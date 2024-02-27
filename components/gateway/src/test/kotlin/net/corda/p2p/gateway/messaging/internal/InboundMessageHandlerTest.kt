@@ -27,6 +27,8 @@ import net.corda.data.p2p.crypto.MessageType
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage
 import net.corda.data.p2p.crypto.ResponderHelloMessage
 import net.corda.data.p2p.crypto.internal.InitiatorHandshakeIdentity
+import net.corda.data.p2p.linkmanager.LinkManagerResponse
+import net.corda.messaging.api.publisher.HttpRpcClient
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpWriter
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
@@ -34,6 +36,8 @@ import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
 import net.corda.schema.Schemas.P2P.LINK_IN_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
+import net.corda.utilities.flags.Features
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -44,7 +48,10 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.net.InetSocketAddress
@@ -61,8 +68,10 @@ class InboundMessageHandlerTest {
         on { createCoordinator(any(), lifecycleEventHandler.capture()) } doReturn coordinator
     }
     private val configurationReaderService = mock<ConfigurationReadService>()
+    private val httpRpcClient = mock<HttpRpcClient>()
     private val publisherFactory = mock<PublisherFactory> {
         on { createPublisher(any(), any()) } doReturn mock()
+        on { createHttpRpcClient() } doReturn httpRpcClient
     }
     private val subscriptionFactory = mock<SubscriptionFactory>()
     private val server = mockConstruction(ReconfigurableHttpServer::class.java) { mock, _ ->
@@ -98,14 +107,23 @@ class InboundMessageHandlerTest {
         on { deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage)) } doReturn
                 GatewayMessage(requestId, authenticatedP2PDataMessage(""))
     }
+    private val features = mock<Features> {
+        on { enableP2PGatewayToLinkManagerOverHttp } doReturn false
+        on { useStatefulSessionManager } doReturn false
+    }
+    private val commonComponents = mock<CommonComponents> {
+        on { features } doReturn features
+    }
     private val handler = InboundMessageHandler(
         lifecycleCoordinatorFactory,
         configurationReaderService,
         publisherFactory,
         subscriptionFactory,
         SmartConfigImpl.empty(),
+        commonComponents,
+        avroSchemaRegistry,
         mock(),
-        avroSchemaRegistry
+        mock(),
     )
 
     @AfterEach
@@ -528,5 +546,204 @@ class InboundMessageHandlerTest {
                 InetSocketAddress("www.r3.com", 1231),
                 serialisedResponse
             )
+    }
+
+    @Test
+    fun `when enableP2PGatewayToLinkManagerOverHttp is false, avoid sending message to HTTP client`() {
+        setRunning()
+        val msgId = "msg-id"
+        val p2pMessage = unauthenticatedP2PMessage("abc")
+        val gatewayMessage = GatewayMessage(msgId, p2pMessage)
+        whenever(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
+
+        handler.onRequest(
+            writer,
+            HttpRequest(
+                source = InetSocketAddress("www.r3.com", 1231),
+                payload = serialisedMessage,
+                destination = InetSocketAddress("www.r3.com", 344),
+            )
+
+        )
+
+        verify(httpRpcClient, never()).send(any(), any(), eq(GatewayResponse::class.java))
+    }
+
+    @Test
+    fun `when enableP2PGatewayToLinkManagerOverHttp is true, avoid publishing data to the bus`() {
+        whenever(features.enableP2PGatewayToLinkManagerOverHttp).doReturn(true)
+        setRunning()
+        val msgId = "msg-id"
+        val p2pMessage = unauthenticatedP2PMessage("abc")
+        val gatewayMessage = GatewayMessage(msgId, p2pMessage)
+        whenever(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
+
+        handler.onRequest(
+            writer,
+            HttpRequest(
+                source = InetSocketAddress("www.r3.com", 1231),
+                payload = serialisedMessage,
+                destination = InetSocketAddress("www.r3.com", 344),
+            )
+
+        )
+
+        verify(p2pInPublisher.constructed().first(), never()).publish(any())
+    }
+
+    @Test
+    fun `when sending messages to the link manager succeed, OK is written to the writer`() {
+        whenever(features.enableP2PGatewayToLinkManagerOverHttp).doReturn(true)
+        setRunning()
+        val msgId = "msg-id"
+        val p2pMessage = unauthenticatedP2PMessage("abc")
+        val gatewayMessage = GatewayMessage(msgId, p2pMessage)
+        whenever(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
+
+        handler.onRequest(
+            writer,
+            HttpRequest(
+                source = InetSocketAddress("www.r3.com", 1231),
+                payload = serialisedMessage,
+                destination = InetSocketAddress("www.r3.com", 344),
+            )
+
+        )
+
+        verify(writer).write(eq(HttpResponseStatus.OK), any(), any())
+    }
+
+    @Test
+    fun `when sending messages to the link manager failed, INTERNAL_SERVER_ERROR is written to the writer`() {
+        whenever(features.enableP2PGatewayToLinkManagerOverHttp).doReturn(true)
+        setRunning()
+        val msgId = "msg-id"
+        val p2pMessage = unauthenticatedP2PMessage("abc")
+        val gatewayMessage = GatewayMessage(msgId, p2pMessage)
+        whenever(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
+        whenever(httpRpcClient.send(any(), any(), eq(LinkManagerResponse::class.java))).doThrow(CordaRuntimeException("Oops"))
+
+        handler.onRequest(
+            writer,
+            HttpRequest(
+                source = InetSocketAddress("www.r3.com", 1231),
+                payload = serialisedMessage,
+                destination = InetSocketAddress("www.r3.com", 344),
+            )
+
+        )
+
+        verify(writer).write(eq(HttpResponseStatus.INTERNAL_SERVER_ERROR), any(), any())
+    }
+
+    @Test
+    fun `link manager payload is forwarded to the writer`() {
+        whenever(features.enableP2PGatewayToLinkManagerOverHttp).doReturn(true)
+        setRunning()
+        val msgId = "msg-id"
+        val p2pMessage = unauthenticatedP2PMessage("abc")
+        val message = argumentCaptor<GatewayResponse>()
+        whenever(avroSchemaRegistry.serialize(message.capture())).doReturn(ByteBuffer.wrap(serialisedResponse))
+        val payload = AuthenticatedEncryptedDataMessage.newBuilder()
+            .apply {
+                header = CommonHeader(MessageType.DATA, 0, "sessionId", 1, 1)
+                encryptedPayload = ByteBuffer.wrap(byteArrayOf())
+                authTag = ByteBuffer.wrap(byteArrayOf())
+            }.build()
+        val gatewayMessage = GatewayMessage(msgId, p2pMessage)
+        whenever(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
+        whenever(
+            httpRpcClient.send(
+                any(),
+                eq(LinkInMessage(p2pMessage)),
+                eq(LinkManagerResponse::class.java),
+            )
+        ).doReturn(
+            LinkManagerResponse(
+                payload,
+            )
+        )
+
+        handler.onRequest(
+            writer,
+            HttpRequest(
+                source = InetSocketAddress("www.r3.com", 1231),
+                payload = serialisedMessage,
+                destination = InetSocketAddress("www.r3.com", 344),
+            )
+
+        )
+
+        assertThat(message.firstValue).isEqualTo(
+            GatewayResponse(
+                msgId,
+                payload,
+            )
+        )
+    }
+
+    @Test
+    fun `link manager response without payload is replied without payload`() {
+        whenever(features.enableP2PGatewayToLinkManagerOverHttp).doReturn(true)
+        setRunning()
+        val msgId = "msg-id"
+        val p2pMessage = unauthenticatedP2PMessage("abc")
+        val message = argumentCaptor<GatewayResponse>()
+        whenever(avroSchemaRegistry.serialize(message.capture())).doReturn(ByteBuffer.wrap(serialisedResponse))
+        val gatewayMessage = GatewayMessage(msgId, p2pMessage)
+        whenever(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
+        whenever(
+            httpRpcClient.send(
+                any(),
+                eq(LinkInMessage(p2pMessage)),
+                eq(LinkManagerResponse::class.java),
+            )
+        ).doReturn(
+            LinkManagerResponse(
+                null,
+            )
+        )
+
+        handler.onRequest(
+            writer,
+            HttpRequest(
+                source = InetSocketAddress("www.r3.com", 1231),
+                payload = serialisedMessage,
+                destination = InetSocketAddress("www.r3.com", 344),
+            )
+
+        )
+
+        assertThat(message.firstValue).isEqualTo(
+            GatewayResponse(
+                msgId,
+                null,
+            )
+        )
+    }
+
+    @Test
+    fun `when useStatefulSessionManager is true, custom partitioning for inbound session messages is turned off`() {
+        whenever(features.useStatefulSessionManager).doReturn(true)
+        whenever(sessionPartitionMapper.constructed().first().getPartitions(any())).doReturn(mock())
+        setRunning()
+        val msgId = "msg-id"
+        val gatewayMessage = GatewayMessage(msgId, authenticatedP2PDataMessage(""))
+        whenever(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
+
+        handler.onRequest(
+            writer,
+            HttpRequest(
+                source = InetSocketAddress("www.r3.com", 1231),
+                payload = serialisedMessage,
+                destination = InetSocketAddress("www.r3.com", 344),
+            )
+
+        )
+
+        verify(p2pInPublisher.constructed().first())
+            .publish(any())
+        verify(sessionPartitionMapper.constructed().first(), never())
+            .getPartitions(any())
     }
 }

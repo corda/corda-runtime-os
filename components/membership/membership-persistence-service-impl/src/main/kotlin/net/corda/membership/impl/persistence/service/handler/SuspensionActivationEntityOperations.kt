@@ -1,8 +1,5 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import javax.persistence.EntityManager
-import javax.persistence.LockModeType
-import javax.persistence.PessimisticLockException
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
@@ -18,6 +15,9 @@ import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.utilities.time.Clock
+import javax.persistence.EntityManager
+import javax.persistence.LockModeType
+import javax.persistence.PessimisticLockException
 
 internal class SuspensionActivationEntityOperations(
     private val clock: Clock,
@@ -44,14 +44,14 @@ internal class SuspensionActivationEntityOperations(
             )
         }
         expectedSerial?.let {
-            if(member.serialNumber != it) {
+            if (member.serialNumber != it) {
                 throw InvalidEntityUpdateException(
                     "The provided serial number '$expectedSerial' does not match the current version '${member.serialNumber}' of " +
-                            "MemberInfo for member '$memberName'."
+                        "MemberInfo for member '$memberName'."
                 )
             }
         }
-        if(member.status != expectedStatus) {
+        if (member.status != expectedStatus) {
             throw InvalidEntityUpdateException(
                 "This action cannot be performed on member '$memberName' because it has status '${member.status}'."
             )
@@ -70,14 +70,16 @@ internal class SuspensionActivationEntityOperations(
     ): PersistentMemberInfo {
         val now = clock.instant()
         val updatedSerial = currentMemberInfo.serialNumber + 1
-        val mgmContext = KeyValuePairList(currentMgmContext.items.map {
-            when (it.key) {
-                STATUS -> KeyValuePair(it.key, newStatus)
-                MODIFIED_TIME -> KeyValuePair(it.key, now.toString())
-                SERIAL -> KeyValuePair(it.key, updatedSerial.toString())
-                else -> it
+        val mgmContext = KeyValuePairList(
+            currentMgmContext.items.map {
+                when (it.key) {
+                    STATUS -> KeyValuePair(it.key, newStatus)
+                    MODIFIED_TIME -> KeyValuePair(it.key, now.toString())
+                    SERIAL -> KeyValuePair(it.key, updatedSerial.toString())
+                    else -> it
+                }
             }
-        })
+        )
         val serializedMgmContext = wrapWithNullErrorHandling({
             MembershipPersistenceException("Failed to serialize the MGM-provided context.", it)
         }) {

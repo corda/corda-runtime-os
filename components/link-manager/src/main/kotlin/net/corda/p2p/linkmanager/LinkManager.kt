@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
@@ -22,6 +23,8 @@ import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import java.util.UUID
+import net.corda.crypto.client.SessionEncryptionOpsClient
+import net.corda.schema.registry.AvroSchemaRegistry
 
 @Suppress("LongParameterList")
 class LinkManager(
@@ -37,6 +40,9 @@ class LinkManager(
     membershipGroupReaderProvider: MembershipGroupReaderProvider,
     membershipQueryClient: MembershipQueryClient,
     groupParametersReaderService: GroupParametersReaderService,
+    stateManager: StateManager,
+    sessionEncryptionOpsClient: SessionEncryptionOpsClient,
+    schemaRegistry: AvroSchemaRegistry,
     linkManagerHostingMap: LinkManagerHostingMap =
         LinkManagerHostingMapImpl(
             lifecycleCoordinatorFactory,
@@ -66,7 +72,10 @@ class LinkManager(
         membershipQueryClient = membershipQueryClient,
         virtualNodeInfoReadService = virtualNodeInfoReadService,
         groupParametersReaderService = groupParametersReaderService,
-        clock = clock
+        clock = clock,
+        stateManager = stateManager,
+        schemaRegistry = schemaRegistry,
+        sessionEncryptionOpsClient = sessionEncryptionOpsClient,
     )
     private val outboundLinkManager = OutboundLinkManager(
         lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,

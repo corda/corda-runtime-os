@@ -10,10 +10,9 @@ interface ResponseFactory {
         payload: Any
     ): Record<String, FlowEvent>
 
-    fun errorResponse(externalEventContext : ExternalEventContext, exception: Exception): Record<String, FlowEvent>
-    fun transientErrorResponse(
-        flowExternalEventContext: ExternalEventContext,
-        e: Exception
+    fun errorResponse(
+        externalEventContext: ExternalEventContext,
+        exception: Exception
     ): Record<String, FlowEvent>
 
     fun platformErrorResponse(

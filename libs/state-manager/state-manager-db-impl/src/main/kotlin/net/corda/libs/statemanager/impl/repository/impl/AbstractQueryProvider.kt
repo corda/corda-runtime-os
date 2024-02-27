@@ -1,13 +1,16 @@
 package net.corda.libs.statemanager.impl.repository.impl
 
 import net.corda.db.schema.DbSchema.STATE_MANAGER_TABLE
-import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.KEY_COLUMN
-import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.VALUE_COLUMN
-import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.METADATA_COLUMN
-import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.VERSION_COLUMN
-import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.MODIFIED_TIME_COLUMN
+import net.corda.libs.statemanager.impl.model.v1.StateColumns.KEY_COLUMN
+import net.corda.libs.statemanager.impl.model.v1.StateColumns.METADATA_COLUMN
+import net.corda.libs.statemanager.impl.model.v1.StateColumns.MODIFIED_TIME_COLUMN
+import net.corda.libs.statemanager.impl.model.v1.StateColumns.VALUE_COLUMN
+import net.corda.libs.statemanager.impl.model.v1.StateColumns.VERSION_COLUMN
+import java.util.TimeZone
 
 abstract class AbstractQueryProvider : QueryProvider {
+    override val timeZone: TimeZone
+        get() = TimeZone.getTimeZone("UTC")
 
     override fun findStatesByKey(size: Int) =
         """

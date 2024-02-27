@@ -27,6 +27,4 @@ dependencies {
 
     testImplementation project(':testing:test-utilities')
     testImplementation project(':testing:packaging-test-utilities')
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

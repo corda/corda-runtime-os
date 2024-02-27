@@ -1,7 +1,7 @@
 package net.corda.ledger.consensual.flow.impl.transaction.serializer.kryo
 
-import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
+import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.kryoserialization.testkit.createCheckpointSerializer
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
@@ -13,7 +13,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
-class ConsensualSignedTransactionKryoSerializerTest: ConsensualLedgerTest() {
+class ConsensualSignedTransactionKryoSerializerTest : ConsensualLedgerTest() {
     @Test
     fun `serialization of a Consensual Signed Tx object using the kryo default serialization`() {
         val serializer = createCheckpointSerializer(

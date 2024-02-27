@@ -24,15 +24,13 @@ dependencies {
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-topic-schema'
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation libs.typesafe.config
+    implementation libs.slf4j.api
 
     runtimeOnly project(":libs:web:web-impl")
 
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     integrationTestImplementation project(":testing:db-message-bus-testkit")
     integrationTestImplementation project(":testing:test-utilities")
     integrationTestImplementation project(":libs:lifecycle:registry")
@@ -45,9 +43,9 @@ dependencies {
     integrationTestRuntimeOnly project(":libs:messaging:db-topic-admin-impl")
     integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
-    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    integrationTestRuntimeOnly libs.slf4j.simple
 
     integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly libs.postgresql.jdbc
 }

@@ -197,8 +197,11 @@ class GroupPolicyProviderImpl @Activate constructor(
             logger.warn("Could not parse group policy file for holding identity [$holdingIdentity].", e)
             null
         } catch (e: Throwable) {
-            logger.warn("Unexpected exception occurred when retrieving group policy file for " +
-                    "holding identity [$holdingIdentity].", e)
+            logger.warn(
+                "Unexpected exception occurred when retrieving group policy file for " +
+                    "holding identity [$holdingIdentity].",
+                e
+            )
             null
         }
 
@@ -224,8 +227,9 @@ class GroupPolicyProviderImpl @Activate constructor(
                     } catch (e: Exception) {
                         logger.warn(
                             "Failure to parse group policy after change in virtual node info. " +
-                                    "Check the format of the group policy in use for virtual node with ID [${it.shortHash}]. " +
-                                    "Caught exception: ", e
+                                "Check the format of the group policy in use for virtual node with ID [${it.shortHash}]. " +
+                                "Caught exception: ",
+                            e
                         )
                         null
                     }
@@ -233,7 +237,7 @@ class GroupPolicyProviderImpl @Activate constructor(
                     if (groupPolicyToStore == null) {
                         logger.debug(
                             "Something went wrong while parsing the group policy for virtual node with holding identity [$it]. " +
-                                    "The group policy will be removed from the cache, to be parsed and cached on the next read."
+                                "The group policy will be removed from the cache, to be parsed and cached on the next read."
                         )
                         groupPolicies.remove(it)
                     } else if (groupPolicyToStore !is MGMGroupPolicy) {
@@ -269,13 +273,13 @@ class GroupPolicyProviderImpl @Activate constructor(
     ): GroupPolicy? {
         val vNodeInfo = virtualNodeInfo ?: virtualNodeInfoReadService.get(holdingIdentity)
         if (vNodeInfo == null) {
-            logger.warn("Could not get virtual node info for holding identity [${holdingIdentity}]")
+            logger.warn("Could not get virtual node info for holding identity [$holdingIdentity]")
         }
         val metadata = vNodeInfo?.cpiIdentifier?.let { cpiInfoReader.get(it) }
         if (metadata == null) {
             logger.warn(
-                "Could not get CPI metadata for holding identity [${holdingIdentity}] and CPI with identifier " +
-                        "[${vNodeInfo?.cpiIdentifier.toString()}]. Any updates to the group policy will be processed later."
+                "Could not get CPI metadata for holding identity [$holdingIdentity] and CPI with identifier " +
+                    "[${vNodeInfo?.cpiIdentifier}]. Any updates to the group policy will be processed later."
             )
             return null
         }
@@ -349,9 +353,11 @@ class GroupPolicyProviderImpl @Activate constructor(
                 this.p2pParameters
                 true
             } catch (e: BadGroupPolicyException) {
-                logger.warn("Something went wrong while parsing the group policy for virtual node with holding identity" +
-                    " [$holdingIdentity]. Error: ${e.message} The group policy will be removed from the cache, to be parsed and cached on" +
-                    " the next read.")
+                logger.warn(
+                    "Something went wrong while parsing the group policy for virtual node with holding identity" +
+                        " [$holdingIdentity]. Error: ${e.message} The group policy will be removed from the cache, " +
+                        "to be parsed and cached on the next read."
+                )
                 false
             }
         }

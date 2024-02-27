@@ -56,7 +56,6 @@ class ExtensionsTest {
 
     @Test
     fun gettingContractFailsForOtherClasses() {
-
         val state1 = Enclosed(emptyList())
         Assertions.assertNull(state1.getContractClass())
 

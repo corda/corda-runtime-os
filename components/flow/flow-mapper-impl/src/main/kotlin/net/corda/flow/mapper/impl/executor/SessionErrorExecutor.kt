@@ -1,7 +1,5 @@
 package net.corda.flow.mapper.impl.executor
 
-import net.corda.data.ExceptionEnvelope
-import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
@@ -10,6 +8,7 @@ import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.flow.mapper.factory.RecordFactory
 import net.corda.libs.configuration.SmartConfig
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
@@ -17,6 +16,7 @@ import java.time.Instant
 class SessionErrorExecutor(
     private val eventKey: String,
     private val sessionEvent: SessionEvent,
+    private val sessionError: SessionError,
     private val flowMapperState: FlowMapperState?,
     private val flowConfig: SmartConfig,
     private val recordFactory: RecordFactory,
@@ -39,7 +39,7 @@ class SessionErrorExecutor(
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
             log.warn(missingSessionMsg + "Ignoring event.")
-            FlowMapperResult(flowMapperState, listOf())
+            FlowMapperResult(null, listOf())
         } else {
             processSessionErrorEvents(flowMapperState)
         }
@@ -48,30 +48,19 @@ class SessionErrorExecutor(
     private fun processSessionErrorEvents(flowMapperState: FlowMapperState): FlowMapperResult {
         return when (flowMapperState.status) {
             null -> {
-                log.debug("FlowMapperState with null status. Key: {}, Event: {}.", eventKey, sessionEvent)
+                log.debug { "FlowMapperState with null status. Key: $eventKey, Event: $sessionEvent." }
                 FlowMapperResult(null, listOf())
             }
             FlowMapperStateType.ERROR -> {
-                log.debug(defaultMsg.format(IGNORING))
+                log.debug { defaultMsg.format(IGNORING) }
                 FlowMapperResult(flowMapperState, listOf())
             }
             FlowMapperStateType.OPEN -> {
-                log.debug(defaultMsg.format(FORWARDING))
+                log.debug { defaultMsg.format(FORWARDING) }
                 flowMapperState.status = FlowMapperStateType.ERROR
-                val payload = if (sessionEvent.messageDirection == MessageDirection.OUTBOUND) {
-                    ExceptionEnvelope(
-                        "FlowMapper-SessionError",
-                        "Received SessionError with sessionId ${sessionEvent.sessionId}"
-                    )
-                } else {
-                    (sessionEvent.payload as? SessionError)?.errorMessage ?: ExceptionEnvelope(
-                        "FlowMapper-SessionError",
-                        "Received SessionError with sessionId ${sessionEvent.sessionId}"
-                    )
-                }
                 val record = recordFactory.forwardError(
                     sessionEvent,
-                    payload,
+                    sessionError.errorMessage,
                     instant,
                     flowConfig,
                     flowMapperState.flowId
@@ -79,7 +68,7 @@ class SessionErrorExecutor(
                 FlowMapperResult(flowMapperState, listOf(record))
             }
             FlowMapperStateType.CLOSING -> {
-                log.debug(defaultMsg.format(IGNORING))
+                log.debug { defaultMsg.format(IGNORING) }
                 flowMapperState.status = FlowMapperStateType.ERROR
                 FlowMapperResult(flowMapperState, listOf())
             }

@@ -10,6 +10,7 @@ import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.crypto.cipher.suite.schemes.KeySchemeTemplate
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.SessionEncryptionOpsClient
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.fullIdHash
 import net.corda.data.config.Configuration
@@ -20,6 +21,7 @@ import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.data.p2p.crypto.protocol.RevocationCheckMode
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerProcessedMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
@@ -28,15 +30,23 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_ENABLED_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_ALGORITHM_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REVOCATION_CHECK_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_FOR_MEMBER_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_FOR_MGM_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_REFRESH_THRESHOLD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
+import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.libs.statemanager.api.MetadataFilter
+import net.corda.libs.statemanager.api.Operation
+import net.corda.libs.statemanager.api.State
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -63,7 +73,6 @@ import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
 import net.corda.p2p.crypto.protocol.ProtocolConstants
-import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
@@ -76,12 +85,15 @@ import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.BootConfig.P2P_LINK_MANAGER_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig
+import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.test.util.eventually
 import net.corda.testing.p2p.certificates.Certificates
 import net.corda.utilities.seconds
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
@@ -101,6 +113,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.kotlin.KStubbing
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -122,6 +135,7 @@ import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicInteger
 
 class P2PLayerEndToEndTest {
 
@@ -514,9 +528,12 @@ class P2PLayerEndToEndTest {
             ConfigFactory.empty()
                 .withValue(MAX_MESSAGE_SIZE_KEY, ConfigValueFactory.fromAnyRef(1000000))
                 .withValue(MAX_REPLAYING_MESSAGES_PER_PEER, ConfigValueFactory.fromAnyRef(100))
+                .withValue(HEARTBEAT_ENABLED_KEY, ConfigValueFactory.fromAnyRef(true))
                 .withValue(HEARTBEAT_MESSAGE_PERIOD_KEY, ConfigValueFactory.fromAnyRef(Duration.ofSeconds(2)))
                 .withValue(SESSION_TIMEOUT_KEY, ConfigValueFactory.fromAnyRef(Duration.ofSeconds(10)))
-                .withValue(SESSIONS_PER_PEER_KEY, ConfigValueFactory.fromAnyRef(4))
+                .withValue(SESSIONS_PER_PEER_KEY, ConfigValueFactory.fromAnyRef(null))
+                .withValue(SESSIONS_PER_PEER_FOR_MEMBER_KEY, ConfigValueFactory.fromAnyRef(2))
+                .withValue(SESSIONS_PER_PEER_FOR_MGM_KEY, ConfigValueFactory.fromAnyRef(1))
                 .withValue(SESSION_REFRESH_THRESHOLD_KEY, ConfigValueFactory.fromAnyRef(432000))
                 .withValue(
                     REPLAY_ALGORITHM_KEY,
@@ -565,8 +582,11 @@ class P2PLayerEndToEndTest {
                     }
                 }?.public
 
-        private inline fun  <reified T: Lifecycle> mockLifeCycle(stubbing: KStubbing<T>.(T) -> Unit): T {
-            val name = LifecycleCoordinatorName.forComponent<T>()
+        private inline fun  <reified T: Lifecycle> mockLifeCycle(
+            coordinatorName: LifecycleCoordinatorName? = null,
+            stubbing: KStubbing<T>.(T) -> Unit
+        ): T {
+            val name = coordinatorName ?: LifecycleCoordinatorName.forComponent<T>()
             val coordinator = lifecycleCoordinatorFactory.createCoordinator(name) { _, coordinator ->
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
@@ -646,6 +666,107 @@ class P2PLayerEndToEndTest {
             on { getGroupReader(any()) } doReturn groupReader
         }
 
+        private val stateManagerName = mock<LifecycleCoordinatorName>()
+        private val stateManager = mockLifeCycle<StateManager>(stateManagerName) {
+            val states = ConcurrentHashMap<String, State>()
+            on { name } doReturn stateManagerName
+            on { get(any()) } doAnswer {
+                val ids = it.getArgument<Collection<String>>(0)
+                ids.mapNotNull { id ->
+                    states[id]?.let {
+                        id to it
+                    }
+                }.toMap()
+            }
+
+            on { findByMetadataMatchingAny(any()) } doAnswer {
+                val filters = it.getArgument<Collection<MetadataFilter>>(0)
+                filters.flatMap { filter ->
+                    states.values.filter {
+                        val value = it.metadata[filter.key]
+                        when (filter.operation) {
+                            Operation.Equals -> {
+                                filter.value == value
+                            }
+                            Operation.NotEquals -> {
+                                filter.value != value
+                            }
+                            Operation.LesserThan -> {
+                                val toFilter = (filter.value as? Number)?.toDouble() ?: 0.0
+                                val doubleValue = (value as? Number)?.toDouble() ?: 0.0
+                                doubleValue < toFilter
+                            }
+                            Operation.GreaterThan -> {
+                                val toFilter = (filter.value as? Number)?.toDouble() ?: 0.0
+                                val doubleValue = (value as? Number)?.toDouble() ?: 0.0
+                                doubleValue > toFilter
+                            }
+                        }
+                    }
+                }.groupBy {
+                    it.key
+                }.mapValues {
+                    it.value.first()
+                }
+            }
+
+            on { update(any()) } doAnswer {
+                it.getArgument<Collection<State>>(0).forEach {
+                    states.compute(it.key) { _, value ->
+                        if (value == null) {
+                            throw CordaRuntimeException("Could not update non existing state!")
+                        }
+                        if (value.version != it.version) {
+                            throw CordaRuntimeException(
+                                "Could not update state with version ${it.version}, known version is ${value.version}"
+                            )
+                        }
+                        it.copy(
+                            version = it.version + 1
+                        )
+                    }
+                }
+                emptyMap()
+            }
+
+            on { create(any()) } doAnswer {
+                it.getArgument<Collection<State>>(0).forEach {
+                    states.compute(it.key) { _, value ->
+                        if (value != null) {
+                            throw CordaRuntimeException("Could not create an existing state!")
+                        }
+                        it
+                    }
+                }
+                emptySet()
+            }
+        }
+        private val sessionEncryptionOpsClient = mockLifeCycle<SessionEncryptionOpsClient>() {
+            on { encryptSessionData(any(), anyOrNull()) } doAnswer {
+                it.getArgument<ByteArray>(0)
+            }
+            on { decryptSessionData(any(), anyOrNull()) } doAnswer {
+                it.getArgument<ByteArray>(0)
+            }
+        }
+        private val schemaRegistry = mock<AvroSchemaRegistry> {
+            val registryData = ConcurrentHashMap<Int, Any?>()
+            val registryIndex = AtomicInteger()
+            on { deserialize(any(), any(), anyOrNull()) } doAnswer {
+                val index = String(it.getArgument<ByteBuffer>(0).array()).toIntOrNull()
+                registryData[index]
+            }
+            on { serialize(any()) } doAnswer {
+                val index = registryIndex.incrementAndGet()
+                registryData[index] = it.getArgument(0)
+                ByteBuffer.wrap(index.toString().toByteArray())
+            }
+            on { getClassType(any()) } doAnswer {
+                val index = String(it.getArgument<ByteBuffer>(0).array()).toIntOrNull()
+                registryData[index]?.javaClass
+            }
+        }
+
         private val linkManager =
             LinkManager(
                 subscriptionFactory,
@@ -660,6 +781,20 @@ class P2PLayerEndToEndTest {
                 membershipGroupReaderProvider,
                 mock(),
                 mock(),
+                stateManager,
+                sessionEncryptionOpsClient,
+                schemaRegistry,
+            )
+        private val platformInfoProvider = object : PlatformInfoProvider {
+            override val activePlatformVersion = 1
+            override val localWorkerPlatformVersion = 1
+            override val localWorkerSoftwareVersion = "5.2"
+        }
+        private val bootConfig = SmartConfigFactory.createWithoutSecurityServices()
+            .create(ConfigFactory.empty())
+            .withValue(
+                P2P_LINK_MANAGER_WORKER_REST_ENDPOINT,
+                ConfigValueFactory.fromAnyRef("localhost:8080"),
             )
 
         private val gateway =
@@ -668,9 +803,11 @@ class P2PLayerEndToEndTest {
                 subscriptionFactory,
                 publisherFactory,
                 lifecycleCoordinatorFactory,
-                bootstrapConfig,
                 cryptoOpsClient,
-                AvroSchemaRegistryImpl()
+                AvroSchemaRegistryImpl(),
+                platformInfoProvider,
+                bootConfig,
+                bootstrapConfig,
             )
 
         private fun Publisher.publishConfig(key: String, config: Config) {
@@ -748,6 +885,7 @@ class P2PLayerEndToEndTest {
         override fun close() {
             linkManager.close()
             gateway.close()
+            topicService.close()
         }
 
         fun addReadWriter(): Subscription<String, AppMessage> {

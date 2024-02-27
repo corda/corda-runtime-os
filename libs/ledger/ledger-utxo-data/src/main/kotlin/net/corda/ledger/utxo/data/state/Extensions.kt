@@ -83,12 +83,13 @@ fun ContractState.getContractClass(): Class<out Contract>? {
 fun ContractState.getContractClassOrThrow(): Class<out Contract> {
     return requireNotNull(getContractClass()) {
         """Unable to infer Contract class. ${javaClass.canonicalName} is not annotated with @BelongsToContract, 
-            |or does not have an enclosing class which implements Contract.""".trimMargin()
+            |or does not have an enclosing class which implements Contract.
+        """.trimMargin()
     }
 }
 
 fun UtxoOutputInfoComponent.getEncumbranceGroup(): EncumbranceGroup? {
-     return encumbrance?.let{
+    return encumbrance?.let {
         require(encumbranceGroupSize != null)
         EncumbranceGroupImpl(encumbranceGroupSize, encumbrance)
     }

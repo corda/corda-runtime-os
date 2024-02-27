@@ -1,6 +1,5 @@
 package net.corda.libs.cpi.datamodel.entities.tests
 
-import java.util.*
 import net.corda.crypto.core.parseSecureHash
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
@@ -13,7 +12,6 @@ import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.libs.cpi.datamodel.entities.tests.utils.cpi
 import net.corda.libs.cpi.datamodel.entities.tests.utils.cpk
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
-import net.corda.libs.cpi.datamodel.repository.impl.CpkDbChangeLogRepositoryImpl
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
@@ -24,6 +22,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import java.util.*
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CpkDbChangeLogEntityTest {

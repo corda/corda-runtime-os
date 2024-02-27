@@ -27,7 +27,7 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
     fun beforeEach() {
         utxoSignedTransaction = createSignedTransaction()
     }
-    
+
     @Test
     fun `create filtered transaction with all components included as audit proofs`() {
         val utxoFilteredTransaction = utxoLedgerService.filterSignedTransaction(utxoSignedTransaction)
@@ -407,7 +407,7 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
 
         assertThatCode { utxoFilteredTransaction.verify() }.doesNotThrowAnyException()
     }
-    
+
     private fun createSignedTransaction(numberOfInputStates: Int = 2, numberOfOutputStates: Int = 2): UtxoSignedTransactionInternal {
         val inputHash = parseSecureHash("SHA256:1234567890abcdef")
         val outputInfo = UtxoOutputInfoComponent(

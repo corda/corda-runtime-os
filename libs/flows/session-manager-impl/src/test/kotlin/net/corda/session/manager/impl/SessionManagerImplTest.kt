@@ -139,36 +139,6 @@ class SessionManagerImplTest {
     }
 
     @Test
-    fun `Send error for session timed out`() {
-        val instant = Instant.now()
-        val sessionState = buildSessionState(
-            SessionStateType.CONFIRMED,
-            0,
-            listOf(),
-            4,
-            listOf(),
-            instant
-        )
-
-        //validate no heartbeat
-        val (firstUpdatedState, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity)
-        assertThat(messagesToSend.size).isEqualTo(0)
-        assertThat(firstUpdatedState.status).isEqualTo(SessionStateType.CONFIRMED)
-
-        //Validate heartbeat
-        val (secondUpdatedState, secondMessagesToSend) = sessionManager.getMessagesToSend(
-            sessionState, instant.plusMillis(sessionTimeout  + 1),
-            testSmartConfig,
-            testIdentity
-        )
-
-        assertThat(secondMessagesToSend.size).isEqualTo(1)
-        assertThat(secondUpdatedState.status).isEqualTo(SessionStateType.ERROR)
-        val messageToSend = secondMessagesToSend.first()
-        assertThat(messageToSend.payload::class.java).isEqualTo(SessionError::class.java)
-    }
-
-    @Test
     fun `next message is a chunk but all chunks are not present, returns null`() {
         val instant = Instant.now()
         val requestId = "chunkId"

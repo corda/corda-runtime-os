@@ -34,6 +34,7 @@ dependencies {
     integrationTestImplementation project(":libs:messaging:topic-admin")
     integrationTestImplementation project(":libs:schema-registry:schema-registry")
     integrationTestImplementation project(":testing:test-utilities")
+    integrationTestImplementation project(":testing:test-state-manager")
 
     integrationTestImplementation platform("net.corda:corda-api:$cordaApiVersion")
     integrationTestImplementation "net.corda:corda-avro-schema"
@@ -41,12 +42,10 @@ dependencies {
     integrationTestImplementation 'net.corda:corda-config-schema'
     integrationTestImplementation 'net.corda:corda-topic-schema'
 
-    integrationTestImplementation "com.typesafe:config:$typeSafeConfigVersion"
-    integrationTestImplementation "org.assertj:assertj-core:$assertjVersion"
-    integrationTestImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    integrationTestImplementation libs.typesafe.config
     integrationTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
     integrationTestImplementation "javax.persistence:javax.persistence-api"
-    integrationTestImplementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    integrationTestImplementation libs.kafka.client
 
     integrationTestImplementation project(":components:kafka-topic-admin")
     integrationTestImplementation 'net.corda:corda-db-schema'
@@ -66,7 +65,7 @@ dependencies {
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     integrationTestRuntimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
     integrationTestRuntimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
-    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    integrationTestRuntimeOnly libs.slf4j.simple
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     integrationTestRuntimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
@@ -78,7 +77,7 @@ dependencies {
     dbIntegrationTestRuntimeOnly project(":libs:messaging:db-message-bus-impl")
     dbIntegrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     dbIntegrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    dbIntegrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    dbIntegrationTestRuntimeOnly libs.postgresql.jdbc
 }
 
 def testingBundle = tasks.register('testingBundle', Bundle) {

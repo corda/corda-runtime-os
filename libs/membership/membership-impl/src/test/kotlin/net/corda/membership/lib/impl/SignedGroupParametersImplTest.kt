@@ -48,7 +48,6 @@ class SignedGroupParametersImplTest {
         on { create(eq(listOf(compositeKeyNodeAndWeight)), any()) } doReturn compositeKey
     }
 
-
     private class TestLayeredPropertyMap(
         map: LayeredPropertyMap
     ) : LayeredPropertyMap by map

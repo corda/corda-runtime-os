@@ -12,13 +12,14 @@ import net.corda.rest.annotations.RestQueryParameter
     description = "RESTful operations on Test Entity",
     path = "testEndpointVersion/",
     minVersion = RestApiVersion.C5_0,
-    maxVersion = RestApiVersion.C5_2)
+    maxVersion = RestApiVersion.C5_2
+)
 interface TestEndpointVersioningRestResource : RestResource {
     @Deprecated("Deprecated in favour of `getUsingPath()`")
     @HttpGET(minVersion = RestApiVersion.C5_0, maxVersion = RestApiVersion.C5_0)
     fun getUsingQuery(@RestQueryParameter id: String): String
 
-    @HttpGET(path = "{id}", minVersion=RestApiVersion.C5_1, maxVersion=RestApiVersion.C5_2)
+    @HttpGET(path = "{id}", minVersion = RestApiVersion.C5_1, maxVersion = RestApiVersion.C5_2)
     fun getUsingPath(@RestPathParameter id: String): String
 }
 
@@ -27,13 +28,14 @@ interface TestEndpointVersioningRestResource : RestResource {
     description = "RESTful operations on Test Entity",
     path = "testResourceVersion/",
     minVersion = RestApiVersion.C5_1,
-    maxVersion = RestApiVersion.C5_2)
+    maxVersion = RestApiVersion.C5_2
+)
 interface TestResourceVersioningRestResource : RestResource {
     @Deprecated("Deprecated in favour of `getUsingPath()`")
     @HttpGET()
     fun getUsingQuery(@RestQueryParameter id: String): String
 
-    @HttpGET(path = "{id}", minVersion=RestApiVersion.C5_0, maxVersion=RestApiVersion.C5_0)
+    @HttpGET(path = "{id}", minVersion = RestApiVersion.C5_0, maxVersion = RestApiVersion.C5_0)
     fun getUsingPath(@RestPathParameter id: String): String
 }
 
@@ -42,12 +44,13 @@ interface TestResourceVersioningRestResource : RestResource {
     description = "RESTful operations on Test Entity",
     path = "testResourceMaxVersion/",
     minVersion = RestApiVersion.C5_0,
-    maxVersion = RestApiVersion.C5_2)
+    maxVersion = RestApiVersion.C5_2
+)
 interface TestResourceMaxVersioningRestResource : RestResource {
     @Deprecated("Deprecated in favour of `getUsingPath()`")
     @HttpGET()
     fun getUsingQuery(@RestQueryParameter id: String): String
 
-    @HttpGET(path = "{id}", minVersion=RestApiVersion.C5_0)
+    @HttpGET(path = "{id}", minVersion = RestApiVersion.C5_0)
     fun getUsingPath(@RestPathParameter id: String): String
 }

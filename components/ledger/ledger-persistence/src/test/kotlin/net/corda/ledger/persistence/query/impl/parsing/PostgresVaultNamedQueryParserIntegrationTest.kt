@@ -94,11 +94,25 @@ class PostgresVaultNamedQueryParserIntegrationTest {
                     """WHERE custom -> 'TestUtxoState' ->> 'testField' = :testField
                         |AND custom -> 'Corda' ->> 'participants' IN :participants
                         |AND custom?:contractStateType
-                        |AND created > :created""".trimMargin(),
+                        |AND created > :created
+                    """.trimMargin(),
                     "custom -> 'TestUtxoState' ->> 'testField' = :testField AND custom -> 'Corda' ->> 'participants' IN (:participants) AND custom \\?\\? :contractStateType AND created > :created"
                 )
             )
         }
+
+        @JvmStatic
+        fun simpleInputsToOutputs() =
+            Stream.of(
+                Arguments.of(
+                    "visible_states.created",
+                    "visible_states.created"
+                ),
+                Arguments.of(
+                    "visible_states.custom_representation -> 'com.r3.example_state' ->> 'field1'",
+                    "visible_states.custom_representation -> 'com.r3.example_state' ->> 'field1'"
+                )
+            )
     }
 
     @ParameterizedTest
@@ -107,9 +121,19 @@ class PostgresVaultNamedQueryParserIntegrationTest {
         assertThat(vaultNamedQueryParser.parseWhereJson(input)).isEqualTo(output)
     }
 
+    @ParameterizedTest
+    @MethodSource("simpleInputsToOutputs")
+    fun `simple expressions are parsed from a postgres query and output back into a postgres query`(input: String, output: String) {
+        assertThat(vaultNamedQueryParser.parseSimpleExpression(input)).isEqualTo(output)
+    }
+
     @Test
     fun `queries containing a select throws an exception`() {
-        assertThatThrownBy { vaultNamedQueryParser.parseWhereJson("SELECT field") }.isExactlyInstanceOf(IllegalArgumentException::class.java)
+        assertThatThrownBy {
+            vaultNamedQueryParser.parseWhereJson(
+                "SELECT field"
+            )
+        }.isExactlyInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test

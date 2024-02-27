@@ -92,7 +92,8 @@ class PersistApprovalRuleHandlerTest {
         on {
             getOrCreateEntityManagerFactory(
                 vaultDmlConnectionId,
-                entitySet
+                entitySet,
+                false
             )
         } doReturn entityManagerFactory
     }

@@ -1,6 +1,5 @@
 package net.corda.libs.permissions.manager.impl
 
-import java.time.Instant
 import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.Permission
 import net.corda.data.permissions.PermissionAssociation
@@ -15,14 +14,14 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Test
-
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Instant
 import java.util.concurrent.atomic.AtomicReference
 
 class RbacBasicAuthenticationServiceTest {
@@ -35,7 +34,8 @@ class RbacBasicAuthenticationServiceTest {
         private val permissionString = "flow/start/com.myapp.MyFlow"
 
         private val permission = Permission(
-            "allowPermissionId", 1,
+            "allowPermissionId",
+            1,
             ChangeDetails(Instant.now()),
             virtualNode,
             PermissionType.ALLOW,
@@ -44,7 +44,8 @@ class RbacBasicAuthenticationServiceTest {
         )
 
         private val permissionDenied = Permission(
-            "denyPermissionId", 1,
+            "denyPermissionId",
+            1,
             ChangeDetails(Instant.now()),
             virtualNode,
             PermissionType.DENY,
@@ -53,7 +54,8 @@ class RbacBasicAuthenticationServiceTest {
         )
 
         private val role = Role(
-            "roleId1", 1,
+            "roleId1",
+            1,
             ChangeDetails(Instant.now()),
             "STARTFLOW-MYFLOW",
             "group1",

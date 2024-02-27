@@ -109,7 +109,7 @@ class MembershipGroupReadLifecycleHandlerTest {
 
         verify(deactivateFunction).invoke(any())
 
-        //these handles are only set if other lifecycle events happen first. In this case they are null when stopping.
+        // these handles are only set if other lifecycle events happen first. In this case they are null when stopping.
         verify(componentRegistrationHandle, never()).close()
         verify(configRegistrationHandle, never()).close()
     }
@@ -135,7 +135,8 @@ class MembershipGroupReadLifecycleHandlerTest {
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
 
         verify(configurationReadService).registerComponentForUpdates(
-            eq(coordinator), eq(setOf(BOOT_CONFIG, MESSAGING_CONFIG))
+            eq(coordinator),
+            eq(setOf(BOOT_CONFIG, MESSAGING_CONFIG))
         )
         verify(coordinator, never()).updateStatus(eq(LifecycleStatus.UP), any())
     }

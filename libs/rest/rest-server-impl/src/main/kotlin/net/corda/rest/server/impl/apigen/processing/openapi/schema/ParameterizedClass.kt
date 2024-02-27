@@ -10,7 +10,7 @@ internal data class ParameterizedClass(
         clazz: Class<*>,
         parameterizedClassList: List<GenericParameterizedType> = emptyList(),
         nullable: Boolean
-    ): this(clazz, parameterizedClassList) {
+    ) : this(clazz, parameterizedClassList) {
         this.nullable = nullable
     }
 
@@ -21,6 +21,8 @@ internal data class ParameterizedClass(
 }
 
 val List<GenericParameterizedType>.mapKey
-    get() = if (this.isEmpty()) ""
-    else "_of_${this.joinToString("_") { it.clazz.simpleName }}"
-
+    get() = if (this.isEmpty()) {
+        ""
+    } else {
+        "_of_${this.joinToString("_") { it.clazz.simpleName }}"
+    }

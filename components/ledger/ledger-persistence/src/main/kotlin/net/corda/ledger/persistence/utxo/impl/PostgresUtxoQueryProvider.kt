@@ -13,18 +13,42 @@ import org.slf4j.LoggerFactory
 class PostgresUtxoQueryProvider @Activate constructor(
     @Reference(target = POSTGRES_TYPE_FILTER)
     databaseTypeProvider: DatabaseTypeProvider
-): AbstractUtxoQueryProvider() {
+) : AbstractUtxoQueryProvider() {
     init {
         LoggerFactory.getLogger(this::class.java).debug { "Activated for ${databaseTypeProvider.databaseType}" }
     }
 
+    // the additional logic will allow repeated filtered transaction inserts to keep updating the table
     override val persistTransaction: String
         get() = """
-            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash)
-                VALUES (:id, :privacySalt, :accountId, :createdAt, :status, :updatedAt, :metadataHash)
+            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
+                VALUES (:id, :privacySalt, :accountId, :createdAt, :status, :updatedAt, :metadataHash, FALSE)
             ON CONFLICT(id) DO
-                UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated
-            WHERE utxo_transaction.status = EXCLUDED.status OR utxo_transaction.status = '$UNVERIFIED'"""
+            UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated, is_filtered = FALSE
+            WHERE utxo_transaction.status in ('$UNVERIFIED', '$DRAFT')
+                OR (utxo_transaction.status = '$VERIFIED' AND utxo_transaction.is_filtered = TRUE)
+            """
+            .trimIndent()
+
+    override val persistUnverifiedTransaction: String
+        get() = """
+            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
+                VALUES (:id, :privacySalt, :accountId, :createdAt, '$UNVERIFIED', :updatedAt, :metadataHash, FALSE)
+            ON CONFLICT(id) DO
+            UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated
+            WHERE utxo_transaction.status in ('$UNVERIFIED', '$DRAFT')
+                OR (utxo_transaction.status = '$VERIFIED' AND utxo_transaction.is_filtered = TRUE)
+            """
+            .trimIndent()
+
+    override val persistFilteredTransaction: String
+        get() = """
+            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
+                VALUES (:id, :privacySalt, :accountId, :createdAt, '$VERIFIED', :updatedAt, :metadataHash, TRUE)
+            ON CONFLICT(id) DO
+            UPDATE SET is_filtered = TRUE
+            WHERE utxo_transaction.status in ('$UNVERIFIED', '$DRAFT') AND utxo_transaction.is_filtered = FALSE
+            """
             .trimIndent()
 
     override val persistTransactionMetadata: String
@@ -34,43 +58,44 @@ class PostgresUtxoQueryProvider @Activate constructor(
             ON CONFLICT DO NOTHING"""
             .trimIndent()
 
-    override val persistTransactionSource: String
-        get() = """
-            INSERT INTO {h-schema}utxo_transaction_sources(
-                transaction_id, group_idx, leaf_idx, source_state_transaction_id, source_state_idx)
-            VALUES(
-                :transactionId, :groupIndex, :leafIndex, :sourceStateTransactionId, :sourceStateIndex)
-            ON CONFLICT DO NOTHING"""
-            .trimIndent()
+    override val persistTransactionSources: (batchSize: Int) -> String
+        get() = { batchSize ->
+            """
+            INSERT INTO utxo_transaction_sources(transaction_id, group_idx, leaf_idx, source_state_transaction_id, source_state_idx)
+            VALUES ${List(batchSize) { "(?, ?, ?, ?, ?)" }.joinToString(",")}
+            ON CONFLICT DO NOTHING
+            """.trimIndent()
+        }
 
-    override val persistTransactionComponentLeaf: String
-        get() = """
-            INSERT INTO {h-schema}utxo_transaction_component(transaction_id, group_idx, leaf_idx, data, hash)
-                VALUES(:transactionId, :groupIndex, :leafIndex, :data, :hash)
-            ON CONFLICT DO NOTHING"""
-            .trimIndent()
+    override val persistTransactionComponents: (batchSize: Int) -> String
+        get() = { batchSize ->
+            """
+            INSERT INTO utxo_transaction_component(transaction_id, group_idx, leaf_idx, data, hash)
+            VALUES ${List(batchSize) { "(?, ?, ?, ?, ?)" }.joinToString(",")}
+            ON CONFLICT DO NOTHING
+            """.trimIndent()
+        }
 
-    override fun persistVisibleTransactionOutput(consumed: Boolean): String {
-        return """INSERT INTO {h-schema}utxo_visible_transaction_output(
+    override val persistVisibleTransactionOutputs: (batchSize: Int) -> String
+        get() = { batchSize ->
+            """
+            INSERT INTO utxo_visible_transaction_output(
                 transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
-                token_symbol, token_tag, token_owner_hash, token_amount, created, consumed, custom_representation)
-            VALUES(
-                :transactionId, :groupIndex, :leafIndex, :type, :tokenType, :tokenIssuerHash, :tokenNotaryX500Name,
-                :tokenSymbol, :tokenTag, :tokenOwnerHash, :tokenAmount, :createdAt, 
-                ${if (consumed) ":consumedAt" else "null"}, 
-                CAST(:customRepresentation as JSONB)
-            ) ON CONFLICT DO NOTHING"""
-            .trimIndent()
-    }
+                token_symbol, token_tag, token_owner_hash, token_amount, created, consumed, custom_representation
+            )
+            VALUES ${List(batchSize) { "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CAST(? as JSONB))"}.joinToString(",")}
+            ON CONFLICT DO NOTHING
+            """.trimIndent()
+        }
 
-    override val persistTransactionSignature: String
-        get() = """
-            INSERT INTO {h-schema}utxo_transaction_signature(
-                transaction_id, signature_idx, signature, pub_key_hash, created)
-            VALUES (
-                :transactionId, :signatureIdx, :signature, :publicKeyHash, :createdAt)
-            ON CONFLICT DO NOTHING"""
-            .trimIndent()
+    override val persistTransactionSignatures: (batchSize: Int) -> String
+        get() = { batchSize ->
+            """
+            INSERT INTO utxo_transaction_signature(transaction_id, signature_idx, signature, pub_key_hash, created)
+            VALUES ${List(batchSize) { "(?, ?, ?, ?, ?)" }.joinToString(",")}
+            ON CONFLICT DO NOTHING
+            """.trimIndent()
+        }
 
     override val persistSignedGroupParameters: String
         get() = """
@@ -80,4 +105,22 @@ class PostgresUtxoQueryProvider @Activate constructor(
                 :hash, :parameters, :signature_public_key, :signature_content, :signature_spec, :createdAt)
             ON CONFLICT DO NOTHING"""
             .trimIndent()
+
+    override val persistMerkleProofs: (batchSize: Int) -> String
+        get() = { batchSize ->
+            """
+            INSERT INTO utxo_transaction_merkle_proof(merkle_proof_id, transaction_id, group_idx, tree_size, leaf_indexes, hashes)
+            VALUES ${List(batchSize) { "(?, ?, ?, ?, ?, ?)" }.joinToString(",")}
+            ON CONFLICT DO NOTHING
+            """.trimIndent()
+        }
+
+    override val persistMerkleProofLeaves: (batchSize: Int) -> String
+        get() = { batchSize ->
+            """
+            INSERT INTO utxo_transaction_merkle_proof_leaves(merkle_proof_id, leaf_index)
+            VALUES ${List(batchSize) { "(?, ?)" }.joinToString(",")}
+            ON CONFLICT DO NOTHING
+            """.trimIndent()
+        }
 }

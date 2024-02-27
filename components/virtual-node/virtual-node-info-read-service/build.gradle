@@ -5,6 +5,8 @@ plugins {
 
 description "Virtual Node Info Service Component"
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly "org.osgi:org.osgi.service.component.annotations"
@@ -22,7 +24,7 @@ dependencies {
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:messaging:messaging")
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
 
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:utilities')
@@ -36,8 +38,5 @@ dependencies {
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(':testing:test-utilities')
 }

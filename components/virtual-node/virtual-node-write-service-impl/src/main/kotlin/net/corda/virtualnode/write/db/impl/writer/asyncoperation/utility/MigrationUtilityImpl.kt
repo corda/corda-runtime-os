@@ -30,7 +30,7 @@ internal class MigrationUtilityImpl(
         migrationChangeLogs
             .groupBy { it.id.cpkFileChecksum }
             .forEach { (cpkFileChecksum, changelogs) ->
-                dbConnectionManager.createDatasource(vaultDdlConnectionId).use {
+                dbConnectionManager.createDatasource(vaultDdlConnectionId, enablePool = false).use {
                     runCpkMigrations(it, virtualNodeShortHash, cpkFileChecksum, changelogs)
                 }
             }
@@ -45,7 +45,7 @@ internal class MigrationUtilityImpl(
             val missingCpks = mutableListOf<String>()
             cpkChangelogs.groupBy { it.id.cpkFileChecksum }.map { (_, changelogs) ->
                 val allChangeLogsForCpk = VirtualNodeDbChangeLog(changelogs)
-                dbConnectionManager.createDatasource(vaultDmlConnectionId).use { datasource ->
+                dbConnectionManager.createDatasource(vaultDmlConnectionId, enablePool = false).use { datasource ->
                     missingCpks.addAll(
                         liquibaseSchemaMigrator.listUnrunChangeSets(datasource.connection, allChangeLogsForCpk)
                     )
@@ -55,7 +55,7 @@ internal class MigrationUtilityImpl(
             if (missingCpks.size > 0) {
                 logger.warn(
                     "Found ${missingCpks.size} changelogs missing from virtual node vault $virtualNodeShortHash: " +
-                            missingCpks.joinToString()
+                        missingCpks.joinToString()
                 )
             }
             missingCpks.size == 0
@@ -66,7 +66,10 @@ internal class MigrationUtilityImpl(
     }
 
     private fun runCpkMigrations(
-        dataSource: CloseableDataSource, virtualNodeShortHash: ShortHash, cpkFileChecksum: SecureHash, changeLogs: List<CpkDbChangeLog>
+        dataSource: CloseableDataSource,
+        virtualNodeShortHash: ShortHash,
+        cpkFileChecksum: SecureHash,
+        changeLogs: List<CpkDbChangeLog>
     ) {
         logger.info("Preparing to run ${changeLogs.size} migrations for CPK '$cpkFileChecksum'.")
         val allChangeLogsForCpk = VirtualNodeDbChangeLog(changeLogs)
@@ -77,7 +80,7 @@ internal class MigrationUtilityImpl(
         } catch (e: Exception) {
             val msg =
                 "CPI migrations failed for virtual node '$virtualNodeShortHash`. Failure occurred running CPI migrations on " +
-                        "CPK with file checksum $cpkFileChecksum."
+                    "CPK with file checksum $cpkFileChecksum."
             logger.warn(msg, e)
             throw VirtualNodeWriteServiceException(msg, e)
         }

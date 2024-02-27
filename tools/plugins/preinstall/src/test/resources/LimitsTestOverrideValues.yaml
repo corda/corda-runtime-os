@@ -1,3 +1,9 @@
+config:
+  storageId: "default"
+databases: []
+stateManager: { }
+kafka: { }
+
 resources:
   requests:
     memory: "50GB"

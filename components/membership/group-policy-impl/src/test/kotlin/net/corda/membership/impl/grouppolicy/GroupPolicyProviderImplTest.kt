@@ -413,7 +413,8 @@ class GroupPolicyProviderImplTest {
         verify(dependencyServiceRegistration).close()
         verify(configHandle).close()
         verify(coordinator).updateStatus(
-            eq(LifecycleStatus.DOWN), any()
+            eq(LifecycleStatus.DOWN),
+            any()
         )
     }
 
@@ -594,7 +595,7 @@ class GroupPolicyProviderImplTest {
         postConfigChangedEvent()
         startComponentAndDependencies()
 
-        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory) {_, _ -> }
+        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory) { _, _ -> }
             .onNext(
                 Record("", "", mgmPersistentMemberInfo),
                 null,
@@ -613,7 +614,7 @@ class GroupPolicyProviderImplTest {
 
         whenever(groupPolicyParser.parse(eq(holdingIdentity5), any(), any())).thenReturn(null)
 
-        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory)  {_, _ -> }
+        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory) { _, _ -> }
             .onNext(
                 Record("", "", mgmPersistentMemberInfo),
                 null,
@@ -625,13 +626,12 @@ class GroupPolicyProviderImplTest {
         verify(groupPolicyParser, times(2)).parse(eq(holdingIdentity5), any(), any())
     }
 
-
     @Test
     fun `MGM group policy is removed from cache if exception occurs when parsing`() {
         postConfigChangedEvent()
         startComponentAndDependencies()
 
-        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory)  {_, _ -> }
+        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory) { _, _ -> }
             .onNext(
                 Record("", "", mgmPersistentMemberInfo),
                 null,
@@ -645,7 +645,7 @@ class GroupPolicyProviderImplTest {
 
         // on new event we will fail parsing
         whenever(groupPolicyParser.parse(eq(holdingIdentity5), any(), any())).thenReturn(null)
-        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory)  {_, _ -> }
+        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory) { _, _ -> }
             .onNext(
                 Record("", "", mgmPersistentMemberInfo),
                 null,
@@ -663,7 +663,7 @@ class GroupPolicyProviderImplTest {
         postConfigChangedEvent()
         startComponentAndDependencies()
 
-        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory)  {_, _ -> }
+        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory) { _, _ -> }
             .onNext(
                 Record("", "", mgmPersistentMemberInfo),
                 null,
@@ -680,7 +680,7 @@ class GroupPolicyProviderImplTest {
             on { p2pParameters } doThrow BadGroupPolicyException("Bad group policy.")
         }
         whenever(groupPolicyParser.parse(eq(holdingIdentity5), any(), any())).thenReturn(mgmGroupPolicy)
-        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory)  {_, _ -> }
+        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory) { _, _ -> }
             .onNext(
                 Record("", "", mgmPersistentMemberInfo),
                 null,
@@ -700,7 +700,7 @@ class GroupPolicyProviderImplTest {
 
         whenever(groupPolicyParser.parse(eq(holdingIdentity5), any(), any())).thenReturn(null)
 
-        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory)  {_, _ -> }
+        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory) { _, _ -> }
             .onNext(
                 Record("", "", mgmPersistentMemberInfo),
                 null,
@@ -708,7 +708,7 @@ class GroupPolicyProviderImplTest {
             )
         verify(groupPolicyParser, times(1)).parse(eq(holdingIdentity5), any(), any())
 
-        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory)  {_, _ -> }
+        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory) { _, _ -> }
             .onNext(
                 Record("", "", mgmPersistentMemberInfo),
                 null,

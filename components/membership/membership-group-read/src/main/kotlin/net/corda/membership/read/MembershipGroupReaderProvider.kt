@@ -6,7 +6,7 @@ import net.corda.virtualnode.HoldingIdentity
 /**
  * Provides read-only access to group membership information via a [MembershipGroupReader] instance.
  */
-interface MembershipGroupReaderProvider: Lifecycle {
+interface MembershipGroupReaderProvider : Lifecycle {
     /**
      * Returns a singleton instance of [MembershipGroupReader] for a given group ID and MemberX500Name which gives
      * access to that holding identity's view on the group.

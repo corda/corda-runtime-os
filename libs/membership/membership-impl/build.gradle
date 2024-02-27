@@ -5,6 +5,8 @@ plugins {
 
 description 'Membership implementation'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     api project(':libs:layered-property-map')
 
@@ -26,11 +28,10 @@ dependencies {
     implementation "net.corda:corda-membership"
     implementation 'net.corda:corda-serialization'
 
+    testImplementation project(':libs:crypto:cipher-suite-impl')
     testImplementation project(":libs:crypto:crypto-impl")
     testImplementation project(":testing:layered-property-map-testkit")
+    testImplementation project(':testing:test-serialization')
+    testImplementation project(':libs:serialization:serialization-amqp')
     testImplementation project(":testing:test-utilities")
-
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

@@ -134,8 +134,6 @@ internal class DeliveryTracker(
 
         private fun recordReplaysMetric(message: AuthenticatedMessage) {
             CordaMetrics.Metric.OutboundMessageReplayCount.builder()
-                .withTag(CordaMetrics.Tag.SourceVirtualNode, message.header.source.x500Name)
-                .withTag(CordaMetrics.Tag.DestinationVirtualNode, message.header.destination.x500Name)
                 .withTag(CordaMetrics.Tag.MembershipGroup, message.header.source.groupId)
                 .build().increment()
         }
@@ -201,8 +199,6 @@ internal class DeliveryTracker(
                 val deliveryLatency = Duration.between(originalProcessingTime, Instant.now())
                 val header = state.message.message.header
                 CordaMetrics.Metric.OutboundMessageDeliveryLatency.builder()
-                    .withTag(CordaMetrics.Tag.SourceVirtualNode, header.source.x500Name)
-                    .withTag(CordaMetrics.Tag.DestinationVirtualNode, header.destination.x500Name)
                     .withTag(CordaMetrics.Tag.MembershipGroup, header.source.groupId)
                     .withTag(CordaMetrics.Tag.MessagingSubsystem, header.subsystem)
                     .build().record(deliveryLatency)
@@ -211,8 +207,6 @@ internal class DeliveryTracker(
             private fun recordTtlExpiredMetric(state: AuthenticatedMessageDeliveryState) {
                 val header = state.message.message.header
                 CordaMetrics.Metric.OutboundMessageTtlExpired.builder()
-                    .withTag(CordaMetrics.Tag.SourceVirtualNode, header.source.x500Name)
-                    .withTag(CordaMetrics.Tag.DestinationVirtualNode, header.destination.x500Name)
                     .withTag(CordaMetrics.Tag.MembershipGroup, header.source.groupId)
                     .withTag(CordaMetrics.Tag.MessagingSubsystem, header.subsystem)
                     .build().increment()

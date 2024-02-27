@@ -1,8 +1,5 @@
 package net.corda.libs.permission.impl
 
-import java.time.Instant
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 import net.corda.data.permissions.PermissionType
 import net.corda.data.permissions.summary.PermissionSummary
 import net.corda.data.permissions.summary.UserPermissionSummary
@@ -10,7 +7,10 @@ import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.time.Instant
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class PermissionValidatorImplTest {
 
@@ -24,11 +24,17 @@ class PermissionValidatorImplTest {
         true,
         listOf(
             PermissionSummary(
-                "id1", null, null, cpiUploadRequest,
+                "id1",
+                null,
+                null,
+                cpiUploadRequest,
                 PermissionType.ALLOW
             ),
             PermissionSummary(
-                "id2", null, null, certsInstallRequest,
+                "id2",
+                null,
+                null,
+                certsInstallRequest,
                 PermissionType.DENY
             )
         ),

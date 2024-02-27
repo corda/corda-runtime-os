@@ -47,9 +47,9 @@ class GroupParametersEntity(
     var signatureSpec: String?,
 ) {
     fun isSigned(): Boolean {
-        return signatureSpec != null
-                && signatureContent != null
-                && signaturePublicKey != null
+        return signatureSpec != null &&
+            signatureContent != null &&
+            signaturePublicKey != null
     }
 
     override fun equals(other: Any?): Boolean {
@@ -62,5 +62,4 @@ class GroupParametersEntity(
     override fun hashCode(): Int {
         return Objects.hash(epoch, ByteBuffer.wrap(parameters))
     }
-
 }

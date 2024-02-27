@@ -6,6 +6,8 @@ plugins {
 
 description 'Membership data distribution and synchronisation implementation'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:org.osgi.service.component.annotations"
@@ -35,9 +37,6 @@ dependencies {
     implementation project(':libs:serialization:serialization-avro')
 
     testImplementation "org.apache.commons:commons-text:$commonsTextVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(':components:crypto:crypto-hes')
     testImplementation project(":libs:membership:membership-impl")
     testImplementation project(':testing:layered-property-map-testkit')

@@ -27,11 +27,9 @@ class TestAllowedCertificatesReaderWriterService @Activate constructor(
         }
     }
 
-    override fun getAllVersionedRecords():
-            Stream<VersionedRecord<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject>>? {
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject>> {
         throw UnsupportedOperationException()
     }
-
 
     override fun put(recordKey: MgmAllowedCertificateSubject, recordValue: MgmAllowedCertificateSubject) {
         throw UnsupportedOperationException()

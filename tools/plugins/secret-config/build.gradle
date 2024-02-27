@@ -15,17 +15,16 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
 
-    compileOnly "org.pf4j:pf4j:$pf4jVersion"
+    compileOnly libs.pf4j
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
 
-    kapt "org.pf4j:pf4j:$pf4jVersion"
+    kapt libs.pf4j
     kapt "info.picocli:picocli:$picocliVersion"
 
     implementation project(":libs:configuration:configuration-core")
 
-    testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
-    testImplementation "org.pf4j:pf4j:$pf4jVersion"
-    testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
+    testImplementation libs.bundles.test
+    testImplementation libs.pf4j
     testImplementation "com.github.stefanbirkner:system-lambda:$systemLambdaVersion"
     testImplementation "net.corda.cli.host:api:$pluginHostVersion"
 }

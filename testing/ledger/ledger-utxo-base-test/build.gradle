@@ -14,5 +14,5 @@ dependencies {
     implementation project(':components:ledger:ledger-utxo-flow')
     implementation project(':libs:membership:membership-common')
     implementation project(':libs:flows:flow-api')
-    implementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    implementation libs.mockito.kotlin
 }

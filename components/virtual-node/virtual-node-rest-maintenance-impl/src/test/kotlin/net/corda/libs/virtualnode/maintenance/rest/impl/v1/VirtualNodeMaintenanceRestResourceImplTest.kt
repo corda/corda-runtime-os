@@ -2,13 +2,13 @@ package net.corda.libs.virtualnode.maintenance.rest.impl.v1
 
 import net.corda.chunking.ChunkWriter
 import net.corda.cpi.upload.endpoints.service.CpiUploadService
-import net.corda.rest.HttpFileUpload
-import net.corda.rest.security.CURRENT_REST_CONTEXT
-import net.corda.rest.security.RestAuthContext
 import net.corda.libs.cpiupload.CpiUploadManager
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.rest.HttpFileUpload
+import net.corda.rest.security.CURRENT_REST_CONTEXT
+import net.corda.rest.security.RestAuthContext
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Nested
@@ -52,6 +52,7 @@ class VirtualNodeMaintenanceRestResourceImplTest {
         private val mockDownCoordinatorFactory = mock<LifecycleCoordinatorFactory>().apply {
             whenever(createCoordinator(any(), any())) doReturn mockDownCoordinator
         }
+
         @Test
         fun `verify coordinator is started on start`() {
             val restResource =

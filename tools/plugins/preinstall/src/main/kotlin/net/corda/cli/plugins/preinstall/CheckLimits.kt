@@ -1,11 +1,11 @@
 package net.corda.cli.plugins.preinstall
 
 import java.util.concurrent.Callable
-import net.corda.cli.plugins.preinstall.PreInstallPlugin.Configurations
+import net.corda.cli.plugins.preinstall.PreInstallPlugin.CordaValues
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.PluginContext
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.ReportEntry
-import net.corda.cli.plugins.preinstall.PreInstallPlugin.ResourceConfig
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.ResourceValues
+import net.corda.cli.plugins.preinstall.PreInstallPlugin.Resources
 import picocli.CommandLine
 import picocli.CommandLine.Parameters
 
@@ -82,7 +82,7 @@ class CheckLimits : Callable<Int>, PluginContext() {
     }
 
     // use the checkResource function to check each individual resource
-    private fun checkResources(resources: ResourceConfig?, name: String) {
+    private fun checkResources(resources: Resources?, name: String) {
         val requests: ResourceValues? = resources?.requests ?: defaultRequests
         val limits: ResourceValues? = resources?.limits ?: defaultLimits
 
@@ -158,9 +158,9 @@ class CheckLimits : Callable<Int>, PluginContext() {
     }
 
     override fun call(): Int {
-        val yaml: Configurations
+        val yaml: CordaValues
         try {
-            yaml = parseYaml<Configurations>(path)
+            yaml = parseYaml<CordaValues>(path)
             report.addEntry(ReportEntry("Parse resource properties from YAML", true))
         } catch (e: Exception) {
             report.addEntry(ReportEntry("Parse resource properties from YAML", false, e))
@@ -173,18 +173,11 @@ class CheckLimits : Callable<Int>, PluginContext() {
             defaultRequests = it.requests
         }
 
-        checkResources(yaml.workers?.crypto?.resources, "crypto")
-        checkResources(yaml.bootstrap?.resources, "bootstrap")
-        checkResources(yaml.workers?.db?.resources, "DB")
-        checkResources(yaml.workers?.flow?.resources, "flow")
-        checkResources(yaml.workers?.flowMapper?.resources, "flowMapper")
-        checkResources(yaml.workers?.verification?.resources, "verification")
-        checkResources(yaml.workers?.membership?.resources, "membership")
-        checkResources(yaml.workers?.rest?.resources, "rest")
-        checkResources(yaml.workers?.p2pLinkManager?.resources, "P2P link manager")
-        checkResources(yaml.workers?.p2pGateway?.resources, "P2P gateway")
-        checkResources(yaml.workers?.persistence?.resources, "persistence")
-        checkResources(yaml.workers?.uniqueness?.resources, "uniqueness")
+        checkResources(yaml.bootstrap.resources, "bootstrap")
+
+        yaml.workers.forEach {
+            checkResources(it.value.resources, it.key)
+        }
 
         return if (report.testsPassed()) {
             logger.info(report.toString())

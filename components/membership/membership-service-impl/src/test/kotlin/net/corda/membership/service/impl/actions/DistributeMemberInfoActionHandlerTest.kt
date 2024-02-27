@@ -130,7 +130,7 @@ class DistributeMemberInfoActionHandlerTest {
     }
     private val groupReader: MembershipGroupReader = mock {
         on { groupParameters } doReturn groupParameters
-        on { lookup(MembershipStatusFilter.ACTIVE_OR_SUSPENDED)} doReturn allActiveMembers + suspendedMemberInfo
+        on { lookup(MembershipStatusFilter.ACTIVE_OR_SUSPENDED) } doReturn allActiveMembers + suspendedMemberInfo
     }
     private val groupReaderProvider: MembershipGroupReaderProvider = mock {
         on { getGroupReader(any()) } doReturn groupReader
@@ -243,11 +243,13 @@ class DistributeMemberInfoActionHandlerTest {
 
     @Test
     fun `process republishes the distribute command if no member info is available via the group reader`() {
-        whenever(membershipQueryClient.queryMemberInfo(
-            owner,
-            listOf(member),
-            listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED)
-        )).thenReturn(MembershipQueryResult.Success(emptyList()))
+        whenever(
+            membershipQueryClient.queryMemberInfo(
+                owner,
+                listOf(member),
+                listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED)
+            )
+        ).thenReturn(MembershipQueryResult.Success(emptyList()))
 
         val reply = handler.process(KEY, action)
 
@@ -322,12 +324,14 @@ class DistributeMemberInfoActionHandlerTest {
 
     @Test
     fun `process republishes the distribute command if creating membership package to send to updated member fails`() {
-        whenever(membershipPackageFactory.createMembershipPackage(
-            any(),
-            eq(activeMembersWithoutMgm + suspendedMemberInfo),
-            any(),
-            any()
-        )).thenThrow(CordaRuntimeException(""))
+        whenever(
+            membershipPackageFactory.createMembershipPackage(
+                any(),
+                eq(activeMembersWithoutMgm + suspendedMemberInfo),
+                any(),
+                any()
+            )
+        ).thenThrow(CordaRuntimeException(""))
 
         val reply = handler.process(KEY, action)
 
@@ -355,6 +359,7 @@ class DistributeMemberInfoActionHandlerTest {
                 assertThat((it.value as? MembershipActionsRequest)?.request).isEqualTo(action)
             }
     }
+
     @Test
     fun `process uses the correct TTL configuration`() {
         handler.process(KEY, action)

@@ -9,18 +9,19 @@ import io.javalin.websocket.WsErrorContext
 import io.javalin.websocket.WsErrorHandler
 import io.javalin.websocket.WsMessageContext
 import io.javalin.websocket.WsMessageHandler
-import java.util.concurrent.ConcurrentHashMap
+import net.corda.rest.authorization.AuthorizationUtils.authorize
 import net.corda.rest.server.impl.apigen.processing.RouteInfo
 import net.corda.rest.server.impl.context.ClientWsRequestContext
 import net.corda.rest.server.impl.context.ContextUtils.authenticate
-import net.corda.rest.server.impl.context.ContextUtils.authorize
 import net.corda.rest.server.impl.context.ContextUtils.retrieveParameters
+import net.corda.rest.server.impl.context.ContextUtils.userNotAuthorized
 import net.corda.rest.server.impl.security.RestAuthenticationProvider
 import net.corda.rest.server.impl.security.provider.credentials.DefaultCredentialResolver
 import net.corda.rest.ws.DuplexChannel
-import org.slf4j.LoggerFactory
 import org.eclipse.jetty.websocket.api.CloseStatus
 import org.eclipse.jetty.websocket.api.StatusCode.POLICY_VIOLATION
+import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
 
 typealias SessionId = String
 
@@ -64,8 +65,12 @@ internal class WebSocketRouteAdaptor(
 
                 try {
                     val authorizingSubject = authenticate(clientWsRequestContext, restAuthProvider, credentialResolver)
-                    authorize(authorizingSubject, clientWsRequestContext.getResourceAccessString())
+                    val resourceAccessString = clientWsRequestContext.getResourceAccessString()
+                    val authorizationProvider = routeInfo.method.instance.authorizationProvider
 
+                    if (!authorize(authorizingSubject, resourceAccessString, authorizationProvider)) {
+                        userNotAuthorized(authorizingSubject.principal, resourceAccessString)
+                    }
                     val paramsFromRequest = routeInfo.retrieveParameters(clientWsRequestContext)
                     val fullListOfParams = listOf(newChannel) + paramsFromRequest
 

@@ -4,7 +4,6 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.crypto.core.ShortHash
-import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
@@ -14,7 +13,9 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.schema.configuration.DatabaseConfig
 import net.corda.schema.configuration.VirtualNodeDatasourceConfig
+import net.corda.virtualnode.write.db.impl.writer.VirtualNodeConnectionStrings
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbFactoryImpl
+import org.assertj.core.api.AssertionsForClassTypes.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -52,10 +53,9 @@ class VirtualNodeDbFactoryImplTest {
 
     private val JDBC_URL = "jdbc:url"
     private val virtualNodesDbAdmin = mock<VirtualNodesDbAdmin> {
-        on { createJdbcUrl(any()) } doReturn JDBC_URL
+        on { getJdbcUrl() } doReturn JDBC_URL
     }
     private val schemaMigrator = mock<LiquibaseSchemaMigrator>()
-
 
     private val configFactory = SmartConfigFactory.createWithoutSecurityServices()
     private val virtualNodesDdlPoolConfig = configFactory.create(
@@ -87,7 +87,7 @@ class VirtualNodeDbFactoryImplTest {
 
     @Test
     fun `createVNodeDbs creates expected VNode datasource configuration`() {
-        val request = mock<VirtualNodeCreateRequest> {
+        val request = mock<VirtualNodeConnectionStrings> {
             on { vaultDdlConnection } doReturn ""
             on { vaultDmlConnection } doReturn ""
             on { cryptoDdlConnection } doReturn ""
@@ -100,7 +100,6 @@ class VirtualNodeDbFactoryImplTest {
             ShortHash.of("1234123412341234"),
             request,
         )
-
 
         val vaultDdlConfig = dbs[VirtualNodeDbType.VAULT]?.dbConnections?.get(DbPrivilege.DDL)?.config!!
         verify(vaultDdlConfig, never()).withValue(eq(DatabaseConfig.JDBC_DRIVER), any())
@@ -117,12 +116,11 @@ class VirtualNodeDbFactoryImplTest {
 
         val uniquenessDmlConfig = dbs[VirtualNodeDbType.UNIQUENESS]?.dbConnections?.get(DbPrivilege.DML)?.config!!
         verify(uniquenessDmlConfig, never()).withValue(eq(DatabaseConfig.JDBC_DRIVER), any())
-
     }
 
     @Test
     fun `createVNodeDbs creates expected VNode datasource configuration with no uniqueness db`() {
-        val request = mock<VirtualNodeCreateRequest> {
+        val request = mock<VirtualNodeConnectionStrings> {
             on { vaultDdlConnection } doReturn ""
             on { vaultDmlConnection } doReturn ""
             on { cryptoDdlConnection } doReturn ""
@@ -135,7 +133,6 @@ class VirtualNodeDbFactoryImplTest {
             ShortHash.of("1234123412341234"),
             request,
         )
-
 
         val vaultDdlConfig = dbs[VirtualNodeDbType.VAULT]?.dbConnections?.get(DbPrivilege.DDL)?.config!!
         verify(vaultDdlConfig, never()).withValue(eq(DatabaseConfig.JDBC_DRIVER), any())
@@ -158,17 +155,114 @@ class VirtualNodeDbFactoryImplTest {
     }
 
     @Test
+    @Suppress("MaxLineLength")
+    fun `createVNodeDbs with custom pool config values in external connection strings creates VNode datasource configuration with custom pool values`() {
+        val externalConnectionString = """
+            {"database":{"jdbc":{"url":""},"pass":"","user":"",
+            "pool":{
+            "idleTimeoutSeconds":999,
+            "keepaliveTimeSeconds":999,
+            "maxLifetimeSeconds":999,
+            "max_size":999,
+            "min_size":999,
+            "validationTimeoutSeconds":999
+            }}}
+        """.trimIndent()
+        val request = VirtualNodeConnectionStrings(
+            /* vaultDdlConnection = */
+            externalConnectionString,
+            /* vaultDmlConnection = */
+            externalConnectionString,
+            /* cryptoDdlConnection = */
+            externalConnectionString,
+            /* cryptoDmlConnection = */
+            externalConnectionString,
+            /* uniquenessDdlConnection = */
+            externalConnectionString,
+            /* uniquenessDmlConnection = */
+            externalConnectionString,
+        )
+
+        val dbs = impl.createVNodeDbs(
+            ShortHash.of("1234123412341234"),
+            request,
+        )
+
+        val vaultDdlConfig = dbs[VirtualNodeDbType.VAULT]?.dbConnections?.get(DbPrivilege.DDL)?.config!!
+        assertThat(vaultDdlConfig.getValue(DatabaseConfig.DB_POOL_IDLE_TIMEOUT_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(999))
+        assertThat(vaultDdlConfig.getValue(DatabaseConfig.DB_POOL_KEEPALIVE_TIME_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(999))
+        assertThat(vaultDdlConfig.getValue(DatabaseConfig.DB_POOL_MAX_LIFETIME_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(999))
+        assertThat(vaultDdlConfig.getValue(DatabaseConfig.DB_POOL_MAX_SIZE)).isEqualTo(ConfigValueFactory.fromAnyRef(999))
+        assertThat(vaultDdlConfig.getValue(DatabaseConfig.DB_POOL_MIN_SIZE)).isEqualTo(ConfigValueFactory.fromAnyRef(999))
+        assertThat(vaultDdlConfig.getValue(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(999))
+
+        val vaultDmlConfig = dbs[VirtualNodeDbType.VAULT]?.dbConnections?.get(DbPrivilege.DML)?.config!!
+        assertThat(vaultDmlConfig.getValue(DatabaseConfig.DB_POOL_IDLE_TIMEOUT_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(999))
+        assertThat(vaultDmlConfig.getValue(DatabaseConfig.DB_POOL_KEEPALIVE_TIME_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(999))
+        assertThat(vaultDmlConfig.getValue(DatabaseConfig.DB_POOL_MAX_LIFETIME_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(999))
+        assertThat(vaultDmlConfig.getValue(DatabaseConfig.DB_POOL_MAX_SIZE)).isEqualTo(ConfigValueFactory.fromAnyRef(999))
+        assertThat(vaultDmlConfig.getValue(DatabaseConfig.DB_POOL_MIN_SIZE)).isEqualTo(ConfigValueFactory.fromAnyRef(999))
+        assertThat(vaultDmlConfig.getValue(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(999))
+    }
+
+    @Test
+    @Suppress("MaxLineLength")
+    fun `createVNodeDbs with no pool config values in external connection strings creates VNode datasource configuration with default pool values`() {
+        val externalConnectionString = """
+            {"database":{"jdbc":{"url":""},"pass":"","user":""}}
+        """.trimIndent()
+        val request = VirtualNodeConnectionStrings(
+            /* vaultDdlConnection = */
+            externalConnectionString,
+            /* vaultDmlConnection = */
+            externalConnectionString,
+            /* cryptoDdlConnection = */
+            externalConnectionString,
+            /* cryptoDmlConnection = */
+            externalConnectionString,
+            /* uniquenessDdlConnection = */
+            externalConnectionString,
+            /* uniquenessDmlConnection = */
+            externalConnectionString,
+        )
+
+        val dbs = impl.createVNodeDbs(
+            ShortHash.of("1234123412341234"),
+            request,
+        )
+
+        val vaultDdlConfig = dbs[VirtualNodeDbType.VAULT]?.dbConnections?.get(DbPrivilege.DDL)?.config!!
+        assertThat(vaultDdlConfig.getValue(DatabaseConfig.DB_POOL_IDLE_TIMEOUT_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(120))
+        assertThat(vaultDdlConfig.getValue(DatabaseConfig.DB_POOL_KEEPALIVE_TIME_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(0))
+        assertThat(vaultDdlConfig.getValue(DatabaseConfig.DB_POOL_MAX_LIFETIME_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(1800))
+        assertThat(vaultDdlConfig.getValue(DatabaseConfig.DB_POOL_MAX_SIZE)).isEqualTo(ConfigValueFactory.fromAnyRef(1))
+        assertFalse(vaultDdlConfig.hasPath(DatabaseConfig.DB_POOL_MIN_SIZE))
+        assertThat(vaultDdlConfig.getValue(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(5))
+
+        val vaultDmlConfig = dbs[VirtualNodeDbType.VAULT]?.dbConnections?.get(DbPrivilege.DML)?.config!!
+        assertThat(vaultDmlConfig.getValue(DatabaseConfig.DB_POOL_IDLE_TIMEOUT_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(120))
+        assertThat(vaultDmlConfig.getValue(DatabaseConfig.DB_POOL_KEEPALIVE_TIME_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(0))
+        assertThat(vaultDmlConfig.getValue(DatabaseConfig.DB_POOL_MAX_LIFETIME_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(1800))
+        assertThat(vaultDmlConfig.getValue(DatabaseConfig.DB_POOL_MAX_SIZE)).isEqualTo(ConfigValueFactory.fromAnyRef(10))
+        assertThat(vaultDmlConfig.getValue(DatabaseConfig.DB_POOL_MIN_SIZE)).isEqualTo(ConfigValueFactory.fromAnyRef(0))
+        assertThat(vaultDmlConfig.getValue(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT_SECONDS)).isEqualTo(ConfigValueFactory.fromAnyRef(5))
+    }
+
+    @Test
     fun `createVNodeDbs sets ddlConnectionProvided to false and isPlatformManagedDb to true when using the cluster DB`() {
-        val request = VirtualNodeCreateRequest(
-            /* holdingId = */ mock(),
-            /* cpiFileChecksum = */ "",
-            /* vaultDdlConnection = */ "",
-            /* vaultDmlConnection = */ "",
-            /* cryptoDdlConnection = */ "",
-            /* cryptoDmlConnection = */ "",
-            /* uniquenessDdlConnection = */ "",
-            /* uniquenessDmlConnection = */ "",
-            /* updateActor = */ ""
+        val request = VirtualNodeConnectionStrings(
+            /* vaultDdlConnection = */
+            "",
+            /* vaultDmlConnection = */
+            "",
+            /* cryptoDdlConnection = */
+            "",
+            /* cryptoDmlConnection = */
+            "",
+            /* uniquenessDdlConnection = */
+            "",
+            /* uniquenessDmlConnection = */
+            "",
         )
 
         val dbs = impl.createVNodeDbs(ShortHash.of("1234123412341234"), request)
@@ -179,16 +273,19 @@ class VirtualNodeDbFactoryImplTest {
 
     @Test
     fun `createVNodeDbs sets ddlConnectionProvided to true and isPlatformManagedDb to false when provided with DML and DDL connection`() {
-        val request = VirtualNodeCreateRequest(
-            /* holdingId = */ mock(),
-            /* cpiFileChecksum = */ "",
-            /* vaultDdlConnection = */ "{}",
-            /* vaultDmlConnection = */ "{}",
-            /* cryptoDdlConnection = */ "{}",
-            /* cryptoDmlConnection = */ "{}",
-            /* uniquenessDdlConnection = */ "{}",
-            /* uniquenessDmlConnection = */ "{}",
-            /* updateActor = */ ""
+        val request = VirtualNodeConnectionStrings(
+            /* vaultDdlConnection = */
+            "{}",
+            /* vaultDmlConnection = */
+            "{}",
+            /* cryptoDdlConnection = */
+            "{}",
+            /* cryptoDmlConnection = */
+            "{}",
+            /* uniquenessDdlConnection = */
+            "{}",
+            /* uniquenessDmlConnection = */
+            "{}",
         )
 
         val dbs = impl.createVNodeDbs(ShortHash.of("1234123412341234"), request)
@@ -200,16 +297,19 @@ class VirtualNodeDbFactoryImplTest {
     @Test
     @Suppress("MaxLineLength")
     fun `createVNodeDbs sets ddlConnectionProvided and isPlatformManaged to false when provided with DML connection but no DDL connection`() {
-        val request = VirtualNodeCreateRequest(
-            /* holdingId = */ mock(),
-            /* cpiFileChecksum = */ "",
-            /* vaultDdlConnection = */ "",
-            /* vaultDmlConnection = */ "{}",
-            /* cryptoDdlConnection = */ "",
-            /* cryptoDmlConnection = */ "{}",
-            /* uniquenessDdlConnection = */ "",
-            /* uniquenessDmlConnection = */ "{}",
-            /* updateActor = */ ""
+        val request = VirtualNodeConnectionStrings(
+            /* vaultDdlConnection = */
+            "",
+            /* vaultDmlConnection = */
+            "{}",
+            /* cryptoDdlConnection = */
+            "",
+            /* cryptoDmlConnection = */
+            "{}",
+            /* uniquenessDdlConnection = */
+            "",
+            /* uniquenessDmlConnection = */
+            "{}",
         )
 
         val dbs = impl.createVNodeDbs(ShortHash.of("1234123412341234"), request)
@@ -221,16 +321,19 @@ class VirtualNodeDbFactoryImplTest {
     @Test
     @Suppress("MaxLineLength")
     fun `createVNodeDbs sets ddlConnectionProvided to false and isPlatformManagedDb to true when provided with DDL no DML connection - uses cluster DB, DDL ignored`() {
-        val request = VirtualNodeCreateRequest(
-            /* holdingId = */ mock(),
-            /* cpiFileChecksum = */ "",
-            /* vaultDdlConnection = */ "{}",
-            /* vaultDmlConnection = */ "",
-            /* cryptoDdlConnection = */ "{}",
-            /* cryptoDmlConnection = */ "",
-            /* uniquenessDdlConnection = */ "{}",
-            /* uniquenessDmlConnection = */ "",
-            /* updateActor = */ ""
+        val request = VirtualNodeConnectionStrings(
+            /* vaultDdlConnection = */
+            "{}",
+            /* vaultDmlConnection = */
+            "",
+            /* cryptoDdlConnection = */
+            "{}",
+            /* cryptoDmlConnection = */
+            "",
+            /* uniquenessDdlConnection = */
+            "{}",
+            /* uniquenessDmlConnection = */
+            "",
         )
 
         val dbs = impl.createVNodeDbs(ShortHash.of("1234123412341234"), request)
@@ -241,28 +344,34 @@ class VirtualNodeDbFactoryImplTest {
 
     @Test
     fun `createVNodeDbs sets ddlConnectionProvided and isPlatformManagedDb to false for uniqueness when uniqueness is none`() {
-        val request = VirtualNodeCreateRequest(
-            /* holdingId = */ mock(),
-            /* cpiFileChecksum = */ "",
-            /* vaultDdlConnection = */ "{}",
-            /* vaultDmlConnection = */ "{}",
-            /* cryptoDdlConnection = */ "{}",
-            /* cryptoDmlConnection = */ "{}",
-            /* uniquenessDdlConnection = */ "none",
-            /* uniquenessDmlConnection = */ "none",
-            /* updateActor = */ ""
+        val request = VirtualNodeConnectionStrings(
+            /* vaultDdlConnection = */
+            "{}",
+            /* vaultDmlConnection = */
+            "{}",
+            /* cryptoDdlConnection = */
+            "{}",
+            /* cryptoDmlConnection = */
+            "{}",
+            /* uniquenessDdlConnection = */
+            "none",
+            /* uniquenessDmlConnection = */
+            "none",
         )
 
         val dbs = impl.createVNodeDbs(ShortHash.of("1234123412341234"), request)
 
         // Uniqueness is set to false
-        assertAll(dbs.filter { (dbType, _) -> dbType == VirtualNodeDbType.UNIQUENESS }
-            .map { (dbType, db) -> { assertFalse(db.ddlConnectionProvided, dbType.name) } })
+        assertAll(
+            dbs.filter { (dbType, _) -> dbType == VirtualNodeDbType.UNIQUENESS }
+                .map { (dbType, db) -> { assertFalse(db.ddlConnectionProvided, dbType.name) } }
+        )
         // Other types are set to true
-        assertAll(dbs.filter { (dbType, _) -> dbType != VirtualNodeDbType.UNIQUENESS }
-            .map { (dbType, db) -> { assertTrue(db.ddlConnectionProvided, dbType.name) } })
+        assertAll(
+            dbs.filter { (dbType, _) -> dbType != VirtualNodeDbType.UNIQUENESS }
+                .map { (dbType, db) -> { assertTrue(db.ddlConnectionProvided, dbType.name) } }
+        )
         // isPlatformManagedDb is set to false
         assertAll(dbs.map { (dbType, db) -> { assertFalse(db.isPlatformManagedDb, dbType.name) } })
     }
-
 }

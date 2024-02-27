@@ -5,6 +5,8 @@ plugins {
 
 description 'Corda Notary virtual node selector - API'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
@@ -12,7 +14,4 @@ dependencies {
     api platform("net.corda:corda-api:$cordaApiVersion")
     api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     api 'net.corda:corda-ledger-common'
-
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

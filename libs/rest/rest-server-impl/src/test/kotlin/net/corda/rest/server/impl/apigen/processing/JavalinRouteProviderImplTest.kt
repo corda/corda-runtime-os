@@ -1,12 +1,13 @@
 package net.corda.rest.server.impl.apigen.processing
 
+import net.corda.rest.RestResource
+import net.corda.rest.SC_OK
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.server.impl.apigen.models.Endpoint
 import net.corda.rest.server.impl.apigen.models.EndpointMethod
 import net.corda.rest.server.impl.apigen.models.InvocationMethod
 import net.corda.rest.server.impl.apigen.models.Resource
 import net.corda.rest.server.impl.apigen.models.ResponseBody
-import net.corda.rest.RestResource
-import net.corda.rest.annotations.RestApiVersion
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -17,9 +18,9 @@ class JavalinRouteProviderImplTest {
     private companion object {
         val API_VERSIONS = setOf(RestApiVersion.C5_0, RestApiVersion.C5_1)
     }
+
     @Test
     fun `httpGetRoutes withPathParameter parameterTranslatedSuccessfully`() {
-
         class TestInterface : RestResource {
             fun foo() {}
             override val protocolVersion: Int
@@ -34,15 +35,24 @@ class JavalinRouteProviderImplTest {
         val resourceName = "testresource"
         val resourcePath = "testpath"
         val testEndpoint = Endpoint(
-                EndpointMethod.GET, "", "",
-            "abc/${pathParameterStartMarker}${testEndpointName}${pathParameterEndMarker}/def",
-            emptyList(), ResponseBody("", Unit::class.java), invocationMethod, API_VERSIONS
+            EndpointMethod.GET,
+            "",
+            "",
+            "abc/${pathParameterStartMarker}${testEndpointName}$pathParameterEndMarker/def",
+            emptyList(),
+            ResponseBody("", SC_OK, Unit::class.java),
+            invocationMethod,
+            API_VERSIONS
         )
 
         val testResource = Resource(resourceName, "", resourcePath, setOf(testEndpoint), API_VERSIONS)
         val provider = JavalinRouteProviderImpl(basePath, listOf(testResource))
-        val expectedPaths = API_VERSIONS.map { apiVersion -> ("/${basePath}/${apiVersion.versionPath}/${testResource.path}/abc/" +
-                "${pathParameterStartMarker}${testEndpointName}${pathParameterEndMarker}/def").lowercase() }.toSet()
+        val expectedPaths = API_VERSIONS.map { apiVersion ->
+            (
+                "/$basePath/${apiVersion.versionPath}/${testResource.path}/abc/" +
+                    "${pathParameterStartMarker}${testEndpointName}$pathParameterEndMarker/def"
+                ).lowercase()
+        }.toSet()
 
         val result = provider.httpGetRoutes
         assertThat(result.map { it.fullPath }.toSet()).isEqualTo(expectedPaths)
@@ -50,7 +60,6 @@ class JavalinRouteProviderImplTest {
 
     @Test
     fun `httpGetRoutes NoAuthRequired routeInfoReturnedSuccessfully`() {
-
         class TestInterface : RestResource {
             override val protocolVersion: Int
                 get() = 1
@@ -62,15 +71,20 @@ class JavalinRouteProviderImplTest {
         val resourceName = "testresource"
         val resourcePath = "testpath"
         val testEndpoint = Endpoint(
-                EndpointMethod.GET, "", "",
+            EndpointMethod.GET,
+            "",
+            "",
             "getprotocolversion",
-            emptyList(), ResponseBody("", Unit::class.java), invocationMethod, API_VERSIONS
+            emptyList(),
+            ResponseBody("", SC_OK, Unit::class.java),
+            invocationMethod,
+            API_VERSIONS
         )
 
         val testResource = Resource(resourceName, "", resourcePath, setOf(testEndpoint), API_VERSIONS)
         val provider = JavalinRouteProviderImpl(basePath, listOf(testResource))
         val expectedPaths =
-            API_VERSIONS.map { apiVersion -> "/${basePath}/${apiVersion.versionPath}/${testResource.path}/${testEndpointName}".lowercase() }
+            API_VERSIONS.map { apiVersion -> "/$basePath/${apiVersion.versionPath}/${testResource.path}/$testEndpointName".lowercase() }
                 .toSet()
 
         val getRoutes = provider.httpGetRoutes

@@ -197,7 +197,8 @@ class ExternalEventManagerImpl(
     private fun generateRecord(externalEventState: ExternalEventState, instant: Instant) : Record<*, *> {
         val eventToSend = externalEventState.eventToSend
         eventToSend.timestamp = instant
-        log.trace { "Dispatching external event with id '${externalEventState.requestId}' to '${eventToSend.topic}'" }
-        return Record(eventToSend.topic, eventToSend.key.array(), eventToSend.payload.array())
+        val topic = eventToSend.topic
+        log.trace { "Dispatching external event with id '${externalEventState.requestId}' to '$topic'" }
+        return Record(topic, eventToSend.key.array(), eventToSend.payload.array())
     }
 }

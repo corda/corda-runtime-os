@@ -8,10 +8,10 @@ import javax.persistence.EntityManager
 // using an interface allows us to easily mock/test
 interface HoldingIdentityRepository {
     fun find(entityManager: EntityManager, shortHash: ShortHash): HoldingIdentity?
+
     @Suppress("LongParameterList")
     fun put(
         entityManager: EntityManager,
         holdingIdentity: HoldingIdentity
     )
 }
-

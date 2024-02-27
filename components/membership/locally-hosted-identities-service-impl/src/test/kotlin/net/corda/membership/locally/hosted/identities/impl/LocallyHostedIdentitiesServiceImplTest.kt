@@ -433,6 +433,7 @@ class LocallyHostedIdentitiesServiceImplTest {
                 service.isHostedLocally(identity)
             }
         }
+
         @Test
         fun `it returns true if the identity is local`() {
             processor.firstValue.onSnapshot(
@@ -441,11 +442,10 @@ class LocallyHostedIdentitiesServiceImplTest {
 
             assertThat(service.isHostedLocally(identity)).isTrue
         }
+
         @Test
         fun `it return false the identity doesn't exist`() {
             assertThat(service.isHostedLocally(identity)).isFalse
         }
-
     }
-
 }

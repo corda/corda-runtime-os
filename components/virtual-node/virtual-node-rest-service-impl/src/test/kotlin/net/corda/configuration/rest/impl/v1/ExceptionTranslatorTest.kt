@@ -1,11 +1,11 @@
 package net.corda.configuration.rest.impl.v1
 
 import net.corda.data.ExceptionEnvelope
+import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
+import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
 import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.ResourceAlreadyExistsException
-import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
-import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
 import net.corda.virtualnode.rest.impl.v1.ExceptionTranslator
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull

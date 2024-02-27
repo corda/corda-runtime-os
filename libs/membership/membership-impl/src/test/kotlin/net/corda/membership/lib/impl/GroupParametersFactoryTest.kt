@@ -1,9 +1,9 @@
 package net.corda.membership.lib.impl
 
-import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -106,7 +106,6 @@ class GroupParametersFactoryTest {
             }
             val groupParameters = groupParametersFactory.create(avro)
 
-
             assertThat(groupParameters).isInstanceOf(InternalGroupParameters::class.java)
             assertThat(groupParameters).isInstanceOf(SignedGroupParameters::class.java)
             assertThat(groupParameters.entries)
@@ -126,7 +125,6 @@ class GroupParametersFactoryTest {
                 on { groupParameters } doReturn serialisedGroupParameters.buffer
             }
             val groupParameters = groupParametersFactory.create(avro)
-
 
             assertThat(groupParameters).isInstanceOf(InternalGroupParameters::class.java)
             assertThat(groupParameters).isInstanceOf(UnsignedGroupParameters::class.java)

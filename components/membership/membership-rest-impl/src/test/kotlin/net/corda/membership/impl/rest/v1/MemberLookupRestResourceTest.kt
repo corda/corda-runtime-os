@@ -445,17 +445,19 @@ class MemberLookupRestResourceTest {
         @Test
         fun `lookup does not return same member when it's suspended`() {
             whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.of(HOLDING_IDENTITY_STRING)))
-                .thenReturn(VirtualNodeInfo(
-                    createTestHoldingIdentity(charlie.name.toString(), "DEFAULT_MEMBER_GROUP_ID"),
-                    CpiIdentifier("test", "test", SecureHashImpl("algorithm", "1234".toByteArray())),
-                    null,
-                    UUID.randomUUID(),
-                    null,
-                    UUID.randomUUID(),
-                    null,
-                    UUID.randomUUID(),
-                    timestamp = Instant.now()
-                ))
+                .thenReturn(
+                    VirtualNodeInfo(
+                        createTestHoldingIdentity(charlie.name.toString(), "DEFAULT_MEMBER_GROUP_ID"),
+                        CpiIdentifier("test", "test", SecureHashImpl("algorithm", "1234".toByteArray())),
+                        null,
+                        UUID.randomUUID(),
+                        null,
+                        UUID.randomUUID(),
+                        null,
+                        UUID.randomUUID(),
+                        timestamp = Instant.now()
+                    )
+                )
 
             val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, statuses = listOf(MEMBER_STATUS_SUSPENDED))
 
@@ -663,17 +665,19 @@ class MemberLookupRestResourceTest {
         @Test
         fun `lookupv5_1 returns same member even when it's suspended`() {
             whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.of(HOLDING_IDENTITY_STRING)))
-                .thenReturn(VirtualNodeInfo(
-                    createTestHoldingIdentity(charlie.name.toString(), "DEFAULT_MEMBER_GROUP_ID"),
-                    CpiIdentifier("test", "test", SecureHashImpl("algorithm", "1234".toByteArray())),
-                    null,
-                    UUID.randomUUID(),
-                    null,
-                    UUID.randomUUID(),
-                    null,
-                    UUID.randomUUID(),
-                    timestamp = Instant.now()
-                ))
+                .thenReturn(
+                    VirtualNodeInfo(
+                        createTestHoldingIdentity(charlie.name.toString(), "DEFAULT_MEMBER_GROUP_ID"),
+                        CpiIdentifier("test", "test", SecureHashImpl("algorithm", "1234".toByteArray())),
+                        null,
+                        UUID.randomUUID(),
+                        null,
+                        UUID.randomUUID(),
+                        null,
+                        UUID.randomUUID(),
+                        timestamp = Instant.now()
+                    )
+                )
 
             val result1 = memberLookupRestResource.lookupV51(HOLDING_IDENTITY_STRING, statuses = listOf(MEMBER_STATUS_SUSPENDED))
 

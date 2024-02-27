@@ -35,7 +35,7 @@ class P2pEndpointVerifierTest {
         assertThatThrownBy {
             p2pEndpointVerifier.verifyContext(context)
         }.isInstanceOf(IllegalArgumentException::class.java)
-         .hasMessageContaining("No endpoint URL was provided.")
+            .hasMessageContaining("No endpoint URL was provided.")
     }
 
     @Test
@@ -47,7 +47,7 @@ class P2pEndpointVerifierTest {
         assertThatThrownBy {
             p2pEndpointVerifier.verifyContext(context)
         }.isInstanceOf(IllegalArgumentException::class.java)
-         .hasMessageContaining("No endpoint protocol was provided.")
+            .hasMessageContaining("No endpoint protocol was provided.")
     }
 
     @Test
@@ -71,7 +71,7 @@ class P2pEndpointVerifierTest {
         assertThatThrownBy {
             p2pEndpointVerifier.verifyContext(context)
         }.isInstanceOf(IllegalArgumentException::class.java)
-         .hasMessageContaining("Provided endpoint URLs are incorrectly numbered.")
+            .hasMessageContaining("Provided endpoint URLs are incorrectly numbered.")
     }
 
     @Test
@@ -95,7 +95,7 @@ class P2pEndpointVerifierTest {
         assertThatThrownBy {
             p2pEndpointVerifier.verifyContext(context)
         }.isInstanceOf(IllegalArgumentException::class.java)
-         .hasMessageContaining("Provided endpoint protocols are incorrectly numbered.")
+            .hasMessageContaining("Provided endpoint protocols are incorrectly numbered.")
     }
 
     @Test
@@ -110,7 +110,7 @@ class P2pEndpointVerifierTest {
         assertThatThrownBy {
             p2pEndpointVerifier.verifyContext(context)
         }.isInstanceOf(IllegalArgumentException::class.java)
-         .hasMessageContaining("Endpoint URL ('hi there') is not a valid URL.")
+            .hasMessageContaining("Endpoint URL ('hi there') is not a valid URL.")
     }
 
     @Test
@@ -125,7 +125,7 @@ class P2pEndpointVerifierTest {
         assertThatThrownBy {
             p2pEndpointVerifier.verifyContext(context)
         }.isInstanceOf(IllegalArgumentException::class.java)
-         .hasMessageContaining("The port of the endpoint URL ('https://r3.com/') was not specified or had an invalid value.")
+            .hasMessageContaining("The port of the endpoint URL ('https://r3.com/') was not specified or had an invalid value.")
     }
 
     @Test
@@ -140,7 +140,7 @@ class P2pEndpointVerifierTest {
         assertThatThrownBy {
             p2pEndpointVerifier.verifyContext(context)
         }.isInstanceOf(IllegalArgumentException::class.java)
-         .hasMessageContaining("The host of the endpoint URL ('https://:4995/') was not specified or had an invalid value.")
+            .hasMessageContaining("The host of the endpoint URL ('https://:4995/') was not specified or had an invalid value.")
     }
 
     @Test
@@ -155,7 +155,7 @@ class P2pEndpointVerifierTest {
         assertThatThrownBy {
             p2pEndpointVerifier.verifyContext(context)
         }.isInstanceOf(IllegalArgumentException::class.java)
-         .hasMessageContaining("The scheme of the endpoint URL ('http://www.corda.net:8888') was not https.")
+            .hasMessageContaining("The scheme of the endpoint URL ('http://www.corda.net:8888') was not https.")
     }
 
     @Test
@@ -170,8 +170,10 @@ class P2pEndpointVerifierTest {
         assertThatThrownBy {
             p2pEndpointVerifier.verifyContext(context)
         }.isInstanceOf(IllegalArgumentException::class.java)
-         .hasMessageContaining("Endpoint URL ('https://username:password@www.corda.net:8888') " +
-                 "had user info specified, which must not be specified.")
+            .hasMessageContaining(
+                "Endpoint URL ('https://username:password@www.corda.net:8888') " +
+                    "had user info specified, which must not be specified."
+            )
     }
 
     @Test

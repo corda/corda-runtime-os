@@ -8,6 +8,8 @@ plugins {
 
 description 'Corda ledger consensual - persistence implementation'
 
+ext.cordaEnableFormatting = true
+
 configurations {
     cpis {
         canBeConsumed = false
@@ -54,12 +56,12 @@ dependencies {
     implementation 'net.corda:corda-topic-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'org.slf4j:slf4j-api'
+    implementation "org.hibernate:hibernate-core:$hibernateVersion"
 
     testImplementation project(':libs:ledger:ledger-utxo-data')
     testImplementation project(':testing:db-testkit')
     testImplementation project(':testing:persistence-testkit')
 
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")
@@ -67,7 +69,7 @@ dependencies {
     testImplementation project(":libs:application:application-impl")
 
     testRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
-    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    testRuntimeOnly libs.postgresql.jdbc
 
     // Integration test resources using cpis configuration
     cpis project(path: ':testing:cpbs:extendable-cpb', configuration: 'cordaCPB')
@@ -82,8 +84,8 @@ dependencies {
     // IMPORTANT:  do NOT attempt to use mockito-kotlin in the integration tests.
     // It's not an OSGi bundle, so you will get errors (despite Intellij appearing to allow you to use it).
 
-    integrationTestImplementation("org.mockito:mockito-core:$mockitoVersion")
-    integrationTestImplementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
+    integrationTestImplementation libs.mockito.core
+    integrationTestImplementation(libs.jackson.module.kotlin)
 
     integrationTestImplementation project(':libs:db:db-admin-impl')
     integrationTestImplementation project(':libs:db:db-orm-impl')
@@ -107,7 +109,7 @@ dependencies {
 
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly libs.postgresql.jdbc
 }
 
 //  Copy the cpi builds declared in the cpis configuration into our resources so we find and load them

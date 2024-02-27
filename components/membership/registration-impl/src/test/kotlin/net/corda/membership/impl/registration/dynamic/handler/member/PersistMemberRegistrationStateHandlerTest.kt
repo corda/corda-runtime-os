@@ -39,7 +39,7 @@ class PersistMemberRegistrationStateHandlerTest {
     }
     private val reason = "some reason"
     private val request = SetOwnRegistrationStatus(
-        UUID(1,2).toString(),
+        UUID(1, 2).toString(),
         RegistrationStatus.DECLINED,
         reason
     )

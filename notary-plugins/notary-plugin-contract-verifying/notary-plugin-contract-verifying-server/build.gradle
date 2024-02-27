@@ -1,0 +1,42 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'corda.common-publishing'
+    id 'net.corda.plugins.cordapp-cpk2'
+}
+
+ext {
+    releasable = true
+}
+
+description 'Corda Contract Verifying Notary Plugin Server'
+
+group 'com.r3.corda.notary.plugin.contractverifying'
+
+cordapp {
+    targetPlatformVersion platformVersion.toInteger()
+    workflow {
+        name "Corda Cotract Verifying Notary - Server"
+        versionId 1
+        vendor "R3"
+    }
+}
+
+dependencies {
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+
+    cordaProvided 'net.corda:corda-application'
+    cordaProvided 'net.corda:corda-notary-plugin'
+    cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    cordaProvided 'org.slf4j:slf4j-api'
+
+    // Common package pulled in as transitive dependency through API
+    cordapp project(":notary-plugins:notary-plugin-contract-verifying:notary-plugin-contract-verifying-api")
+
+    testImplementation libs.bundles.test
+
+    testImplementation project(":libs:crypto:crypto-core")
+    testImplementation project(":libs:uniqueness:common")
+    testImplementation project(":libs:ledger:ledger-utxo-data")
+    testImplementation project(":testing:crypto-testkit")
+    testImplementation project(':testing:ledger:ledger-common-testkit')
+}

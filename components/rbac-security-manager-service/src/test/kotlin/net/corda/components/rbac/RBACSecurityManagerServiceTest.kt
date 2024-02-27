@@ -1,7 +1,5 @@
 package net.corda.components.rbac
 
-import net.corda.rest.security.read.RestSecurityManager
-import net.corda.rest.security.read.rbac.RBACSecurityManager
 import net.corda.libs.permission.PermissionValidator
 import net.corda.libs.permissions.manager.BasicAuthenticationService
 import net.corda.lifecycle.LifecycleCoordinator
@@ -13,6 +11,8 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.permissions.management.PermissionManagementService
+import net.corda.rest.security.read.RestSecurityManager
+import net.corda.rest.security.read.rbac.RBACSecurityManager
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull

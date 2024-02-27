@@ -22,7 +22,8 @@ class HikariDataSourceFactoryTest {
             "FROM pg_stat_activity WHERE datname = '$dbName'"
 
     private val monitorPoolDelegate = lazy {
-        HikariDataSourceFactory().create(
+        DataSourceFactoryImpl().create(
+            enablePool = true,
             driverClass = "org.postgresql.Driver",
             jdbcUrl = "jdbc:postgresql://localhost:5432/$dbName",
             username = "postgres",
@@ -45,12 +46,14 @@ class HikariDataSourceFactoryTest {
 
     @Disabled("This test should not be run in the pipeline. It is useful for observing Hikari behaviour for particular" +
             " configuration settings, but it isn't a useful test for corda and will always be time bound.")
+    @Suppress("ForEachOnRange")
     @Test
     fun `observe hikari remove idle connections`() {
         val maxConnections = 5
         val minConnections = 0
         val idleTimeout = 10.toDuration(DurationUnit.SECONDS).toJavaDuration()
-        HikariDataSourceFactory().create(
+        DataSourceFactoryImpl().create(
+            enablePool = true,
             driverClass = "org.postgresql.Driver",
             jdbcUrl = "jdbc:postgresql://localhost:5432/$dbName",
             username = "postgres",

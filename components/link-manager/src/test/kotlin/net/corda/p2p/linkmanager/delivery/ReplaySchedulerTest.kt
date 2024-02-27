@@ -35,7 +35,8 @@ class ReplaySchedulerTest {
             createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", DeliveryTrackerTest.groupId),
             createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", DeliveryTrackerTest.groupId),
             MembershipStatusFilter.ACTIVE,
-            1L
+            1L,
+            false,
         )
         lateinit var loggingInterceptor: LoggingInterceptor
 

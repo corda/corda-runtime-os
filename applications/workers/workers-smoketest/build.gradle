@@ -53,9 +53,6 @@ kotlin {
 
 dependencies {
     // NO CORDA DEPENDENCIES!!
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinCoroutinesVersion"
-
     smokeTestImplementation "net.corda:corda-avro-schema:$cordaApiVersion"
     // Avoid having the schema names and keys scattered across projects
     smokeTestImplementation "net.corda:corda-config-schema:$cordaApiVersion"
@@ -68,8 +65,8 @@ dependencies {
     upgradeTestingCpiV1 project(path: ':testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v1', configuration: 'cordaCPB')
     upgradeTestingCpiV2 project(path: ':testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v2', configuration: 'cordaCPB')
 
-    smokeTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    smokeTestImplementation "org.slf4j:slf4j-api:$slf4jVersion"
+    smokeTestImplementation libs.jackson.module.kotlin
+    smokeTestImplementation libs.slf4j.api
 
     smokeTestImplementation project(':components:flow:flow-rest-resource-service')
     smokeTestImplementation project(':libs:crypto:crypto-core')
@@ -83,8 +80,9 @@ dependencies {
     smokeTestImplementation project(":testing:packaging-test-utilities")
     smokeTestImplementation project(':testing:test-utilities')
     smokeTestImplementation project(":testing:uniqueness:uniqueness-utilities")
-    smokeTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
-    smokeTestRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    smokeTestImplementation libs.bundles.test
+    smokeTestRuntimeOnly libs.bundles.test.runtime
+    smokeTestRuntimeOnly libs.log4j.slf4j
 }
 
 def smokeTestResources = tasks.named('processSmokeTestResources', ProcessResources) {
@@ -153,4 +151,11 @@ tasks.register('smokeTest', Test) {
     systemProperty "uniquenessWorkerUrl", uniquenessWorkerUrl
 
     jvmArgs '--add-opens', 'java.base/java.lang.reflect=ALL-UNNAMED'
+
+    systemProperties([
+            // Configuration parameters to execute top-level classes in parallel but methods in same thread
+            'junit.jupiter.execution.parallel.enabled'                 : 'true',
+            'junit.jupiter.execution.parallel.mode.default'            : 'same_thread',
+            'junit.jupiter.execution.parallel.mode.classes.default'    : 'concurrent',
+    ])
 }

@@ -9,4 +9,4 @@ data class ClaimQuery(
     override val tagRegex: String?,
     override val ownerHash: String?,
     override val poolKey: TokenPoolKey
-): TokenFilter
+) : TokenFilter

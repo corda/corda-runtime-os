@@ -1,7 +1,8 @@
 package net.corda.ledger.utxo.flow.impl.transaction.filtered
 
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
-import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
+import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters
+import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters.AuditProof.AuditProofPredicate
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
@@ -24,8 +25,9 @@ class UtxoFilteredTransactionImplTest : UtxoFilteredTransactionTestBase() {
             componentGroupFilterParameters = listOf(
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.METADATA.ordinal,
-                    TransactionMetadataImpl::class.java
-                ) { true }
+                    TransactionMetadataImpl::class.java,
+                    AuditProofPredicate.Content { true }
+                )
             )
         )
 
@@ -35,7 +37,6 @@ class UtxoFilteredTransactionImplTest : UtxoFilteredTransactionTestBase() {
         assertThat(utxoFilteredTx.id).isEqualTo(wireTransaction.id)
         assertThat(utxoFilteredTx.metadata.getLedgerModel())
             .isEqualTo(wireTransaction.metadata.getLedgerModel())
-
     }
 
     @Test
@@ -79,26 +80,35 @@ class UtxoFilteredTransactionImplTest : UtxoFilteredTransactionTestBase() {
             componentGroupFilterParameters = listOf(
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.METADATA.ordinal,
-                    TransactionMetadataImpl::class.java
-                ) { true },
-                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.NOTARY.ordinal, Any::class.java) { true },
+                    TransactionMetadataImpl::class.java,
+                    AuditProofPredicate.Content { true }
+                ),
+                ComponentGroupFilterParameters.AuditProof(
+                    UtxoComponentGroup.NOTARY.ordinal,
+                    Any::class.java,
+                    AuditProofPredicate.Content { true }
+                ),
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.OUTPUTS_INFO.ordinal,
-                    UtxoOutputInfoComponent::class.java
-                ) { true },
+                    UtxoOutputInfoComponent::class.java,
+                    AuditProofPredicate.Content { true }
+                ),
                 ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS_INFO.ordinal),
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.INPUTS.ordinal,
-                    StateRef::class.java
-                ) { it.index != 0 },
+                    StateRef::class.java,
+                    AuditProofPredicate.Content { it.index != 0 }
+                ),
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.REFERENCES.ordinal,
-                    StateRef::class.java
-                ) { it.index != 0 },
+                    StateRef::class.java,
+                    AuditProofPredicate.Content { it.index != 0 }
+                ),
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.OUTPUTS.ordinal,
-                    ContractState::class.java
-                ) { true },
+                    ContractState::class.java,
+                    AuditProofPredicate.Content { true }
+                ),
                 ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS.ordinal),
             )
         )
@@ -119,7 +129,6 @@ class UtxoFilteredTransactionImplTest : UtxoFilteredTransactionTestBase() {
         assertThat(inputStateRefs.values[1]?.index).isEqualTo(5)
     }
 
-
     @Test
     fun `can get notary and time window`() {
         val utxoFilteredTransaction: UtxoFilteredTransaction =
@@ -137,32 +146,41 @@ class UtxoFilteredTransactionImplTest : UtxoFilteredTransactionTestBase() {
             componentGroupFilterParameters = listOf(
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.METADATA.ordinal,
-                    TransactionMetadataImpl::class.java
-                ) { true },
-                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.NOTARY.ordinal, Any::class.java) {
-                    when (it) {
-                        is MemberX500Name -> false
-                        is PublicKey -> false
-                        else -> true
+                    TransactionMetadataImpl::class.java,
+                    AuditProofPredicate.Content { true }
+                ),
+                ComponentGroupFilterParameters.AuditProof(
+                    UtxoComponentGroup.NOTARY.ordinal,
+                    Any::class.java,
+                    AuditProofPredicate.Content {
+                        when (it) {
+                            is MemberX500Name -> false
+                            is PublicKey -> false
+                            else -> true
+                        }
                     }
-                },
+                ),
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.OUTPUTS_INFO.ordinal,
-                    UtxoOutputInfoComponent::class.java
-                ) { true },
+                    UtxoOutputInfoComponent::class.java,
+                    AuditProofPredicate.Content { true }
+                ),
                 ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS_INFO.ordinal),
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.INPUTS.ordinal,
-                    StateRef::class.java
-                ) { true },
+                    StateRef::class.java,
+                    AuditProofPredicate.Content { true }
+                ),
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.REFERENCES.ordinal,
-                    StateRef::class.java
-                ) { true },
+                    StateRef::class.java,
+                    AuditProofPredicate.Content { true }
+                ),
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.OUTPUTS.ordinal,
-                    ContractState::class.java
-                ) { true },
+                    ContractState::class.java,
+                    AuditProofPredicate.Content { true }
+                ),
                 ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS.ordinal),
             )
         )
@@ -181,25 +199,30 @@ class UtxoFilteredTransactionImplTest : UtxoFilteredTransactionTestBase() {
             componentGroupFilterParameters = listOf(
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.METADATA.ordinal,
-                    TransactionMetadataImpl::class.java
-                ) { true },
+                    TransactionMetadataImpl::class.java,
+                    AuditProofPredicate.Content { true }
+                ),
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.OUTPUTS_INFO.ordinal,
-                    UtxoOutputInfoComponent::class.java
-                ) { true },
+                    UtxoOutputInfoComponent::class.java,
+                    AuditProofPredicate.Content { true }
+                ),
                 ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS_INFO.ordinal),
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.INPUTS.ordinal,
-                    StateRef::class.java
-                ) { true },
+                    StateRef::class.java,
+                    AuditProofPredicate.Content { true }
+                ),
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.REFERENCES.ordinal,
-                    StateRef::class.java
-                ) { true },
+                    StateRef::class.java,
+                    AuditProofPredicate.Content { true }
+                ),
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.OUTPUTS.ordinal,
-                    ContractState::class.java
-                ) { true },
+                    ContractState::class.java,
+                    AuditProofPredicate.Content { true }
+                ),
                 ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS.ordinal),
             )
         )
@@ -229,7 +252,6 @@ class UtxoFilteredTransactionImplTest : UtxoFilteredTransactionTestBase() {
 
         assertThat(utxoFilteredTransaction.referenceStateRefs)
             .isInstanceOf(UtxoFilteredData.Removed::class.java)
-
     }
 }
 

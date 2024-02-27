@@ -15,7 +15,7 @@ import java.security.PublicKey
  * And some methods what the Finality flows use internally.
  */
 @CordaSerializable
-interface UtxoSignedTransactionInternal: UtxoSignedTransaction {
+interface UtxoSignedTransactionInternal : UtxoSignedTransaction {
     val wireTransaction: WireTransaction
 
     /**
@@ -44,14 +44,6 @@ interface UtxoSignedTransactionInternal: UtxoSignedTransaction {
      * @return Returns a [Set] of [PublicKey] representing the missing signatories from the current [UtxoSignedTransactionInternal].
      */
     fun getMissingSignatories(): Set<PublicKey>
-
-    /**
-     * Verify the signatories' signatures and check if there are any missing one.
-     * It ignores the non-signatory signatures! (including the notary's)
-     *
-     * @throws TransactionSignatureException if any signatures are missing or invalid.
-     */
-    fun verifySignatorySignatures()
 
     /**
      * Verify if notary has signed the transaction.

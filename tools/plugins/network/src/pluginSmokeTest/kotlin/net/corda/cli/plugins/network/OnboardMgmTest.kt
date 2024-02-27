@@ -1,4 +1,5 @@
 @file:Suppress("DEPRECATION")
+
 package net.corda.cli.plugins.network
 
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -42,7 +43,7 @@ class OnboardMgmTest {
             targetUrl,
             user,
             password,
-            INSECURE
+            INSECURE,
         )
 
         outputStub.lookup(mgm)
@@ -58,7 +59,7 @@ class OnboardMgmTest {
             targetUrl,
             user,
             password,
-            INSECURE
+            INSECURE,
         )
         val cpiHash = command.getExistingCpiHash()
 
@@ -69,7 +70,7 @@ class OnboardMgmTest {
             targetUrl,
             user,
             password,
-            INSECURE
+            INSECURE,
         )
 
         outputStub.lookup(mgm)
@@ -85,11 +86,12 @@ class OnboardMgmTest {
             targetUrl,
             user,
             password,
-            INSECURE
+            INSECURE,
         )
 
         val groupPolicyFile = File(
-            File(File(File(System.getProperty("user.home")), ".corda"), "gp"), "test.json"
+            File(File(File(System.getProperty("user.home")), ".corda"), "gp"),
+            "test.json",
         )
         assertThat(groupPolicyFile.exists()).isTrue
         assertThat(ObjectMapper().readTree(groupPolicyFile.inputStream()).get("groupId")).isNotNull
@@ -102,13 +104,14 @@ class OnboardMgmTest {
             targetUrl,
             user,
             password,
-            INSECURE
+            INSECURE,
         )
 
         assertThat(
             File(
-                File(File(File(System.getProperty("user.home")), ".corda"), "groupId"), "groupId.txt"
-            ).exists()
+                File(File(File(System.getProperty("user.home")), ".corda"), "groupId"),
+                "groupId.txt",
+            ).exists(),
         ).isTrue
     }
 
@@ -120,13 +123,14 @@ class OnboardMgmTest {
             targetUrl,
             user,
             password,
-            INSECURE
+            INSECURE,
         )
 
         assertThat(
             File(
-                File(File(File(System.getProperty("user.home")), ".corda"), "gp"), "groupPolicy.json"
-            ).readText().contains("\"corda.group.tls.type\": \"Mutual\"")
+                File(File(File(System.getProperty("user.home")), ".corda"), "gp"),
+                "groupPolicy.json",
+            ).readText().contains("\"corda.group.tls.type\": \"Mutual\""),
         )
     }
 
@@ -142,7 +146,7 @@ class OnboardMgmTest {
             targetUrl,
             user,
             password,
-            INSECURE
+            INSECURE,
         )
 
         outputStub.lookup(mgm)
@@ -165,14 +169,14 @@ class OnboardMgmTest {
         holdingIdentity = HoldingIdentityUtils.getHoldingIdentity(
             null,
             mgmName,
-            null
+            null,
         )
         CommandLine(MemberLookup(this)).execute(
             "-h=$holdingIdentity",
             targetUrl,
             user,
             password,
-            INSECURE
+            INSECURE,
         )
     }
 }

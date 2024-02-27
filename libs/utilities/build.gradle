@@ -18,14 +18,12 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     // Concluded this is the one acceptable dependency in addition to kotlin.
     implementation 'org.slf4j:slf4j-api'
-    implementation "org.bouncycastle:bcpkix-jdk18on:$bouncycastleVersion"
+    implementation libs.bouncycastle.pkix
+    implementation libs.snappy.java
 
     implementation project(":libs:configuration:configuration-core")
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly 'org.osgi:osgi.core'
 }

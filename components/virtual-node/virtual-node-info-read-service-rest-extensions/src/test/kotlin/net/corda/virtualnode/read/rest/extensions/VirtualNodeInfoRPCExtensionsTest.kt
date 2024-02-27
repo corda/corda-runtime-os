@@ -1,11 +1,9 @@
 package net.corda.virtualnode.read.rest.extensions
 
 import net.corda.crypto.core.ShortHash
-import java.time.Instant
-import java.util.UUID
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.ResourceNotFoundException
-import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.test.util.TestRandom
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.base.types.MemberX500Name
@@ -16,6 +14,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.time.Instant
+import java.util.UUID
 
 class VirtualNodeInfoRPCExtensionsTest {
 

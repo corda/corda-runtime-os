@@ -15,6 +15,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentMatchers.eq
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doNothing
@@ -46,7 +47,7 @@ class AddPreAuthTokenHandlerTest {
         on { createEntityManager() } doReturn entityManager
     }
     private val dbConnectionManager = mock<DbConnectionManager> {
-        on { getOrCreateEntityManagerFactory(any<UUID>(), any()) } doReturn entityManagerFactory
+        on { getOrCreateEntityManagerFactory(any<UUID>(), any(), eq(false)) } doReturn entityManagerFactory
     }
     private val entitySet = mock<JpaEntitiesSet>()
     private val jpaEntitiesRegistry = mock<JpaEntitiesRegistry> {

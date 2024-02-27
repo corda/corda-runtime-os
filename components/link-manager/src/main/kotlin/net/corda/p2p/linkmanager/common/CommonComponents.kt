@@ -3,7 +3,9 @@ package net.corda.p2p.linkmanager.common
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.SessionEncryptionOpsClient
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
@@ -14,16 +16,25 @@ import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.forwarding.gateway.TlsCertificatesPublisher
 import net.corda.p2p.linkmanager.forwarding.gateway.TrustStoresPublisher
 import net.corda.p2p.linkmanager.forwarding.gateway.mtls.ClientCertificatePublisher
+import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
+import net.corda.p2p.linkmanager.sessions.DeadSessionMonitor
+import net.corda.p2p.linkmanager.sessions.DeadSessionMonitorConfigurationHandler
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueuesImpl
+import net.corda.p2p.linkmanager.sessions.SessionCache
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
+import net.corda.p2p.linkmanager.sessions.StateConvertor
+import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl
+import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 import net.corda.schema.Schemas
+import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.utilities.flags.Features
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import java.util.concurrent.Executors
 
 @Suppress("LongParameterList")
 internal class CommonComponents(
@@ -41,34 +52,99 @@ internal class CommonComponents(
     membershipQueryClient: MembershipQueryClient,
     groupParametersReaderService: GroupParametersReaderService,
     clock: Clock,
+    internal val stateManager: StateManager,
+    schemaRegistry: AvroSchemaRegistry,
+    sessionEncryptionOpsClient: SessionEncryptionOpsClient,
+    features: Features = Features(),
 ) : LifecycleWithDominoTile {
     private companion object {
         const val LISTENER_NAME = "link.manager.group.policy.listener"
     }
+
     internal val inboundAssignmentListener = InboundAssignmentListener(
         lifecycleCoordinatorFactory,
-        Schemas.P2P.LINK_IN_TOPIC
+        Schemas.P2P.LINK_IN_TOPIC,
+    )
+
+    internal val messageConverter = MessageConverter(
+        groupPolicyProvider,
+        membershipGroupReaderProvider,
+        clock,
     )
 
     internal val messagesPendingSession = PendingSessionMessageQueuesImpl(
         publisherFactory,
         lifecycleCoordinatorFactory,
-        messagingConfiguration
+        messagingConfiguration,
+        messageConverter,
     )
 
-    internal val sessionManager = SessionManagerImpl(
-        groupPolicyProvider,
-        membershipGroupReaderProvider,
-        cryptoOpsClient,
-        messagesPendingSession,
-        publisherFactory,
-        configurationReaderService,
+    private val sessionEventPublisher = StatefulSessionEventPublisher(
         lifecycleCoordinatorFactory,
+        publisherFactory,
         messagingConfiguration,
-        inboundAssignmentListener,
-        linkManagerHostingMap,
-        clock = clock,
     )
+
+    private val sessionCache = SessionCache(
+        stateManager,
+        clock,
+        sessionEventPublisher,
+    )
+
+    private val deadSessionMonitor = DeadSessionMonitor(
+        Executors.newSingleThreadScheduledExecutor { runnable -> Thread(runnable, "Dead Session Monitor") },
+        sessionCache,
+    )
+
+    private val deadSessionMonitorConfigHandler =
+        DeadSessionMonitorConfigurationHandler(deadSessionMonitor, configurationReaderService)
+
+    internal val sessionManager = if (features.useStatefulSessionManager) {
+        StatefulSessionManagerImpl(
+            subscriptionFactory,
+            messagingConfiguration,
+            lifecycleCoordinatorFactory,
+            stateManager,
+            SessionManagerImpl(
+                groupPolicyProvider,
+                membershipGroupReaderProvider,
+                cryptoOpsClient,
+                messagesPendingSession,
+                publisherFactory,
+                configurationReaderService,
+                lifecycleCoordinatorFactory,
+                messagingConfiguration,
+                inboundAssignmentListener,
+                linkManagerHostingMap,
+                clock = clock,
+                trackSessionHealthAndReplaySessionMessages = false,
+            ),
+            StateConvertor(
+                schemaRegistry,
+                sessionEncryptionOpsClient,
+            ),
+            clock,
+            membershipGroupReaderProvider,
+            deadSessionMonitor,
+            schemaRegistry,
+            sessionCache,
+            sessionEventPublisher,
+        )
+    } else {
+        SessionManagerImpl(
+            groupPolicyProvider,
+            membershipGroupReaderProvider,
+            cryptoOpsClient,
+            messagesPendingSession,
+            publisherFactory,
+            configurationReaderService,
+            lifecycleCoordinatorFactory,
+            messagingConfiguration,
+            inboundAssignmentListener,
+            linkManagerHostingMap,
+            clock = clock,
+        )
+    }
 
     private val trustStoresPublisher = TrustStoresPublisher(
         subscriptionFactory,
@@ -108,7 +184,8 @@ internal class CommonComponents(
         NamedLifecycle.of(virtualNodeInfoReadService),
         NamedLifecycle.of(cpiInfoReadService),
         NamedLifecycle.of(membershipQueryClient),
-        NamedLifecycle.of(groupParametersReaderService)
+        NamedLifecycle.of(groupParametersReaderService),
+        NamedLifecycle.of(sessionEncryptionOpsClient),
     ) + externalDependencies
 
     override val dominoTile = ComplexDominoTile(
@@ -123,7 +200,7 @@ internal class CommonComponents(
             mtlsClientCertificatePublisher.dominoTile.coordinatorName,
         ) + externalDependencies.map {
             it.name
-        },
+        } + stateManager.name,
         managedChildren = listOf(
             linkManagerHostingMap.dominoTile.toNamedLifecycle(),
             messagesPendingSession.dominoTile.toNamedLifecycle(),
@@ -131,6 +208,7 @@ internal class CommonComponents(
             trustStoresPublisher.dominoTile.toNamedLifecycle(),
             tlsCertificatesPublisher.dominoTile.toNamedLifecycle(),
             mtlsClientCertificatePublisher.dominoTile.toNamedLifecycle(),
-        ) + externalManagedDependencies
+        ) + externalManagedDependencies,
+        configurationChangeHandler = deadSessionMonitorConfigHandler,
     )
 }

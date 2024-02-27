@@ -1,6 +1,5 @@
 package net.corda.virtualnode.rest.impl.status
 
-import net.corda.data.virtualnode.VirtualNodeOperationStatus as AvroVirtualNodeOperationStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -24,6 +23,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
+import net.corda.data.virtualnode.VirtualNodeOperationStatus as AvroVirtualNodeOperationStatus
 
 @Suppress("Unused")
 @Component(service = [VirtualNodeStatusCacheService::class])
@@ -85,7 +85,6 @@ class VirtualNodeStatusCacheServiceImpl @Activate constructor(
     }
 
     override fun setStatus(requestId: String, newStatus: AvroVirtualNodeOperationStatus) {
-
         cache[requestId] = newStatus
         val record = Record(
             VIRTUAL_NODE_OPERATION_STATUS_TOPIC,

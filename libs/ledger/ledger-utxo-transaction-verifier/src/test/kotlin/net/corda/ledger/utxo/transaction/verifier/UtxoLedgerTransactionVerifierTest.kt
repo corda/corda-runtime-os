@@ -40,7 +40,7 @@ class UtxoLedgerTransactionVerifierTest {
     private val metadata = mock<TransactionMetadata>()
     private val holdingIdentity = HoldingIdentity(MemberX500Name("ALICE", "LDN", "GB"), "group")
     private val injectionService = mock<(Contract) -> Unit>()
-    private val verifier = UtxoLedgerTransactionVerifier( { transaction }, transaction, holdingIdentity, injectionService)
+    private val verifier = UtxoLedgerTransactionVerifier({ transaction }, transaction, holdingIdentity, injectionService)
 
     @BeforeEach
     fun beforeEach() {
@@ -150,7 +150,6 @@ class UtxoLedgerTransactionVerifierTest {
         assertDoesNotThrow { verifier.verify() }
     }
 
-
     @Test
     fun `throws an exception when input and reference states don't have the same notary passed into verification (names are different)`() {
         whenever(inputTransactionState.notaryName).thenReturn(anotherNotaryX500Name)
@@ -175,7 +174,8 @@ class UtxoLedgerTransactionVerifierTest {
     @Test
     fun `catches exceptions from contract verification and outputs them as failure reasons`() {
         val validContractAState = stateAndRef<MyInvalidContractA>(
-            SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1)), 0
+            SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1)),
+            0
         )
         whenever(transaction.inputStateAndRefs).thenReturn(listOf(validContractAState))
         whenever(transaction.outputStateAndRefs).thenReturn(emptyList())

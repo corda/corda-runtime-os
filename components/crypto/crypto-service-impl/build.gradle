@@ -13,10 +13,10 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
+    implementation libs.jackson.databind
+    implementation libs.jackson.datatype.jsr310
+    implementation libs.jackson.module.kotlin
+    implementation libs.caffeine
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
@@ -41,12 +41,12 @@ dependencies {
     implementation project(":libs:tracing")
     implementation project(':libs:utilities')
     implementation project(':libs:virtual-node:virtual-node-info')
+    implementation project(":libs:serialization:serialization-avro")
 
     api project(":components:crypto:crypto-softhsm-impl")
 
     testImplementation project(":libs:cache:cache-caffeine")
     testImplementation 'net.corda:corda-application'
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(":components:crypto:crypto-component-test-utils")
 
     testImplementation project(":components:crypto:crypto-persistence-model")
@@ -59,7 +59,7 @@ dependencies {
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:crypto-testkit")
 
-    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    testRuntimeOnly libs.slf4j.simple
 }
 
 tasks.named('jar', Jar) {

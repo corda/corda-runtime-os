@@ -10,10 +10,13 @@ import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.cpiinfo.write.CpiInfoWriteService
+import net.corda.libs.configuration.validation.ExternalChannelsConfigValidator
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.CpiReader
 import net.corda.libs.packaging.PackagingConstants
 import net.corda.libs.packaging.verify.verifyCpi
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.certificate.service.CertificatesService
 import net.corda.membership.group.policy.validation.MembershipGroupPolicyValidator
 import net.corda.membership.group.policy.validation.MembershipInvalidGroupPolicyException
@@ -39,7 +42,9 @@ class CpiValidatorImpl(
     private val cpiPartsDir: Path,
     certificatesService: CertificatesService,
     private val clock: Clock,
+    platformInfoProvider: PlatformInfoProvider
 ) : CpiValidator {
+    private val cpiReader = CpiReader(platformInfoProvider.activePlatformVersion)
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -61,7 +66,7 @@ class CpiValidatorImpl(
 
         // Read the cpi from a file
         publisher.update(requestId, "Validating CPI")
-        val cpi: Cpi = fileInfo.validateAndGetCpi(cpiPartsDir, requestId)
+        val cpi: Cpi = fileInfo.validateAndGetCpi(cpiPartsDir, requestId, cpiReader)
 
         publisher.update(requestId, "Checking group policy is well formed.")
         try {
@@ -99,7 +104,8 @@ class CpiValidatorImpl(
         val liquibaseScripts = cpi.extractLiquibaseScripts()
 
         publisher.update(requestId, "Validating configuration for external channels")
-        externalChannelsConfigValidator.validate(cpi.metadata.cpksMetadata)
+        val externalChannelsConfigList = cpi.metadata.cpksMetadata.mapNotNull { it.externalChannelsConfig }
+        externalChannelsConfigValidator.validate(externalChannelsConfigList)
 
         publisher.update(requestId, "Persisting CPI")
         val cpiMetadata =

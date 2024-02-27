@@ -9,7 +9,7 @@ import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
-import net.corda.schema.Schemas
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -18,8 +18,7 @@ import java.time.Clock
 @Component(service = [ExternalEventFactory::class])
 class FindUnconsumedStatesByTypeExternalEventFactory(
     private val clock: Clock
-) : ExternalEventFactory<FindUnconsumedStatesByTypeParameters, UtxoTransactionOutputs, List<UtxoVisibleTransactionOutputDto>>
-{
+) : ExternalEventFactory<FindUnconsumedStatesByTypeParameters, UtxoTransactionOutputs, List<UtxoVisibleTransactionOutputDto>> {
     @Activate
     constructor() : this(Clock.systemUTC())
 
@@ -31,7 +30,6 @@ class FindUnconsumedStatesByTypeExternalEventFactory(
         parameters: FindUnconsumedStatesByTypeParameters
     ): ExternalEventRecord {
         return ExternalEventRecord(
-            topic = Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC,
             payload = LedgerPersistenceRequest.newBuilder()
                 .setTimestamp(clock.instant())
                 .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())
@@ -53,6 +51,7 @@ class FindUnconsumedStatesByTypeExternalEventFactory(
     }
 }
 
+@CordaSerializable
 data class FindUnconsumedStatesByTypeParameters(
     val stateClass: Class<*>
 )

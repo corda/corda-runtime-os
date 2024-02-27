@@ -1,5 +1,7 @@
 package net.corda.rest.server.impl.apigen.processing.openapi.schema
 
+import net.corda.rest.HttpFileUpload
+import net.corda.rest.durablestream.api.Cursor
 import net.corda.rest.server.apigen.processing.openapi.schema.TestNestedClass
 import net.corda.rest.server.impl.apigen.models.EndpointParameter
 import net.corda.rest.server.impl.apigen.models.GenericParameterizedType
@@ -13,7 +15,6 @@ import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.SchemaP
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.SchemaRefObjectModel
 import net.corda.rest.server.impl.apigen.processing.streams.DurableReturnResult
 import net.corda.rest.server.impl.apigen.processing.streams.FiniteDurableReturnResult
-import net.corda.rest.durablestream.api.Cursor
 import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -26,7 +27,6 @@ import java.time.LocalDateTime
 import java.util.Date
 import java.util.UUID
 import javax.security.auth.x500.X500Principal
-import net.corda.rest.HttpFileUpload
 
 class SchemaModelProviderTest {
 
@@ -637,7 +637,6 @@ class SchemaModelProviderTest {
 
         val result = provider.toSchemaModel(mockParam)
 
-
         assertNull(result.type)
         assertNull(result.format)
         result as SchemaRefObjectModel
@@ -668,7 +667,8 @@ class SchemaModelProviderTest {
 
         val result =
             provider.toSchemaModel(
-                    ParameterizedClass(net.corda.rest.server.impl.apigen.processing.DurableStreamsMethodInvoker::class.java))
+                ParameterizedClass(net.corda.rest.server.impl.apigen.processing.DurableStreamsMethodInvoker::class.java)
+            )
         assertEquals("DurableStreamsMethodInvoker", (result as SchemaRefObjectModel).ref)
 
         val result2 = provider.toSchemaModel(ParameterizedClass(DurableStreamsMethodInvoker::class.java))
@@ -706,9 +706,9 @@ class SchemaModelProviderTest {
     )
 
     class TestClass(
-            val a: String = "a",
-            val b: NestedTestClass = NestedTestClass(),
-            private val c: String = "c"
+        val a: String = "a",
+        val b: NestedTestClass = NestedTestClass(),
+        private val c: String = "c"
     )
 
     private fun endpointParameter(clazz: Class<*>, parameterizedTypes: List<GenericParameterizedType> = emptyList()): EndpointParameter {

@@ -145,6 +145,7 @@ spec:
         {{- end }}
       labels:
         {{- include "corda.workerSelectorLabels" ( list $ $worker ) | nindent 8 }}
+        {{- include "corda.workerCommonPodLabels" $ | nindent 8 }}
     spec:
       {{- if and ( not $.Values.dumpHostPath ) ( not .profiling.enabled ) }}
       {{- with $.Values.podSecurityContext }}
@@ -158,7 +159,12 @@ spec:
       serviceAccountName: {{ . }}
       {{- end }}
       {{- include "corda.topologySpreadConstraints" $ | indent 6 }}
-      {{- include "corda.affinity" (list $ ( include "corda.workerComponent" $worker ) ) | indent 6 }}
+      {{- include "corda.affinity" (list $ ( include "corda.workerComponent" $worker ) ) | indent 6 -}}
+      {{- $stateManagerV2 := include "corda.sm.required" ( list $ . ) -}}
+      {{- if eq $stateManagerV2 "true" }}
+      initContainers:
+      {{-   include "corda.sm.db.runtimeConfigurationContainer" ( list $ $worker . )  | indent 8 -}}
+      {{- end }}
       containers:
       - name: {{ $workerName | quote }}
         image: {{ include "corda.workerImage" ( list $ . ) }}
@@ -267,11 +273,8 @@ spec:
         {{- if not (($.Values).vault).url }}
         {{- include "corda.configSaltAndPassphraseEnv" $ | nindent 10 }}
         {{- end }}
-        {{- if $optionalArgs.clusterDbAccess }}
-        {{- include "corda.clusterDbEnv" $ | nindent 10 }}
-        {{- end }}
-        {{- if $optionalArgs.stateManagerDbAccess }}
-        {{- include "corda.stateManagerDbEnv" ( list $ . $worker ) | nindent 10 }}
+        {{- if .config }}
+        {{- include "corda.db.workerConfigEnvironment" ( list $ $worker .config ) | nindent 10 }}
         {{- end }}
         args:
           - "--workspace-dir=/work"
@@ -303,47 +306,22 @@ spec:
           {{- end }}
           - "-spassphrase=$(PASSPHRASE)"
           - "-ssalt=$(SALT)"
-          {{- if $optionalArgs.clusterDbAccess }}
-          - "-ddatabase.user=$(DB_CLUSTER_USERNAME)"
-          - "-ddatabase.pass=$(DB_CLUSTER_PASSWORD)"
-          - "-ddatabase.jdbc.url=jdbc:postgresql://{{ required "Must specify db.cluster.host" $.Values.db.cluster.host }}:{{ $.Values.db.cluster.port }}/{{ $.Values.db.cluster.database }}?currentSchema={{ $.Values.db.cluster.schema }}"
+          {{- if .config }}
+          - "-ddatabase.user=$(CONFIG_DB_USERNAME)"
+          - "-ddatabase.pass=$(CONFIG_DB_PASSWORD)"
+          {{- $connectionSettings := fromYaml ( include "corda.db.configuration" ( list $ $.Values.config.storageId "config.storageId" ) ) }}
+          - "-ddatabase.jdbc.url={{ include "corda.db.connectionUrl" $connectionSettings }}"
           - "-ddatabase.jdbc.directory=/opt/jdbc-driver"
-          - "-ddatabase.pool.max_size={{ .clusterDbConnectionPool.maxSize }}"
-          {{- if .clusterDbConnectionPool.minSize }}
-          - "-ddatabase.pool.min_size={{ .clusterDbConnectionPool.minSize }}"
-          {{- end }}
-          - "-ddatabase.pool.idleTimeoutSeconds={{ .clusterDbConnectionPool.idleTimeoutSeconds }}"
-          - "-ddatabase.pool.maxLifetimeSeconds={{ .clusterDbConnectionPool.maxLifetimeSeconds }}"
-          - "-ddatabase.pool.keepaliveTimeSeconds={{ .clusterDbConnectionPool.keepaliveTimeSeconds }}"
-          - "-ddatabase.pool.validationTimeoutSeconds={{ .clusterDbConnectionPool.validationTimeoutSeconds }}"
-          {{- end }}
-          {{- if $optionalArgs.stateManagerDbAccess }}
-          - "--stateManager"
-          - "type=DATABASE"
-          - "--stateManager"
-          - "database.user=$(STATE_MANAGER_USERNAME)"
-          - "--stateManager"
-          - "database.pass=$(STATE_MANAGER_PASSWORD)"
-          - "--stateManager"
-          - "database.jdbc.url={{- include "corda.stateManagerJdbcUrl" ( list $ . ) -}}?currentSchema=STATE_MANAGER"
-          - "--stateManager"
-          - "database.jdbc.directory=/opt/jdbc-driver"
-          - "--stateManager"
-          - "database.jdbc.driver=org.postgresql.Driver"
-          - "--stateManager"
-          - "database.pool.maxSize={{ .stateManager.db.connectionPool.maxSize }}"
-          {{- if .stateManager.db.connectionPool.minSize }}
-          - "--stateManager"
-          - "database.pool.minSize={{ .stateManager.db.connectionPool.minSize }}"
-          {{- end }}
-          - "--stateManager"
-          - "database.pool.idleTimeoutSeconds={{ .stateManager.db.connectionPool.idleTimeoutSeconds }}"
-          - "--stateManager"
-          - "database.pool.maxLifetimeSeconds={{ .stateManager.db.connectionPool.maxLifetimeSeconds }}"
-          - "--stateManager"
-          - "database.pool.keepAliveTimeSeconds={{ .stateManager.db.connectionPool.keepAliveTimeSeconds }}"
-          - "--stateManager"
-          - "database.pool.validationTimeoutSeconds={{ .stateManager.db.connectionPool.validationTimeoutSeconds }}"
+          {{-   with .config.connectionPool }}
+          - "-ddatabase.pool.max_size={{ .maxSize }}"
+          {{-     if not ( kindIs "invalid" .minSize ) }}
+          - "-ddatabase.pool.min_size={{ .minSize }}"
+          {{-     end }}
+          - "-ddatabase.pool.idleTimeoutSeconds={{ .idleTimeoutSeconds }}"
+          - "-ddatabase.pool.maxLifetimeSeconds={{ .maxLifetimeSeconds }}"
+          - "-ddatabase.pool.keepaliveTimeSeconds={{ .keepAliveTimeSeconds }}"
+          - "-ddatabase.pool.validationTimeoutSeconds={{ .validationTimeoutSeconds }}"
+          {{-   end }}
           {{- end }}
           {{- if $.Values.tracing.endpoint }}
           - "--send-trace-to={{ $.Values.tracing.endpoint }}"
@@ -351,13 +329,25 @@ spec:
           {{- if $.Values.tracing.samplesPerSecond }}
           - "--trace-samples-per-second={{ $.Values.tracing.samplesPerSecond }}"
           {{- end }}
+          {{- with $.Values.metrics.keepNames }}
+          - "--metrics-keep-names={{ join "|" . }}"
+          {{- end }}
+          {{- with $.Values.metrics.dropLabels }}
+          - "--metrics-drop-labels={{ join "|" . }}"
+          {{- end }}
           {{- if $optionalArgs.servicesAccessed }}
           {{- range $worker := $optionalArgs.servicesAccessed }}
           - "--serviceEndpoint={{ include "corda.getWorkerEndpoint" (dict "context" $ "worker" $worker) }}"
           {{- end }}
           {{- end }}
+          {{- range .extraArgs }}
+          - {{ . | quote }}
+          {{- end }}
           {{- range $i, $arg := $optionalArgs.additionalWorkerArgs }}
           - {{ $arg | quote }}
+          {{- end -}}
+          {{- if eq $stateManagerV2 "true" }}
+          {{-   include "corda.sm.runtimeConfigurationParameters" . | nindent 10 -}}
           {{- end }}
         volumeMounts:
           - mountPath: "/tmp"
@@ -451,8 +441,11 @@ spec:
           hostPath:
             path: {{ $.Values.dumpHostPath }}/{{ $.Release.Namespace }}/
             type: DirectoryOrCreate
-        {{- end }}
-        {{- include "corda.log4jVolume" $ | nindent 8 }}
+        {{- end -}}
+        {{- if eq $stateManagerV2 "true" }}
+        {{-   include "corda.sm.runtimeCredentialVolumes" ( list $ $worker . )  | nindent 8 -}}
+        {{- end -}}
+        {{- include "corda.log4jVolume" $ | nindent 8 -}}
       {{- with $.Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

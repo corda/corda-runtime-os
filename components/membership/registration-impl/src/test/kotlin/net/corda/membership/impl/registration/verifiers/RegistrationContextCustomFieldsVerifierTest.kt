@@ -10,7 +10,7 @@ class RegistrationContextCustomFieldsVerifierTest {
         const val CUSTOM_VALUE = "customValue"
     }
     private val fieldsVerifier = RegistrationContextCustomFieldsVerifier()
-    private val longString = StringBuilder().apply { for(i in 0..800){ this.append("a") } }.toString()
+    private val longString = StringBuilder().apply { for (i in 0..800) { this.append("a") } }.toString()
 
     @Test
     fun `adding a custom field verifies successfully`() {

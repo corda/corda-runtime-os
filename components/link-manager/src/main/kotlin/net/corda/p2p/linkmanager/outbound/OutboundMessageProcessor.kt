@@ -21,7 +21,6 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
-import net.corda.metrics.CordaMetrics
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.common.MessageConverter
 import net.corda.p2p.linkmanager.grouppolicy.networkType
@@ -43,6 +42,9 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import net.corda.p2p.linkmanager.TraceableItem
+import net.corda.p2p.linkmanager.metrics.recordOutboundMessagesMetric
+import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class OutboundMessageProcessor(
@@ -53,8 +55,9 @@ internal class OutboundMessageProcessor(
     private val inboundAssignmentListener: InboundAssignmentListener,
     private val messagesPendingSession: PendingSessionMessageQueues,
     private val clock: Clock,
+    private val messageConverter: MessageConverter,
     private val networkMessagingValidator: NetworkMessagingValidator =
-        NetworkMessagingValidator(membershipGroupReaderProvider)
+        NetworkMessagingValidator(membershipGroupReaderProvider),
 ) : EventLogProcessor<String, AppMessage> {
 
     override val keyClass = String::class.java
@@ -62,6 +65,7 @@ internal class OutboundMessageProcessor(
     private var logger = LoggerFactory.getLogger(this::class.java.name)
 
     companion object {
+        private const val tracingEventName = "P2P Link Manager Outbound Event"
         fun recordsForNewSessions(
             state: SessionManager.SessionState.NewSessionsNeeded,
             inboundAssignmentListener: InboundAssignmentListener,
@@ -76,6 +80,9 @@ internal class OutboundMessageProcessor(
                 )
                 emptyList()
             } else {
+                state.messages.forEach {
+                    recordOutboundSessionMessagesMetric(state.sessionCounterparties.ourId)
+                }
                 state.messages.flatMap {
                     listOf(
                         Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), it.second),
@@ -86,42 +93,44 @@ internal class OutboundMessageProcessor(
         }
     }
 
-    override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<*, *>> {
-        val records = mutableListOf<Record<*, *>>()
-        for (event in events) {
-            records += traceEventProcessing(event,"P2P Link Manager Outbound Event") { processEvent(event)}
-        }
-        return records
-    }
-
     private fun ttlExpired(ttl: Instant?): Boolean {
         if (ttl == null) return false
         val currentTimeInTimeMillis = clock.instant()
         return currentTimeInTimeMillis >= ttl
     }
 
-    private fun processEvent(event: EventLogRecord<String, AppMessage>): List<Record<String, *>> {
-
-        val message = event.value?.message
-        if (message == null) {
-            logger.error("Received null message. The message was discarded.")
-            return emptyList()
+    override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<String, *>> {
+        val authenticatedMessages = mutableListOf<TraceableItem<AuthenticatedMessageAndKey, AppMessage>>()
+        val unauthenticatedMessages = mutableListOf<TraceableItem<OutboundUnauthenticatedMessage, AppMessage>>()
+        for (event in events) {
+            when (val message = event.value?.message) {
+                is AuthenticatedMessage -> {
+                    authenticatedMessages += TraceableItem(AuthenticatedMessageAndKey(message, event.key), event)
+                    recordOutboundMessagesMetric(message)
+                }
+                is OutboundUnauthenticatedMessage -> {
+                    unauthenticatedMessages += TraceableItem(message, event)
+                    recordOutboundMessagesMetric(message)
+                }
+                null -> {
+                    logger.warn("Message is null.")
+                }
+                else -> {
+                    logger.warn("Unknown message type: ${message::class.java}.")
+                }
+            }
         }
 
-        return when (message) {
-            is AuthenticatedMessage -> {
-                processAuthenticatedMessage(AuthenticatedMessageAndKey(message, event.key))
-                    .also { recordOutboundMessagesMetric(message) }
-            }
-            is OutboundUnauthenticatedMessage -> {
-                processUnauthenticatedMessage(message)
-                    .also { recordOutboundMessagesMetric(message) }
-            }
-            else -> {
-                logger.warn("Unknown message type: ${message::class.java}")
-                emptyList()
+        val results = unauthenticatedMessages.map { (message, event) ->
+            TraceableItem(processUnauthenticatedMessage(message), event)
+        } + processAuthenticatedMessages(authenticatedMessages)
+
+        for (result in results) {
+            result.originalRecord?.let { originalRecord ->
+                traceEventProcessing(originalRecord, tracingEventName) { result.item }
             }
         }
+        return results.map { it.item }.flatten()
     }
 
     private fun checkSourceAndDestinationValid(
@@ -243,19 +252,57 @@ internal class OutboundMessageProcessor(
     }
 
     fun processReplayedAuthenticatedMessage(messageAndKey: AuthenticatedMessageAndKey): List<Record<String, *>> =
-        processAuthenticatedMessage(messageAndKey, true)
+        processAuthenticatedMessages(listOf(TraceableItem(messageAndKey, null)), true).flatMap { it.item }
+
+    private fun processAuthenticatedMessages(
+        messagesWithKeys: List<TraceableItem<AuthenticatedMessageAndKey, AppMessage>>,
+        isReplay: Boolean = false
+    ): List<TraceableItem<List<Record<String, *>>, AppMessage>> {
+        val validatedMessages = messagesWithKeys.map { message ->
+            message to validateAndCheckIfSessionNeeded(message.item, isReplay)
+        }
+        val messagesWithSession = validatedMessages.mapNotNull { (message, result) ->
+            if (result is ValidateAuthenticatedMessageResult.SessionNeeded) {
+                TraceableItem(result, message.originalRecord)
+            } else {
+                null
+            }
+        }
+        val messageWithNoSession = validatedMessages.mapNotNull { (message, result) ->
+            if (result is ValidateAuthenticatedMessageResult.NoSessionNeeded) {
+                TraceableItem(result.records, message.originalRecord)
+            } else {
+                null
+            }
+        }
+        return messageWithNoSession + processRemoteAuthenticatedMessage(messagesWithSession, isReplay)
+    }
+
+    internal sealed class ValidateAuthenticatedMessageResult {
+        data class SessionNeeded(
+            val messageWithKey: AuthenticatedMessageAndKey,
+            val markerRecords: List<Record<String, *>>
+        ): ValidateAuthenticatedMessageResult()
+        data class NoSessionNeeded(val records: List<Record<String, *>>): ValidateAuthenticatedMessageResult()
+    }
 
     /**
-     * processed an AuthenticatedMessage returning a list of records to be persisted.
+     * validates an AuthenticatedMessage and checks if a session is needed.
      *
      * [isReplay] - If the message is being replayed we don't persist a [LinkManagerSentMarker] as there is already
      * a marker for this message. If the process is restarted we reread the original marker.
+     *
+     * @return
+     * [ValidateAuthenticatedMessageResult.SessionNeeded] if validation succeeds and the destination identity is hosted in a
+     * different corda cluster. This contains the authenticated message to be authenticated (and optionally encrypted by the session, along
+     * with some marker records.
+     * [ValidateAuthenticatedMessageResult.NoSessionNeeded] in all other cases. This contains some marker records and the message to be
+     * looped back (if validation succeeded).
      */
-
-    private fun processAuthenticatedMessage(
+    private fun validateAndCheckIfSessionNeeded(
         messageAndKey: AuthenticatedMessageAndKey,
         isReplay: Boolean = false
-    ): List<Record<String, *>> {
+    ): ValidateAuthenticatedMessageResult {
         logger.trace {
             "Processing outbound ${messageAndKey.message.javaClass} with ID ${messageAndKey.message.header.messageId} " +
                 "to ${messageAndKey.message.header.destination}."
@@ -268,17 +315,16 @@ internal class OutboundMessageProcessor(
         if (discardReason != null) {
             logger.warn("Dropping outbound authenticated message ${messageAndKey.message.header.messageId}" +
                     " from ${messageAndKey.message.header.source} to ${messageAndKey.message.header.destination} as the $discardReason")
-            return listOf(recordForLMDiscardedMarker(messageAndKey, discardReason))
+            return ValidateAuthenticatedMessageResult.NoSessionNeeded(listOf(recordForLMDiscardedMarker(messageAndKey, discardReason)))
         }
 
         if (ttlExpired(messageAndKey.message.header.ttl)) {
             val expiryMarker = recordForTTLExpiredMarker(messageAndKey.message.header.messageId)
             return if (isReplay) {
-                listOf(expiryMarker)
+                ValidateAuthenticatedMessageResult.NoSessionNeeded(listOf(expiryMarker))
             } else {
-                listOf(
-                    recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId),
-                    expiryMarker
+                ValidateAuthenticatedMessageResult.NoSessionNeeded(
+                    listOf(recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId), expiryMarker)
                 )
             }
         }
@@ -288,9 +334,11 @@ internal class OutboundMessageProcessor(
         val destinationMemberInfo = membershipGroupReaderProvider.lookup(
             source, destination, messageAndKey.message.header.statusFilter
         ) ?: return if (isReplay) {
-            emptyList()
+            ValidateAuthenticatedMessageResult.NoSessionNeeded(emptyList())
         } else {
-            listOf(recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId))
+            ValidateAuthenticatedMessageResult.NoSessionNeeded(
+                listOf(recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId))
+            )
         }.also {
             logger.warn("Trying to send authenticated message (${messageAndKey.message.header.messageId}) from $source to $destination, " +
                     "but the destination is not part of the network. Filter was " +
@@ -300,13 +348,19 @@ internal class OutboundMessageProcessor(
         if (linkManagerHostingMap.isHostedLocallyAndSessionKeyMatch(destinationMemberInfo)) {
             recordInboundMessagesMetric(messageAndKey.message)
             return if (isReplay) {
-                listOf(Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
-                    recordForLMReceivedMarker(messageAndKey.message.header.messageId)
+                ValidateAuthenticatedMessageResult.NoSessionNeeded(
+                    listOf(
+                        Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
+                        recordForLMReceivedMarker(messageAndKey.message.header.messageId)
+                    )
                 )
             } else {
-                listOf(Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
-                    recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId),
-                    recordForLMReceivedMarker(messageAndKey.message.header.messageId)
+                ValidateAuthenticatedMessageResult.NoSessionNeeded(
+                    listOf(
+                        Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
+                        recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId),
+                        recordForLMReceivedMarker(messageAndKey.message.header.messageId)
+                    )
                 )
             }
         } else {
@@ -315,40 +369,46 @@ internal class OutboundMessageProcessor(
             } else {
                 listOf(recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId))
             }
-            return processNoTtlRemoteAuthenticatedMessage(messageAndKey, isReplay) + markers
+            return ValidateAuthenticatedMessageResult.SessionNeeded(messageAndKey, markers)
         }
     }
-    private fun processNoTtlRemoteAuthenticatedMessage(
-        messageAndKey: AuthenticatedMessageAndKey,
-        isReplay: Boolean = false
-    ): List<Record<String, *>> {
 
-        return when (val state = sessionManager.processOutboundMessage(messageAndKey)) {
-            is SessionManager.SessionState.NewSessionsNeeded -> {
-                logger.trace {
-                    "No existing session with ${messageAndKey.message.header.destination}. " +
-                        "Initiating a new one.."
+    private fun processRemoteAuthenticatedMessage(
+        validationResults: List<TraceableItem<ValidateAuthenticatedMessageResult.SessionNeeded, AppMessage>>,
+        isReplay: Boolean = false
+    ): List<TraceableItem<List<Record<String, *>>, AppMessage>> {
+        return sessionManager.processOutboundMessages(validationResults) { validationResult ->
+            validationResult.item.messageWithKey
+        }.map { (message, state) ->
+                when (state) {
+                is SessionManager.SessionState.NewSessionsNeeded -> {
+                    logger.trace {
+                        "No existing session with ${message.item.messageWithKey.message.header.destination}. Initiating a new one.."
+                    }
+                    if (!isReplay) messagesPendingSession.queueMessage(message.item.messageWithKey, state.sessionCounterparties)
+                    TraceableItem(recordsForNewSessions(state) + message.item.markerRecords, message.originalRecord)
                 }
-                if (!isReplay) messagesPendingSession.queueMessage(messageAndKey, state.sessionCounterparties)
-                recordsForNewSessions(state)
-            }
-            is SessionManager.SessionState.SessionEstablished -> {
-                logger.trace {
-                    "Session already established with ${messageAndKey.message.header.destination}." +
-                        " Using this to send outbound message."
+                is SessionManager.SessionState.SessionEstablished -> {
+                    logger.trace {
+                        "Session already established with ${message.item.messageWithKey.message.header.destination}. Using this to send" +
+                            " outbound message."
+                    }
+                    TraceableItem(
+                        recordsForSessionEstablished(state, message.item.messageWithKey) + message.item.markerRecords,
+                        message.originalRecord
+                    )
                 }
-                recordsForSessionEstablished(state, messageAndKey)
-            }
-            is SessionManager.SessionState.SessionAlreadyPending -> {
-                logger.trace {
-                    "Session already pending with ${messageAndKey.message.header.destination}. " +
-                        "Message queued until session is established."
+                is SessionManager.SessionState.SessionAlreadyPending -> {
+                    logger.trace {
+                        "Session already pending with ${message.item.messageWithKey.message.header.destination}. Message queued until " +
+                            "session is established."
+                    }
+                    if (!isReplay) messagesPendingSession.queueMessage(message.item.messageWithKey, state.sessionCounterparties)
+                    TraceableItem(message.item.markerRecords, message.originalRecord)
                 }
-                if (!isReplay) messagesPendingSession.queueMessage(messageAndKey, state.sessionCounterparties)
-                emptyList()
-            }
-            is SessionManager.SessionState.CannotEstablishSession -> {
-                emptyList()
+                is SessionManager.SessionState.CannotEstablishSession -> {
+                    TraceableItem(message.item.markerRecords, message.originalRecord)
+                }
             }
         }
     }
@@ -357,10 +417,11 @@ internal class OutboundMessageProcessor(
         state: SessionManager.SessionState.SessionEstablished,
         messageAndKey: AuthenticatedMessageAndKey
     ): List<Record<String, *>> {
-        return sessionManager.recordsForSessionEstablished(
+        return messageConverter.recordsForSessionEstablished(
+            sessionManager,
             state.session,
+            state.sessionCounterparties.serial,
             messageAndKey,
-            state.sessionCounterparties.serial
         )
     }
 
@@ -390,30 +451,6 @@ internal class OutboundMessageProcessor(
                                            reason: String): Record<String, AppMessageMarker> {
         val marker = AppMessageMarker(LinkManagerDiscardedMarker(message, reason), clock.instant().toEpochMilli())
         return Record(Schemas.P2P.P2P_OUT_MARKERS, message.message.header.messageId, marker)
-    }
-
-    private fun recordOutboundMessagesMetric(message: AuthenticatedMessage) {
-        message.header.let {
-            recordOutboundMessagesMetric(it.source.x500Name, it.destination.x500Name, it.source.groupId,
-                it.subsystem, message::class.java.simpleName)
-        }
-    }
-
-    private fun recordOutboundMessagesMetric(message: OutboundUnauthenticatedMessage) {
-        message.header.let {
-            recordOutboundMessagesMetric(it.source.x500Name, it.destination.x500Name, it.source.groupId,
-                it.subsystem, message::class.java.simpleName)
-        }
-    }
-
-    private fun recordOutboundMessagesMetric(source: String, dest: String, group: String, subsystem: String, messageType: String) {
-        CordaMetrics.Metric.OutboundMessageCount.builder()
-            .withTag(CordaMetrics.Tag.SourceVirtualNode, source)
-            .withTag(CordaMetrics.Tag.DestinationVirtualNode, dest)
-            .withTag(CordaMetrics.Tag.MembershipGroup, group)
-            .withTag(CordaMetrics.Tag.MessagingSubsystem, subsystem)
-            .withTag(CordaMetrics.Tag.MessageType, messageType)
-            .build().increment()
     }
 
 }

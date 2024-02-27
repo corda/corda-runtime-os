@@ -1,8 +1,8 @@
 package net.corda.rest.security.read
 
-import net.corda.rest.security.AuthServiceId
-import net.corda.rest.security.AuthorizingSubject
 import net.corda.lifecycle.Lifecycle
+import net.corda.rest.authorization.AuthorizingSubject
+import net.corda.rest.security.AuthServiceId
 import javax.security.auth.login.FailedLoginException
 
 /**
@@ -27,7 +27,6 @@ interface RestSecurityManager : Lifecycle {
      */
     fun buildSubject(principal: String): AuthorizingSubject
 }
-
 
 /**
  * Non-throwing version of authenticate, returning null instead of throwing in case of authentication failure

@@ -1,28 +1,46 @@
-# Override file suitable for local deployment of the Corda Helm chart against version 0.1.0 of the corda-dev prereqs
-# Helm chart and a state-manager deployed via bitnami postgres helm chart with the overrides from
-# `state-manager-postgres.yaml`.
+# Override file suitable for local deployment of the Corda Helm chart against version 0.2.0 of the corda-dev-prereqs Helm chart with a State Manager database isolated from the cluster database.
 #
-# Then deploy the state manager using the bitnami helm chart
-# helm install state-manager-db oci://registry-1.docker.io/bitnamicharts/postgresql -n corda --version "12.1.0" \
-# -f ./state-manager-postgres.yaml  \
-# --timeout 10m \
-# --wait
+# Create local docker images:
+#   ./gradlew publishOSGiImage --parallel
 #
-# Then deploy Corda using
-#  helm upgrade --install corda -n corda \
-#  charts/corda \
-#  --values values-prereqs.yaml \
-#  --values state-manager.yaml \
-#  --wait
+# Deploy corda-dev-prereqs Helm Chart:
+#   helm -n corda install prereqs  oci://registry-1.docker.io/corda/corda-dev-prereqs --version 0.2.0 --timeout 10m --wait
 #
+# Deploy state manager database instance:
+#   helm -n corda install state-manager-db oci://registry-1.docker.io/bitnamicharts/postgresql --version "12.1.0" --values state-manager-postgres.yaml  --timeout 10m --wait
 #
-# NOTE: This assumes you deploy the above in the same `corda` namespace, so that domain names containing just the service
-# name are resolved (i.e. prereqs-postgresql instead of prereqs-postgresql.<namespace>). If that is not the case, you
-# might need to add the namespace as a suffix.
+# Deploy corda Helm Chart:
+#   helm dependency build charts/corda && helm -n corda upgrade --install corda charts/corda --values debug.yaml --values values-prereqs.yaml --values state-manager.yaml --wait
+#
+# See `debug.yaml` for debug settings.
+#
+# NOTE: The below assumes you deploy Kafka and the PostgreSQL database in the same namespace, so that domain names containing just the service name are resolved (i.e. prereqs-postgresql instead of prereqs-postgresql.<namespace>)
+#       If that is not the case, you might need to add the namespace as a suffix.
+#
+databases:
+  - id: "default"
+    name: "cordacluster"
+    port: 5432
+    type: "postgresql"
+    host: "prereqs-postgres"
+  - id: "isolated-state-manager"
+    name: "state-manager"
+    port: 5432
+    type: "postgresql"
+    host: "state-manager-db-postgresql"
+
 bootstrap:
   db:
-    stateManager:
-      flow:
+    databases:
+      - id: "default"
+        username:
+          value: "postgres"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "prereqs-postgres"
+              key: "postgres-password"
+      - id: "isolated-state-manager"
         username:
           value: "postgres"
         password:
@@ -30,54 +48,17 @@ bootstrap:
             secretKeyRef:
               name: "state-manager-db-postgresql"
               key: "postgres-password"
-      flowMapper:
-        username:
-          value: "postgres"
-        password:
-          valueFrom:
-            secretKeyRef:
-              name: "state-manager-db-postgresql"
-              key: "postgres-password"
-      tokenSelection:
-        username:
-          value: "postgres"
-        password:
-          valueFrom:
-            secretKeyRef:
-              name: "state-manager-db-postgresql"
-              key: "postgres-password"
-workers:
-  flow:
-    stateManager:
-      db:
-        host: "state-manager-db-postgresql"
-        username:
-          value: "statemanager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              name: "state-manager-db-postgresql"
-              key: "password"
-  flowMapper:
-    stateManager:
-      db:
-        host: "state-manager-db-postgresql"
-        username:
-          value: "statemanager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              name: "state-manager-db-postgresql"
-              key: "password"
 
-  tokenSelection:
-    stateManager:
-      db:
-        host: "state-manager-db-postgresql"
-        username:
-          value: "statemanager-user"
-        password:
-          valueFrom:
-            secretKeyRef:
-              name: "state-manager-db-postgresql"
-              key: "password"
+stateManager:
+  flowCheckpoint:
+    storageId: "isolated-state-manager"
+  flowMapping:
+    storageId: "isolated-state-manager"
+  flowStatus:
+    storageId: "isolated-state-manager"
+  keyRotation:
+    storageId: "isolated-state-manager"
+  p2pSession:
+    storageId: "isolated-state-manager"
+  tokenPoolCache:
+    storageId: "isolated-state-manager"

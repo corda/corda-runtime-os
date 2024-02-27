@@ -84,7 +84,7 @@ class DistributeGroupParametersActionHandlerTest {
     }
     private val groupReader: MembershipGroupReader = mock {
         on { groupParameters } doReturn groupParameters
-        on { lookup()} doReturn allActiveMembers
+        on { lookup() } doReturn allActiveMembers
     }
     private val groupReaderProvider: MembershipGroupReaderProvider = mock {
         on { getGroupReader(any()) } doReturn groupReader
@@ -180,6 +180,7 @@ class DistributeGroupParametersActionHandlerTest {
                 Assertions.assertThat((it.value as? MembershipActionsRequest)?.request).isEqualTo(action)
             }
     }
+
     @Test
     fun `process uses the correct TTL configuration`() {
         handler.process(KEY, action)

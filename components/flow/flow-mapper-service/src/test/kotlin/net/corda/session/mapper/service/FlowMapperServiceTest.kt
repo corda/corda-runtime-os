@@ -18,10 +18,12 @@ import net.corda.messaging.api.exception.CordaMessageAPIConfigException
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 import net.corda.schema.configuration.FlowConfig
+import net.corda.schema.configuration.StateManagerConfig
 import net.corda.session.mapper.messaging.mediator.FlowMapperEventMediatorFactory
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -37,12 +39,16 @@ internal class FlowMapperServiceTest {
 
     private val configFactory = SmartConfigFactory.createWithoutSecurityServices()
     private val flowConfig = SmartConfigImpl.empty().withValue(FlowConfig.SESSION_P2P_TTL, ConfigValueFactory.fromAnyRef(10000))
-        .withValue(FlowConfig.PROCESSING_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(1000L))
+        .withValue(FlowConfig.PROCESSING_FLOW_MAPPER_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(1000L))
 
     private val messagingConfig = configFactory.create(
         ConfigFactory.parseString(
             ""
         )
+    )
+
+    val bootConfig = configFactory.create(
+        ConfigFactory.parseString("")
     )
 
     private val stateManagerConfig = configFactory.create(
@@ -52,6 +58,7 @@ internal class FlowMapperServiceTest {
     private val configMap = mapOf(
         FLOW_CONFIG to flowConfig,
         MESSAGING_CONFIG to messagingConfig,
+        BOOT_CONFIG to bootConfig,
         STATE_MANAGER_CONFIG to stateManagerConfig
     )
 
@@ -63,10 +70,10 @@ internal class FlowMapperServiceTest {
         }
         val flowMapperEventMediatorFactory = mock<FlowMapperEventMediatorFactory>().also {
             doAnswer { mock<MultiSourceEventMediator<String, String, String>>() }
-                .whenever(it).create(any(), any(), any())
+                .whenever(it).create(any(), any(), any(), any())
         }
         val stateManagerFactory = mock<StateManagerFactory>().also {
-            doAnswer { mock<StateManager>() }.whenever(it).create(any())
+            doAnswer { mock<StateManager>() }.whenever(it).create(any(), eq(StateManagerConfig.StateType.FLOW_MAPPING), anyOrNull())
         }
 
         LifecycleTest {
@@ -127,11 +134,11 @@ internal class FlowMapperServiceTest {
                 .thenReturn(cleanupSubscription)
         }
         val flowMapperEventMediatorFactory = mock<FlowMapperEventMediatorFactory>().apply {
-            whenever(create(any(), any(), any()))
+            whenever(create(any(), any(), any(), any()))
                 .thenReturn(eventMediator)
         }
         val stateManagerFactory = mock<StateManagerFactory>().also {
-            doAnswer { mock<StateManager>() }.whenever(it).create(any())
+            doAnswer { mock<StateManager>() }.whenever(it).create(any(), eq(StateManagerConfig.StateType.FLOW_MAPPING), anyOrNull())
         }
 
         LifecycleTest {
@@ -159,6 +166,7 @@ internal class FlowMapperServiceTest {
                 any(),
                 eq(messagingConfig),
                 any(),
+                any()
             )
             verify(eventMediator).start()
             verifyIsUp<FlowMapperService>()
@@ -171,6 +179,7 @@ internal class FlowMapperServiceTest {
                 any(),
                 eq(messagingConfig),
                 any(),
+                any()
             )
             verify(eventMediator, times(2)).start()
             verifyIsUp<FlowMapperService>()
@@ -182,11 +191,11 @@ internal class FlowMapperServiceTest {
         val subName = LifecycleCoordinatorName("sub")
         val subscriptionFactory = mock<SubscriptionFactory>()
         val flowMapperEventMediatorFactory = mock<FlowMapperEventMediatorFactory>().apply {
-            whenever(create(any(), any(), any()))
+            whenever(create(any(), any(), any(), any()))
                 .thenThrow(CordaMessageAPIConfigException("Bad config!"))
         }
         val stateManagerFactory = mock<StateManagerFactory>().also {
-            doAnswer { mock<StateManager>() }.whenever(it).create(any())
+            doAnswer { mock<StateManager>() }.whenever(it).create(any(), eq(StateManagerConfig.StateType.FLOW_MAPPING), anyOrNull())
         }
 
         LifecycleTest {
@@ -214,6 +223,7 @@ internal class FlowMapperServiceTest {
                 any(),
                 eq(messagingConfig),
                 any(),
+                any()
             )
             verifyIsInError<FlowMapperService>()
         }

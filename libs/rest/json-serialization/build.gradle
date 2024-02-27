@@ -5,6 +5,7 @@ plugins {
 
 description 'Corda Common JSON serialization'
 
+ext.cordaEnableFormatting = true
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
@@ -12,12 +13,10 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
 
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation libs.jackson.datatype.jsr310
+    implementation libs.jackson.module.kotlin
 
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation libs.slf4j.api
     implementation project(":libs:serialization:json-serializers")
     implementation project(':libs:rest:rest')
-
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 }

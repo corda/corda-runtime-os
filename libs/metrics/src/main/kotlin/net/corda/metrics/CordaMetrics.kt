@@ -11,6 +11,7 @@ import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.binder.BaseUnits
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry
 import io.micrometer.core.instrument.config.MeterFilter
+import io.micrometer.core.instrument.distribution.DistributionStatisticConfig
 import io.micrometer.core.instrument.noop.NoopGauge
 import java.io.File
 import java.nio.file.FileSystems
@@ -208,6 +209,11 @@ object CordaMetrics {
         object OutboundSessionTimeoutCount : Metric<Counter>("p2p.session.outbound.timeout", Metrics::counter)
 
         /**
+         * Number of inbound peer-to-peer sessions that timed out (indicating communication issues with peers).
+         */
+        object InboundSessionTimeoutCount : Metric<Counter>("p2p.session.inbound.timeout", Metrics::counter)
+
+        /**
          * Number of outbound peer-to-peer sessions.
          */
         class OutboundSessionCount(computation: Supplier<Number>): ComputedValue<Nothing>("p2p.session.outbound", computation)
@@ -383,6 +389,11 @@ object CordaMetrics {
              * The time taken for crypto signature spec operations.
              */
             object SignatureSpecTimer: Metric<Timer>("$PREFIX.signature.spec.time", CordaMetrics::timer)
+
+            /**
+             * The time taken for rewrapping keys in key rotation
+             */
+            object RewrapKeysTimer: Metric<Timer>("$PREFIX.rewrap.time", CordaMetrics::timer)
 
         }
 
@@ -631,6 +642,17 @@ object CordaMetrics {
             object ConsumerBatchSize : Metric<DistributionSummary>("consumer.batch.size", Metrics::summary)
 
             /**
+             * The number of states marked as failed to process by the [ConsumerProcessor]
+             */
+            object ConsumerProcessorFailureCount: Metric<Counter>("consumer.processor.failure.count", Metrics::counter)
+
+            /**
+             * The number of states marked as failed to process by the [EventProcessor]
+             */
+            object EventProcessorFailureCount: Metric<Counter>("event.processor.failure.count", Metrics::counter)
+
+
+            /**
              * The time taken to commit a processed batch of messages back to the bus.
              */
             object MessageCommitTime : Metric<Timer>("messaging.commit.time", CordaMetrics::timer)
@@ -671,6 +693,10 @@ object CordaMetrics {
              */
             object HTTPRPCResponseSize : Metric<DistributionSummary>("rpc.http.response.size", Metrics::summary)
 
+            /**
+             * Record how long a HTTP RPC call from the messaging library takes to process on the server side
+             */
+            object HTTPRPCProcessingTime : Metric<Timer>("rpc.http.processing.time", CordaMetrics::timer)
         }
 
         object TaskManager {
@@ -683,6 +709,20 @@ object CordaMetrics {
              * The number of live tasks running or scheduled in the task manager.
              */
             class LiveTasks(computation: Supplier<Number>) : ComputedValue<Nothing>("taskmanager.live.tasks", computation)
+        }
+
+        object StateManger {
+            private const val PREFIX = "state.manager"
+
+            /**
+             * Time taken to execute a specific State Manager operation.
+             */
+            object ExecutionTime : Metric<Timer>("$PREFIX.execution.time", CordaMetrics::timer)
+
+            /**
+             * Record the number of failed creates/updates/deletes that occur in the state manager.
+             */
+            object FailureCount: Metric<Counter>("$PREFIX.failure.count", Metrics::counter)
         }
     }
 
@@ -772,11 +812,6 @@ object CordaMetrics {
          * The source virtual node in peer-to-peer communication.
          */
         SourceVirtualNode("virtualnode.source"),
-
-        /**
-         * The destination virtual node in peer-to-peer communication.
-         */
-        DestinationVirtualNode("virtualnode.destination"),
 
         /**
          * The ledger type.
@@ -914,9 +949,11 @@ object CordaMetrics {
      *
      * @param workerType Type of Worker, will be tagged to each metric.
      * @param registry Registry instance
+     * @param keepNames Regular expression of metric names to keep
+     * @param dropLabels Regular expression of metric labels to drop
      */
-    fun configure(workerType: String, registry: MeterRegistry) {
-        this.registry.add(registry).config()
+    fun configure(workerType: String, registry: MeterRegistry, keepNames: Regex?, dropLabels: Regex?) {
+        val config = this.registry.add(registry).config()
             .commonTags(Tag.WorkerType.value, workerType)
             .meterFilter(object : MeterFilter {
                 override fun map(id: Meter.Id): Meter.Id {
@@ -934,6 +971,43 @@ object CordaMetrics {
                     }
                 }
             })
+        if (keepNames != null) {
+            config
+                .meterFilter(MeterFilter.denyUnless {
+                    val name = registry.config().namingConvention().name(it.name, it.type, it.baseUnit)
+                    when (it.type) {
+                        Meter.Type.TIMER ->
+                            (name + "_count").matches(keepNames)
+                                || (name + "_sum").matches(keepNames)
+                                || (name + "_max").matches(keepNames)
+                                || (name + "_bucket").matches(keepNames)
+                        Meter.Type.DISTRIBUTION_SUMMARY ->
+                            (name + "_count").matches(keepNames)
+                                || (name + "_sum").matches(keepNames)
+                                || (name + "_bucket").matches(keepNames)
+                        else -> name.matches(keepNames)
+                    }
+                })
+                .meterFilter(object: MeterFilter {
+                    override fun configure(id: Meter.Id, config: DistributionStatisticConfig): DistributionStatisticConfig {
+                        val name = registry.config().namingConvention().name(id.name, id.type, id.baseUnit)
+                        val publishPercentiles = config.isPublishingHistogram && (name + "_bucket").matches(keepNames)
+                        return DistributionStatisticConfig.builder()
+                            .percentilesHistogram(publishPercentiles)
+                            .build()
+                            .merge(config)
+                    }
+                })
+        }
+        if (dropLabels != null) {
+            config.meterFilter(object : MeterFilter {
+                override fun map(id: Meter.Id): Meter.Id {
+                    return id.replaceTags(id.tags.filter {
+                        !registry.config().namingConvention().tagKey(it.key).matches(dropLabels)
+                    })
+                }
+            })
+        }
     }
 
     private fun timer(name: String, tags: Iterable<micrometerTag>): Timer {

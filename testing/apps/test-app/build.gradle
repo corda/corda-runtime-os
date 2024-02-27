@@ -18,6 +18,4 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     compileOnly 'org.slf4j:slf4j-api'
     compileOnly project(':osgi-framework-api')
-
-    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
 }

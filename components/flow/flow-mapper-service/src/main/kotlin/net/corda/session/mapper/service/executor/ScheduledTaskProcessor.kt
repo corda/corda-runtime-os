@@ -51,15 +51,13 @@ class ScheduledTaskProcessor(
 
     private fun getExpiredStateIds() : List<String> {
         val windowExpiry = clock.instant() - Duration.ofMillis(cleanupWindow)
-        val closingStates = stateManager.findUpdatedBetweenWithMetadataFilter(
+        val states = stateManager.findUpdatedBetweenWithMetadataMatchingAny(
             IntervalFilter(Instant.EPOCH, windowExpiry),
-            MetadataFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.CLOSING.toString())
+            listOf(
+                MetadataFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.ERROR.toString()),
+                MetadataFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.CLOSING.toString()),
+            )
         )
-        val errorStates = stateManager.findUpdatedBetweenWithMetadataFilter(
-            IntervalFilter(Instant.EPOCH, windowExpiry),
-            MetadataFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.ERROR.toString())
-        )
-        val states = closingStates + errorStates
 
         return states.map {
             it.key

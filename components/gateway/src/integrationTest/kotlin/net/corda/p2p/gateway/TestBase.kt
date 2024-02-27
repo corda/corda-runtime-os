@@ -4,13 +4,6 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
-import java.net.BindException
-import java.net.ServerSocket
-import java.net.URL
-import java.security.KeyStore
-import java.util.UUID
-import java.util.concurrent.atomic.AtomicInteger
-import kotlin.random.Random.Default.nextInt
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
 import net.corda.data.config.Configuration
@@ -20,6 +13,7 @@ import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
 import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
@@ -51,8 +45,17 @@ import net.corda.testing.p2p.certificates.Certificates
 import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
+import org.junit.jupiter.api.AfterEach
+import java.net.BindException
+import java.net.ServerSocket
+import java.net.URL
+import java.security.KeyStore
+import java.util.UUID
+import java.util.concurrent.ConcurrentLinkedQueue
+import kotlin.random.Random.Default.nextInt
 
 internal open class TestBase {
+    private val toClose = ConcurrentLinkedQueue<Resource>()
     private fun readKeyStore(url: URL?, password: String = keystorePass): KeyStoreWithPassword {
         val keyStore = KeyStore.getInstance("JKS").also { keyStore ->
             url!!.openStream().use {
@@ -99,7 +102,7 @@ internal open class TestBase {
     protected val serverResponseContent = "PONG"
     protected val keystorePass = "password"
 
-    protected val keystorePass_c4 = "cordacadevpass"
+    protected val keystorePassC4 = "cordacadevpass"
     protected val aliceSNI = listOf("alice.net", "www.alice.net")
     protected val bobSNI = listOf("bob.net", "www.bob.net")
     protected val partyAx500Name = X500Name("O=PartyA, L=London, C=GB")
@@ -121,7 +124,7 @@ internal open class TestBase {
         tlsType = TlsType.ONE_WAY,
     )
     protected val daleKeyStore = readKeyStore(Certificates.daleKeyStoreFile)
-    protected val c4sslKeyStore = readKeyStore(Certificates.c4KeyStoreFile, keystorePass_c4)
+    protected val c4sslKeyStore = readKeyStore(Certificates.c4KeyStoreFile, keystorePassC4)
     protected val c4sslConfig = SslConfiguration(
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF),
         tlsType = TlsType.ONE_WAY,
@@ -129,9 +132,10 @@ internal open class TestBase {
 
     protected val smartConfigFactory = SmartConfigFactory.createWithoutSecurityServices()
 
-    protected val lifecycleCoordinatorFactory = LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
+    protected val lifecycleCoordinatorFactory =
+        LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
 
-    protected inner class ConfigPublisher(private var coordinatorFactory: LifecycleCoordinatorFactory? = null) {
+    protected inner class ConfigPublisher(private var coordinatorFactory: LifecycleCoordinatorFactory? = null): Resource {
         init {
             coordinatorFactory = coordinatorFactory ?: lifecycleCoordinatorFactory
         }
@@ -178,19 +182,31 @@ internal open class TestBase {
                 }
             )
             val publishConfig = ConfigFactory.empty()
-                .withValue("serversConfiguration", servers)
-                .withValue("maxRequestSize", ConfigValueFactory.fromAnyRef(configuration.maxRequestSize))
-                .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(configuration.sslConfig.revocationCheck.mode.toString()))
-                .withValue("sslConfig.tlsType", ConfigValueFactory.fromAnyRef(configuration.sslConfig.tlsType.toString()))
-                .withValue("connectionConfig.connectionIdleTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.connectionIdleTimeout))
-                .withValue("connectionConfig.maxClientConnections", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxClientConnections))
-                .withValue("connectionConfig.acquireTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.acquireTimeout))
-                .withValue("connectionConfig.responseTimeout", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.responseTimeout))
-                .withValue("connectionConfig.retryDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.retryDelay))
-                .withValue("connectionConfig.initialReconnectionDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.initialReconnectionDelay))
-                .withValue("connectionConfig.maxReconnectionDelay", ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxReconnectionDelay))
+                .withValue("serversConfiguration",
+                    servers)
+                .withValue("maxRequestSize",
+                    ConfigValueFactory.fromAnyRef(configuration.maxRequestSize))
+                .withValue("sslConfig.revocationCheck.mode",
+                    ConfigValueFactory.fromAnyRef(configuration.sslConfig.revocationCheck.mode.toString()))
+                .withValue("sslConfig.tlsType",
+                    ConfigValueFactory.fromAnyRef(configuration.sslConfig.tlsType.toString()))
+                .withValue("connectionConfig.connectionIdleTimeout",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.connectionIdleTimeout))
+                .withValue("connectionConfig.maxClientConnections",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxClientConnections))
+                .withValue("connectionConfig.acquireTimeout",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.acquireTimeout))
+                .withValue("connectionConfig.responseTimeout",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.responseTimeout))
+                .withValue("connectionConfig.retryDelay",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.retryDelay))
+                .withValue("connectionConfig.initialReconnectionDelay",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.initialReconnectionDelay))
+                .withValue("connectionConfig.maxReconnectionDelay",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxReconnectionDelay))
             CordaPublisherFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory)
-                .createPublisher(PublisherConfig(configPublisherClientId, false), messagingConfig).use { publisher ->
+                .createPublisher(PublisherConfig(configPublisherClientId, false), messagingConfig)
+                .use { publisher ->
                     publisher.publishGatewayConfig(publishConfig)
                 }
         }
@@ -203,12 +219,31 @@ internal open class TestBase {
                     publisher.publishGatewayConfig(publishConfig)
                 }
         }
+
+        override fun close() {
+            configurationTopicService.close()
+        }
     }
 
-    protected fun createConfigurationServiceFor(configuration: GatewayConfiguration, coordinatorFactory: LifecycleCoordinatorFactory? = null): ConfigurationReadService {
+    protected fun createConfigurationServiceFor(
+        configuration: GatewayConfiguration,
+        coordinatorFactory: LifecycleCoordinatorFactory? = null) : ConfigurationReadService {
         val publisher = ConfigPublisher(coordinatorFactory)
+        keep(publisher)
         publisher.publishConfig(configuration)
         return publisher.readerService
+    }
+
+    protected fun keep(resource: Resource) {
+        toClose.add(resource)
+    }
+
+    @AfterEach
+    fun cleanUp() {
+        toClose.forEach {
+            it.close()
+        }
+        toClose.clear()
     }
 
     fun Lifecycle.startAndWaitForStarted() {

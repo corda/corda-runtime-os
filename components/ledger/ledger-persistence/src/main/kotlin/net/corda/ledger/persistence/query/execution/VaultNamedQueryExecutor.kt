@@ -8,5 +8,4 @@ interface VaultNamedQueryExecutor {
     fun executeQuery(
         request: FindWithNamedQuery
     ): EntityResponse
-
 }

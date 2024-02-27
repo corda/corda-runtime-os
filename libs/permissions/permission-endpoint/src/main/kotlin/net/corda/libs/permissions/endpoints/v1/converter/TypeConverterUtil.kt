@@ -141,14 +141,14 @@ fun PermissionsResponseDto.convertToEndpointType(): BulkCreatePermissionsRespons
 }
 
 fun PermissionType.toRequestDtoType(): InternalPermissionTypeEnum {
-    return when(this) {
+    return when (this) {
         PermissionType.ALLOW -> InternalPermissionTypeEnum.ALLOW
         PermissionType.DENY -> InternalPermissionTypeEnum.DENY
     }
 }
 
 private fun InternalPermissionTypeEnum.toEndpointType(): PermissionType {
-    return when(this) {
+    return when (this) {
         InternalPermissionTypeEnum.ALLOW -> PermissionType.ALLOW
         InternalPermissionTypeEnum.DENY -> PermissionType.DENY
     }
@@ -167,16 +167,16 @@ fun CreatePermissionType.convertToDto(requestedBy: String): CreatePermissionRequ
 fun BulkCreatePermissionsRequestType.convertToDto(requestedBy: String): CreatePermissionsRequestDto {
     val permissions: Set<CreatePermissionRequestDto> = permissionsToCreate.map {
         CreatePermissionRequestDto(
-        requestedBy,
-        it.permissionType.toRequestDtoType(),
-        it.permissionString,
-        it.groupVisibility,
-        it.virtualNode)
+            requestedBy,
+            it.permissionType.toRequestDtoType(),
+            it.permissionString,
+            it.groupVisibility,
+            it.virtualNode
+        )
     }.toSet()
 
     return CreatePermissionsRequestDto(permissions, roleIds)
 }
-
 
 /**
  * Convert a PermissionSummaryResponseDto to a v1 PermissionSummaryResponseType to be returned to the HTTP caller.

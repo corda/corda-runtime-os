@@ -3,10 +3,18 @@ package net.corda.e2etest.utilities
 import net.corda.utilities.minutes
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
+import java.time.Duration
 
-fun ClusterBuilder.awaitVirtualNodeOperationStatusCheck(requestId: String): String {
+/**
+ * Given previously submitted [requestId], this method blocks till request is completed.
+ * If operation has been completed successfully, the method returns the short hash id of the vNode.
+ */
+fun ClusterBuilder.awaitVirtualNodeOperationStatusCheck(
+    requestId: String,
+    timeout: Duration = 3.minutes
+): String {
     val statusResponse = assertWithRetryIgnoringExceptions {
-        timeout(1.minutes)
+        timeout(timeout)
         command { getVNodeStatus(requestId) }
         condition {
             if (it.code != 200) {
@@ -29,6 +37,6 @@ fun ClusterBuilder.awaitVirtualNodeOperationStatusCheck(requestId: String): Stri
         .withFailMessage("Virtual node operation failed '${statusResponse.body}'")
         .isEqualTo("SUCCEEDED")
 
-    return  statusResponse.toJson()["resourceId"]?.textValue()
+    return statusResponse.toJson()["resourceId"]?.textValue()
         ?: fail("Virtual node status response did not include a resourceId field")
 }

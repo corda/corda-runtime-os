@@ -1,9 +1,9 @@
 package net.corda.membership.impl.persistence.service
 
-import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -58,8 +58,8 @@ import net.corda.membership.datamodel.GroupPolicyEntity
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.PreAuthTokenEntity
 import net.corda.membership.datamodel.RegistrationRequestEntity
-import net.corda.membership.impl.persistence.service.handler.HandlerFactories
 import net.corda.membership.datamodel.StaticNetworkInfoEntity
+import net.corda.membership.impl.persistence.service.handler.HandlerFactories
 import net.corda.membership.impl.persistence.service.handler.PersistenceHandlerServices
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
@@ -267,6 +267,7 @@ class MembershipPersistenceRPCProcessorTest {
         on {
             getOrCreateEntityManagerFactory(
                 eq(vaultDmlConnectionId),
+                any(),
                 any()
             )
         } doReturn entityManagerFactory
@@ -923,5 +924,4 @@ class MembershipPersistenceRPCProcessorTest {
             }
         }
     }
-
 }

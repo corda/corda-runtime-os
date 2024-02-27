@@ -1,5 +1,6 @@
 package com.example.ledger.testing.datamodel.consensual
 
+import net.corda.v5.base.annotations.CordaSerializable
 import java.time.Instant
 import javax.persistence.CascadeType
 import javax.persistence.Column
@@ -10,7 +11,6 @@ import javax.persistence.JoinTable
 import javax.persistence.ManyToMany
 import javax.persistence.OneToMany
 import javax.persistence.Table
-import net.corda.v5.base.annotations.CordaSerializable
 
 @CordaSerializable
 @Entity
@@ -39,7 +39,8 @@ data class ConsensualTransactionEntity(
     var signatures: MutableList<ConsensualTransactionSignatureEntity> = mutableListOf()
 
     @get:ManyToMany(cascade = [CascadeType.PERSIST, CascadeType.MERGE])
-    @get:JoinTable(name = "consensual_transaction_cpk",
+    @get:JoinTable(
+        name = "consensual_transaction_cpk",
         joinColumns = [JoinColumn(name = "transaction_id")],
         inverseJoinColumns = [JoinColumn(name = "file_checksum")]
     )

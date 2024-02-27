@@ -57,7 +57,8 @@ class RevocationCheckerTest {
     }
 
     private val aliceCert = Certificates.aliceKeyStorePem.readText()
-    private val corruptedAliceCert = Certificates.aliceKeyStorePem.readText().slice(0..aliceCert.length - 10)
+    private val corruptedAliceCert =
+        Certificates.aliceKeyStorePem.readText().slice(0..aliceCert.length - 10)
     private val revokedBobCert = Certificates.bobKeyStorePem.readText()
     private val trustStore = listOf(Certificates.truststoreCertificatePem.readText())
     private val trustStoreWithRevocation = listOf(Certificates.truststoreCertificateWithRevocationPem.readText())
@@ -67,14 +68,16 @@ class RevocationCheckerTest {
     @Disabled("Disabling temporarily until CORE-5879 is completed.")
     fun `valid certificate passes validation`() {
         val result = CompletableFuture<RevocationCheckResponse>()
-        processor.firstValue.onNext(RevocationCheckRequest(listOf(aliceCert), trustStore, RevocationMode.HARD_FAIL), result)
+        processor.firstValue.onNext(
+            RevocationCheckRequest(listOf(aliceCert), trustStore, RevocationMode.HARD_FAIL), result)
         assertThat(result.getOrThrow().status).isEqualTo(Active())
     }
 
     @Test
     fun `corrupeted certificate causes the future to complete exceptionally`() {
         val result = CompletableFuture<RevocationCheckResponse>()
-        processor.firstValue.onNext(RevocationCheckRequest(listOf(corruptedAliceCert), trustStore, RevocationMode.HARD_FAIL), result)
+        processor.firstValue.onNext(
+            RevocationCheckRequest(listOf(corruptedAliceCert), trustStore, RevocationMode.HARD_FAIL), result)
         assertThrows<ExecutionException> { result.get() }
     }
 
@@ -82,7 +85,9 @@ class RevocationCheckerTest {
     @Disabled("Disabling temporarily until CORE-5879 is completed.")
     fun `revoked certificate fails validation with HARD FAIL mode`() {
         val result = CompletableFuture<RevocationCheckResponse>()
-        processor.firstValue.onNext(RevocationCheckRequest(listOf(revokedBobCert), trustStoreWithRevocation, RevocationMode.HARD_FAIL), result)
+        processor.firstValue.onNext(
+            RevocationCheckRequest(listOf(revokedBobCert), trustStoreWithRevocation, RevocationMode.HARD_FAIL),
+            result)
         assertThat(result.getOrThrow().status).isInstanceOf(Revoked::class.java)
     }
 
@@ -90,14 +95,17 @@ class RevocationCheckerTest {
     @Disabled("Disabling temporarily until CORE-5879 is completed.")
     fun `revoked certificate fails validation with SOFT FAIL mode`() {
         val resultFuture = CompletableFuture<RevocationCheckResponse>()
-        processor.firstValue.onNext(RevocationCheckRequest(listOf(revokedBobCert), trustStoreWithRevocation, RevocationMode.SOFT_FAIL), resultFuture)
+        processor.firstValue.onNext(
+            RevocationCheckRequest(listOf(revokedBobCert), trustStoreWithRevocation, RevocationMode.SOFT_FAIL),
+            resultFuture)
         assertThat(resultFuture.getOrThrow().status).isInstanceOf(Revoked::class.java)
     }
 
     @Test
     fun `if truststore is wrong validation fails`() {
         val resultFuture = CompletableFuture<RevocationCheckResponse>()
-        processor.firstValue.onNext(RevocationCheckRequest(listOf(aliceCert), wrongTrustStore, RevocationMode.HARD_FAIL), resultFuture)
+        processor.firstValue.onNext(
+            RevocationCheckRequest(listOf(aliceCert), wrongTrustStore, RevocationMode.HARD_FAIL), resultFuture)
         assertThat(resultFuture.getOrThrow().status).isInstanceOf(Revoked::class.java)
     }
 }

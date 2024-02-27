@@ -17,7 +17,7 @@ internal class Application @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = ConfigMerger::class)
-    private val configMerger: ConfigMerger
+    private val configMerger: ConfigMerger,
 ) : Application {
     private val topicDumper = TopicDumper(subscriptionFactory, configMerger)
     override fun startup(args: Array<String>) {

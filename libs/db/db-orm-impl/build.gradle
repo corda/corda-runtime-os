@@ -33,11 +33,8 @@ dependencies {
     implementation project(":libs:db:db-orm")
     implementation project(":libs:utilities")
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
-    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    testRuntimeOnly libs.postgresql.jdbc
 
     integrationTestImplementation project(":testing:db-testkit")
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"

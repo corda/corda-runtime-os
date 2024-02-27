@@ -18,7 +18,7 @@ class PropertyConverter constructor(
     @Suppress("UNCHECKED_CAST", "ComplexMethod")
     fun <T> convert(context: ConversionContext, clazz: Class<out T>): T? {
         val converter = converters[clazz]
-        return if(converter != null) {
+        return if (converter != null) {
             converter.convert(context) as T
         } else {
             val value = context.value()

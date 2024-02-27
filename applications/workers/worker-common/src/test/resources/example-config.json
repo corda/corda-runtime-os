@@ -40,14 +40,119 @@
   },
   "topicPrefix": "prefix",
   "stateManager": {
-    "type": "DATABASE",
-    "database": {
-      "jdbc": {
-        "url": "cnx-url",
-        "directory": "jdbc-dir"
-      },
-      "user": "cnx-user",
-      "pass": "cnx-password"
+    "flowCheckpoint": {
+      "type": "Database",
+      "database": {
+        "jdbc": {
+          "url": "flowCheckpoint-url",
+          "driver": "flowCheckpoint-driver"
+        },
+        "pool": {
+          "minSize": 111,
+          "maxSize": 222,
+          "idleTimeoutSeconds": 333,
+          "maxLifetimeSeconds": 444,
+          "keepAliveTimeSeconds": 555,
+          "validationTimeoutSeconds": 666
+        },
+        "user": "flowCheckpoint-user",
+        "pass": "flowCheckpoint-pass"
+      }
+    },
+    "flowMapping": {
+      "type": "Database",
+      "database": {
+        "jdbc": {
+          "url": "flowMapping-url",
+          "driver": "flowMapping-driver"
+        },
+        "pool": {
+          "minSize": 111,
+          "maxSize": 222,
+          "idleTimeoutSeconds": 333,
+          "maxLifetimeSeconds": 444,
+          "keepAliveTimeSeconds": 555,
+          "validationTimeoutSeconds": 666
+        },
+        "user": "flowMapping-user",
+        "pass": "flowMapping-pass"
+      }
+    },
+    "flowStatus": {
+      "type": "Database",
+      "database": {
+        "jdbc": {
+          "url": "flowStatus-url",
+          "driver": "flowStatus-driver"
+        },
+        "pool": {
+          "minSize": 111,
+          "maxSize": 222,
+          "idleTimeoutSeconds": 333,
+          "maxLifetimeSeconds": 444,
+          "keepAliveTimeSeconds": 555,
+          "validationTimeoutSeconds": 666
+        },
+        "user": "flowStatus-user",
+        "pass": "flowStatus-pass"
+      }
+    },
+    "keyRotation": {
+      "type": "Database",
+      "database": {
+        "jdbc": {
+          "url": "keyRotation-url",
+          "driver": "keyRotation-driver"
+        },
+        "pool": {
+          "minSize": 111,
+          "maxSize": 222,
+          "idleTimeoutSeconds": 333,
+          "maxLifetimeSeconds": 444,
+          "keepAliveTimeSeconds": 555,
+          "validationTimeoutSeconds": 666
+        },
+        "user": "keyRotation-user",
+        "pass": "keyRotation-pass"
+      }
+    },
+    "p2pSession": {
+      "type": "Database",
+      "database": {
+        "jdbc": {
+          "url": "p2pSession-url",
+          "driver": "p2pSession-driver"
+        },
+        "pool": {
+          "minSize": 111,
+          "maxSize": 222,
+          "idleTimeoutSeconds": 333,
+          "maxLifetimeSeconds": 444,
+          "keepAliveTimeSeconds": 555,
+          "validationTimeoutSeconds": 666
+        },
+        "user": "p2pSession-user",
+        "pass": "p2pSession-pass"
+      }
+    },
+    "tokenPoolCache": {
+      "type": "Database",
+      "database": {
+        "jdbc": {
+          "url": "tokenPoolCache-url",
+          "driver": "tokenPoolCache-driver"
+        },
+        "pool": {
+          "minSize": 111,
+          "maxSize": 222,
+          "idleTimeoutSeconds": 333,
+          "maxLifetimeSeconds": 444,
+          "keepAliveTimeSeconds": 555,
+          "validationTimeoutSeconds": 666
+        },
+        "user": "tokenPoolCache-user",
+        "pass": "tokenPoolCache-pass"
+      }
     }
   }
 }

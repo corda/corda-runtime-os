@@ -97,7 +97,8 @@ class MGMAdminRestResourceTest {
             mgmAdminRestResource.forceDeclineRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID)
 
             verify(mgmResourceClient).forceDeclineRegistrationRequest(
-                HOLDING_IDENTITY_ID.shortHash(), REQUEST_ID.uuid()
+                HOLDING_IDENTITY_ID.shortHash(),
+                REQUEST_ID.uuid()
             )
         }
 
@@ -106,9 +107,12 @@ class MGMAdminRestResourceTest {
             val couldNotFindEntityException = mock<CouldNotFindEntityException> {
                 on { entity } doReturn Entity.MEMBER
             }
-            whenever(mgmResourceClient.forceDeclineRegistrationRequest(
-                HOLDING_IDENTITY_ID.shortHash(), REQUEST_ID.uuid()
-            )).doThrow(couldNotFindEntityException)
+            whenever(
+                mgmResourceClient.forceDeclineRegistrationRequest(
+                    HOLDING_IDENTITY_ID.shortHash(),
+                    REQUEST_ID.uuid()
+                )
+            ).doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 mgmAdminRestResource.forceDeclineRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID)
@@ -117,9 +121,12 @@ class MGMAdminRestResourceTest {
 
         @Test
         fun `forceDeclineRegistrationRequest throws invalid input for non MGM member`() {
-            whenever(mgmResourceClient.forceDeclineRegistrationRequest(
-                HOLDING_IDENTITY_ID.shortHash(), REQUEST_ID.uuid()
-            )).doThrow(mock<MemberNotAnMgmException>())
+            whenever(
+                mgmResourceClient.forceDeclineRegistrationRequest(
+                    HOLDING_IDENTITY_ID.shortHash(),
+                    REQUEST_ID.uuid()
+                )
+            ).doThrow(mock<MemberNotAnMgmException>())
 
             assertThrows<InvalidInputDataException> {
                 mgmAdminRestResource.forceDeclineRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID)
@@ -135,9 +142,12 @@ class MGMAdminRestResourceTest {
 
         @Test
         fun `forceDeclineRegistrationRequest throws bad request if request is not found or already completed`() {
-            whenever(mgmResourceClient.forceDeclineRegistrationRequest(
-                HOLDING_IDENTITY_ID.shortHash(), REQUEST_ID.uuid()
-            )).doThrow(mock<IllegalArgumentException>())
+            whenever(
+                mgmResourceClient.forceDeclineRegistrationRequest(
+                    HOLDING_IDENTITY_ID.shortHash(),
+                    REQUEST_ID.uuid()
+                )
+            ).doThrow(mock<IllegalArgumentException>())
 
             assertThrows<BadRequestException> {
                 mgmAdminRestResource.forceDeclineRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID)

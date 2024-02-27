@@ -12,15 +12,15 @@ import net.corda.permissions.model.User
 import net.corda.permissions.model.UserProperty
 import net.corda.permissions.query.dto.InternalPermissionQueryDto
 import net.corda.data.permissions.ChangeDetails as AvroChangeDetails
+import net.corda.data.permissions.Group as AvroGroup
 import net.corda.data.permissions.Permission as AvroPermission
 import net.corda.data.permissions.PermissionAssociation as AvroPermissionAssociation
-import net.corda.data.permissions.summary.PermissionSummary as AvroPermissionSummary
 import net.corda.data.permissions.PermissionType as AvroPermissionType
 import net.corda.data.permissions.Property as AvroProperty
 import net.corda.data.permissions.Role as AvroRole
 import net.corda.data.permissions.RoleAssociation as AvroRoleAssociation
 import net.corda.data.permissions.User as AvroUser
-import net.corda.data.permissions.Group as AvroGroup
+import net.corda.data.permissions.summary.PermissionSummary as AvroPermissionSummary
 
 /**
  * This Utility class contains functions for converting from model objects to avro objects to be placed on the messaging bus. For example:
@@ -113,14 +113,14 @@ fun Permission.toAvroPermission(): AvroPermission {
  * Convert from model PermissionType to Avro PermissionType.
  */
 fun PermissionType.toAvroPermissionType(): AvroPermissionType {
-    return when(this) {
+    return when (this) {
         PermissionType.ALLOW -> AvroPermissionType.ALLOW
         PermissionType.DENY -> AvroPermissionType.DENY
     }
 }
 
-fun AvroPermissionType.toDbModelPermissionType(): PermissionType  {
-    return when(this) {
+fun AvroPermissionType.toDbModelPermissionType(): PermissionType {
+    return when (this) {
         AvroPermissionType.ALLOW -> PermissionType.ALLOW
         AvroPermissionType.DENY -> PermissionType.DENY
     }

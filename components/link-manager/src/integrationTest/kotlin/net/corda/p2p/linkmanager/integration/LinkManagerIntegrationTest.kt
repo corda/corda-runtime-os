@@ -6,17 +6,23 @@ import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.SessionEncryptionOpsClient
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
+import net.corda.data.p2p.crypto.protocol.RevocationCheckMode
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_ENABLED_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_FOR_MEMBER_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_FOR_MGM_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_REFRESH_THRESHOLD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -28,11 +34,11 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.integration.stub.CpiInfoReadServiceStub
 import net.corda.p2p.linkmanager.integration.stub.GroupPolicyProviderStub
 import net.corda.p2p.linkmanager.integration.stub.MembershipQueryClientStub
+import net.corda.p2p.linkmanager.integration.stub.StateManagerFactoryStub
 import net.corda.p2p.linkmanager.integration.stub.VirtualNodeInfoReadServiceStub
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
@@ -40,6 +46,8 @@ import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
+import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.schema.configuration.StateManagerConfig
 import net.corda.test.util.eventually
 import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.utilities.seconds
@@ -101,6 +109,11 @@ class LinkManagerIntegrationTest {
         @InjectService(timeout = 4000)
         lateinit var  groupParametersReaderService: GroupParametersReaderService
 
+        @InjectService(timeout = 4000)
+        lateinit var sessionEncryptionOpsClient: SessionEncryptionOpsClient
+
+        @InjectService(timeout = 4000)
+        lateinit var schemaRegistry: AvroSchemaRegistry
     }
 
     private val replayPeriod = 2000
@@ -110,9 +123,12 @@ class LinkManagerIntegrationTest {
         return ConfigFactory.empty()
             .withValue(MAX_MESSAGE_SIZE_KEY, ConfigValueFactory.fromAnyRef(1000000))
             .withValue(MAX_REPLAYING_MESSAGES_PER_PEER, ConfigValueFactory.fromAnyRef(100))
+            .withValue(HEARTBEAT_ENABLED_KEY, ConfigValueFactory.fromAnyRef(true))
             .withValue(HEARTBEAT_MESSAGE_PERIOD_KEY, ConfigValueFactory.fromAnyRef(2000))
             .withValue(SESSION_TIMEOUT_KEY, ConfigValueFactory.fromAnyRef(10000))
-            .withValue(SESSIONS_PER_PEER_KEY, ConfigValueFactory.fromAnyRef(4))
+            .withValue(SESSIONS_PER_PEER_KEY, ConfigValueFactory.fromAnyRef(null))
+            .withValue(SESSIONS_PER_PEER_FOR_MEMBER_KEY, ConfigValueFactory.fromAnyRef(2))
+            .withValue(SESSIONS_PER_PEER_FOR_MGM_KEY, ConfigValueFactory.fromAnyRef(1))
             .withValue(SESSION_REFRESH_THRESHOLD_KEY, ConfigValueFactory.fromAnyRef(432000))
             .withValue(
                 LinkManagerConfiguration.REPLAY_ALGORITHM_KEY,
@@ -165,6 +181,12 @@ class LinkManagerIntegrationTest {
         }
         groupPolicyProviderCoordinator.start()
 
+        val stateManagerName = LifecycleCoordinatorName.forComponent<StateManager>()
+        val stateManagerCoordinator = lifecycleCoordinatorFactory.createCoordinator(stateManagerName) { _, coordinator ->
+            coordinator.updateStatus(LifecycleStatus.UP)
+        }
+        stateManagerCoordinator.start()
+
         eventually {
             assertThat(configReadService.isRunning).isTrue
         }
@@ -205,6 +227,9 @@ class LinkManagerIntegrationTest {
             membershipGroupReaderProvider,
             MembershipQueryClientStub(),
             groupParametersReaderService,
+            StateManagerFactoryStub().create(bootstrapConfig, StateManagerConfig.StateType.P2P_SESSION),
+            sessionEncryptionOpsClient,
+            schemaRegistry,
         )
 
         linkManager.usingLifecycle {

@@ -19,6 +19,7 @@ import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_OUT
 import net.corda.schema.Schemas.Flow.FLOW_SESSION
 import net.corda.schema.Schemas.Flow.FLOW_START
 import net.corda.schema.configuration.MessagingConfig
+import net.corda.schema.configuration.StateManagerConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -78,7 +79,8 @@ class TestFlowEventMediatorFactoryImpl @Activate constructor(
         .messageRouterFactory(createMessageRouterFactory())
         .threads(1)
         .threadName("flow-event-mediator")
-        .stateManager(stateManagerFactory.create(stateManagerConfig))
+        .stateManager(stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT))
+        .minGroupSize(20)
         .build()
 
     private fun createMessageRouterFactory() = MessageRouterFactory { clientFinder ->

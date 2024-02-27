@@ -14,8 +14,6 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation project(':libs:db:db-core')
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     integrationTestImplementation project(':libs:db:db-admin')
     integrationTestImplementation project(':libs:db:db-admin-impl')
@@ -25,7 +23,7 @@ dependencies {
     integrationTestImplementation project(':testing:test-utilities')
 
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly libs.postgresql.jdbc
 }
 
 tasks.named('jar', Jar) {

@@ -141,6 +141,7 @@ class MemberInfoExtension {
          */
         const val NOTARY_KEYS = "corda.notary.keys"
         const val NOTARY_SERVICE_NAME = "corda.notary.service.name"
+        const val NOTARY_SERVICE_BACKCHAIN_REQUIRED = "corda.notary.service.backchain.required"
         const val NOTARY_SERVICE_PROTOCOL = "corda.notary.service.flow.protocol.name"
         const val NOTARY_SERVICE_PROTOCOL_VERSIONS = "corda.notary.service.flow.protocol.version.%s"
         const val NOTARY_KEYS_ID = "corda.notary.keys.%s.id"
@@ -302,7 +303,7 @@ class MemberInfoExtension {
         ) = memberProvidedContext.parseSet<SecureHash>(key).ifEmpty {
             logger.warn(
                 "Calculating the key hash for $name in group $groupId for property $key. " +
-                        "It is preferable to store this hash in the member context to avoid calculating on each access."
+                    "It is preferable to store this hash in the member context to avoid calculating on each access."
             )
             keyListGetter().map { it.fullIdHash() }
         }

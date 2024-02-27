@@ -1,6 +1,6 @@
 package net.corda.flow.application.sessions.factory
 
-import net.corda.flow.application.serialization.SerializationServiceInternal
+import net.corda.flow.application.serialization.FlowSerializationService
 import net.corda.flow.application.sessions.impl.FlowSessionImpl
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.state.impl.FlatSerializableContext
@@ -13,18 +13,20 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
+import java.time.Duration
 
 @Component(service = [FlowSessionFactory::class])
 class FlowSessionFactoryImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService,
-    @Reference(service = SerializationServiceInternal::class)
-    private val serializationService: SerializationServiceInternal
+    @Reference(service = FlowSerializationService::class)
+    private val serializationService: FlowSerializationService
 ) : FlowSessionFactory {
 
     override fun createInitiatedFlowSession(
         sessionId: String,
         requireClose: Boolean,
+        sessionTimeout: Duration?,
         x500Name: MemberX500Name,
         contextProperties: Map<String, String>
     ): FlowSession {
@@ -41,7 +43,8 @@ class FlowSessionFactoryImpl @Activate constructor(
                         contextPlatformProperties = contextProperties
                     ),
                     FlowSessionImpl.Direction.INITIATED_SIDE,
-                    requireClose
+                    requireClose,
+                    sessionTimeout,
                 )
             })
         } catch (e: PrivilegedActionException) {
@@ -52,6 +55,7 @@ class FlowSessionFactoryImpl @Activate constructor(
     override fun createInitiatingFlowSession(
         sessionId: String,
         requireClose: Boolean,
+        sessionTimeout: Duration?,
         x500Name: MemberX500Name,
         flowContextPropertiesBuilder: FlowContextPropertiesBuilder?
     ): FlowSession {
@@ -68,7 +72,8 @@ class FlowSessionFactoryImpl @Activate constructor(
                         flowFiberService
                     ),
                     FlowSessionImpl.Direction.INITIATING_SIDE,
-                    requireClose
+                    requireClose,
+                    sessionTimeout,
                 )
             })
         } catch (e: PrivilegedActionException) {

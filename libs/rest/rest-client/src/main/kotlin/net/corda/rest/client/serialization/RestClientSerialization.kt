@@ -8,12 +8,12 @@ import com.fasterxml.jackson.databind.JavaType
 import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.deser.ContextualDeserializer
 import com.fasterxml.jackson.databind.module.SimpleModule
-import net.corda.rest.json.serialization.jacksonObjectMapper
 import net.corda.crypto.core.parseSecureHash
 import net.corda.rest.JsonObject
 import net.corda.rest.durablestream.DurableCursorTransferObject
 import net.corda.rest.durablestream.api.Cursor
 import net.corda.rest.json.serialization.JsonObjectSerializer
+import net.corda.rest.json.serialization.jacksonObjectMapper
 import net.corda.utilities.trace
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
@@ -40,7 +40,8 @@ internal class PositionedValueDeserializer(private val valueType: JavaType? = nu
 
     override fun deserialize(p: JsonParser, ctxt: DeserializationContext): Cursor.PollResult.PositionedValue<*> {
         val jacksonType = ctxt.typeFactory.constructParametricType(
-            DurableCursorTransferObject.Companion.PositionedValueImpl::class.java, valueType
+            DurableCursorTransferObject.Companion.PositionedValueImpl::class.java,
+            valueType
         )
         return ctxt.findRootValueDeserializer(jacksonType).deserialize(p, ctxt) as Cursor.PollResult.PositionedValue<*>
     }

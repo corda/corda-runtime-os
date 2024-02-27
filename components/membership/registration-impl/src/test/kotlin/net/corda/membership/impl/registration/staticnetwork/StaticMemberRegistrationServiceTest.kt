@@ -1,5 +1,8 @@
 package net.corda.membership.impl.registration.staticnetwork
 
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
@@ -12,9 +15,6 @@ import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.crypto.impl.converter.PublicKeyHashConverter
-import net.corda.avro.serialization.CordaAvroDeserializer
-import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSigningKey
@@ -414,8 +414,8 @@ class StaticMemberRegistrationServiceTest {
 
             publishedList.take(3).forEach {
                 assertTrue(
-                    it.key.startsWith(aliceId.value) || it.key.startsWith(bobId.value)
-                            || it.key.startsWith(charlieId.value)
+                    it.key.startsWith(aliceId.value) || it.key.startsWith(bobId.value) ||
+                        it.key.startsWith(charlieId.value)
                 )
                 assertTrue(it.key.endsWith(aliceId.value))
             }
@@ -552,7 +552,8 @@ class StaticMemberRegistrationServiceTest {
                 notary,
                 null,
                 emptyList(),
-                emptyList()
+                emptyList(),
+                true
             )
             val mockMemberContext: MemberContext = mock {
                 on { entries } doReturn mapOf(
@@ -696,7 +697,7 @@ class StaticMemberRegistrationServiceTest {
             assertThat(exception)
                 .hasMessage(
                     "Registration failed. Reason: Our membership O=Daisy, L=London, C=GB is either not " +
-                            "listed in the static member list or there is another member with the same name."
+                        "listed in the static member list or there is another member with the same name."
                 )
             registrationService.stop()
         }
@@ -744,7 +745,8 @@ class StaticMemberRegistrationServiceTest {
                 notary,
                 null,
                 emptyList(),
-                emptyList()
+                emptyList(),
+                true
             )
             val mockMemberContext: MemberContext = mock {
                 on { entries } doReturn mapOf(
@@ -809,7 +811,7 @@ class StaticMemberRegistrationServiceTest {
 
         @Test
         fun `registration fails when context has invalid entries`() {
-            val longString = StringBuilder().apply { for(i in 0..256){ this.append("a") } }.toString()
+            val longString = StringBuilder().apply { for (i in 0..256) { this.append("a") } }.toString()
             setUpPublisher()
             registrationService.start()
             val invalidContext = mockContext + mapOf(
@@ -1090,7 +1092,7 @@ class StaticMemberRegistrationServiceTest {
             var attempts = 0
             whenever(persistenceClient.updateStaticNetworkInfo(any()))
                 .doAnswer {
-                    if(++attempts == maxRetries-1 ) {
+                    if (++attempts == maxRetries - 1) {
                         // Overwrite the behaviour for next call so it succeeds
                         whenever(persistenceClient.updateStaticNetworkInfo(any())).doAnswer {
                             SuccessOperation(it.getArgument(0))

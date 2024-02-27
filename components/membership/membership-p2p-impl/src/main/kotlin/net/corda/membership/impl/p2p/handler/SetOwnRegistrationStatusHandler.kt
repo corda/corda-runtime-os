@@ -4,10 +4,10 @@ import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.member.PersistMemberRegistrationState
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
-import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.membership.lib.RegistrationStatusV2
 import net.corda.membership.lib.SetOwnRegistrationStatusV2
+import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
@@ -38,8 +38,8 @@ internal class SetOwnRegistrationStatusHandler(
         )
     }
 
-    private fun SetOwnRegistrationStatus.convertToNewVersion() : SetOwnRegistrationStatusV2 {
-        val status = when(newStatus) {
+    private fun SetOwnRegistrationStatus.convertToNewVersion(): SetOwnRegistrationStatusV2 {
+        val status = when (newStatus) {
             RegistrationStatus.NEW -> RegistrationStatusV2.NEW
             RegistrationStatus.SENT_TO_MGM -> RegistrationStatusV2.SENT_TO_MGM
             RegistrationStatus.RECEIVED_BY_MGM -> RegistrationStatusV2.RECEIVED_BY_MGM

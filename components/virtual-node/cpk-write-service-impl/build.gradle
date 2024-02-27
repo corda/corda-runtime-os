@@ -11,7 +11,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
     implementation 'javax.persistence:javax.persistence-api'
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-base"
@@ -33,9 +33,6 @@ dependencies {
 
     api project(":components:virtual-node:cpk-write-service")
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")

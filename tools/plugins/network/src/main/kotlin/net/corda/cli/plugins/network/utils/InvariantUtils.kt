@@ -7,7 +7,7 @@ object InvariantUtils {
         maxAttempts: Int,
         waitInterval: Long,
         errorMessage: String,
-        invariantCheck: () -> T?
+        invariantCheck: () -> T?,
     ): T {
         var remainingAttempts = maxAttempts
 

@@ -1,5 +1,6 @@
 package net.corda.rest.server.impl.apigen.processing
 
+import net.corda.rest.SC_OK
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.server.impl.apigen.models.Endpoint
 import net.corda.rest.server.impl.apigen.models.EndpointMethod
@@ -21,7 +22,12 @@ class RouteInfoTest {
             method = EndpointMethod.GET,
             parameters = emptyList(),
             path = "sanity",
-            responseBody = ResponseBody(description = "", type = String::class.java, parameterizedTypes = emptyList()),
+            responseBody = ResponseBody(
+                description = "",
+                successCode = SC_OK,
+                type = String::class.java,
+                parameterizedTypes = emptyList()
+            ),
             title = "Sanity",
             apiVersions = setOf(RestApiVersion.C5_0)
         )
@@ -37,7 +43,12 @@ class RouteInfoTest {
             method = EndpointMethod.GET,
             parameters = emptyList(),
             path = "hello/{name}",
-            responseBody = ResponseBody(description = "", type = String::class.java, parameterizedTypes = emptyList()),
+            responseBody = ResponseBody(
+                description = "",
+                successCode = SC_OK,
+                type = String::class.java,
+                parameterizedTypes = emptyList()
+            ),
             title = "Hello",
             apiVersions = setOf(RestApiVersion.C5_0)
         )
@@ -55,7 +66,12 @@ class RouteInfoTest {
             method = EndpointMethod.GET,
             parameters = emptyList(),
             path = "sanity",
-            responseBody = ResponseBody(description = "Increased by one", type = String::class.java, parameterizedTypes = emptyList()),
+            responseBody = ResponseBody(
+                description = "Increased by one",
+                successCode = SC_OK,
+                type = String::class.java,
+                parameterizedTypes = emptyList()
+            ),
             title = "Sanity",
             apiVersions = setOf(RestApiVersion.C5_0)
         )

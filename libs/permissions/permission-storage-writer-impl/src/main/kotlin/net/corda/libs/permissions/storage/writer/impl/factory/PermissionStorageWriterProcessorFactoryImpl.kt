@@ -5,11 +5,11 @@ import net.corda.libs.permissions.storage.writer.PermissionStorageWriterProcesso
 import net.corda.libs.permissions.storage.writer.factory.PermissionStorageWriterProcessorFactory
 import net.corda.libs.permissions.storage.writer.impl.PermissionStorageWriterProcessorImpl
 import net.corda.libs.permissions.storage.writer.impl.permission.impl.PermissionWriterImpl
-import org.osgi.service.component.annotations.Component
-import javax.persistence.EntityManagerFactory
 import net.corda.libs.permissions.storage.writer.impl.role.impl.RoleWriterImpl
 import net.corda.libs.permissions.storage.writer.impl.user.impl.UserWriterImpl
+import org.osgi.service.component.annotations.Component
 import java.util.function.Supplier
+import javax.persistence.EntityManagerFactory
 
 @Component(service = [PermissionStorageWriterProcessorFactory::class])
 @Suppress("Unused")

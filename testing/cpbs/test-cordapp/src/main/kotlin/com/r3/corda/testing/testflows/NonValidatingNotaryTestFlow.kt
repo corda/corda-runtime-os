@@ -29,7 +29,7 @@ import java.time.Instant
 
 /**
  * This flow is used to call the `NonValidatingNotaryClientFlowImpl`. Since `NonValidatingNotaryClientFlowImpl` is not
- * a HTTP RPC invokable flow, we need an extra layer to call that flow from tests and through HTTP RPC.
+ * REST invokable flow, we need an extra layer to call that flow from tests and through REST.
  *
  * This flow will generate a UTXO signed transaction using the provided HTTP parameters and pass that signed transaction
  * to the non-validating notary plugin. This flow will automatically find a notary on the network and use that as the
@@ -46,6 +46,7 @@ import java.time.Instant
  * will be the current  UTC time ([Instant.now]) + 1 hour.
  */
 @InitiatingFlow(protocol = "non-validating-test")
+@Suppress("unused")
 class NonValidatingNotaryTestFlow : ClientStartableFlow {
 
     @CordaInject
@@ -205,7 +206,7 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
 
     /**
      * A helper function that will build a UTXO signed transaction from the provided input parameters using the
-     * [UtxoTransactionBuilder] utility class.
+     * [net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder] utility class.
      */
     @Suspendable
     private fun buildSignedTransaction(

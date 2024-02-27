@@ -23,7 +23,7 @@ class RestServerObjectSettingsProvider(
     }
 
     init {
-        log.info("REST config instantiated:\n${restServerSettings}, devMode=$devMode")
+        log.info("REST config instantiated:\n$restServerSettings, devMode=$devMode")
     }
 
     override fun getHostAndPort() = restServerSettings.address

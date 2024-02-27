@@ -299,36 +299,46 @@ on_board_node() {
 
    CPI_ID=$(upload_cpi $1 "$WORKING_DIR"/test-cordapp-5.0.0.0-SNAPSHOT-package.cpi)
 
-   echo "NODE $2 CPI ID $CPI_ID"
+   echo "CPI ID $CPI_ID"
 
    wait_for_cpi $1 $CPI_ID
 
    CPI_CHECKSUM=$(cpi_checksum $1 $CPI_ID)
 
-   NODE_HOLDING_ID_SHORT_HASH=$(create_vnode $1 $CPI_CHECKSUM $2)
-   echo "$2 Holding Id Short Hash $NODE_HOLDING_ID_SHORT_HASH"
+   echo "Onboarding $6 members per cluster..."
+   UPLOAD_TLS=true
+   i=0
+   until [ $i == $6 ]
+   do
+     NAME=$2-$i
+     NODE_HOLDING_ID_SHORT_HASH=$(create_vnode $1 $CPI_CHECKSUM $NAME)
+     echo "$NAME Holding Id Short Hash $NODE_HOLDING_ID_SHORT_HASH"
 
-   NODE_SESSION_KEY_ID=$(assign_hsm_and_generate_session_key_pair $1 $NODE_HOLDING_ID_SHORT_HASH)
-   echo Node $2 Session Key Id: $NODE_SESSION_KEY_ID
+     NODE_SESSION_KEY_ID=$(assign_hsm_and_generate_session_key_pair $1 $NODE_HOLDING_ID_SHORT_HASH)
+     echo Node $NAME Session Key Id: $NODE_SESSION_KEY_ID
 
-   NODE_LEDGER_KEY_ID=$(assign_hsm_and_generate_ledger_key_pair $1 $NODE_HOLDING_ID_SHORT_HASH)
-   echo Node $2 Ledger Key Id: $NODE_LEDGER_KEY_ID
+     NODE_LEDGER_KEY_ID=$(assign_hsm_and_generate_ledger_key_pair $1 $NODE_HOLDING_ID_SHORT_HASH)
+     echo Node $NAME Ledger Key Id: $NODE_LEDGER_KEY_ID
 
-   # Generate Key Pair for TLS for Member
-   if [ "$CLUSTER_MODE" != "SINGLE_CLUSTER" ]
-   then
-     NODE_TLS_KEY_ID=$(assign_hsm_and_generate_tls_key_pair $1)
-     echo NODE $2 TLS Key Id: $NODE_TLS_KEY_ID
+     # Generate Key Pair for TLS for Member
+     if [ "$CLUSTER_MODE" != "SINGLE_CLUSTER" ] && [ $UPLOAD_TLS == true ]
+     then
+       NODE_TLS_KEY_ID=$(assign_hsm_and_generate_tls_key_pair $1)
+       echo NODE $NAME TLS Key Id: $NODE_TLS_KEY_ID
 
-     get_csr $1 $2 $3 $NODE_TLS_KEY_ID $4
-     sign_certificate $4
+       get_csr $1 $NAME $3 $NODE_TLS_KEY_ID $4
+       sign_certificate $4
 
-     echo Upload Signed TLS certificate
-     upload_certificate $1 "$WORKING_DIR"/ca/$4/certificate.pem
-   fi
+       echo Upload Signed TLS certificate
+       upload_certificate $1 "$WORKING_DIR"/ca/$4/certificate.pem
+       UPLOAD_TLS=false
+     fi
 
-   complete_network_setup $1 $NODE_HOLDING_ID_SHORT_HASH $NODE_SESSION_KEY_ID
-   register_node $1 $NODE_HOLDING_ID_SHORT_HASH $NODE_SESSION_KEY_ID $5 $NODE_LEDGER_KEY_ID
+     complete_network_setup $1 $NODE_HOLDING_ID_SHORT_HASH $NODE_SESSION_KEY_ID
+     register_node $1 $NODE_HOLDING_ID_SHORT_HASH $NODE_SESSION_KEY_ID $5 $NODE_LEDGER_KEY_ID
+
+     i=$((i+1))
+   done
 }
 
 if [ "$CLUSTER_MODE" == "SINGLE_CLUSTER" ]
@@ -356,6 +366,6 @@ java -jar $CA_JAR --home="$WORKING_DIR"/ca create-ca
 
 on_board_mgm
 
-on_board_node $A_RPC $A_X500_NAME $A_GATEWAY_ADDRESS a_tls $A_GATEWAY_ENDPOINT
+on_board_node $A_RPC $A_X500_NAME $A_GATEWAY_ADDRESS a_tls $A_GATEWAY_ENDPOINT $NUM_OF_MEMBERS_PER_CLUSTER_A
 
-on_board_node $B_RPC $B_X500_NAME $B_GATEWAY_ADDRESS b_tls $B_GATEWAY_ENDPOINT
+on_board_node $B_RPC $B_X500_NAME $B_GATEWAY_ADDRESS b_tls $B_GATEWAY_ENDPOINT $NUM_OF_MEMBERS_PER_CLUSTER_B

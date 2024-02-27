@@ -7,7 +7,6 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.observer.UtxoTokenTransactionStateObserver
 
-
 class UtxoTokenObserverMapImpl(private val sandboxGroupContext: SandboxGroupContext) :
     UtxoTokenObserverMap {
 

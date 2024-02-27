@@ -13,9 +13,10 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import java.sql.Timestamp
+import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
@@ -36,7 +37,7 @@ class RequestsIdsRepositoryTest {
      * [entityManagerFactory].
      */
     init {
-        //System.setProperty("postgresPort", "5432")
+        // System.setProperty("postgresPort", "5432")
         dbConfig = DbUtils.getEntityManagerConfiguration(this::class.java.simpleName)
 
         val dbChange = ClassloaderChangeLog(
@@ -78,8 +79,8 @@ class RequestsIdsRepositoryTest {
 
     @Test
     fun `inserts into request ids table`() {
-        val requestId1 = UUID.randomUUID()
-        val requestId2 = UUID.randomUUID()
+        val requestId1 = UUID.randomUUID().toString()
+        val requestId2 = UUID.randomUUID().toString()
         entityManagerFactory.createEntityManager().transaction { em ->
             requestsIdsRepository.persist(requestId1, em)
         }
@@ -99,34 +100,40 @@ class RequestsIdsRepositoryTest {
         assertTrue(request1Time < request2Time)
     }
 
-    @Disabled("Disabling due to its time overhead of 2 seconds. " +
-            "The test, however, is valid to assert `requestsIdsRepository.deleteRequestsOlderThan` works")
     @Test
     fun `deletes older requests`() {
         val requestId1 = UUID.randomUUID()
         val requestId2 = UUID.randomUUID()
-        entityManagerFactory.createEntityManager().transaction { em ->
-            requestsIdsRepository.persist(requestId1, em)
-        }
-
-        entityManagerFactory.createEntityManager().transaction { em ->
-            requestsIdsRepository.persist(requestId2, em)
+        dbConfig.dataSource.connection.use { con ->
+            con.autoCommit = true
+            con.prepareStatement(
+                """
+                INSERT INTO ${DbSchema.VNODE_PERSISTENCE_REQUEST_ID_TABLE}(request_id, insert_ts)
+                VALUES (?,?)
+                """.trimIndent()
+            ).also {
+                it.setString(1, requestId1.toString())
+                it.setTimestamp(2, Timestamp.from(Instant.now().minusSeconds(10)))
+            }.executeUpdate()
+            con.prepareStatement(
+                """
+                INSERT INTO ${DbSchema.VNODE_PERSISTENCE_REQUEST_ID_TABLE}(request_id, insert_ts)
+                VALUES (?,?)
+                """.trimIndent()
+            ).also {
+                it.setString(1, requestId2.toString())
+                it.setTimestamp(2, Timestamp.from(Instant.now().plusSeconds(10)))
+            }.executeUpdate()
         }
         var storedRequestIds = getStoredRequestIds()
         assertEquals(2, storedRequestIds.size)
-        Thread.sleep(2000)
-        entityManagerFactory.createEntityManager().transaction { em ->
-            requestsIdsRepository.persist(UUID.randomUUID(), em)
-        }
-        entityManagerFactory.createEntityManager().transaction { em ->
-            requestsIdsRepository.deleteRequestsOlderThan(1, em)
-        }
+        requestsIdsRepository.deleteRequestsOlderThan(1, dbConfig.dataSource)
 
         storedRequestIds = getStoredRequestIds()
         assertEquals(1, storedRequestIds.size)
     }
 
-    private fun getStoredRequestIds(): List<Pair<UUID, java.sql.Timestamp>> =
+    private fun getStoredRequestIds(): List<Pair<String, java.sql.Timestamp>> =
         dbConfig.dataSource.connection.use {
             val stmt = it.prepareStatement(
                 "SELECT * FROM ${DbSchema.VNODE_PERSISTENCE_REQUEST_ID_TABLE} ORDER BY insert_ts"
@@ -135,11 +142,11 @@ class RequestsIdsRepositoryTest {
             return stmt.use {
                 val rs = stmt.executeQuery()
 
-                val list = mutableListOf<Pair<UUID, java.sql.Timestamp>>()
+                val list = mutableListOf<Pair<String, java.sql.Timestamp>>()
                 while (rs.next()) {
                     list.add(
                         Pair(
-                            UUID.fromString(rs.getString(1)),
+                            rs.getString(1),
                             rs.getTimestamp(2)
                         )
                     )

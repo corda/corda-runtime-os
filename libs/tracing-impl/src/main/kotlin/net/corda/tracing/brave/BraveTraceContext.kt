@@ -39,4 +39,7 @@ internal class BraveTraceContext(
     override fun finish() {
         span.finish()
     }
+
+    override val traceIdString: String
+        get() = span.context().traceIdString()
 }

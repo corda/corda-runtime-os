@@ -14,7 +14,7 @@ import java.nio.ByteBuffer
 
 internal class VerificationRequestHandler(
     private val avroSchemaRegistry: AvroSchemaRegistry
-) : AuthenticatedMessageHandler()  {
+) : AuthenticatedMessageHandler() {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }

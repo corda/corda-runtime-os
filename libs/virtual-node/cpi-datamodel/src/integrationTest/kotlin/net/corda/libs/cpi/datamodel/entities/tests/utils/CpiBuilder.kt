@@ -1,10 +1,10 @@
 package net.corda.libs.cpi.datamodel.entities.tests.utils
 
-import java.util.UUID
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.cpi.datamodel.entities.internal.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.entities.internal.CpkMetadataEntity
 import net.corda.v5.crypto.SecureHash
+import java.util.UUID
 
 internal fun cpi(init: CpiBuilder.() -> Unit): CpiMetadataEntity {
     val cpi = CpiBuilder()
@@ -12,6 +12,7 @@ internal fun cpi(init: CpiBuilder.() -> Unit): CpiMetadataEntity {
     return cpi.build()
 }
 
+@Suppress("TooManyFunctions")
 internal class CpiBuilder(private val randomId: UUID = UUID.randomUUID()) {
     private var name: String? = null
     private var version: String? = null

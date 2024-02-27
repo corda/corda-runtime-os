@@ -14,7 +14,7 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(':libs:utilities')
     implementation project(":libs:serialization:serialization-avro")
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
@@ -23,9 +23,6 @@ dependencies {
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:flow:flow-utilities")
     testImplementation project(":libs:flows:flow-utils")
 }

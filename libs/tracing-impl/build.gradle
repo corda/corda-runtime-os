@@ -10,14 +10,17 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':libs:tracing')
+    implementation project(':libs:utilities')
 
-    implementation("io.zipkin.reporter2:zipkin-sender-urlconnection:$zipkinVersion")
-    implementation("io.zipkin.brave:brave-context-slf4j:$braveVersion")
-    implementation("io.zipkin.brave:brave-instrumentation-servlet:$braveVersion")
+    implementation libs.zipkin.core
+    implementation libs.zipkin.sender.urlconnection
+    implementation libs.zipkin.reporter.brave
+    implementation libs.brave.context.slf4j
+    implementation libs.brave.instrumentation.servlet
 
-    implementation "io.javalin:javalin-osgi:$javalinVersion"
+    implementation libs.javalin
     constraints {
-        implementation("org.eclipse.jetty:jetty-server:$jettyVersion") {
+        implementation(libs.bundles.jetty) {
             because 'Javalin uses an older version of Jetty which is exposed to CVE-2023-26048 and CVE-2023-26049. ' +
                     'This might be resolved in the future versions of Javalin.'
         }

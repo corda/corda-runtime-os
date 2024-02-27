@@ -38,7 +38,7 @@ abstract class ConsensualFinalityBaseV1 : SubFlow<ConsensualSignedTransaction> {
             }
         } catch (e: Exception) {
             val message = "Failed to verify transaction signature($signature) by ${signature.by} (key id) for " +
-                    "transaction ${transaction.id}. Message: ${e.message}"
+                "transaction ${transaction.id}. Message: ${e.message}"
             log.warn(message)
             persistInvalidTransaction(transaction)
             sessionToNotify?.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(message))
@@ -77,7 +77,7 @@ abstract class ConsensualFinalityBaseV1 : SubFlow<ConsensualSignedTransaction> {
         initialTransaction: ConsensualSignedTransactionInternal,
         sessionToNotify: FlowSession? = null
     ) {
-        if (initialTransaction.signatures.isEmpty()){
+        if (initialTransaction.signatures.isEmpty()) {
             val message = "Received initial transaction without signatures."
             log.warn(message)
             persistInvalidTransaction(initialTransaction)

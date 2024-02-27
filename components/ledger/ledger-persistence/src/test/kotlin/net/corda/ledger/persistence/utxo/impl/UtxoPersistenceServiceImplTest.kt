@@ -2,14 +2,15 @@ package net.corda.ledger.persistence.utxo.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
+import net.corda.crypto.cipher.suite.merkle.MerkleProofProvider
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.json.DefaultContractStateVaultJsonFactory
-import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFactoryImpl
 import net.corda.ledger.persistence.json.impl.ContractStateVaultJsonFactoryRegistryImpl
+import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFactoryImpl
 import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
@@ -31,7 +32,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -47,22 +47,19 @@ class UtxoPersistenceServiceImplTest {
     private val persistedJsonStrings = mutableMapOf<String, CustomRepresentation>()
 
     private val mockRepository = mock<UtxoRepository> {
-        on { persistVisibleTransactionOutput(
-            any(), any(), any(), any(), any(), any(), any(), any(),
-            anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()
-        ) } doAnswer {
+        on {
+            persistVisibleTransactionOutputs(any(), any(), any(), any())
+        } doAnswer {
             val txId = it.getArgument<String>(1)
-            val customRepresentation = it.arguments.single {
-                it as? CustomRepresentation != null
-            } as CustomRepresentation
+            val customRepresentation = it.getArgument<List<UtxoRepository.VisibleTransactionOutput>>(3).single().customRepresentation
             persistedJsonStrings[txId] = customRepresentation
         }
 
         on { persistTransaction(any(), any(), any(), any(), any(), any(), any()) } doAnswer {}
-        on { persistTransactionComponentLeaf(any(), any(), any(), any(), any(), any()) } doAnswer {}
+        on { persistTransactionComponents(any(), any(), any(), any()) } doAnswer {}
     }
     private val mockDigestService = mock<DigestService> {
-        on { hash(any<ByteArray>(), any())} doAnswer { SecureHashImpl("algo", byteArrayOf(1, 2, 11)) }
+        on { hash(any<ByteArray>(), any()) } doAnswer { SecureHashImpl("algo", byteArrayOf(1, 2, 11)) }
     }
 
     private val mockPrivacySalt = mock<PrivacySalt> {
@@ -90,7 +87,12 @@ class UtxoPersistenceServiceImplTest {
         mockDigestService,
         storage,
         DefaultContractStateVaultJsonFactoryImpl(),
-        JsonMarshallingServiceImpl(), // We could mock this but this is basically just a layer on top of Jackson
+        JsonMarshallingServiceImpl(mock<MerkleProofProvider> {}), // We could mock this but this is basically just a layer on top of Jackson
+        mock(),
+        mock(),
+        mock(),
+        mock(),
+        mock(),
         UTCClock()
     )
 
@@ -101,9 +103,11 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `Persisting a transaction while JSON parsing fails will result in an empty JSON string being stored`() {
-        val tx = createMockTransaction(mapOf(
-            0 to createStateAndRef(InvalidState())
-        ))
+        val tx = createMockTransaction(
+            mapOf(
+                0 to createStateAndRef(InvalidState())
+            )
+        )
 
         persistenceService.persistTransaction(tx)
 
@@ -115,7 +119,7 @@ class UtxoPersistenceServiceImplTest {
             expected = """
                 {
                     "net.corda.ledger.persistence.utxo.impl.InvalidState" : {
-                    
+
                     },
                     "net.corda.v5.ledger.utxo.ContractState" : {
                         "stateRef": "hash:0"
@@ -141,13 +145,20 @@ class UtxoPersistenceServiceImplTest {
             mockDigestService,
             storage,
             emptyDefaultContractStateVaultJsonFactory,
-            JsonMarshallingServiceImpl(),
+            JsonMarshallingServiceImpl(mock<MerkleProofProvider> {}),
+            mock(),
+            mock(),
+            mock(),
+            mock(),
+            mock(),
             UTCClock()
         )
 
-        val tx = createMockTransaction(mapOf(
-            0 to createStateAndRef(EmptyState())
-        ))
+        val tx = createMockTransaction(
+            mapOf(
+                0 to createStateAndRef(EmptyState())
+            )
+        )
 
         singlePersistenceService.persistTransaction(tx)
 
@@ -159,7 +170,7 @@ class UtxoPersistenceServiceImplTest {
             expected = """
                 {
                     "net.corda.ledger.persistence.utxo.impl.EmptyState" : {
-                    
+
                     }
                 }
             """.trimIndent(),
@@ -169,9 +180,11 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `Persisting a transaction with multiple JSON factories will result in a combined JSON string being stored`() {
-        val tx = createMockTransaction(mapOf(
-            0 to createStateAndRef(DummyState("DUMMY"))
-        ))
+        val tx = createMockTransaction(
+            mapOf(
+                0 to createStateAndRef(DummyState("DUMMY"))
+            )
+        )
 
         persistenceService.persistTransaction(tx)
 
@@ -196,9 +209,11 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `Persisting a transaction while no JSON factory is present for the given type will store the default state json`() {
-        val tx = createMockTransaction(mapOf(
-            0 to createStateAndRef(NoJsonFactoryState()) // State that has no specific factory
-        ))
+        val tx = createMockTransaction(
+            mapOf(
+                0 to createStateAndRef(NoJsonFactoryState()) // State that has no specific factory
+            )
+        )
 
         persistenceService.persistTransaction(tx)
 
@@ -226,13 +241,20 @@ class UtxoPersistenceServiceImplTest {
             mockDigestService,
             ContractStateVaultJsonFactoryRegistryImpl(), // Empty storage
             DefaultContractStateVaultJsonFactoryImpl(),
-            JsonMarshallingServiceImpl(),
+            JsonMarshallingServiceImpl(mock<MerkleProofProvider> {}),
+            mock(),
+            mock(),
+            mock(),
+            mock(),
+            mock(),
             UTCClock()
         )
 
-        val tx = createMockTransaction(mapOf(
-            0 to createStateAndRef(NoJsonFactoryState())
-        ))
+        val tx = createMockTransaction(
+            mapOf(
+                0 to createStateAndRef(NoJsonFactoryState())
+            )
+        )
 
         emptyPersistenceService.persistTransaction(tx)
 
@@ -253,7 +275,6 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `if an exception is thrown in a json factory, the state should still be persisted and that field should be {}`() {
-
         val storage = ContractStateVaultJsonFactoryRegistryImpl().apply {
             registerJsonFactory(ExceptionStateFactory()) // Register the factory that throws an exception
         }
@@ -265,13 +286,20 @@ class UtxoPersistenceServiceImplTest {
             mockDigestService,
             storage,
             DefaultContractStateVaultJsonFactoryImpl(),
-            JsonMarshallingServiceImpl(),
+            JsonMarshallingServiceImpl(mock<MerkleProofProvider> {}),
+            mock(),
+            mock(),
+            mock(),
+            mock(),
+            mock(),
             UTCClock()
         )
 
-        val tx = createMockTransaction(mapOf(
-            0 to createStateAndRef(ExceptionState("a", "b", "c"))
-        ))
+        val tx = createMockTransaction(
+            mapOf(
+                0 to createStateAndRef(ExceptionState("a", "b", "c"))
+            )
+        )
 
         assertDoesNotThrow {
             persistenceService.persistTransaction(tx)
@@ -352,7 +380,6 @@ class UtxoPersistenceServiceImplTest {
         override fun getEncumbranceGroup(): EncumbranceGroup? {
             TODO("Not yet implemented")
         }
-
     }
 
     private inline fun <reified T : ContractState> createStateAndRef(returnState: T): StateAndRef<T> {
@@ -391,7 +418,7 @@ private class DummyStateJsonFactory : ContractStateVaultJsonFactory<DummyState> 
                 "dummyField": "${state.dummyField}",
                 "dummyField2": "${state.dummyField}"
             }
-            """.trimIndent()
+        """.trimIndent()
     }
 }
 

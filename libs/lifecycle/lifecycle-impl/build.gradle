@@ -13,13 +13,11 @@ dependencies {
     implementation project(':libs:utilities')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "com.google.guava:guava:$guavaVersion"
+    implementation libs.guava
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'net.corda:corda-base'
     implementation 'org.slf4j:slf4j-api'
 
     testImplementation project(":testing:test-utilities")
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

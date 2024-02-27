@@ -116,8 +116,8 @@ class MemberOpsServiceProcessorTest {
         PropertyKeys.SESSION_PKI_MODE to "pki-sess",
         PropertyKeys.TLS_PKI_MODE to "pki-tls",
         PropertyKeys.TLS_VERSION to "tls-ver",
-        PropertyKeys.SESSION_TRUST_ROOTS+".0" to "truststore-sess",
-        PropertyKeys.TLS_TRUST_ROOTS+".0" to "truststore-tls",
+        PropertyKeys.SESSION_TRUST_ROOTS + ".0" to "truststore-sess",
+        PropertyKeys.TLS_TRUST_ROOTS + ".0" to "truststore-tls",
         PropertyKeys.P2P_PROTOCOL_MODE to "p2p-mode",
     )
 
@@ -144,7 +144,6 @@ class MemberOpsServiceProcessorTest {
         assertThat(actual.responseTimestamp.toEpochMilli()).isGreaterThanOrEqualTo(expected.requestTimestamp.toEpochMilli())
         assertThat(actual.responseTimestamp.toEpochMilli()).isLessThanOrEqualTo(now.toEpochMilli())
     }
-
 
     @Test
     fun `should fail in case of unknown request`() {
@@ -192,8 +191,8 @@ class MemberOpsServiceProcessorTest {
             it.assertThat(groupPolicy).contains("\"$PROTOCOL_PARAMETERS\"")
             it.assertThat(groupPolicy).contains("\"$SESSION_KEY_POLICY\":\"${testProperties[PropertyKeys.SESSION_KEY_POLICY]}\"")
             it.assertThat(groupPolicy).contains("\"$P2P_PARAMETERS\"")
-            it.assertThat(groupPolicy).contains("\"$SESSION_TRUST_ROOTS\":[\"${testProperties[PropertyKeys.SESSION_TRUST_ROOTS+".0"]}\"]")
-            it.assertThat(groupPolicy).contains("\"$TLS_TRUST_ROOTS\":[\"${testProperties[PropertyKeys.TLS_TRUST_ROOTS+".0"]}\"]")
+            it.assertThat(groupPolicy).contains("\"$SESSION_TRUST_ROOTS\":[\"${testProperties[PropertyKeys.SESSION_TRUST_ROOTS + ".0"]}\"]")
+            it.assertThat(groupPolicy).contains("\"$TLS_TRUST_ROOTS\":[\"${testProperties[PropertyKeys.TLS_TRUST_ROOTS + ".0"]}\"]")
             it.assertThat(groupPolicy).contains("\"$SESSION_PKI\":\"${testProperties[PropertyKeys.SESSION_PKI_MODE]}\"")
             it.assertThat(groupPolicy).contains("\"$TLS_PKI\":\"${testProperties[PropertyKeys.TLS_PKI_MODE]}\"")
             it.assertThat(groupPolicy).contains("\"$TLS_VERSION\":\"${testProperties[PropertyKeys.TLS_VERSION]}\"")
@@ -209,8 +208,8 @@ class MemberOpsServiceProcessorTest {
     @Test
     fun `should parse TLS type if present`() {
         val testPropertiesWithMutualTls = testProperties +
-                (PropertyKeys.TLS_TYPE to "mutual") +
-                (PropertyKeys.MGM_CLIENT_CERTIFICATE_SUBJECT to "subject")
+            (PropertyKeys.TLS_TYPE to "mutual") +
+            (PropertyKeys.MGM_CLIENT_CERTIFICATE_SUBJECT to "subject")
         val testPersistedGroupPolicyEntries =
             LayeredPropertyMapMocks.create<LayeredContextImpl>(testPropertiesWithMutualTls)
         whenever(

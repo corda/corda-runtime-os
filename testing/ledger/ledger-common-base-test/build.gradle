@@ -23,5 +23,5 @@ dependencies {
     implementation project(':libs:serialization:serialization-amqp')
     implementation project(':libs:serialization:serialization-internal')
 
-    implementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    implementation libs.mockito.kotlin
 }

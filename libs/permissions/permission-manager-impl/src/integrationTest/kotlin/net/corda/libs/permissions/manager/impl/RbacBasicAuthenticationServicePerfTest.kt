@@ -67,10 +67,12 @@ class RbacBasicAuthenticationServicePerfTest {
 
         // Measure time
         val start = System.currentTimeMillis()
-        val result: List<Boolean> = (1..repsCount).map { iterCount ->  rbacBasicAuthenticationService.authenticateUser(
-            userLogons[iterCount % userLogons.size],
-            passwordString.toCharArray()
-        )}
+        val result: List<Boolean> = (1..repsCount).map { iterCount ->
+            rbacBasicAuthenticationService.authenticateUser(
+                userLogons[iterCount % userLogons.size],
+                passwordString.toCharArray()
+            )
+        }
         val end = System.currentTimeMillis()
 
         assertThat(result).allMatch { true }

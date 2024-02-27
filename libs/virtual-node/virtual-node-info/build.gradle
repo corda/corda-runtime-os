@@ -5,6 +5,8 @@ plugins {
 
 description "Virtual Node Info Interfaces"
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
@@ -15,8 +17,5 @@ dependencies {
     api project(':libs:crypto:crypto-core')
     api project(':libs:packaging:packaging-core')
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(':testing:test-utilities')
 }

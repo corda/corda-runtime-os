@@ -18,7 +18,7 @@ object CertificateAuthorityFactory {
         keysFactoryDefinitions: KeysFactoryDefinitions,
         validDuration: Duration = Duration.ofDays(30),
     ): CertificateAuthority {
-        return LocalCertificatesAuthority(keysFactoryDefinitions, validDuration, null)
+        return LocalCertificatesAuthority(keysFactoryDefinitions, validDuration, null, issuerName = null)
     }
 
     /**

@@ -10,19 +10,18 @@ import java.time.format.DateTimeParseException
 class ArgParsingUtils {
     companion object {
 
-        class InvalidArgumentException(override val message: String): Exception()
+        class InvalidArgumentException(override val message: String) : Exception()
 
         /***
          * Get a database parameter from the command line or the config file. Command line options override options in
          * the config file.
          */
-        fun getDbParameter(path: String, configFromFile: Config, parameters: CliParameters): String {
+        fun getDbParameter(path: String, configFromFile: Config, parameters: CliParameters): String? {
             return getParameter(
                 path,
                 configFromFile.getConfigOrEmpty(AppSimulator.DB_PARAMS_PREFIX),
-                parameters.databaseParams
-            ) ?: throw InvalidArgumentException("Database parameter $path must be specified on the command line, using -d$path, or in a " +
-                    "config file.")
+                parameters.databaseParams,
+            )
         }
 
         /***
@@ -33,7 +32,7 @@ class ArgParsingUtils {
             val stringParameter = getParameter(
                 path,
                 configFromFile.getConfigOrEmpty(AppSimulator.TOPIC_CREATION_PREFIX),
-                parameters.topicCreationParams
+                parameters.topicCreationParams,
             ) ?: return default
             return try {
                 Integer.parseInt(stringParameter)
@@ -50,29 +49,35 @@ class ArgParsingUtils {
             return getParameter(
                 path,
                 configFromFile.getConfigOrEmpty(AppSimulator.LOAD_GEN_PARAMS_PREFIX),
-                parameters.loadGenerationParams
-            ) ?: throw InvalidArgumentException("Load generation parameter $path must be specified on the command line, using -l$path, " +
-                "or in a config file.")
+                parameters.loadGenerationParams,
+            ) ?: throw InvalidArgumentException(
+                "Load generation parameter $path must be specified on the command line, using -l$path, " +
+                    "or in a config file.",
+            )
         }
 
-        inline fun <reified E: Enum<E>> getLoadGenEnumParameter(path: String, configFromFile: Config, parameters: CliParameters): E {
+        inline fun <reified E : Enum<E>> getLoadGenEnumParameter(path: String, configFromFile: Config, parameters: CliParameters): E {
             val stringParameter = getParameter(
                 path,
                 configFromFile.getConfigOrEmpty(AppSimulator.LOAD_GEN_PARAMS_PREFIX),
-                parameters.loadGenerationParams
-            ) ?: throw InvalidArgumentException("Load generation parameter $path must be specified on the command line, using -l$path," +
-                    " or in a config file. Must be one of (${E::class.java.enumConstants.map { it.name }.toSet()}).")
+                parameters.loadGenerationParams,
+            ) ?: throw InvalidArgumentException(
+                "Load generation parameter $path must be specified on the command line, using -l$path," +
+                    " or in a config file. Must be one of (${E::class.java.enumConstants.map { it.name }.toSet()}).",
+            )
             return E::class.java.enumConstants.singleOrNull {
                 it.name == stringParameter
-            } ?: throw InvalidArgumentException("Load generation parameter $path = $stringParameter is not one of " +
-                "(${E::class.java.enumConstants.map { it.name }.toSet()}).")
+            } ?: throw InvalidArgumentException(
+                "Load generation parameter $path = $stringParameter is not one of " +
+                    "(${E::class.java.enumConstants.map { it.name }.toSet()}).",
+            )
         }
 
-        fun getLoadGenIntParameter(path: String, default: Int, configFromFile: Config, parameters: CliParameters, ): Int {
+        fun getLoadGenIntParameter(path: String, default: Int, configFromFile: Config, parameters: CliParameters): Int {
             val stringParameter = getParameter(
                 path,
                 configFromFile.getConfigOrEmpty(AppSimulator.LOAD_GEN_PARAMS_PREFIX),
-                parameters.loadGenerationParams
+                parameters.loadGenerationParams,
             ) ?: return default
             return try {
                 Integer.parseInt(stringParameter)
@@ -93,8 +98,11 @@ class ArgParsingUtils {
                 try {
                     Duration.parse(parameterFromCommandLine)
                 } catch (exception: DateTimeParseException) {
-                    throw InvalidArgumentException("Load generation parameter $path = $parameterFromCommandLine can not be parsed as a " +
-                        "duration. It must have the ISO-8601 duration format PnDTnHnMn.nS. e.g. PT20.5S gets converted to 20.5 seconds.")
+                    throw InvalidArgumentException(
+                        "Load generation parameter $path = $parameterFromCommandLine can not be parsed as a " +
+                            "duration. It must have the ISO-8601 duration format " +
+                            "PnDTnHnMn.nS. e.g. PT20.5S gets converted to 20.5 seconds.",
+                    )
                 }
             }
         }
@@ -111,9 +119,11 @@ class ArgParsingUtils {
                 try {
                     Duration.parse(parameterFromCommandLine)
                 } catch (exception: DateTimeParseException) {
-                    throw InvalidArgumentException("Load generation parameter $path = $parameterFromCommandLine can not be parsed " +
-                        "as a duration. It must have the ISO-8601 duration format PnDTnHnMn.nS. e.g. PT20.5S gets converted to 20.5 " +
-                        "seconds.")
+                    throw InvalidArgumentException(
+                        "Load generation parameter $path = $parameterFromCommandLine can not be parsed " +
+                            "as a duration. It must have the ISO-8601 duration format PnDTnHnMn.nS. e.g. PT20.5S gets converted to 20.5 " +
+                            "seconds.",
+                    )
                 }
             }
         }

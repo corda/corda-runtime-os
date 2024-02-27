@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory
 internal class ParametersRetrieverContext(private val ctx: ClientRequestContext) {
 
     private companion object {
-       val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val pathParamsMap: Map<String, String?>
@@ -26,14 +26,18 @@ internal class ParametersRetrieverContext(private val ctx: ClientRequestContext)
         val ctxPathParamMap = ctx.pathParamMap
         pathParamsMap = ctxPathParamMap.mapKeys { it.key.lowercase() }
         if (pathParamsMap.size != ctxPathParamMap.size) {
-            logger.warn("Some path parameters keys were dropped. " +
-                    "Original map: $ctxPathParamMap, transformed map: $pathParamsMap")
+            logger.warn(
+                "Some path parameters keys were dropped. " +
+                    "Original map: $ctxPathParamMap, transformed map: $pathParamsMap"
+            )
         }
         val ctxQueryParamMap = ctx.queryParams
         queryParamsMap = ctxQueryParamMap.mapKeys { it.key.lowercase() }
         if (queryParamsMap.size != ctxQueryParamMap.size) {
-            logger.warn("Some query parameters keys were dropped. " +
-                    "Original map: $ctxQueryParamMap, transformed map: $queryParamsMap")
+            logger.warn(
+                "Some query parameters keys were dropped. " +
+                    "Original map: $ctxQueryParamMap, transformed map: $queryParamsMap"
+            )
         }
     }
 

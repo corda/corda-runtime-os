@@ -9,16 +9,18 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.data.virtualnode.VirtualNodeOperationStatusRequest
 import net.corda.data.virtualnode.VirtualNodeOperationalState
+import net.corda.data.virtualnode.VirtualNodeSchemaRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType.VAULT
 import net.corda.db.core.CloseableDataSource
+import net.corda.db.schema.CordaDb
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
-import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
+import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationBadRequestException
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
@@ -26,6 +28,7 @@ import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
+import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC
@@ -36,12 +39,12 @@ import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeOperationStatusHandler
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeSchemaHandler
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 import javax.sql.DataSource
-import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 
 /**
  * An RPC responder processor that handles virtual node creation requests.
@@ -59,9 +62,11 @@ internal class VirtualNodeWriterProcessor(
     private val dbConnectionManager: DbConnectionManager,
     private val oldVirtualNodeEntityRepository: VirtualNodeEntityRepository,
     private val virtualNodeOperationStatusHandler: VirtualNodeOperationStatusHandler,
+    private val virtualNodeSchemaHandler: VirtualNodeSchemaHandler,
     private val changeLogsRepository: CpkDbChangeLogRepository,
     private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
-    private val migrationUtility: MigrationUtility
+    private val migrationUtility: MigrationUtility,
+    private val jpaEntitiesRegistry: JpaEntitiesRegistry,
 ) : RPCResponderProcessor<VirtualNodeManagementRequest, VirtualNodeManagementResponse> {
 
     companion object {
@@ -94,6 +99,10 @@ internal class VirtualNodeWriterProcessor(
             is VirtualNodeOperationStatusRequest -> {
                 logger.info("Handling virtual node operation status request with id ${typedRequest.requestId}")
                 virtualNodeOperationStatusHandler.handle(request.timestamp, typedRequest, respFuture)
+            }
+            is VirtualNodeSchemaRequest -> {
+                logger.info("Handling virtual node schema SQL request for ${typedRequest.dbType} DB")
+                virtualNodeSchemaHandler.handle(request.timestamp, typedRequest, respFuture)
             }
             else -> throw VirtualNodeWriteServiceException("Unknown management request of type: ${typedRequest::class.java.name}")
         }
@@ -134,16 +143,21 @@ internal class VirtualNodeWriterProcessor(
                         virtualNodeInfo.cpiIdentifier.version
                     )!!
                     dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).use { dataSource ->
+                        val emVault = dbConnectionManager.getOrCreateEntityManagerFactory(
+                            virtualNodeInfo.vaultDdlConnectionId!!,
+                            jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)!!,
+                            enablePool = false
+                        ).createEntityManager()
                         // changelog tags are the CPK file checksum the changelog belongs to
                         val cpkChecksumsOfAppliedChangelogs: Set<String> = getAppliedChangelogTags(
-                            em,
+                            emVault,
                             dataSource,
                             systemTerminatorTag
                         )
 
                         logger.info(
                             "CPK file checksums of currently applied changelogs on vault schema for virtual node " +
-                                    "$currentVNodeShortHash: [${cpkChecksumsOfAppliedChangelogs.joinToString()}]"
+                                "$currentVNodeShortHash: [${cpkChecksumsOfAppliedChangelogs.joinToString()}]"
                         )
 
                         val changesetsToRollback =
@@ -154,10 +168,11 @@ internal class VirtualNodeWriterProcessor(
                             val changeLogs = changelogs.joinToString { it.id.filePath }
                             logger.info(
                                 "Virtual node '$currentVNodeShortHash' attempting to roll back the following " +
-                                        "changelogs for CPK '$cpkFileChecksum' [$changeLogs]"
+                                    "changelogs for CPK '$cpkFileChecksum' [$changeLogs]"
                             )
                             rollbackVirtualNodeDb(
-                                dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!),
+                                dbConnectionManager
+                                    .createDatasource(virtualNodeInfo.vaultDdlConnectionId!!, enablePool = false),
                                 changelogs,
                                 systemTerminatorTag
                             )
@@ -170,16 +185,17 @@ internal class VirtualNodeWriterProcessor(
 
                     changelogsToRun.forEach { (cpkFileChecksum, changelogsForThisCpk) ->
                         try {
-                            dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).use {
-                                runCpkResyncMigrations(it, cpkFileChecksum, changelogsForThisCpk)
-                            }
+                            dbConnectionManager
+                                .createDatasource(virtualNodeInfo.vaultDdlConnectionId!!, enablePool = false).use {
+                                    runCpkResyncMigrations(it, cpkFileChecksum, changelogsForThisCpk)
+                                }
                         } catch (e: Exception) {
                             val changeLogs = changelogsForThisCpk.joinToString {
                                 it.id.cpkFileChecksum.toString() + ", " + it.id.filePath
                             }
                             logger.warn(
                                 "Error from liquibase API while running resync migrations for CPI " +
-                                        "${cpiMetadata.cpiId.name} - changelogs: [${changeLogs}]",
+                                    "${cpiMetadata.cpiId.name} - changelogs: [$changeLogs]",
                                 e
                             )
                             respFuture.complete(
@@ -225,7 +241,6 @@ internal class VirtualNodeWriterProcessor(
         stateChangeRequest: VirtualNodeStateChangeRequest,
         respFuture: CompletableFuture<VirtualNodeManagementResponse>
     ) {
-
         // Attempt and update, and on failure, pass the error back to the RPC processor
         try {
             val em = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
@@ -247,12 +262,27 @@ internal class VirtualNodeWriterProcessor(
                 val newState = OperationalStatus.fromAvro(stateChangeRequest.newState)
 
                 // Compare new state to current state
+                val successResponse = {
+                    VirtualNodeManagementResponse(
+                        instant,
+                        VirtualNodeStateChangeResponse(
+                            stateChangeRequest.holdingIdentityShortHash,
+                            nodeInfo.flowP2pOperationalStatus.toAvro(),
+                            nodeInfo.flowStartOperationalStatus.toAvro(),
+                            nodeInfo.flowOperationalStatus.toAvro(),
+                            nodeInfo.vaultDbOperationalStatus.toAvro()
+                        )
+                    )
+                }
                 when (inMaintenance) {
-                    true -> if (newState == OperationalStatus.INACTIVE)
-                        throw InvalidStateChangeRuntimeException("VirtualNode", newState.name, shortHash.value)
-
-                    false -> if (newState == OperationalStatus.ACTIVE)
-                        throw InvalidStateChangeRuntimeException("VirtualNode", newState.name, shortHash.value)
+                    true -> if (newState == OperationalStatus.INACTIVE) {
+                        respFuture.complete(successResponse())
+                        return
+                    }
+                    false -> if (newState == OperationalStatus.ACTIVE) {
+                        respFuture.complete(successResponse())
+                        return
+                    }
                 }
 
                 val changelogsPerCpk = changeLogsRepository.findByCpiId(em, nodeInfo.cpiIdentifier)
@@ -291,7 +321,8 @@ internal class VirtualNodeWriterProcessor(
                 future.get()
             } catch (e: Exception) {
                 throw VirtualNodeWriteServiceException(
-                    "Record $virtualNodeRecord was written to the database, but couldn't be published. Cause: $e", e
+                    "Record $virtualNodeRecord was written to the database, but couldn't be published. Cause: $e",
+                    e
                 )
             }
 
@@ -332,14 +363,17 @@ internal class VirtualNodeWriterProcessor(
 
         LiquibaseSchemaMigratorImpl().updateDb(
             dataSource.connection,
-            VirtualNodeDbChangeLog(changelogs.map {
-                CpkDbChangeLog(
-                    CpkDbChangeLogIdentifier(
-                        it.id.cpkFileChecksum,
-                        it.id.filePath
-                    ), it.content
-                )
-            }),
+            VirtualNodeDbChangeLog(
+                changelogs.map {
+                    CpkDbChangeLog(
+                        CpkDbChangeLogIdentifier(
+                            it.id.cpkFileChecksum,
+                            it.id.filePath
+                        ),
+                        it.content
+                    )
+                }
+            ),
             tag = cpkFileChecksum.toString()
         )
         logger.info("Resync migrations for CPK '$cpkFileChecksum' completed.")
@@ -351,13 +385,13 @@ internal class VirtualNodeWriterProcessor(
         dataSource: DataSource,
         systemTerminatorTag: String
     ): Set<String> = (
-            em.createNativeQuery(
-                "SELECT tag FROM ${dataSource.connection.schema}.databasechangelog " +
-                        "WHERE tag IS NOT NULL and tag != :systemTerminatorTag " +
-                        "ORDER BY orderexecuted"
-            )
-                .setParameter("systemTerminatorTag", systemTerminatorTag)
-                .resultList
-                .toSet() as Set<String>
-            ).toSet()
+        em.createNativeQuery(
+            "SELECT tag FROM ${dataSource.connection.schema}.databasechangelog " +
+                "WHERE tag IS NOT NULL and tag != :systemTerminatorTag " +
+                "ORDER BY orderexecuted"
+        )
+            .setParameter("systemTerminatorTag", systemTerminatorTag)
+            .resultList
+            .toSet() as Set<String>
+        ).toSet()
 }

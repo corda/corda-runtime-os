@@ -253,7 +253,7 @@ class MemberListCachePerformanceTest {
         executorService.invokeAll(cacheOperations)
         countDownLatch.await(10L, TimeUnit.SECONDS)
         val end = clock.millis()
-        //END PERFORMANCE TEST
+        // END PERFORMANCE TEST
         if (PRINT_PROGRESS_VERBOSE) println("Ending test. Shutting down threads.")
         // Shutdown executor service
         executorService.shutdown()
@@ -280,15 +280,17 @@ class MemberListCachePerformanceTest {
         var writes = 0
         var reads = 0
 
-        val output = CacheOperations((0 until numOperationsToExecute).map {
-            if (readOccurrence > 0 && it % readOccurrence < writeToReadRatio) {
-                writes++
-                getOperation(possibleWriteOperations())
-            } else {
-                reads++
-                getOperation(possibleReadOperations())
-            }
-        }.shuffled())
+        val output = CacheOperations(
+            (0 until numOperationsToExecute).map {
+                if (readOccurrence > 0 && it % readOccurrence < writeToReadRatio) {
+                    writes++
+                    getOperation(possibleWriteOperations())
+                } else {
+                    reads++
+                    getOperation(possibleReadOperations())
+                }
+            }.shuffled()
+        )
         require(output.size == numOperationsToExecute)
 
         if (PRINT_PROGRESS_VERBOSE) {
@@ -351,7 +353,7 @@ class MemberListCachePerformanceTest {
                 Ratio of writes to reads: $writeToReadRatio
                 Number of test runs: $NUM_TEST_REPETITIONS
                 ************************
-            """.trimIndent()
+                """.trimIndent()
             )
         }
     }

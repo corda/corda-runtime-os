@@ -95,6 +95,7 @@ class DatabaseInstaller(
      *
      * @return [EntityManagerFactory] that can be used to access the database.
      */
+    @Suppress("NestedBlockDepth")
     fun setupDatabase(
         cfg: EntityManagerConfiguration,
         resourceSubPath: String,
@@ -123,8 +124,19 @@ class DatabaseInstaller(
         } else {
             cfg.dataSource.connection.use { connection ->
                 connection.createStatement().use { stmt ->
-                    stmt.execute("CREATE SCHEMA IF NOT EXISTS $schemaName")
+                    val sql = """
+                        CREATE SCHEMA IF NOT EXISTS $schemaName;
+                    """.trimIndent()
+                    stmt.execute(sql)
                 }
+
+                if (!DbUtils.isInMemory)
+                    connection.createStatement().use { stmt ->
+                        val sql = """
+                            SET search_path TO $schemaName;
+                        """.trimIndent()
+                        stmt.execute(sql)
+                    }
                 connection.commit()
 
                 StringWriter().use { writer ->

@@ -9,6 +9,7 @@ import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.ConfigDefaults
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.StateManagerConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
@@ -111,32 +112,38 @@ class BootstrapConfigTest {
 
             softly.assertThat(config.hasPath("secrets")).isFalse
 
-            softly.assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_TYPE)).isEqualTo("DATABASE")
-            softly.assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_JDBC_URL)).isEqualTo("cnx-url")
-            softly.assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_DB_USER)).isEqualTo("cnx-user")
-            softly.assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_DB_PASS)).isEqualTo("cnx-password")
+            val stateManagerConfig = config.getConfig(BootConfig.BOOT_STATE_MANAGER)
+            assertStateType(
+                softly, stateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT,
+                driver = "flowCheckpoint-driver",
+                minSize = 111, maxSize = 222, idleTimeout = 333, maxLifetime = 444, keepAlive = 555, validationTimeout = 666
+            )
+            assertStateType(
+                softly, stateManagerConfig, StateManagerConfig.StateType.FLOW_MAPPING,
+                driver = "flowMapping-driver",
+                minSize = 111, maxSize = 222, idleTimeout = 333, maxLifetime = 444, keepAlive = 555, validationTimeout = 666
+            )
+            assertStateType(
+                softly, stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION,
+                driver = "keyRotation-driver",
+                minSize = 111, maxSize = 222, idleTimeout = 333, maxLifetime = 444, keepAlive = 555, validationTimeout = 666
+            )
+            assertStateType(
+                softly, stateManagerConfig, StateManagerConfig.StateType.TOKEN_POOL_CACHE,
+                driver = "tokenPoolCache-driver",
+                minSize = 111, maxSize = 222, idleTimeout = 333, maxLifetime = 444, keepAlive = 555, validationTimeout = 666
+            )
+            assertStateType(
+                softly, stateManagerConfig, StateManagerConfig.StateType.P2P_SESSION,
+                driver = "p2pSession-driver",
+                minSize = 111, maxSize = 222, idleTimeout = 333, maxLifetime = 444, keepAlive = 555, validationTimeout = 666
+            )
+            assertStateType(
+                softly, stateManagerConfig, StateManagerConfig.StateType.FLOW_STATUS,
+                driver = "flowStatus-driver",
+                minSize = 111, maxSize = 222, idleTimeout = 333, maxLifetime = 444, keepAlive = 555, validationTimeout = 666
+            )
         }
-    }
-
-    @Test
-    fun `state manager config can be provided in default worker params and put into boot config`() {
-        val config = WorkerHelpers.getBootstrapConfig(
-            mockSecretsServiceFactoryResolver,
-            DefaultWorkerParams(1234).also {
-                it.stateManagerParams = mapOf(
-                    "database.user" to "user123",
-                    "database.pass" to "pass123",
-                )
-                it.secrets = mapOf(
-                    "salt" to "foo",
-                    "passphrase" to "bar",
-                )
-            },
-            mockConfigurationValidator
-        )
-
-        assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_DB_USER)).isEqualTo("user123")
-        assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_DB_PASS)).isEqualTo("pass123")
     }
 
     @Test
@@ -180,6 +187,5 @@ class BootstrapConfigTest {
             softly.assertThat(config.getInt("maxAllowedMessageSize")).isEqualTo(0)
             softly.assertThat(config.getString("topicPrefix")).isEqualTo("")
         }
-
     }
 }

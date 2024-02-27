@@ -1,10 +1,6 @@
 package net.corda.messaging.emulation.subscription.stateandevent
 
 import com.typesafe.config.ConfigValueFactory
-import java.util.*
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -22,6 +18,10 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class)
 @Timeout(10, unit = TimeUnit.SECONDS)
@@ -149,7 +149,11 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
                 return StateAndEventProcessor.Response(
                     null,
                     (1..increaseBy).map {
-                        val toSend = Record(anotherSubscriptionConfig.eventTopic, UUID.randomUUID().toString(), UUID.randomUUID().toString())
+                        val toSend =
+                            Record(
+                                anotherSubscriptionConfig.eventTopic,
+                                UUID.randomUUID().toString(),
+                                UUID.randomUUID().toString())
                         sent.add(toSend)
                         toSend
                     }
@@ -199,6 +203,7 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
         anotherSubscription.close()
     }
 
+    @Suppress("TooGenericExceptionThrown")
     @Test
     fun `state modifications are saved`() {
         val subscriptionConfig = SubscriptionConfig(

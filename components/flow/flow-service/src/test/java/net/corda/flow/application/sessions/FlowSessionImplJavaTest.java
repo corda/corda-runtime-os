@@ -1,7 +1,7 @@
 package net.corda.flow.application.sessions;
 
 import co.paralleluniverse.fibers.FiberScheduler;
-import net.corda.flow.application.serialization.SerializationServiceInternal;
+import net.corda.flow.application.serialization.FlowSerializationService;
 import net.corda.flow.application.sessions.impl.FlowSessionImpl;
 import net.corda.flow.fiber.FlowContinuation;
 import net.corda.flow.fiber.FlowFiber;
@@ -21,6 +21,7 @@ import net.corda.serialization.checkpoint.CheckpointSerializer;
 import net.corda.v5.application.messaging.FlowSession;
 import net.corda.v5.base.types.MemberX500Name;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,7 +35,7 @@ import static org.mockito.Mockito.when;
 public class FlowSessionImplJavaTest {
 
     private final FlowSandboxGroupContext flowSandboxGroupContext = mock(FlowSandboxGroupContext.class);
-    private final SerializationServiceInternal serializationService = mock(SerializationServiceInternal.class);
+    private final FlowSerializationService serializationService = mock(FlowSerializationService.class);
     private final SandboxDependencyInjector sandboxDependencyInjector = mock(SandboxDependencyInjector.class);
     private final CheckpointSerializer checkpointSerializer = mock(CheckpointSerializer.class);
     private final FlowFiberExecutionContext flowFiberExecutionContext = new FlowFiberExecutionContext(
@@ -58,7 +59,8 @@ public class FlowSessionImplJavaTest {
             serializationService,
             flowContext,
             FlowSessionImpl.Direction.INITIATED_SIDE,
-            false);
+            false,
+            null);
 
     private static class FakeFiber implements FlowFiber {
         @NotNull
@@ -106,6 +108,12 @@ public class FlowSessionImplJavaTest {
 
         @Override
         public void attemptInterrupt() {
+        }
+
+        @Nullable
+        @Override
+        public UUID getSandboxGroupId() {
+            return null;
         }
     }
 

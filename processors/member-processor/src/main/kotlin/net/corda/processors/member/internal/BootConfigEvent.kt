@@ -4,5 +4,5 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleEvent
 
 data class BootConfigEvent(
-    val config: SmartConfig
+    val config: SmartConfig,
 ) : LifecycleEvent

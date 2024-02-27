@@ -1,6 +1,6 @@
 package net.corda.rest.asynchronous.v1
 
-enum class AsyncOperationState  {
+enum class AsyncOperationState {
 
     /**
      * The requested has been accepted by the platform

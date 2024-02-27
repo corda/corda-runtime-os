@@ -432,7 +432,6 @@ class KeyRestResourceImplTest {
             assertThat(details.message).isEqualTo("Could not list supported schemes for tenant $TENANT_ID: Repartition Event!")
         }
 
-
         @Test
         fun `InvalidParamsException is mapped to InvalidInputException`() {
             whenever(cryptoOpsClient.generateKeyPair(TENANT_ID, CATEGORY, ALIAS, SCHEME))

@@ -9,6 +9,7 @@ import brave.context.slf4j.MDCScopeDecorator
 import brave.http.HttpRequest
 import brave.http.HttpRequestMatchers.methodEquals
 import brave.http.HttpRequestMatchers.pathStartsWith
+import brave.http.HttpRequestParser
 import brave.http.HttpRuleSampler
 import brave.http.HttpTracing
 import brave.propagation.B3Propagation
@@ -25,10 +26,12 @@ import net.corda.tracing.BatchPublishTracing
 import net.corda.tracing.BatchRecordTracer
 import net.corda.tracing.TraceContext
 import net.corda.tracing.TracingService
+import net.corda.utilities.debug
 import org.eclipse.jetty.servlet.FilterHolder
 import org.slf4j.LoggerFactory
 import zipkin2.Span
 import zipkin2.reporter.AsyncReporter
+import zipkin2.reporter.BytesMessageSender
 import zipkin2.reporter.Reporter
 import zipkin2.reporter.brave.ZipkinSpanHandler
 import zipkin2.reporter.urlconnection.URLConnectionSender
@@ -84,8 +87,8 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
         //Establish zipkin connection iff url host is provided and create respective reporter
         if (zipkinHost != null) {
             val zipkinUrl = "$zipkinHost/api/v2/spans"
-            val spanAsyncReporter =
-                AsyncReporter.create(URLConnectionSender.create(zipkinUrl)).also(resourcesToClose::push)
+            val sender: BytesMessageSender = URLConnectionSender.create(zipkinUrl)
+            val spanAsyncReporter = AsyncReporter.create(sender).also(resourcesToClose::push)
             reporters.add(spanAsyncReporter)
         }
 
@@ -112,7 +115,17 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
         .putRule(and(methodEquals("POST"), pathStartsWith("/api/v1/flow")), sampler(samplesPerSecond))
         .putRule(pathStartsWith("/"), sampler(samplesPerSecond)).build()
 
-    private val httpTracing by lazy { HttpTracing.newBuilder(tracing).serverSampler(serverSampler).build() }
+    private val httpTracing by lazy {
+        HttpTracing.newBuilder(tracing)
+            .serverRequestParser(
+                object : HttpRequestParser.Default() {
+                    override fun spanName(req: HttpRequest?, context: brave.propagation.TraceContext?): String {
+                        return "http server - ${req?.method()} - ${req?.path()}"
+                    }
+                }
+            )
+        .serverSampler(serverSampler).build()
+    }
 
     private class LogReporter : Reporter<Span> {
         private val logger: Logger = Logger.getLogger(LogReporter::class.java.name)
@@ -133,18 +146,48 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
     }
 
     private val recordInjector by lazy {
-        tracing.propagation().injector { param: MutableList<Pair<String, String>>, key: String, value: String ->
-            param.removeAll { it.first == key }
-            param.add(key to value)
-        }
+        BraveRecordInjector(tracing)
     }
 
     private val recordTracing: BraveRecordTracing by lazy { BraveRecordTracing(tracing) }
 
-    override fun addTraceHeaders(headers: List<Pair<String, String>>): List<Pair<String, String>> {
-        val headersWithTracing = headers.toMutableList()
-        recordInjector.inject(tracing.currentTraceContext().get(), headersWithTracing)
-        return headersWithTracing
+    override fun addTraceHeaders(
+        headers: List<Pair<String, String>>,
+        traceHeadersToOverrideContext: List<Pair<String, String>>
+    ): List<Pair<String, String>> {
+        val ctx = recordTracing.getTraceContext(traceHeadersToOverrideContext)
+        return if (ctx == null) {
+            logger.debug { "Tracing context is not set" }
+            headers
+        } else {
+            recordInjector.inject(ctx, headers)
+        }
+    }
+
+    override fun addTraceHeaders(
+        headers: List<Pair<String, String>>,
+        traceHeadersToOverrideContext: Map<String, Any>
+    ): List<Pair<String, String>> {
+        val ctx = recordTracing.getTraceContext(traceHeadersToOverrideContext)
+        return if (ctx == null) {
+            logger.debug { "Tracing context is not set" }
+            headers
+        } else {
+            recordInjector.inject(ctx, headers)
+        }
+    }
+
+    override fun addTraceHeaders(
+        headers: Map<String, Any>,
+        traceHeadersToOverrideContext: Map<String, Any>
+    ): Map<String, Any> {
+        val ctx = recordTracing.getTraceContext(traceHeadersToOverrideContext)
+        return if (ctx == null) {
+            logger.debug { "Tracing context is not set" }
+            headers
+        } else {
+            return recordInjector.inject(ctx, headers)
+        }
     }
 
     override fun traceBatch(operationName: String): BatchRecordTracer {
@@ -176,6 +219,13 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
 
     override fun nextSpan(
         operationName: String, headers: List<Pair<String, String>>
+    ): TraceContext {
+        val span = recordTracing.nextSpan(headers).name(operationName).start()
+        return BraveTraceContext(tracer, span)
+    }
+
+    override fun nextSpan(
+        operationName: String, headers:  Map<String, Any>
     ): TraceContext {
         val span = recordTracing.nextSpan(headers).name(operationName).start()
         return BraveTraceContext(tracer, span)

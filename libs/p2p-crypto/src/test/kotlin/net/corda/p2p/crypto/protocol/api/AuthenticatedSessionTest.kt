@@ -5,7 +5,11 @@ import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.data.p2p.crypto.CommonHeader
 import net.corda.data.p2p.crypto.MessageType
 import net.corda.data.p2p.crypto.ProtocolMode
+import net.corda.data.p2p.crypto.protocol.AuthenticatedSessionDetails
+import net.corda.data.p2p.crypto.protocol.Session
+import net.corda.p2p.crypto.protocol.api.Session.Companion.toCorda
 import net.corda.v5.base.types.MemberX500Name
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.BeforeAll
@@ -16,6 +20,7 @@ import java.security.Security
 import java.security.Signature
 import java.time.Instant
 import java.util.UUID
+import javax.crypto.spec.SecretKeySpec
 
 class AuthenticatedSessionTest {
 
@@ -36,7 +41,7 @@ class AuthenticatedSessionTest {
         partyAMaxMessageSize,
         partyASessionKey.public,
         groupId,
-        CertificateCheckMode.NoCertificate
+        CertificateCheckMode.NoCertificate,
     )
 
     // party B
@@ -75,18 +80,18 @@ class AuthenticatedSessionTest {
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
             partyBSessionKey.public,
             null,
-            signingCallbackForA
+            signingCallbackForA,
         )
 
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
-            listOf(partyASessionKey.public to SignatureSpecs.ECDSA_SHA256)
+            listOf(partyASessionKey.public to SignatureSpecs.ECDSA_SHA256),
         )
 
         authenticationProtocolB.validateEncryptedExtensions(
             CertificateCheckMode.NoCertificate,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
-            aliceX500Name
+            aliceX500Name,
         )
 
         // Step 4: responder sending handshake message and initiator validating it.
@@ -98,13 +103,13 @@ class AuthenticatedSessionTest {
         val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(
             partyBSessionKey.public,
             null,
-            signingCallbackForB
+            signingCallbackForB,
         )
 
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
             aliceX500Name,
-            listOf(partyBSessionKey.public to SignatureSpecs.ECDSA_SHA256)
+            listOf(partyBSessionKey.public to SignatureSpecs.ECDSA_SHA256),
         )
 
         // Both sides generate session secrets
@@ -116,8 +121,9 @@ class AuthenticatedSessionTest {
             val payload = "ping $i".toByteArray(Charsets.UTF_8)
             val authenticationResult = authenticatedSessionOnA.createMac(payload)
             val initiatorMsg = AuthenticatedDataMessage(
-                authenticationResult.header, ByteBuffer.wrap(payload),
-                ByteBuffer.wrap(authenticationResult.mac)
+                authenticationResult.header,
+                ByteBuffer.wrap(payload),
+                ByteBuffer.wrap(authenticationResult.mac),
             )
 
             authenticatedSessionOnB.validateMac(initiatorMsg.header, initiatorMsg.payload.array(), initiatorMsg.authTag.array())
@@ -130,7 +136,8 @@ class AuthenticatedSessionTest {
             val responderMsg =
                 AuthenticatedDataMessage(
                     authenticationResult.header,
-                    ByteBuffer.wrap(payload), ByteBuffer.wrap(authenticationResult.mac)
+                    ByteBuffer.wrap(payload),
+                    ByteBuffer.wrap(authenticationResult.mac),
                 )
 
             authenticatedSessionOnA.validateMac(responderMsg.header, responderMsg.payload.array(), responderMsg.authTag.array())
@@ -160,7 +167,7 @@ class AuthenticatedSessionTest {
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
             partyBSessionKey.public,
             null,
-            signingCallbackForA
+            signingCallbackForA,
         )
 
         authenticationProtocolB.validatePeerHandshakeMessage(
@@ -171,7 +178,7 @@ class AuthenticatedSessionTest {
         authenticationProtocolB.validateEncryptedExtensions(
             CertificateCheckMode.NoCertificate,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
-            aliceX500Name
+            aliceX500Name,
         )
 
         // Step 4: responder sending handshake message and initiator validating it.
@@ -183,13 +190,13 @@ class AuthenticatedSessionTest {
         val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(
             partyBSessionKey.public,
             null,
-            signingCallbackForB
+            signingCallbackForB,
         )
 
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
             aliceX500Name,
-            listOf(partyBSessionKey.public to SignatureSpecs.ECDSA_SHA256)
+            listOf(partyBSessionKey.public to SignatureSpecs.ECDSA_SHA256),
         )
 
         // Both sides generate session secrets
@@ -200,14 +207,16 @@ class AuthenticatedSessionTest {
         val payload = "ping".toByteArray(Charsets.UTF_8)
         val authenticationResult = authenticatedSessionOnA.createMac(payload)
         val initiatorMsg = AuthenticatedDataMessage(
-            authenticationResult.header, ByteBuffer.wrap(payload),
-            ByteBuffer.wrap(authenticationResult.mac)
+            authenticationResult.header,
+            ByteBuffer.wrap(payload),
+            ByteBuffer.wrap(authenticationResult.mac),
         )
 
         assertThatThrownBy {
             authenticatedSessionOnB.validateMac(
                 initiatorMsg.header,
-                initiatorMsg.payload.array() + "0".toByteArray(Charsets.UTF_8), initiatorMsg.authTag.array()
+                initiatorMsg.payload.array() + "0".toByteArray(Charsets.UTF_8),
+                initiatorMsg.authTag.array(),
             )
         }
             .isInstanceOf(InvalidMac::class.java)
@@ -236,7 +245,7 @@ class AuthenticatedSessionTest {
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(
             partyBSessionKey.public,
             null,
-            signingCallbackForA
+            signingCallbackForA,
         )
 
         authenticationProtocolB.validatePeerHandshakeMessage(
@@ -247,7 +256,7 @@ class AuthenticatedSessionTest {
         authenticationProtocolB.validateEncryptedExtensions(
             CertificateCheckMode.NoCertificate,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
-            aliceX500Name
+            aliceX500Name,
         )
 
         // Step 4: responder sending handshake message and initiator validating it.
@@ -259,13 +268,13 @@ class AuthenticatedSessionTest {
         val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(
             partyBSessionKey.public,
             null,
-            signingCallbackForB
+            signingCallbackForB,
         )
 
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
             aliceX500Name,
-            listOf(partyBSessionKey.public to SignatureSpecs.ECDSA_SHA256)
+            listOf(partyBSessionKey.public to SignatureSpecs.ECDSA_SHA256),
         )
 
         // Both sides generate session secrets
@@ -276,7 +285,7 @@ class AuthenticatedSessionTest {
             .isInstanceOf(MessageTooLargeError::class.java)
             .hasMessageContaining(
                 "Message's size (${partyAMaxMessageSize + 1} bytes) was larger than the max message " +
-                    "size of the session ($partyAMaxMessageSize bytes)"
+                    "size of the session ($partyAMaxMessageSize bytes)",
             )
 
         val payload = ByteArray(partyAMaxMessageSize + 1)
@@ -285,7 +294,43 @@ class AuthenticatedSessionTest {
             .isInstanceOf(MessageTooLargeError::class.java)
             .hasMessageContaining(
                 "Message's size (${partyAMaxMessageSize + 1} bytes) was larger than the max message" +
-                    " size of the session ($partyAMaxMessageSize bytes)"
+                    " size of the session ($partyAMaxMessageSize bytes)",
             )
+    }
+
+    @Test
+    fun `toAvro return a correct avro object`() {
+        val session = AuthenticatedSession(
+            sessionId = "sessionId",
+            outboundSecretKey = SecretKeySpec("aaa".toByteArray(), "alg1"),
+            inboundSecretKey = SecretKeySpec("bbb".toByteArray(), "alg2"),
+            maxMessageSize = 100,
+        )
+
+        val avro = session.toAvro()
+
+        assertThat(avro.details).isInstanceOf(AuthenticatedSessionDetails::class.java)
+    }
+
+    @Test
+    fun `toCorda return a correct session`() {
+        val avro = Session(
+            "sessionId",
+            300,
+            AuthenticatedSessionDetails(
+                net.corda.data.p2p.crypto.protocol.SecretKeySpec(
+                    "alg",
+                    ByteBuffer.wrap(byteArrayOf(1)),
+                ),
+                net.corda.data.p2p.crypto.protocol.SecretKeySpec(
+                    "alg-2",
+                    ByteBuffer.wrap(byteArrayOf(3)),
+                ),
+            ),
+        )
+
+        val session = avro.toCorda()
+
+        assertThat(session).isInstanceOf(AuthenticatedSession::class.java)
     }
 }

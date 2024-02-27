@@ -2,6 +2,15 @@ plugins {
     id 'corda.common-publishing'
     id 'corda.common-library'
 }
+sourceSets {
+    integrationTest {
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+
+tasks.named('integrationTest') {
+}
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
@@ -11,7 +20,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-config-schema"
@@ -20,9 +29,6 @@ dependencies {
     implementation project(":libs:messaging:message-bus")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:serialization:serialization-avro")
-
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
 
 description 'Messaging API'

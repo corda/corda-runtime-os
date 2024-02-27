@@ -5,14 +5,17 @@
 -runtrace: true
 
 -runvm: \
-    -DpostgresHost=${project.postgresHost},\
-    -DpostgresPort=${project.postgresPort},\
-    -DpostgresDb=${project.postgresDb},\
-    -DpostgresUser=${project.postgresUser},\
-    -DpostgresPassword=${project.postgresPassword},\
-    --illegal-access=deny
+  -DdatabaseHost=${project.databaseHost},\
+  -DdatabasePort=${project.databasePort},\
+  -DdatabaseName=${project.databaseName},\
+  -DdatabaseAdminUser=${project.databaseAdminUser},\
+  -DdatabaseAdminPassword=${project.databaseAdminPassword},\
+  -DdatabaseType=${project.databaseType}
+  --illegal-access=deny
 
 -runsystempackages: \
+    javax.annotation;version=3.0.0,\
+    javax.annotation.meta;version=3.0.0,\
     sun.security.x509
 
 # Enable debugging.
@@ -45,6 +48,7 @@
     bnd.identity;id='org.hsqldb.hsqldb',\
     bnd.identity;id='org.ops4j.pax.jdbc.hsqldb',\
     bnd.identity;id='org.osgi.service.jdbc',\
+    bnd.identity;id='org.eclipse.jetty.websocket.server',\
     bnd.identity;id='org.postgresql.jdbc'
 
 -runstartlevel: \

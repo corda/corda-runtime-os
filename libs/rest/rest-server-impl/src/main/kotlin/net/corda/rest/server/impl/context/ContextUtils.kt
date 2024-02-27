@@ -5,10 +5,11 @@ import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
 import io.javalin.http.UnauthorizedResponse
 import net.corda.metrics.CordaMetrics
+import net.corda.rest.authorization.AuthorizationUtils
+import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.exception.HttpApiException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.security.Actor
-import net.corda.rest.security.AuthorizingSubject
 import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.rest.security.InvocationContext
 import net.corda.rest.security.RestAuthContext
@@ -37,12 +38,15 @@ internal object ContextUtils {
 
     private const val CORDA_X500_NAME = "O=HTTP REST Server, L=New York, C=US"
 
-    private const val USER_MDC = "http.user"
-    private const val METHOD_MDC = "http.method"
-    private const val PATH_MDC = "http.path"
-
     private fun <T> withMDC(user: String, method: String, path: String, block: () -> T): T {
-        return withMDC(listOf(USER_MDC to user, METHOD_MDC to method, PATH_MDC to path).toMap(), block)
+        return withMDC(
+            listOf(
+                AuthorizationUtils.USER_MDC to user,
+                AuthorizationUtils.METHOD_MDC to method,
+                AuthorizationUtils.PATH_MDC to path
+            ).toMap(),
+            block
+        )
     }
 
     private fun String.loggerFor(): Logger {
@@ -72,7 +76,8 @@ internal object ContextUtils {
                             this::javaClass.toString(),
                             MemberX500Name.parse(CORDA_X500_NAME)
                         )
-                    ), it
+                    ),
+                    it
                 )
                 CURRENT_REST_CONTEXT.set(restAuthContext)
                 log.trace { """Authenticate user "${it.principal}" completed.""" }
@@ -90,9 +95,9 @@ internal object ContextUtils {
         val expectsMultipart = routeInfo.isMultipartFileUpload
         val receivesMultipartRequest = ctx.isMultipart()
 
-        if(expectsMultipart && !receivesMultipartRequest) {
+        if (expectsMultipart && !receivesMultipartRequest) {
             throw IllegalArgumentException("Endpoint expects Content-Type [multipart/form-data] but received [${ctx.contentType()}].")
-        } else if(receivesMultipartRequest && !expectsMultipart) {
+        } else if (receivesMultipartRequest && !expectsMultipart) {
             throw IllegalArgumentException("Unexpected Content-Type [${ctx.contentType()}].")
         }
     }
@@ -187,18 +192,13 @@ internal object ContextUtils {
         }
     }
 
-    fun authorize(authorizingSubject: AuthorizingSubject, resourceAccessString: String) {
-        val principal = authorizingSubject.principal
-        log.trace { "Authorize \"$principal\" for \"$resourceAccessString\"." }
-        if (!authorizingSubject.isPermitted(resourceAccessString)) {
-            val pathParts = resourceAccessString.split(METHOD_SEPARATOR, limit = 2)
-            withMDC(principal, pathParts.firstOrNull() ?: "no_method", pathParts.lastOrNull() ?: "no_path") {
-                "User not authorized.".let {
-                    log.info(it)
-                    throw ForbiddenResponse(it)
-                }
+    internal fun userNotAuthorized(user: String, resourceAccessString: String) {
+        val pathParts = resourceAccessString.split(METHOD_SEPARATOR, limit = 2)
+        withMDC(user, pathParts.firstOrNull() ?: "no_method", pathParts.lastOrNull() ?: "no_path") {
+            "User not authorized.".let {
+                log.info(it)
+                throw ForbiddenResponse(it)
             }
         }
-        log.trace { "Authorize \"$principal\" for \"$resourceAccessString\" completed." }
     }
 }

@@ -101,7 +101,7 @@ class TestSqlFormattersForPropertyAccess {
 
         assertEquals(
             "insert into testSchema.testTable (testyMcTestFace, testNumber) " +
-                "values ('face', 42)",
+                "values ('face', 42);",
             statement
         )
     }
@@ -113,7 +113,7 @@ class TestSqlFormattersForPropertyAccess {
 
         assertEquals(
             "insert into testSchema.testTable (testDate, testyMcTestFace, testNumber) " +
-                "values ('1970-01-02T10:17:36Z', 'face', 42)",
+                "values ('1970-01-02T10:17:36Z', 'face', 42);",
             statement
         )
     }
@@ -125,7 +125,7 @@ class TestSqlFormattersForPropertyAccess {
 
         assertEquals(
             "insert into testSchema.testTable (crossRef, testyMcTestFace, testNumber) " +
-                "values ('ref#1', 'face', 42)",
+                "values ('ref#1', 'face', 42);",
             statement
         )
     }
@@ -137,7 +137,7 @@ class TestSqlFormattersForPropertyAccess {
 
         assertEquals(
             "insert into testSchema.testTable (testyMcTestFace, version) " +
-                "values ('face', 0)",
+                "values ('face', 0);",
             statement
         )
     }
@@ -149,7 +149,7 @@ class TestSqlFormattersForPropertyAccess {
 
         assertEquals(
             "insert into testSchema.testTable (testyMcTestFace, testNumber) " +
-                "values ('Robert\\'); DROP TABLE Students;--', 34)",
+                "values ('Robert\\'); DROP TABLE Students;--', 34);",
             statement
         )
     }
@@ -171,21 +171,21 @@ class TestSqlFormattersForPropertyAccess {
     fun testToInsertStatementNoSchema() {
         val ent = NoSchemaEntity("test")
         val statement = ent.toInsertStatement()
-        assertEquals("insert into NoSchemaTable (testface) values ('test')", statement)
+        assertEquals("insert into NoSchemaTable (testface) values ('test');", statement)
     }
 
     @Test
     fun testMissingTableName() {
         val ent = NoNameEntity("test")
         val statement = ent.toInsertStatement()
-        assertEquals("insert into NoNameEntity (testface) values ('test')", statement)
+        assertEquals("insert into NoNameEntity (testface) values ('test');", statement)
     }
 
     @Test
     fun testMissingColumnName() {
         val ent = UnnamedColumnEntity("test")
         val statement = ent.toInsertStatement()
-        assertEquals("insert into UnnamedColumn (testFace) values ('test')", statement)
+        assertEquals("insert into UnnamedColumn (testFace) values ('test');", statement)
     }
 
     @Test

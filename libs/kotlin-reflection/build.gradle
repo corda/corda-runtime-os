@@ -45,18 +45,19 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     testCompileOnly 'org.jetbrains:annotations'
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
+    testImplementation libs.assertj.core
+    testImplementation libs.junit.params
+    testRuntimeOnly libs.junit.engine
     testRuntimeOnly "org.jetbrains.kotlinx:kotlinx-metadata-jvm:$kotlinMetadataVersion"
     testRuntimeOnly "org.ow2.asm:asm:$asmVersion"
 
     integrationTestImplementation project(':libs:kotlin-reflection:kotlin-reflection-test-example')
     integrationTestImplementation 'org.slf4j:slf4j-api'
     integrationTestImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
-    integrationTestImplementation "org.junit.jupiter:junit-jupiter:$junit5Version"
-    integrationTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
-    integrationTestRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    integrationTestImplementation libs.junit
+    integrationTestRuntimeOnly libs.junit.engine
+    integrationTestRuntimeOnly libs.junit.platform
+    integrationTestRuntimeOnly libs.slf4j.simple
 }
 
 def jar = tasks.named('jar', Jar) {

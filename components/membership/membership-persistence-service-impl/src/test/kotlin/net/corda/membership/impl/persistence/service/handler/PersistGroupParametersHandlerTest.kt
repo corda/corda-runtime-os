@@ -1,8 +1,8 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -72,7 +72,9 @@ class PersistGroupParametersHandlerTest {
         ByteBuffer.wrap(sigContent)
     )
     private val signatureSpec = CryptoSignatureSpec(
-        SignatureSpecs.ECDSA_SHA256.signatureName, null, null
+        SignatureSpecs.ECDSA_SHA256.signatureName,
+        null,
+        null
     )
 
     private val newSignedParams = SignedGroupParameters(
@@ -158,7 +160,8 @@ class PersistGroupParametersHandlerTest {
         on {
             getOrCreateEntityManagerFactory(
                 vaultDmlConnectionId,
-                entitySet
+                entitySet,
+                false
             )
         } doReturn entityManagerFactory
     }

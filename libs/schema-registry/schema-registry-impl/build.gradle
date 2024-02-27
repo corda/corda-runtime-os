@@ -3,26 +3,45 @@ plugins {
     id 'corda.common-library'
 }
 
+configurations.all {
+    resolutionStrategy {
+        // CVE-2023-42503, current version of Avro uses an outdated version
+        force libs.apache.commons.compress
+    }
+}
+
 dependencies {
+
+    constraints {
+        implementation(libs.slf4j.api)
+
+        implementation(libs.apache.commons.compress) {
+            because "CVE-2023-42503, current version of Avro uses an outdated version"
+        }
+    }
+    
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "net.corda:corda-base"
-
     implementation "org.apache.avro:avro:$avroVersion"
-    constraints {
-        implementation("org.apache.commons:commons-compress:$commonsCompressVersion") {
-            because "CVE-2023-42503, current version of Avro uses an outdated version"
-        }
-    }
-
     implementation "net.corda:corda-avro-schema"
     implementation project(":libs:schema-registry:schema-registry")
     implementation project(':libs:utilities')
 
+    //needed by commons-compress
+    implementation libs.apache.commons.codec
+    
     testRuntimeOnly 'org.osgi:osgi.core'
-    testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    testRuntimeOnly libs.log4j.slf4j
+}
+
+configurations.all {
+    resolutionStrategy {
+        // CVE-2023-42503, current version of Avro uses an outdated version
+        force libs.apache.commons.compress
+    }
 }
 
 description 'Schema Registry Library Implementation'

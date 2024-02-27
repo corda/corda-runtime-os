@@ -26,9 +26,6 @@ dependencies {
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:flow:flow-utilities")
     testImplementation project(":libs:flows:flow-utils")
 }

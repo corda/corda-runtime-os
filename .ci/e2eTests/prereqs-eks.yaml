@@ -5,7 +5,17 @@ global:
   storageClass: corda-sc
 
 kafka:
-  replicaCount: 7
+  extraConfig: |-
+    offsets.topic.replication.factor: 3
+    transaction.state.log.replication.factor: 3
+    authorizer.class.name=org.apache.kafka.metadata.authorizer.StandardAuthorizer
+    auto.create.topics.enable=false
+    allow.everyone.if.no.acl.found=true
+    super.users=User:controller_user
+  controller:
+    replicaCount: 7
+    startupProbe:
+      enabled: true
   resources:
     requests:
       memory: 780Mi
@@ -13,14 +23,6 @@ kafka:
     limits:
       memory: 1600Mi
       cpu: 1000m
-  startupProbe:
-    enabled: true
-  zookeeper:
-    replicaCount: 3
-    startupProbe:
-      enabled: true
-  offsetsTopicReplicationFactor: 3
-  transactionStateLogReplicationFactor: 3
 
 postgresql:
   primary:
@@ -28,6 +30,6 @@ postgresql:
       requests:
         memory: 256Mi
         cpu: 300m
-      limits:  
+      limits:
         memory: 512Mi
         cpu: 600m

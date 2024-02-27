@@ -5,6 +5,7 @@ plugins {
 
 description 'Corda REST Test Common'
 
+ext.cordaEnableFormatting = true
 
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -12,11 +13,11 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-serialization"
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    implementation "com.nimbusds:oauth2-oidc-sdk:$nimbusVersion"
-    implementation "com.konghq:unirest-java:$unirestVersion"
+    implementation libs.jackson.module.kotlin
+    implementation libs.nimbus.sdk
+    implementation libs.unirest.java
 
-    implementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    implementation libs.mockito.kotlin
 
     implementation project(":libs:rest:rest")
     implementation project(":libs:rest:rest-common")

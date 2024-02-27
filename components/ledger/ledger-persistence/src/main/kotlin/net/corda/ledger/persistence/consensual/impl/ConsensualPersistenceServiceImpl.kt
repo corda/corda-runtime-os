@@ -1,8 +1,8 @@
 package net.corda.ledger.persistence.consensual.impl
 
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
-import net.corda.ledger.persistence.consensual.ConsensualRepository
 import net.corda.ledger.persistence.consensual.ConsensualPersistenceService
+import net.corda.ledger.persistence.consensual.ConsensualRepository
 import net.corda.ledger.persistence.consensual.ConsensualTransactionReader
 import net.corda.orm.utils.transaction
 import net.corda.utilities.time.Clock
@@ -42,15 +42,15 @@ class ConsensualPersistenceServiceImpl constructor(
             // Insert the Transactions components
             transaction.rawGroupLists.mapIndexed { groupIndex, leaves ->
                 leaves.mapIndexed { leafIndex, data ->
-                   repository.persistTransactionComponentLeaf(
-                       em,
-                       transactionIdString,
-                       groupIndex,
-                       leafIndex,
-                       data,
-                       sandboxDigestService.hash(data, DigestAlgorithmName.SHA2_256).toString(),
-                       nowUtc
-                   )
+                    repository.persistTransactionComponentLeaf(
+                        em,
+                        transactionIdString,
+                        groupIndex,
+                        leafIndex,
+                        data,
+                        sandboxDigestService.hash(data, DigestAlgorithmName.SHA2_256).toString(),
+                        nowUtc
+                    )
                 }
             }
 

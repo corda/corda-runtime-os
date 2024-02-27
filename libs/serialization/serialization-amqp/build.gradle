@@ -26,6 +26,7 @@ dependencies {
     implementation "net.corda:corda-application"
 
     api project(':libs:base-internal')
+    api project(':libs:serialization:serialization-amqp-api')
     implementation project(":libs:packaging:packaging")
     implementation "net.corda:corda-serialization"
     implementation project(':libs:serialization:serialization-internal')
@@ -33,9 +34,10 @@ dependencies {
     implementation project(":libs:sandbox")
     implementation project(path: ':libs:serialization:serialization-encoding', configuration: 'bundle')
     implementation project(":libs:utilities")
+    implementation project(":libs:serialization:serialization-amqp-api")
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "com.google.guava:guava:$guavaVersion"
+    implementation libs.guava
     implementation "org.apache.qpid:proton-j:$protonjVersion"
     implementation 'org.slf4j:slf4j-api'
 
@@ -45,14 +47,9 @@ dependencies {
     testImplementation project(':libs:crypto:crypto-serialization-impl')
     testImplementation project(':testing:test-serialization')
     testImplementation project(':libs:crypto:cipher-suite')
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
-    testImplementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    testImplementation libs.jackson.databind
+    testRuntimeOnly libs.slf4j.simple
     testRuntimeOnly 'org.osgi:osgi.core'
 
     cpbs project(path: ':libs:serialization:serialization-amqp:cpk-four', configuration: 'cordaCPB')

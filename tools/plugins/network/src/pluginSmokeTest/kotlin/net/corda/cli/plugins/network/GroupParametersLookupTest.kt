@@ -24,7 +24,8 @@ class GroupParametersLookupTest {
 
         private val mgmName = MemberX500Name.parse("O=MGM-${UUID.randomUUID()}, L=London, C=GB").toString()
         private val groupPolicyFile = File(
-            File(File(File(System.getProperty("user.home")), ".corda"), "gp"), "groupPolicy.json"
+            File(File(File(System.getProperty("user.home")), ".corda"), "gp"),
+            "groupPolicy.json",
         )
         private lateinit var holdingIdentity: String
 
@@ -32,10 +33,16 @@ class GroupParametersLookupTest {
         @JvmStatic
         fun setup() {
             CommandLine(OnboardMgm()).execute(
-                mgmName, targetUrl, user, password, INSECURE
+                mgmName,
+                targetUrl,
+                user,
+                password,
+                INSECURE,
             )
             holdingIdentity = HoldingIdentityUtils.getHoldingIdentity(
-                null, mgmName, null
+                null,
+                mgmName,
+                null,
             )
         }
     }
@@ -48,7 +55,11 @@ class GroupParametersLookupTest {
     @Test
     fun `group parameters lookup with holding identity returns correct result`() {
         CommandLine(GroupParametersLookup(outputStub)).execute(
-            "-h=$holdingIdentity", targetUrl, user, password, INSECURE
+            "-h=$holdingIdentity",
+            targetUrl,
+            user,
+            password,
+            INSECURE,
         )
 
         val output = outputStub.printedOutput?.get("parameters")
@@ -61,7 +72,12 @@ class GroupParametersLookupTest {
         val groupId = ObjectMapper().readTree(groupPolicyFile.inputStream()).get("groupId").asText()
 
         CommandLine(GroupParametersLookup(outputStub)).execute(
-            "-n=$mgmName", "-g=$groupId", targetUrl, user, password, INSECURE
+            "-n=$mgmName",
+            "-g=$groupId",
+            targetUrl,
+            user,
+            password,
+            INSECURE,
         )
 
         val output = outputStub.printedOutput?.get("parameters")
@@ -72,7 +88,11 @@ class GroupParametersLookupTest {
     @Test
     fun `group parameters lookup with only name provided uses group ID of last created group`() {
         CommandLine(GroupParametersLookup(outputStub)).execute(
-            "-n=$mgmName", targetUrl, user, password, INSECURE
+            "-n=$mgmName",
+            targetUrl,
+            user,
+            password,
+            INSECURE,
         )
 
         val output = outputStub.printedOutput?.get("parameters")

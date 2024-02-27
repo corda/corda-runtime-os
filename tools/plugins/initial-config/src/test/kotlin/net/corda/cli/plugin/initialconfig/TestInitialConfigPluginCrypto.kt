@@ -32,14 +32,14 @@ class TestInitialConfigPluginCrypto {
         assertThat(outText).contains("-s, --salt=<salt>")
         assertThat(outText).contains("Salt for the encrypting secrets service.")
         assertThat(outText).contains("-wp, --wrapping-passphrase=<softHsmRootPassphrase>")
-        assertThat(outText).contains("Passphrase for the SOFT HSM root wrapping key.")
+        assertThat(outText).contains("Passphrase for a SOFT HSM unmanaged root wrapping key.")
         assertThat(outText).contains("-ws, --wrapping-salt=<softHsmRootSalt>")
-        assertThat(outText).contains("Salt for the SOFT HSM root wrapping key.")
+        assertThat(outText).contains("Salt for deriving a SOFT HSM root unmanaged wrapping key")
     }
 
 
     @Test
-    fun `Should output missing options when targetting Hashicorp Vault`() {
+    fun `Should output missing options when targeting Hashicorp Vault`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = InitialConfigPlugin.PluginEntryPoint()
         var outText = SystemLambda.tapSystemErrNormalized {
@@ -69,7 +69,6 @@ class TestInitialConfigPluginCrypto {
                 "-ws", "master-salt"
             )
         }
-        println(outText)
         assertThat(outText).startsWith(expectedPrefix)
         val outJsonEnd = outText.indexOf("}}}',", expectedPrefix.length)
         val json = outText.substring(expectedPrefix.length until (outJsonEnd + 3))
@@ -108,7 +107,7 @@ class TestInitialConfigPluginCrypto {
     }
 
     @Test
-    fun `Should be able to create vault initial crypto configuration with random wrapping key`() {
+    fun `Should be able to create vault initial crypto configuration with single random wrapping key`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = InitialConfigPlugin.PluginEntryPoint()
         val outText = SystemLambda.tapSystemOutNormalized {
@@ -120,9 +119,9 @@ class TestInitialConfigPluginCrypto {
                 "--vault-path", "cryptosecrets",
                 "--key-salt", "salt",
                 "--key-passphrase", "passphrase",
+                "--number-of-unmanaged-root-wrapping-keys", "1"
             )
         }
-        println(outText)
         assertThat(outText).startsWith(expectedPrefix)
         val outJsonEnd = outText.indexOf("}}}',", expectedPrefix.length)
         val json = outText.substring(expectedPrefix.length until (outJsonEnd + 3))
@@ -135,6 +134,58 @@ class TestInitialConfigPluginCrypto {
             assertThat(key1.getValue("passphrase").render()).contains("vaultKey")
             assertThat(key1.getValue("passphrase").render()).contains("vaultPath")
         }
+    }
+
+
+    @Test
+    fun `Should be able to create vault initial crypto configuration with two random wrapping keys`() {
+        val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
+        val app = InitialConfigPlugin.PluginEntryPoint()
+        val outText = SystemLambda.tapSystemOutNormalized {
+            CommandLine(
+                app
+            ).setColorScheme(colorScheme).execute(
+                "create-crypto-config",
+                "-t", "VAULT",
+                "--vault-path", "cryptosecrets",
+                "--key-salt", "salt",
+                "--key-passphrase", "passphrase",
+                "--key-salt", "salt2",
+                "--key-passphrase", "passphrase2",
+            )
+        }
+        assertThat(outText).startsWith(expectedPrefix)
+        val outJsonEnd = outText.indexOf("}}}',", expectedPrefix.length)
+        val json = outText.substring(expectedPrefix.length until (outJsonEnd + 3))
+        assertGeneratedJson(json) { it: ConfigList, _: SmartConfigFactory ->
+            assertThat(it.size).isEqualTo(2)
+            val key1 = it[0] as ConfigObject
+            val key2 = it[1] as ConfigObject
+            assertThat(key1.getValue("salt").render()).doesNotContain("encryptedSecret")
+            assertThat(key1.getValue("passphrase").render()).doesNotContain("encryptedSecret")
+            assertThat(key1.getValue("salt").render()).contains("vaultKey")
+            assertThat(key1.getValue("salt").render()).contains("vaultPath")
+            assertThat(key1.getValue("passphrase").render()).contains("vaultKey")
+            assertThat(key1.getValue("passphrase").render()).contains("vaultPath")
+            assertThat(key1.getValue("passphrase")).isNotEqualTo((key2.getValue("passphrase")))
+        }
+    }
+    @Test
+    fun `Should fail to create vault initial crypto configuration with insufficient keys specified`() {
+        val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
+        val app = InitialConfigPlugin.PluginEntryPoint()
+        val outText = SystemLambda.tapSystemErrNormalized {
+            CommandLine(
+                app
+            ).setColorScheme(colorScheme).execute(
+                "create-crypto-config",
+                "-t", "VAULT",
+                "--vault-path", "cryptosecrets",
+                "--key-salt", "salt",
+                "--key-passphrase", "passphrase",
+            )
+        }
+        assertThat(outText).contains("Not enough vault wrapping key salt keys passed in")
     }
 
     private fun assertGeneratedJson(json: String, wrappingKeyAssert: (ConfigList, SmartConfigFactory) -> Unit) {

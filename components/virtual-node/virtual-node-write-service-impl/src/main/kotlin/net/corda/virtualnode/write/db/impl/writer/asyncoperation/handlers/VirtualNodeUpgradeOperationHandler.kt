@@ -8,6 +8,7 @@ import net.corda.data.membership.common.v2.RegistrationStatus.APPROVED
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
+import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.libs.external.messaging.ExternalMessagingRouteConfigGenerator
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.virtualnode.common.exception.LiquibaseDiffCheckFailedException
@@ -15,7 +16,14 @@ import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
+import net.corda.membership.client.MemberResourceClient
+import net.corda.membership.lib.ContextDeserializationException
+import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.deserializeContext
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
@@ -29,20 +37,12 @@ import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtilit
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception.MigrationsFailedException
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception.VirtualNodeUpgradeRejectedException
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.factories.RecordFactory
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
-import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
-import net.corda.membership.client.MemberResourceClient
-import net.corda.membership.lib.ContextDeserializationException
-import net.corda.membership.lib.MemberInfoExtension
-import net.corda.membership.lib.deserializeContext
-import net.corda.membership.persistence.client.MembershipQueryClient
-import net.corda.membership.persistence.client.MembershipQueryResult
-import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.virtualnode.write.db.impl.writer.asyncoperation.factories.RecordFactory
 
 @Suppress("LongParameterList")
 internal class VirtualNodeUpgradeOperationHandler(
@@ -140,9 +140,9 @@ internal class VirtualNodeUpgradeOperationHandler(
         ) {
             logger.info(
                 "Virtual node upgrade complete, no migrations necessary to upgrade virtual node ${request.virtualNodeShortHash} to CPI " +
-                        "'${request.cpiFileChecksum}'. Virtual node successfully upgraded to CPI " +
-                        "name: ${upgradedVNodeInfo.cpiIdentifier.name}, version: ${upgradedVNodeInfo.cpiIdentifier.version} " +
-                        "(request $requestId)"
+                    "'${request.cpiFileChecksum}'. Virtual node successfully upgraded to CPI " +
+                    "name: ${upgradedVNodeInfo.cpiIdentifier.name}, version: ${upgradedVNodeInfo.cpiIdentifier.version} " +
+                    "(request $requestId)"
             )
             publishVirtualNodeInfo(completeVirtualNodeOperation(request.virtualNodeShortHash))
             return
@@ -150,6 +150,7 @@ internal class VirtualNodeUpgradeOperationHandler(
 
         if (upgradedVNodeInfo.vaultDdlConnectionId == null) {
             logger.info("No vault DDL connection provided, CPI migrations must be run out of process (request $requestId)")
+            publishVirtualNodeInfo(completeVirtualNodeOperation(request.virtualNodeShortHash))
             return
         }
 
@@ -157,9 +158,9 @@ internal class VirtualNodeUpgradeOperationHandler(
 
         logger.info(
             "Virtual node upgrade with CPI migrations complete - Virtual node " +
-                    "${upgradedVNodeInfo.holdingIdentity.shortHash} successfully upgraded to CPI " +
-                    "name: ${upgradedVNodeInfo.cpiIdentifier.name}, version: ${upgradedVNodeInfo.cpiIdentifier.version} " +
-                    "(request $requestId)"
+                "${upgradedVNodeInfo.holdingIdentity.shortHash} successfully upgraded to CPI " +
+                "name: ${upgradedVNodeInfo.cpiIdentifier.name}, version: ${upgradedVNodeInfo.cpiIdentifier.version} " +
+                "(request $requestId)"
         )
         publishVirtualNodeInfo(completeVirtualNodeOperation(request.virtualNodeShortHash))
     }
@@ -206,7 +207,8 @@ internal class VirtualNodeUpgradeOperationHandler(
         val targetMgmGroupId = GroupPolicyParser.groupIdFromJson(targetCpiMetadata.groupPolicy!!)
         if (originalMgmGroupId != targetMgmGroupId) {
             throw VirtualNodeUpgradeRejectedException(
-                "Expected MGM GroupId $originalMgmGroupId but was $targetMgmGroupId in CPI", requestId
+                "Expected MGM GroupId $originalMgmGroupId but was $targetMgmGroupId in CPI",
+                requestId
             )
         }
 
@@ -226,7 +228,7 @@ internal class VirtualNodeUpgradeOperationHandler(
         val mgmInfo = if (!GroupPolicyParser.isStaticNetwork(cpiMetadata.groupPolicy!!)) {
             policyParser.getMgmInfo(holdingIdentity, cpiMetadata.groupPolicy!!)
         } else {
-            //If it's a static network there is no MGM to re-register with.
+            // If it's a static network there is no MGM to re-register with.
             return
         }
 
@@ -255,18 +257,20 @@ internal class VirtualNodeUpgradeOperationHandler(
                     try {
                         // Get the latest registration request
                         val registrationRequestDetails = payload.sortedBy { it.serial }.last()
-                        
+
                         val registrationContext = registrationRequestDetails
                             .memberProvidedContext.data.array()
                             .deserializeContext(keyValuePairListDeserializer)
                             .toMutableMap()
 
                         if (isEnriched(registrationContext)) {
-                            // In some cases, the registration request contains the platform-transformed data, 
-                            // instead of the user-provided context, so we skip re-registration. 
+                            // In some cases, the registration request contains the platform-transformed data,
+                            // instead of the user-provided context, so we skip re-registration.
                             // This is applicable only for old registration requests, as it's now fixed.
-                            logger.warn("The platform was not able to automatically re-register the vNode. " +
-                                    "Please perform re-registration of vNode $holdingIdentity manually.")
+                            logger.warn(
+                                "The platform was not able to automatically re-register the vNode. " +
+                                    "Please perform re-registration of vNode $holdingIdentity manually."
+                            )
                             return
                         }
 
@@ -275,25 +279,31 @@ internal class VirtualNodeUpgradeOperationHandler(
                             registrationContext[MemberInfoExtension.SERIAL] = updatedSerial.toString()
                         }
 
-                        logger.info("Starting MGM re-registration for holdingIdentity=$holdingIdentity, " +
-                                "shortHash=${holdingIdentity.shortHash}, registrationContext=$registrationContext")
+                        logger.info(
+                            "Starting MGM re-registration for holdingIdentity=$holdingIdentity, " +
+                                "shortHash=${holdingIdentity.shortHash}, registrationContext=$registrationContext"
+                        )
                         val registrationProgress =
                             memberResourceClient.startRegistration(holdingIdentity.shortHash, registrationContext)
                         logger.info("Registration progress: $registrationProgress")
                     } catch (e: ContextDeserializationException) {
                         logger.warn(
                             "Could not deserialize previous registration context for ${holdingIdentity.shortHash}. " +
-                                    "Re-registration will not be attempted."
+                                "Re-registration will not be attempted."
                         )
                     }
                 } else {
-                    logger.warn("No previous registration requests were found for ${holdingIdentity.shortHash}. " +
-                            "Re-registration will not be attempted.")
+                    logger.warn(
+                        "No previous registration requests were found for ${holdingIdentity.shortHash}. " +
+                            "Re-registration will not be attempted."
+                    )
                 }
             }
             is MembershipQueryResult.Failure -> {
-                logger.warn("Failed to query for an APPROVED previous registration request for ${holdingIdentity.shortHash}: " +
-                        "${registrationRequest.errorMsg}. Re-registration will not be attempted.")
+                logger.warn(
+                    "Failed to query for an APPROVED previous registration request for ${holdingIdentity.shortHash}: " +
+                        "${registrationRequest.errorMsg}. Re-registration will not be attempted."
+                )
             }
         }
     }
@@ -398,7 +408,11 @@ internal class VirtualNodeUpgradeOperationHandler(
             is VirtualNodeUpgradeRejectedException -> {
                 logger.info("Virtual node upgrade (request $requestId) validation failed: ${e.message}")
                 val vNodeInfo = writeFailedOperationEntity(
-                    request, requestId, requestTimestamp, VirtualNodeOperationStateDto.VALIDATION_FAILED, e.reason
+                    request,
+                    requestId,
+                    requestTimestamp,
+                    VirtualNodeOperationStateDto.VALIDATION_FAILED,
+                    e.reason
                 )
                 publishVirtualNodeInfo(vNodeInfo)
             }
@@ -406,7 +420,11 @@ internal class VirtualNodeUpgradeOperationHandler(
             is MigrationsFailedException -> {
                 logger.warn("Virtual node upgrade (request $requestId) failed to run migrations: ${e.message}")
                 val vNodeInfo = writeFailedOperationEntity(
-                    request, requestId, requestTimestamp, VirtualNodeOperationStateDto.MIGRATIONS_FAILED, e.reason
+                    request,
+                    requestId,
+                    requestTimestamp,
+                    VirtualNodeOperationStateDto.MIGRATIONS_FAILED,
+                    e.reason
                 )
                 publishVirtualNodeInfo(vNodeInfo)
             }

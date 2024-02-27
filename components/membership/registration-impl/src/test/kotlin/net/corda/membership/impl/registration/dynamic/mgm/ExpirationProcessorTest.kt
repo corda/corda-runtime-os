@@ -65,7 +65,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.test.assertTrue
 
 class ExpirationProcessorTest {
-    private val groupId = UUID(100 ,30).toString()
+    private val groupId = UUID(100, 30).toString()
     private val mgmOne = HoldingIdentity(
         MemberX500Name("Corda MGM One", "London", "GB"),
         groupId
@@ -113,12 +113,12 @@ class ExpirationProcessorTest {
     private val notExpiredRegistrationRequest: RegistrationRequestDetails = mock {
         on { holdingIdentityId } doReturn alice.shortHash.value
         on { registrationLastModified } doReturn clock.instant()
-        on { registrationId } doReturn UUID(100 ,30).toString()
+        on { registrationId } doReturn UUID(100, 30).toString()
     }
     private val expiredRegistrationRequest: RegistrationRequestDetails = mock {
         on { holdingIdentityId } doReturn bob.shortHash.value
         on { registrationLastModified } doReturn clock.instant().minusMillis(6.hours.toMillis())
-        on { registrationId } doReturn UUID(100 ,30).toString()
+        on { registrationId } doReturn UUID(100, 30).toString()
     }
     private val configurationReadService: ConfigurationReadService = mock()
     private val membershipQueryClient: MembershipQueryClient = mock {
@@ -318,7 +318,10 @@ class ExpirationProcessorTest {
         fun `processing fails - when persistence failure happens`() {
             whenever(
                 membershipQueryClient.queryRegistrationRequests(
-                    eq(mgmOne), eq(null), eq(listOf(PENDING_MEMBER_VERIFICATION)), eq(null)
+                    eq(mgmOne),
+                    eq(null),
+                    eq(listOf(PENDING_MEMBER_VERIFICATION)),
+                    eq(null)
                 )
             ).thenReturn(MembershipQueryResult.Failure("error"))
             triggerEvent()

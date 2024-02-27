@@ -206,7 +206,7 @@ class SynchronisationProxyImplTest {
                     },
                     "$CIPHER_SUITE": {}
                 }
-            """.trimIndent()
+                """.trimIndent()
             )
         )
     }
@@ -261,7 +261,8 @@ class SynchronisationProxyImplTest {
                     ConfigKeys.BOOT_CONFIG to testConfig,
                     ConfigKeys.MESSAGING_CONFIG to testConfig
                 )
-            ), coordinator
+            ),
+            coordinator
         )
     }
 
@@ -533,7 +534,7 @@ class SynchronisationProxyImplTest {
     abstract class AbstractMgmSyncProtocol : MgmSynchronisationService {
         var started = 0
 
-        override fun processSyncRequest(request: ProcessSyncRequest) : List<Record<*, *>> {
+        override fun processSyncRequest(request: ProcessSyncRequest): List<Record<*, *>> {
             classes.add(AbstractMgmSyncProtocol::class.java)
             return emptyList()
         }

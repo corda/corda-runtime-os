@@ -5,7 +5,7 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-class ConsensualLedgerServiceTest: ConsensualLedgerIntegrationTest() {
+class ConsensualLedgerServiceTest : ConsensualLedgerIntegrationTest() {
     @Test
     @Suppress("FunctionName")
     fun `createTransactionBuilder should return a Transaction Builder`() {

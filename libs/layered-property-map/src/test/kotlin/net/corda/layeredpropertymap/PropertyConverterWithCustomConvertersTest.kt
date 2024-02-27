@@ -25,13 +25,15 @@ class PropertyConverterWithCustomConvertersTest {
 
         private const val DUMMY_NUMBER = "dummyNumber"
 
-        private val propertyConverter = PropertyConverter(mapOf(
-            Int::class.java to object : CustomPropertyConverter<Int> {
-                override val type: Class<Int> = Int::class.java
-                override fun convert(context: ConversionContext): Int? = INT_CUSTOM_VALUE
-            },
-            DummyObjectWithNumberAndText::class.java to DummyConverter()
-        ))
+        private val propertyConverter = PropertyConverter(
+            mapOf(
+                Int::class.java to object : CustomPropertyConverter<Int> {
+                    override val type: Class<Int> = Int::class.java
+                    override fun convert(context: ConversionContext): Int? = INT_CUSTOM_VALUE
+                },
+                DummyObjectWithNumberAndText::class.java to DummyConverter()
+            )
+        )
 
         private val layeredPropertyMapImpl = LayeredPropertyMapImpl(
             sortedMapOf(

@@ -15,7 +15,7 @@ dependencies {
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
 
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:chunking:chunking-core")
@@ -28,9 +28,6 @@ dependencies {
 
     api project(":components:virtual-node:cpk-read-service")
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
-    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    testRuntimeOnly libs.slf4j.simple
 }

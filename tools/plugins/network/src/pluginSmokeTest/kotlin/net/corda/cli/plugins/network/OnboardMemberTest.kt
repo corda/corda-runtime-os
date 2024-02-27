@@ -48,14 +48,14 @@ class OnboardMemberTest {
                 targetUrl,
                 user,
                 password,
-                INSECURE
+                INSECURE,
             )
             CommandLine(MemberLookup(outputStub)).execute(
                 "-n=$mgmName",
                 targetUrl,
                 user,
                 password,
-                INSECURE
+                INSECURE,
             )
             assertEquals(mgmName, outputStub.getFirstPartyName())
         }
@@ -79,7 +79,7 @@ class OnboardMemberTest {
             user,
             password,
             INSECURE,
-            "--wait"
+            "--wait",
         )
 
         outputStub.lookup(member)
@@ -95,7 +95,7 @@ class OnboardMemberTest {
             user,
             password,
             INSECURE,
-            "--wait"
+            "--wait",
         )
         val member = memberName()
         val cpiHash = command.getExistingCpiHash()
@@ -107,7 +107,7 @@ class OnboardMemberTest {
             user,
             password,
             INSECURE,
-            "--wait"
+            "--wait",
         )
 
         outputStub.lookup(member)
@@ -129,7 +129,7 @@ class OnboardMemberTest {
             user,
             password,
             INSECURE,
-            "--wait"
+            "--wait",
         )
 
         outputStub.lookup(member)
@@ -153,7 +153,7 @@ class OnboardMemberTest {
             user,
             password,
             INSECURE,
-            "--wait"
+            "--wait",
         )
 
         outputStub.lookup(member)
@@ -173,7 +173,7 @@ class OnboardMemberTest {
             user,
             password,
             INSECURE,
-            "--wait"
+            "--wait",
         )
 
         outputStub.lookup(member)
@@ -194,7 +194,7 @@ class OnboardMemberTest {
             user,
             password,
             INSECURE,
-            "--wait"
+            "--wait",
         )
 
         outputStub.lookup(member)
@@ -215,11 +215,12 @@ class OnboardMemberTest {
         val holdingIdentity = HoldingIdentityUtils.getHoldingIdentity(
             null,
             mgmName,
-            null
+            null,
         )
         return createRestClient(MGMRestResource::class).use { client ->
             client.start().proxy.generatePreAuthToken(
-                holdingIdentity, PreAuthTokenRequest(member)
+                holdingIdentity,
+                PreAuthTokenRequest(member),
             ).id
         }
     }
@@ -231,7 +232,7 @@ class OnboardMemberTest {
             targetUrl,
             user,
             password,
-            INSECURE
+            INSECURE,
         )
     }
 }

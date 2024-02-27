@@ -25,7 +25,7 @@ dependencies {
     integrationTestImplementation "com.google.jimfs:jimfs:$jimfsVersion"
 
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly libs.postgresql.jdbc
 }
 
 tasks.named('jar', Jar) {

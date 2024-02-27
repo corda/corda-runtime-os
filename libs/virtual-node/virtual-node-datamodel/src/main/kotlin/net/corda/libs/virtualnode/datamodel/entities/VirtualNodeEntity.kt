@@ -136,7 +136,7 @@ internal class VirtualNodeEntity(
             cryptoDDLConnectionId,
             cryptoDMLConnectionId!!,
             uniquenessDDLConnectionId,
-            uniquenessDMLConnectionId!!,
+            uniquenessDMLConnectionId,
             holdingIdentity.hsmConnectionId,
             flowP2pOperationalStatus,
             flowStartOperationalStatus,

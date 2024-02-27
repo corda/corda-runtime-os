@@ -7,29 +7,34 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import java.util.UUID
-import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.crypto.core.parseSecureHash
-import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
+import net.corda.e2etest.utilities.ClusterReadiness
+import net.corda.e2etest.utilities.ClusterReadinessChecker
+import net.corda.e2etest.utilities.DEFAULT_CLUSTER
+import net.corda.e2etest.utilities.REST_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
-import net.corda.e2etest.utilities.awaitRpcFlowFinished
+import net.corda.e2etest.utilities.TestRequestIdGenerator
+import net.corda.e2etest.utilities.awaitRestFlowFinished
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.registerStaticMember
-import net.corda.e2etest.utilities.startRpcFlow
+import net.corda.e2etest.utilities.startRestFlow
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInfo
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
+import java.time.Duration
+import java.util.UUID
 
 @Suppress("Unused", "FunctionName")
 @TestInstance(PER_CLASS)
-class UtxoLedgerTests {
+class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
 
     private companion object {
         const val TEST_CPI_NAME = "ledger-utxo-demo-app"
@@ -69,6 +74,9 @@ class UtxoLedgerTests {
 
     @BeforeAll
     fun beforeAll() {
+        // check cluster is ready
+        assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(100))
+
         DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
 
         conditionallyUploadCordaPackage(
@@ -102,25 +110,28 @@ class UtxoLedgerTests {
 
 
     @Test
-    fun `Utxo Ledger - create a transaction containing states and finalize it then evolve it`() {
+    fun `Utxo Ledger - create a transaction containing states and finalize it then evolve it`(testInfo: TestInfo) {
+        val idGenerator = TestRequestIdGenerator(testInfo)
         val input = "test input"
-        val utxoFlowRequestId = startRpcFlow(
+        val utxoFlowRequestId = startRestFlow(
             aliceHoldingId,
             mapOf("input" to input, "members" to listOf(bobX500, charlieX500), "notary" to NOTARY_SERVICE_X500),
-            "com.r3.corda.demo.utxo.UtxoDemoFlow"
+            "com.r3.corda.demo.utxo.UtxoDemoFlow",
+            requestId = idGenerator.nextId
         )
-        val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
-        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        val utxoFlowResult = awaitRestFlowFinished(aliceHoldingId, utxoFlowRequestId)
+        assertThat(utxoFlowResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
         assertThat(utxoFlowResult.flowError).isNull()
 
         for (holdingId in listOf(aliceHoldingId, bobHoldingId, charlieHoldingId)) {
-            val findTransactionFlowRequestId = startRpcFlow(
+            val findTransactionFlowRequestId = startRestFlow(
                 holdingId,
                 mapOf("transactionId" to utxoFlowResult.flowResult!!),
-                "com.r3.corda.demo.utxo.FindTransactionFlow"
+                "com.r3.corda.demo.utxo.FindTransactionFlow",
+                requestId = idGenerator.nextId
             )
-            val transactionResult = awaitRpcFlowFinished(holdingId, findTransactionFlowRequestId)
-            assertThat(transactionResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+            val transactionResult = awaitRestFlowFinished(holdingId, findTransactionFlowRequestId)
+            assertThat(transactionResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
             assertThat(transactionResult.flowError).isNull()
 
             val parsedResult = objectMapper
@@ -136,12 +147,14 @@ class UtxoLedgerTests {
         }
 
         val evolvedMessage = "evolved input"
-        val evolveRequestId = startRpcFlow(
+        val evolveRequestId = startRestFlow(
             bobHoldingId,
             mapOf("update" to evolvedMessage, "transactionId" to utxoFlowResult.flowResult!!, "index" to "0"),
-            "com.r3.corda.demo.utxo.UtxoDemoEvolveFlow"
+            "com.r3.corda.demo.utxo.UtxoDemoEvolveFlow",
+            requestId = idGenerator.nextId
+
         )
-        val evolveFlowResult = awaitRpcFlowFinished(bobHoldingId, evolveRequestId)
+        val evolveFlowResult = awaitRestFlowFinished(bobHoldingId, evolveRequestId)
 
         val parsedEvolveFlowResult = objectMapper
             .readValue(evolveFlowResult.flowResult!!, EvolveResponse::class.java)
@@ -151,13 +164,14 @@ class UtxoLedgerTests {
 
         // Peek into the last transaction
 
-        val peekFlowId = startRpcFlow(
+        val peekFlowId = startRestFlow(
             bobHoldingId,
             mapOf("transactionId" to parsedEvolveFlowResult.transactionId!!),
-            "com.r3.corda.demo.utxo.PeekTransactionFlow"
+            "com.r3.corda.demo.utxo.PeekTransactionFlow",
+            requestId = idGenerator.nextId
         )
 
-        val peekFlowResult = awaitRpcFlowFinished(bobHoldingId, peekFlowId)
+        val peekFlowResult = awaitRestFlowFinished(bobHoldingId, peekFlowId)
         assertThat(peekFlowResult.flowError).isNull()
         assertThat(peekFlowResult.flowResult).isNotNull()
 
@@ -170,14 +184,16 @@ class UtxoLedgerTests {
     }
 
     @Test
-    fun `Utxo Ledger - creating a transaction that fails custom validation causes finality to fail`() {
-        val utxoFlowRequestId = startRpcFlow(
+    fun `Utxo Ledger - creating a transaction that fails custom validation causes finality to fail`(testInfo: TestInfo) {
+        val idGenerator = TestRequestIdGenerator(testInfo)
+        val utxoFlowRequestId = startRestFlow(
             aliceHoldingId,
             mapOf("input" to "fail", "members" to listOf(bobX500, charlieX500), "notary" to NOTARY_SERVICE_X500),
-            "com.r3.corda.demo.utxo.UtxoDemoFlow"
+            "com.r3.corda.demo.utxo.UtxoDemoFlow",
+            requestId = idGenerator.nextId
         )
-        val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
-        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        val utxoFlowResult = awaitRestFlowFinished(aliceHoldingId, utxoFlowRequestId)
+        assertThat(utxoFlowResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
         assertThat(utxoFlowResult.flowResult).contains("Transaction validation failed for transaction")
         assertThat(utxoFlowResult.flowResult).contains("when signature was requested")
     }

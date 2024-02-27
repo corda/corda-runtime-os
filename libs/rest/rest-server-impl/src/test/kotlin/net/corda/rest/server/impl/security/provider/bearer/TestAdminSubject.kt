@@ -1,6 +1,6 @@
 package net.corda.rest.server.impl.security.provider.bearer
 
-import net.corda.rest.security.AuthorizingSubject
+import net.corda.rest.authorization.AuthorizingSubject
 
 /**
  * An implementation of [AuthorizingSubject] permitting all actions

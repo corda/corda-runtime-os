@@ -1,8 +1,5 @@
 package net.corda.libs.permissions.manager.impl.converter
 
-import java.time.Instant
-import java.time.temporal.ChronoUnit
-import java.util.UUID
 import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.Permission
 import net.corda.data.permissions.PermissionAssociation
@@ -13,7 +10,9 @@ import net.corda.data.permissions.User
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
-
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+import java.util.UUID
 
 internal class InternalDtoConverterUtilKtTest {
 
@@ -49,7 +48,6 @@ internal class InternalDtoConverterUtilKtTest {
 
     @Test
     fun `convert User with properties`() {
-
         val property1ChangeTimestamp = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val property2ChangeTimestamp = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val userWithoutPassword = User(

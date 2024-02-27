@@ -58,7 +58,7 @@ class GroupParametersCacheImpl @Activate constructor(
     private fun onEviction(vnc: VirtualNodeContext) {
         log.debug {
             "Evicting cached items from ${cache::class.java} with holding identity: ${vnc.holdingIdentity}, " +
-                    "cpkFileChecksums: ${vnc.cpkFileChecksums} and sandbox type: ${SandboxGroupType.FLOW}"
+                "cpkFileChecksums: ${vnc.cpkFileChecksums} and sandbox type: ${SandboxGroupType.FLOW}"
         }
         remove(vnc)
     }

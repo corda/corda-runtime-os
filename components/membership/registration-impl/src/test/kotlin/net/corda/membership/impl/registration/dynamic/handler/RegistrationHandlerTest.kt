@@ -26,7 +26,7 @@ class RegistrationHandlerTest {
 
     private val resultFactory = mock<Callable<RegistrationHandlerResult>>()
 
-    private val testImpl = object: RegistrationHandler<MyCommand> {
+    private val testImpl = object : RegistrationHandler<MyCommand> {
         override fun getOwnerHoldingId(state: RegistrationState?, command: MyCommand): HoldingIdentity? = null
 
         override fun invoke(state: RegistrationState?, key: String, command: MyCommand): RegistrationHandlerResult {

@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.token.cache.factories
 
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.ledger.utxo.token.selection.data.Token
 import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.data.ledger.utxo.token.selection.data.TokenBalanceQueryResult
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimQueryResult
@@ -8,12 +9,11 @@ import net.corda.data.ledger.utxo.token.selection.data.TokenClaimReleaseAck
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimResultStatus
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
-import net.corda.ledger.utxo.token.cache.entities.TokenBalance
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.messaging.api.records.Record
+import net.corda.v5.ledger.utxo.token.selection.TokenBalance
 import java.math.BigDecimal
 import java.nio.ByteBuffer
-import net.corda.data.ledger.utxo.token.selection.data.Token
 
 class RecordFactoryImpl(private val externalEventResponseFactory: ExternalEventResponseFactory) : RecordFactory {
 
@@ -84,5 +84,4 @@ class RecordFactoryImpl(private val externalEventResponseFactory: ExternalEventR
             .setScale(this.scale())
             .setUnscaledValue(ByteBuffer.wrap(this.unscaledValue().toByteArray()))
             .build()
-
 }

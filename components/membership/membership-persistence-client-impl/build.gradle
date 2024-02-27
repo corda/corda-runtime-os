@@ -5,6 +5,8 @@ plugins {
 
 description 'Membership persistence client implementation'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
@@ -25,9 +27,6 @@ dependencies {
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:utilities')
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(':testing:layered-property-map-testkit')
     testImplementation project(':testing:test-utilities')
 }

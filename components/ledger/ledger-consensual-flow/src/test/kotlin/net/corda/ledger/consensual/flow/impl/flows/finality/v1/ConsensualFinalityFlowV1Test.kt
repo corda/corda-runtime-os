@@ -1,7 +1,7 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality.v1
 
-import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
+import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.fullId
 import net.corda.crypto.core.fullIdHash
@@ -151,7 +151,7 @@ class ConsensualFinalityFlowV1Test {
 
     @Test
     fun `called with a transaction initially with invalid signature throws and persists as invalid`() {
-        whenever(signedTransaction.verifySignature(any())).thenThrow (
+        whenever(signedTransaction.verifySignature(any())).thenThrow(
             CryptoSignatureException("Verifying signature failed!!")
         )
         assertThatThrownBy { callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob)) }
@@ -167,7 +167,8 @@ class ConsensualFinalityFlowV1Test {
         whenever(ledgerTransaction.states).thenReturn(
             listOf(
                 ConsensualStateClassExample(
-                    "throw", listOf(
+                    "throw",
+                    listOf(
                         publicKeyExample
                     )
                 )

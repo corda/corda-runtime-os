@@ -5,12 +5,14 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
+import net.corda.messaging.api.exception.CordaHTTPServerTransientException
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.exceptions.KafkaMessageSizeException
 import net.corda.persistence.common.exceptions.MissingAccountContextPropertyException
 import net.corda.persistence.common.exceptions.NullParameterException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.io.NotSerializableException
@@ -21,7 +23,7 @@ import javax.persistence.PersistenceException
 class ResponseFactoryImplTest {
 
     private companion object {
-        val FLOW_EXTERNAL_EVENT_CONTEXT = ExternalEventContext()
+        val FLOW_EXTERNAL_EVENT_CONTEXT = ExternalEventContext().apply { requestId = "req1" }
         val RECORD = Record("topic", "key", FlowEvent())
     }
 
@@ -37,17 +39,13 @@ class ResponseFactoryImplTest {
     }
 
     @Test
-    fun `errorResponse creates and returns a transient error response when the input exception is CpkNotAvailableException`() {
-        val exception = CpkNotAvailableException("")
-        whenever(externalEventResponseFactory.transientError(FLOW_EXTERNAL_EVENT_CONTEXT, exception)).thenReturn(RECORD)
-        assertThat(responseFactory.errorResponse(FLOW_EXTERNAL_EVENT_CONTEXT, exception)).isEqualTo(RECORD)
+    fun `errorResponse throws CordaTransientServerException when the input exception is CpkNotAvailableException`() {
+        invokeAndAssertTransientException(CpkNotAvailableException("Cpk not available"))
     }
 
     @Test
-    fun `errorResponse creates and returns a transient error response when the input exception is VirtualNodeException`() {
-        val exception = VirtualNodeException("")
-        whenever(externalEventResponseFactory.transientError(FLOW_EXTERNAL_EVENT_CONTEXT, exception)).thenReturn(RECORD)
-        assertThat(responseFactory.errorResponse(FLOW_EXTERNAL_EVENT_CONTEXT, exception)).isEqualTo(RECORD)
+    fun `errorResponse throws CordaTransientServerException when the input exception is VirtualNodeException`() {
+        invokeAndAssertTransientException(VirtualNodeException("Virtual node not available"))
     }
 
     @Test
@@ -96,10 +94,9 @@ class ResponseFactoryImplTest {
 
     @Test
     fun `errorResponse creates and returns a transient error response when the input exception is PersistenceException and categorized as transient`() {
-        val exception = PersistenceException()
+        val exception = PersistenceException("Transient persistence exception")
         whenever(persistenceExceptionCategorizer.categorize(exception)).thenReturn(PersistenceExceptionType.TRANSIENT)
-        whenever(externalEventResponseFactory.transientError(FLOW_EXTERNAL_EVENT_CONTEXT, exception)).thenReturn(RECORD)
-        assertThat(responseFactory.errorResponse(FLOW_EXTERNAL_EVENT_CONTEXT, exception)).isEqualTo(RECORD)
+        invokeAndAssertTransientException(exception)
     }
 
     @Test
@@ -120,10 +117,9 @@ class ResponseFactoryImplTest {
 
     @Test
     fun `errorResponse creates and returns a transient error response when the input exception is SQLException and categorized as transient`() {
-        val exception = SQLException()
+        val exception = SQLException("Transient SQL exception")
         whenever(persistenceExceptionCategorizer.categorize(exception)).thenReturn(PersistenceExceptionType.TRANSIENT)
-        whenever(externalEventResponseFactory.transientError(FLOW_EXTERNAL_EVENT_CONTEXT, exception)).thenReturn(RECORD)
-        assertThat(responseFactory.errorResponse(FLOW_EXTERNAL_EVENT_CONTEXT, exception)).isEqualTo(RECORD)
+        invokeAndAssertTransientException(exception)
     }
 
     @Test
@@ -131,13 +127,6 @@ class ResponseFactoryImplTest {
         val exception = Exception()
         whenever(externalEventResponseFactory.platformError(FLOW_EXTERNAL_EVENT_CONTEXT, exception)).thenReturn(RECORD)
         assertThat(responseFactory.errorResponse(FLOW_EXTERNAL_EVENT_CONTEXT, exception)).isEqualTo(RECORD)
-    }
-
-    @Test
-    fun `transientErrorResponse creates and returns a transient response`() {
-        val exception = Exception()
-        whenever(externalEventResponseFactory.transientError(FLOW_EXTERNAL_EVENT_CONTEXT, exception)).thenReturn(RECORD)
-        assertThat(responseFactory.transientErrorResponse(FLOW_EXTERNAL_EVENT_CONTEXT, exception)).isEqualTo(RECORD)
     }
 
     @Test
@@ -152,5 +141,18 @@ class ResponseFactoryImplTest {
         val exception = Exception()
         whenever(externalEventResponseFactory.fatalError(FLOW_EXTERNAL_EVENT_CONTEXT, exception)).thenReturn(RECORD)
         assertThat(responseFactory.fatalErrorResponse(FLOW_EXTERNAL_EVENT_CONTEXT, exception)).isEqualTo(RECORD)
+    }
+
+    private fun invokeAndAssertTransientException(exception: Exception) {
+        val expectedErrorMessage = """
+                Transient server exception while processing request '${FLOW_EXTERNAL_EVENT_CONTEXT.requestId}'. Cause: ${exception.message}
+            """.trimIndent()
+
+        val e = assertThrows<CordaHTTPServerTransientException> {
+            responseFactory.errorResponse(FLOW_EXTERNAL_EVENT_CONTEXT, exception)
+        }
+
+        assertThat(e.requestId).isEqualTo(FLOW_EXTERNAL_EVENT_CONTEXT.requestId)
+        assertThat(e.message).isEqualTo(expectedErrorMessage)
     }
 }

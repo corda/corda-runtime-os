@@ -13,10 +13,12 @@ const val VNODE_CREATOR_ROLE = "VNodeCreatorRole"
 
 @CommandLine.Command(
     name = "vnode-creator",
-    description = ["""Creates a role ('$VNODE_CREATOR_ROLE') which will permit: 
+    description = [
+        """Creates a role ('$VNODE_CREATOR_ROLE') which will permit: 
         - CPI upload
         - vNode creation
-        - vNode update"""],
+        - vNode update"""
+    ],
     mixinStandardHelpOptions = true
 )
 class VNodeCreatorSubcommand : RestCommand(), Callable<Int> {

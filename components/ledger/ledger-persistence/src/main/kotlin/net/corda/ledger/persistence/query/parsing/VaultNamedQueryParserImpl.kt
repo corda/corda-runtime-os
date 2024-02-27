@@ -22,11 +22,17 @@ class VaultNamedQueryParserImpl(
         converter: VaultNamedQueryConverter
     ) : this(VaultNamedQueryExpressionParserImpl(), VaultNamedQueryExpressionValidatorImpl(), converter)
 
-    override fun parseWhereJson(query: String): String {
-        val expression = expressionParser.parse(query)
-        val whereClause = expressionValidator.validateWhereJson(query, expression)
+    override fun parseWhereJson(query: String): String =
+        doParse(query, expressionValidator::validateWhereJson)
+
+    override fun parseSimpleExpression(input: String): String =
+        doParse(input, expressionValidator::validateSimpleExpression)
+
+    private fun doParse(input: String, validator: (input: String, expression: List<Token>) -> List<Token>): String {
+        val expression = expressionParser.parse(input)
+        val clause = validator(input, expression)
         return StringBuilder().let { output ->
-            converter.convert(output, whereClause)
+            converter.convert(output, clause)
             output.toString()
         }.replace("  ", " ").trim()
     }

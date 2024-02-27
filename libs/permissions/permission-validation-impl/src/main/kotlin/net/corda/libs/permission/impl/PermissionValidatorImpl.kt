@@ -54,7 +54,6 @@ class PermissionValidatorImpl(
     }
 
     private fun findPermissionMatch(permissionSummary: UserPermissionSummary, operation: String): Boolean {
-
         val (denies, allows) = permissionSummary.permissions
             .partition { it.permissionType == AvroPermissionType.DENY }
 

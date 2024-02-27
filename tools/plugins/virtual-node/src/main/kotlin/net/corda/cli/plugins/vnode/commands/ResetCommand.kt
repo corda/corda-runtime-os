@@ -2,21 +2,22 @@ package net.corda.cli.plugins.vnode.commands
 
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
-import net.corda.rest.HttpFileUpload
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
+import net.corda.rest.HttpFileUpload
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
 
 @Command(
     name = "reset",
-    description = ["Upload and overwrite earlier stored CPI record.",
+    description = [
+        "Upload and overwrite earlier stored CPI record.",
         "The plugin purges any sandboxes running an overwritten version of a CPI and optionally ",
-        "deletes vault data for the affected Virtual Nodes."],
+        "deletes vault data for the affected Virtual Nodes."
+    ],
     mixinStandardHelpOptions = true
 )
 class ResetCommand : RestCommand(), Runnable {

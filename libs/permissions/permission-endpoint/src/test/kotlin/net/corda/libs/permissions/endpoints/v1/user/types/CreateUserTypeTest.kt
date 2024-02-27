@@ -14,11 +14,19 @@ class CreateUserTypeTest {
         // Should create successfully
         assertDoesNotThrow {
             CreateUserType(
-                "Joe Bloggs", "Joe.Bloggs@company.com", true, "secret1234!", Instant.now(),
+                "Joe Bloggs",
+                "Joe.Bloggs@company.com",
+                true,
+                "secret1234!",
+                Instant.now(),
                 UUID.randomUUID().toString()
             )
             CreateUserType(
-                "Andrew O'Malia", "Andrew.OMalia@company.com", true, "secret'1234!", Instant.now(),
+                "Andrew O'Malia",
+                "Andrew.OMalia@company.com",
+                true,
+                "secret'1234!",
+                Instant.now(),
                 UUID.randomUUID().toString()
             )
         }
@@ -27,8 +35,14 @@ class CreateUserTypeTest {
     @Test
     fun testTooLong() {
         Assertions.assertThatThrownBy {
-            CreateUserType("abc".repeat(100), "abc".repeat(100), true, "abc".repeat(100), null,
-                "1234")
+            CreateUserType(
+                "abc".repeat(100),
+                "abc".repeat(100),
+                true,
+                "abc".repeat(100),
+                null,
+                "1234"
+            )
         }.hasMessage("Invalid input data for user creation.").matches {
             (it as InvalidInputDataException).details == mapOf(
                 "Error #1" to "Full name exceed maximum length of 255.",
@@ -43,8 +57,14 @@ class CreateUserTypeTest {
     @Test
     fun testTooShort() {
         Assertions.assertThatThrownBy {
-            CreateUserType("abc", "abc", true, "abc", null,
-                null)
+            CreateUserType(
+                "abc",
+                "abc",
+                true,
+                "abc",
+                null,
+                null
+            )
         }.hasMessage("Invalid input data for user creation.").matches {
             (it as InvalidInputDataException).details == mapOf(
                 "Error #1" to "Password is too short. Minimum length is 5."
@@ -56,8 +76,13 @@ class CreateUserTypeTest {
     fun testBlankFullName() {
         Assertions.assertThatThrownBy {
             CreateUserType(
-                "", "Joe.Bloggs@company.com", true, "secret1234!", Instant.now(),
-                UUID.randomUUID().toString())
+                "",
+                "Joe.Bloggs@company.com",
+                true,
+                "secret1234!",
+                Instant.now(),
+                UUID.randomUUID().toString()
+            )
         }.hasMessage("Invalid input data for user creation.").matches {
             (it as InvalidInputDataException).details == mapOf(
                 "Error #1" to "Full name must not be blank.",
@@ -69,8 +94,13 @@ class CreateUserTypeTest {
     fun testBlankLoginName() {
         Assertions.assertThatThrownBy {
             CreateUserType(
-                "Joe Bloggs", "", true, "secret1234!", Instant.now(),
-                UUID.randomUUID().toString())
+                "Joe Bloggs",
+                "",
+                true,
+                "secret1234!",
+                Instant.now(),
+                UUID.randomUUID().toString()
+            )
         }.hasMessage("Invalid input data for user creation.").matches {
             (it as InvalidInputDataException).details == mapOf(
                 "Error #1" to "Login name must not be blank.",
@@ -82,8 +112,14 @@ class CreateUserTypeTest {
     @Test
     fun testWrongChars() {
         Assertions.assertThatThrownBy {
-            CreateUserType("abc{}", "def()", true, "passw+=", null,
-                "1234")
+            CreateUserType(
+                "abc{}",
+                "def()",
+                true,
+                "passw+=",
+                null,
+                "1234"
+            )
         }.hasMessage("Invalid input data for user creation.").matches {
             (it as InvalidInputDataException).details == mapOf(
                 "Error #1" to "Full name contains invalid characters. Allowed characters are: 'a-zA-Z0-9.@\\-#\' '.",

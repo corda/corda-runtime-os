@@ -29,29 +29,30 @@ class PermissionManagerFactoryImpl @Activate constructor(
 ) : PermissionManagerFactory {
 
     override fun createPermissionManager(
-        config: SmartConfig,
+        restConfig: SmartConfig,
+        rbacConfig: SmartConfig,
         rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>,
         permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>,
         permissionValidationCacheRef: AtomicReference<PermissionValidationCache?>
     ): PermissionManager {
-
         return PermissionManagerImpl(
             PermissionUserManagerImpl(
-                config,
+                restConfig,
+                rbacConfig,
                 rpcSender,
                 permissionManagementCacheRef,
                 permissionValidationCacheRef,
                 passwordServiceFactory.createPasswordService(SecureRandom())
             ),
-            PermissionGroupManagerImpl(config, rpcSender, permissionManagementCacheRef),
-            PermissionRoleManagerImpl(config, rpcSender, permissionManagementCacheRef),
-            PermissionEntityManagerImpl(config, rpcSender, permissionManagementCacheRef)
+            PermissionGroupManagerImpl(restConfig, rpcSender, permissionManagementCacheRef),
+            PermissionRoleManagerImpl(restConfig, rpcSender, permissionManagementCacheRef),
+            PermissionEntityManagerImpl(restConfig, rpcSender, permissionManagementCacheRef)
         )
     }
 
     override fun createBasicAuthenticationService(
-        permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>): BasicAuthenticationService {
-
+        permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>
+    ): BasicAuthenticationService {
         return RbacBasicAuthenticationService(
             permissionManagementCacheRef,
             passwordServiceFactory.createPasswordService(SecureRandom())

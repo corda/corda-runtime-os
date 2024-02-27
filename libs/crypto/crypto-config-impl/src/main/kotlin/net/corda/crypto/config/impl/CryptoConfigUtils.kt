@@ -218,9 +218,17 @@ fun SmartConfig.bootstrapHsmId(): String =
 fun createCryptoBootstrapParamsMap(hsmId: String): Map<String, String> =
     mapOf(HSM_ID to hsmId)
 
+
+data class KeyDerivationParameters(
+    val passphrase: Any,
+    val salt: Any
+)
+
 // TODO - get this from the JSON config schema, or eliminate this function
 @Suppress("LongMethod")
-fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any): SmartConfig =
+fun createDefaultCryptoConfig(
+    wrappingKeys: List<KeyDerivationParameters>,
+): SmartConfig =
     SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
         .withValue(
             CACHING,
@@ -243,15 +251,16 @@ fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any):
                         CryptoHSMConfig.RetryConfig::attemptTimeoutMills.name to 20000,
                     ),
                     CryptoHSMConfig::defaultWrappingKey.name to ConfigValueFactory.fromAnyRef("root1"),
-                    CryptoHSMConfig::wrappingKeys.name to listOf(
-                        ConfigValueFactory.fromAnyRef(
-                            mapOf(
-                                "alias" to "root1",
-                                "salt" to wrappingKeySalt,
-                                "passphrase" to wrappingKeyPassphrase,
+                    CryptoHSMConfig::wrappingKeys.name to
+                        wrappingKeys.withIndex().map { (i, params) ->
+                            ConfigValueFactory.fromAnyRef(
+                                mapOf(
+                                    "alias" to "root${i+1}",
+                                    "salt" to params.salt,
+                                    "passphrase" to params.passphrase,
+                                )
                             )
-                        )
-                    )
+                        }.toList()
                 )
             )
         )

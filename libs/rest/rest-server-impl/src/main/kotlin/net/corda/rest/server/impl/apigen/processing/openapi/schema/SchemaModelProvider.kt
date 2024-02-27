@@ -1,8 +1,8 @@
 package net.corda.rest.server.impl.apigen.processing.openapi.schema
 
 import net.corda.rest.server.impl.apigen.models.EndpointParameter
-import net.corda.rest.server.impl.apigen.processing.openapi.schema.builders.JsonSchemaBuilder
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.builders.HttpResponseTypeBuilder
+import net.corda.rest.server.impl.apigen.processing.openapi.schema.builders.JsonSchemaBuilder
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.builders.SchemaBigDecimalBuilder
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.builders.SchemaBigIntegerBuilder
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.builders.SchemaBooleanBuilder
@@ -131,8 +131,8 @@ internal class DefaultSchemaModelProvider(private val schemaModelContextHolder: 
             .build(parameterizedClass.clazz, parameterizedClass.parameterizedClassList)
             .apply {
                 if (this !is SchemaObjectModel) this.example = parameterizedClass.clazz.toExample()
-                if(!parameterizedClass.name.isNullOrBlank()) name = parameterizedClass.name
-                if(!parameterizedClass.description.isNullOrBlank()) description = parameterizedClass.description
+                if (!parameterizedClass.name.isNullOrBlank()) name = parameterizedClass.name
+                if (!parameterizedClass.description.isNullOrBlank()) description = parameterizedClass.description
             }.let {
                 returnOrRegisterAndReturnRef(it, parameterizedClass)
             }.also {
@@ -143,7 +143,7 @@ internal class DefaultSchemaModelProvider(private val schemaModelContextHolder: 
             }
     }
 
-    private fun getExistingSchemaRefOrNull(parameterizedClass: ParameterizedClass) : SchemaRefObjectModel? {
+    private fun getExistingSchemaRefOrNull(parameterizedClass: ParameterizedClass): SchemaRefObjectModel? {
         return schemaModelContextHolder.getSchema(parameterizedClass)?.let {
             SchemaRefObjectModel(ref = schemaModelContextHolder.getName(parameterizedClass)!!)
         }?.also {
@@ -171,8 +171,11 @@ internal class DefaultSchemaModelProvider(private val schemaModelContextHolder: 
             }
             else -> model
         }.also {
-            log.trace { """Return or register and return ref for class: "${parameterizedClass.clazz}", 
-                |model: "$model", returned model: "$it" completed.""".trimMargin() }
+            log.trace {
+                """Return or register and return ref for class: "${parameterizedClass.clazz}", 
+                |model: "$model", returned model: "$it" completed.
+                """.trimMargin()
+            }
         }
     }
 }

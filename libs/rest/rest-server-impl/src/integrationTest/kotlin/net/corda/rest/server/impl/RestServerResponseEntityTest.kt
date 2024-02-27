@@ -1,5 +1,7 @@
 package net.corda.rest.server.impl
 
+import io.swagger.v3.core.util.Json
+import io.swagger.v3.oas.models.OpenAPI
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.test.CustomNonSerializableString
 import net.corda.rest.test.CustomUnsafeString
@@ -7,16 +9,19 @@ import net.corda.rest.test.ResponseEntityRestResourceImpl
 import net.corda.rest.test.utils.TestHttpClientUnirestImpl
 import net.corda.rest.test.utils.WebRequest
 import net.corda.rest.test.utils.multipartDir
+import net.corda.rest.tools.HttpVerb
 import net.corda.rest.tools.HttpVerb.DELETE
 import net.corda.rest.tools.HttpVerb.POST
 import net.corda.rest.tools.HttpVerb.PUT
 import net.corda.utilities.NetworkHostAndPort
 import org.apache.http.HttpStatus
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 class RestServerResponseEntityTest : RestServerTestBase() {
     companion object {
@@ -41,8 +46,10 @@ class RestServerResponseEntityTest : RestServerTestBase() {
                 true
             ).apply { start() }
             client =
-                TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${server.port}/" +
-                        "${restServerSettings.context.basePath}/${apiVersion.versionPath}/")
+                TestHttpClientUnirestImpl(
+                    "http://${restServerSettings.address.host}:${server.port}/" +
+                        "${restServerSettings.context.basePath}/${apiVersion.versionPath}/"
+                )
         }
 
         @AfterAll
@@ -122,5 +129,24 @@ class RestServerResponseEntityTest : RestServerTestBase() {
         val response = client.call(DELETE, WebRequest<Any>("responseentity/async-delete-returns-accepted"), userName, password)
         assertEquals(HttpStatus.SC_ACCEPTED, response.responseStatus)
         assertEquals("\"DELETING\"", response.body)
+    }
+
+    @Test
+    fun `post returns a string and has status CREATED with the string in the response body`() {
+        val response = client.call(POST, WebRequest<Any>("responseentity/post-returns-created-string-json"), userName, password)
+        assertEquals(HttpStatus.SC_CREATED, response.responseStatus)
+        assertEquals("{\"somejson\": \"for confusion\"}", response.body)
+
+        // Validate OpenAPI
+        val apiSpec = client.call(HttpVerb.GET, WebRequest<Any>("swagger.json"))
+        assertEquals(HttpStatus.SC_OK, apiSpec.responseStatus)
+        val openAPI = Json.mapper().readValue(apiSpec.body, OpenAPI::class.java)
+
+        with(openAPI.paths["/responseentity/post-returns-created-string-json"]) {
+            assertNotNull(this)
+
+            val createdResponse = assertNotNull(this.post.responses[HttpStatus.SC_CREATED.toString()])
+            assertThat(createdResponse.description).isEqualTo("Description of postReturnsCreatedWithEscapedJson")
+        }
     }
 }

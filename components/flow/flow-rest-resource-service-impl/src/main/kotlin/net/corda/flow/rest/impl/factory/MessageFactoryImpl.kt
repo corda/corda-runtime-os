@@ -95,7 +95,7 @@ class MessageFactoryImpl : MessageFactory {
         )
 
         return when (flowStatus.flowStatus) {
-            FlowStates.START_REQUESTED, FlowStates.RUNNING, FlowStates.RETRYING -> ResponseEntity.accepted(
+            FlowStates.START_REQUESTED, FlowStates.RUNNING -> ResponseEntity.accepted(
                 flowResultResponse
             )
 

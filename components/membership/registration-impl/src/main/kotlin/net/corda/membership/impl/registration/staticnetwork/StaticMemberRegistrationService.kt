@@ -1,7 +1,5 @@
 package net.corda.membership.impl.registration.staticnetwork
 
-import java.nio.ByteBuffer
-import java.util.UUID
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigurationReadService
@@ -29,6 +27,7 @@ import net.corda.membership.impl.registration.KeyDetails
 import net.corda.membership.impl.registration.KeysFactory
 import net.corda.membership.impl.registration.MemberRole
 import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
+import net.corda.membership.impl.registration.RegistrationLogger
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_PROTOCOL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
 import net.corda.membership.impl.registration.staticnetwork.StaticNetworkGroupParametersUtils.addNotary
@@ -96,6 +95,8 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.util.UUID
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
@@ -222,6 +223,9 @@ class StaticMemberRegistrationService(
         member: HoldingIdentity,
         context: Map<String, String>
     ): Collection<Record<*, *>> {
+        val registrationLogger = RegistrationLogger(logger)
+            .setRegistrationId(registrationId.toString())
+            .setMember(member)
         if (!isRunning || coordinator.status == LifecycleStatus.DOWN) {
             throw MembershipRegistrationException(
                 "Registration failed. Reason: StaticMemberRegistrationService is not running/down."
@@ -236,15 +240,14 @@ class StaticMemberRegistrationService(
                     context
                 )
         } catch (ex: MembershipSchemaValidationException) {
-            throw InvalidMembershipRegistrationException(
-                "Registration failed. The registration context is invalid: " + ex.message,
-                ex,
-            )
+            val err = "Registration failed. The registration context is invalid: " + ex.message
+            registrationLogger.info(err)
+            throw InvalidMembershipRegistrationException(err, ex)
         }
         val customFieldsValid = customFieldsVerifier.verify(context)
         if (customFieldsValid is RegistrationContextCustomFieldsVerifier.Result.Failure) {
-            val errorMessage = "Registration failed for ID '$registrationId'. ${customFieldsValid.reason}"
-            logger.warn(errorMessage)
+            val errorMessage = "Registration failed. ${customFieldsValid.reason}"
+            registrationLogger.warn(errorMessage)
             throw InvalidMembershipRegistrationException(errorMessage)
         }
         val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(member)
@@ -262,8 +265,8 @@ class StaticMemberRegistrationService(
         if (latestStatuses.isNotEmpty()) {
             throw InvalidMembershipRegistrationException(
                 "The member ${member.x500Name} had been registered successfully in the group ${member.groupId}. " +
-                        "See registrations: ${latestStatuses.map { it.registrationId }}. " +
-                        "Can not re-register."
+                    "See registrations: ${latestStatuses.map { it.registrationId }}. " +
+                    "Can not re-register."
             )
         }
         try {
@@ -294,19 +297,19 @@ class StaticMemberRegistrationService(
 
             return emptyList()
         } catch (e: InvalidMembershipRegistrationException) {
-            logger.warn("Registration failed. Reason:", e)
+            registrationLogger.warn("Registration failed. Reason:", e)
             throw e
         } catch (e: IllegalArgumentException) {
-            logger.warn("Registration failed. Reason:", e)
+            registrationLogger.warn("Registration failed. Reason:", e)
             throw InvalidMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
         } catch (e: MembershipPersistenceResult.PersistenceRequestException) {
-            logger.warn("Registration failed. Reason:", e)
+            registrationLogger.warn("Registration failed. Reason:", e)
             throw NotReadyMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
-        } catch(e: InvalidGroupParametersUpdateException) {
-            logger.warn("Registration failed. Reason:", e)
+        } catch (e: InvalidGroupParametersUpdateException) {
+            registrationLogger.warn("Registration failed. Reason:", e)
             throw InvalidMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
         } catch (e: Exception) {
-            logger.warn("Registration failed. Reason:", e)
+            registrationLogger.warn("Registration failed. Reason:", e)
             throw NotReadyMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
         }
     }
@@ -395,13 +398,13 @@ class StaticMemberRegistrationService(
             MemberX500Name.parse(it)
         }
 
-        //The notary service x500 name is different from the notary virtual node being registered.
+        // The notary service x500 name is different from the notary virtual node being registered.
         require(
             registeringMemberName != serviceName
         ) {
             "Notary service name invalid: Notary service name $serviceName and virtual node name cannot be the same."
         }
-        //The notary service x500 name is different from any existing virtual node x500 name (notary or otherwise).
+        // The notary service x500 name is different from any existing virtual node x500 name (notary or otherwise).
         require(
             staticMemberList.none { MemberX500Name.parse(it.name!!) == serviceName }
         ) {
@@ -441,7 +444,7 @@ class StaticMemberRegistrationService(
             MemberX500Name.parse(it.name!!) == memberName
         } ?: throw IllegalArgumentException(
             "Our membership $memberName is either not listed in the static member list or there is another member " +
-                    "with the same name."
+                "with the same name."
         )
 
         validateStaticMemberDeclaration(staticMemberInfo)

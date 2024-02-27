@@ -1,7 +1,6 @@
 package net.corda.membership.impl.read
 
 import com.typesafe.config.ConfigFactory
-import kotlin.reflect.KFunction
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -35,6 +34,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import org.slf4j.LoggerFactory
+import kotlin.reflect.KFunction
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class MembershipGroupReaderProviderIntegrationTest {
@@ -62,7 +62,7 @@ class MembershipGroupReaderProviderIntegrationTest {
         $INSTANCE_ID=1
         $BUS_TYPE = INMEMORY
         $BOOT_MAX_ALLOWED_MSG_SIZE = 1000000
-        """.trimIndent()
+    """.trimIndent()
 
     private val messagingConf = """
             componentVersion="5.1"
@@ -88,8 +88,7 @@ class MembershipGroupReaderProviderIntegrationTest {
         get() = listOf(
             configurationReadService
         )
-    private val schemaVersion = ConfigurationSchemaVersion(1,0)
-
+    private val schemaVersion = ConfigurationSchemaVersion(1, 0)
 
     @BeforeEach
     fun setUp() {
@@ -225,10 +224,12 @@ class MembershipGroupReaderProviderIntegrationTest {
     }
 
     private fun Publisher.publishMessagingConf() =
-        publishRecord(Schemas.Config.CONFIG_TOPIC, ConfigKeys.MESSAGING_CONFIG,
-            Configuration(messagingConf, messagingConf, 0, schemaVersion))
+        publishRecord(
+            Schemas.Config.CONFIG_TOPIC,
+            ConfigKeys.MESSAGING_CONFIG,
+            Configuration(messagingConf, messagingConf, 0, schemaVersion)
+        )
 
     private fun <K : Any, V : Any> Publisher.publishRecord(topic: String, key: K, value: V) =
         publish(listOf(Record(topic, key, value)))
 }
-

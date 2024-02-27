@@ -64,9 +64,9 @@ class MemberInfoEntity(
         if (other === this) return true
         if (other == null) return false
         if (other !is MemberInfoEntity) return false
-        return other.groupId == this.groupId
-                && MemberX500Name.parse(other.memberX500Name) == MemberX500Name.parse(this.memberX500Name)
-                && other.isPending == this.isPending
+        return other.groupId == this.groupId &&
+            MemberX500Name.parse(other.memberX500Name) == MemberX500Name.parse(this.memberX500Name) &&
+            other.isPending == this.isPending
     }
 
     override fun hashCode(): Int {
@@ -75,7 +75,6 @@ class MemberInfoEntity(
         result = 31 * result + isPending.hashCode()
         return result
     }
-
 }
 
 @Embeddable

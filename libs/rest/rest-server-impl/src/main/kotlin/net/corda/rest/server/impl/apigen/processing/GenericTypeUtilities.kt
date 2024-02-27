@@ -26,7 +26,8 @@ fun Type.toEndpointParameterParameterizedType(): GenericParameterizedType? {
         is ParameterizedType -> {
             GenericParameterizedType(
                 this.rawType as Class<*>,
-                this.actualTypeArguments.mapNotNull { it.toEndpointParameterParameterizedType() })
+                this.actualTypeArguments.mapNotNull { it.toEndpointParameterParameterizedType() }
+            )
         }
         is WildcardType -> {
             this.upperBounds.singleOrNull()?.toEndpointParameterParameterizedType()

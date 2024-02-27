@@ -8,7 +8,7 @@ import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactoryFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFactoryFactory
 import net.corda.messaging.api.mediator.factory.MultiSourceEventMediatorFactory
-import net.corda.schema.configuration.FlowConfig
+import net.corda.schema.configuration.MessagingConfig
 import net.corda.session.mapper.messaging.mediator.FlowMapperEventMediatorFactory
 import net.corda.session.mapper.messaging.mediator.FlowMapperEventMediatorFactoryImpl
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -24,13 +24,13 @@ class FlowMapperEventMediatorFactoryImplTest {
     private val mediatorConsumerFactoryFactory = mock<MediatorConsumerFactoryFactory>()
     private val messagingClientFactoryFactory = mock<MessagingClientFactoryFactory>()
     private val multiSourceEventMediatorFactory = mock<MultiSourceEventMediatorFactory>()
-    private val flowConfig = mock<SmartConfig>()
+    private val config = mock<SmartConfig>()
 
     @BeforeEach
     fun beforeEach() {
         `when`(multiSourceEventMediatorFactory.create(any<EventMediatorConfig<String, FlowMapperState, FlowMapperEvent>>()))
             .thenReturn(mock())
-        `when`(flowConfig.getInt(FlowConfig.PROCESSING_THREAD_POOL_SIZE)).thenReturn(10)
+        `when`(config.getInt(MessagingConfig.Subscription.MEDIATOR_PROCESSING_THREAD_POOL_SIZE)).thenReturn(10)
 
         flowMapperEventMediatorFactory = FlowMapperEventMediatorFactoryImpl(
             flowMapperEventExecutorFactory,
@@ -42,7 +42,7 @@ class FlowMapperEventMediatorFactoryImplTest {
 
     @Test
     fun `successfully creates event mediator`() {
-        val mediator = flowMapperEventMediatorFactory.create(flowConfig, mock(), mock())
+        val mediator = flowMapperEventMediatorFactory.create(mock(), config, mock(), mock())
 
         assertNotNull(mediator)
     }

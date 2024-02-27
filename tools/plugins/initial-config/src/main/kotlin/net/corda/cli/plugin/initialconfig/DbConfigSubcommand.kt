@@ -1,5 +1,6 @@
 package net.corda.cli.plugin.initialconfig
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
@@ -10,7 +11,6 @@ import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
 import java.io.FileWriter
-import java.lang.IllegalArgumentException
 import java.time.Instant
 import java.util.UUID
 
@@ -206,16 +206,22 @@ class DbConfigSubcommand : Runnable {
 /**
  * Generate a JSON config string for the config database.
  *
- * @param jdbcUrl URL for the database
- * @param usernmae
+ * @param jdbcUrl URL for the database.
+ * @param username Username for the database connection.
  * @param value
- * @param jdcbPoolMaxSize
- * @param secretsService a factory that can produce representations of secrets
- * @return a string containing a JSON config
+ * @param key Vault key for the secrets service. Used only by VAULT type secrets service.
+ * @param jdbcPoolMaxSize The maximum size for the JDBC connection pool.
+ * @param jdbcPoolMinSize The minimum size for the JDBC connection pool.
+ * @param idleTimeout The maximum time (in seconds) a connection can stay idle in the pool.
+ * @param maxLifetime The maximum time (in seconds) a connection can stay in the pool.
+ * @param keepaliveTime The interval time (in seconds) in which connections will be tested for aliveness.
+ * @param validationTimeout The maximum time (in seconds) that the pool will wait for a connection to be validated as alive.
+ * @param secretsService A factory that can produce representations of secrets.
+ * @return A string containing a JSON config.
  *
  */
 @Suppress("LongParameterList")
-private fun createConfigDbConfig(
+fun createConfigDbConfig(
     jdbcUrl: String,
     username: String,
     value: String,
@@ -230,9 +236,9 @@ private fun createConfigDbConfig(
 ): String {
     return "{\"database\":{" +
             "\"jdbc\":" +
-            "{\"url\":\"$jdbcUrl\"}," +
+            "{\"url\":${jacksonObjectMapper().writeValueAsString(jdbcUrl)}}," +
             "\"pass\":${createSecureConfig(secretsService, value, key)}," +
-            "\"user\":\"$username\"," +
+            "\"user\":${jacksonObjectMapper().writeValueAsString(username)}," +
             "\"pool\":" +
             "{\"max_size\":$jdbcPoolMaxSize," +
             if (jdbcPoolMinSize != null) { "\"min_size\":$jdbcPoolMinSize," } else { "" } +

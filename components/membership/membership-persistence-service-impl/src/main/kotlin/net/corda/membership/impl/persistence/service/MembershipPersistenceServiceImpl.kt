@@ -1,9 +1,9 @@
 package net.corda.membership.impl.persistence.service
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequest
 import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequestState
@@ -159,11 +159,11 @@ class MembershipPersistenceServiceImpl @Activate constructor(
         logger.debug { "Handling registration changed event. Registration event status=${event.status}" }
         when (event.status) {
             LifecycleStatus.UP -> {
-                    configHandle?.close()
-                    configHandle = configurationReadService.registerComponentForUpdates(
-                        coordinator,
-                        setOf(BOOT_CONFIG, MESSAGING_CONFIG)
-                    )
+                configHandle?.close()
+                configHandle = configurationReadService.registerComponentForUpdates(
+                    coordinator,
+                    setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+                )
             }
             else -> {
                 coordinator.updateStatus(LifecycleStatus.DOWN, "Dependencies are down.")

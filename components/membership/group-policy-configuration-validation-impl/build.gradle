@@ -5,6 +5,8 @@ plugins {
 
 description 'Membership Group Policy Configuration Validation Implementation'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
@@ -16,7 +18,4 @@ dependencies {
     implementation project(':libs:membership:membership-common')
     implementation project(':components:membership:group-policy-configuration-validation')
     implementation project(':components:configuration:configuration-read-service')
-
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

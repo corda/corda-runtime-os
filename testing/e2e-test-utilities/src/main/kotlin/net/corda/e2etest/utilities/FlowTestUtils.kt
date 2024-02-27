@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
@@ -6,16 +8,20 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.NullNode
 import net.corda.utilities.minutes
 import org.apache.commons.text.StringEscapeUtils.escapeJson
+import org.junit.jupiter.api.TestInfo
+import org.slf4j.LoggerFactory
 import java.util.UUID
 
-const val SMOKE_TEST_CLASS_NAME = "com.r3.corda.testing.smoketests.flow.RpcSmokeTestFlow"
-const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
-const val RPC_FLOW_STATUS_FAILED = "FAILED"
+const val SMOKE_TEST_CLASS_NAME = "com.r3.corda.testing.smoketests.flow.RestSmokeTestFlow"
+
+const val REST_FLOW_STATUS_SUCCESS = "COMPLETED"
+const val REST_FLOW_STATUS_FAILED = "FAILED"
+
 private val RETRY_TIMEOUT = 6.minutes
 
-fun startRpcFlow(
+fun startRestFlow(
     holdingId: String,
-    args: RpcSmokeTestInput,
+    args: RestSmokeTestInput,
     expectedCode: Int = 202,
     requestId: String = UUID.randomUUID().toString()
 ): String {
@@ -38,16 +44,22 @@ fun startRpcFlow(
     }
 }
 
-fun startRpcFlow(
+fun startRestFlow(
     holdingId: String,
     args: Map<String, Any>,
     flowName: String,
-    expectedCode: Int = 202
-) = DEFAULT_CLUSTER.startRpcFlow(holdingId, args, flowName, expectedCode)
+    expectedCode: Int = 202,
+    requestId: String = UUID.randomUUID().toString()
+) = DEFAULT_CLUSTER.startRestFlow(holdingId, args, flowName, expectedCode, requestId)
 
-fun ClusterInfo.startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String, expectedCode: Int = 202): String {
+fun ClusterInfo.startRestFlow(
+    holdingId: String,
+    args: Map<String, Any>,
+    flowName: String,
+    expectedCode: Int = 202,
+    requestId: String = UUID.randomUUID().toString()
+): String {
     return cluster {
-        val requestId = UUID.randomUUID().toString()
 
         assertWithRetry {
             timeout(RETRY_TIMEOUT)
@@ -66,22 +78,21 @@ fun ClusterInfo.startRpcFlow(holdingId: String, args: Map<String, Any>, flowName
     }
 }
 
-fun awaitRpcFlowFinished(
+fun awaitRestFlowFinished(
     holdingId: String,
     requestId: String
-) = DEFAULT_CLUSTER.awaitRpcFlowFinished(holdingId, requestId)
+) = DEFAULT_CLUSTER.awaitRestFlowFinished(holdingId, requestId)
 
-fun ClusterInfo.awaitRpcFlowFinished(holdingId: String, requestId: String): FlowStatus {
+fun ClusterInfo.awaitRestFlowFinished(holdingId: String, requestId: String): FlowStatus {
     return cluster {
         ObjectMapper().readValue(
             assertWithRetryIgnoringExceptions {
                 command { flowStatus(holdingId, requestId) }
-                //CORE-6118 - tmp increase this timeout to a large number to allow tests to pass while slow flow sessions are investigated
                 timeout(RETRY_TIMEOUT)
                 condition {
                     it.code == 200 &&
-                            (it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_SUCCESS ||
-                                    it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_FAILED)
+                            (it.toJson()["flowStatus"].textValue() == REST_FLOW_STATUS_SUCCESS ||
+                                    it.toJson()["flowStatus"].textValue() == REST_FLOW_STATUS_FAILED)
                 }
             }.body, FlowStatus::class.java
         )
@@ -92,6 +103,7 @@ fun awaitRestFlowResult(
     holdingId: String,
     requestId: String
 ) = DEFAULT_CLUSTER.awaitRestFlowResult(holdingId, requestId)
+
 fun ClusterInfo.awaitRestFlowResult(holdingId: String, requestId: String): FlowResult {
     return cluster {
         val jsonNode = ObjectMapper().readTree(
@@ -100,10 +112,11 @@ fun ClusterInfo.awaitRestFlowResult(holdingId: String, requestId: String): FlowR
                 timeout(RETRY_TIMEOUT)
                 condition {
                     it.code == 200 &&
-                            (it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_SUCCESS ||
-                                    it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_FAILED)
+                            (it.toJson()["flowStatus"].textValue() == REST_FLOW_STATUS_SUCCESS ||
+                                    it.toJson()["flowStatus"].textValue() == REST_FLOW_STATUS_FAILED)
                 }
-            }.body)
+            }.body
+        )
 
         FlowResult(
             jsonNode[FlowResult::flowStatus.name]?.textValue(),
@@ -114,12 +127,13 @@ fun ClusterInfo.awaitRestFlowResult(holdingId: String, requestId: String): FlowR
 }
 
 private fun JsonNode.handlingNulls(): JsonNode? {
-    return when(this) {
+    return when (this) {
         is NullNode -> null
         else -> this
     }
 }
 
+@Suppress("unused")
 fun getFlowStatus(
     holdingId: String,
     requestId: String,
@@ -147,7 +161,8 @@ private fun JsonNode.asFlowError(): FlowError {
     return flowError
 }
 
-fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
+@Suppress("unused")
+fun awaitMultipleRestFlowFinished(holdingId: String, expectedFlowCount: Int) {
     return DEFAULT_CLUSTER.cluster {
         assertWithRetryIgnoringExceptions {
             command { multipleFlowStatus(holdingId) }
@@ -156,8 +171,8 @@ fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
                 val json = it.toJson()
                 val flowStatuses = json["flowStatusResponses"]
                 val allStatusComplete = flowStatuses.map { flowStatus ->
-                    flowStatus["flowStatus"].textValue() == RPC_FLOW_STATUS_SUCCESS ||
-                            flowStatus["flowStatus"].textValue() == RPC_FLOW_STATUS_FAILED
+                    flowStatus["flowStatus"].textValue() == REST_FLOW_STATUS_SUCCESS ||
+                            flowStatus["flowStatus"].textValue() == REST_FLOW_STATUS_FAILED
                 }.all { true }
                 it.code == 200 && flowStatuses.size() == expectedFlowCount && allStatusComplete
             }
@@ -165,6 +180,26 @@ fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
     }
 }
 
+@Suppress("unused")
+fun assertStatusFilter(
+    holdingId: String,
+    expectedCode: Int,
+    status: String?
+) = DEFAULT_CLUSTER.assertStatusFilter(holdingId, expectedCode, status)
+
+fun ClusterInfo.assertStatusFilter(holdingId: String, expectedCode: Int, status: String?) {
+    return cluster {
+        assertWithRetryIgnoringExceptions {
+            command { multipleFlowStatus(holdingId, status) }
+            timeout(RETRY_TIMEOUT)
+            condition {
+                it.code == expectedCode
+            }
+        }
+    }
+}
+
+@Suppress("unused")
 fun getFlowClasses(
     holdingId: String
 ) = DEFAULT_CLUSTER.getFlowClasses(holdingId)
@@ -182,7 +217,7 @@ fun ClusterInfo.getFlowClasses(holdingId: String): List<String> {
     }
 }
 
-class RpcSmokeTestInput {
+class RestSmokeTestInput {
     var command: String? = null
     var data: Map<String, String>? = null
 }
@@ -199,10 +234,47 @@ class FlowStatus {
 class FlowError {
     var type: String? = null
     var message: String? = null
+    override fun toString(): String {
+        return "FlowError(type=$type, message=$message)"
+    }
 }
 
-data class FlowResult (
+data class FlowResult(
     val flowStatus: String?,
     val json: JsonNode?,
     val flowError: FlowError?
 )
+
+class TestRequestIdGenerator(testName: String) {
+    companion object {
+
+        val logger = LoggerFactory.getLogger(this::class.java)
+
+        private fun getNameFromTestInfo(testInfo: TestInfo): String {
+            val parameterNumber = Regex("^\\[(\\d+)\\]").find(testInfo.displayName)?.groups?.get(1)?.value
+            val testName = if (!parameterNumber.isNullOrBlank()) {
+                "${testInfo.testMethod.get().name}-param_$parameterNumber"
+            } else {
+                testInfo.displayName.removeSuffix("(TestInfo)")
+            }
+            return if (testName.length > 235) {
+                val name = "${testName.takeLast(150)}-${UUID.randomUUID()}"
+                logger.warn("Test exceeding 235 characters, shortening to $name")
+                name
+
+            } else {
+                testName
+            }
+        }
+    }
+
+    constructor(testInfo: TestInfo) : this(getNameFromTestInfo(testInfo))
+
+    private val baseName: String = Regex("[^-._A-Za-z0-9]").replace(testName, "_")
+    private var count = 0
+
+    val nextId: String
+        get() {
+            return "$baseName-${count++}"
+        }
+}

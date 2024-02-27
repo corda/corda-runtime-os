@@ -36,21 +36,30 @@ pluginManagement {
             }
         }
     }
+
+    // Manually parse the Toml file to workaround issues with version catalog
+    // not supporting direct use in settings.gradle
+    def tomlFile = new File(rootDir, 'gradle/libs.versions.toml')
+    def tomlContent = tomlFile.text
+    def extractVersion = { String name ->
+        def pattern = java.util.regex.Pattern.compile("${name}\\s*=\\s*\"([^\"]+)\"")
+        def matcher = pattern.matcher(tomlContent)
+        if (matcher.find()) {
+            return matcher.group(1)
+        } else {
+            return null
+        }
+    }
+
+    def gradleEnterpriseVersion = extractVersion('gradleEnterpriseVersion')
+    def gradleDataPluginVersion = extractVersion('gradleDataVersion')
+
     plugins {
         id 'com.gradle.enterprise' version gradleEnterpriseVersion
-        id 'com.gradle.common-custom-user-data-gradle-plugin' version gradleDataPlugin
+        id 'com.gradle.common-custom-user-data-gradle-plugin' version gradleDataPluginVersion
         id 'net.corda.cordapp.cordapp-configuration' version cordaApiVersion
-        id 'org.jetbrains.kotlin.jvm' version kotlinVersion
-        id 'org.jetbrains.kotlin.plugin.allopen' version kotlinVersion
-        id 'org.jetbrains.kotlin.plugin.jpa' version kotlinVersion
         id 'net.corda.plugins.cordapp-cpk2' version cordaGradlePluginsVersion
         id 'net.corda.plugins.cordapp-cpb2' version cordaGradlePluginsVersion
-        id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
-        id 'com.github.ben-manes.versions' version dependencyCheckVersion
-        id "com.jfrog.artifactory" version artifactoryPluginVersion
-        id 'io.snyk.gradle.plugin.snykplugin' version snykVersion
-        id 'org.jetbrains.dokka' version dokkaVersion
-        id "org.cyclonedx.bom" version cyclonedxVersion
     }
 }
 
@@ -62,6 +71,7 @@ plugins {
 rootProject.name = 'corda-runtime-os'
 include 'applications:examples:sandbox-app'
 include 'applications:examples:sandbox-app:example-cpi'
+include 'applications:tools:metrics-webserver'
 include 'applications:tools:p2p-test:app-simulator'
 include 'applications:tools:p2p-test:fake-ca'
 include 'applications:tools:p2p-test:dump-topic'
@@ -101,6 +111,7 @@ include 'components:crypto:crypto-hes'
 include 'components:crypto:crypto-hes-core-impl'
 include 'components:crypto:crypto-hes-impl'
 include 'components:crypto:crypto-persistence'
+include 'components:crypto:crypto-rest'
 include 'components:crypto:crypto-service-impl'
 include 'components:crypto:crypto-softhsm-impl'
 include 'components:db:db-connection-manager'
@@ -182,7 +193,6 @@ include 'components:uniqueness:backing-store-impl'
 include 'components:uniqueness:uniqueness-checker'
 include 'components:uniqueness:uniqueness-checker-client-service-impl'
 include 'components:uniqueness:uniqueness-checker-impl'
-include 'components:uniqueness:uniqueness-checker-impl-osgi-tests'
 include 'components:virtual-node:cpi-info-read-service'
 include 'components:virtual-node:cpi-info-read-service-impl'
 include 'components:virtual-node:cpi-info-write-service'
@@ -274,7 +284,6 @@ include 'libs:lifecycle:lifecycle-impl'
 include 'libs:lifecycle:lifecycle-test-impl'
 include 'libs:lifecycle:registry'
 include 'libs:membership:certificates-datamodel'
-include 'libs:membership:ledger-identity'
 include 'libs:membership:membership-common'
 include 'libs:membership:membership-datamodel'
 include 'libs:membership:membership-impl'
@@ -336,6 +345,7 @@ include 'libs:serialization:json-serializers'
 include 'libs:serialization:json-validator'
 include 'libs:serialization:kryo-serializers'
 include 'libs:serialization:serialization-amqp'
+include 'libs:serialization:serialization-amqp-api'
 include 'libs:serialization:serialization-amqp:cpk-swap-original'
 include 'libs:serialization:serialization-amqp:cpk-swap-replacement'
 include 'libs:serialization:serialization-amqp:cpk-evolution-newer'
@@ -376,6 +386,9 @@ include 'notary-plugins:notary-plugin-common'
 include 'notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-api'
 include 'notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-client'
 include 'notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-server'
+include 'notary-plugins:notary-plugin-contract-verifying:notary-plugin-contract-verifying-api'
+include 'notary-plugins:notary-plugin-contract-verifying:notary-plugin-contract-verifying-client'
+include 'notary-plugins:notary-plugin-contract-verifying:notary-plugin-contract-verifying-server'
 include 'osgi-framework-api'
 include 'osgi-framework-bootstrap'
 include 'processors:crypto-processor'
@@ -451,15 +464,18 @@ include 'testing:packaging-test-utilities'
 include 'testing:persistence-testkit'
 include 'testing:sandboxes'
 include 'testing:sandboxes:test-api'
+include 'testing:sandbox-stresstests'
 include 'testing:sandboxes-testkit'
 include 'testing:security-manager-utilities'
 include 'testing:test-serialization'
+include 'testing:test-state-manager'
 include 'testing:test-utilities'
 include 'testing:uniqueness:backing-store-fake'
 include 'testing:uniqueness:uniqueness-utilities'
 include 'testing:cpi-info-read-service-fake'
 include 'testing:virtual-node-info-read-service-fake'
 include 'testing:group-policy-test-common'
+include 'tools:corda-runtime-gradle-plugin'
 include 'tools:plugins:plugins-rest'
 include 'tools:plugins:db-config'
 include 'tools:plugins:initial-config'
@@ -538,6 +554,3 @@ gradleEnterprise {
         }
     }
 }
-include 'libs:kotlin-coroutines'
-findProject(':libs:kotlin-coroutines')?.name = 'kotlin-coroutines'
-

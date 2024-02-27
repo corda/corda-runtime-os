@@ -66,7 +66,11 @@ class FakeFlowFiberFactory : FlowFiberFactory {
         }
 
         override fun getExecutionContext(): FlowFiberExecutionContext {
-            TODO("Not yet implemented")
+            TODO("Not needed")
+        }
+
+        override fun getSandboxGroupId(): UUID? {
+            TODO("Not needed")
         }
 
         override fun startFlow(flowFiberExecutionContext: FlowFiberExecutionContext): Future<FlowIORequest<*>> {
@@ -80,7 +84,7 @@ class FakeFlowFiberFactory : FlowFiberFactory {
             suspensionOutcome: FlowContinuation,
             scheduler: FiberScheduler
         ): Future<FlowIORequest<*>> {
-            TODO("Not yet implemented")
+            TODO("Not needed")
         }
 
         fun resume(
@@ -91,11 +95,11 @@ class FakeFlowFiberFactory : FlowFiberFactory {
         }
 
         override fun <SUSPENDRETURN> suspend(request: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN {
-            TODO("Not yet implemented")
+            TODO("Not needed")
         }
 
         override fun attemptInterrupt() {
-            TODO("Not yet implemented")
+            TODO("Not needed")
         }
 
         private fun getCompletedFuture(): Future<FlowIORequest<*>> {

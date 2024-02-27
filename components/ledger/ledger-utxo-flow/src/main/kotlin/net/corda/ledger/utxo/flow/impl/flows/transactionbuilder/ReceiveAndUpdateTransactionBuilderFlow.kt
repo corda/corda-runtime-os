@@ -22,10 +22,10 @@ class ReceiveAndUpdateTransactionBuilderFlow(
 
     @Suspendable
     override fun call(): UtxoTransactionBuilder {
-       return versioningService.versionedSubFlow(
-           ReceiveAndUpdateTransactionBuilderFlowVersionedFlowFactory(originalTransactionBuilder),
-           session
-       )
+        return versioningService.versionedSubFlow(
+            ReceiveAndUpdateTransactionBuilderFlowVersionedFlowFactory(originalTransactionBuilder),
+            session
+        )
     }
 }
 

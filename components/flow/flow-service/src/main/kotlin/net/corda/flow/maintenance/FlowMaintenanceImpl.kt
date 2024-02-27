@@ -19,6 +19,7 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
+import net.corda.schema.configuration.StateManagerConfig
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.osgi.service.component.annotations.Activate
@@ -58,14 +59,20 @@ class FlowMaintenanceImpl @Activate constructor(
             subscriptionRegistrationHandle?.close()
             stateManager?.stop()
 
-            stateManager = stateManagerFactory.create(newStateManagerConfig).also { it.start() }
+            val stateManagerInstance = stateManagerFactory.create(newStateManagerConfig, StateManagerConfig.StateType.FLOW_CHECKPOINT)
+                .also { it.start() }
+            stateManager = stateManagerInstance
+
+            /**
+             * Task and executor for the cleanup of checkpoints that are idle or timed out.
+             */
             coordinator.createManagedResource("FLOW_MAINTENANCE_SUBSCRIPTION") {
                 subscriptionFactory.createDurableSubscription(
                     SubscriptionConfig(
                         "flow.maintenance.tasks",
                         Schemas.ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_PROCESSOR
                     ),
-                    flowMaintenanceHandlersFactory.createScheduledTaskHandler(stateManager!!),
+                    flowMaintenanceHandlersFactory.createScheduledTaskHandler(stateManagerInstance, flowConfig),
                     messagingConfig,
                     null
                 )
@@ -77,13 +84,13 @@ class FlowMaintenanceImpl @Activate constructor(
                         "flow.timeout.task",
                         Schemas.Flow.FLOW_TIMEOUT_TOPIC
                     ),
-                    flowMaintenanceHandlersFactory.createTimeoutEventHandler(stateManager!!, flowConfig),
+                    flowMaintenanceHandlersFactory.createTimeoutEventHandler(stateManagerInstance, flowConfig),
                     messagingConfig,
                     null
                 )
             }.start()
 
-            subscriptionRegistrationHandle = coordinator.followStatusChangesByName(setOf(stateManager!!.name))
+            subscriptionRegistrationHandle = coordinator.followStatusChangesByName(setOf(stateManagerInstance.name))
         }
     }
 
@@ -94,8 +101,8 @@ class FlowMaintenanceImpl @Activate constructor(
         config: Map<String, SmartConfig>,
         messagingConfig: SmartConfig
     ) = config.getConfig(ConfigKeys.FLOW_CONFIG)
-        .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(MAX_ALLOWED_MSG_SIZE)))
         .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(PROCESSOR_TIMEOUT)))
+        .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(MAX_ALLOWED_MSG_SIZE)))
 
     override val isRunning: Boolean
         get() = coordinator.isRunning

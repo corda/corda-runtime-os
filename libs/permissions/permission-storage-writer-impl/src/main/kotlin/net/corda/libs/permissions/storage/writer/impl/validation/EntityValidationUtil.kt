@@ -1,6 +1,5 @@
 package net.corda.libs.permissions.storage.writer.impl.validation
 
-import javax.persistence.EntityManager
 import net.corda.libs.permissions.common.exception.EntityAlreadyExistsException
 import net.corda.libs.permissions.common.exception.EntityAssociationAlreadyExistsException
 import net.corda.libs.permissions.common.exception.EntityAssociationDoesNotExistException
@@ -10,6 +9,7 @@ import net.corda.permissions.model.Role
 import net.corda.permissions.model.RolePermissionAssociation
 import net.corda.permissions.model.RoleUserAssociation
 import net.corda.permissions.model.User
+import javax.persistence.EntityManager
 
 class EntityValidationUtil(private val entityManager: EntityManager) {
 
@@ -36,7 +36,7 @@ class EntityValidationUtil(private val entityManager: EntityManager) {
         permissionId: String,
         roleId: String
     ) {
-        if(associations.any { it.permission.id == permissionId }) {
+        if (associations.any { it.permission.id == permissionId }) {
             throw EntityAssociationAlreadyExistsException("Permission '$permissionId' is already associated with Role '$roleId'.")
         }
     }
@@ -57,7 +57,9 @@ class EntityValidationUtil(private val entityManager: EntityManager) {
     fun validateAndGetOptionalParentGroup(groupId: String?): Group? {
         return if (groupId != null) {
             requireEntityExists(Group::class.java, groupId)
-        } else null
+        } else {
+            null
+        }
     }
 
     fun validateRoleNotAlreadyAssignedToUser(user: User, roleId: String) {

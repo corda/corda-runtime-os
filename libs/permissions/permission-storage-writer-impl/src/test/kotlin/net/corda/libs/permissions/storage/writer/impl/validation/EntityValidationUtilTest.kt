@@ -1,9 +1,5 @@
 package net.corda.libs.permissions.storage.writer.impl.validation
 
-import java.time.Instant
-import javax.persistence.EntityManager
-import javax.persistence.Query
-import javax.persistence.TypedQuery
 import net.corda.libs.permissions.common.exception.EntityAlreadyExistsException
 import net.corda.libs.permissions.common.exception.EntityAssociationAlreadyExistsException
 import net.corda.libs.permissions.common.exception.EntityAssociationDoesNotExistException
@@ -17,12 +13,15 @@ import net.corda.permissions.model.User
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
-
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.time.Instant
+import javax.persistence.EntityManager
+import javax.persistence.Query
+import javax.persistence.TypedQuery
 
 class EntityValidationUtilTest {
 

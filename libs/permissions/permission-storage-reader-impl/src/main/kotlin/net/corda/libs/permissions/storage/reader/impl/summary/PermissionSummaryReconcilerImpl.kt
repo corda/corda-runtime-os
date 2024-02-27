@@ -18,11 +18,9 @@ class PermissionSummaryReconcilerImpl : PermissionSummaryReconciler {
         dbPermissionSummaries: Map<UserLogin, InternalUserPermissionSummary>,
         cachedPermissionSummaries: Map<UserLogin, AvroUserPermissionSummary>
     ): Map<UserLogin, AvroUserPermissionSummary?> {
-
         val usersForReconciliation = mutableMapOf<UserLogin, AvroUserPermissionSummary?>()
 
         for ((currentUserLogin: UserLogin, permissionSummaryDb: InternalUserPermissionSummary) in dbPermissionSummaries) {
-
             val permissionSummaryCached: AvroUserPermissionSummary? = cachedPermissionSummaries[currentUserLogin]
 
             if (permissionSummaryCached == null) {
@@ -39,7 +37,7 @@ class PermissionSummaryReconcilerImpl : PermissionSummaryReconciler {
                 // We will not overwrite a more recently calculated permission summary.
                 logger.debug {
                     "Permission summary reconciliation task discovered a more recent version of permission summary in cache for " +
-                            "user $currentUserLogin and will skip reconciliation for this user."
+                        "user $currentUserLogin and will skip reconciliation for this user."
                 }
                 continue
             }
@@ -59,43 +57,47 @@ class PermissionSummaryReconcilerImpl : PermissionSummaryReconciler {
      * Returns null if there is no difference therefore no need to reconcile the user's permission summary.
      */
     private fun InternalUserPermissionSummary.reconcileCachedPermissionSummary(summaryCache: AvroUserPermissionSummary):
-            AvroUserPermissionSummary? {
-
+        AvroUserPermissionSummary? {
         val permissionSummaryDb = this
         val permissionsCache = summaryCache.permissions
         val permissionsDb = permissionSummaryDb.permissions
 
-        if (permissionsDb.size != permissionsCache.size)
+        if (permissionsDb.size != permissionsCache.size) {
             return permissionSummaryDb.toAvroUserPermissionSummary()
+        }
 
-        if (permissionSummaryDb.enabled != summaryCache.enabled)
+        if (permissionSummaryDb.enabled != summaryCache.enabled) {
             return permissionSummaryDb.toAvroUserPermissionSummary()
+        }
 
         // we want ordering of permissions to be preserved
         for (i in permissionsDb.indices) {
-
-            if (permissionsDb[i].permissionString != permissionsCache[i].permissionString)
+            if (permissionsDb[i].permissionString != permissionsCache[i].permissionString) {
                 return permissionSummaryDb.toAvroUserPermissionSummary()
+            }
 
-            if (permissionsDb[i].permissionType.name != permissionsCache[i].permissionType.name)
+            if (permissionsDb[i].permissionType.name != permissionsCache[i].permissionType.name) {
                 return permissionSummaryDb.toAvroUserPermissionSummary()
+            }
 
-            if (permissionsDb[i].groupVisibility != permissionsCache[i].groupVisibility)
+            if (permissionsDb[i].groupVisibility != permissionsCache[i].groupVisibility) {
                 return permissionSummaryDb.toAvroUserPermissionSummary()
+            }
 
-            if (permissionsDb[i].virtualNode != permissionsCache[i].virtualNode)
+            if (permissionsDb[i].virtualNode != permissionsCache[i].virtualNode) {
                 return permissionSummaryDb.toAvroUserPermissionSummary()
+            }
 
-            if (permissionsDb[i].id != permissionsCache[i].id)
+            if (permissionsDb[i].id != permissionsCache[i].id) {
                 return permissionSummaryDb.toAvroUserPermissionSummary()
+            }
         }
 
         // permission reconciliation is not necessary for this user
         return null
     }
 
-    private fun reconcileForRemovedUsers(dbPermissionSummaries: Set<UserLogin>, cachedPermissionSummaries: Set<UserLogin>):
-            Set<UserLogin> {
+    private fun reconcileForRemovedUsers(dbPermissionSummaries: Set<UserLogin>, cachedPermissionSummaries: Set<UserLogin>): Set<UserLogin> {
         val removedUserLogins = cachedPermissionSummaries.filterNotTo(mutableSetOf()) { dbPermissionSummaries.contains(it) }
         if (removedUserLogins.isNotEmpty()) {
             logger.debug { "Permission summary reconciliation task discovered ${removedUserLogins.size} removed users." }
@@ -110,4 +112,3 @@ class PermissionSummaryReconcilerImpl : PermissionSummaryReconciler {
         lastUpdateTimestamp
     )
 }
-

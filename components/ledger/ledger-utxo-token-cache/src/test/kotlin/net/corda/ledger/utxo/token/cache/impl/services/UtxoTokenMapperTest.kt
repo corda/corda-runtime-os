@@ -48,7 +48,7 @@ class UtxoTokenMapperTest {
     fun `Map tuple fields to token - with null owner`() {
         val mapper = UtxoTokenMapper()
 
-        val tuple = getTuple("tag",null)
+        val tuple = getTuple("tag", null)
 
         val cachedToken = mapper.map(listOf(tuple)).single()
 
@@ -58,7 +58,7 @@ class UtxoTokenMapperTest {
         assertThat(cachedToken.amount).isEqualTo(tokenAmount)
     }
 
-    private fun getTuple(tag:String?,ownerHash:String?):Tuple{
+    private fun getTuple(tag: String?, ownerHash: String?): Tuple {
         return mock<Tuple>().apply {
             whenever(get(0)).thenReturn(transactionId.toString())
             whenever(get(1)).thenReturn(leafId)

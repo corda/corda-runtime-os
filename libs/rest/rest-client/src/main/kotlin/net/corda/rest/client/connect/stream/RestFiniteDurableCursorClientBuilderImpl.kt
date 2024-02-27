@@ -48,7 +48,8 @@ private class RestFiniteDurableCursorClientImpl(
     override fun poll(maxCount: Int, awaitForResultTimeout: Duration): Cursor.PollResult<Any> {
         log.trace { "Poll maxCount: $maxCount, timeout: $awaitForResultTimeout." }
         val parameters = method.parametersFrom(
-            args, mapOf("context" to TypeUtils.durableStreamContext(positionManager.get(), maxCount))
+            args,
+            mapOf("context" to TypeUtils.durableStreamContext(positionManager.get(), maxCount))
         )
 
         val methodParameterizedType = method.genericReturnType as ParameterizedType
@@ -56,8 +57,10 @@ private class RestFiniteDurableCursorClientImpl(
         val pollResultParamType = TypeUtils.parameterizePollResult(itemType)
 
         val response = client.call(
-            method.endpointHttpVerb, parameters.toWebRequest(rawPath),
-            pollResultParamType, RequestContext.fromAuthenticationConfig(authenticationConfig)
+            method.endpointHttpVerb,
+            parameters.toWebRequest(rawPath),
+            pollResultParamType,
+            RequestContext.fromAuthenticationConfig(authenticationConfig)
         )
         @Suppress("unchecked_cast")
         return response.body as Cursor.PollResult<Any>

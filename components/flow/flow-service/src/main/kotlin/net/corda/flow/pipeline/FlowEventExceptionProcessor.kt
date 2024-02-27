@@ -6,7 +6,6 @@ import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
-import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.libs.configuration.SmartConfig
 
 /**
@@ -33,18 +32,6 @@ interface FlowEventExceptionProcessor {
      * @return The updated context.
      */
     fun process(throwable: Throwable, context: FlowEventContext<*>): FlowEventContext<*>
-
-    /**
-     * Processes a [FlowTransientException] and provides the pipeline response.
-     *
-     * Used to handle event retries.
-     *
-     * @param exception The [FlowTransientException] thrown during processing
-     * @param context The [FlowEventContext] at the point of failure.
-     *
-     * @return The updated context.
-     */
-    fun process(exception: FlowTransientException, context: FlowEventContext<*>): FlowEventContext<*>
 
     /**
      * Processes a [FlowFatalException] and provides the pipeline response.

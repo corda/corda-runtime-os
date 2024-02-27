@@ -4,6 +4,8 @@ plugins {
 }
 description 'Corda HTTP SSL Certificate Read'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
 
     compileOnly "org.osgi:osgi.annotation"

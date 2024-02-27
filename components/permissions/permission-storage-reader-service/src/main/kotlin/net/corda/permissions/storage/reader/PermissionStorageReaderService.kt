@@ -13,8 +13,8 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.permissions.management.cache.PermissionManagementCacheService
-import net.corda.permissions.validation.cache.PermissionValidationCacheService
 import net.corda.permissions.storage.reader.internal.PermissionStorageReaderServiceEventHandler
+import net.corda.permissions.validation.cache.PermissionValidationCacheService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

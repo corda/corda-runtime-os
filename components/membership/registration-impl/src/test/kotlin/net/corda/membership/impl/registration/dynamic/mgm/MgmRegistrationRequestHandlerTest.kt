@@ -25,6 +25,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -55,13 +56,11 @@ class MgmRegistrationRequestHandlerTest {
             persistRegistrationRequest(any(), any())
         } doReturn operation
     }
-    private val membershipQueryClient = mock<MembershipQueryClient> {
-
-    }
+    private val membershipQueryClient = mock<MembershipQueryClient>()
     private val mgmRegistrationRequestHandler = MGMRegistrationRequestHandler(
         cordaAvroSerializationFactory,
         membershipPersistenceClient,
-        membershipQueryClient
+        membershipQueryClient,
     )
 
     @Test
@@ -84,6 +83,7 @@ class MgmRegistrationRequestHandlerTest {
         assertThat(captor.firstValue.memberContext.data).isEqualTo(ByteBuffer.wrap(serializedMemberContext))
         assertThat(captor.firstValue.registrationContext.data).isEqualTo(ByteBuffer.wrap(serialisedPayload))
         assertThat(captor.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
+        assertThat(captor.firstValue.serial).isEqualTo(0)
         assertThat(captor.firstValue.memberContext.signature).isEqualTo(signature)
         assertThat(captor.firstValue.memberContext.signatureSpec).isEqualTo(signatureSpec)
     }
@@ -95,14 +95,16 @@ class MgmRegistrationRequestHandlerTest {
         )
         mgmRegistrationRequestHandler.throwIfRegistrationAlreadyApproved(holdingIdentity)
         verify(membershipQueryClient).queryRegistrationRequests(
-            eq(holdingIdentity), eq(null), eq(RegistrationStatus.values().toList()), eq(null)
+            eq(holdingIdentity),
+            eq(null),
+            eq(RegistrationStatus.values().toList()),
+            eq(null)
         )
     }
 
     @Test
     fun `expected exception thrown if registration request persistence fails`() {
-        whenever(operation.execute()).
-            doReturn(MembershipPersistenceResult.Failure(""))
+        whenever(operation.execute()).doReturn(MembershipPersistenceResult.Failure(""))
         val serialisedPayload = "test".toByteArray()
         whenever(cordaAvroSerializer.serialize(any())).thenReturn(serialisedPayload)
 
@@ -139,5 +141,40 @@ class MgmRegistrationRequestHandlerTest {
         assertThrows<InvalidMembershipRegistrationException> {
             mgmRegistrationRequestHandler.throwIfRegistrationAlreadyApproved(holdingIdentity)
         }
+    }
+
+    @Test
+    fun `persistRegistrationRequest persists request with the provided serial`() {
+        val serial = 10L
+        assertDoesNotThrow {
+            mgmRegistrationRequestHandler.persistRegistrationRequest(
+                registrationId,
+                holdingIdentity,
+                memberContext,
+                serial,
+            )
+        }
+        val captor = argumentCaptor<RegistrationRequest>()
+        verify(membershipPersistenceClient).persistRegistrationRequest(eq(holdingIdentity), captor.capture())
+        assertThat(captor.firstValue.serial).isEqualTo(serial)
+    }
+
+    @Test
+    fun `retrieving latest registration request is successful`() {
+        val oldRequest = mock<RegistrationRequestDetails> {
+            on { serial } doReturn 1
+        }
+        val newRequest = mock<RegistrationRequestDetails> {
+            on { serial } doReturn 2
+        }
+        whenever(
+            membershipQueryClient.queryRegistrationRequests(
+                eq(holdingIdentity),
+                eq(holdingIdentity.x500Name),
+                eq(listOf(RegistrationStatus.APPROVED)),
+                isNull()
+            )
+        ).thenReturn(MembershipQueryResult.Success(listOf(oldRequest, newRequest)))
+        assertThat(mgmRegistrationRequestHandler.getLastRegistrationRequest(holdingIdentity)).isEqualTo(newRequest)
     }
 }

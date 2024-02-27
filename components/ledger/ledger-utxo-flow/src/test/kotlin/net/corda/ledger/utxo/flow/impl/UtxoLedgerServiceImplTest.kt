@@ -35,7 +35,7 @@ import java.security.PublicKey
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
+class UtxoLedgerServiceImplTest : UtxoLedgerTest() {
 
     @Test
     fun `createTransactionBuilder should return a Transaction Builder`() {
@@ -89,7 +89,6 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
 
     @Test
     fun `getPluggableNotaryClientFlow fails for an unknown notary service`() {
-
         val notaryService = mock<NotaryInfo>().apply {
             whenever(this.name).thenReturn(notaryX500Name)
         }
@@ -97,7 +96,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         whenever(mockNotaryLookup.notaryServices).thenReturn(listOf(notaryService))
 
         assertThatThrownBy {
-            utxoLedgerService.getPluggableNotaryClientFlow(MemberX500Name.parse("O=ExampleNotaryService2, L=London, C=GB"))
+            utxoLedgerService.getPluggableNotaryDetails(MemberX500Name.parse("O=ExampleNotaryService2, L=London, C=GB"))
         }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("has not been registered on the network")
@@ -105,7 +104,6 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
 
     @Test
     fun `getPluggableNotaryClientFlow fails with plugin that does not inherit from base class`() {
-
         class MyClientFlow
 
         val notaryService = mock<NotaryInfo>().apply {
@@ -119,7 +117,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         }
 
         val protocolStore = mock<FlowProtocolStore>().apply {
-            whenever(this.initiatorForProtocol(any(),any())).thenReturn(MyClientFlow::class.java.name)
+            whenever(this.initiatorForProtocol(any(), any())).thenReturn(MyClientFlow::class.java.name)
         }
 
         val virtualNodeContext = mock<VirtualNodeContext>().apply {
@@ -140,7 +138,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         whenever(mockFlowSandboxService.get(any(), any())).thenReturn(flowSandboxGroupContext)
 
         assertThatThrownBy {
-            utxoLedgerService.getPluggableNotaryClientFlow(notaryX500Name)
+            utxoLedgerService.getPluggableNotaryDetails(notaryX500Name)
         }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("is invalid because it does not inherit from")
@@ -148,8 +146,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
 
     @Test
     fun `getPluggableNotaryClientFlow fails when protocol name not found in protocol store`() {
-
-        class MyClientFlow: PluggableNotaryClientFlow {
+        class MyClientFlow : PluggableNotaryClientFlow {
             override fun call(): List<DigitalSignatureAndMetadata> { return emptyList() }
         }
 
@@ -164,7 +161,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         }
 
         val protocolStore = mock<FlowProtocolStore>().apply {
-            whenever(this.initiatorForProtocol(eq("my-client-flow"),any()))
+            whenever(this.initiatorForProtocol(eq("my-client-flow"), any()))
                 .thenThrow(FlowFatalException("Flow not found"))
         }
 
@@ -186,7 +183,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         whenever(mockFlowSandboxService.get(any(), any())).thenReturn(flowSandboxGroupContext)
 
         assertThatThrownBy {
-            utxoLedgerService.getPluggableNotaryClientFlow(notaryX500Name)
+            utxoLedgerService.getPluggableNotaryDetails(notaryX500Name)
         }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("Flow not found")
@@ -194,7 +191,6 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
 
     @Test
     fun `getPluggableNotaryClientFlow fails when no compatible version found`() {
-
         class MyClientFlow : PluggableNotaryClientFlow {
             override fun call(): List<DigitalSignatureAndMetadata> { return emptyList() }
         }
@@ -234,7 +230,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         whenever(mockFlowSandboxService.get(any(), any())).thenReturn(flowSandboxGroupContext)
 
         assertThatThrownBy {
-            utxoLedgerService.getPluggableNotaryClientFlow(notaryX500Name)
+            utxoLedgerService.getPluggableNotaryDetails(notaryX500Name)
         }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("Protocol version not found")
@@ -242,7 +238,6 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
 
     @Test
     fun `getPluggableNotaryClientFlow succeeds with valid notary service and plugin`() {
-
         class MyClientFlow : PluggableNotaryClientFlow {
             override fun call(): List<DigitalSignatureAndMetadata> { return emptyList() }
         }
@@ -258,7 +253,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         }
 
         val protocolStore = mock<FlowProtocolStore>().apply {
-            whenever(this.initiatorForProtocol(any(),any())).thenReturn(MyClientFlow::class.java.name)
+            whenever(this.initiatorForProtocol(any(), any())).thenReturn(MyClientFlow::class.java.name)
         }
 
         val virtualNodeContext = mock<VirtualNodeContext>().apply {
@@ -279,9 +274,9 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         whenever(mockFlowSandboxService.get(any(), any())).thenReturn(flowSandboxGroupContext)
 
         val result = assertDoesNotThrow {
-            utxoLedgerService.getPluggableNotaryClientFlow(notaryX500Name)
+            utxoLedgerService.getPluggableNotaryDetails(notaryX500Name)
         }
 
-        assertEquals(MyClientFlow::class.java.name, result.name)
+        assertEquals(MyClientFlow::class.java.name, result.flowClass.name)
     }
 }

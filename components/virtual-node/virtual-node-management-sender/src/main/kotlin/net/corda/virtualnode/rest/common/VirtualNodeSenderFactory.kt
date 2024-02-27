@@ -6,6 +6,8 @@ import java.time.Duration
 
 interface VirtualNodeSenderFactory {
     fun createSender(
-        timeout: Duration, messagingConfig: SmartConfig, asyncPublisherConfig: PublisherConfig
+        timeout: Duration,
+        messagingConfig: SmartConfig,
+        asyncPublisherConfig: PublisherConfig
     ): VirtualNodeSender
 }

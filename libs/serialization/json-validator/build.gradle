@@ -29,9 +29,7 @@ dependencies {
             because "Version bundled with current version of 'com.networknt:json-schema-validator' does not have OSGi manifest."
         }
     }
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
-
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    implementation libs.jackson.databind
 }
 
 def jar = tasks.named('jar', Jar) {

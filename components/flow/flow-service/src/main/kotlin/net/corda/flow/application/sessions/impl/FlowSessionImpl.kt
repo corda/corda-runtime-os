@@ -2,7 +2,7 @@ package net.corda.flow.application.sessions.impl
 
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.application.serialization.DeserializedWrongAMQPObjectException
-import net.corda.flow.application.serialization.SerializationServiceInternal
+import net.corda.flow.application.serialization.FlowSerializationService
 import net.corda.flow.application.sessions.FlowSessionInternal
 import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.application.sessions.utils.SessionUtils.verifySessionStatusNotErrorOrClose
@@ -20,16 +20,18 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
+import java.time.Duration
 
 @Suppress("LongParameterList", "TooManyFunctions")
 class FlowSessionImpl(
     private val counterparty: MemberX500Name,
     private val sourceSessionId: String,
     private val flowFiberService: FlowFiberService,
-    private val serializationService: SerializationServiceInternal,
+    private val serializationService: FlowSerializationService,
     private val flowContext: FlowContext,
     direction: Direction,
-    private val requireClose: Boolean
+    private val requireClose: Boolean,
+    private val sessionTimeout: Duration? = null,
 ) : FlowSession, FlowSessionInternal {
 
     private companion object {
@@ -162,6 +164,7 @@ class FlowSessionImpl(
             sourceSessionId,
             counterparty,
             requireClose,
+            sessionTimeout,
             contextUserProperties = flowContext.flattenUserProperties(),
             contextPlatformProperties = flowContext.flattenPlatformProperties()
         )

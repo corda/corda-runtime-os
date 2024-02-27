@@ -5,6 +5,8 @@ plugins {
 
 description 'Membership Internal API'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
 
@@ -23,7 +25,5 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:serialization:serialization-avro')
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:test-utilities")
 }

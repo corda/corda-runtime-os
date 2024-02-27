@@ -35,6 +35,7 @@ interface TestMembershipPersistenceClient : MembershipPersistenceClient {
     fun getPersistedGroupParameters(): InternalGroupParameters?
 }
 
+@Suppress("TooManyFunctions")
 @ServiceRanking(Int.MAX_VALUE)
 @Component(service = [MembershipPersistenceClient::class, TestMembershipPersistenceClient::class])
 class TestMembershipPersistenceClientImpl @Activate constructor(
@@ -79,7 +80,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     }
 
     override fun persistGroupParametersInitialSnapshot(viewOwningIdentity: HoldingIdentity):
-            MembershipPersistenceOperation<InternalGroupParameters> {
+        MembershipPersistenceOperation<InternalGroupParameters> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
@@ -143,7 +144,8 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     }
 
     override fun addApprovalRule(
-        viewOwningIdentity: HoldingIdentity, ruleParams: ApprovalRuleParams
+        viewOwningIdentity: HoldingIdentity,
+        ruleParams: ApprovalRuleParams
     ): MembershipPersistenceOperation<ApprovalRuleDetails> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
@@ -152,7 +154,9 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     }
 
     override fun deleteApprovalRule(
-        viewOwningIdentity: HoldingIdentity, ruleId: String, ruleType: ApprovalRuleType
+        viewOwningIdentity: HoldingIdentity,
+        ruleId: String,
+        ruleType: ApprovalRuleType
     ): MembershipPersistenceOperation<Unit> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
@@ -161,8 +165,11 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     }
 
     override fun suspendMember(
-        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
-    ):  MembershipPersistenceOperation<Pair<PersistentMemberInfo, InternalGroupParameters?>> {
+        viewOwningIdentity: HoldingIdentity,
+        memberX500Name: MemberX500Name,
+        serialNumber: Long?,
+        reason: String?
+    ): MembershipPersistenceOperation<Pair<PersistentMemberInfo, InternalGroupParameters?>> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
@@ -170,7 +177,10 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     }
 
     override fun activateMember(
-        viewOwningIdentity: HoldingIdentity, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+        viewOwningIdentity: HoldingIdentity,
+        memberX500Name: MemberX500Name,
+        serialNumber: Long?,
+        reason: String?
     ): MembershipPersistenceOperation<Pair<PersistentMemberInfo, InternalGroupParameters?>> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
@@ -186,7 +196,8 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     }
 
     override fun updateGroupParameters(
-        viewOwningIdentity: HoldingIdentity, newGroupParameters: Map<String, String>
+        viewOwningIdentity: HoldingIdentity,
+        newGroupParameters: Map<String, String>
     ): MembershipPersistenceOperation<InternalGroupParameters> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)

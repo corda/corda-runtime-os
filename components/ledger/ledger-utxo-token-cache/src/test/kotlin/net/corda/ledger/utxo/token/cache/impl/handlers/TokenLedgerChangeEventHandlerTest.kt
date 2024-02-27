@@ -23,7 +23,7 @@ class TokenLedgerChangeEventHandlerTest {
     fun `produced tokens are not added to the cache`() {
         val token1 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s1") }
 
-        val ledgerChange = LedgerChange(POOL_KEY,"","", "", listOf(), listOf(token1))
+        val ledgerChange = LedgerChange(POOL_KEY, "", "", "", listOf(), listOf(token1))
 
         val target = TokenLedgerChangeEventHandler()
         val result = target.handle(tokenCache, poolCacheState, ledgerChange)
@@ -38,14 +38,14 @@ class TokenLedgerChangeEventHandlerTest {
         val token1 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s1") }
         val token2 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s2") }
 
-        val ledgerChange = LedgerChange(POOL_KEY,"","", "", listOf(token1, token2), listOf())
+        val ledgerChange = LedgerChange(POOL_KEY, "", "", "", listOf(token1, token2), listOf())
 
         val target = TokenLedgerChangeEventHandler()
         val result = target.handle(tokenCache, poolCacheState, ledgerChange)
 
         assertThat(result).isNull()
 
-        verify(tokenCache).removeAll(setOf("s1","s2"))
-        verify(poolCacheState).tokensRemovedFromCache(setOf("s1","s2"))
+        verify(tokenCache).removeAll(setOf("s1", "s2"))
+        verify(poolCacheState).tokensRemovedFromCache(setOf("s1", "s2"))
     }
 }

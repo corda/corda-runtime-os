@@ -1,24 +1,24 @@
 package net.corda.membership.rest.v1
 
 import net.corda.membership.rest.v1.types.RestGroupParameters
-import net.corda.rest.RestResource
-import net.corda.rest.annotations.HttpDELETE
-import net.corda.rest.annotations.HttpGET
-import net.corda.rest.annotations.HttpPOST
-import net.corda.rest.annotations.HttpPUT
-import net.corda.rest.annotations.HttpRestResource
-import net.corda.rest.annotations.RestPathParameter
-import net.corda.rest.annotations.RestQueryParameter
-import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams
-import net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
 import net.corda.membership.rest.v1.types.request.ManualDeclinationReason
+import net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
 import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
 import net.corda.membership.rest.v1.types.response.ApprovalRuleInfo
 import net.corda.membership.rest.v1.types.response.PreAuthToken
 import net.corda.membership.rest.v1.types.response.PreAuthTokenStatus
 import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
+import net.corda.rest.RestResource
+import net.corda.rest.annotations.ClientRequestBodyParameter
+import net.corda.rest.annotations.HttpDELETE
+import net.corda.rest.annotations.HttpGET
+import net.corda.rest.annotations.HttpPOST
+import net.corda.rest.annotations.HttpPUT
+import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.annotations.RestApiVersion
+import net.corda.rest.annotations.RestPathParameter
+import net.corda.rest.annotations.RestQueryParameter
 
 /**
  * The MGM API consists of a number of endpoints used to manage membership groups. A membership group is a logical
@@ -28,9 +28,9 @@ import net.corda.rest.annotations.RestApiVersion
 @HttpRestResource(
     name = "MGM API",
     description = "The MGM API consists of a number of endpoints used to manage membership groups. A membership group" +
-            " is a logical grouping of a number of Corda Identities to communicate and transact with one another with" +
-            " a specific set of CorDapps. The API allows you to generate the group policy for a membership group," +
-            " required for new members to join the group.",
+        " is a logical grouping of a number of Corda Identities to communicate and transact with one another with" +
+        " a specific set of CorDapps. The API allows you to generate the group policy for a membership group," +
+        " required for new members to join the group.",
     path = "mgm"
 )
 @Suppress("TooManyFunctions")
@@ -52,7 +52,7 @@ interface MGMRestResource : RestResource {
         path = "{holdingIdentityShortHash}/info",
         description = "This API retrieves the group policy from the MGM required to join the membership group.",
         responseDescription = "The group policy from the MGM required to join the membership group as a string " +
-                "in JSON format"
+            "in JSON format"
     )
     fun generateGroupPolicy(
         @RestPathParameter(description = "The holding identity ID of the MGM of the membership group to be joined")
@@ -86,7 +86,7 @@ interface MGMRestResource : RestResource {
     @HttpDELETE(
         path = "{holdingIdentityShortHash}/mutual-tls/allowed-client-certificate-subjects/{subject}",
         description = "This API disallows a client certificate with a " +
-                "given subject to be used in mutual TLS connections.",
+            "given subject to be used in mutual TLS connections.",
     )
     fun mutualTlsDisallowClientCertificate(
         @RestPathParameter(description = "The holding identity ID of the MGM.")
@@ -104,7 +104,7 @@ interface MGMRestResource : RestResource {
     @HttpGET(
         path = "{holdingIdentityShortHash}/mutual-tls/allowed-client-certificate-subjects",
         description = "This API list the allowed  client certificates subjects " +
-                "to be used in mutual TLS connections.",
+            "to be used in mutual TLS connections.",
         responseDescription = "List of the allowed client certificate subjects",
     )
     fun mutualTlsListClientCertificate(
@@ -202,8 +202,10 @@ interface MGMRestResource : RestResource {
     fun addGroupApprovalRule(
         @RestPathParameter(description = "The holding identity ID of the MGM of the membership group")
         holdingIdentityShortHash: String,
-        @ClientRequestBodyParameter(description = "The approval rule information including the regular expression " +
-                "associated with the rule, and an optional label describing the rule")
+        @ClientRequestBodyParameter(
+            description = "The approval rule information including the regular expression " +
+                "associated with the rule, and an optional label describing the rule"
+        )
         ruleParams: ApprovalRuleRequestParams,
     ): ApprovalRuleInfo
 
@@ -273,7 +275,7 @@ interface MGMRestResource : RestResource {
     @HttpPOST(
         path = "{holdingIdentityShortHash}/approval/rules/preauth",
         description = "This API adds a rule to the set of group approval rules for registrations " +
-                "including a pre-auth token.",
+            "including a pre-auth token.",
         responseDescription = "Details of the newly persisted approval rule."
     )
     fun addPreAuthGroupApprovalRule(
@@ -299,7 +301,7 @@ interface MGMRestResource : RestResource {
     @HttpGET(
         path = "{holdingIdentityShortHash}/approval/rules/preauth",
         description = "This API retrieves the set of rules the group is currently configured with for " +
-                "registration request with a pre-auth token.",
+            "registration request with a pre-auth token.",
         responseDescription = "A collection of group approval rules."
     )
     fun getPreAuthGroupApprovalRules(
@@ -500,8 +502,9 @@ interface MGMRestResource : RestResource {
         path = "{holdingIdentityShortHash}/activate",
         minVersion = RestApiVersion.C5_0,
         maxVersion = RestApiVersion.C5_0,
-        description = "This endpoint enables you to activate a previously suspended member. The v1 version of this endpoint is deprecated "
-            + "in favour of later versions. Later versions mandate that the serial number is specified in the request body."
+        description = "This endpoint enables you to activate a previously suspended member. The v1 version of this " +
+            "endpoint is deprecated in favour of later versions. Later versions mandate that the serial number " +
+            "is specified in the request body."
     )
     @Deprecated("Deprecated in favour of activateMember")
     fun deprecatedActivateMember(
@@ -562,7 +565,7 @@ interface MGMRestResource : RestResource {
         path = "{holdingIdentityShortHash}/group-parameters",
         minVersion = RestApiVersion.C5_1,
         description = "This API allows you to make changes to the group parameters by submitting an updated version " +
-                "of the group parameters.",
+            "of the group parameters.",
         responseDescription = "The newly updated group parameters"
     )
     fun updateGroupParameters(

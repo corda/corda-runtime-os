@@ -22,6 +22,7 @@ import net.corda.crypto.softhsm.deriveSupportedSchemes
 import net.corda.crypto.softhsm.impl.infra.TestWrappingRepository
 import net.corda.crypto.softhsm.impl.infra.makeShortHashCache
 import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
+import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.EDDSA_ED25519_CODE_NAME
@@ -41,6 +42,9 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import java.security.InvalidParameterException
 import java.security.KeyPairGenerator
@@ -55,14 +59,20 @@ import kotlin.test.assertNull
 
 private val schemeMetadata = CipherSchemeMetadataImpl()
 
+
 /* Tests that need wrapping keys */
 class SoftCryptoServiceOperationsTests {
+
     companion object {
+        private const val rootKeyAlias = "root"
+        private const val managedWrappingKey1Alias = "k1"
         private val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         private val knownWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         private val knownWrappingKeyMaterial = rootWrappingKey.wrap(knownWrappingKey)
         private val knownWrappingKeyAlias = UUID.randomUUID().toString()
         private val tenantId = UUID.randomUUID().toString()
+
+        //  TODO - reuse these two fixtures?
         private val clusterWrappingRepository = TestWrappingRepository(
             ConcurrentHashMap(
                 listOf(
@@ -71,7 +81,8 @@ class SoftCryptoServiceOperationsTests {
                         knownWrappingKey.algorithm,
                         knownWrappingKeyMaterial,
                         1,
-                        "root",
+                        rootKeyAlias,
+                        managedWrappingKey1Alias
                     )
                 ).toMap()
             )
@@ -84,7 +95,8 @@ class SoftCryptoServiceOperationsTests {
                         knownWrappingKey.algorithm,
                         knownWrappingKeyMaterial,
                         1,
-                        "root",
+                        rootKeyAlias,
+                        managedWrappingKey1Alias
                     )
                 ).toMap()
             )
@@ -92,6 +104,9 @@ class SoftCryptoServiceOperationsTests {
         private val wrappingKeyCache = makeWrappingKeyCache()
         private val shortHashCache = makeShortHashCache()
         private val signingRepository: SigningRepository = mock()
+        private val mockHsmAssociation = mock<HSMAssociationInfo> {
+            on { masterKeyAlias } doReturn knownWrappingKeyAlias
+        }
         private val cryptoService = SoftCryptoService(
             wrappingRepositoryFactory = {
                 when (it) {
@@ -101,8 +116,8 @@ class SoftCryptoServiceOperationsTests {
                 }
             },
             schemeMetadata = schemeMetadata,
-            defaultUnmanagedWrappingKeyName = "root",
-            unmanagedWrappingKeys = mapOf("root" to rootWrappingKey),
+            defaultUnmanagedWrappingKeyName = rootKeyAlias,
+            unmanagedWrappingKeys = mapOf(rootKeyAlias to rootWrappingKey),
             digestService = PlatformDigestServiceImpl(schemeMetadata),
             keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
                 KeyPairGenerator.getInstance(algorithm, provider)
@@ -111,7 +126,9 @@ class SoftCryptoServiceOperationsTests {
             shortHashCache = shortHashCache,
             signingRepositoryFactory = { signingRepository },
             privateKeyCache = null,
-            tenantInfoService = mock()
+            tenantInfoService = mock {
+                on { lookup(eq(CryptoTenants.P2P), any()) } doReturn mockHsmAssociation
+            }
         )
         private val category = CryptoConsts.Categories.LEDGER
         private val defaultContext = mapOf(CRYPTO_TENANT_ID to tenantId, CRYPTO_CATEGORY to category)
@@ -195,6 +212,7 @@ class SoftCryptoServiceOperationsTests {
                 )
             }
         }
+
         val exception1 = verifySign(softAliasedKeys.getValue(scheme), spec)
         assertThat(exception1.message).contains("Wrapping key with alias")
         val exception2 = verifySign(softFreshKeys.getValue(scheme), spec)
@@ -359,7 +377,11 @@ class SoftCryptoServiceOperationsTests {
     fun `should throw IllegalArgumentException when generating key pair with unsupported key scheme`(aliased: Boolean) {
         val exception = assertThrows<IllegalArgumentException> {
             cryptoService.generateKeyPair(
-                KeyGenerationSpec(UNSUPPORTED_KEY_SCHEME, if (aliased) UUID.randomUUID().toString() else null, knownWrappingKeyAlias),
+                KeyGenerationSpec(
+                    UNSUPPORTED_KEY_SCHEME,
+                    if (aliased) UUID.randomUUID().toString() else null,
+                    knownWrappingKeyAlias
+                ),
                 defaultContext
             )
         }
@@ -438,23 +460,24 @@ class SoftCryptoServiceOperationsTests {
             expected1.algorithm,
             rootWrappingKey.wrap(expected1),
             1,
-            "root"
-
+            rootKeyAlias,
+            alias1
         )
         val info2 = WrappingKeyInfo(
             WRAPPING_KEY_ENCODING_VERSION,
             expected2.algorithm,
             rootWrappingKey.wrap(expected2),
             1,
-            "root"
+            rootKeyAlias,
+            alias2
         )
         val key1Missing = wrappingKeyCache.getIfPresent(alias1)
         assertNull(key1Missing)
         val key2Missing = wrappingKeyCache.getIfPresent(alias2)
         assertNull(key2Missing)
 
-        clusterWrappingRepository.saveKey(alias1, info1)
-        clusterWrappingRepository.saveKey(alias2, info2)
+        clusterWrappingRepository.saveKey(info1)
+        clusterWrappingRepository.saveKey(info2)
 
         val key1StillMissing = wrappingKeyCache.getIfPresent(alias1)
         assertNull(key1StillMissing)
@@ -480,18 +503,18 @@ class SoftCryptoServiceOperationsTests {
     }
 
     @Test
-    fun `generateKeyPair should throw IllegalArgumentException when encoding version is not recognised`() {
+    fun `generateKeyPair should throw IllegalStateException when encoding version is not recognised`() {
         val alias = UUID.randomUUID().toString()
         clusterWrappingRepository.saveKey(
-            alias, WrappingKeyInfo(
+            WrappingKeyInfo(
                 WRAPPING_KEY_ENCODING_VERSION + 1,
                 knownWrappingKey.algorithm,
                 rootWrappingKey.wrap(knownWrappingKey),
-                1, "enoch"
+                1, rootKeyAlias, alias
             )
         )
-        val exception = assertThrows<IllegalArgumentException> {
-            cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key1", alias), emptyMap())
+        val exception = assertThrows<IllegalStateException> {
+            cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "k1", alias), emptyMap())
         }
         assertThat(exception.message).contains("Unknown wrapping key encoding")
     }
@@ -501,15 +524,16 @@ class SoftCryptoServiceOperationsTests {
     fun `generateKeyPair should throw IllegalArgumentException when key algorithm does not match master key`() {
         val alias = UUID.randomUUID().toString()
         clusterWrappingRepository.saveKey(
-            alias, WrappingKeyInfo(
+            WrappingKeyInfo(
                 WRAPPING_KEY_ENCODING_VERSION,
                 knownWrappingKey.algorithm + "!",
                 rootWrappingKey.wrap(knownWrappingKey),
                 1,
-                "Enoch"
+                "Enoch",
+                alias
             )
         )
-        val exception =  assertThrows<IllegalStateException> {
+        val exception = assertThrows<IllegalStateException> {
             cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key1", alias), emptyMap())
         }
         assertThat(exception.message).contains("Unknown parent key")
@@ -531,7 +555,7 @@ class SoftCryptoServiceOperationsTests {
         val unknownAlias = UUID.randomUUID().toString()
         assertNull(clusterWrappingRepository.findKey(storeAlias))
         assertNull(clusterWrappingRepository.findKey(unknownAlias))
-        clusterWrappingRepository.saveKey(storeAlias, WrappingKeyInfo(1, "t", byteArrayOf(), 1, "Enoch"))
+        clusterWrappingRepository.saveKey(WrappingKeyInfo(1, "t", byteArrayOf(), 1, "Enoch", storeAlias))
         assertNotNull(clusterWrappingRepository.findKey(storeAlias))
         assertNull(clusterWrappingRepository.findKey(unknownAlias))
     }
@@ -547,6 +571,47 @@ class SoftCryptoServiceOperationsTests {
         }
         assertThat(exception2.message).contains("Wrapping key with alias  not found")
     }
+
+    @Test
+    fun `should delegate decryption to correct key when alias is provided`() {
+        val cipherBytes = knownWrappingKey.key.encryptor.encrypt(byteArrayOf(33))
+        val expectedResult = knownWrappingKey.key.encryptor.decrypt(cipherBytes)
+
+        val result = cryptoService.decrypt(
+            CryptoTenants.P2P,
+            cipherBytes,
+            knownWrappingKeyAlias
+        )
+
+        assertThat(result).isEqualTo(expectedResult)
+    }
+
+    @Test
+    fun `should delegate decryption to default key when no alias is provided`() {
+        val cipherBytes = knownWrappingKey.key.encryptor.encrypt(byteArrayOf(33))
+        val expectedResult = knownWrappingKey.key.encryptor.decrypt(cipherBytes)
+
+        val result = cryptoService.decrypt(
+            CryptoTenants.P2P,
+            cipherBytes
+        )
+
+        assertThat(result).isEqualTo(expectedResult)
+    }
+
+    @Test
+    fun `should successfully delegate encryption to encryptor instance of key`() {
+        val plainBytes = byteArrayOf(33)
+
+        val result = cryptoService.encrypt(
+            CryptoTenants.P2P,
+            plainBytes,
+            knownWrappingKeyAlias
+        )
+
+        assertThat(result).isNotEmpty
+    }
+
     /*
     @ParameterizedTest
     @MethodSource("derivingSchemes")

@@ -12,52 +12,69 @@ import net.corda.messaging.api.records.Record
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
+@Suppress("LongParameterList")
 class TimeoutEventCleanupProcessor(
     private val checkpointCleanupHandler: CheckpointCleanupHandler,
     private val stateManager: StateManager,
-    private val avroDeserializer: CordaAvroDeserializer<Checkpoint>,
+    private val checkpointDeserializer: CordaAvroDeserializer<Checkpoint>,
     private val flowCheckpointFactory: FlowCheckpointFactory,
     private val config: SmartConfig
 ) : DurableProcessor<String, FlowTimeout> {
-
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun onNext(events: List<Record<String, FlowTimeout>>): List<Record<*, *>> {
-        logger.debug { "Processing ${events.size} flows for timeout" }
-        val statesToRecords = stateManager.get(events.mapNotNull {
-            it.value?.checkpointStateKey
-        }).mapNotNull { (_, state) ->
-            avroDeserializer.deserialize(state.value)?.let {
-                state to generateCleanupRecords(it)
-            }
-        }.toMap()
-        if (statesToRecords.size < events.size) {
-            logger.info(
-                "Could not process ${events.size - statesToRecords.size} events for flow session timeout cleanup as the " +
-                        "checkpoint did not deserialize cleanly."
-            )
-        }
-        val undeletedStates = stateManager.delete(statesToRecords.keys)
-        if (undeletedStates.isNotEmpty()) {
-            logger.info("Failed to delete ${undeletedStates.size} checkpoints when handling flow session timeout.")
-        }
-        val records = statesToRecords.filterKeys { !undeletedStates.containsKey(it.key) }.map {
-            it.value
-        }.flatten()
-        return records
-    }
-
-    private fun generateCleanupRecords(checkpoint: Checkpoint): List<Record<*, *>> {
-        val flowCheckpoint = flowCheckpointFactory.create(checkpoint.flowId, checkpoint, config)
-        return checkpointCleanupHandler.cleanupCheckpoint(
-            flowCheckpoint,
-            config,
-            FlowFatalException("A session was timed out")
-        )
-    }
-
     override val keyClass = String::class.java
     override val valueClass = FlowTimeout::class.java
+
+    private fun generateCleanupRecords(checkpoint: Checkpoint, timeOutReason: String): List<Record<*, *>> =
+        checkpointCleanupHandler.cleanupCheckpoint(
+            flowCheckpointFactory.create(checkpoint.flowId, checkpoint, config),
+            config,
+            FlowFatalException(timeOutReason)
+        )
+
+    override fun onNext(events: List<Record<String, FlowTimeout>>): List<Record<*, *>> {
+        logger.debug { "Processing ${events.size} flows for timeout" }
+
+        val timeOutReasonsByCheckpointId = events
+            .mapNotNull { it.value }
+            .associate { it.checkpointStateKey to it.reason }
+
+        val statesToRecords = stateManager.get(events.mapNotNull {
+            it.value?.checkpointStateKey
+        }).mapNotNull { (key, state) ->
+            checkpointDeserializer.deserialize(state.value)?.let {
+                // This should never happen as we always get 'checkpointId' + 'reason' within 'FlowTimeout' record
+                val timeOutReason = timeOutReasonsByCheckpointId[key] ?: "Unknown"
+                logger.info("Flow '${it.flowId}' will be timed out due to '${timeOutReason}'")
+
+                state to generateCleanupRecords(it, timeOutReason)
+            }
+
+        }.toMap()
+
+        if (statesToRecords.size < events.size) {
+            (events.mapNotNull { it.value?.checkpointStateKey }.toSet() - statesToRecords.keys.map { it.key }.toSet())
+                .also {
+                    logger.warn(
+                        "Could not process flow timeout events for keys '${it.joinToString()}' as " +
+                                "the checkpoint did not deserialize cleanly."
+                    )
+                }
+        }
+
+        val undeletedStates = stateManager.delete(statesToRecords.keys)
+        if (undeletedStates.isNotEmpty()) {
+            logger.info("Failed to delete checkpoints '${undeletedStates.keys.joinToString()}' when handling flow timeout.")
+        }
+
+        val records = statesToRecords.filterKeys {
+            !undeletedStates.containsKey(it.key)
+        }.map {
+            it.value
+        }.flatten()
+
+        return records
+    }
 }

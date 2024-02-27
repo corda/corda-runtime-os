@@ -103,28 +103,33 @@ class PlatformMigrationTest {
         verifyFactoryCalls()
     }
 
-
     private fun verifyFactoryCalls() {
         verify(mockWriterFactory, times(1)).invoke(any())
         verify(mockLineReader, times(1)).invoke(any(), any())
 
         verify(mockConnectionFactory, times(NUMBER_OF_SUPPORTED_SCHEMAS * validHoldingIds.size)).invoke(
-            JDBC_URL, USER, PASSWORD
+            JDBC_URL,
+            USER,
+            PASSWORD
         )
         verify(mockDatabaseFactory, times(NUMBER_OF_SUPPORTED_SCHEMAS * validHoldingIds.size)).invoke(mockConnection)
 
         verify(mockLiquibaseFactory, times(validHoldingIds.size)).invoke(
-            eq("net/corda/db/schema/vnode-crypto/db.changelog-master.xml"), any()
+            eq("net/corda/db/schema/vnode-crypto/db.changelog-master.xml"),
+            any()
         )
         verify(mockLiquibaseFactory, times(validHoldingIds.size)).invoke(
-            eq("net/corda/db/schema/vnode-uniqueness/db.changelog-master.xml"), any()
+            eq("net/corda/db/schema/vnode-uniqueness/db.changelog-master.xml"),
+            any()
         )
         verify(mockLiquibaseFactory, times(validHoldingIds.size)).invoke(
-            eq("net/corda/db/schema/vnode-vault/db.changelog-master.xml"), any()
+            eq("net/corda/db/schema/vnode-vault/db.changelog-master.xml"),
+            any()
         )
 
         verify(mockLiquibase, times(NUMBER_OF_SUPPORTED_SCHEMAS * validHoldingIds.size)).update(
-            any<Contexts>(), eq(mockFileWriter)
+            any<Contexts>(),
+            eq(mockFileWriter)
         )
 
         verify(mockFileWriter, times(1)).close()

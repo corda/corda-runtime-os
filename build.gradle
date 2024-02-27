@@ -14,21 +14,21 @@ buildscript {
 }
 
 plugins {
-    id 'org.jetbrains.kotlin.jvm' apply false
-    id 'org.jetbrains.kotlin.plugin.allopen' apply false
-    id 'org.jetbrains.kotlin.plugin.jpa' apply false
-    id 'io.gitlab.arturbosch.detekt' apply false
+    alias libs.plugins.kotlin.jvm apply false
+    alias libs.plugins.kotlin.allopen apply false
+    alias libs.plugins.kotlin.jpa apply false
+    alias libs.plugins.detekt apply false
     id 'biz.aQute.bnd.builder' apply false
-    id 'com.adarshr.test-logger' version '3.2.0' apply false
-    id 'io.snyk.gradle.plugin.snykplugin'
+    alias libs.plugins.test.logger apply false
+    alias libs.plugins.snyk
     id 'idea'
     id 'application'
     id 'net.corda.cordapp.cordapp-configuration'
     id 'corda.root-publish'
     id 'jacoco'
-    id 'com.github.ben-manes.versions' // discover possible dependency version upgrades
-    id 'org.jetbrains.dokka' apply false
-    id 'org.cyclonedx.bom' apply false
+    alias libs.plugins.dependency.check.versions // discover possible dependency version upgrades
+    alias libs.plugins.dokka apply false
+    alias libs.plugins.cyclonedx.bom apply false
 }
 
 tasks.named("wrapper") {
@@ -245,11 +245,21 @@ allprojects {
     }
 
     tasks.register('integrationTest', Test) {
-        inputs.property('postgresHost', postgresHost)
-        inputs.property('postgresDb', postgresDb)
-        inputs.property('postgresPort', postgresPort)
-        inputs.property('postresUser', postgresUser)
-        inputs.property('postgresPassword', postgresPassword)
+        // Conversion of legacy arguments to keep old Jenkins pipeline happy
+        if (!postgresPort.isBlank()){
+            databasePort = postgresPort
+            databaseType = 'POSTGRES'
+            databaseName = postgresDb
+            databaseHost = postgresHost
+            databaseAdminUser = postgresUser
+            databaseAdminPassword = postgresPassword
+        }
+        inputs.property('databaseHost', databaseHost)
+        inputs.property('databaseName', databaseName)
+        inputs.property('databasePort', databasePort)
+        inputs.property('databaseAdminUser', databaseAdminUser)
+        inputs.property('databaseAdminPassword', databaseAdminPassword)
+        inputs.property('databaseType', databaseType)
 
         description = "Runs integration tests."
         group = "verification"
@@ -257,23 +267,16 @@ allprojects {
         testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
         classpath = project.sourceSets["integrationTest"].runtimeClasspath
 
-        systemProperty 'postgresHost', postgresHost
-        systemProperty 'postgresDb', postgresDb
-        systemProperty 'postgresPort', postgresPort
-        systemProperty 'postgresUser', postgresUser
-        systemProperty 'postgresPassword', postgresPassword
+        systemProperty 'databaseHost', databaseHost
+        systemProperty 'databaseName', databaseName
+        systemProperty 'databasePort', databasePort
+        systemProperty 'databaseAdminUser', databaseAdminUser
+        systemProperty 'databaseAdminPassword', databaseAdminPassword
+        systemProperty 'databaseType', databaseType
         systemProperty 'org.slf4j.simpleLogger.showDateTime', true
         systemProperty 'org.slf4j.simpleLogger.dateTimeFormat', 'yyyy-MM-dd HH:mm:ss:SSS Z'
 
         shouldRunAfter tasks.named('test', Test)
-    }
-
-    dependencies {
-        // Test utilities
-        testImplementation "org.assertj:assertj-core:$assertjVersion"
-        testImplementation "org.junit.jupiter:junit-jupiter:$junit5Version"
-        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
-        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     }
 }
 
@@ -315,16 +318,16 @@ if (project.hasProperty('generateSBOM')) {
 void configureKotlinForOSGi(Configuration configuration) {
     configuration.resolutionStrategy {
         dependencySubstitution {
-            substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk8') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
-            substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk7') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
-            substitute module('org.jetbrains.kotlin:kotlin-stdlib-common') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
-            substitute module('org.jetbrains.kotlin:kotlin-stdlib') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
-            substitute module('org.jetbrains.kotlin:kotlin-reflect') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk8') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:${libs.versions.kotlinVersion.get()}")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-jdk7') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:${libs.versions.kotlinVersion.get()}")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib-common') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:${libs.versions.kotlinVersion.get()}")
+            substitute module('org.jetbrains.kotlin:kotlin-stdlib') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:${libs.versions.kotlinVersion.get()}")
+            substitute module('org.jetbrains.kotlin:kotlin-reflect') using module("org.jetbrains.kotlin:kotlin-osgi-bundle:${libs.versions.kotlinVersion.get()}")
         }
     }
 }
 
-logger.quiet("********************** CORDA FLOW WORKER BUILD **********************")
+logger.quiet("********************** CORDA 5 OS BUILD **********************")
 if (!JavaVersion.current().isCompatibleWith(javaVersion)) {
     throw new GradleException("The java version used ${JavaVersion.current()} is not compatible with the expected version ${javaVersion}.")
 }
@@ -392,20 +395,23 @@ subprojects {
 
     pluginManager.withPlugin('io.gitlab.arturbosch.detekt'){
         dependencies {
-        detekt "io.gitlab.arturbosch.detekt:detekt-cli:$detektPluginVersion"
-            constraints {
-                detekt("org.yaml:snakeyaml:$snakeyamlVersion") {
-                    because "required until detekt plugin updates it's internal version of snakeYaml, not fixed as of detekt version 1.21"
-                }
-            }
+            detekt "io.gitlab.arturbosch.detekt:detekt-cli:$detektPluginVersion"
         }
     }
 
     tasks.named("detekt").configure {
+        setSource(files("src/main/kotlin", "src/test/kotlin", "src/integrationTest/kotlin", "src/smokeTest/kotlin"))
         if(file("$projectDir/detekt-baseline.xml").exists()){
             baseline = file("$projectDir/detekt-baseline.xml")
         }
-        config.setFrom(files("$rootDir/detekt-config.yml"))
+
+        var configFiles = files("$rootDir/detekt-config.yml")
+        if (it.project.getProperties().getOrDefault('cordaEnableFormatting', false) == true) {
+            configFiles += "$rootDir/detekt-formatting.yaml"
+            autoCorrect = true
+        }
+        config.setFrom(configFiles)
+
         parallel = true
         reports {
             xml{

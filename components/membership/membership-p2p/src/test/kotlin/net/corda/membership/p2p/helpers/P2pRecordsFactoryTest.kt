@@ -4,11 +4,11 @@ import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.MEMBERSHIP_P2P_SUBSYSTEM
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
-import net.corda.data.p2p.app.AuthenticatedMessage
-import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.test.util.time.TestClock
@@ -33,15 +33,18 @@ class P2pRecordsFactoryTest {
     private val clock = TestClock(Instant.ofEpochMilli(2000))
 
     private val factory = P2pRecordsFactory(
-        cordaAvroSerializationFactory, clock
+        cordaAvroSerializationFactory,
+        clock
     )
 
     private val holdingIdentity1 = HoldingIdentity(
-        "name1", "group"
+        "name1",
+        "group"
     )
 
     private val holdingIdentity2 = HoldingIdentity(
-        "name2", "group"
+        "name2",
+        "group"
     )
 
     private val dataBytes = "data".toByteArray()

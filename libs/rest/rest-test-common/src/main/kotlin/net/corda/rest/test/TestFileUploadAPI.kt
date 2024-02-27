@@ -1,13 +1,13 @@
 package net.corda.rest.test
 
-import java.io.InputStream
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.RestResource
+import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.HttpPOST
+import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.RestQueryParameter
-import net.corda.rest.annotations.ClientRequestBodyParameter
-import net.corda.rest.annotations.HttpRestResource
+import java.io.InputStream
 
 @HttpRestResource(name = "TestFileUploadAPI", path = "fileupload/")
 interface TestFileUploadAPI : RestResource {

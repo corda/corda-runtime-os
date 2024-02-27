@@ -1,7 +1,6 @@
 package net.corda.ledger.consensual.test
 
 import net.corda.ledger.common.test.CommonLedgerTest
-import net.corda.ledger.common.testkit.fakeTransactionSignatureService
 import net.corda.ledger.consensual.flow.impl.ConsensualLedgerServiceImpl
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualTransactionBuilderImpl
 import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualSignedTransactionFactoryImpl
@@ -13,27 +12,28 @@ import org.mockito.kotlin.mock
 abstract class ConsensualLedgerTest : CommonLedgerTest() {
     val consensualSignedTransactionFactory = ConsensualSignedTransactionFactoryImpl(
         serializationServiceNullCfg,
-        fakeTransactionSignatureService(),
+        transactionSignatureService,
         transactionMetadataFactory,
         wireTransactionFactory,
         currentSandboxGroupContext,
         jsonMarshallingService,
-        jsonValidator
+        jsonValidator,
+        mockPrivacySaltProviderService
     )
     val consensualLedgerService = ConsensualLedgerServiceImpl(consensualSignedTransactionFactory, flowEngine, mock())
     val consensualSignedTransactionKryoSerializer = ConsensualSignedTransactionKryoSerializer(
         serializationServiceWithWireTx,
-        fakeTransactionSignatureService()
+        transactionSignatureService
     )
     val consensualSignedTransactionAMQPSerializer =
-        ConsensualSignedTransactionSerializer(serializationServiceNullCfg, fakeTransactionSignatureService())
+        ConsensualSignedTransactionSerializer(serializationServiceNullCfg, transactionSignatureService)
     val consensualSignedTransactionExample = getConsensualSignedTransactionExample(
         digestService,
         merkleTreeProvider,
         serializationServiceWithWireTx,
         jsonMarshallingService,
         jsonValidator,
-        fakeTransactionSignatureService()
+        transactionSignatureService
     )
 
     // This is the only not stateless.

@@ -16,8 +16,8 @@ import java.security.cert.X509Certificate
 
 internal class MtlsMgmClientCertificateKeeper(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    private val membershipPersistenceClient : MembershipPersistenceClient,
-    private val membershipQueryClient : MembershipQueryClient,
+    private val membershipPersistenceClient: MembershipPersistenceClient,
+    private val membershipQueryClient: MembershipQueryClient,
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
     private val certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
 ) {
@@ -26,7 +26,7 @@ internal class MtlsMgmClientCertificateKeeper(
         groupPolicy: GroupPolicy,
         pemTlsCertificates: String,
     ) {
-        if(groupPolicy.p2pParameters.tlsType != MUTUAL) {
+        if (groupPolicy.p2pParameters.tlsType != MUTUAL) {
             return
         }
         val groupReader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
@@ -37,15 +37,15 @@ internal class MtlsMgmClientCertificateKeeper(
         val subject = pemTlsCertificates.byteInputStream().use {
             certificateFactory.generateCertificates(it)
         }.filterIsInstance<X509Certificate>()
-            .firstOrNull()?.subjectX500Principal ?:
-        throw CordaRuntimeException("Can not extract TLS certificate subject.")
+            .firstOrNull()?.subjectX500Principal
+            ?: throw CordaRuntimeException("Can not extract TLS certificate subject.")
         val normalizedSubject = MemberX500Name.parse(subject.toString()).toString()
         val (persistedGroupPolicy, version) = membershipQueryClient
             .queryGroupPolicy(holdingIdentity)
             .getOrThrow()
 
         val newGroupPolicy = persistedGroupPolicy.entries.associate { it.key to it.value } +
-                (MGM_CLIENT_CERTIFICATE_SUBJECT to normalizedSubject)
+            (MGM_CLIENT_CERTIFICATE_SUBJECT to normalizedSubject)
 
         membershipPersistenceClient.persistGroupPolicy(
             holdingIdentity,

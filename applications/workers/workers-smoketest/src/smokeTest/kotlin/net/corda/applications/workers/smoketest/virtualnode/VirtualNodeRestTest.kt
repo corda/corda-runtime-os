@@ -1,6 +1,6 @@
 package net.corda.applications.workers.smoketest.virtualnode
 
-import java.util.UUID
+import com.fasterxml.jackson.databind.JsonNode
 import net.corda.applications.workers.smoketest.utils.ERROR_CPI_NOT_UPLOADED
 import net.corda.applications.workers.smoketest.utils.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.utils.TEST_CPI_NAME
@@ -15,8 +15,10 @@ import net.corda.e2etest.utilities.CODE_SIGNER_CERT
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT_ALIAS
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT_USAGE
 import net.corda.e2etest.utilities.ClusterBuilder
+import net.corda.e2etest.utilities.ClusterReadiness
+import net.corda.e2etest.utilities.ClusterReadinessChecker
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
-import net.corda.e2etest.utilities.assertWithRetry
+import net.corda.e2etest.utilities.SimpleResponse
 import net.corda.e2etest.utilities.assertWithRetryIgnoringExceptions
 import net.corda.e2etest.utilities.cluster
 import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
@@ -26,12 +28,16 @@ import net.corda.e2etest.utilities.truncateLongHash
 import net.corda.rest.ResponseCode
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestMethodOrder
+import java.time.Duration
+import java.util.UUID
 
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
@@ -42,7 +48,8 @@ annotation class SkipInitialization
  */
 @Order(10)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
-class VirtualNodeRestTest {
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+class VirtualNodeRestTest : ClusterReadiness by ClusterReadinessChecker() {
     companion object {
         // Some simple test failure messages
         private val testRunUniqueId = UUID.randomUUID()
@@ -57,6 +64,12 @@ class VirtualNodeRestTest {
 
         private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
         private val upgradeTestingCpiName = "${VNODE_UPGRADE_TEST_CPI_NAME}_$testRunUniqueId"
+    }
+
+    @BeforeAll
+    fun setup() {
+        // check cluster is ready
+        assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(100))
     }
 
     @BeforeEach
@@ -117,7 +130,7 @@ class VirtualNodeRestTest {
                 timeout(retryTimeout)
                 interval(retryInterval)
                 command { cpiList() }
-                condition { it.code == 200 }
+                condition { it.code == 200 && it.toJson()["cpis"].size() > 0 }
             }.toJson()
 
             assertThat(json["cpis"].size()).isGreaterThan(0)
@@ -179,14 +192,21 @@ class VirtualNodeRestTest {
     }
 
     private fun ClusterBuilder.getCpiChecksum(cpiName: String): String {
+
+        fun SimpleResponse.cpiJsonNode(): JsonNode? {
+            return body.toJson()["cpis"]?.toList()?.find { it["id"]?.get("cpiName")?.textValue() == cpiName }
+        }
+
         val cpis = assertWithRetryIgnoringExceptions {
             timeout(retryTimeout)
             interval(retryInterval)
             command { cpiList() }
-            condition { it.code == ResponseCode.OK.statusCode }
-        }.body.toJson()["cpis"]
+            condition { resp ->
+                resp.code == ResponseCode.OK.statusCode && resp.cpiJsonNode() != null
+            }
+        }
 
-        val cpiJson = cpis.toList().find { it["id"]["cpiName"].textValue() == cpiName }
+        val cpiJson: JsonNode? = cpis.cpiJsonNode()
         assertNotNull(cpiJson, "Cpi with name $cpiName not yet found in cpi list.")
         return truncateLongHash(cpiJson!!["cpiFileChecksum"].textValue())
     }

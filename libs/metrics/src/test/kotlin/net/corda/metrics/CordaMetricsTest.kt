@@ -1,7 +1,8 @@
 package net.corda.metrics
 
 import io.micrometer.core.instrument.Meter
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import io.micrometer.prometheus.PrometheusConfig
+import io.micrometer.prometheus.PrometheusMeterRegistry
 import net.corda.metrics.CordaMetrics.Tag.MembershipGroup
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Condition
@@ -14,7 +15,7 @@ import kotlin.math.roundToLong
 @ResourceLock("corda-metrics")
 class CordaMetricsTest {
     private val meterSourceName = "Testing"
-    private val registry = SimpleMeterRegistry()
+    private val registry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
     private fun singleValueOf(expected: Long): Condition<in Meter> {
         return Condition<Meter>({ m ->
@@ -24,7 +25,16 @@ class CordaMetricsTest {
 
     @BeforeEach
     fun setup() {
-        CordaMetrics.configure(meterSourceName, registry)
+        CordaMetrics.configure(
+            meterSourceName,
+            registry,
+            ("corda_p2p_session_(inbound|outbound)|" +
+                    "corda_p2p_message_outbound_total|" +
+                    "corda_membership_memberlist_cache_size|" +
+                    "corda_flow_execution_time_seconds_(count|sum|max)|" +
+                    "corda_http_server_request_time_seconds_(count|sum|max|bucket)").toRegex(),
+            "virtualnode_source".toRegex()
+        )
         assertThat(CordaMetrics.registry.registries).hasSize(1)
     }
 
@@ -132,5 +142,49 @@ class CordaMetricsTest {
         assertThat(meter.id.name).isEqualTo("corda.${CordaMetrics.Metric.HttpRequestTime.metricsName}")
         assertThat(meter.id.tags.map { Pair(it.key, it.value) })
             .contains(Pair(CordaMetrics.Tag.WorkerType.value, meterSourceName))
+    }
+
+    @Test
+    fun `summary metrics allowed for timer but not histogram`() {
+        val meter = CordaMetrics.Metric.FlowExecutionTime.builder().build()
+        assertThat(CordaMetrics.registry.meters)
+            .hasSize(1)
+        assertThat(meter.takeSnapshot().histogramCounts())
+            .isEmpty()
+    }
+
+    @Test
+    fun `all metrics allowed for timer`() {
+        val meter = CordaMetrics.Metric.HttpRequestTime.builder().build()
+        assertThat(CordaMetrics.registry.meters)
+            .hasSize(1)
+        assertThat(meter.takeSnapshot().histogramCounts())
+            .isNotEmpty()
+    }
+
+    @Test
+    fun `all metrics allowed for counter`() {
+        CordaMetrics.Metric.OutboundMessageCount.builder().build()
+        assertThat(CordaMetrics.registry.meters)
+            .hasSize(1)
+    }
+
+    @Test
+    fun `metric not matching keep names is filtered out`() {
+        CordaMetrics.Metric.SandboxCreateTime.builder().build()
+        assertThat(CordaMetrics.registry.meters)
+            .hasSize(0)
+    }
+
+    @Test
+    fun `dropped tags are filtered out`() {
+        val meter = CordaMetrics.Metric.HttpRequestTime
+            .builder()
+            .withTag(CordaMetrics.Tag.UriPath, "/hello")
+            .withTag(CordaMetrics.Tag.SourceVirtualNode, "abc")
+            .build()
+        assertThat(meter.id.tags.map { Pair(it.key, it.value) })
+            .contains(Pair(CordaMetrics.Tag.UriPath.value, "/hello"))
+            .doesNotContain(Pair(CordaMetrics.Tag.SourceVirtualNode.value, "abc"))
     }
 }

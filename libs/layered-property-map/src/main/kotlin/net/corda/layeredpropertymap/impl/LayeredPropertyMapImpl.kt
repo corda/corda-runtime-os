@@ -1,9 +1,9 @@
 package net.corda.layeredpropertymap.impl
 
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.layeredpropertymap.ConversionContext
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.types.LayeredPropertyMap
+import java.util.concurrent.ConcurrentHashMap
 
 class LayeredPropertyMapImpl(
     private val properties: Map<String, String?>,

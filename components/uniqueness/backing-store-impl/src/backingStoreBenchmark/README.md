@@ -13,9 +13,10 @@ These tests can be run by executing the Gradle `backingStoreBenchmark` task, wit
 arguments. This will run all benchmarks, using default settings. The tests can be configured using
 the following properties:
 
-- `postgresPort`: Setting this will run the tests against a Postgres DB instance, instead of using 
-   HSQLDB (the default). It is strongly recommended that you use Postgres DB, as HSQLDB is not a 
-   production grade database, and is unlikely to provide realistic results. Additional Postgres
+- `databaseType`: Setting this will run the tests against the configured database type instance,
+   instead of using HSQLDB (the default). Currently supported options are POSTGRES and HSQL.
+   It is strongly recommended that you use Postgres DB, as HSQLDB is not a 
+   production grade database, and is unlikely to provide realistic results. Additional
    properties, such as user, password etc. can also be specified. These are the same set of
    properties as used by other database based tests in this repo.
 - `bsBenchNumIterations`: This controls how many times each test case is run. This should not affect 
@@ -33,7 +34,7 @@ the following properties:
 
 For example, to run the tests with Postgres, 2500 iterations, and 20 operations per iteration:
 
-` ./gradlew :components:uniqueness:backing-store-impl:backingStoreBenchmark -PpostgresPort=5432 -PbsBenchNumIterations=2500 -PbsBenchNumOpsPerIteration=20`
+` ./gradlew :components:uniqueness:backing-store-impl:backingStoreBenchmark -PdatabaseType=POSTGRES -PbsBenchNumIterations=2500 -PbsBenchNumOpsPerIteration=20`
 
 ## Output
 

@@ -1,5 +1,12 @@
 package net.corda.rest
 
+const val SC_OK = 200
+const val SC_CREATED = 201
+const val SC_ACCEPTED = 202
+const val SC_NO_CONTENT = 204
+const val SC_RESET_CONTENT = 205
+const val SC_PARTIAL_CONTENT = 206
+
 /**
  * Use this enum when you want to customize the HTTP status code returned in success responses and error scenarios in HTTP APIs.
  *
@@ -17,7 +24,7 @@ package net.corda.rest
  *
  * @param statusCode the http status code for the http response.
  */
-enum class ResponseCode constructor(val statusCode: Int) {
+enum class ResponseCode(val statusCode: Int) {
 
     /**
      * SUCCESSFUL 2xx
@@ -28,38 +35,38 @@ enum class ResponseCode constructor(val statusCode: Int) {
      *
      * See `https://httpwg.org/specs/rfc9110.html#status.200`.
      */
-    OK(200),
+    OK(SC_OK),
 
     /**
      * One or more resources have been successfully created.
      *
      * See `https://httpwg.org/specs/rfc9110.html#status.201`.
      */
-    CREATED(201),
+    CREATED(SC_CREATED),
 
     /**
      * The request has been accepted for processing but the processing has not been completed.
      *
      * See `https://httpwg.org/specs/rfc9110.html#status.202`.
      */
-    ACCEPTED(202),
+    ACCEPTED(SC_ACCEPTED),
 
     /**
      * A request has succeeded but there is no content to send to the client.
      *
      * See `https://httpwg.org/specs/rfc9110.html#status.204`.
      */
-    NO_CONTENT(204),
+    NO_CONTENT(SC_NO_CONTENT),
 
     /**
      * See `https://httpwg.org/specs/rfc9110.html#status.205`.
      */
-    RESET_CONTENT(205),
+    RESET_CONTENT(SC_RESET_CONTENT),
 
     /**
      * See `https://httpwg.org/specs/rfc9110.html#status.206`.
      */
-    PARTIAL_CONTENT(206),
+    PARTIAL_CONTENT(SC_PARTIAL_CONTENT),
 
     /**
      * REDIRECTION 3xx

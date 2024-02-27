@@ -1,9 +1,9 @@
 package net.corda.rest.durablestream.api
 
+import net.corda.rest.durablestream.api.Cursor.PollResult
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.rest.durablestream.api.Cursor.PollResult
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 

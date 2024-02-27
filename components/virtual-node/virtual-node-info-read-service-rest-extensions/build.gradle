@@ -5,17 +5,17 @@ plugins {
 
 description "Virtual Node Info Service REST Extensions"
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation libs.slf4j.api
     implementation project(':libs:rest:rest')
     implementation project(":libs:virtual-node:virtual-node-info")
     implementation project(':libs:crypto:crypto-core')
     implementation project(":components:virtual-node:virtual-node-info-read-service")
 
     testImplementation project(":testing:test-utilities")
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

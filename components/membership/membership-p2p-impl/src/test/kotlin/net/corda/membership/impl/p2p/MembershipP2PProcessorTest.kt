@@ -104,7 +104,10 @@ class MembershipP2PProcessorTest {
     private val mgm = HoldingIdentity(MemberX500Name.parse("C=GB, L=London, O=MGM").toString(), groupId)
     private val unauthenticatedRegistrationRequest = UnauthenticatedRegistrationRequest(
         UnauthenticatedRegistrationRequestHeader(
-            mgm, ByteBuffer.wrap(SALT_BYTES), ByteBuffer.wrap(AAD_BYTES), memberKeyPem
+            mgm,
+            ByteBuffer.wrap(SALT_BYTES),
+            ByteBuffer.wrap(AAD_BYTES),
+            memberKeyPem
         ),
         registrationReqMsgPayload
     )
@@ -141,7 +144,10 @@ class MembershipP2PProcessorTest {
             syncId,
             clock.instant()
         ),
-        secureHash, BloomFilter(1, 1, 1, byteBuffer), secureHash, secureHash
+        secureHash,
+        BloomFilter(1, 1, 1, byteBuffer),
+        secureHash,
+        secureHash
     )
     private val syncRequestMsgPayload = syncRequest.toByteBuffer()
 
@@ -382,7 +388,8 @@ class MembershipP2PProcessorTest {
         return AppMessage(
             InboundUnauthenticatedMessage(
                 InboundUnauthenticatedMessageHeader(
-                    subsystem, "messageId"
+                    subsystem,
+                    "messageId"
                 ),
                 this
             )

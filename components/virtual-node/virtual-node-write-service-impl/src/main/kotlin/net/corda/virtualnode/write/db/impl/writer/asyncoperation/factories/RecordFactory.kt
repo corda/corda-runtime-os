@@ -19,4 +19,3 @@ internal interface RecordFactory {
         mgmInfo: MemberInfo
     ): Record<*, *>
 }
-

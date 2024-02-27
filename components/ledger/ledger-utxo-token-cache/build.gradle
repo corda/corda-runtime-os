@@ -5,13 +5,17 @@ plugins {
 
 description "Token Cache"
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     compileOnly 'org.osgi:osgi.annotation'
 
+    // enforce transitive dependency for all places where this module is used
+    api 'net.corda:corda-ledger-utxo'
+
     implementation project(":components:configuration:configuration-read-service")
-    implementation project(":components:ledger:ledger-utxo-flow")
     implementation project(":components:virtual-node:virtual-node-info-read-service")
     implementation project(":components:db:db-connection-manager")
     implementation project(":libs:configuration:configuration-core")
@@ -27,7 +31,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-base"
@@ -36,13 +40,10 @@ dependencies {
     implementation project(":libs:packaging:packaging")
     implementation "net.corda:corda-topic-schema"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation libs.slf4j.api
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
-    testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    testImplementation libs.jackson.module.kotlin
 
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation project(":libs:lifecycle:lifecycle-impl")
@@ -51,7 +52,7 @@ dependencies {
     testImplementation project(":libs:schema-registry:schema-registry")
     testImplementation project(":libs:schema-registry:schema-registry-impl")
 
-    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    testRuntimeOnly libs.slf4j.simple
 
     integrationTestRuntimeOnly project(':libs:application:application-impl')
 

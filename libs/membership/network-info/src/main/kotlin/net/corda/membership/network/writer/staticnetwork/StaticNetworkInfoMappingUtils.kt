@@ -2,7 +2,6 @@ package net.corda.membership.network.writer.staticnetwork
 
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.KeyValuePairList
-import net.corda.data.membership.StaticNetworkInfo as AvroStaticNetworkInfo
 import net.corda.membership.datamodel.StaticNetworkInfoEntity
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmSigningKeyAlgorithm
@@ -12,6 +11,7 @@ import java.security.KeyFactory
 import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 import java.util.UUID
+import net.corda.data.membership.StaticNetworkInfo as AvroStaticNetworkInfo
 
 object StaticNetworkInfoMappingUtils {
 

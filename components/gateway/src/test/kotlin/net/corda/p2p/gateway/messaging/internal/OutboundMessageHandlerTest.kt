@@ -3,6 +3,7 @@ package net.corda.p2p.gateway.messaging.internal
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
@@ -21,6 +22,10 @@ import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.NetworkType
 import net.corda.data.p2p.app.InboundUnauthenticatedMessage
 import net.corda.data.p2p.app.InboundUnauthenticatedMessageHeader
+import net.corda.data.p2p.crypto.AuthenticatedDataMessage
+import net.corda.data.p2p.gateway.GatewayResponse
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.DynamicKeyStore
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
@@ -30,7 +35,10 @@ import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpResponse
 import net.corda.p2p.gateway.messaging.http.TrustStoresMap
+import net.corda.schema.Schemas.P2P.LINK_IN_TOPIC
+import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.test.util.time.MockTimeFacilitiesProvider
+import net.corda.utilities.flags.Features
 import net.corda.utilities.millis
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
@@ -103,6 +111,7 @@ class OutboundMessageHandlerTest {
             sentMessages.add(it.arguments[0] as ByteArray)
             val httpResponse = mock<HttpResponse> {
                 on { statusCode } doReturn HttpResponseStatus.OK
+                on { payload } doReturn byteArrayOf(1, 3)
             }
             CompletableFuture.completedFuture(httpResponse)
         }
@@ -130,20 +139,36 @@ class OutboundMessageHandlerTest {
     private val commonComponentsDominoTile = mock<ComplexDominoTile> {
         whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
     }
+    private val features = mock<Features> {
+        on { enableP2PGatewayToLinkManagerOverHttp } doReturn false
+    }
     private val commonComponents = mock<CommonComponents> {
         on { dominoTile } doReturn commonComponentsDominoTile
         on { trustStoresMap } doReturn trustStoresMap
+        on { features } doReturn features
+    }
+    private val publisherFactory = mock<PublisherFactory> {
+        on { createPublisher(any(), any()) } doReturn mock()
+    }
+    private val p2pInPublisher = mockConstruction(PublisherWithDominoLogic::class.java) { mock, _ ->
+        val mockDominoTile = mock<ComplexDominoTile> {
+            whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+        }
+        whenever(mock.dominoTile).doReturn(mockDominoTile)
+    }
+    private val serialisedMessage = "gateway-message".toByteArray()
+    private val avroSchemaRegistry = mock<AvroSchemaRegistry> {
+        on { serialize(any<GatewayMessage>()) } doReturn ByteBuffer.wrap(serialisedMessage)
+        on { deserialize(any(), eq(GatewayResponse::class.java), anyOrNull()) } doReturn GatewayResponse()
     }
 
-    private val serialisedMessage = "gateway-message".toByteArray()
     private val handler = OutboundMessageHandler(
         lifecycleCoordinatorFactory,
         configurationReaderService,
         subscriptionFactory,
+        publisherFactory,
         SmartConfigImpl.empty(),
-        mock {
-            on { serialize(any<GatewayMessage>()) } doReturn ByteBuffer.wrap(serialisedMessage)
-        },
+        avroSchemaRegistry,
         commonComponents,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }
 
@@ -153,6 +178,7 @@ class OutboundMessageHandlerTest {
         dominoTile.close()
         subscriptionTile.close()
         gatewayConfigReader.close()
+        p2pInPublisher.close()
     }
 
     @Test
@@ -162,6 +188,7 @@ class OutboundMessageHandlerTest {
             lifecycleCoordinatorFactory,
             configurationReaderService,
             subscriptionFactory,
+            publisherFactory,
             SmartConfigImpl.empty(),
             mock {
                 on { serialize(any<GatewayMessage>()) } doReturn ByteBuffer.wrap("gateway-message".toByteArray())
@@ -637,5 +664,158 @@ class OutboundMessageHandlerTest {
         repeat(2) { mockTimeFacilitiesProvider.advanceTime(connectionConfig.retryDelay.multipliedBy(2)) }
         assertThat(sentMessages).hasSize(1)
         assertThat(sentMessages.first()).isEqualTo(serialisedMessage)
+    }
+
+    @Test
+    fun `OK with data will publish the data to the bus`() {
+        val content = byteArrayOf(1)
+        val published = argumentCaptor<List<Record<Any, Any>>>()
+        whenever(
+            p2pInPublisher.constructed().first()
+                .publish(published.capture())
+        ).doReturn(mock())
+        val client = mock<HttpClient> {
+            on { write(any()) } doAnswer {
+                sentMessages.add(it.arguments[0] as ByteArray)
+                val response = mock<HttpResponse> {
+                    on { statusCode } doReturn HttpResponseStatus.OK
+                    on { payload } doReturn content
+                }
+                CompletableFuture.completedFuture(response)
+            }
+        }
+        val replyPayload = AuthenticatedDataMessage()
+        whenever(
+            avroSchemaRegistry.deserialize(
+                ByteBuffer.wrap(content),
+                GatewayResponse::class.java,
+                null,
+            )
+        ).doReturn(
+            GatewayResponse(
+                "",
+                replyPayload,
+            )
+        )
+        whenever(features.enableP2PGatewayToLinkManagerOverHttp).doReturn(true)
+
+        val msgPayload = InboundUnauthenticatedMessage.newBuilder().apply {
+            header = InboundUnauthenticatedMessageHeader(
+                "subsystem",
+                "messageId",
+            )
+            payload = ByteBuffer.wrap(byteArrayOf())
+        }.build()
+        val headers = LinkOutHeader(
+            HoldingIdentity("b", GROUP_ID),
+            HoldingIdentity(VALID_X500_NAME, GROUP_ID),
+            NetworkType.CORDA_5,
+            "https://r3.com/",
+        )
+        val message = LinkOutMessage(headers, msgPayload)
+        whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
+
+        handler.onNext(Record("", "", message))
+
+        val record = published.firstValue.firstOrNull()
+        val data = record?.value as? LinkInMessage
+        assertThat(data?.payload).isSameAs(replyPayload)
+        assertThat(record?.topic).isEqualTo(LINK_IN_TOPIC)
+    }
+
+    @Test
+    fun `OK with data will not publish the data to the bus if the flag is off`() {
+        val content = byteArrayOf(1)
+        val client = mock<HttpClient> {
+            on { write(any()) } doAnswer {
+                sentMessages.add(it.arguments[0] as ByteArray)
+                val response = mock<HttpResponse> {
+                    on { statusCode } doReturn HttpResponseStatus.OK
+                    on { payload } doReturn content
+                }
+                CompletableFuture.completedFuture(response)
+            }
+        }
+        val replyPayload = AuthenticatedDataMessage()
+        whenever(
+            avroSchemaRegistry.deserialize(
+                ByteBuffer.wrap(content),
+                GatewayResponse::class.java,
+                null,
+            )
+        ).doReturn(
+            GatewayResponse(
+                "",
+                replyPayload,
+            )
+        )
+        whenever(features.enableP2PGatewayToLinkManagerOverHttp).doReturn(false)
+
+        val msgPayload = InboundUnauthenticatedMessage.newBuilder().apply {
+            header = InboundUnauthenticatedMessageHeader(
+                "subsystem",
+                "messageId",
+            )
+            payload = ByteBuffer.wrap(byteArrayOf())
+        }.build()
+        val headers = LinkOutHeader(
+            HoldingIdentity("b", GROUP_ID),
+            HoldingIdentity(VALID_X500_NAME, GROUP_ID),
+            NetworkType.CORDA_5,
+            "https://r3.com/",
+        )
+        val message = LinkOutMessage(headers, msgPayload)
+        whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
+
+        handler.onNext(Record("", "", message))
+
+        verify(p2pInPublisher.constructed().first(), never()).publish(any())
+    }
+
+    @Test
+    fun `OK without data will not publish the data to the bus`() {
+        val content = byteArrayOf(1)
+        val client = mock<HttpClient> {
+            on { write(any()) } doAnswer {
+                sentMessages.add(it.arguments[0] as ByteArray)
+                val response = mock<HttpResponse> {
+                    on { statusCode } doReturn HttpResponseStatus.OK
+                    on { payload } doReturn content
+                }
+                CompletableFuture.completedFuture(response)
+            }
+        }
+        whenever(
+            avroSchemaRegistry.deserialize(
+                ByteBuffer.wrap(content),
+                GatewayResponse::class.java,
+                null,
+            )
+        ).doReturn(
+            GatewayResponse(
+                "",
+                null,
+            )
+        )
+
+        val msgPayload = InboundUnauthenticatedMessage.newBuilder().apply {
+            header = InboundUnauthenticatedMessageHeader(
+                "subsystem",
+                "messageId",
+            )
+            payload = ByteBuffer.wrap(byteArrayOf())
+        }.build()
+        val headers = LinkOutHeader(
+            HoldingIdentity("b", GROUP_ID),
+            HoldingIdentity(VALID_X500_NAME, GROUP_ID),
+            NetworkType.CORDA_5,
+            "https://r3.com/",
+        )
+        val message = LinkOutMessage(headers, msgPayload)
+        whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
+
+        handler.onNext(Record("", "", message))
+
+        verify(p2pInPublisher.constructed().first(), never()).publish(any())
     }
 }

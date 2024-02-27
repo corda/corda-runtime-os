@@ -1,5 +1,5 @@
 package net.corda.libs.virtualnode.datamodel.dto
 
 enum class VirtualNodeOperationType {
-    CREATE, UPGRADE
+    CREATE, UPGRADE, CHANGE_DB
 }

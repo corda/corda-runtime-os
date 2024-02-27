@@ -19,8 +19,8 @@ import java.util.TreeMap
     ],
     scope = ServiceScope.PROTOTYPE
 )
-class ContractStateVaultJsonFactoryRegistryImpl @Activate constructor()
-    : ContractStateVaultJsonFactoryRegistry, UsedByPersistence {
+class ContractStateVaultJsonFactoryRegistryImpl @Activate constructor() :
+    ContractStateVaultJsonFactoryRegistry, UsedByPersistence {
 
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(ContractStateVaultJsonFactoryRegistryImpl::class.java)
@@ -30,9 +30,11 @@ class ContractStateVaultJsonFactoryRegistryImpl @Activate constructor()
 
     override fun registerJsonFactory(factory: ContractStateVaultJsonFactory<out ContractState>) {
         if (factoryStorage.putIfAbsent(factory.stateType.name, factory) != null) {
-            logger.warn("Failed to register ${ContractStateVaultJsonFactory::class.java.name} of ${factory::class.java.name} " +
+            logger.warn(
+                "Failed to register ${ContractStateVaultJsonFactory::class.java.name} of ${factory::class.java.name} " +
                     "for state type ${factory.stateType::class.java.name} as ${factoryStorage[factory.stateType.name]} " +
-                    "is already registered for the same type.")
+                    "is already registered for the same type."
+            )
             throw IllegalArgumentException("A factory for state class ${factory.stateType} is already registered.")
         }
     }

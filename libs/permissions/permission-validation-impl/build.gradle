@@ -5,6 +5,8 @@ plugins {
 
 description 'Permission Validation Implementation'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
@@ -12,7 +14,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
 
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:messaging:messaging")
@@ -24,7 +26,4 @@ dependencies {
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-topic-schema"
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 }

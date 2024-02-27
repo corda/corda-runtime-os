@@ -40,6 +40,7 @@ import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.validateSchem
 import net.corda.membership.p2p.helpers.KeySpecExtractor.KeySpecType
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity
@@ -55,13 +56,13 @@ internal class MGMRegistrationMemberInfoHandler(
     private val keyEncodingService: KeyEncodingService,
     private val memberInfoFactory: MemberInfoFactory,
     private val membershipPersistenceClient: MembershipPersistenceClient,
+    private val membershipQueryClient: MembershipQueryClient,
     private val platformInfoProvider: PlatformInfoProvider,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) {
 
     private companion object {
-        const val SERIAL_CONST = "1"
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val keyIdList = listOf(SESSION_KEYS, ECDH_KEY_ID)
     }
@@ -78,14 +79,23 @@ internal class MGMRegistrationMemberInfoHandler(
     }
 
     @Throws(MGMRegistrationMemberInfoHandlingException::class)
-    fun buildAndPersistMgmMemberInfo(
-        holdingIdentity: HoldingIdentity,
-        context: Map<String, String>
-    ): SelfSignedMemberInfo {
-        logger.info("Started building mgm member info.")
-        return buildMgmInfo(holdingIdentity, context).also {
-            persistMemberInfo(holdingIdentity, it)
+    fun persistMgmMemberInfo(holdingIdentity: HoldingIdentity, selfSignedMemberInfo: SelfSignedMemberInfo) {
+        logger.info("Started persisting mgm member info.")
+        val persistenceResult = membershipPersistenceClient.persistMemberInfo(holdingIdentity, listOf(selfSignedMemberInfo))
+            .execute()
+        if (persistenceResult is MembershipPersistenceResult.Failure) {
+            throw MGMRegistrationMemberInfoHandlingException(
+                "Registration failed, persistence error. Reason: ${persistenceResult.errorMsg}"
+            )
         }
+    }
+
+    fun queryForMGMMemberInfo(holdingIdentity: HoldingIdentity): SelfSignedMemberInfo {
+        return membershipQueryClient.queryMemberInfo(
+            holdingIdentity,
+            setOf(holdingIdentity),
+            listOf(MEMBER_STATUS_ACTIVE)
+        ).getOrThrow().single()
     }
 
     @Suppress("ThrowsCount")
@@ -111,10 +121,10 @@ internal class MGMRegistrationMemberInfoHandler(
                     null
                 )
             }
-            if(expectedCategory == SESSION_INIT) {
+            if (expectedCategory == SESSION_INIT) {
                 try {
                     it.validateSchemeAndSignatureSpec(signatureSpec, KeySpecType.SESSION)
-                } catch(ex: IllegalArgumentException) {
+                } catch (ex: IllegalArgumentException) {
                     throw MGMRegistrationContextValidationException(
                         "Key scheme and/or signature spec are not valid for category $SESSION_INIT.",
                         ex
@@ -126,7 +136,8 @@ internal class MGMRegistrationMemberInfoHandler(
             } catch (ex: RuntimeException) {
                 throw MGMRegistrationMemberInfoHandlingException(
                     "Could not decode public key for tenant ID: " +
-                            "$tenantId under ID: $keyId.", ex
+                        "$tenantId under ID: $keyId.",
+                    ex
                 )
             }
         } ?: throw MGMRegistrationMemberInfoHandlingException(
@@ -136,19 +147,11 @@ internal class MGMRegistrationMemberInfoHandler(
 
     private fun PublicKey.toPem(): String = keyEncodingService.encodeAsString(this)
 
-    private fun persistMemberInfo(holdingIdentity: HoldingIdentity, mgmInfo: SelfSignedMemberInfo) {
-        val persistenceResult = membershipPersistenceClient.persistMemberInfo(holdingIdentity, listOf(mgmInfo))
-            .execute()
-        if (persistenceResult is MembershipPersistenceResult.Failure) {
-            throw MGMRegistrationMemberInfoHandlingException(
-                "Registration failed, persistence error. Reason: ${persistenceResult.errorMsg}"
-            )
-        }
-    }
-
-    private fun buildMgmInfo(
+    fun buildMgmMemberInfo(
         holdingIdentity: HoldingIdentity,
-        context: Map<String, String>
+        context: Map<String, String>,
+        serialNumber: Long = 1,
+        creationTime: String? = null,
     ): SelfSignedMemberInfo {
         val cpi = virtualNodeInfoReadService.get(holdingIdentity)?.cpiIdentifier
             ?: throw MGMRegistrationMemberInfoHandlingException(
@@ -163,15 +166,15 @@ internal class MGMRegistrationMemberInfoHandler(
         val sessionKeys = context.filterKeys { key ->
             sessionKeyRegex.matches(key)
         }.map {
-                val keyIndex = it.key.substringAfter("$SESSION_KEYS.").substringBefore('.')
-                val signatureSpec = context[SESSION_KEYS_SIGNATURE_SPEC.format(keyIndex)]
-                getKeyFromId(it.value, holdingIdentity.shortHash.value, SESSION_INIT, signatureSpec)
-            }.flatMapIndexed { index, sessionKey ->
-                listOf(
-                    String.format(PARTY_SESSION_KEYS_PEM, index) to sessionKey.toPem(),
-                    String.format(SESSION_KEYS_HASH, index) to sessionKey.fullId(),
-                )
-            }
+            val keyIndex = it.key.substringAfter("$SESSION_KEYS.").substringBefore('.')
+            val signatureSpec = context[SESSION_KEYS_SIGNATURE_SPEC.format(keyIndex)]
+            getKeyFromId(it.value, holdingIdentity.shortHash.value, SESSION_INIT, signatureSpec)
+        }.flatMapIndexed { index, sessionKey ->
+            listOf(
+                String.format(PARTY_SESSION_KEYS_PEM, index) to sessionKey.toPem(),
+                String.format(SESSION_KEYS_HASH, index) to sessionKey.fullId(),
+            )
+        }
         val memberContext = context.filterKeys { key ->
             !keyIdList.any { keyPrefix ->
                 key.startsWith(keyPrefix)
@@ -191,11 +194,11 @@ internal class MGMRegistrationMemberInfoHandler(
             serialize(memberContext.toSortedMap().toWire()),
             serialize(
                 sortedMapOf(
-                    CREATION_TIME to now,
+                    CREATION_TIME to (creationTime ?: now),
                     MODIFIED_TIME to now,
                     STATUS to MEMBER_STATUS_ACTIVE,
                     IS_MGM to "true",
-                    SERIAL to SERIAL_CONST,
+                    SERIAL to serialNumber.toString(),
                 ).toWire()
             ),
             CryptoSignatureWithKey(

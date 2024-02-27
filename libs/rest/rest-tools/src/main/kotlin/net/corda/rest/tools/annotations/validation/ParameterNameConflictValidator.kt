@@ -1,9 +1,9 @@
 package net.corda.rest.tools.annotations.validation
 
 import net.corda.rest.RestResource
+import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.RestQueryParameter
-import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.isRestParameterAnnotation
 import net.corda.rest.tools.annotations.validation.utils.endpoints
 import net.corda.rest.tools.annotations.validation.utils.getParameterName

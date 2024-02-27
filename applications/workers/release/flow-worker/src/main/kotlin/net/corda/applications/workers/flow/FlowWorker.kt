@@ -70,16 +70,36 @@ class FlowWorker @Activate constructor(
         val params = getParams(args, FlowWorkerParams())
 
         if (printHelpOrVersion(params.defaultParams, FlowWorker::class.java, shutDownService)) return
-        Metrics.configure(webServer, this.javaClass.simpleName)
+        Metrics.configure(
+            webServer,
+            this.javaClass.simpleName,
+            params.defaultParams.metricsKeepNames?.toRegex(),
+            params.defaultParams.metricsDropLabels?.toRegex()
+        )
         Health.configure(webServer, lifecycleRegistry)
 
         configureTracing("Flow Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
         webServer.start(params.defaultParams.workerServerPort)
+
+        val extraConfigs = mutableListOf(
+            WorkerHelpers.createConfigFromParams(BOOT_WORKER_SERVICE, params.workerEndpoints)
+        )
+
+        if (params.mediatorReplicasFlowSession != null) {
+            extraConfigs.add(
+                WorkerHelpers.createConfigFromParams(
+                    BOOT_WORKER_SERVICE,
+                    mapOf("mediatorReplicas.flowSession" to params.mediatorReplicasFlowSession.toString())
+                )
+            )
+        }
+
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
-            listOf(WorkerHelpers.createConfigFromParams(BOOT_WORKER_SERVICE, params.workerEndpoints)))
+            extraConfigs
+        )
 
         flowProcessor.start(config)
     }
@@ -99,4 +119,8 @@ private class FlowWorkerParams {
 
     @Option(names = ["--serviceEndpoint"], description = ["Internal REST endpoints for Corda workers"], required = true)
     val workerEndpoints: Map<String, String> = emptyMap()
+
+    @Option(names = ["--mediator-replicas-flow-session"], description = ["Sets the number of mediators that consume " +
+            "flow.session messages"])
+    var mediatorReplicasFlowSession: Int? = null
 }

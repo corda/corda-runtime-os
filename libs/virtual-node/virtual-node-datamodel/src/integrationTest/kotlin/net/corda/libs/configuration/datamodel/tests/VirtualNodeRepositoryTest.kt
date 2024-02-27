@@ -1,9 +1,5 @@
 package net.corda.libs.configuration.datamodel.tests
 
-import java.time.Instant
-import java.util.UUID
-import javax.persistence.EntityManagerFactory
-import kotlin.streams.toList
 import net.corda.crypto.core.ShortHash
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
@@ -37,6 +33,10 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
+import java.time.Instant
+import java.util.UUID
+import javax.persistence.EntityManagerFactory
+import kotlin.streams.toList
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class VirtualNodeRepositoryTest {
@@ -156,6 +156,7 @@ class VirtualNodeRepositoryTest {
         assertEquals(virtualNodeOperation[0].requestData, "data")
     }
 
+    @Suppress("ForEachOnRange")
     @Test
     fun `find returns null if no vnode found`() {
         // "set up"
@@ -259,7 +260,9 @@ class VirtualNodeRepositoryTest {
 
         entityManagerFactory.createEntityManager().use {
             VirtualNodeRepositoryImpl().updateVirtualNodeState(
-                it, vnode.holdingIdentity.holdingIdentityShortHash, OperationalStatus.INACTIVE
+                it,
+                vnode.holdingIdentity.holdingIdentityShortHash,
+                OperationalStatus.INACTIVE
             )
         }
 
@@ -278,7 +281,7 @@ class VirtualNodeRepositoryTest {
     fun `upgrade virtual node CPI test`() {
         val signerSummaryHash = TestRandom.secureHash()
         val testName = "Testing ${UUID.randomUUID()}"
-        val externalMessagingRouteConfig =  """ "dummy":"dummy" """
+        val externalMessagingRouteConfig = """ "dummy":"dummy" """
         val vnode = VNodeTestUtils.newVNode(
             entityManagerFactory,
             testName,
@@ -346,8 +349,12 @@ class VirtualNodeRepositoryTest {
         val requestId = UUID.randomUUID().toString()
 
         val operation = VirtualNodeOperationEntity(
-            operationId, requestId, "data", VirtualNodeOperationState.IN_PROGRESS,
-            OperationType.UPGRADE, Instant.now()
+            operationId,
+            requestId,
+            "data",
+            VirtualNodeOperationState.IN_PROGRESS,
+            OperationType.UPGRADE,
+            Instant.now()
         )
         val vnode = VNodeTestUtils.newVNode(
             entityManagerFactory,
@@ -389,8 +396,12 @@ class VirtualNodeRepositoryTest {
         val requestId = UUID.randomUUID().toString()
 
         val operation = VirtualNodeOperationEntity(
-            operationId, requestId, "data", VirtualNodeOperationState.IN_PROGRESS,
-            OperationType.UPGRADE, Instant.now()
+            operationId,
+            requestId,
+            "data",
+            VirtualNodeOperationState.IN_PROGRESS,
+            OperationType.UPGRADE,
+            Instant.now()
         )
         val vnode = VNodeTestUtils.newVNode(
             entityManagerFactory,

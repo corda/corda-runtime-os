@@ -21,7 +21,7 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(':libs:utilities')
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
 
     implementation project(":libs:virtual-node:virtual-node-info")
     api project(":components:virtual-node:cpi-info-read-service")
@@ -33,8 +33,4 @@ dependencies {
 
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")
-
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

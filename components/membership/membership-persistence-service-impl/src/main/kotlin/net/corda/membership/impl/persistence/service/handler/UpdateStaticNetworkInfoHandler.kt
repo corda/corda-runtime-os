@@ -1,6 +1,5 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import javax.persistence.LockModeType
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.UpdateStaticNetworkInfo
@@ -10,6 +9,7 @@ import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkInfoMappingUtils.toAvro
 import net.corda.utilities.serialization.wrapWithNullErrorHandling
+import javax.persistence.LockModeType
 
 internal class UpdateStaticNetworkInfoHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -57,17 +57,17 @@ internal class UpdateStaticNetworkInfoHandler(
                     em.flush()
                 }
             } else {
-                if (persistedVersion == proposedVersion + 1
-                    && groupParametersAreEqual(persistedGroupParams, proposedGroupParams)
+                if (persistedVersion == proposedVersion + 1 &&
+                    groupParametersAreEqual(persistedGroupParams, proposedGroupParams)
                 ) {
                     logger.info(
                         "Attempted to update the group parameters for a static network but they are " +
-                                "unchanged. Returning the previously persisted version."
+                            "unchanged. Returning the previously persisted version."
                     )
                 } else {
                     throw MembershipPersistenceException(
                         "Current persisted version of the static network information does not match the version in " +
-                                "the request to update."
+                            "the request to update."
                     )
                 }
             }

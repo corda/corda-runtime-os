@@ -10,7 +10,7 @@ dependencies {
     compileOnly platform("net.corda:corda-api:$cordaApiVersion")
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation libs.jackson.databind
 }
 
 tasks.named('jar', Jar) {

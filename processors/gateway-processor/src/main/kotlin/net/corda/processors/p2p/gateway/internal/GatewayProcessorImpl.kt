@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -39,10 +40,15 @@ class GatewayProcessorImpl @Activate constructor(
     @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient,
     @Reference(service = AvroSchemaRegistry::class)
-    private val avroSchemaRegistry: AvroSchemaRegistry
+    private val avroSchemaRegistry: AvroSchemaRegistry,
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider,
 ) : GatewayProcessor {
 
     private companion object {
+        init {
+            System.setProperty("jdk.tls.client.enableCAExtension", "true")
+        }
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
@@ -79,9 +85,11 @@ class GatewayProcessorImpl @Activate constructor(
                     subscriptionFactory,
                     publisherFactory,
                     coordinatorFactory,
-                    configMerger.getMessagingConfig(event.config),
                     cryptoOpsClient,
-                    avroSchemaRegistry
+                    avroSchemaRegistry,
+                    platformInfoProvider,
+                    bootConfig = event.config,
+                    messagingConfiguration = configMerger.getMessagingConfig(event.config),
                 )
                 this.gateway = gateway
 
@@ -89,8 +97,8 @@ class GatewayProcessorImpl @Activate constructor(
                 registration = lifecycleCoordinator.followStatusChangesByName(
                     setOf(
                         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                        gateway.dominoTile.coordinatorName
-                    )
+                        gateway.dominoTile.coordinatorName,
+                    ),
                 )
 
                 gateway.start()

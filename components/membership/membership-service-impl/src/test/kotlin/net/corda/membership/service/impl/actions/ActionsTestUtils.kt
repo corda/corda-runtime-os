@@ -94,7 +94,8 @@ private fun mockMemberContext(
             holdingIdentity.x500Name,
             "Notary Plugin A",
             listOf(1, 2),
-            listOf(mock())
+            listOf(mock()),
+            true
         )
         whenever(mock.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
     } else {

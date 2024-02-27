@@ -1,7 +1,6 @@
 package net.corda.virtualnode.write.db.impl.writer
 
 import net.corda.crypto.core.ShortHash
-import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.db.connection.manager.VirtualNodeDbType
 
 internal interface VirtualNodeDbFactory {
@@ -15,6 +14,15 @@ internal interface VirtualNodeDbFactory {
      */
     fun createVNodeDbs(
         holdingIdentityShortHash: ShortHash,
-        request: VirtualNodeCreateRequest
+        request: VirtualNodeConnectionStrings
     ): Map<VirtualNodeDbType, VirtualNodeDb>
 }
+
+internal data class VirtualNodeConnectionStrings(
+    val vaultDdlConnection: String?,
+    val vaultDmlConnection: String?,
+    val cryptoDdlConnection: String?,
+    val cryptoDmlConnection: String?,
+    val uniquenessDdlConnection: String?,
+    val uniquenessDmlConnection: String?
+)

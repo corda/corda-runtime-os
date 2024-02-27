@@ -14,7 +14,7 @@ dependencies {
 
 processResources {
     filesMatching('**/configuration.properties') {
-        expand([ 'kotlinVersion': kotlinVersion ])
+        expand([ 'kotlinVersion': libs.versions.kotlinVersion.get() ])
     }
 }
 

@@ -23,14 +23,12 @@ import org.osgi.service.component.annotations.ServiceScope
 class NotaryVirtualNodeSelectorServiceImpl @Activate constructor(
     @Reference(service = MemberLookup::class)
     private val memberLookup: MemberLookup
-): NotaryVirtualNodeSelectorService, SingletonSerializeAsToken, UsedByFlow {
+) : NotaryVirtualNodeSelectorService, SingletonSerializeAsToken, UsedByFlow {
     /**
      * This function will fetch the virtual nodes that belong to the [serviceIdentity] and do a random selection on
      * that list.
      */
-    override fun selectVirtualNode(serviceIdentity: MemberX500Name): MemberX500Name
-    = memberLookup.lookup().filter {
-            it.notaryDetails?.serviceName == serviceIdentity
-        }.random().name
-
+    override fun selectVirtualNode(serviceIdentity: MemberX500Name): MemberX500Name = memberLookup.lookup().filter {
+        it.notaryDetails?.serviceName == serviceIdentity
+    }.random().name
 }

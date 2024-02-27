@@ -27,6 +27,11 @@ sourceSets {
 }
 
 dependencies {
+
+    constraints {
+        implementation(libs.slf4j.api)
+    }
+    
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
@@ -45,6 +50,8 @@ dependencies {
     implementation project(":components:membership:membership-persistence-client")
     implementation project(":libs:metrics")
     implementation project(":libs:tracing")
+    implementation project(':libs:schema-registry:schema-registry')
+    implementation project(':libs:cache:cache-caffeine')
 
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
@@ -57,21 +64,22 @@ dependencies {
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
+    implementation libs.caffeine
     implementation project(":components:membership:group-policy")
     implementation project(":libs:virtual-node:virtual-node-info")
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(":components:virtual-node:cpi-info-read-service")
     implementation project(":libs:membership:membership-common")
     implementation project(":components:membership:membership-group-read")
+    implementation project(":libs:state-manager:state-manager-api")
+    implementation project(":libs:utilities")
     runtimeOnly project(":libs:web:web-impl")
 
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:p2p:certificates")
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
-    testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    testImplementation libs.log4j.core
+    testRuntimeOnly libs.log4j.slf4j
 
     integrationTestImplementation project(":components:gateway")
     integrationTestImplementation project(":testing:db-message-bus-testkit")
@@ -88,8 +96,10 @@ dependencies {
     nonOsgiIntegrationTestImplementation project(":libs:messaging:db-message-bus-impl")
     nonOsgiIntegrationTestImplementation project(":components:crypto:crypto-client")
     nonOsgiIntegrationTestImplementation project(':libs:schema-registry:schema-registry')
+    nonOsgiIntegrationTestImplementation project(':libs:platform-info')
     nonOsgiIntegrationTestImplementation "net.corda:corda-avro-schema"
     nonOsgiIntegrationTestImplementation project(":libs:schema-registry:schema-registry-impl")
+    nonOsgiIntegrationTestImplementation project(':libs:schema-registry:schema-registry-impl')
     nonOsgiIntegrationTestRuntimeOnly 'org.osgi:osgi.core'
 
     integrationTestImplementation project(":components:configuration:configuration-read-service-impl")
@@ -107,7 +117,7 @@ dependencies {
     testRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     testRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    testRuntimeOnly libs.postgresql.jdbc
 }
 
 var nonOsgiIntegrationTest = tasks.register('nonOsgiIntegrationTest', Test) {

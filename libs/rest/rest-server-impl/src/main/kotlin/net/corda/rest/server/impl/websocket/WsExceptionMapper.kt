@@ -1,10 +1,10 @@
 package net.corda.rest.server.impl.websocket
 
-import java.lang.IllegalArgumentException
 import net.corda.rest.ws.WebSocketProtocolViolationException
 import net.corda.rest.ws.WebSocketValidationException
 import org.eclipse.jetty.websocket.api.CloseStatus
 import org.eclipse.jetty.websocket.api.StatusCode
+import java.lang.IllegalArgumentException
 
 // Maximum length for a closeStatus is 123 characters, otherwise a 1011 Server Error - Phrase exceeds maximum length of 123
 fun Exception.mapToWsStatusCode(): CloseStatus {

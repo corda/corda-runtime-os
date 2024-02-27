@@ -12,6 +12,7 @@ import net.corda.flow.utils.keyValuePairListOf
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSIONS_SUPPORTED
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
+import net.corda.session.manager.Constants.Companion.FLOW_SESSION_TIMEOUT_MS
 import net.corda.utilities.trace
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -102,7 +103,12 @@ class GenerateSessionService @Activate constructor(
                 checkpoint,
                 sessionInfo.sessionId,
                 sessionInfo.counterparty,
-                sessionProperties = sessionContext.apply { put(FLOW_SESSION_REQUIRE_CLOSE, sessionInfo.requireClose.toString()) }.avro,
+                sessionProperties = sessionContext.apply {
+                    put(FLOW_SESSION_REQUIRE_CLOSE, sessionInfo.requireClose.toString())
+                    sessionInfo.sessionTimeout?.let {
+                        put(FLOW_SESSION_TIMEOUT_MS, it.toMillis().toString())
+                    }
+                }.avro,
                 Instant.now()
             ).also { checkpoint.putSessionState(it) }
 

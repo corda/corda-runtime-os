@@ -3,12 +3,12 @@ package net.corda.ledger.utxo.flow.impl.flows.backchain.v1
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.sandbox.CordaSystemFlow
+import net.corda.utilities.trace
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.utilities.trace
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -43,26 +43,37 @@ class TransactionBackchainSenderFlowV1(
     override fun call() {
         log.trace {
             "Backchain resolution of $headTransactionIds - Waiting to be told what transactions to send to ${session.counterparty} " +
-                    "so that the backchain can be resolved"
+                "so that the backchain can be resolved"
         }
         while (true) {
             when (val request = session.receive(TransactionBackchainRequestV1::class.java)) {
                 is TransactionBackchainRequestV1.Get -> {
                     val transactions = request.transactionIds.map { id ->
                         utxoLedgerPersistenceService.findSignedTransaction(id)
-                            ?: throw CordaRuntimeException("Requested transaction does not exist locally")
+                            ?: run {
+                                log.warn(
+                                    "Transaction $id does not exist locally when requested during backchain resolution. A filtered " +
+                                        "transaction might exist for the same id or the transaction has been deleted locally. " +
+                                        "Sending a backchain containing a filtered transaction suggests incorrect mixing of states " +
+                                        "and transactions in enhanced privacy and non-enhanced privacy mode."
+                                )
+                                throw CordaRuntimeException(
+                                    "Transaction $id does not exist locally when requested during backchain resolution. A filtered " +
+                                        "transaction might exist for the same id or the transaction has been deleted locally."
+                                )
+                            }
                     }
                     session.send(transactions)
                     log.trace {
                         "Backchain resolution of $headTransactionIds - Sent backchain transactions ${transactions.map { it.id }} to " +
-                                session.counterparty
+                            session.counterparty
                     }
                 }
 
                 is TransactionBackchainRequestV1.Stop -> {
                     log.trace {
                         "Backchain resolution of $headTransactionIds - Received stop, finishing sending of backchain transaction to " +
-                                session.counterparty
+                            session.counterparty
                     }
                     return
                 }
@@ -84,7 +95,7 @@ class TransactionBackchainSenderFlowV1(
         session.send(signedGroupParameters)
         log.trace {
             "Backchain resolution of $headTransactionIds - Sent signed group parameters (${request.groupParametersHash}) to " +
-                    session.counterparty
+                session.counterparty
         }
     }
 

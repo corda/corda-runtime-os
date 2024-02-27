@@ -5,6 +5,8 @@ plugins {
 
 description 'Membership Client Certificate Publisher Implementation'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
@@ -20,7 +22,4 @@ dependencies {
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-topic-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

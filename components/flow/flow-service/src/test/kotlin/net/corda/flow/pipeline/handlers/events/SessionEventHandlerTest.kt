@@ -13,11 +13,11 @@ import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
+import net.corda.data.flow.state.waiting.start.WaitingForStartFlow
 import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.pipeline.CheckpointInitializer
 import net.corda.flow.pipeline.exceptions.FlowEventException
-import net.corda.flow.pipeline.handlers.waiting.WaitingForStartFlow
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.FlowSessionManager
@@ -30,6 +30,7 @@ import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSIONS_SUPPORTED
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
+import net.corda.session.manager.Constants.Companion.FLOW_SESSION_TIMEOUT_MS
 import net.corda.session.manager.SessionManager
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
@@ -80,7 +81,7 @@ class SessionEventHandlerTest {
     private val flowSessionManager = mock<FlowSessionManager>()
 
     private val holdingIdentity = ALICE_X500_HOLDING_IDENTITY
-    private val waitingFor = WaitingFor(WaitingForStartFlow)
+    private val waitingFor = WaitingFor(WaitingForStartFlow())
     private val expectedCheckpoint = mock<FlowCheckpoint>()
 
     private val fakeCheckpointInitializerService = FakeCheckpointInitializerService(
@@ -205,6 +206,7 @@ class SessionEventHandlerTest {
             put(FLOW_PROTOCOL, PROTOCOL.protocol)
             put(FLOW_PROTOCOL_VERSIONS_SUPPORTED, "1")
             put(FLOW_SESSION_REQUIRE_CLOSE, "true")
+            put(FLOW_SESSION_TIMEOUT_MS, "1800000")
         }.avro
     }
     private fun createSessionEvent(payload: Any): SessionEvent {

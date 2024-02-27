@@ -1,9 +1,5 @@
 package net.corda.libs.permissions.manager.impl
 
-import java.lang.IllegalArgumentException
-import java.time.Duration
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeoutException
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
@@ -16,6 +12,10 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.lang.IllegalArgumentException
+import java.time.Duration
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeoutException
 
 internal class PermissionSenderUtilKtTest {
 
@@ -37,7 +37,6 @@ internal class PermissionSenderUtilKtTest {
         }
 
         assertEquals("timed out.", e.message)
-
     }
 
     @Test

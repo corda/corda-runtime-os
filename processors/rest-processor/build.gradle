@@ -6,6 +6,8 @@ plugins {
 
 description 'REST Processor'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:osgi.annotation"
@@ -28,6 +30,7 @@ dependencies {
     implementation project(":components:virtual-node:virtual-node-info-read-service")
     implementation project(":components:crypto:crypto-client")
     implementation project(":components:crypto:crypto-client-hsm")
+    implementation project(':components:crypto:crypto-rest')
     implementation project(':components:membership:group-policy')
     implementation project(":libs:utilities")
 
@@ -63,14 +66,13 @@ dependencies {
     runtimeOnly project(':libs:permissions:permission-management-cache-impl')
     runtimeOnly project(':libs:permissions:permission-validation-impl')
     runtimeOnly project(':libs:permissions:permission-validation-cache-impl')
+    runtimeOnly project(':libs:state-manager:state-manager-db-impl')
     runtimeOnly project(":libs:web:web-impl")
 
     runtimeOnly project(':libs:virtual-node:cpi-upload-manager-impl')
     runtimeOnly project(':components:virtual-node:cpi-upload-rest-service')
 
-    integrationTestImplementation "org.assertj:assertj-core:$assertjVersion"
-    integrationTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
-    integrationTestImplementation "io.swagger.core.v3:swagger-core:$swaggerVersion"
+    integrationTestImplementation libs.swagger.core
 
     integrationTestImplementation project(':libs:rest:rest')
     integrationTestImplementation project(':libs:rest:rest-server')
@@ -86,5 +88,5 @@ dependencies {
 
     integrationTestRuntimeOnly project(':libs:messaging:kafka-message-bus-impl')
     integrationTestRuntimeOnly 'org.osgi:osgi.core'
-    integrationTestRuntimeOnly "org.webjars:swagger-ui:$swaggeruiVersion"
+    integrationTestRuntimeOnly libs.swagger.ui
 }

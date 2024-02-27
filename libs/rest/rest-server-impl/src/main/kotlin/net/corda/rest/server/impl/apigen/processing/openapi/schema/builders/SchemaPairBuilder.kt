@@ -2,8 +2,8 @@ package net.corda.rest.server.impl.apigen.processing.openapi.schema.builders
 
 import net.corda.rest.server.impl.apigen.models.GenericParameterizedType
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.ParameterizedClass
-import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.SchemaModel
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.SchemaModelProvider
+import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.SchemaModel
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.SchemaPairModel
 import kotlin.reflect.KVisibility
 import kotlin.reflect.full.memberProperties

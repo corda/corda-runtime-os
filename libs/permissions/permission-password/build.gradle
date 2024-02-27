@@ -5,6 +5,8 @@ plugins {
 
 description 'Handles password salting and hashing as well as verification.'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:org.osgi.service.component.annotations"
@@ -16,6 +18,5 @@ dependencies {
     implementation project(":libs:crypto:crypto-core")
     implementation "org.apache.commons:commons-text:$commonsTextVersion"
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation project(":libs:crypto:cipher-suite-impl")
 }

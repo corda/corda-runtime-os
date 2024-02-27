@@ -15,7 +15,7 @@ import java.security.PublicKey
  * And some methods what the Finality flows use internally.
  */
 @CordaSerializable
-interface ConsensualSignedTransactionInternal: ConsensualSignedTransaction {
+interface ConsensualSignedTransactionInternal : ConsensualSignedTransaction {
     val wireTransaction: WireTransaction
 
     /**

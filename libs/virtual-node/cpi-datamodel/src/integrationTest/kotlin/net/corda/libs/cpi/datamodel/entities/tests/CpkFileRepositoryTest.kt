@@ -7,7 +7,7 @@ import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.entities.internal.CpkFileEntity
-import net.corda.libs.cpi.datamodel.repository.impl.CpkFileRepositoryImpl
+import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
@@ -17,7 +17,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.util.*
-import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CpkFileRepositoryTest {

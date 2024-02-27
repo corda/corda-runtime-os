@@ -25,6 +25,7 @@ import java.security.PublicKey
 import java.security.Signature
 import java.util.concurrent.ConcurrentHashMap
 
+@Suppress("TooManyFunctions")
 internal class TestCryptoOpsClient(
     coordinatorFactory: LifecycleCoordinatorFactory,
 ) : CryptoOpsClient {

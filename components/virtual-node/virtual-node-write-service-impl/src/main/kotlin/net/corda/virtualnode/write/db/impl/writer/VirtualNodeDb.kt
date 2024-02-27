@@ -42,4 +42,18 @@ internal interface VirtualNodeDb {
      * @param migrationTagToApply
      */
     fun runCpiMigrations(dbChange: DbChange, migrationTagToApply: String)
+
+    /**
+     * Returns true if all DB migrations have been applied, false otherwise.
+     *
+     * Checks the platform DB schema matching the dbType field.
+     */
+    fun checkDbMigrationsArePresent(): Boolean
+
+    /**
+     * Returns true if all DB migrations have been applied, false otherwise.
+     *
+     * @param dbChange holds the DB schema resources read from the CPI
+     */
+    fun checkCpiMigrationsArePresent(dbChange: DbChange): Boolean
 }

@@ -19,20 +19,21 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':osgi-framework-api')
     implementation 'org.slf4j:slf4j-api'
-    implementation "org.slf4j:jul-to-slf4j:$slf4jVersion"
+    implementation libs.slf4j.jul
     runtimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
-    runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
-    runtimeOnly "org.apache.logging.log4j:log4j-layout-template-json:$log4jVersion"
+    runtimeOnly libs.log4j.slf4j
+    runtimeOnly libs.log4j.layout.json
 
     // Jackson dependencies for JSON formatted logs
-    runtimeOnly "com.fasterxml.jackson.core:jackson-core:$jacksonVersion"
-    runtimeOnly "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
-    runtimeOnly "com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion"
+    runtimeOnly libs.jackson.core
+    runtimeOnly libs.jackson.databind
+    runtimeOnly libs.jackson.annotations
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation libs.mockito.core
     testImplementation "org.apache.sling:org.apache.sling.testing.osgi-mock.junit5:$slingVersion"
-    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
+    testImplementation libs.junit.api
+    testImplementation libs.assertj.core
+    testRuntimeOnly libs.junit.engine
 
     testBundles project(':testing:apps:test-app')
 }

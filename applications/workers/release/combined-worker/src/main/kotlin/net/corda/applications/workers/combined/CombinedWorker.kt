@@ -1,9 +1,7 @@
 package net.corda.applications.workers.combined
 
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory.fromAnyRef
-import java.time.Duration
 import net.corda.application.dbsetup.PostgresDbSetup
 import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.BusType
@@ -11,6 +9,7 @@ import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.Health
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
 import net.corda.applications.workers.workercommon.Metrics
+import net.corda.applications.workers.workercommon.StateManagerConfigHelper.createStateManagerConfigFromClusterDb
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.createConfigFromParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
@@ -38,17 +37,10 @@ import net.corda.processors.token.cache.TokenCacheProcessor
 import net.corda.processors.uniqueness.UniquenessProcessor
 import net.corda.processors.verification.VerificationProcessor
 import net.corda.schema.configuration.BootConfig
-import net.corda.schema.configuration.BootConfig.BOOT_JDBC_PASS
 import net.corda.schema.configuration.BootConfig.BOOT_JDBC_URL
-import net.corda.schema.configuration.BootConfig.BOOT_JDBC_USER
-import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_DB_PASS
-import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_DB_USER
-import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_JDBC_URL
-import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_TYPE
 import net.corda.schema.configuration.BootConfig.BOOT_WORKER_SERVICE
 import net.corda.schema.configuration.DatabaseConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
-import net.corda.schema.configuration.StateManagerConfig
 import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
 import net.corda.web.api.WebServer
@@ -113,11 +105,8 @@ class CombinedWorker @Activate constructor(
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private const val DEFAULT_BOOT_STATE_MANAGER_TYPE = "DATABASE"
-        private const val STATE_MANAGER_SCHEMA_NAME = "STATE_MANAGER"
+        private const val DEFAULT_BOOT_STATE_MANAGER_TYPE = "Database"
         private const val MESSAGE_BUS_CONFIG_PATH_SUFFIX = "_messagebus"
-        private const val MESSAGEBUS_SCHEMA_NAME = "MESSAGEBUS"
-        private const val CONFIG_SCHEMA_NAME = "CONFIG"
     }
 
     /** Parses the arguments, then initialises and starts the processors. */
@@ -138,10 +127,8 @@ class CombinedWorker @Activate constructor(
         val dbUrl = params.databaseParams[DatabaseConfig.JDBC_URL] ?: "jdbc:postgresql://localhost:5432/cordacluster"
 
         val dbConfig = createConfigFromParams(BootConfig.BOOT_DB, params.databaseParams)
-        val stateManagerConfig = createOrDeriveStateManagerConfig(params.defaultParams.stateManagerParams, dbConfig)
-
+        val stateManagerConfig = createStateManagerConfigFromClusterDb(dbConfig)
         val preparedDbConfig = prepareDbConfig(dbConfig)
-        val preparedStateManagerConfig = prepareStateManagerConfig(stateManagerConfig)
 
         if (printHelpOrVersion(params.defaultParams, CombinedWorker::class.java, shutDownService)) return
         if (params.hsmId.isBlank()) {
@@ -149,17 +136,14 @@ class CombinedWorker @Activate constructor(
             params.hsmId = SOFT_HSM_ID
         }
 
+        val extraConfigs = mutableListOf(preparedDbConfig,stateManagerConfig)
+        extraConfigs.addAll(createExtraConfigs(params))
+
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
-            listOf(
-                preparedDbConfig,
-                createConfigFromParams(BootConfig.BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId)),
-                createConfigFromParams(BootConfig.BOOT_REST, params.restParams),
-                preparedStateManagerConfig,
-                createConfigFromParams(BOOT_WORKER_SERVICE, params.workerEndpoints)
-            )
+            extraConfigs
         )
 
         val superUser = System.getenv("CORDA_DEV_POSTGRES_USER") ?: "postgres"
@@ -195,7 +179,12 @@ class CombinedWorker @Activate constructor(
             config.factory,
         ).run()
 
-        Metrics.configure(webServer, this.javaClass.simpleName)
+        Metrics.configure(
+            webServer,
+            this.javaClass.simpleName,
+            params.defaultParams.metricsKeepNames?.toRegex(),
+            params.defaultParams.metricsDropLabels?.toRegex()
+        )
         Health.configure(webServer, lifecycleRegistry)
         configureTracing("Combined Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
 
@@ -219,58 +208,54 @@ class CombinedWorker @Activate constructor(
         schedulerProcessor.start(config)
     }
 
-    /**
-     * Combined worker parameter for state manager's JDBC URL should be the schemaless database URL because the combined worker sets up
-     * schemas itself. However, Corda processors all expect the JDBC URL in the config to point to the config schema
-     * directly, so the name of that schema must be added to the params that are used to create the config.
-     */
-    private fun prepareStateManagerConfig(stateManagerConfig: Config): Config {
-        val defaultConfig = ConfigFactory.empty()
-            .withValue(StateManagerConfig.Database.JDBC_DRIVER, fromAnyRef("org.postgresql.Driver"))
-            .withValue(StateManagerConfig.Database.JDBC_POOL_MIN_SIZE, fromAnyRef(1))
-            .withValue(StateManagerConfig.Database.JDBC_POOL_MAX_SIZE, fromAnyRef(5))
-            .withValue(StateManagerConfig.Database.JDBC_POOL_IDLE_TIMEOUT_SECONDS, fromAnyRef(Duration.ofMinutes(2).toSeconds()))
-            .withValue(StateManagerConfig.Database.JDBC_POOL_MAX_LIFETIME_SECONDS, fromAnyRef(Duration.ofMinutes(30).toSeconds()))
-            .withValue(StateManagerConfig.Database.JDBC_POOL_KEEP_ALIVE_TIME_SECONDS, fromAnyRef(Duration.ZERO.toSeconds()))
-            .withValue(StateManagerConfig.Database.JDBC_POOL_VALIDATION_TIMEOUT_SECONDS, fromAnyRef(Duration.ofSeconds(5).toSeconds()))
-        val stateManagerConfigWithFallback = stateManagerConfig.withFallback(
-            ConfigFactory.empty().withValue(StateManagerConfig.STATE_MANAGER, defaultConfig.root())
+    private fun createExtraConfigs(params: CombinedWorkerParams): List<Config> {
+        val extraConfigs = mutableListOf(
+            createConfigFromParams(BootConfig.BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId)),
+            createConfigFromParams(BootConfig.BOOT_REST, params.restParams),
+            createConfigFromParams(BOOT_WORKER_SERVICE, params.workerEndpoints),
         )
-        // add the state manager schema to the JDBC URL.
-        return stateManagerConfigWithFallback.withValue(
-            BOOT_STATE_MANAGER_JDBC_URL,
-            fromAnyRef("${stateManagerConfig.getString(BOOT_STATE_MANAGER_JDBC_URL)}?currentSchema=$STATE_MANAGER_SCHEMA_NAME")
-        )
-    }
 
-    /**
-     * When no state manager configuration is provided, we default to the cluster db configuration. Note, this JDBC URL is before any
-     * preparation or alteration performed in [prepareDbConfig].
-     */
-    private fun createOrDeriveStateManagerConfig(stateManagerParams: Map<String, String>, dbConfig: Config): Config {
-        return if (stateManagerParams.isEmpty()) {
-            ConfigFactory.empty()
-                .withValue(BOOT_STATE_MANAGER_TYPE, fromAnyRef(DEFAULT_BOOT_STATE_MANAGER_TYPE))
-                .withValue(BOOT_STATE_MANAGER_JDBC_URL, fromAnyRef(dbConfig.getString(BOOT_JDBC_URL)))
-                .withValue(BOOT_STATE_MANAGER_DB_USER, fromAnyRef(dbConfig.getString(BOOT_JDBC_USER)))
-                .withValue(BOOT_STATE_MANAGER_DB_PASS, fromAnyRef(dbConfig.getString(BOOT_JDBC_PASS)))
-        } else {
-            createConfigFromParams(BootConfig.BOOT_STATE_MANAGER, stateManagerParams)
+        if (params.mediatorReplicasFlowSession != null) {
+            extraConfigs.add(
+                createConfigFromParams(
+                    BOOT_WORKER_SERVICE,
+                    mapOf("mediatorReplicas.flowSession" to params.mediatorReplicasFlowSession.toString())
+                )
+            )
         }
+
+        if(params.mediatorReplicasFlowMapperSessionIn != null) {
+            extraConfigs.add(
+                createConfigFromParams(
+                    BOOT_WORKER_SERVICE,
+                    mapOf("mediatorReplicas.flowMapperSessionIn" to params.mediatorReplicasFlowMapperSessionIn.toString())
+                )
+            )
+        }
+
+        if(params.mediatorReplicasFlowMapperSessionOut != null) {
+            extraConfigs.add(
+                createConfigFromParams(
+                    BOOT_WORKER_SERVICE,
+                    mapOf("mediatorReplicas.flowMapperSessionOut" to params.mediatorReplicasFlowMapperSessionOut.toString())
+                )
+            )
+        }
+
+        return extraConfigs
     }
 
     /**
-     * Combined worker parameter for JDBC URL should be the schemaless database URL because the combined worker sets up
-     * schemas itself. However, Corda processors all expect the JDBC URL in the config to point to the config schema
-     * directly, so the name of that schema must be added to the params that are used to create the config.
+     * Sets the JDBC URL (as schema agnostic). It is the DB users responsibility to have set their search_path context
+     * to be able to see whichever schema they need to see.
      */
     private fun prepareDbConfig(dbConfig: Config): Config {
         val tempJdbcUrl = dbConfig.getString(BOOT_JDBC_URL)
         return dbConfig
-            .withValue(BOOT_JDBC_URL, fromAnyRef("$tempJdbcUrl?currentSchema=$CONFIG_SCHEMA_NAME"))
+            .withValue(BOOT_JDBC_URL, fromAnyRef(tempJdbcUrl))
             .withValue(
                 BOOT_JDBC_URL + MESSAGE_BUS_CONFIG_PATH_SUFFIX,
-                fromAnyRef("$tempJdbcUrl?currentSchema=$MESSAGEBUS_SCHEMA_NAME")
+                fromAnyRef(tempJdbcUrl)
             )
     }
 
@@ -311,6 +296,21 @@ private class CombinedWorkerParams {
     @Option(names = ["--hsm-id"], description = ["HSM ID which is handled by this worker instance."])
     var hsmId = ""
 
-    @Option(names = ["--serviceEndpoint"], description = ["Internal REST endpoints for Corda workers"], required = true)
-    val workerEndpoints: Map<String, String> = emptyMap()
+    @Option(names = ["--serviceEndpoint"], description = ["Internal REST endpoints for Corda workers"])
+    val workerEndpoints: Map<String, String> =
+        listOf("crypto", "verification", "uniqueness", "persistence", "tokenSelection", "p2pLinkManager")
+            .associate { "endpoints.$it" to "localhost:7004" }
+            .toMap()
+
+    @Option(names = ["--mediator-replicas-flow-session"], description = ["Sets the number of mediators that consume " +
+            "flow.session messages"])
+    var mediatorReplicasFlowSession: Int? = null
+
+    @Option(names = ["--mediator-replicas-flow-session-in"], description = ["Sets the number of mediators that " +
+            "consume flow.mapper.session.in messages"])
+    var mediatorReplicasFlowMapperSessionIn: Int? = null
+
+    @Option(names = ["--mediator-replicas-flow-session-out"], description = ["Sets the number of mediators that " +
+            "consume flow.mapper.session.out messages"])
+    var mediatorReplicasFlowMapperSessionOut: Int? = null
 }

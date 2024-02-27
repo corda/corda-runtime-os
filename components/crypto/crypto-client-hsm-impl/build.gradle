@@ -23,10 +23,8 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:utilities")
 
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-
     testImplementation project(":components:crypto:crypto-component-test-utils")
 
-    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    testRuntimeOnly libs.slf4j.simple
 }
 

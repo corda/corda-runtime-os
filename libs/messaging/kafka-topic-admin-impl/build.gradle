@@ -9,20 +9,11 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
-    constraints {
-        implementation("org.xerial.snappy:snappy-java:$xerialSnappyVersion") {
-            because 'Kafka Client uses an older version of Snappy library which is exposed to CVE-2023-34455. ' +
-                    'This might be resolved in the future versions of Kafka Client.'
-        }
-    }
+    implementation libs.typesafe.config
+    implementation libs.kafka.client
     implementation "net.corda:corda-base"
     implementation project(":libs:messaging:topic-admin")
     implementation project(":libs:utilities")
-
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly 'org.osgi:osgi.core'
 }

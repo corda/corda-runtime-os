@@ -1,8 +1,8 @@
 package net.corda.rest.test
 
+import net.corda.lifecycle.Lifecycle
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.ws.DuplexChannel
-import net.corda.lifecycle.Lifecycle
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
@@ -67,7 +67,6 @@ class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRestResource<TestHea
     override fun instantCall(instant: TestHealthCheckAPI.InstantCallDto): String = instant.instant.toString()
 
     override fun throwException(exception: String) {
-
         throw Class.forName(exception)
             .getDeclaredConstructor(String::class.java)
             .newInstance("$exception thrown from throwException method") as Throwable
@@ -110,8 +109,7 @@ class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRestResource<TestHea
         return requestString
     }
 
-    override fun counterFeed(channel: DuplexChannel, start: Int, range: Int?)  {
-
+    override fun counterFeed(channel: DuplexChannel, start: Int, range: Int?) {
         var counter = start
         var scheduledFuture: ScheduledFuture<*>? = null
 

@@ -227,7 +227,7 @@ class AllowedCertificatesReaderWriterServiceImplTest {
                 emptyMap()
             )
 
-            val records = impl.getAllVersionedRecords()?.toList()
+            val records = impl.getAllVersionedRecords().toList()
 
             assertThat(records).hasSize(1)
                 .anySatisfy {
@@ -252,7 +252,7 @@ class AllowedCertificatesReaderWriterServiceImplTest {
                 emptyMap()
             )
 
-            val records = impl.getAllVersionedRecords()?.toList()
+            val records = impl.getAllVersionedRecords().toList()
 
             assertThat(records).isEmpty()
         }
@@ -270,7 +270,7 @@ class AllowedCertificatesReaderWriterServiceImplTest {
                 emptyMap()
             )
 
-            val records = impl.getAllVersionedRecords()?.toList()
+            val records = impl.getAllVersionedRecords().toList()
 
             assertThat(records).hasSize(1)
         }
@@ -284,7 +284,7 @@ class AllowedCertificatesReaderWriterServiceImplTest {
                 )
             )
 
-            val records = impl.getAllVersionedRecords()?.toList()
+            val records = impl.getAllVersionedRecords().toList()
 
             assertThat(records).hasSize(2)
                 .anySatisfy {

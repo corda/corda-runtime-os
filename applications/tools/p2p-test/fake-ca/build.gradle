@@ -5,6 +5,8 @@ plugins {
 
 description "P2P Testing tools - Fake CA"
 
+ext.cordaEnableFormatting = true
+
 configurations {
     app {
         canBeResolved = false

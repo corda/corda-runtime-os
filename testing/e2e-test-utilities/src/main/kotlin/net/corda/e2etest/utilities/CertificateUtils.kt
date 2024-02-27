@@ -15,15 +15,20 @@ import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import java.io.File
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 /**
  * Get the default CA for testing. This is written to file so it can be shared across tests.
  */
-fun getCa(): FileSystemCertificatesAuthority = CertificateAuthorityFactory
-    .createFileSystemLocalAuthority(
-        KeysFactoryDefinitions("RSA".toAlgorithm(), 3072, null,),
-        File("build${File.separator}tmp${File.separator}ca")
-    ).also { it.save() }
+private val caLock = ReentrantLock()
+fun getCa(): FileSystemCertificatesAuthority = caLock.withLock {
+    CertificateAuthorityFactory
+        .createFileSystemLocalAuthority(
+            KeysFactoryDefinitions("RSA".toAlgorithm(), 3072, null,),
+            File("build${File.separator}tmp${File.separator}ca")
+        ).also { it.save() }
+}
 
 /**
  * Generate a certificate from a CSR as a PEM string.
@@ -37,7 +42,9 @@ fun FileSystemCertificatesAuthority.generateCert(csrPem: String): String {
     }?.also {
         assertThat(it).isInstanceOf(PKCS10CertificationRequest::class.java)
     }
-    return signCsr(request as PKCS10CertificationRequest).also { save() }.toPem()
+    return caLock.withLock {
+        signCsr(request as PKCS10CertificationRequest).also { save() }.toPem()
+    }
 }
 
 /**
@@ -70,7 +77,7 @@ fun ClusterInfo.generateCsr(
         } else {
             command {
                 post(
-                    "/api/${RestApiVersion.C5_1.versionPath}/certificate/$tenantId/$keyId",
+                    "/api/${restApiVersion.versionPath}/certificate/$tenantId/$keyId",
                     ObjectMapper().writeValueAsString(payload)
                 )
             }
@@ -105,5 +112,6 @@ fun ClusterInfo.importCertificate(
 fun ClusterInfo.disableCertificateRevocationChecks() {
     SingleClusterTestConfigManager(this)
         .load(ConfigKeys.P2P_GATEWAY_CONFIG, "sslConfig.revocationCheck.mode", "OFF")
-        .apply()
+        .load(ConfigKeys.P2P_GATEWAY_CONFIG, "sslConfig.tlsType", TlsType.type.configName)
+        .applyWithoutRevert {}
 }

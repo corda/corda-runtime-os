@@ -12,6 +12,7 @@ sealed class MembershipPersistenceResult<T> {
             return Success(Unit)
         }
     }
+
     /**
      * Data class representing the successful result of a membership persistence operation.
      *

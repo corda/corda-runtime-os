@@ -7,11 +7,13 @@ import java.util.UUID
 import java.util.concurrent.Future
 
 @DoNotImplement
-interface FlowFiber: Interruptable {
+interface FlowFiber : Interruptable {
     val flowId: UUID
     val flowLogic: FlowLogicAndArgs
 
     fun getExecutionContext(): FlowFiberExecutionContext
+
+    fun getSandboxGroupId(): UUID?
 
     fun startFlow(flowFiberExecutionContext: FlowFiberExecutionContext): Future<FlowIORequest<*>>
 

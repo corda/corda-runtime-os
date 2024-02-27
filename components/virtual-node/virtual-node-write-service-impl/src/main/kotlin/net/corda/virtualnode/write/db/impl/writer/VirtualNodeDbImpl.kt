@@ -78,7 +78,7 @@ internal class VirtualNodeDbImpl(
     override fun runDbMigration(migrationTagToApply: String?) {
         val dbConnection = dbConnections[DDL]
             ?: throw VirtualNodeDbException("No DDL database connection when due to apply system migrations")
-        dbConnectionManager.getDataSource(dbConnection.config).use { dataSource ->
+        dbConnectionManager.getDataSource(dbConnection.config, enablePool = false).use { dataSource ->
             val dbChangeFiles = dbType.dbChangeFiles
             val changeLogResourceFiles = setOf(DbSchema::class.java).mapTo(LinkedHashSet()) { klass ->
                 ClassloaderChangeLog.ChangeLogResourceFiles(klass.packageName, dbChangeFiles, klass.classLoader)
@@ -108,9 +108,35 @@ internal class VirtualNodeDbImpl(
     override fun runCpiMigrations(dbChange: DbChange, migrationTagToApply: String) {
         val dbConnection = dbConnections[DDL]
             ?: throw VirtualNodeDbException("No DDL database connection when due to apply CPI migrations")
-        dbConnectionManager.getDataSource(dbConnection.config).use { dataSource ->
+        dbConnectionManager.getDataSource(dbConnection.config, enablePool = false).use { dataSource ->
             dataSource.connection.use { connection ->
                 schemaMigrator.updateDb(connection, dbChange, tag = migrationTagToApply)
+            }
+        }
+    }
+
+    override fun checkDbMigrationsArePresent(): Boolean {
+        val dbConnection = dbConnections[DML]
+            ?: throw VirtualNodeDbException("No DML database connection when due to check system migrations")
+        return dbConnectionManager.getDataSource(dbConnection.config, enablePool = false).use { dataSource ->
+            val dbChangeFiles = dbType.dbChangeFiles
+            val changeLogResourceFiles = setOf(DbSchema::class.java).mapTo(LinkedHashSet()) { klass ->
+                ClassloaderChangeLog.ChangeLogResourceFiles(klass.packageName, dbChangeFiles, klass.classLoader)
+            }
+            val dbChange = ClassloaderChangeLog(changeLogResourceFiles)
+
+            dataSource.connection.use { connection ->
+                schemaMigrator.listUnrunChangeSets(connection, dbChange).isEmpty()
+            }
+        }
+    }
+
+    override fun checkCpiMigrationsArePresent(dbChange: DbChange): Boolean {
+        val dbConnection = dbConnections[DML]
+            ?: throw VirtualNodeDbException("No DML database connection when due to check CPI migrations")
+        return dbConnectionManager.getDataSource(dbConnection.config, enablePool = false).use { dataSource ->
+            dataSource.connection.use { connection ->
+                schemaMigrator.listUnrunChangeSets(connection, dbChange).isEmpty()
             }
         }
     }

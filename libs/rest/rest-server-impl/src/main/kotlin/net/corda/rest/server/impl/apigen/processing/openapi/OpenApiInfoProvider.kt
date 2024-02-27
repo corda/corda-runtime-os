@@ -11,9 +11,9 @@ import io.swagger.v3.oas.models.security.SecurityRequirement
 import io.swagger.v3.oas.models.security.SecurityScheme
 import io.swagger.v3.oas.models.servers.Server
 import net.corda.rest.annotations.RestApiVersion
+import net.corda.rest.server.config.RestServerSettingsProvider
 import net.corda.rest.server.impl.apigen.models.Resource
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.SchemaModelContextHolder
-import net.corda.rest.server.config.RestServerSettingsProvider
 import net.corda.rest.server.impl.internal.SwaggerUIRenderer
 import net.corda.rest.server.impl.security.provider.bearer.azuread.AzureAdAuthenticationProvider
 import net.corda.utilities.trace
@@ -47,14 +47,16 @@ internal class OpenApiInfoProvider(
         return resources.toOpenAPI(SchemaModelContextHolder(), apiVersion).apply openapi@{
             info(createSwaggerInfo())
             addServersItem(Server().url("/$basePath/${apiVersion.versionPath}".replace("/+".toRegex(), "/")))
-            components((components ?: Components()).apply {
-                addSecuritySchemes(
-                    "basicAuth",
-                    SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("basic")
-                )
-                addSecurityItem(SecurityRequirement().addList("basicAuth"))
-                addAzureAdIfNecessary(this@openapi, this)
-            })
+            components(
+                (components ?: Components()).apply {
+                    addSecuritySchemes(
+                        "basicAuth",
+                        SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("basic")
+                    )
+                    addSecurityItem(SecurityRequirement().addList("basicAuth"))
+                    addAzureAdIfNecessary(this@openapi, this)
+                }
+            )
         }.also { log.trace { "Generate OpenApi for ${resources.size} resources completed." } }
     }
 
@@ -70,23 +72,26 @@ internal class OpenApiInfoProvider(
         val azureAd = configurationsProvider.getSsoSettings()?.azureAd()
         if (azureAd != null) {
             components.addSecuritySchemes(
-                "azuread", SecurityScheme()
+                "azuread",
+                SecurityScheme()
                     .type(SecurityScheme.Type.OAUTH2)
                     .flows(
                         OAuthFlows()
-                            .authorizationCode(OAuthFlow()
-                                .authorizationUrl(azureAd.getAuthorizeUrl())
-                                .tokenUrl(azureAd.getTokenUrl())
-                                .scopes(Scopes().apply {
-                                    AzureAdAuthenticationProvider.SCOPE.split(' ').forEach { scope ->
-                                        addString(scope, scope)
-                                    }
-                                })
+                            .authorizationCode(
+                                OAuthFlow()
+                                    .authorizationUrl(azureAd.getAuthorizeUrl())
+                                    .tokenUrl(azureAd.getTokenUrl())
+                                    .scopes(
+                                        Scopes().apply {
+                                            AzureAdAuthenticationProvider.SCOPE.split(' ').forEach { scope ->
+                                                addString(scope, scope)
+                                            }
+                                        }
+                                    )
                             )
                     )
                     .extensions(mapOf("x-tokenName" to "id_token"))
             )
-
 
             openApi.addSecurityItem(SecurityRequirement().addList("azuread", "AzureAd authentication"))
         }

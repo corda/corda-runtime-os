@@ -26,11 +26,11 @@ import javax.persistence.PersistenceException
 class MigrationUtilityImplTest {
 
     private val connection = mock<Connection>()
-    private val datasource = mock<CloseableDataSource>() {
+    private val datasource = mock<CloseableDataSource> {
         whenever(it.connection).thenReturn(connection)
     }
-    private val dbConnectionManager = mock<DbConnectionManager>() {
-        whenever(it.createDatasource(any())).thenReturn(datasource)
+    private val dbConnectionManager = mock<DbConnectionManager> {
+        whenever(it.createDatasource(any(), any())).thenReturn(datasource)
     }
     private val liquibaseSchemaMigrator = mock<LiquibaseSchemaMigrator>()
     private val migrationUtility = MigrationUtilityImpl(dbConnectionManager, liquibaseSchemaMigrator)
@@ -60,7 +60,7 @@ class MigrationUtilityImplTest {
             vaultDdlConnectionId
         )
 
-        verify(dbConnectionManager, times(0)).createDatasource(any())
+        verify(dbConnectionManager, times(0)).createDatasource(any(), any())
         verify(liquibaseSchemaMigrator, times(0)).updateDb(any(), any(), tag = any())
     }
 
@@ -144,8 +144,8 @@ class MigrationUtilityImplTest {
 
     @Test
     fun `exception creating datasource is not caught`() {
-        val dbConnectionManager = mock<DbConnectionManager>() {
-            whenever(it.createDatasource(any())).thenThrow(IllegalArgumentException("some exception"))
+        val dbConnectionManager = mock<DbConnectionManager> {
+            whenever(it.createDatasource(any(), any())).thenThrow(IllegalArgumentException("some exception"))
         }
         val migrationUtility = MigrationUtilityImpl(dbConnectionManager, liquibaseSchemaMigrator)
 

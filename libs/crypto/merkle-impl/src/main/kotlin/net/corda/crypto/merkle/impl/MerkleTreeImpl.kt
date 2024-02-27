@@ -162,40 +162,48 @@ class MerkleTreeImpl(
     override fun getRoot() = _root
 
     /**
-     * createAuditProof creates the proof for a set of leaf indices.
-     * Similarly to the Merkle tree building it walks through the tree from the leaves towards the root.
+     * createAuditProof creates a MerkleProof object that has a specified subset of the data leaves in a tree,
+     * and the information needed to prove that those data leaves are actually members of the tree. This is
+     * invoked on a fullly known Merkle Tree, and so we are hiding all the information we can.
+     *
      * The proof contains
      * - the data what we are proving with their positions and nonce. (leaves)
      * - enough hashes of the other elements to be able to reconstruct the tree.
      * - the size of the tree.
      *
-     * The extra hashes' order is quite important to fill the gaps between the subject elements.
+     * In particular, it is not viable to work out the data we are choosing not to reveal from the Merkle proof.
      *
-     * We'll need to calculate the node's hashes on the routes from the subject elements
-     * towards the tree's root element in the verification process.
-     * We'll mark the indices of these route elements in inPath for the level what we are processing.
-     * Through the processing of a level we'll add a set of hashes to the proof, and we'll calculate the next
-     * level's in route elements (next iteration's inPath) in the newInPath variable.
+     * The extra hashes' order is critical to fill the gaps between the subject elements.
      *
-     * When we process a level of the tree, we pair the elements, and we'll have these cases:
-     * - Both elements of the pair are in route, which means they'll be calculated in the verification, so
-     *   their parent on the next level will be in route as well, and we do not need to add their hashes.
-     * - None of the elements of the pair are in route, which means their parent won't be either, also
-     *   we do not need to add their hashes, since their parent hash will be enough to cover them.
-     * - Only one of the elements are in route, which means their parent will be in route, and also we need to
-     *   add the other element's hash to the proof.
+     * @param leafIndices a list of the leaf indexes that we do want to include in the original version
+     * @return The MerkleProof object
      *
-     * If a level has odd number of elements, then the last element is essentially the both or none case.
-     * So we do not need to add its hash, and its parent node will be on the route if and only if it was on route.
      */
     @Suppress("NestedBlockDepth", "ComplexMethod")
     override fun createAuditProof(leafIndices: List<Int>): MerkleProof {
+
+        // We don't handle empty leafIndices; we could just say "yes you proved it" and not handle this special case
+        // but it isn't useful.
         require(leafIndices.isNotEmpty()) { "Proof requires at least one leaf" }
         require(leafIndices.all { it >= 0 && it < leaves.size }) { "Leaf indices out of bounds" }
         require(leafIndices.toSet().size == leafIndices.size) {"Duplications are not allowed."}
 
+        // We'll need to calculate the node's hashes on the routes from the subject elements
+        // towards the tree's root element in the verification process.
+        // We'll mark the indices of these route elements in inPath for the level what we are processing.
+        // Through the processing of a level we'll add a set of hashes to the proof, and we'll calculate the next
+        // level in route elements (next iteration's inPath) in the newInPath variable.
+
         var inPath = List(leaves.size) { it in leafIndices }    // Initialize inPath from the input elements
         val outputHashes = mutableListOf<SecureHash>()
+
+        // When we process a level of the tree, we pair the elements, and we'll have these cases:
+        // - Both elements of the pair are in route, which means they'll be calculated in the verification, so
+        //   their parent on the next level will be in route as well, and we do not need to add their hashes.
+        // - None of the elements of the pair are in route, which means their parent won't be either, also
+        //   we do not need to add their hashes, since their parent hash will be enough to cover them.
+        // - Only one of the elements are in route, which means their parent will be in route, and also we need to
+        //   add the other element's hash to the proof.
         var level = 0
         while (inPath.size > 1) {
             val newInPath = mutableListOf<Boolean>()            // This will contain the next
@@ -210,6 +218,9 @@ class MerkleTreeImpl(
                     }
                 }
             }
+            // If a level has odd number of elements, then the last element is essentially the both or none case.
+            // so we do not need to add its hash, and its parent node will be on the route if and only if it was on route.
+
             if ((inPath.size and 1) == 1) {                     // If the level has odd number of elements,
                                                                 // the last one is still to be processed.
                 newInPath += inPath.last()
@@ -225,4 +236,42 @@ class MerkleTreeImpl(
             outputHashes
         )
     }
+
+    /**
+     *
+     * Produce a textual representation of the Merkle tree, with:
+     *
+     * - Hex dumps of the leafs
+     * - The first 8 hex digits of the hash for each node and leaf
+     * - Unicode box symbols to show the tree structure
+     *
+     * For example, here's a Merkle tree string representation of a tree
+     * with 3 elements.
+     *
+     *   a9d5543c┳bab170b1┳7901af93━00:00:00:00
+     *           ┃        ┗471864d3━00:00:00:01
+     *           ┗66973b1a━66973b1a━00:00:00:02
+     *
+     * In this case a9d5543c is the hash of the root of the tree.
+     * 
+     * This could potentially be very large, which is why it is not the `toString`, since otherwise
+     * people could easily accidentally produce massive log files. This also includes the leaf data
+     * of the tree, so the output should be treated as sensitive.
+     *
+     * @return a textual representation of the MerkleTree
+     */
+
+    fun render(): String {
+        // the hashes we want to show, at their (X,Y) coordinates
+        val hashes = mutableMapOf<Pair<Int, Int>, String>()
+        for (y in leaves.indices) {
+            for (x in 0..depth) {
+                val nodeHashesLevel = nodeHashes.getOrNull(depth-x)?: emptyList()
+                val hash = nodeHashesLevel.getOrNull(y)
+                hashes[x to y] = (hash?.toString()?:"").substringAfter(":").take(8).lowercase()
+            }
+        }
+        return renderTree(leaves.map { it.joinToString(separator = ":") { b -> "%02x".format(b) } }, hashes)
+    }
 }
+

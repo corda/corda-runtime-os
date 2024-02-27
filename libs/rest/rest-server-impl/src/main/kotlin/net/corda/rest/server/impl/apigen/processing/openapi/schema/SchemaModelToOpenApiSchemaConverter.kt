@@ -79,7 +79,6 @@ object SchemaModelToOpenApiSchemaConverter {
                 )
             }
             else -> convertBaseSchemaModel(schemaModel)
-
         }.also {
             it.setRequiredAndNullable(schemaModel)
             log.trace { """Convert schemaModel "$schemaModel" to schema, Result: "$it" completed.""" }

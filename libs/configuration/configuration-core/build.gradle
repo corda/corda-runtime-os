@@ -11,7 +11,7 @@ dependencies {
 
     compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
 
-    api "com.typesafe:config:$typeSafeConfigVersion"
+    api libs.typesafe.config
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
@@ -20,8 +20,4 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     implementation project(":libs:crypto:crypto-core")
-
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

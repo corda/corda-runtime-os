@@ -1,10 +1,10 @@
 package net.corda.libs.permissions.validation.cache.impl
 
+import net.corda.data.permissions.summary.UserPermissionSummary
+import net.corda.libs.permissions.cache.exception.PermissionCacheException
+import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
-import net.corda.data.permissions.summary.UserPermissionSummary
-import net.corda.libs.permissions.validation.cache.PermissionValidationCache
-import net.corda.libs.permissions.cache.exception.PermissionCacheException
 
 /**
  * The Permission cache holds the data used in the RBAC permission system.

@@ -11,6 +11,7 @@ enum class RestApiVersion(val versionPath: String, val parentVersion: RestApiVer
     C5_0("v1", null),
     C5_1("v5_1", C5_0),
     C5_2("v5_2", C5_1),
+    C5_3("v5_3", C5_2),
 
     // Whenever new version is added, please re-visit `HttpResource.kt` and `RestEndpoint.kt` to change default
     // version aliases.

@@ -2,6 +2,7 @@ package net.corda.flow.application.persistence.query
 
 import net.corda.flow.application.persistence.external.events.NamedQueryExternalEventFactory
 import net.corda.flow.application.persistence.external.events.NamedQueryParameters
+import net.corda.utilities.toByteArrays
 import net.corda.flow.application.persistence.wrapWithPersistenceException
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.persistence.query.ResultSetFactory
@@ -17,7 +18,7 @@ class NamedParameterizedQuery<R : Any>(
     private val externalEventExecutor: ExternalEventExecutor,
     private val resultSetFactory: ResultSetFactory,
     private val queryName: String,
-    private var parameters: MutableMap<String, Any>,
+    private var parameters: MutableMap<String, Any?>,
     private var limit: Int,
     private var offset: Int,
     private var expectedClass: Class<R>,
@@ -35,7 +36,7 @@ class NamedParameterizedQuery<R : Any>(
         return this
     }
 
-    override fun setParameter(name: String, value: Any): ParameterizedQuery<R> {
+    override fun setParameter(name: String, value: Any?): ParameterizedQuery<R> {
         parameters[name] = value
         return this
     }
@@ -56,7 +57,7 @@ class NamedParameterizedQuery<R : Any>(
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     NamedQueryExternalEventFactory::class.java,
-                    NamedQueryParameters(queryName, serializedParameters, offset, limit)
+                    NamedQueryParameters(queryName, serializedParameters.toByteArrays(), offset, limit)
                 )
             }
         }

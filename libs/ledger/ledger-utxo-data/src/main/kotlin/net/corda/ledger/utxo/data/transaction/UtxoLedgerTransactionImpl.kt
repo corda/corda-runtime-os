@@ -41,7 +41,6 @@ class UtxoLedgerTransactionImpl(
         return wrappedWireTransaction.notaryKey
     }
 
-
     override fun getMetadata(): TransactionMetadata {
         return wrappedWireTransaction.metadata
     }
@@ -107,8 +106,8 @@ class UtxoLedgerTransactionImpl(
     }
 
     /*
-    * The null check in the method is to make 5.0 in-flight transactions caught in upgrades failing more gracefully.
-    */
+     * The null check in the method is to make 5.0 in-flight transactions caught in upgrades failing more gracefully.
+     */
     override fun getGroupParameters(): GroupParameters {
         requireNotNull(groupParameters) {
             "Group parameters can't be accessed for the transaction = ${this.id}"
@@ -117,9 +116,9 @@ class UtxoLedgerTransactionImpl(
     }
 
     override fun equals(other: Any?): Boolean {
-        return this === other
-                || other is UtxoLedgerTransactionImpl
-                && other.wrappedWireTransaction == wrappedWireTransaction
+        return this === other ||
+            other is UtxoLedgerTransactionImpl &&
+            other.wrappedWireTransaction == wrappedWireTransaction
     }
 
     override fun hashCode(): Int {

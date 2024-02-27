@@ -10,10 +10,10 @@ import net.corda.rest.exception.ResourceAlreadyExistsException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.MalformedURLException
+import java.net.URL
 import java.time.Duration
 import kotlin.reflect.KClass
 import kotlin.system.exitProcess
-import java.net.URL
 
 object RestClientUtils {
 
@@ -25,7 +25,7 @@ object RestClientUtils {
         apiVersion: RestApiVersion = RestApiVersion.C5_0
     ): RestClient<I> {
         validateTargetUrl(targetUrl)
-        val localTargetUrl = if(targetUrl.endsWith("/")) {
+        val localTargetUrl = if (targetUrl.endsWith("/")) {
             targetUrl.dropLast(1)
         } else {
             targetUrl
@@ -54,8 +54,10 @@ object RestClientUtils {
         override fun onPermanentFailure(context: RestConnectionListener.RestConnectionContext<I>) {
             when (context.throwableOpt) {
                 is ClientSslHandshakeException -> {
-                    errOut.error("Unable to verify server's SSL certificate. " +
-                            "Please check the target parameter or use '--insecure' option.")
+                    errOut.error(
+                        "Unable to verify server's SSL certificate. " +
+                            "Please check the target parameter or use '--insecure' option."
+                    )
                     exitProcess(1)
                 }
             }
@@ -63,7 +65,8 @@ object RestClientUtils {
     }
 
     fun <T> executeWithRetry(
-        waitDuration: Duration, operationName: String,
+        waitDuration: Duration,
+        operationName: String,
         onAlreadyExists: (ResourceAlreadyExistsException) -> T = ::reThrow,
         block: () -> T
     ): T {

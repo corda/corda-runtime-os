@@ -32,7 +32,5 @@ dependencies {
     implementation project(':libs:utilities')
     implementation project(':libs:platform-info')
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(':libs:virtual-node:cpi-upload-manager-impl')
 }

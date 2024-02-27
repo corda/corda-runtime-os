@@ -1,8 +1,8 @@
 package net.corda.rest.client.processing
 
+import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.RestQueryParameter
-import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.client.serialization.objectMapper
 import net.corda.rest.tools.annotations.extensions.name
 import net.corda.utilities.trace
@@ -17,7 +17,7 @@ internal fun Method.bodyParametersFrom(methodArguments: Array<out Any?>, extraPa
         .mapIndexed { index, parameter -> parameter to methodArguments[index] }
         .filter {
             it.first.annotations.any { annotation -> annotation is ClientRequestBodyParameter } ||
-                    it.first.annotations.none { annotation -> annotation is RestPathParameter || annotation is RestQueryParameter }
+                it.first.annotations.none { annotation -> annotation is RestPathParameter || annotation is RestQueryParameter }
         }
 
     val bodyParametersByName = bodyParameters.map {

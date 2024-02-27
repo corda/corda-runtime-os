@@ -11,12 +11,10 @@ import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.node.ValueNode
 import net.corda.rest.JsonObject
 
-
 object JsonObjectSerializer : JsonSerializer<JsonObject>() {
 
     private val mapper = jacksonObjectMapper()
     override fun serialize(obj: JsonObject, generator: JsonGenerator, provider: SerializerProvider) {
-
         // Check if `escapedJson` is a valid JSON content
         val actualJsonNode: JsonNode? = try {
             mapper.readTree(obj.escapedJson)
@@ -36,8 +34,11 @@ object JsonObjectSerializer : JsonSerializer<JsonObject>() {
 object JsonObjectDeserializer : JsonDeserializer<JsonObject>() {
     override fun deserialize(p: JsonParser, ctxt: DeserializationContext): JsonObject {
         val jsonValue = p.readValueAsTree<TreeNode>().let {
-            if (it.isValueNode) (it as ValueNode).textValue()
-            else it.toString()
+            if (it.isValueNode) {
+                (it as ValueNode).textValue()
+            } else {
+                it.toString()
+            }
         }
         return JsonObjectAsString(jsonValue)
     }

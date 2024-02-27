@@ -1,12 +1,13 @@
 package net.corda.cli.plugins.network
 
-import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
-import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
+import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.crypto.test.certificates.generation.toPem
+import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.membership.rest.v1.MGMRestResource
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.ByteArrayOutputStream
@@ -18,26 +19,28 @@ import java.util.UUID
     description = [
         "Onboard MGM",
     ],
-    mixinStandardHelpOptions = true
+    mixinStandardHelpOptions = true,
 )
 class OnboardMgm : Runnable, BaseOnboard() {
     @Option(
         names = ["--cpi-hash", "-h"],
-        description = ["The CPI hash of a previously uploaded CPI. " +
-                "If not specified, an auto-generated MGM CPI will be used."]
+        description = [
+            "The CPI hash of a previously uploaded CPI. " +
+                "If not specified, an auto-generated MGM CPI will be used.",
+        ],
     )
     var cpiHash: String? = null
 
     @Option(
         names = ["--save-group-policy-as", "-s"],
-        description = ["Location to save the group policy file (default to ~/.corda/gp/groupPolicy.json)"]
+        description = ["Location to save the group policy file (default to ~/.corda/gp/groupPolicy.json)"],
     )
     var groupPolicyFile: File =
         File(File(File(File(System.getProperty("user.home")), ".corda"), "gp"), "groupPolicy.json")
 
     private val groupIdFile: File = File(
         File(File(File(System.getProperty("user.home")), ".corda"), "groupId"),
-        "groupId.txt"
+        "groupId.txt",
     )
 
     private val cpiName: String = "MGM-${UUID.randomUUID()}"
@@ -47,7 +50,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
             "fileFormatVersion" to 1,
             "groupId" to "CREATE_ID",
             "registrationProtocol" to "net.corda.membership.impl.registration.dynamic.mgm.MGMRegistrationService",
-            "synchronisationProtocol" to "net.corda.membership.impl.synchronisation.MgmSynchronisationServiceImpl"
+            "synchronisationProtocol" to "net.corda.membership.impl.synchronisation.MgmSynchronisationServiceImpl",
         ).let { groupPolicyMap ->
             ByteArrayOutputStream().use { outputStream ->
                 json.writeValue(outputStream, groupPolicyMap)
@@ -62,7 +65,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
             checkInvariant(
                 maxAttempts = MAX_ATTEMPTS,
                 waitInterval = WAIT_INTERVAL,
-                errorMessage = "Failed to save group policy after $MAX_ATTEMPTS attempts."
+                errorMessage = "Failed to save group policy after $MAX_ATTEMPTS attempts.",
             ) {
                 try {
                     val resource = client.start().proxy
@@ -75,7 +78,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
             json.writerWithDefaultPrettyPrinter()
                 .writeValue(
                     groupPolicyFile,
-                    json.readTree(groupPolicyResponse)
+                    json.readTree(groupPolicyResponse),
                 )
             println("Group policy file created at $groupPolicyFile")
             // extract the groupId from the response
@@ -111,9 +114,9 @@ class OnboardMgm : Runnable, BaseOnboard() {
             "corda.session.keys.0.id" to sessionKeyId,
             "corda.ecdh.key.id" to ecdhKeyId,
             "corda.group.protocol.registration"
-                    to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
+                to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
             "corda.group.protocol.synchronisation"
-                    to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
+                to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
             "corda.group.protocol.p2p.mode" to "Authenticated_Encryption",
             "corda.group.key.session.policy" to "Distinct",
             "corda.group.tls.type" to tlsType,
@@ -141,7 +144,10 @@ class OnboardMgm : Runnable, BaseOnboard() {
         creator.cpiUpgrade = false
         creator.outputFileName = cpiFile.absolutePath
         creator.signingOptions = createDefaultSingingOptions()
-        creator.run()
+        val exitCode = creator.call()
+        if (exitCode != 0) {
+            throw CordaRuntimeException("Create CPI returned non-zero exit code")
+        }
         uploadSigningCertificates()
         cpiFile
     }
@@ -193,8 +199,8 @@ class OnboardMgm : Runnable, BaseOnboard() {
             if (mtls) {
                 println(
                     "To onboard members to this group on other clusters, please add those members' " +
-                            "client certificates subjects to this MGM's allowed list. " +
-                            "See command: 'allowClientCertificate'."
+                        "client certificates subjects to this MGM's allowed list. " +
+                        "See command: 'allowClientCertificate'.",
                 )
             }
         }

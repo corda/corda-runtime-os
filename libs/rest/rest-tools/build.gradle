@@ -5,6 +5,7 @@ plugins {
 
 description 'Corda REST tools'
 
+ext.cordaEnableFormatting = true
 
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")

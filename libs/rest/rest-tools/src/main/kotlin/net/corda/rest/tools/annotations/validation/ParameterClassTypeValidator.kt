@@ -33,14 +33,16 @@ internal class ParameterClassTypeValidator(private val clazz: Class<out RestReso
         }
 
     private fun validateParameter(parameter: Parameter, allowedPathParameterTypes: Set<Class<out Any>>) =
-        if (parameter.type !in allowedPathParameterTypes)
+        if (parameter.type !in allowedPathParameterTypes) {
             RestValidationResult(
                 listOf(
                     "Parameter type is not supported in ${clazz.simpleName} for: $parameter. " +
-                            "Allowed parameter types are : ${allowedPathParameterTypes.membersAsString()}"
+                        "Allowed parameter types are : ${allowedPathParameterTypes.membersAsString()}"
                 )
             )
-        else RestValidationResult()
+        } else {
+            RestValidationResult()
+        }
 
     private fun getPathParameters(parameters: List<Parameter>) =
         parameters.filter {

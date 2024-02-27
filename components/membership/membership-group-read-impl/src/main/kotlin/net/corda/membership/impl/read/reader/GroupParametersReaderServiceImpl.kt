@@ -33,7 +33,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.stream.Stream
 
-
 @Component(service = [GroupParametersReaderService::class])
 class GroupParametersReaderServiceImpl internal constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -96,7 +95,7 @@ class GroupParametersReaderServiceImpl internal constructor(
         coordinator.stop()
     }
 
-    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, InternalGroupParameters>>? =
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, InternalGroupParameters>> =
         impl.getAllVersionedRecords()
 
     override fun get(identity: HoldingIdentity) = impl.get(identity)

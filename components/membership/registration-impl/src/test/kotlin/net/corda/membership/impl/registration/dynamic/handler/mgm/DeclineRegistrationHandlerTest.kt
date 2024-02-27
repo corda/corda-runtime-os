@@ -6,21 +6,21 @@ import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.p2p.v2.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
-import net.corda.membership.p2p.helpers.P2pRecordsFactory
-import net.corda.membership.persistence.client.MembershipPersistenceClient
-import net.corda.messaging.api.records.Record
-import net.corda.data.p2p.app.AppMessage
-import net.corda.membership.persistence.client.MembershipPersistenceOperation
-import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.VersionedMessageBuilder
+import net.corda.membership.p2p.helpers.P2pRecordsFactory
+import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
+import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.DECLINE_REGISTRATION
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
@@ -113,7 +113,13 @@ class DeclineRegistrationHandlerTest {
     }
 
     private val handler = DeclineRegistrationHandler(
-        membershipPersistenceClient, membershipQueryClient, mock(), mock(), mock(), config, p2pRecordsFactory
+        membershipPersistenceClient,
+        membershipQueryClient,
+        mock(),
+        mock(),
+        mock(),
+        config,
+        p2pRecordsFactory
     )
 
     @Test

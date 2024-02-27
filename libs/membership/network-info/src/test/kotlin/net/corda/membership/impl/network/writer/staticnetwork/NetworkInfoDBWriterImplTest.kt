@@ -2,9 +2,9 @@ package net.corda.membership.impl.network.writer.staticnetwork
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
-import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.KeyValuePairList
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.core.CpiMetadata
@@ -93,7 +93,11 @@ class NetworkInfoDBWriterImplTest {
     }
 
     private val staticNetworkInfoDBWriterImpl = NetworkInfoDBWriterImpl(
-        clock, platformInfoProvider, keyEncodingService, groupPolicyParser, cordaAvroSerializationFactory
+        clock,
+        platformInfoProvider,
+        keyEncodingService,
+        groupPolicyParser,
+        cordaAvroSerializationFactory
     )
 
     private val existingInfo: StaticNetworkInfoEntity = mock {

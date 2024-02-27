@@ -31,7 +31,7 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
 
-    runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"
+    runtimeOnly libs.typesafe.config
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
@@ -42,8 +42,6 @@ dependencies {
     runtimeOnly project(':libs:tracing-impl')
 
     testImplementation 'org.osgi:osgi.core'
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(':libs:application:addon')
     testImplementation project(':libs:application:banner')
 
@@ -56,7 +54,7 @@ dependencies {
     // this folder can contain many jdbc drivers (and DataSourceFactory provider bundles).
     // Postgres doesn't need a DataSourceFactory provider bundle (e.g. pax-jdbc), because
     // the postgres devs have written their own and it's in this jar (PGDataSourceFactory).
-    dockerImageJdbc "org.postgresql:postgresql:$postgresDriverVersion"
+    dockerImageJdbc libs.postgresql.jdbc
 
     // If we were to do this for a different database that is *not natively an OSGi bundle*
     // we would need the wrapped OSGi bundle version and the pax-jdbc loader, i.e.

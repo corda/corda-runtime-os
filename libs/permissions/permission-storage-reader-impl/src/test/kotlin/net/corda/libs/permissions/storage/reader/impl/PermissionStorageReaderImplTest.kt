@@ -1,16 +1,8 @@
 package net.corda.libs.permissions.storage.reader.impl
 
 import net.corda.data.permissions.ChangeDetails
-import net.corda.data.permissions.Group as AvroGroup
 import net.corda.data.permissions.PermissionAssociation
-import net.corda.data.permissions.Permission as AvroPermission
-import net.corda.data.permissions.PermissionType as AvroPermissionType
-import net.corda.data.permissions.Property as AvroProperty
-import net.corda.data.permissions.Role as AvroRole
-import net.corda.data.permissions.User as AvroUser
 import net.corda.data.permissions.RoleAssociation
-import net.corda.data.permissions.summary.PermissionSummary as AvroPermissionSummary
-import net.corda.data.permissions.summary.UserPermissionSummary as AvroUserPermissionSummary
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.libs.permissions.storage.reader.repository.PermissionRepository
 import net.corda.libs.permissions.storage.reader.summary.InternalUserPermissionSummary
@@ -34,14 +26,22 @@ import net.corda.schema.Schemas.Rest.REST_PERM_ROLE_TOPIC
 import net.corda.schema.Schemas.Rest.REST_PERM_USER_TOPIC
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicReference
+import net.corda.data.permissions.Group as AvroGroup
+import net.corda.data.permissions.Permission as AvroPermission
+import net.corda.data.permissions.PermissionType as AvroPermissionType
+import net.corda.data.permissions.Property as AvroProperty
+import net.corda.data.permissions.Role as AvroRole
+import net.corda.data.permissions.User as AvroUser
+import net.corda.data.permissions.summary.PermissionSummary as AvroPermissionSummary
+import net.corda.data.permissions.summary.UserPermissionSummary as AvroUserPermissionSummary
 
 class PermissionStorageReaderImplTest {
 
@@ -317,9 +317,12 @@ class PermissionStorageReaderImplTest {
     private val reconciler = mock<PermissionSummaryReconciler>()
 
     private val processor = PermissionStorageReaderImpl(
-            AtomicReference(permissionValidationCache),
-            AtomicReference(permissionManagementCache), permissionRepository, publisher, reconciler
-        )
+        AtomicReference(permissionValidationCache),
+        AtomicReference(permissionManagementCache),
+        permissionRepository,
+        publisher,
+        reconciler
+    )
 
     @Test
     fun `starting the reader publishes stored users, groups, roles and permissions`() {
@@ -393,7 +396,6 @@ class PermissionStorageReaderImplTest {
 
     @Test
     fun `publishUsers finds the specified users and publishes them`() {
-
         whenever(permissionManagementCache.users).thenReturn(emptyMap())
         whenever(permissionRepository.findAllUsers()).thenReturn(listOf(user))
 
@@ -474,7 +476,6 @@ class PermissionStorageReaderImplTest {
 
     @Test
     fun `publishUsers allows users to be updated and removed at the same time`() {
-
         whenever(permissionManagementCache.users).thenReturn(mapOf(user.loginName to avroUser, user2.loginName to avroUser2))
         whenever(permissionRepository.findAllUsers()).thenReturn(listOf(user))
 

@@ -9,14 +9,8 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
-    constraints {
-        implementation("org.xerial.snappy:snappy-java:$xerialSnappyVersion") {
-            because 'Kafka Client uses an older version of Snappy library which is exposed to CVE-2023-34455. ' +
-                    'This might be resolved in the future versions of Kafka Client.'
-        }
-    }
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.kafka.client
+    implementation libs.typesafe.config
     implementation "net.corda:corda-base"
     implementation 'net.corda:corda-db-schema'
     implementation project(":libs:db:db-orm")
@@ -26,8 +20,6 @@ dependencies {
     implementation project(":libs:messaging:db-message-bus-datamodel")
     implementation project(":libs:messaging:db-message-bus-impl")
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     integrationTestImplementation project(":libs:db:db-admin")
     integrationTestImplementation project(":libs:db:db-admin-impl")
@@ -36,8 +28,8 @@ dependencies {
 
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
-    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    integrationTestRuntimeOnly libs.postgresql.jdbc
+    integrationTestRuntimeOnly libs.slf4j.simple
 }
 
 description 'Topic Util DB Implementation'

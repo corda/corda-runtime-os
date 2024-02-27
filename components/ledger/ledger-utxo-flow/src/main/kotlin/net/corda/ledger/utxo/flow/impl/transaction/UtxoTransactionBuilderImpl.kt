@@ -40,8 +40,8 @@ class UtxoTransactionBuilderImpl(
 
     override fun addSignatories(signatories: Iterable<PublicKey>): UtxoTransactionBuilder {
         require(
-            this.signatories.intersect(signatories.toSet()).isEmpty()
-                    && signatories.distinct().size == signatories.count()
+            this.signatories.intersect(signatories.toSet()).isEmpty() &&
+                signatories.distinct().size == signatories.count()
         ) {
             "Duplicating signatories are not allowed."
         }
@@ -63,8 +63,8 @@ class UtxoTransactionBuilderImpl(
 
     override fun addInputStates(stateRefs: Iterable<StateRef>): UtxoTransactionBuilder {
         require(
-            this.inputStateRefs.intersect(stateRefs.toSet()).isEmpty()
-                    && stateRefs.distinct().size == stateRefs.count()
+            this.inputStateRefs.intersect(stateRefs.toSet()).isEmpty() &&
+                stateRefs.distinct().size == stateRefs.count()
         ) {
             "Duplicating input StateRefs is not allowed."
         }
@@ -86,8 +86,8 @@ class UtxoTransactionBuilderImpl(
 
     override fun addReferenceStates(stateRefs: Iterable<StateRef>): UtxoTransactionBuilder {
         require(
-            this.referenceStateRefs.intersect(stateRefs.toSet()).isEmpty()
-                    && stateRefs.distinct().size == stateRefs.count()
+            this.referenceStateRefs.intersect(stateRefs.toSet()).isEmpty() &&
+                stateRefs.distinct().size == stateRefs.count()
         ) {
             "Duplicating reference StateRefs is not allowed."
         }
@@ -197,16 +197,16 @@ class UtxoTransactionBuilderImpl(
 
     @Suppress("ComplexMethod")
     override fun equals(other: Any?): Boolean {
-        return this === other
-                || other is UtxoTransactionBuilderImpl
-                && other.notaryName == notaryName
-                && other.notaryKey == notaryKey
-                && other.timeWindow == timeWindow
-                && other.commands == commands
-                && other.inputStateRefs == inputStateRefs
-                && other.referenceStateRefs == referenceStateRefs
-                && other.outputStates == outputStates
-                && other.signatories == signatories
+        return this === other ||
+            other is UtxoTransactionBuilderImpl &&
+            other.notaryName == notaryName &&
+            other.notaryKey == notaryKey &&
+            other.timeWindow == timeWindow &&
+            other.commands == commands &&
+            other.inputStateRefs == inputStateRefs &&
+            other.referenceStateRefs == referenceStateRefs &&
+            other.outputStates == outputStates &&
+            other.signatories == signatories
     }
 
     override fun hashCode(): Int = Objects.hash(
@@ -222,14 +222,14 @@ class UtxoTransactionBuilderImpl(
 
     override fun toString(): String {
         return "UtxoTransactionBuilderImpl(" +
-                "notary=$notaryName (key: $notaryKey), " +
-                "timeWindow=$timeWindow, " +
-                "commands=$commands, " +
-                "signatories=$signatories, " +
-                "inputStateRefs=$inputStateRefs, " +
-                "referenceStateRefs=$referenceStateRefs, " +
-                "outputStates=$outputStates" +
-                ")"
+            "notary=$notaryName (key: $notaryKey), " +
+            "timeWindow=$timeWindow, " +
+            "commands=$commands, " +
+            "signatories=$signatories, " +
+            "inputStateRefs=$inputStateRefs, " +
+            "referenceStateRefs=$referenceStateRefs, " +
+            "outputStates=$outputStates" +
+            ")"
     }
 
     /**
@@ -258,8 +258,9 @@ class UtxoTransactionBuilderImpl(
     }
 
     private fun lookUpNotaryKey(notaryName: MemberX500Name?): PublicKey? {
-        if (notaryName == null )
+        if (notaryName == null) {
             return null
+        }
         return notaryLookup.lookup(notaryName)?.publicKey
     }
 }

@@ -22,23 +22,27 @@ class UtxoTransactionEncumbranceVerifierTest {
             TODO("Not yet implemented")
         }
     }
-    
+
     private companion object {
         val transactionId1 = parseSecureHash("SHA256:1234567890")
         val transactionId2 = parseSecureHash("SHA256:ABCDEF0123")
     }
-    
+
     private val transaction = mock<UtxoLedgerTransaction>()
 
     @Test
     fun `unencumbered states are fine`() {
         val inputs = listOf(
-            StateAndRefImpl(TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, null),
-                StateRef(transactionId1, 0)),
-            StateAndRefImpl(TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, null),
-                StateRef(transactionId2, 1))
+            StateAndRefImpl(
+                TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, null),
+                StateRef(transactionId1, 0)
+            ),
+            StateAndRefImpl(
+                TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, null),
+                StateRef(transactionId2, 1)
+            )
         )
-        
+
         whenever(transaction.inputStateAndRefs).thenReturn(inputs)
 
         val result = verifyEncumbrance(transaction)
@@ -48,8 +52,15 @@ class UtxoTransactionEncumbranceVerifierTest {
     @Test
     fun `complete encumbrance group is fine`() {
         val inputs = listOf(
-            StateAndRefImpl(TransactionStateImpl(
-                TestContractState(), notaryX500Name, publicKeyExample,null), StateRef(transactionId1, 0)),
+            StateAndRefImpl(
+                TransactionStateImpl(
+                    TestContractState(),
+                    notaryX500Name,
+                    publicKeyExample,
+                    null
+                ),
+                StateRef(transactionId1, 0)
+            ),
             StateAndRefImpl(
                 TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, EncumbranceGroupImpl(2, "test1")),
                 StateRef(transactionId2, 1)
@@ -74,8 +85,10 @@ class UtxoTransactionEncumbranceVerifierTest {
         )
 
         val inputs = listOf(
-            StateAndRefImpl(TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, null),
-                StateRef(transactionId1, 0)),
+            StateAndRefImpl(
+                TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, null),
+                StateRef(transactionId1, 0)
+            ),
             state2,
             state2
         )
@@ -138,10 +151,10 @@ class UtxoTransactionEncumbranceVerifierTest {
         assertThat(result).hasSize(1)
         assertThat(result.first()).extracting { it.exceptionMessage }.isEqualTo(
             "Encumbrance check failed: State $transactionId1, " +
-                    "0 is part " +
-                    "of encumbrance group test1, but only " +
-                    "1 states out of " +
-                    "2 encumbered states are present as inputs."
+                "0 is part " +
+                "of encumbrance group test1, but only " +
+                "1 states out of " +
+                "2 encumbered states are present as inputs."
         )
     }
 
@@ -164,25 +177,27 @@ class UtxoTransactionEncumbranceVerifierTest {
         assertThat(result).hasSize(2)
         assertThat(result.first()).extracting { it.exceptionMessage }.isEqualTo(
             "Encumbrance check failed: State $transactionId1, " +
-                    "0 is part " +
-                    "of encumbrance group test1, but only " +
-                    "1 states out of " +
-                    "2 encumbered states are present as inputs."
+                "0 is part " +
+                "of encumbrance group test1, but only " +
+                "1 states out of " +
+                "2 encumbered states are present as inputs."
         )
         assertThat(result.last()).extracting { it.exceptionMessage }.isEqualTo(
             "Encumbrance check failed: State $transactionId2, " +
-                    "1 is part " +
-                    "of encumbrance group test1, but only " +
-                    "1 states out of " +
-                    "2 encumbered states are present as inputs."
+                "1 is part " +
+                "of encumbrance group test1, but only " +
+                "1 states out of " +
+                "2 encumbered states are present as inputs."
         )
     }
 
     @Test
     fun `does not crash on silly inputs`() {
         val inputs = listOf(
-            StateAndRefImpl(TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, null),
-                StateRef(transactionId1, 0)),
+            StateAndRefImpl(
+                TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, null),
+                StateRef(transactionId1, 0)
+            ),
             StateAndRefImpl(
                 TransactionStateImpl(TestContractState(), notaryX500Name, publicKeyExample, EncumbranceGroupImpl(2, "test1")),
                 StateRef(transactionId2, 1)
@@ -204,17 +219,17 @@ class UtxoTransactionEncumbranceVerifierTest {
 
         assertThat(result.first()).extracting { it.exceptionMessage }.isEqualTo(
             "Encumbrance check failed: State $transactionId2, " +
-                    "1 is part " +
-                    "of encumbrance group test1, but only " +
-                    "3 states out of " +
-                    "2 encumbered states are present as inputs."
+                "1 is part " +
+                "of encumbrance group test1, but only " +
+                "3 states out of " +
+                "2 encumbered states are present as inputs."
         )
         assertThat(result.last()).extracting { it.exceptionMessage }.isEqualTo(
             "Encumbrance check failed: State $transactionId2, " +
-                    "4 is part " +
-                    "of encumbrance group test1, but only " +
-                    "3 states out of " +
-                    "2 encumbered states are present as inputs."
+                "4 is part " +
+                "of encumbrance group test1, but only " +
+                "3 states out of " +
+                "2 encumbered states are present as inputs."
         )
     }
 }

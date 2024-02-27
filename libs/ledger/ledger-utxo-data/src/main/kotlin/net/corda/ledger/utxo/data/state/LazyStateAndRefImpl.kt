@@ -48,12 +48,11 @@ data class LazyStateAndRefImpl<out T : ContractState>(
      * @return Returns true if the specified object is equal to the current object; otherwise, false.
      */
     override fun equals(other: Any?): Boolean {
-        return this === other
-                || other != null
-                && other is StateAndRef<*>
-                && other.ref == ref
-                && other.state == state
-
+        return this === other ||
+            other != null &&
+            other is StateAndRef<*> &&
+            other.ref == ref &&
+            other.state == state
     }
 
     /**
@@ -70,14 +69,14 @@ data class LazyStateAndRefImpl<out T : ContractState>(
 private fun <T : ContractState> UtxoVisibleTransactionOutputDto.deserializeToStateAndRef(
     serializationService: SerializationService
 ): StateAndRef<T> {
-    val info = try{
+    val info = try {
         serializationService.deserialize<UtxoOutputInfoComponent>(info)
-    } catch (e: Exception){
+    } catch (e: Exception) {
         throw CordaRuntimeException("Deserialization of $info into UtxoOutputInfoComponent failed.", e)
     }
-    val contractState = try{
+    val contractState = try {
         serializationService.deserialize<ContractState>(data)
-    } catch (e: Exception){
+    } catch (e: Exception) {
         throw CordaRuntimeException("Deserialization of $data into ContractState failed.", e)
     }
     return StateAndRefImpl(

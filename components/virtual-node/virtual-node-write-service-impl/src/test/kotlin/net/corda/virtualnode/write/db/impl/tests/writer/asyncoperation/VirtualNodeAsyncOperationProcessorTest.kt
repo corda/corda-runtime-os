@@ -32,7 +32,7 @@ class VirtualNodeAsyncOperationProcessorTest {
     fun `requests should be dispatched to correct handler`() {
         val requestType1 = RequestType1()
         val requestType2 = RequestType2()
-        val request1= createRequest(requestType1)
+        val request1 = createRequest(requestType1)
         val request2 = createRequest(requestType2)
 
         processor.onNext(
@@ -41,8 +41,8 @@ class VirtualNodeAsyncOperationProcessorTest {
             )
         )
 
-        verify(handlerMap.getHandler<RequestType1>(),times(1)).handle(timestamp,requestId,requestType1)
-        verify(handlerMap.getHandler<RequestType2>(), times(0)).handle(any(),any(),any())
+        verify(handlerMap.getHandler<RequestType1>(), times(1)).handle(timestamp, requestId, requestType1)
+        verify(handlerMap.getHandler<RequestType2>(), times(0)).handle(any(), any(), any())
 
         processor.onNext(
             listOf(
@@ -50,14 +50,14 @@ class VirtualNodeAsyncOperationProcessorTest {
             )
         )
 
-        verify(handlerMap.getHandler<RequestType1>(),times(1)).handle(timestamp,requestId,requestType1)
-        verify(handlerMap.getHandler<RequestType2>(), times(1)).handle(timestamp,requestId,requestType2)
+        verify(handlerMap.getHandler<RequestType1>(), times(1)).handle(timestamp, requestId, requestType1)
+        verify(handlerMap.getHandler<RequestType2>(), times(1)).handle(timestamp, requestId, requestType2)
     }
 
     @Test
     fun `exceptions thrown by handlers are caught and logged`() {
         val requestType1 = RequestType1()
-        val request1= createRequest(requestType1)
+        val request1 = createRequest(requestType1)
         val virtualNodeUpgradeHandler = handlerMap.getHandler<RequestType1>()
         val error = IllegalArgumentException()
 
@@ -72,7 +72,8 @@ class VirtualNodeAsyncOperationProcessorTest {
 
         verify(logger).warn(
             argWhere {
-                it.startsWith("Error while processing virtual node") },
+                it.startsWith("Error while processing virtual node")
+            },
             eq(error)
         )
     }
@@ -83,12 +84,10 @@ class VirtualNodeAsyncOperationProcessorTest {
             .setTimestamp(timestamp)
             .setRequest(payload)
             .build()
-
     }
 
     @Suppress("unchecked_cast")
-    inline fun <reified T : Any> Map<Class<*>, VirtualNodeAsyncOperationHandler<*>>.getHandler()
-            : VirtualNodeAsyncOperationHandler<T> {
+    inline fun <reified T : Any> Map<Class<*>, VirtualNodeAsyncOperationHandler<*>>.getHandler(): VirtualNodeAsyncOperationHandler<T> {
         return this[T::class.java] as VirtualNodeAsyncOperationHandler<T>
     }
 

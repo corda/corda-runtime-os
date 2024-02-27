@@ -3,6 +3,9 @@ package net.corda.membership.impl.synchronisation
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecs
@@ -11,9 +14,6 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.bytes
 import net.corda.crypto.core.toAvro
 import net.corda.crypto.hes.StableKeyPairDecryptor
-import net.corda.avro.serialization.CordaAvroDeserializer
-import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
@@ -49,8 +49,8 @@ import net.corda.membership.groupparams.writer.service.GroupParametersWriterServ
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.grouppolicy.test.common.MemberTestGroupPolicy
 import net.corda.membership.grouppolicy.test.common.MgmTestGroupPolicy
-import net.corda.membership.impl.synchronisation.dummy.TestCryptoOpsClient
 import net.corda.membership.grouppolicy.test.common.TestGroupPolicyProvider
+import net.corda.membership.impl.synchronisation.dummy.TestCryptoOpsClient
 import net.corda.membership.impl.synchronisation.dummy.TestGroupReaderProvider
 import net.corda.membership.impl.synchronisation.dummy.TestLocallyHostedIdentitiesService
 import net.corda.membership.impl.synchronisation.dummy.TestMembershipPersistenceClient
@@ -66,6 +66,7 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.toSortedMap
 import net.corda.membership.locally.hosted.identities.IdentityInfo
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.p2p.MembershipP2PReadService
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -117,7 +118,6 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
-import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class SynchronisationIntegrationTest {
@@ -434,7 +434,10 @@ class SynchronisationIntegrationTest {
                 syncId,
                 clock.instant()
             ),
-            requesterHash.toAvro(), BloomFilter(1, 1, 1, byteBuffer), secureHash, secureHash
+            requesterHash.toAvro(),
+            BloomFilter(1, 1, 1, byteBuffer),
+            secureHash,
+            secureHash
         )
         val messageHeader = AuthenticatedMessageHeader(
             mgm,

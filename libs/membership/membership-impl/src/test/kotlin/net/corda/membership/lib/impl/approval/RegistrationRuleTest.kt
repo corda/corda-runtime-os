@@ -26,5 +26,4 @@ class RegistrationRuleTest {
             RegistrationRule.Impl(REGEX_STRING.toRegex()).evaluate(listOf(PARTY_NAME, GROUP_ID))
         ).isFalse
     }
-
 }

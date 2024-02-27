@@ -12,6 +12,7 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowStackItemSession
 import net.corda.data.flow.state.waiting.WaitingFor
+import net.corda.data.flow.state.waiting.start.WaitingForStartFlow
 import net.corda.data.flow.state.waiting.external.ExternalEventResponse
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
@@ -26,7 +27,6 @@ import net.corda.flow.fiber.factory.FlowFiberFactory
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
-import net.corda.flow.pipeline.handlers.waiting.WaitingForStartFlow
 import net.corda.flow.pipeline.runner.impl.FlowRunnerImpl
 import net.corda.flow.pipeline.runner.impl.remoteToLocalContextMapper
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
@@ -119,7 +119,7 @@ class FlowRunnerImplTest {
         whenever(cpiInfoReadService.get(any())).thenReturn(getMockCpiMetaData())
         whenever(flowCheckpoint.initialPlatformVersion).thenReturn(67890)
         whenever(platformInfoProvider.localWorkerSoftwareVersion).thenReturn("67890")
-        whenever(flowCheckpoint.waitingFor).thenReturn(WaitingFor(WaitingForStartFlow))
+        whenever(flowCheckpoint.waitingFor).thenReturn(WaitingFor(WaitingForStartFlow()))
     }
 
     @BeforeEach
@@ -255,6 +255,7 @@ class FlowRunnerImplTest {
             flowFactory.createInitiatedFlow(
                 flowStartContext,
                 true,
+                sessionTimeout = null,
                 sandboxGroupContext,
                 localContextProperties.sessionProperties
             )

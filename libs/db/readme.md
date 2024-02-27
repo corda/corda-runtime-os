@@ -42,7 +42,36 @@ When used in an OSGi context, the following bundles are required
 * `net.bytebuddy.byte-buddy`: needed by hibernate - byte buddy has replaced javassist as the default bytecode provider
 * db driver used by Hikari. E.g. `org.hsqldb.hsqldb` for in-memory (test) use.
 
-### Postgres
+### Different databases
+
+The integration tests can be run against different database types. The default is an HSQL in memory
+database. Currently, running against Postgres is also fully supported (and required for some tests).
+There is experimental support for some OSGI integration tests for Microsoft Sqlserver.
+
+The database to use is controlled by gradle properties that can be set on the command line.
+Currently supported database testing properties are:
+
+- `-PdatabaseType`: choose the type of database to connect to. Supported values
+  are `HSQL` (the default) and `POSTGRES`. There is also experimental support
+  for MS SQL server (`MSSQL`).
+- `-PdatabasePort`: connection port for database servers. This will default to the
+  standard port for the chose DB server.
+- `-PdatabaseHost`: database host to connect to. Will default to `localhost`
+- `-PdatabaseAdminUser` and `-PdatabaseAdminPassword`: defaults depend on database type
+  chosen. This should match the respective docker command line examples.
+- `-PdatabaseName`: name of the database instance to use. Defaults depend on
+  the chosen database type.
+
+NOTES:
+* we cannot use the `testcontainers` library as it does not work with OSGi.
+* Change the port forwarding if needed.
+* System property must be set in the bndrun file, which can use gradle properties: `databaseType=${project.databaseType}`
+* If integration test has to be executed repeatedly `clean` or `cleanTestOSGi` target has to be executed before `integrationTest`
+  or else Gradle may skip execution.
+* When adding support for a new database type, the JDBC driver must be added as a dependency to the bndrun file and
+  as a `integrationTestRuntimOnly` dependency in the build.gradle of the tests in question.
+
+#### Running against Postgres
 
 Start container like so:
 
@@ -50,19 +79,27 @@ Start container like so:
 docker run --rm --name test-instance -e POSTGRES_PASSWORD=password -p 5432:5432 postgres
 ```
 
-Set the `postgresPort` gradle property, e.g.:
+Set the `databaseType` gradle property, e.g.:
 
 ```bash
-gradle clean :libs:db:osgi-integration-tests:integrationTest -PpostgresPort=5432
+gradle clean :libs:db:osgi-integration-tests:integrationTest -PdatabaseType=POSTGRES
 ```
 
-NOTES: 
-* we cannot use the `testcontainers` library as it does not work with OSGi.
-* Change the port forwarding if needed.
-* Other postgres properties could be added (e.g. host etc)
-* System property must be set in the bndrun file, which can use gradle properties: `postgresPort=${project.postgresPort}`
-* If integration test has to be executed repeatedly `clean` or `cleanTestOSGi` target has to be executed before `integrationTest`
-or else Gradle may skip execution.
+#### Running against Sqlserver
+
+Start the MS Sqlserver container:
+
+```bash
+docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=yourStrong(!)Password" -p 1433:1433 -d mcr.microsoft.com/mssql/server:2022-latest
+```
+It is recommended to create a test database in the database server using the database tool of your choice - this example
+assumes a database called `corda-test` has been created.
+
+```bash
+gradle clean :libs:db:osgi-integration-tests:integrationTest -PdatabaseType=MSSQL -PdatabaseName=corda-test
+```
+
+
 
 ### Testing
 
@@ -102,7 +139,7 @@ gradle :libs:db:osgi-integration-tests:integrationTest -D-runjdb=1046
 or against Postgres like so:
 
 ```bash
-gradle :libs:db:osgi-integration-tests:integrationTest -D-runjdb=1046 -PpostgresPort=5432
+gradle :libs:db:osgi-integration-tests:integrationTest -D-runjdb=1046 -PdatabaseType=POSTGRES
 ```
 
 ## Data definition (DDL)

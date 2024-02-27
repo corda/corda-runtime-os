@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction.filtered
 
-import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
+import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters
+import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters.AuditProof.AuditProofPredicate
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactory
@@ -52,7 +53,7 @@ data class UtxoFilteredTransactionBuilderImpl(
             signatories = ComponentGroupFilterParameters.AuditProof(
                 UtxoComponentGroup.SIGNATORIES.ordinal,
                 PublicKey::class.java,
-                predicate
+                AuditProofPredicate.Content(predicate)
             )
         )
     }
@@ -73,7 +74,7 @@ data class UtxoFilteredTransactionBuilderImpl(
             inputStates = ComponentGroupFilterParameters.AuditProof(
                 UtxoComponentGroup.INPUTS.ordinal,
                 StateRef::class.java,
-                predicate
+                AuditProofPredicate.Content(predicate)
             )
         )
     }
@@ -94,7 +95,7 @@ data class UtxoFilteredTransactionBuilderImpl(
             referenceStates = ComponentGroupFilterParameters.AuditProof(
                 UtxoComponentGroup.REFERENCES.ordinal,
                 StateRef::class.java,
-                predicate
+                AuditProofPredicate.Content(predicate)
             )
         )
     }
@@ -115,7 +116,18 @@ data class UtxoFilteredTransactionBuilderImpl(
             outputStates = ComponentGroupFilterParameters.AuditProof(
                 UtxoComponentGroup.OUTPUTS.ordinal,
                 ContractState::class.java,
-                predicate
+                AuditProofPredicate.Content(predicate)
+            )
+        )
+    }
+
+    @Suspendable
+    override fun withOutputStates(indexes: List<Int>): UtxoFilteredTransactionBuilderInternal {
+        return copy(
+            outputStates = ComponentGroupFilterParameters.AuditProof(
+                UtxoComponentGroup.OUTPUTS.ordinal,
+                ContractState::class.java,
+                AuditProofPredicate.Index(indexes)
             )
         )
     }
@@ -136,7 +148,7 @@ data class UtxoFilteredTransactionBuilderImpl(
             commands = ComponentGroupFilterParameters.AuditProof(
                 UtxoComponentGroup.COMMANDS.ordinal,
                 Command::class.java,
-                predicate
+                AuditProofPredicate.Content(predicate)
             )
         )
     }

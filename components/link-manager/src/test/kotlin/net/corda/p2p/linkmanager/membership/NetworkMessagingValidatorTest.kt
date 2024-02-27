@@ -11,15 +11,12 @@ import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.KStubbing
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class NetworkMessagingValidatorTest {
@@ -28,7 +25,6 @@ class NetworkMessagingValidatorTest {
 
     companion object {
         private const val GROUP_ID = "group-id"
-        private const val TEST_LAMBDA_RETURN_VAL = "foo-bar"
 
         private val nonMgmMgmProvidedContext: MGMContext = mock()
         private val mgmMgmProvidedContext: MGMContext = mock {
@@ -94,10 +90,6 @@ class NetworkMessagingValidatorTest {
         on { getGroupReader(any()) } doReturn groupReader
     }
 
-    private val testLambda: () -> String = mock {
-        on { invoke() } doReturn TEST_LAMBDA_RETURN_VAL
-    }
-
     private val networkMessagingValidator = NetworkMessagingValidator(membershipGroupReaderProvider)
 
     @ParameterizedTest
@@ -126,33 +118,9 @@ class NetworkMessagingValidatorTest {
 
     @ParameterizedTest
     @MethodSource("allowedMessagingGroups")
-    fun `invokeIfValidInbound performs as expected`(testConfig: TestConfig) {
-        val output = assertDoesNotThrow {
-            networkMessagingValidator.invokeIfValidInbound(testConfig.sender, testConfig.receiver, testLambda)
-        }
+    fun `isValidInbound performs as expected`(testConfig: TestConfig) {
+        val valid = networkMessagingValidator.isValidInbound(testConfig.sender, testConfig.receiver)
 
-        if (testConfig.canMessage) {
-            verify(testLambda).invoke()
-            assertThat(output).isNotNull.isEqualTo(TEST_LAMBDA_RETURN_VAL)
-        } else {
-            verify(testLambda, never()).invoke()
-            assertThat(output).isNull()
-        }
-    }
-
-    @ParameterizedTest
-    @MethodSource("allowedMessagingGroups")
-    fun `invokeIfValidOutbound performs as expected`(testConfig: TestConfig) {
-        val output = assertDoesNotThrow {
-            networkMessagingValidator.invokeIfValidInbound(testConfig.sender, testConfig.receiver, testLambda)
-        }
-
-        if (testConfig.canMessage) {
-            verify(testLambda).invoke()
-            assertThat(output).isNotNull.isEqualTo(TEST_LAMBDA_RETURN_VAL)
-        } else {
-            verify(testLambda, never()).invoke()
-            assertThat(output).isNull()
-        }
+        assertThat(valid).isEqualTo(testConfig.canMessage)
     }
 }

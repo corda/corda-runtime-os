@@ -43,7 +43,7 @@ class RestServerApiVersioningTest : RestServerTestBase() {
             client =
                 TestHttpClientUnirestImpl(
                     "http://${restServerSettings.address.host}:${server.port}/" +
-                            "${restServerSettings.context.basePath}/"
+                        "${restServerSettings.context.basePath}/"
                 )
         }
 
@@ -59,13 +59,15 @@ class RestServerApiVersioningTest : RestServerTestBase() {
     @Test
     fun `same endpoint available in multiple versions`() {
         val response = client.call(
-            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_1.versionPath}/testEndpointVersion/1234"),
+            HttpVerb.GET,
+            WebRequest<Any>("${RestApiVersion.C5_1.versionPath}/testEndpointVersion/1234"),
             userName,
             password
         )
 
         val response2 = client.call(
-            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_2.versionPath}/testEndpointVersion/1234"),
+            HttpVerb.GET,
+            WebRequest<Any>("${RestApiVersion.C5_2.versionPath}/testEndpointVersion/1234"),
             userName,
             password
         )
@@ -76,14 +78,16 @@ class RestServerApiVersioningTest : RestServerTestBase() {
     @Test
     fun `endpoint added at a particular version`() {
         val response = client.call(
-            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_0.versionPath}/testEndpointVersion/1234"),
+            HttpVerb.GET,
+            WebRequest<Any>("${RestApiVersion.C5_0.versionPath}/testEndpointVersion/1234"),
             userName,
             password
         )
         assertEquals(HttpStatus.SC_NOT_FOUND, response.responseStatus)
 
         val response2 = client.call(
-            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_2.versionPath}/testEndpointVersion/1234"),
+            HttpVerb.GET,
+            WebRequest<Any>("${RestApiVersion.C5_2.versionPath}/testEndpointVersion/1234"),
             userName,
             password
         )
@@ -93,14 +97,16 @@ class RestServerApiVersioningTest : RestServerTestBase() {
     @Test
     fun `endpoint removed at a particular version`() {
         val response = client.call(
-            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_0.versionPath}/testEndpointVersion?id=1234"),
+            HttpVerb.GET,
+            WebRequest<Any>("${RestApiVersion.C5_0.versionPath}/testEndpointVersion?id=1234"),
             userName,
             password
         )
         assertEquals(HttpStatus.SC_OK, response.responseStatus)
 
         val response2 = client.call(
-            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_1.versionPath}/testEndpointVersion?id=1234"),
+            HttpVerb.GET,
+            WebRequest<Any>("${RestApiVersion.C5_1.versionPath}/testEndpointVersion?id=1234"),
             userName,
             password
         )
@@ -110,7 +116,8 @@ class RestServerApiVersioningTest : RestServerTestBase() {
     @Test
     fun `request works with resource versions when no version specified at endpoint level`() {
         val response = client.call(
-            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_1.versionPath}/testResourceVersion?id=1234"),
+            HttpVerb.GET,
+            WebRequest<Any>("${RestApiVersion.C5_1.versionPath}/testResourceVersion?id=1234"),
             userName,
             password
         )
@@ -120,7 +127,8 @@ class RestServerApiVersioningTest : RestServerTestBase() {
     @Test
     fun `when endpoint versions are outside of resource version limit, calling endpoint fails`() {
         val response = client.call(
-            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_0.versionPath}/testResourceVersion/1234"),
+            HttpVerb.GET,
+            WebRequest<Any>("${RestApiVersion.C5_0.versionPath}/testResourceVersion/1234"),
             userName,
             password
         )
@@ -130,14 +138,16 @@ class RestServerApiVersioningTest : RestServerTestBase() {
     @Test
     fun `endpoint without specified maxVersion supported up to CURRENT Rest Endpoint version`() {
         val response = client.call(
-            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_0.versionPath}/testResourceMaxVersion/1234"),
+            HttpVerb.GET,
+            WebRequest<Any>("${RestApiVersion.C5_0.versionPath}/testResourceMaxVersion/1234"),
             userName,
             password
         )
         assertEquals(HttpStatus.SC_OK, response.responseStatus)
 
         val response2 = client.call(
-            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_1.versionPath}/testResourceMaxVersion/1234"),
+            HttpVerb.GET,
+            WebRequest<Any>("${RestApiVersion.C5_1.versionPath}/testResourceMaxVersion/1234"),
             userName,
             password
         )

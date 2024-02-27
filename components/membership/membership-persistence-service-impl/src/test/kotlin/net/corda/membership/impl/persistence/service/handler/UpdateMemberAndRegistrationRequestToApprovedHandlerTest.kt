@@ -1,9 +1,9 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -78,7 +78,9 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
     private val virtualNodeInfo = VirtualNodeInfo(
         vaultDmlConnectionId = vaultDmlConnectionId,
         cpiIdentifier = CpiIdentifier(
-            "", "", TestRandom.secureHash()
+            "",
+            "",
+            TestRandom.secureHash()
         ),
         cryptoDmlConnectionId = UUID(0, 0),
         uniquenessDmlConnectionId = UUID(0, 0),
@@ -98,7 +100,8 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         on {
             getOrCreateEntityManagerFactory(
                 vaultDmlConnectionId,
-                jpaEntitiesSet
+                jpaEntitiesSet,
+                false
             )
         } doReturn factory
     }

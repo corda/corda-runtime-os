@@ -14,7 +14,9 @@ import net.corda.p2p.gateway.messaging.internal.RequestListener
 import net.corda.p2p.gateway.messaging.mtls.DynamicCertificateSubjectStore
 import net.corda.p2p.gateway.messaging.toGatewayConfiguration
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
+import java.net.BindException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
@@ -110,7 +112,16 @@ internal class ReconfigurableHttpServer(
                                 commonComponents.dynamicKeyStore.serverKeyStore,
                                 mutualTlsTrustManager,
                             ).also {
-                                it.start()
+                                try {
+                                    it.start()
+                                } catch (e: BindException) {
+                                    throw CordaRuntimeException(
+                                        "Failed to connect on " +
+                                                "'${serverConfiguration.hostAddress}:${serverConfiguration.hostPort}' " +
+                                                "address. Please make sure the required address is not in use " +
+                                                "and could be accessed.", e
+                                    )
+                                }
                             }
                         }
                     }

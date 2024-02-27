@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.hes.StableKeyPairDecryptor
+import net.corda.data.p2p.app.AppMessage
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -20,7 +21,6 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.data.p2p.app.AppMessage
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.registry.AvroSchemaRegistry
@@ -139,7 +139,8 @@ class MembershipP2PReadServiceImplTest {
         verify(configHandle, never()).close()
         verify(subscription, never()).close()
         verify(coordinator).updateStatus(
-            eq(LifecycleStatus.DOWN), any()
+            eq(LifecycleStatus.DOWN),
+            any()
         )
     }
 
@@ -148,7 +149,8 @@ class MembershipP2PReadServiceImplTest {
         postStartEvent()
         eventHandlerCaptor.firstValue.processEvent(
             RegistrationStatusChangeEvent(
-                registrationHandle, LifecycleStatus.UP
+                registrationHandle,
+                LifecycleStatus.UP
             ),
             coordinator
         )
@@ -159,7 +161,8 @@ class MembershipP2PReadServiceImplTest {
                     BOOT_CONFIG to testConfig,
                     MESSAGING_CONFIG to testConfig
                 )
-            ), coordinator
+            ),
+            coordinator
         )
         postStopEvent()
 
@@ -167,7 +170,8 @@ class MembershipP2PReadServiceImplTest {
         verify(configHandle).close()
         verify(subscription, times(2)).close()
         verify(coordinator).updateStatus(
-            eq(LifecycleStatus.DOWN), any()
+            eq(LifecycleStatus.DOWN),
+            any()
         )
     }
 
@@ -176,7 +180,8 @@ class MembershipP2PReadServiceImplTest {
         postStartEvent()
         eventHandlerCaptor.firstValue.processEvent(
             RegistrationStatusChangeEvent(
-                registrationHandle, LifecycleStatus.UP
+                registrationHandle,
+                LifecycleStatus.UP
             ),
             coordinator
         )
@@ -193,13 +198,15 @@ class MembershipP2PReadServiceImplTest {
         postStartEvent()
         eventHandlerCaptor.firstValue.processEvent(
             RegistrationStatusChangeEvent(
-                registrationHandle, LifecycleStatus.UP
+                registrationHandle,
+                LifecycleStatus.UP
             ),
             coordinator
         )
         eventHandlerCaptor.firstValue.processEvent(
             RegistrationStatusChangeEvent(
-                registrationHandle, LifecycleStatus.UP
+                registrationHandle,
+                LifecycleStatus.UP
             ),
             coordinator
         )
@@ -216,7 +223,8 @@ class MembershipP2PReadServiceImplTest {
         postStartEvent()
         eventHandlerCaptor.firstValue.processEvent(
             RegistrationStatusChangeEvent(
-                registrationHandle, LifecycleStatus.DOWN
+                registrationHandle,
+                LifecycleStatus.DOWN
             ),
             coordinator
         )
@@ -235,11 +243,13 @@ class MembershipP2PReadServiceImplTest {
                     BOOT_CONFIG to testConfig,
                     MESSAGING_CONFIG to testConfig
                 )
-            ), coordinator
+            ),
+            coordinator
         )
         eventHandlerCaptor.firstValue.processEvent(
             RegistrationStatusChangeEvent(
-                registrationHandle, LifecycleStatus.DOWN
+                registrationHandle,
+                LifecycleStatus.DOWN
             ),
             coordinator
         )
@@ -257,7 +267,8 @@ class MembershipP2PReadServiceImplTest {
                     BOOT_CONFIG to testConfig,
                     MESSAGING_CONFIG to testConfig
                 )
-            ), coordinator
+            ),
+            coordinator
         )
 
         verify(subscription, never()).close()
@@ -280,14 +291,16 @@ class MembershipP2PReadServiceImplTest {
                     BOOT_CONFIG to testConfig,
                     MESSAGING_CONFIG to testConfig
                 )
-            ), coordinator
+            ),
+            coordinator
         )
 
         eventHandlerCaptor.firstValue.processEvent(
             RegistrationStatusChangeEvent(
                 subRegistrationHandle,
                 LifecycleStatus.UP
-            ), coordinator
+            ),
+            coordinator
         )
 
         verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
@@ -302,7 +315,8 @@ class MembershipP2PReadServiceImplTest {
                     BOOT_CONFIG to testConfig,
                     MESSAGING_CONFIG to testConfig
                 )
-            ), coordinator
+            ),
+            coordinator
         )
         eventHandlerCaptor.firstValue.processEvent(
             ConfigChangedEvent(
@@ -311,7 +325,8 @@ class MembershipP2PReadServiceImplTest {
                     BOOT_CONFIG to testConfig,
                     MESSAGING_CONFIG to testConfig
                 )
-            ), coordinator
+            ),
+            coordinator
         )
 
         verify(subscription, times(2)).close()

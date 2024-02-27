@@ -1,13 +1,12 @@
 package net.corda.ledger.utxo.token.cache.impl.services
 
-import java.util.stream.Stream
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.test.impl.LifecycleTest
-import net.corda.schema.configuration.ConfigKeys
 import net.corda.ledger.utxo.token.cache.impl.MINIMUM_SMART_CONFIG
 import net.corda.ledger.utxo.token.cache.services.TokenCacheComponent
 import net.corda.ledger.utxo.token.cache.services.TokenCacheSubscriptionHandler
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.test.impl.LifecycleTest
+import net.corda.schema.configuration.ConfigKeys
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -17,6 +16,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import java.util.stream.Stream
 
 class TokenCacheComponentTest {
 

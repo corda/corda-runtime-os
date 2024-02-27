@@ -1,5 +1,6 @@
 package net.corda.rest.server.impl.apigen.processing.openapi.schema.builders
 
+import net.corda.rest.HttpFileUpload
 import net.corda.rest.server.impl.apigen.models.GenericParameterizedType
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.DataFormat
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.DataType
@@ -10,7 +11,6 @@ import java.math.BigInteger
 import java.time.temporal.Temporal
 import java.time.temporal.TemporalAmount
 import java.util.Date
-import net.corda.rest.HttpFileUpload
 
 internal class SchemaBooleanBuilder : SchemaBuilder {
     override val keys = listOf(Boolean::class.java, Boolean::class.javaObjectType)
@@ -90,8 +90,10 @@ internal class SchemaStringBuilder : SchemaBuilder {
 
 internal class SchemaByteArrayBuilder : SchemaBuilder {
     override val keys = listOf(
-        ByteArray::class.java, ByteArray::class.javaObjectType,
-        Array<Byte>::class.java, Array<Byte>::class.javaObjectType
+        ByteArray::class.java,
+        ByteArray::class.javaObjectType,
+        Array<Byte>::class.java,
+        Array<Byte>::class.javaObjectType
     )
 
     override fun build(clazz: Class<*>, parameterizedClassList: List<GenericParameterizedType>): SchemaModel =

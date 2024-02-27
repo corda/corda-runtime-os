@@ -1,11 +1,11 @@
 package net.corda.rest.annotations
 
 import net.corda.rest.ResponseCode
+import net.corda.rest.SC_OK
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.response.ResponseEntity
-
 import net.corda.rest.annotations.RestApiVersion.C5_0 as MIN_SUPPORTED
-import net.corda.rest.annotations.RestApiVersion.C5_1 as CURRENT
+import net.corda.rest.annotations.RestApiVersion.C5_2 as CURRENT
 
 /**
  * Annotation that is meant to be applied on annotations to flag the fact that they are meant for exposing
@@ -31,6 +31,7 @@ annotation class RestEndpoint
  * @property title The title of the endpoint, used for documentation. Defaults to the function name.
  * @property description The description of the endpoint, used for documentation. Defaults to empty string.
  * @property responseDescription The description of the response, used for documentation. Defaults to empty string.
+ * @property successCode HTTP success code to be included into documentation. Default 200.
  * @property minVersion version when API has been introduced.
  * @property maxVersion version till which API is still supported.
  */
@@ -43,6 +44,7 @@ annotation class HttpPOST(
     val title: String = "",
     val description: String = "",
     val responseDescription: String = "",
+    val successCode: Int = SC_OK,
     val minVersion: RestApiVersion = MIN_SUPPORTED,
     val maxVersion: RestApiVersion = CURRENT
 )
@@ -64,6 +66,7 @@ annotation class HttpPOST(
  * @property title The title of the endpoint, used for documentation. Defaults to the function name.
  * @property description The description of the endpoint, used for documentation. Defaults to empty string.
  * @property responseDescription The description of the response, used for documentation. Defaults to empty string.
+ * @property successCode HTTP success code to be included into documentation. Default 200.
  * @property minVersion version when API has been introduced.
  * @property maxVersion version till which API is still supported.
  */
@@ -76,6 +79,7 @@ annotation class HttpPUT(
     val title: String = "",
     val description: String = "",
     val responseDescription: String = "",
+    val successCode: Int = SC_OK,
     val minVersion: RestApiVersion = MIN_SUPPORTED,
     val maxVersion: RestApiVersion = CURRENT
 )
@@ -94,6 +98,7 @@ annotation class HttpPUT(
  * @property title The title of the endpoint, used for documentation. Defaults to the function name.
  * @property description The description of the endpoint, used for documentation. Defaults to empty string.
  * @property responseDescription The description of the response, used for documentation. Defaults to empty string.
+ * @property successCode HTTP success code to be included into documentation. Default 200.
  * @property minVersion version when API has been introduced.
  * @property maxVersion version till which API is still supported.
  */
@@ -106,6 +111,7 @@ annotation class HttpGET(
     val title: String = "",
     val description: String = "",
     val responseDescription: String = "",
+    val successCode: Int = SC_OK,
     val minVersion: RestApiVersion = MIN_SUPPORTED,
     val maxVersion: RestApiVersion = CURRENT
 )
@@ -125,6 +131,7 @@ annotation class HttpGET(
  * @property title The title of the endpoint, used for documentation. Defaults to the function name.
  * @property description The description of the endpoint, used for documentation. Defaults to empty string.
  * @property responseDescription The description of the response, used for documentation. Defaults to empty string.
+ * @property successCode HTTP success code to be included into documentation. Default 200.
  * @property minVersion version when API has been introduced.
  * @property maxVersion version till which API is still supported.
  */
@@ -137,6 +144,7 @@ annotation class HttpDELETE(
     val title: String = "",
     val description: String = "",
     val responseDescription: String = "",
+    val successCode: Int = SC_OK,
     val minVersion: RestApiVersion = MIN_SUPPORTED,
     val maxVersion: RestApiVersion = CURRENT
 )
@@ -150,6 +158,7 @@ annotation class HttpDELETE(
  * @property title The title of the endpoint, used for documentation. Defaults to the function name.
  * @property description The description of the endpoint, used for documentation. Defaults to empty string.
  * @property responseDescription The description of the response, used for documentation. Defaults to empty string.
+ * @property successCode HTTP success code to be included into documentation. Default 200.
  * @property minVersion version when API has been introduced.
  * @property maxVersion version till which API is still supported.
  */
@@ -162,6 +171,7 @@ annotation class HttpWS(
     val title: String = "",
     val description: String = "",
     val responseDescription: String = "",
+    val successCode: Int = SC_OK,
     val minVersion: RestApiVersion = MIN_SUPPORTED,
     val maxVersion: RestApiVersion = CURRENT
 )

@@ -1,4 +1,5 @@
 @file:Suppress("TooManyFunctions")
+
 package net.corda.rest.server.impl.apigen.processing.openapi
 
 import io.swagger.v3.oas.models.Components
@@ -15,9 +16,6 @@ import io.swagger.v3.oas.models.parameters.RequestBody
 import io.swagger.v3.oas.models.responses.ApiResponse
 import io.swagger.v3.oas.models.responses.ApiResponses
 import io.swagger.v3.oas.models.tags.Tag
-import java.io.InputStream
-import java.util.Collections.singletonList
-import java.util.Locale
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.server.impl.apigen.models.Endpoint
@@ -38,6 +36,9 @@ import net.corda.utilities.VisibleForTesting
 import net.corda.utilities.trace
 import org.eclipse.jetty.http.HttpStatus
 import org.slf4j.LoggerFactory
+import java.io.InputStream
+import java.util.Collections.singletonList
+import java.util.Locale
 
 private val log =
     LoggerFactory.getLogger("net.corda.rest.server.impl.apigen.processing.openapi.ResourceToOpenApiSpecMapper.kt")
@@ -91,7 +92,8 @@ internal fun EndpointParameter.toOpenApiParameter(schemaModelProvider: SchemaMod
             .description(description)
             .required(required)
             .schema(
-                    SchemaModelToOpenApiSchemaConverter.convert(schemaModelProvider.toSchemaModel(this)
+                SchemaModelToOpenApiSchemaConverter.convert(
+                    schemaModelProvider.toSchemaModel(this)
                 )
             )
             .`in`(type.name.lowercase())
@@ -153,9 +155,11 @@ private fun List<EndpointParameter>.toMediaType(
             )
         )
     } else {
+        // The case of a single parameter which is not a reference to a complex type
         MediaType().schema(
             Schema<Any>().properties(this.toProperties(schemaModelProvider))
                 .type(DataType.OBJECT.toString().lowercase())
+                .required(with(this.first()) { if (required) listOf(name) else null })
         )
     }
 }
@@ -170,8 +174,8 @@ private fun List<EndpointParameter>.determineContentType() =
 private fun List<EndpointParameter>.isMultipartFileUpload(): Boolean {
     return this.any { endpointParameter ->
         endpointParameter.classType == InputStream::class.java ||
-                endpointParameter.classType == HttpFileUpload::class.java ||
-                endpointParameter.parameterizedTypes.any { it.clazz == HttpFileUpload::class.java }
+            endpointParameter.classType == HttpFileUpload::class.java ||
+            endpointParameter.parameterizedTypes.any { it.clazz == HttpFileUpload::class.java }
     }
 }
 
@@ -179,21 +183,25 @@ private fun List<EndpointParameter>.isMultipartFileUpload(): Boolean {
 internal fun Endpoint.toOperation(path: String, schemaModelProvider: SchemaModelProvider): Operation {
     log.trace { "Map Endpoint: \"$this\" to Operation." }
     return Operation()
-        .operationId("${method}$path".toValidMethodName()) //Swagger will use this as the method name when generating the client
+        .operationId("${method}$path".toValidMethodName()) // Swagger will use this as the method name when generating the client
         .description(description)
         .responses(
             ApiResponses()
                 .addApiResponse(
-                    HttpStatus.OK_200.toString(),
+                    this.responseBody.successCode.toString(),
                     ApiResponse().withResponseBodyFrom(this, schemaModelProvider)
                 )
                 .addApiResponse(HttpStatus.UNAUTHORIZED_401.toString(), ApiResponse().description("Unauthorized"))
                 .addApiResponse(HttpStatus.FORBIDDEN_403.toString(), ApiResponse().description("Forbidden"))
         )
-        .parameters(parameters.filter { it.type != ParameterType.BODY }
-            .map { it.toOpenApiParameter(schemaModelProvider) })
-        .requestBody(parameters.filter { it.type == ParameterType.BODY }
-            .toRequestBody(schemaModelProvider, title.toValidSchemaName()))
+        .parameters(
+            parameters.filter { it.type != ParameterType.BODY }
+                .map { it.toOpenApiParameter(schemaModelProvider) }
+        )
+        .requestBody(
+            parameters.filter { it.type == ParameterType.BODY }
+                .toRequestBody(schemaModelProvider, title.toValidSchemaName())
+        )
         .also { log.trace { "Map Endpoint: \"$this\" to Operation: \"$it\" completed." } }
 }
 
@@ -224,7 +232,9 @@ private fun ApiResponse.withResponseBodyFrom(
                     MediaType().schema(createResponseSchema(schemaModelProvider, endpoint))
                 )
             )
-        } else this
+        } else {
+            this
+        }
 
         endpoint.responseBody.description.let {
             response.description = it.ifBlank { "Success" }
@@ -286,30 +296,27 @@ private fun Resource.getPathToPathItems(
     log.trace { "Map resource: \"${this.name}\" to Map of Path to PathItem." }
     return endpoints.filter { apiVersion in it.apiVersions }
         .groupBy { joinResourceAndEndpointPaths(path, it.path).toOpenApiPath() }.map {
-        val getEndpoint = it.value.singleOrNull { endpoint -> EndpointMethod.GET == endpoint.method }
-        val postEndpoint = it.value.singleOrNull { endpoint -> EndpointMethod.POST == endpoint.method }
-        val putEndpoint = it.value.singleOrNull { endpoint -> EndpointMethod.PUT == endpoint.method }
-        val deleteEndpoint = it.value.singleOrNull { endpoint -> EndpointMethod.DELETE == endpoint.method }
-        val fullPath = it.key
+            val getEndpoint = it.value.singleOrNull { endpoint -> EndpointMethod.GET == endpoint.method }
+            val postEndpoint = it.value.singleOrNull { endpoint -> EndpointMethod.POST == endpoint.method }
+            val putEndpoint = it.value.singleOrNull { endpoint -> EndpointMethod.PUT == endpoint.method }
+            val deleteEndpoint = it.value.singleOrNull { endpoint -> EndpointMethod.DELETE == endpoint.method }
+            val fullPath = it.key
 
-        fullPath to PathItem().also { pathItem ->
-            val tagName = singletonList(name)
-            getEndpoint?.let {
-                pathItem.get(getEndpoint.toOperation(fullPath, schemaModelProvider).tags(tagName))
+            fullPath to PathItem().also { pathItem ->
+                val tagName = singletonList(name)
+                getEndpoint?.let {
+                    pathItem.get(getEndpoint.toOperation(fullPath, schemaModelProvider).tags(tagName))
+                }
+                postEndpoint?.let {
+                    pathItem.post(postEndpoint.toOperation(fullPath, schemaModelProvider).tags(tagName))
+                }
+                putEndpoint?.let {
+                    pathItem.put(putEndpoint.toOperation(fullPath, schemaModelProvider).tags(tagName))
+                }
+                deleteEndpoint?.let {
+                    pathItem.delete(deleteEndpoint.toOperation(fullPath, schemaModelProvider).tags(tagName))
+                }
             }
-            postEndpoint?.let {
-                pathItem.post(postEndpoint.toOperation(fullPath, schemaModelProvider).tags(tagName))
-            }
-            putEndpoint?.let {
-                pathItem.put(putEndpoint.toOperation(fullPath, schemaModelProvider).tags(tagName))
-            }
-            deleteEndpoint?.let {
-                pathItem.delete(deleteEndpoint.toOperation(fullPath, schemaModelProvider).tags(tagName))
-            }
-        }
-    }.toMap()
+        }.toMap()
         .also { log.trace { "Map resource: ${this.name} to Map of Path to PathItem completed." } }
 }
-
-
-

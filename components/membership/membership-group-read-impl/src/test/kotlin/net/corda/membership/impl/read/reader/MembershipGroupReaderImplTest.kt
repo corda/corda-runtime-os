@@ -202,7 +202,6 @@ class MembershipGroupReaderImplTest {
         assertNull(membershipGroupReaderImpl.lookup(aliceName))
     }
 
-
     @Test
     fun `lookup non-existing member based on name`() {
         mockMemberList(emptyList())

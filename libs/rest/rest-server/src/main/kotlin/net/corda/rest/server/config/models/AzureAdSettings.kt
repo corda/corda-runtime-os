@@ -13,6 +13,5 @@ data class AzureAdSettings(
     }
 
     override fun toString() = "AzureAdSettings(clientId=$clientId, tenantId=$tenantId, " +
-            "principalNameClaims=$principalNameClaims, appIdUri=$appIdUri, trustedIssuers=$trustedIssuers)"
-
+        "principalNameClaims=$principalNameClaims, appIdUri=$appIdUri, trustedIssuers=$trustedIssuers)"
 }

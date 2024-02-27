@@ -27,7 +27,7 @@ class RbacBasicAuthenticationService(
 
         val clearTextPassword = String(password)
 
-        if(repeatedLogonsCache.verifies(loginName, clearTextPassword)) {
+        if (repeatedLogonsCache.verifies(loginName, clearTextPassword)) {
             return true
         }
 

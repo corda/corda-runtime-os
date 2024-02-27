@@ -16,7 +16,9 @@ import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
 import org.slf4j.LoggerFactory
 
-class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constructor(
+class UtxoPersistTransactionRequestHandler
+@Suppress("LongParameterList")
+constructor(
     private val transaction: UtxoTransactionReader,
     private val tokenObservers: UtxoTokenObserverMap,
     private val externalEventContext: ExternalEventContext,
@@ -30,7 +32,6 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
     }
 
     override fun execute(): List<Record<*, *>> {
-
         val listOfPairsStateAndUtxoToken =
             getTokens(transaction.getVisibleStates().values.toList(), tokenObservers)
         val utxoTokenMap = listOfPairsStateAndUtxoToken.associate { it.first.ref to it.second }
@@ -49,7 +50,7 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
         visibleStates.flatMap { stateAndRef ->
             val observerV2 = tokenObservers.getObserverForV2(stateAndRef.state.contractStateType)
             if (observerV2 != null) {
-                return@flatMap  onCommit(observerV2, stateAndRef) { obs, context ->
+                return@flatMap onCommit(observerV2, stateAndRef) { obs, context ->
                     obs.onCommit(context)
                 }
             }

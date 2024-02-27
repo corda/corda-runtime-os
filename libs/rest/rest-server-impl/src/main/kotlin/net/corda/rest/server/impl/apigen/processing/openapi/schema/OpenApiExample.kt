@@ -6,9 +6,9 @@ import org.slf4j.LoggerFactory
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.temporal.TemporalAmount
 import java.util.*
-import java.time.ZonedDateTime
 
 private val log = LoggerFactory.getLogger("net.corda.rest.server.apigen.processing.openapi.schema.OpenApiExample.kt")
 private val instant = Instant.parse("2022-06-24T10:15:30.00Z")
@@ -24,9 +24,13 @@ fun Class<*>.toExample(): Any {
     log.trace { """To example for class: "$this".""" }
 
     if (this.isEnum && this.enumConstants.isNotEmpty()) {
-        //Return the second value if possible
-        return if (enumConstants.size > 1) enumConstants[1] else enumConstants.first().also {
-            log.trace { """To example for class: "$this" completed. Result: "$it".""" }
+        // Return the second value if possible
+        return if (enumConstants.size > 1) {
+            enumConstants[1]
+        } else {
+            enumConstants.first().also {
+                log.trace { """To example for class: "$this" completed. Result: "$it".""" }
+            }
         }
     }
 

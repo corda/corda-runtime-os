@@ -40,12 +40,15 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import net.corda.messaging.api.records.Record
+import net.corda.p2p.linkmanager.TraceableItem
+import net.corda.p2p.linkmanager.common.MessageConverter
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doThrow
 
 class OutboundMessageProcessorTest {
@@ -63,9 +66,7 @@ class OutboundMessageProcessorTest {
         on { getCurrentlyAssignedPartitions() } doReturn setOf(1)
     }
     private val mockTimeFacilitiesProvider = MockTimeFacilitiesProvider()
-    private val sessionManager = mock<SessionManager> {
-        on { recordsForSessionEstablished(any(), any(), any()) } doReturn emptyList()
-    }
+    private val sessionManager = mock<SessionManager>()
     private val messagesPendingSession = mock<PendingSessionMessageQueues>()
     private val authenticationResult = mock<AuthenticationResult> {
         on { mac } doReturn byteArrayOf()
@@ -75,8 +76,11 @@ class OutboundMessageProcessorTest {
     }
     private val serialNumber = 1L
     private val sessionCounterparties = mock<SessionManager.SessionCounterparties> {
+        on { ourId } doReturn myIdentity
+        on { counterpartyId } doReturn remoteIdentity
         on { serial } doReturn serialNumber
     }
+    private val messageConverter = mock<MessageConverter>()
 
     private val networkMessagingValidator = mock<NetworkMessagingValidator> {
         on { validateInbound(any(), any()) } doReturn Either.Left(Unit)
@@ -91,8 +95,18 @@ class OutboundMessageProcessorTest {
         assignedListener,
         messagesPendingSession,
         mockTimeFacilitiesProvider.clock,
+        messageConverter,
         networkMessagingValidator
     )
+
+    private fun setupSessionManager(response: SessionManager.SessionState) {
+        val captor =
+            argumentCaptor<List<TraceableItem<OutboundMessageProcessor.ValidateAuthenticatedMessageResult.SessionNeeded, AppMessage>>>()
+        whenever(sessionManager.processOutboundMessages(captor.capture(), any()))
+            .thenAnswer {
+                captor.firstValue.map {it to response }
+            }
+    }
 
     @Test
     fun `authenticated messages are dropped when source and destination identities are in different groups`() {
@@ -589,6 +603,7 @@ class OutboundMessageProcessorTest {
             assignedListener,
             messagesPendingSession,
             mockTimeFacilitiesProvider.clock,
+            messageConverter,
             networkMessagingValidator,
         )
 
@@ -633,6 +648,7 @@ class OutboundMessageProcessorTest {
             assignedListener,
             messagesPendingSession,
             mockTimeFacilitiesProvider.clock,
+            messageConverter,
             networkMessagingValidator,
         )
 
@@ -765,8 +781,7 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `onNext produces only a LinkManagerProcessed marker (per flowMessage) if SessionAlreadyPending`() {
-        whenever(sessionManager.processOutboundMessage(any()))
-            .thenReturn(SessionManager.SessionState.SessionAlreadyPending(sessionCounterparties))
+        setupSessionManager(SessionManager.SessionState.SessionAlreadyPending(sessionCounterparties))
         val numberOfMessages = 3
         val messages = (1..numberOfMessages).map { i ->
             val header = AuthenticatedMessageHeader(
@@ -800,8 +815,7 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `onNext queue messages if SessionAlreadyPending`() {
-        whenever(sessionManager.processOutboundMessage(any()))
-            .thenReturn(SessionManager.SessionState.SessionAlreadyPending(sessionCounterparties))
+        setupSessionManager(SessionManager.SessionState.SessionAlreadyPending(sessionCounterparties))
         val numberOfMessages = 3
         val messages = (1..numberOfMessages).map { i ->
             val header = AuthenticatedMessageHeader(
@@ -835,8 +849,7 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `processReplayedAuthenticatedMessage produces no records and queues no messages if SessionAlreadyPending`() {
-        whenever(sessionManager.processOutboundMessage(any()))
-            .thenReturn(SessionManager.SessionState.SessionAlreadyPending(sessionCounterparties))
+        setupSessionManager(SessionManager.SessionState.SessionAlreadyPending(sessionCounterparties))
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
                 remoteIdentity.toAvro(),
@@ -867,7 +880,7 @@ class OutboundMessageProcessorTest {
             ),
             sessionCounterparties
         )
-        whenever(sessionManager.processOutboundMessage(any())).thenReturn(state)
+        setupSessionManager(state)
         val inboundSubscribedTopics = setOf(1, 5, 9)
         whenever(assignedListener.getCurrentlyAssignedPartitions()).doReturn(inboundSubscribedTopics)
         val authenticatedMsg = AuthenticatedMessage(
@@ -899,7 +912,7 @@ class OutboundMessageProcessorTest {
                 }
             softly.assertThat(records).filteredOn { it.topic == Schemas.P2P.SESSION_OUT_PARTITIONS }
                 .hasSize(state.messages.size)
-                .extracting<String> { it.key as String }.containsExactlyInAnyOrder(
+                .extracting<String> { it.key }.containsExactlyInAnyOrder(
                     "session-id",
                     "another-session-id"
                 )
@@ -915,7 +928,7 @@ class OutboundMessageProcessorTest {
     fun `processReplayedAuthenticatedMessage produces the correct records if NewSessionsNeeded`() {
         val firstSessionInitMessage = mock<LinkOutMessage>()
         val secondSessionInitMessage = mock<LinkOutMessage>()
-        whenever(sessionManager.processOutboundMessage(any())).thenReturn(
+        setupSessionManager(
             SessionManager.SessionState.NewSessionsNeeded(
                 listOf(
                     "session-id" to firstSessionInitMessage,
@@ -953,7 +966,7 @@ class OutboundMessageProcessorTest {
     fun `processReplayedAuthenticatedMessage will not add to queue if NewSessionsNeeded`() {
         val firstSessionInitMessage = mock<LinkOutMessage>()
         val secondSessionInitMessage = mock<LinkOutMessage>()
-        whenever(sessionManager.processOutboundMessage(any())).thenReturn(
+        setupSessionManager(
             SessionManager.SessionState.NewSessionsNeeded(
                 listOf(
                     "session-id" to firstSessionInitMessage,
@@ -1018,8 +1031,7 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `processReplayedAuthenticatedMessage will not write any records if destination is not in the members map or locally hosted`() {
-        val state = SessionManager.SessionState.SessionEstablished(authenticatedSession, sessionCounterparties)
-        whenever(sessionManager.processOutboundMessage(any())).thenReturn(state)
+        setupSessionManager(SessionManager.SessionState.SessionEstablished(authenticatedSession, sessionCounterparties))
         val authenticatedMessage = AuthenticatedMessage(
             AuthenticatedMessageHeader(
                 HoldingIdentity("CN=PartyE, O=Corp, L=LDN, C=GB", "Group"),
@@ -1037,7 +1049,7 @@ class OutboundMessageProcessorTest {
     @Test
     fun `onNext produces a LinkManagerProcessedMarker per message if SessionEstablished`() {
         val state = SessionManager.SessionState.SessionEstablished(authenticatedSession, sessionCounterparties)
-        whenever(sessionManager.processOutboundMessage(any())).thenReturn(state)
+        setupSessionManager(state)
         val messageIds = (1..3).map { i ->
             "Id$i"
         }
@@ -1062,57 +1074,85 @@ class OutboundMessageProcessorTest {
             )
         }
 
-        val records = processor.onNext(eventLogRecords)
+        val records = processor.onNext(eventLogRecords).filter {
+            it.topic == Schemas.P2P.P2P_OUT_MARKERS
+        }.mapNotNull {
+            val marker = ((it.value as? AppMessageMarker)?.marker) as? LinkManagerProcessedMarker
+            marker?.message
+        }
+
 
         assertThat(records)
             .hasSize(3)
             .allSatisfy {
-                assertThat(it.topic).isEqualTo(Schemas.P2P.P2P_OUT_MARKERS)
+                assertThat(it?.key).isEqualTo("key")
             }.allSatisfy {
-                val marker =  (it.value as? AppMessageMarker)?.marker
-                assertThat(marker).isInstanceOf(LinkManagerProcessedMarker::class.java)
+                assertThat(messages).contains(it?.message)
             }
-
-        messages.forEach { message ->
-            verify(sessionManager).recordsForSessionEstablished(
-                state.session,
-                AuthenticatedMessageAndKey(
-                    message,
-                    "key",
-                ),
-                serialNumber
-            )
-
-        }
         verify(messagesPendingSession, never()).queueMessage(any(), any())
     }
-
     @Test
-    fun `processReplayedAuthenticatedMessage call to recordsForSessionEstablished`() {
+    fun `onNext returns messages returned from recordsForSessionEstablished`() {
         val state = SessionManager.SessionState.SessionEstablished(authenticatedSession, sessionCounterparties)
-        whenever(sessionManager.processOutboundMessage(any())).thenReturn(state)
-        val authenticatedMsg = AuthenticatedMessage(
-            AuthenticatedMessageHeader(
-                remoteIdentity.toAvro(),
-                localIdentity.toAvro(),
-                null, "message-id", "trace-id", "system-1", MembershipStatusFilter.ACTIVE
-            ),
-            ByteBuffer.wrap("0".toByteArray())
-        )
-        val authenticatedMessageAndKey = AuthenticatedMessageAndKey(
-            authenticatedMsg,
-            "key"
-        )
+        setupSessionManager(state)
+        val messageIds = (1..3).map { i ->
+            "Id$i"
+        }
+        val messages = messageIds.map { id ->
+            AuthenticatedMessage(
+                AuthenticatedMessageHeader(
+                    remoteIdentity.toAvro(),
+                    myIdentity.toAvro(),
+                    null, id, "trace-id", "system-1", MembershipStatusFilter.ACTIVE
+                ),
+                ByteBuffer.wrap(id.toByteArray())
+            )
+        }
+        messages.forEachIndexed { index, authenticatedMessage ->
+            whenever(
+                messageConverter.recordsForSessionEstablished(
+                    sessionManager,
+                    state.session,
+                    state.sessionCounterparties.serial,
+                    AuthenticatedMessageAndKey(
+                        authenticatedMessage,
+                        "key",
+                    )
+                )
+            ).doReturn(
+                listOf(
+                    Record(
+                        "topic",
+                        "key-$index",
+                        index,
+                    ),
+                ),
+            )
+        }
+        val eventLogRecords = messages.map { message ->
+            EventLogRecord(
+                Schemas.P2P.P2P_OUT_TOPIC,
+                "key",
+                AppMessage(
+                    message
+                ),
+                0, 0
+            )
+        }
 
-        processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
+        val records = processor.onNext(eventLogRecords)
+            .filter {
+                it.topic == "topic"
+            }.map {
+                it.value
+            }.filterIsInstance<Int>()
 
-        verify(sessionManager, times(1)).recordsForSessionEstablished(state.session, authenticatedMessageAndKey, serialNumber)
-        verify(messagesPendingSession, never()).queueMessage(any(), any())
+        assertThat(records).hasSize(3).containsExactly(0, 1, 2)
     }
 
     @Test
     fun `onNext produces only a LinkManagerProcessedMarker if CannotEstablishSession`() {
-        whenever(sessionManager.processOutboundMessage(any())).thenReturn(SessionManager.SessionState.CannotEstablishSession)
+        setupSessionManager(SessionManager.SessionState.CannotEstablishSession)
         val messages = listOf(
             EventLogRecord(
                 Schemas.P2P.P2P_OUT_TOPIC,
@@ -1144,7 +1184,7 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `processReplayedAuthenticatedMessage doesn't queue messages when CannotEstablishSession`() {
-        whenever(sessionManager.processOutboundMessage(any())).thenReturn(SessionManager.SessionState.CannotEstablishSession)
+        setupSessionManager(SessionManager.SessionState.CannotEstablishSession)
         val records = processor.processReplayedAuthenticatedMessage(
             AuthenticatedMessageAndKey(
                 AuthenticatedMessage(
@@ -1166,7 +1206,7 @@ class OutboundMessageProcessorTest {
     @Test
     fun `onNext produces only a LinkManagerProcessedMarker if destination is not in the network map or locally hosted`() {
         val state = SessionManager.SessionState.SessionEstablished(authenticatedSession, sessionCounterparties)
-        whenever(sessionManager.processOutboundMessage(any())).thenReturn(state)
+        setupSessionManager(state)
         val appMessage = AppMessage(
             AuthenticatedMessage(
                 AuthenticatedMessageHeader(
@@ -1198,8 +1238,7 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `processReplayedAuthenticatedMessage gives TtlExpiredMarker if TTL expiry true and replay true`() {
-        whenever(sessionManager.processOutboundMessage(any()))
-            .thenReturn(SessionManager.SessionState.SessionAlreadyPending(sessionCounterparties))
+        setupSessionManager(SessionManager.SessionState.SessionAlreadyPending(sessionCounterparties))
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
                 remoteIdentity.toAvro(),
@@ -1264,8 +1303,7 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `onNext produces only a LinkManagerDiscardedMarker if source ID is not locally hosted`() {
-        val state = SessionManager.SessionState.SessionEstablished(authenticatedSession, sessionCounterparties)
-        whenever(sessionManager.processOutboundMessage(any())).thenReturn(state)
+        setupSessionManager(SessionManager.SessionState.SessionEstablished(authenticatedSession, sessionCounterparties))
         val appMessage = AppMessage(
             AuthenticatedMessage(
                 AuthenticatedMessageHeader(
@@ -1326,8 +1364,7 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `processReplayedAuthenticatedMessage produces only a LinkManagerDiscardedMarker if source ID is not locally hosted`() {
-        val state = SessionManager.SessionState.SessionEstablished(authenticatedSession, sessionCounterparties)
-        whenever(sessionManager.processOutboundMessage(any())).thenReturn(state)
+        setupSessionManager(SessionManager.SessionState.SessionEstablished(authenticatedSession, sessionCounterparties))
         val authenticatedMessage = AuthenticatedMessage(
             AuthenticatedMessageHeader(
                 HoldingIdentity("CN=PartyC, O=Corp, L=LDN, C=GB", "Group"),
@@ -1352,5 +1389,4 @@ class OutboundMessageProcessorTest {
             it.assertThat(markers.map { it.topic }.distinct()).containsOnly(Schemas.P2P.P2P_OUT_MARKERS)
         }
     }
-
 }

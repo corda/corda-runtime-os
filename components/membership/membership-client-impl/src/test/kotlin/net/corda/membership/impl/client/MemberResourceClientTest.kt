@@ -1,12 +1,12 @@
 package net.corda.membership.impl.client
 
 import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.impl.toWire
-import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -166,7 +166,7 @@ class MemberResourceClientTest {
     )
 
     private val messagingConfig: SmartConfig = mock()
-    private val bootConfig: SmartConfig = mock ()
+    private val bootConfig: SmartConfig = mock()
 
     private val configs = mapOf(
         ConfigKeys.BOOT_CONFIG to bootConfig,
@@ -176,7 +176,8 @@ class MemberResourceClientTest {
     private fun startComponent() = lifecycleHandler?.processEvent(StartEvent(), coordinator)
     private fun stopComponent() = lifecycleHandler?.processEvent(StopEvent(), coordinator)
     private fun changeRegistrationStatus(status: LifecycleStatus) = lifecycleHandler?.processEvent(
-        RegistrationStatusChangeEvent(mock(), status), coordinator
+        RegistrationStatusChangeEvent(mock(), status),
+        coordinator
     )
 
     private fun changeConfig() = lifecycleHandler?.processEvent(
@@ -246,7 +247,8 @@ class MemberResourceClientTest {
         changeRegistrationStatus(LifecycleStatus.UP)
 
         verify(configurationReadService).registerComponentForUpdates(
-            any(), any()
+            any(),
+            any()
         )
         verify(coordinator, never()).updateStatus(eq(LifecycleStatus.UP), any())
     }
@@ -277,7 +279,8 @@ class MemberResourceClientTest {
         changeRegistrationStatus(LifecycleStatus.UP)
 
         verify(configurationReadService).registerComponentForUpdates(
-            any(), any()
+            any(),
+            any()
         )
 
         changeRegistrationStatus(LifecycleStatus.DOWN)
@@ -290,7 +293,8 @@ class MemberResourceClientTest {
         changeRegistrationStatus(LifecycleStatus.UP)
 
         verify(configurationReadService).registerComponentForUpdates(
-            any(), any()
+            any(),
+            any()
         )
 
         changeRegistrationStatus(LifecycleStatus.UP)
@@ -376,8 +380,13 @@ class MemberResourceClientTest {
                     SERIAL,
                 ),
             )
-        whenever(membershipQueryClient.queryRegistrationRequests(
-            any(), eq(null), eq(RegistrationStatus.values().toList()), eq(null))
+        whenever(
+            membershipQueryClient.queryRegistrationRequests(
+                any(),
+                eq(null),
+                eq(RegistrationStatus.values().toList()),
+                eq(null)
+            )
         ).doReturn(MembershipQueryResult.Success(response))
 
         memberOpsClient.start()
@@ -443,8 +452,13 @@ class MemberResourceClientTest {
 
     @Test
     fun `checkRegistrationProgress throw exception if the request fails`() {
-        whenever(membershipQueryClient.queryRegistrationRequests(
-            any(), eq(null), eq(RegistrationStatus.values().toList()), eq(null))
+        whenever(
+            membershipQueryClient.queryRegistrationRequests(
+                any(),
+                eq(null),
+                eq(RegistrationStatus.values().toList()),
+                eq(null)
+            )
         ).doReturn(MembershipQueryResult.Failure("oops"))
 
         memberOpsClient.start()
@@ -457,22 +471,31 @@ class MemberResourceClientTest {
 
     @Test
     fun `checkRegistrationProgress throw exception if deserialization fails`() {
-        whenever(membershipQueryClient.queryRegistrationRequests(
-            any(), eq(null), eq(RegistrationStatus.values().toList()), eq(null))
-        ).doReturn(MembershipQueryResult.Success(listOf(
-            RegistrationRequestDetails(
-                clock.instant().plusSeconds(3),
-                clock.instant().plusSeconds(7),
-                RegistrationStatus.APPROVED,
-                "registration id",
-                "holdingId1",
-                1,
-                signedContext,
-                signedContext,
-                null,
-                SERIAL,
+        whenever(
+            membershipQueryClient.queryRegistrationRequests(
+                any(),
+                eq(null),
+                eq(RegistrationStatus.values().toList()),
+                eq(null)
             )
-        )))
+        ).doReturn(
+            MembershipQueryResult.Success(
+                listOf(
+                    RegistrationRequestDetails(
+                        clock.instant().plusSeconds(3),
+                        clock.instant().plusSeconds(7),
+                        RegistrationStatus.APPROVED,
+                        "registration id",
+                        "holdingId1",
+                        1,
+                        signedContext,
+                        signedContext,
+                        null,
+                        SERIAL,
+                    )
+                )
+            )
+        )
 
         memberOpsClient.start()
         setUpConfig()
@@ -512,7 +535,8 @@ class MemberResourceClientTest {
         setUpConfig()
 
         val result = memberOpsClient.checkSpecificRegistrationProgress(
-            holdingIdentityId, "registration id"
+            holdingIdentityId,
+            "registration id"
         )
 
         assertThat(result).isNotNull

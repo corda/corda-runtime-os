@@ -1,12 +1,16 @@
 package net.corda.session.mapper.service.integration
 
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.CompressionType
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
+import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
+import net.corda.libs.statemanager.api.StateOperationGroup
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.schema.configuration.StateManagerConfig
 import org.osgi.service.component.annotations.Component
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -26,14 +30,14 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
         fun clear() = storage.clear()
     }
 
-    override fun create(config: SmartConfig): StateManager {
+    override fun create(config: SmartConfig, stateType: StateManagerConfig.StateType, compressionType: CompressionType): StateManager {
         return object : StateManager {
             override val name = LifecycleCoordinatorName("MockStateManager", UUID.randomUUID().toString())
 
-            override fun create(states: Collection<State>): Map<String, Exception> {
+            override fun create(states: Collection<State>): Set<String> {
                 return states.mapNotNull {
                     storage.putIfAbsent(it.key, it)
-                }.associate { it.key to RuntimeException("State already exists [$it]") }
+                }.map { it.key }.toSet()
             }
 
             override fun get(keys: Collection<String>): Map<String, State> {
@@ -70,6 +74,10 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
                 }.associateBy { it.key }
             }
 
+            override fun createOperationGroup(): StateOperationGroup {
+                TODO("Not yet implemented")
+            }
+
             override fun updatedBetween(interval: IntervalFilter): Map<String, State> {
                 TODO("Not yet implemented")
             }
@@ -89,10 +97,66 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
             ): Map<String, State> {
                 return storage.filter { (_, state) ->
                     state.modifiedTime >= intervalFilter.start && state.modifiedTime <= intervalFilter.finish
-                }.filter { (_, state) ->
-                    state.metadata.containsKey(metadataFilter.key) && state.metadata[metadataFilter.key] == metadataFilter.value
+                }.filter {
+                    matchesAll(it.value, listOf(metadataFilter))
                 }
             }
+
+            override fun findUpdatedBetweenWithMetadataMatchingAll(
+                intervalFilter: IntervalFilter,
+                metadataFilters: Collection<MetadataFilter>
+            ): Map<String, State> {
+                return storage.filter { (_, state) ->
+                    state.modifiedTime >= intervalFilter.start && state.modifiedTime <= intervalFilter.finish
+                }.filter {
+                    matchesAll(it.value, metadataFilters)
+                }
+            }
+
+            override fun findUpdatedBetweenWithMetadataMatchingAny(
+                intervalFilter: IntervalFilter,
+                metadataFilters: Collection<MetadataFilter>
+            ): Map<String, State> {
+                return storage.filter { (_, state) ->
+                    state.modifiedTime >= intervalFilter.start && state.modifiedTime <= intervalFilter.finish
+                }.filter {
+                    matchesAny(it.value, metadataFilters)
+                }
+            }
+
+            @Suppress("UNCHECKED_CAST")
+            private fun matchesAny(state: State, filters: Collection<MetadataFilter>) =
+                filters.any {
+                    if (state.metadata.containsKey(it.key)) {
+                        val source = state.metadata[it.key] as Comparable<Any>
+
+                        when (it.operation) {
+                            Operation.Equals -> source == it.value
+                            Operation.NotEquals -> source != it.value
+                            Operation.LesserThan -> source < it.value
+                            Operation.GreaterThan -> source > it.value
+                        }
+                    } else {
+                        false
+                    }
+                }
+
+            @Suppress("UNCHECKED_CAST")
+            private fun matchesAll(state: State, filters: Collection<MetadataFilter>) =
+                filters.all {
+                    if (state.metadata.containsKey(it.key)) {
+                        val source = state.metadata[it.key] as Comparable<Any>
+
+                        when (it.operation) {
+                            Operation.Equals -> source == it.value
+                            Operation.NotEquals -> source != it.value
+                            Operation.LesserThan -> source < it.value
+                            Operation.GreaterThan -> source > it.value
+                        }
+                    } else {
+                        false
+                    }
+                }
 
             override val isRunning: Boolean
                 get() = true

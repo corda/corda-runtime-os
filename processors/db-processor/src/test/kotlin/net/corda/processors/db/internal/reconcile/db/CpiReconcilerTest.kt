@@ -4,9 +4,9 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.Random
 import javax.persistence.EntityManager
-import kotlin.streams.toList
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.parseSecureHash
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.cpi.datamodel.repository.CpiMetadataRepository
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CordappType
@@ -24,6 +24,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import javax.persistence.EntityManagerFactory
 
 class CpiReconcilerTest {
     private val random = Random(0)
@@ -86,9 +87,12 @@ class CpiReconcilerTest {
         val em = mock<EntityManager>()
         whenever(em.transaction).thenReturn(mock())
 
-
-        val reconciliationContext = mock<ReconciliationContext>()
-        whenever(reconciliationContext.getOrCreateEntityManager()).thenReturn(em)
+        val entityManagerFactory: EntityManagerFactory = mock()
+        whenever(entityManagerFactory.createEntityManager()).thenReturn(em)
+        
+        val dbConnectionManager: DbConnectionManager = mock()
+        whenever(dbConnectionManager.getClusterEntityManagerFactory()).thenReturn(entityManagerFactory)
+        val reconciliationContext = ClusterReconciliationContext(dbConnectionManager)
 
         val versionedRecords = cpiReconcilerMock.getAllCpiInfoDBVersionedRecords(reconciliationContext).toList()
         val record = versionedRecords.single()

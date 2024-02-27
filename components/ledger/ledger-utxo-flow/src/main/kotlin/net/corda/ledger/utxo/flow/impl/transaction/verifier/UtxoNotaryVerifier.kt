@@ -21,7 +21,7 @@ fun verifyNotaryAllowed(transaction: UtxoLedgerTransaction, signedGroupParameter
     val txGroupParametersHash = (transaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()
     check(txGroupParametersHash == signedGroupParameters.hash.toString()) {
         "Membership group parameters (${signedGroupParameters.hash}) is not the one associated to the transaction " +
-                " in its metadata ($txGroupParametersHash)."
+            " in its metadata ($txGroupParametersHash)."
     }
 
     val notaryCandidate = checkNotNull(allowedNotaries.singleOrNull { it.name == transaction.notaryName }) {
@@ -29,6 +29,6 @@ fun verifyNotaryAllowed(transaction: UtxoLedgerTransaction, signedGroupParameter
     }
     check(notaryCandidate.publicKey == transaction.notaryKey) {
         "Notary key of the transaction (${transaction.notaryKey.publicKeyId()} is not matching against " +
-                "the related notary (${notaryCandidate.publicKey.publicKeyId()} in Signed Group Parameters."
+            "the related notary (${notaryCandidate.publicKey.publicKeyId()} in Signed Group Parameters."
     }
 }

@@ -32,35 +32,33 @@ dependencies {
     implementation "net.corda:corda-config-schema"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
     implementation "info.picocli:picocli:$picocliVersion"
-    implementation "io.javalin:javalin-osgi:$javalinVersion"
+    implementation libs.javalin
     constraints {
-        implementation("org.eclipse.jetty:jetty-server:$jettyVersion") {
+        implementation(libs.bundles.jetty) {
             because 'Javalin uses an older version of Jetty which is exposed to CVE-2023-26048 and CVE-2023-26049. ' +
                     'This might be resolved in the future versions of Javalin.'
         }
     }
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
-    implementation ("io.micrometer:micrometer-core:$micrometerVersion") {
+    implementation libs.jackson.databind
+    implementation (libs.micrometer.core) {
         // we don't need these in classpath, so excluding them to reduce dependencies.
         exclude group: 'org.hdrhistogram', module: 'HdrHistogram'
         exclude group: 'org.latencyutils', module: 'LatencyUtils'
     }
-    implementation "io.micrometer:micrometer-registry-prometheus:$micrometerVersion"
+    implementation libs.micrometer.registry.prometheus
 
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly project(':libs:web:web-impl')
     runtimeOnly "org.apache.commons:commons-lang3:$commonsLangVersion"
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":libs:web:web-impl")
 
     testRuntimeOnly 'org.osgi:osgi.core'
 
     // Required for enterprise addons, so must appear in all worker JARs even if they don't use them
-    runtimeOnly "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    runtimeOnly "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
+    runtimeOnly libs.jackson.module.kotlin
+    runtimeOnly libs.caffeine
     runtimeOnly project(":libs:cache:cache-caffeine")
 }

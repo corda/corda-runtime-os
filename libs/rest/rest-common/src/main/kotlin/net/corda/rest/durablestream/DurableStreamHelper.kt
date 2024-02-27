@@ -1,8 +1,8 @@
 package net.corda.rest.durablestream
 
-import net.corda.rest.security.restContext
 import net.corda.rest.durablestream.api.Cursor
 import net.corda.rest.durablestream.api.FiniteDurableCursorBuilder
+import net.corda.rest.security.restContext
 
 /**
  * A set of helper method to make working with durable streams constructs easier
@@ -22,8 +22,9 @@ object DurableStreamHelper {
      * and returns a result in the form of a [DurableStreamContextExecutionOutcome]
      */
     @JvmStatic
-    fun <T> withDurableStreamContext
-            (block: DurableStreamContext.() -> DurableStreamContextExecutionOutcome<T>): FiniteDurableCursorBuilder<T> {
+    fun <T> withDurableStreamContext(
+        block: DurableStreamContext.() -> DurableStreamContextExecutionOutcome<T>
+    ): FiniteDurableCursorBuilder<T> {
         val durableStreamContext = requireNotNull(restContext()?.invocation?.durableStreamContext) {
             "Durable stream context should always be set for durable streams invocation."
         }

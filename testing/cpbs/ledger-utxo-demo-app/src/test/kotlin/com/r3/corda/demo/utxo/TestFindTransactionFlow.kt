@@ -17,7 +17,7 @@ import org.mockito.kotlin.whenever
 import java.security.KeyPairGenerator
 
 class TestFindTransactionFlow {
-    private val jsonMarshallingService = JsonMarshallingServiceImpl()
+    private val jsonMarshallingService = JsonMarshallingServiceImpl(mock {})
 
     private lateinit var digestService: DigestService
 

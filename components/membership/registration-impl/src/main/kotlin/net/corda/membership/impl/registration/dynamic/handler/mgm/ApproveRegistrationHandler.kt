@@ -11,6 +11,7 @@ import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
+import net.corda.membership.impl.registration.RegistrationLogger
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
@@ -18,8 +19,8 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.VersionedMessageBuilder.retrieveRegistrationStatusMessage
+import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.registration.DECLINED_REASON_FOR_USER_INTERNAL_ERROR
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -71,14 +72,19 @@ internal class ApproveRegistrationHandler(
         val approvedBy = state.mgm
         val approvedMember = state.registeringMember
         val registrationId = state.registrationId
+        val registrationLogger = RegistrationLogger(logger)
+            .setRegistrationId(registrationId)
+            .setMember(approvedMember)
+            .setMgm(approvedBy)
+        registrationLogger.info("Processing registration approval.")
         val messages = try {
             val mgm = memberTypeChecker.getMgmMemberInfo(approvedBy.toCorda())
                 ?: throw CordaRuntimeException(
-                    "Could not approve registration request: '$registrationId' - member ${approvedBy.x500Name} is not an MGM."
+                    "Could not approve registration request. Member is not an MGM."
                 )
             if (memberTypeChecker.isMgm(approvedMember)) {
                 throw CordaRuntimeException(
-                    "The registration request: '$registrationId' cannot be approved by ${approvedMember.x500Name} as it is an MGM."
+                    "The registration request cannot be approved for member as it is an MGM."
                 )
             }
             val groupParameters = groupReaderProvider.getGroupReader(approvedBy.toCorda()).groupParameters
@@ -105,7 +111,7 @@ internal class ApproveRegistrationHandler(
                 if (result is MembershipPersistenceResult.Failure) {
                     throw MembershipPersistenceException(
                         "Failed to update group parameters with notary information of" +
-                                " '${memberInfo.name}', which has role set to 'notary'."
+                            " '${memberInfo.name}', which has role set to 'notary'."
                     )
                 }
                 val persistedGroupParameters = result.getOrThrow()
@@ -118,7 +124,7 @@ internal class ApproveRegistrationHandler(
             val distributionAction = Record(
                 MEMBERSHIP_ACTIONS_TOPIC,
                 "${approvedMember.x500Name}-${approvedMember.groupId}",
-                 MembershipActionsRequest(DistributeMemberInfo(mgm.holdingIdentity.toAvro(), approvedMember, epoch, memberInfo.serial)),
+                MembershipActionsRequest(DistributeMemberInfo(mgm.holdingIdentity.toAvro(), approvedMember, epoch, memberInfo.serial)),
             )
 
             // Push member to member list kafka topic
@@ -151,11 +157,15 @@ internal class ApproveRegistrationHandler(
 
             listOfNotNull(memberRecord, persistApproveMessage, distributionAction, commandToStartProcessingTheNextRequest)
         } catch (e: Exception) {
-            logger.warn("Could not approve registration request: '$registrationId'", e)
+            registrationLogger.warn("Could not approve registration request.", e)
             return RegistrationHandlerResult(
                 state,
-                listOf(Record(REGISTRATION_COMMAND_TOPIC, key,
-                    RegistrationCommand(DeclineRegistration(e.message, DECLINED_REASON_FOR_USER_INTERNAL_ERROR)))
+                listOf(
+                    Record(
+                        REGISTRATION_COMMAND_TOPIC,
+                        key,
+                        RegistrationCommand(DeclineRegistration(e.message, DECLINED_REASON_FOR_USER_INTERNAL_ERROR))
+                    )
                 )
             )
         }

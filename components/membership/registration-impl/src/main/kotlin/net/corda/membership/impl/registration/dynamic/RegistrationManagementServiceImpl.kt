@@ -1,8 +1,8 @@
 package net.corda.membership.impl.registration.dynamic
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.data.membership.command.registration.RegistrationCommand

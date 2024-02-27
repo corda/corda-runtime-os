@@ -5,6 +5,8 @@ plugins {
 
 description 'Endpoint API for management of virtual nodes.'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 

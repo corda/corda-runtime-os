@@ -18,9 +18,9 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "commons-validator:commons-validator:$commonsVersion"
 
-    implementation "io.javalin:javalin-osgi:$javalinVersion"
+    implementation libs.javalin
     constraints {
-        implementation("org.eclipse.jetty:jetty-server:$jettyVersion") {
+        implementation(libs.bundles.jetty) {
             because 'Javalin uses an older version of Jetty which is exposed to CVE-2023-26048 and CVE-2023-26049. ' +
                     'This might be resolved in the future versions of Javalin.'
         }
@@ -32,8 +32,5 @@ dependencies {
 
     testImplementation 'org.osgi:osgi.core'
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-
-    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    integrationTestRuntimeOnly libs.slf4j.simple
 }

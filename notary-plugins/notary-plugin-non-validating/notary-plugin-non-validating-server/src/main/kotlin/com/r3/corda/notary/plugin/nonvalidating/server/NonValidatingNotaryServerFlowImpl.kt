@@ -1,5 +1,6 @@
 package com.r3.corda.notary.plugin.nonvalidating.server
 
+import com.r3.corda.notary.plugin.common.NotaryTransactionDetails
 import com.r3.corda.notary.plugin.common.NotarizationResponse
 import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
 import com.r3.corda.notary.plugin.common.toNotarizationResponse
@@ -34,6 +35,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val NOTARY_SERVICE_NAME = "corda.notary.service.name"
+        const val NOTARY_SERVICE_BACKCHAIN_REQUIRED = "corda.notary.service.backchain.required"
     }
 
     @CordaInject
@@ -112,11 +114,16 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             session.send(uniquenessResult.toNotarizationResponse(txDetails.id, signature))
         } catch (e: Exception) {
             logger.warn("Error while processing request from client. Cause: $e ${e.stackTraceToString()}")
+            val genericMessage = "Error while processing request from client. "
+            val additionalMessage =
+                when (e) {
+                    is InvalidBackchainFlagException -> "Cause: ${e.message}"
+                    else -> "Please contact notary operator for further details."
+                }
             session.send(
                 NotarizationResponse(
                     emptyList(),
-                    NotaryExceptionGeneral("Error while processing request from client. " +
-                            "Please contact notary operator for further details.")
+                    NotaryExceptionGeneral(genericMessage + additionalMessage)
                 )
             )
         }
@@ -126,16 +133,22 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
      * This function will validate selected notary is valid notary to notarize.
      * */
     @Suspendable
-    private fun validateTransactionNotaryAgainstCurrentNotary(txDetails: NonValidatingNotaryTransactionDetails) {
-        val currentNotaryServiceName = memberLookup
+    private fun validateTransactionNotaryAgainstCurrentNotary(txDetails: NotaryTransactionDetails) {
+        val currentNotaryContext = memberLookup
             .myInfo()
             .memberProvidedContext
+        val currentNotaryServiceName = currentNotaryContext
             .parse(NOTARY_SERVICE_NAME, MemberX500Name::class.java)
+        val currentNotaryBackchainRequired = currentNotaryContext
+            .parse(NOTARY_SERVICE_BACKCHAIN_REQUIRED, Boolean::class.java)
 
         require(currentNotaryServiceName == txDetails.notaryName) {
             "Notary service on the transaction ${txDetails.notaryName} does not match the notary service represented" +
                     " by this notary virtual node (${currentNotaryServiceName})"
         }
+
+        if (!currentNotaryBackchainRequired) throw InvalidBackchainFlagException()
+
     }
 
     /**
@@ -145,7 +158,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
      */
     @Suspendable
     @Suppress("TooGenericExceptionCaught")
-    private fun validateRequest(requestPayload: NonValidatingNotarizationPayload): NonValidatingNotaryTransactionDetails {
+    private fun validateRequest(requestPayload: NonValidatingNotarizationPayload): NotaryTransactionDetails {
         val transactionParts = try {
             extractParts(requestPayload)
         } catch (e: Exception) {
@@ -159,10 +172,10 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     }
 
     /**
-     * A helper function that constructs an instance of [NonValidatingNotaryTransactionDetails] from the given transaction.
+     * A helper function that constructs an instance of [NotaryTransactionDetails] from the given transaction.
      */
     @Suspendable
-    private fun extractParts(requestPayload: NonValidatingNotarizationPayload): NonValidatingNotaryTransactionDetails {
+    private fun extractParts(requestPayload: NonValidatingNotarizationPayload): NotaryTransactionDetails {
         val filteredTx = requestPayload.transaction as UtxoFilteredTransaction
 
         // The notary component is not needed by us but we validate that it is present just in case
@@ -194,7 +207,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             "Could not fetch output states from the filtered transaction"
         }
 
-        return NonValidatingNotaryTransactionDetails(
+        return NotaryTransactionDetails(
             filteredTx.id,
             filteredTx.metadata,
             outputStates.size,

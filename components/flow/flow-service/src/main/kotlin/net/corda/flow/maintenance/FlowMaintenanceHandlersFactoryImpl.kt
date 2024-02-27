@@ -24,8 +24,8 @@ class FlowMaintenanceHandlersFactoryImpl @Activate constructor(
 
     private val checkpointDeserializer = avroSerializationFactory.createAvroDeserializer({}, Checkpoint::class.java)
 
-    override fun createScheduledTaskHandler(stateManager: StateManager): SessionTimeoutTaskProcessor {
-        return SessionTimeoutTaskProcessor(stateManager)
+    override fun createScheduledTaskHandler(stateManager: StateManager, config: SmartConfig): FlowTimeoutTaskProcessor {
+        return FlowTimeoutTaskProcessor(stateManager, config)
     }
 
     override fun createTimeoutEventHandler(

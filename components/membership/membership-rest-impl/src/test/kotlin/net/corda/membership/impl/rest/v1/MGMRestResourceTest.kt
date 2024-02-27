@@ -10,10 +10,6 @@ import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
 import net.corda.data.membership.common.ApprovalRuleType.STANDARD
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.v2.RegistrationStatus
-import net.corda.rest.exception.BadRequestException
-import net.corda.rest.exception.InvalidInputDataException
-import net.corda.rest.exception.ResourceNotFoundException
-import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -24,16 +20,21 @@ import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.InternalGroupParameters
-import net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams
-import net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
-import net.corda.membership.rest.v1.types.response.PreAuthToken
-import net.corda.membership.rest.v1.types.response.PreAuthTokenStatus
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.rest.v1.types.RestGroupParameters
+import net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams
+import net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
+import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
+import net.corda.membership.rest.v1.types.response.PreAuthToken
+import net.corda.membership.rest.v1.types.response.PreAuthTokenStatus
+import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.InternalServerException
+import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.InvalidStateChangeException
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.test.util.time.MockTimeFacilitiesProvider
 import net.corda.v5.base.types.MemberX500Name
@@ -45,6 +46,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -62,8 +64,6 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 import javax.persistence.PessimisticLockException
-import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
-import org.junit.jupiter.api.assertDoesNotThrow
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
@@ -112,8 +112,8 @@ class MGMRestResourceTest {
     private val initialTime = Instant.parse("2007-12-03T00:00:00.00Z")
     private val manualDeclinationReason = REASON
     private val suspensionActivationParameters = SuspensionActivationParameters(subject, 1, REASON)
-    private val deprecatedSuspensionActivationParameters
-        = net.corda.membership.rest.v1.types.request.SuspensionActivationParameters(subject, 1, REASON)
+    private val deprecatedSuspensionActivationParameters =
+        net.corda.membership.rest.v1.types.request.SuspensionActivationParameters(subject, 1, REASON)
     private val deserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
@@ -261,7 +261,6 @@ class MGMRestResourceTest {
         fun `addGroupApprovalRule throws bad request for duplicate rule`() {
             startService()
             whenever(mgmResourceClient.addApprovalRule(any(), any())).doThrow(mock<MembershipPersistenceException>())
-
 
             assertThrows<BadRequestException> {
                 mgmRestResource.addGroupApprovalRule(HOLDING_IDENTITY_ID, ApprovalRuleRequestParams(RULE_REGEX, RULE_LABEL))
@@ -443,7 +442,7 @@ class MGMRestResourceTest {
                 HOLDING_IDENTITY_ID,
                 1,
                 mock {
-                     on { data } doReturn ByteBuffer.wrap(byteArrayOf(0))
+                    on { data } doReturn ByteBuffer.wrap(byteArrayOf(0))
                 },
                 mock(),
                 null,
@@ -472,15 +471,21 @@ class MGMRestResourceTest {
             mgmRestResource.approveRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID)
 
             verify(mgmResourceClient).reviewRegistrationRequest(
-                (ShortHash.of(HOLDING_IDENTITY_ID)), REQUEST_ID.uuid(), true
+                (ShortHash.of(HOLDING_IDENTITY_ID)),
+                REQUEST_ID.uuid(),
+                true
             )
         }
 
         @Test
         fun `approveRegistrationRequest throws resource not found for invalid member`() {
-            whenever(mgmResourceClient.reviewRegistrationRequest(
-                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), true
-            )).doThrow(couldNotFindEntityException)
+            whenever(
+                mgmResourceClient.reviewRegistrationRequest(
+                    ShortHash.of(HOLDING_IDENTITY_ID),
+                    REQUEST_ID.uuid(),
+                    true
+                )
+            ).doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.approveRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID)
@@ -489,9 +494,13 @@ class MGMRestResourceTest {
 
         @Test
         fun `approveRegistrationRequest throws invalid input for non MGM member`() {
-            whenever(mgmResourceClient.reviewRegistrationRequest(
-                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), true
-            )).doThrow(mock<MemberNotAnMgmException>())
+            whenever(
+                mgmResourceClient.reviewRegistrationRequest(
+                    ShortHash.of(HOLDING_IDENTITY_ID),
+                    REQUEST_ID.uuid(),
+                    true
+                )
+            ).doThrow(mock<MemberNotAnMgmException>())
 
             assertThrows<InvalidInputDataException> {
                 mgmRestResource.approveRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID)
@@ -507,9 +516,13 @@ class MGMRestResourceTest {
 
         @Test
         fun `approveRegistrationRequest throws bad request if request is not found or is not pending review`() {
-            whenever(mgmResourceClient.reviewRegistrationRequest(
-                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), true
-            )).doThrow(mock<IllegalArgumentException>())
+            whenever(
+                mgmResourceClient.reviewRegistrationRequest(
+                    ShortHash.of(HOLDING_IDENTITY_ID),
+                    REQUEST_ID.uuid(),
+                    true
+                )
+            ).doThrow(mock<IllegalArgumentException>())
 
             assertThrows<BadRequestException> {
                 mgmRestResource.approveRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID)
@@ -518,9 +531,13 @@ class MGMRestResourceTest {
 
         @Test
         fun `approveRegistrationRequest throws internal server exception when deserializing the context fails`() {
-            whenever(mgmResourceClient.reviewRegistrationRequest(
-                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), true
-            )).doThrow(mock<ContextDeserializationException>())
+            whenever(
+                mgmResourceClient.reviewRegistrationRequest(
+                    ShortHash.of(HOLDING_IDENTITY_ID),
+                    REQUEST_ID.uuid(),
+                    true
+                )
+            ).doThrow(mock<ContextDeserializationException>())
 
             assertThrows<InternalServerException> {
                 mgmRestResource.approveRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID)
@@ -541,15 +558,23 @@ class MGMRestResourceTest {
             mgmRestResource.declineRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID, manualDeclinationReason)
 
             verify(mgmResourceClient).reviewRegistrationRequest(
-                (ShortHash.of(HOLDING_IDENTITY_ID)), REQUEST_ID.uuid(), false, manualDeclinationReason
+                (ShortHash.of(HOLDING_IDENTITY_ID)),
+                REQUEST_ID.uuid(),
+                false,
+                manualDeclinationReason
             )
         }
 
         @Test
         fun `declineRegistrationRequest throws resource not found for invalid member`() {
-            whenever(mgmResourceClient.reviewRegistrationRequest(
-                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), false, manualDeclinationReason
-            )).doThrow(couldNotFindEntityException)
+            whenever(
+                mgmResourceClient.reviewRegistrationRequest(
+                    ShortHash.of(HOLDING_IDENTITY_ID),
+                    REQUEST_ID.uuid(),
+                    false,
+                    manualDeclinationReason
+                )
+            ).doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.declineRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID, manualDeclinationReason)
@@ -558,9 +583,14 @@ class MGMRestResourceTest {
 
         @Test
         fun `declineRegistrationRequest throws invalid input for non MGM member`() {
-            whenever(mgmResourceClient.reviewRegistrationRequest(
-                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), false, manualDeclinationReason
-            )).doThrow(mock<MemberNotAnMgmException>())
+            whenever(
+                mgmResourceClient.reviewRegistrationRequest(
+                    ShortHash.of(HOLDING_IDENTITY_ID),
+                    REQUEST_ID.uuid(),
+                    false,
+                    manualDeclinationReason
+                )
+            ).doThrow(mock<MemberNotAnMgmException>())
 
             assertThrows<InvalidInputDataException> {
                 mgmRestResource.declineRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID, manualDeclinationReason)
@@ -576,9 +606,14 @@ class MGMRestResourceTest {
 
         @Test
         fun `declineRegistrationRequest throws bad request if request is not found or is not pending review`() {
-            whenever(mgmResourceClient.reviewRegistrationRequest(
-                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), false, manualDeclinationReason
-            )).doThrow(mock<IllegalArgumentException>())
+            whenever(
+                mgmResourceClient.reviewRegistrationRequest(
+                    ShortHash.of(HOLDING_IDENTITY_ID),
+                    REQUEST_ID.uuid(),
+                    false,
+                    manualDeclinationReason
+                )
+            ).doThrow(mock<IllegalArgumentException>())
 
             assertThrows<BadRequestException> {
                 mgmRestResource.declineRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID, manualDeclinationReason)
@@ -697,7 +732,6 @@ class MGMRestResourceTest {
             )
         }
     }
-
 
     @Nested
     inner class MutualTlsListClientCertificateTest {
@@ -1084,7 +1118,10 @@ class MGMRestResourceTest {
             val expiryTimestamp = initialTime.plus(5, ChronoUnit.DAYS)
             whenever(
                 mgmResourceClient.generatePreAuthToken(
-                    ShortHash.of(HOLDING_IDENTITY_ID), MemberX500Name.parse(subject), expiryTimestamp, remark
+                    ShortHash.of(HOLDING_IDENTITY_ID),
+                    MemberX500Name.parse(subject),
+                    expiryTimestamp,
+                    remark
                 )
             ).doReturn(AvroPreAuthToken(tokenId, subject, expiryTimestamp, AvroPreAuthTokenStatus.AVAILABLE, remark, removalRemark))
 
@@ -1101,7 +1138,7 @@ class MGMRestResourceTest {
         @Test
         fun `it fails when not ready`() {
             assertThrows<ServiceUnavailableException> {
-                mgmRestResource.getPreAuthTokens(HOLDING_IDENTITY_ID, null, null,  false)
+                mgmRestResource.getPreAuthTokens(HOLDING_IDENTITY_ID, null, null, false)
             }
         }
 
@@ -1259,9 +1296,14 @@ class MGMRestResourceTest {
 
         @Test
         fun `suspendMember throws resource not found for invalid member`() {
-            whenever(mgmResourceClient.suspendMember(
-                ShortHash.of(HOLDING_IDENTITY_ID), MemberX500Name.parse(subject), SERIAL, REASON
-            )).doThrow(couldNotFindEntityException)
+            whenever(
+                mgmResourceClient.suspendMember(
+                    ShortHash.of(HOLDING_IDENTITY_ID),
+                    MemberX500Name.parse(subject),
+                    SERIAL,
+                    REASON
+                )
+            ).doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.suspendMember(HOLDING_IDENTITY_ID, suspensionActivationParameters)
@@ -1270,9 +1312,14 @@ class MGMRestResourceTest {
 
         @Test
         fun `suspendMember throws invalid input for non MGM member`() {
-            whenever(mgmResourceClient.suspendMember(
-                ShortHash.of(HOLDING_IDENTITY_ID), MemberX500Name.parse(subject), SERIAL, REASON
-            )).doThrow(mock<MemberNotAnMgmException>())
+            whenever(
+                mgmResourceClient.suspendMember(
+                    ShortHash.of(HOLDING_IDENTITY_ID),
+                    MemberX500Name.parse(subject),
+                    SERIAL,
+                    REASON
+                )
+            ).doThrow(mock<MemberNotAnMgmException>())
 
             assertThrows<InvalidInputDataException> {
                 mgmRestResource.suspendMember(HOLDING_IDENTITY_ID, suspensionActivationParameters)
@@ -1289,9 +1336,14 @@ class MGMRestResourceTest {
         @Test
         fun `suspendMember throws bad request if MGM tries to suspend itself`() {
             val mgm = HoldingIdentity(MemberX500Name.parse("C=GB,L=London,O=MGM"), "group")
-            whenever(mgmResourceClient.suspendMember(
-                mgm.shortHash, mgm.x500Name, SERIAL, REASON
-            )).doThrow(mock<IllegalArgumentException>())
+            whenever(
+                mgmResourceClient.suspendMember(
+                    mgm.shortHash,
+                    mgm.x500Name,
+                    SERIAL,
+                    REASON
+                )
+            ).doThrow(mock<IllegalArgumentException>())
 
             assertThrows<BadRequestException> {
                 mgmRestResource.suspendMember(
@@ -1304,9 +1356,14 @@ class MGMRestResourceTest {
         @Test
         fun `suspendMember throws bad request if member is not currently active`() {
             val mgm = HoldingIdentity(MemberX500Name.parse("C=GB,L=London,O=SuspendedMember"), "group")
-            whenever(mgmResourceClient.suspendMember(
-                mgm.shortHash, mgm.x500Name, SERIAL, REASON
-            )).doThrow(mock<IllegalArgumentException>())
+            whenever(
+                mgmResourceClient.suspendMember(
+                    mgm.shortHash,
+                    mgm.x500Name,
+                    SERIAL,
+                    REASON
+                )
+            ).doThrow(mock<IllegalArgumentException>())
 
             assertThrows<BadRequestException> {
                 mgmRestResource.suspendMember(
@@ -1319,9 +1376,13 @@ class MGMRestResourceTest {
         @Test
         fun `suspendMember throws resource not found if member to be suspended is not found`() {
             val missingMember = MemberX500Name.parse("C=GB,L=London,O=MissingMember")
-            whenever(mgmResourceClient.suspendMember(
-                ShortHash.of(HOLDING_IDENTITY_ID), missingMember, 1
-            )).doThrow(mock<NoSuchElementException>())
+            whenever(
+                mgmResourceClient.suspendMember(
+                    ShortHash.of(HOLDING_IDENTITY_ID),
+                    missingMember,
+                    1
+                )
+            ).doThrow(mock<NoSuchElementException>())
 
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.suspendMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(missingMember.toString(), 1))
@@ -1330,9 +1391,13 @@ class MGMRestResourceTest {
 
         @Test
         fun `suspendMember throws invalid state change in case of concurrent update attempt`() {
-            whenever(mgmResourceClient.suspendMember(
-                ShortHash.of(HOLDING_IDENTITY_ID), MemberX500Name.parse(subject), 1
-            )).doThrow(mock<PessimisticLockException>())
+            whenever(
+                mgmResourceClient.suspendMember(
+                    ShortHash.of(HOLDING_IDENTITY_ID),
+                    MemberX500Name.parse(subject),
+                    1
+                )
+            ).doThrow(mock<PessimisticLockException>())
 
             assertThrows<InvalidStateChangeException> {
                 mgmRestResource.suspendMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject, 1))
@@ -1341,9 +1406,13 @@ class MGMRestResourceTest {
 
         @Test
         fun `suspendMember throws invalid state change in case of failed serial number check`() {
-            whenever(mgmResourceClient.suspendMember(
-                ShortHash.of(HOLDING_IDENTITY_ID), MemberX500Name.parse(subject), 1
-            )).doThrow(mock<InvalidEntityUpdateException>())
+            whenever(
+                mgmResourceClient.suspendMember(
+                    ShortHash.of(HOLDING_IDENTITY_ID),
+                    MemberX500Name.parse(subject),
+                    1
+                )
+            ).doThrow(mock<InvalidEntityUpdateException>())
 
             assertThrows<InvalidStateChangeException> {
                 mgmRestResource.suspendMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject, 1))
@@ -1401,9 +1470,14 @@ class MGMRestResourceTest {
 
         @Test
         fun `activateMember throws resource not found for invalid member`() {
-            whenever(mgmResourceClient.activateMember(
-                ShortHash.of(HOLDING_IDENTITY_ID), MemberX500Name.parse(subject), SERIAL, REASON
-            )).doThrow(couldNotFindEntityException)
+            whenever(
+                mgmResourceClient.activateMember(
+                    ShortHash.of(HOLDING_IDENTITY_ID),
+                    MemberX500Name.parse(subject),
+                    SERIAL,
+                    REASON
+                )
+            ).doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.activateMember(HOLDING_IDENTITY_ID, suspensionActivationParameters)
@@ -1412,9 +1486,14 @@ class MGMRestResourceTest {
 
         @Test
         fun `activateMember throws invalid input for non MGM member`() {
-            whenever(mgmResourceClient.activateMember(
-                ShortHash.of(HOLDING_IDENTITY_ID), MemberX500Name.parse(subject), SERIAL, REASON
-            )).doThrow(mock<MemberNotAnMgmException>())
+            whenever(
+                mgmResourceClient.activateMember(
+                    ShortHash.of(HOLDING_IDENTITY_ID),
+                    MemberX500Name.parse(subject),
+                    SERIAL,
+                    REASON
+                )
+            ).doThrow(mock<MemberNotAnMgmException>())
 
             assertThrows<InvalidInputDataException> {
                 mgmRestResource.activateMember(HOLDING_IDENTITY_ID, suspensionActivationParameters)
@@ -1431,9 +1510,14 @@ class MGMRestResourceTest {
         @Test
         fun `activateMember throws bad request if MGM tries to activate itself`() {
             val mgm = HoldingIdentity(MemberX500Name.parse("C=GB,L=London,O=MGM"), "group")
-            whenever(mgmResourceClient.activateMember(
-                mgm.shortHash, mgm.x500Name, SERIAL, REASON
-            )).doThrow(mock<IllegalArgumentException>())
+            whenever(
+                mgmResourceClient.activateMember(
+                    mgm.shortHash,
+                    mgm.x500Name,
+                    SERIAL,
+                    REASON
+                )
+            ).doThrow(mock<IllegalArgumentException>())
 
             assertThrows<BadRequestException> {
                 mgmRestResource.activateMember(
@@ -1446,9 +1530,14 @@ class MGMRestResourceTest {
         @Test
         fun `activateMember throws bad request if member is not currently suspended`() {
             val mgm = HoldingIdentity(MemberX500Name.parse("C=GB,L=London,O=ActiveMember"), "group")
-            whenever(mgmResourceClient.activateMember(
-                mgm.shortHash, mgm.x500Name, SERIAL, REASON
-            )).doThrow(mock<IllegalArgumentException>())
+            whenever(
+                mgmResourceClient.activateMember(
+                    mgm.shortHash,
+                    mgm.x500Name,
+                    SERIAL,
+                    REASON
+                )
+            ).doThrow(mock<IllegalArgumentException>())
 
             assertThrows<BadRequestException> {
                 mgmRestResource.activateMember(
@@ -1461,9 +1550,13 @@ class MGMRestResourceTest {
         @Test
         fun `activateMember throws resource not found if member to be activated is not found`() {
             val missingMember = MemberX500Name.parse("C=GB,L=London,O=MissingMember")
-            whenever(mgmResourceClient.activateMember(
-                ShortHash.of(HOLDING_IDENTITY_ID), missingMember, 1
-            )).doThrow(mock<NoSuchElementException>())
+            whenever(
+                mgmResourceClient.activateMember(
+                    ShortHash.of(HOLDING_IDENTITY_ID),
+                    missingMember,
+                    1
+                )
+            ).doThrow(mock<NoSuchElementException>())
 
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.activateMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(missingMember.toString(), 1))
@@ -1472,9 +1565,13 @@ class MGMRestResourceTest {
 
         @Test
         fun `activateMember throws invalid state change in case of concurrent update attempt`() {
-            whenever(mgmResourceClient.activateMember(
-                ShortHash.of(HOLDING_IDENTITY_ID), MemberX500Name.parse(subject), 1
-            )).doThrow(mock<PessimisticLockException>())
+            whenever(
+                mgmResourceClient.activateMember(
+                    ShortHash.of(HOLDING_IDENTITY_ID),
+                    MemberX500Name.parse(subject),
+                    1
+                )
+            ).doThrow(mock<PessimisticLockException>())
 
             assertThrows<InvalidStateChangeException> {
                 mgmRestResource.activateMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject, 1))
@@ -1483,15 +1580,18 @@ class MGMRestResourceTest {
 
         @Test
         fun `activateMember throws invalid state change in case of failed serial number check`() {
-            whenever(mgmResourceClient.activateMember(
-                ShortHash.of(HOLDING_IDENTITY_ID), MemberX500Name.parse(subject), 1
-            )).doThrow(mock<InvalidEntityUpdateException>())
+            whenever(
+                mgmResourceClient.activateMember(
+                    ShortHash.of(HOLDING_IDENTITY_ID),
+                    MemberX500Name.parse(subject),
+                    1
+                )
+            ).doThrow(mock<InvalidEntityUpdateException>())
 
             assertThrows<InvalidStateChangeException> {
                 mgmRestResource.activateMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject, 1))
             }
         }
-
 
         @Test
         fun `activateMember throws BadRequestException when serial number is null`() {
@@ -1538,9 +1638,12 @@ class MGMRestResourceTest {
 
         @Test
         fun `updateGroupParameters throws resource not found for invalid member`() {
-            whenever(mgmResourceClient.updateGroupParameters(
-                ShortHash.of(HOLDING_IDENTITY_ID), mockUpdate.parameters
-            )).doThrow(couldNotFindEntityException)
+            whenever(
+                mgmResourceClient.updateGroupParameters(
+                    ShortHash.of(HOLDING_IDENTITY_ID),
+                    mockUpdate.parameters
+                )
+            ).doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.updateGroupParameters(HOLDING_IDENTITY_ID, mockUpdate)
@@ -1549,9 +1652,12 @@ class MGMRestResourceTest {
 
         @Test
         fun `updateGroupParameters throws invalid input for non MGM member`() {
-            whenever(mgmResourceClient.updateGroupParameters(
-                ShortHash.of(HOLDING_IDENTITY_ID), mockUpdate.parameters
-            )).doThrow(mock<MemberNotAnMgmException>())
+            whenever(
+                mgmResourceClient.updateGroupParameters(
+                    ShortHash.of(HOLDING_IDENTITY_ID),
+                    mockUpdate.parameters
+                )
+            ).doThrow(mock<MemberNotAnMgmException>())
 
             assertThrows<InvalidInputDataException> {
                 mgmRestResource.updateGroupParameters(HOLDING_IDENTITY_ID, mockUpdate)
@@ -1577,14 +1683,16 @@ class MGMRestResourceTest {
 
         @Test
         fun `updateGroupParameters throws invalid state change in case of concurrent update attempt`() {
-            whenever(mgmResourceClient.updateGroupParameters(
-                ShortHash.of(HOLDING_IDENTITY_ID), mockUpdate.parameters
-            )).doThrow(mock<PessimisticLockException>())
+            whenever(
+                mgmResourceClient.updateGroupParameters(
+                    ShortHash.of(HOLDING_IDENTITY_ID),
+                    mockUpdate.parameters
+                )
+            ).doThrow(mock<PessimisticLockException>())
 
             assertThrows<InvalidStateChangeException> {
                 mgmRestResource.updateGroupParameters(HOLDING_IDENTITY_ID, mockUpdate)
             }
         }
     }
-
 }

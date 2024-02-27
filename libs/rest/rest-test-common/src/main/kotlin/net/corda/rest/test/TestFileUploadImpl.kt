@@ -1,9 +1,9 @@
 package net.corda.rest.test
 
-import java.io.InputStream
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.test.utils.ChecksumUtil
+import java.io.InputStream
 
 class TestFileUploadImpl : TestFileUploadAPI, PluggableRestResource<TestFileUploadAPI> {
 

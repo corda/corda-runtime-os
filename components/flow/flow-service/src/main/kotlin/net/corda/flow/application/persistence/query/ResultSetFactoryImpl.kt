@@ -24,7 +24,7 @@ class ResultSetFactoryImpl @Activate constructor(
 ) : ResultSetFactory, UsedByFlow {
 
     override fun <R> create(
-        parameters: Map<String, Any>,
+        parameters: Map<String, Any?>,
         limit: Int,
         offset: Int,
         resultClass: Class<R>,
@@ -34,7 +34,7 @@ class ResultSetFactoryImpl @Activate constructor(
     }
 
     override fun <R> create(
-        parameters: Map<String, Any>,
+        parameters: Map<String, Any?>,
         limit: Int,
         resultClass: Class<R>,
         resultSetExecutor: StableResultSetExecutor<R>
@@ -47,9 +47,11 @@ class ResultSetFactoryImpl @Activate constructor(
             resultSetExecutor)
     }
 
-    private fun getSerializedParameters(parameters: Map<String, Any>): Map<String, ByteBuffer> {
-        return parameters.mapValues {
-            ByteBuffer.wrap(serializationService.serialize(it.value).bytes)
+    private fun getSerializedParameters(parameters: Map<String, Any?>): Map<String, ByteBuffer?> {
+        return parameters.mapValues { (_, param) ->
+            param?.let {
+                ByteBuffer.wrap(serializationService.serialize(it).bytes)
+            }
         }
     }
 }

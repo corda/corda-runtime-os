@@ -4,10 +4,7 @@ import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.pipeline.CheckpointInitializer
 import net.corda.flow.pipeline.events.FlowEventContext
-import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
-import net.corda.flow.pipeline.handlers.waiting.WaitingForStartFlow
-import net.corda.virtualnode.OperationalStatus
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.data.flow.state.waiting.start.WaitingForStartFlow
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -16,8 +13,6 @@ import org.slf4j.LoggerFactory
 
 @Component(service = [FlowEventHandler::class])
 class StartFlowEventHandler @Activate constructor(
-    @Reference(service = VirtualNodeInfoReadService::class)
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = CheckpointInitializer::class)
     private val checkpointInitializer: CheckpointInitializer
 ) : FlowEventHandler<StartFlow> {
@@ -31,19 +26,9 @@ class StartFlowEventHandler @Activate constructor(
     override fun preProcess(context: FlowEventContext<StartFlow>): FlowEventContext<StartFlow> {
         log.info("Flow [${context.checkpoint.flowId}] started")
 
-        val holdingIdentity = context.inputEventPayload.startContext.identity.toCorda()
-        val virtualNodeInfo = virtualNodeInfoReadService.get(holdingIdentity)
-
-        if (virtualNodeInfo?.flowStartOperationalStatus == OperationalStatus.INACTIVE) {
-            throw FlowMarkedForKillException(
-                "flowStartOperationalStatus is INACTIVE, new flows cannot be started for virtual node with " +
-                        "shortHash ${holdingIdentity.shortHash}"
-            )
-        }
-
         checkpointInitializer.initialize(
             context.checkpoint,
-            WaitingFor(WaitingForStartFlow),
+            WaitingFor(WaitingForStartFlow()),
             context.inputEventPayload.startContext.identity.toCorda(),
         ) {
             context.inputEventPayload.startContext

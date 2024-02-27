@@ -5,6 +5,8 @@ plugins {
 
 description 'Membership persistent data model'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:osgi.core"
@@ -20,9 +22,6 @@ dependencies {
     implementation project(":libs:db:db-orm")
 
     testImplementation 'net.corda:corda-avro-schema'
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
 
 // This is required for Hibernate Proxy generation. Without it OSGi will report:

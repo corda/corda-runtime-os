@@ -39,7 +39,7 @@ class AllowedCertificatesReaderWriterServiceImpl @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-): AllowedCertificatesReaderWriterService {
+) : AllowedCertificatesReaderWriterService {
     private companion object {
         const val FOLLOW_CHANGES_RESOURCE_NAME = "AllowedCertificatesReaderWriterService.followStatusChangesByName"
         const val WAIT_FOR_CONFIG_RESOURCE_NAME = "AllowedCertificatesReaderWriterService.registerComponentForUpdates"
@@ -49,11 +49,11 @@ class AllowedCertificatesReaderWriterServiceImpl @Activate constructor(
         const val PUBLISHER_CLIENT_ID = "mgm-allowed-certificate-subjects-writer"
     }
     private val publishedSubjects = ConcurrentHashMap.newKeySet<MgmAllowedCertificateSubject>()
-    private val coordinator = coordinatorFactory.createCoordinator<AllowedCertificatesReaderWriterService> {event, _ ->
+    private val coordinator = coordinatorFactory.createCoordinator<AllowedCertificatesReaderWriterService> { event, _ ->
         handleEvent(event)
     }
     private fun handleEvent(event: LifecycleEvent) {
-        when(event) {
+        when (event) {
             is StartEvent -> {
                 coordinator.createManagedResource(FOLLOW_CHANGES_RESOURCE_NAME) {
                     coordinator.followStatusChangesByName(
@@ -122,7 +122,7 @@ class AllowedCertificatesReaderWriterServiceImpl @Activate constructor(
         }
     }
 
-    private inner class Processor: CompactedProcessor<String, MgmAllowedCertificateSubject> {
+    private inner class Processor : CompactedProcessor<String, MgmAllowedCertificateSubject> {
         override val keyClass = String::class.java
         override val valueClass = MgmAllowedCertificateSubject::class.java
 
@@ -132,7 +132,7 @@ class AllowedCertificatesReaderWriterServiceImpl @Activate constructor(
             currentData: Map<String, MgmAllowedCertificateSubject>,
         ) {
             val newData = newRecord.value
-            if(newData != null) {
+            if (newData != null) {
                 publishedSubjects.add(newData)
             } else {
                 if (oldValue != null) {
@@ -145,13 +145,11 @@ class AllowedCertificatesReaderWriterServiceImpl @Activate constructor(
             publishedSubjects.addAll(currentData.values)
             coordinator.updateStatus(LifecycleStatus.UP)
         }
-
     }
 
-    override fun getAllVersionedRecords():
-            Stream<VersionedRecord<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject>>? {
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject>> {
         return publishedSubjects.stream().map {
-            object: VersionedRecord<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject> {
+            object : VersionedRecord<MgmAllowedCertificateSubject, MgmAllowedCertificateSubject> {
                 override val version = 1
                 override val isDeleted = false
                 override val key = it
@@ -160,8 +158,7 @@ class AllowedCertificatesReaderWriterServiceImpl @Activate constructor(
         }
     }
 
-    private fun MgmAllowedCertificateSubject.key(): String
-        = "${this.groupId};${this.subject}"
+    private fun MgmAllowedCertificateSubject.key(): String = "${this.groupId};${this.subject}"
 
     override fun put(recordKey: MgmAllowedCertificateSubject, recordValue: MgmAllowedCertificateSubject) {
         coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)?.publish(

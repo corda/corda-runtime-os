@@ -2,14 +2,19 @@ plugins {
     id 'corda.common-publishing'
     id 'corda.common-library'
 }
+
 description 'State Manager API'
+ext.cordaEnableFormatting = true
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     api project(":libs:lifecycle:lifecycle")
     api project(":libs:configuration:configuration-core")
+    api 'net.corda:corda-config-schema'
 
     implementation "net.corda:corda-base"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    testImplementation libs.assertj.core
 }

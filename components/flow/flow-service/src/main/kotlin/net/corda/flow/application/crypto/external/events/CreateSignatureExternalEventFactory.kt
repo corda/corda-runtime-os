@@ -7,7 +7,7 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
-import net.corda.schema.Schemas
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.SignatureSpec
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -35,7 +35,7 @@ class CreateSignatureExternalEventFactory @Activate constructor(
             context = emptyMap(),
             flowExternalEventContext = flowExternalEventContext
         )
-        return ExternalEventRecord(topic = Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC, payload = flowOpsRequest)
+        return ExternalEventRecord(payload = flowOpsRequest)
     }
 
     override fun resumeWith(checkpoint: FlowCheckpoint, response: FlowOpsResponse): DigitalSignatureWithKey {
@@ -43,4 +43,5 @@ class CreateSignatureExternalEventFactory @Activate constructor(
     }
 }
 
+@CordaSerializable
 data class SignParameters(val bytes: ByteArray, val encodedPublicKeyBytes: ByteArray, val signatureSpec: SignatureSpec)

@@ -2,15 +2,15 @@ package net.corda.membership.impl.registration.dynamic.handler.member
 
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.member.PersistMemberRegistrationState
-import net.corda.data.membership.common.RegistrationStatus as RegistrationStatusV1
-import net.corda.data.membership.common.v2.RegistrationStatus as RegistrationStatusV2
-import net.corda.data.membership.p2p.SetOwnRegistrationStatus as SetOwnRegistrationStatusV1
-import net.corda.data.membership.p2p.v2.SetOwnRegistrationStatus as SetOwnRegistrationStatusV2
 import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.virtualnode.toCorda
+import net.corda.data.membership.common.RegistrationStatus as RegistrationStatusV1
+import net.corda.data.membership.common.v2.RegistrationStatus as RegistrationStatusV2
+import net.corda.data.membership.p2p.SetOwnRegistrationStatus as SetOwnRegistrationStatusV1
+import net.corda.data.membership.p2p.v2.SetOwnRegistrationStatus as SetOwnRegistrationStatusV2
 
 internal class PersistMemberRegistrationStateHandler(
     private val membershipPersistenceClient: MembershipPersistenceClient,
@@ -55,7 +55,7 @@ internal class PersistMemberRegistrationStateHandler(
     }
 
     private fun RegistrationStatusV1.toV2(): RegistrationStatusV2 {
-        return when(this) {
+        return when (this) {
             RegistrationStatusV1.NEW -> RegistrationStatusV2.NEW
             RegistrationStatusV1.SENT_TO_MGM -> RegistrationStatusV2.SENT_TO_MGM
             RegistrationStatusV1.RECEIVED_BY_MGM -> RegistrationStatusV2.RECEIVED_BY_MGM
@@ -68,6 +68,5 @@ internal class PersistMemberRegistrationStateHandler(
             RegistrationStatusV1.FAILED -> RegistrationStatusV2.FAILED
             else -> throw IllegalArgumentException("Unknown status '${this.name}' received.")
         }
-
     }
 }

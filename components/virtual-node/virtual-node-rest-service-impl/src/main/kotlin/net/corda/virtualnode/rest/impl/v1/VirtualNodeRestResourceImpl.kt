@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.ShortHash
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.virtualnode.DbTypes
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
@@ -13,20 +14,23 @@ import net.corda.data.virtualnode.VirtualNodeOperationStatus
 import net.corda.data.virtualnode.VirtualNodeOperationStatusRequest
 import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
 import net.corda.data.virtualnode.VirtualNodeOperationalState
+import net.corda.data.virtualnode.VirtualNodeSchemaRequest
+import net.corda.data.virtualnode.VirtualNodeSchemaResponse
 import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
+import net.corda.data.virtualnode.VirtualNodeUpdateDbStatusResponse
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.external.messaging.serialization.ExternalMessagingRouteConfigSerializerImpl
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
-import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
 import net.corda.libs.virtualnode.common.exception.LiquibaseDiffCheckFailedException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationBadRequestException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationNotFoundException
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.UpdateVirtualNodeDbRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
 import net.corda.lifecycle.CustomEvent
@@ -195,7 +199,9 @@ internal class VirtualNodeRestResourceImpl(
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {
                         virtualNodeSenderFactory.createSender(
-                            duration, messagingConfig, PublisherConfig(VIRTUAL_NODE_ASYNC_OPERATION_CLIENT_ID)
+                            duration,
+                            messagingConfig,
+                            PublisherConfig(VIRTUAL_NODE_ASYNC_OPERATION_CLIENT_ID)
                         )
                     }
 
@@ -291,8 +297,10 @@ internal class VirtualNodeRestResourceImpl(
         }
 
         if (currentCpi.fileChecksum.toHexString().slice(targetCpiFileChecksum.indices) == targetCpiFileChecksum) {
-            throw InvalidStateChangeException("Virtual Node with shorthash $virtualNodeShortId already has " +
-                    "CPI with file checksum $targetCpiFileChecksum")
+            throw InvalidStateChangeException(
+                "Virtual Node with shorthash $virtualNodeShortId already has " +
+                    "CPI with file checksum $targetCpiFileChecksum"
+            )
         }
 
         val targetCpi = virtualNodeValidationService.validateAndGetCpiByChecksum(targetCpiFileChecksum)
@@ -337,6 +345,14 @@ internal class VirtualNodeRestResourceImpl(
         val resp: VirtualNodeManagementResponse = sendAndReceive(rpcRequest)
 
         return when (val resolvedResponse = resp.responseType) {
+            is VirtualNodeUpdateDbStatusResponse -> {
+                // It's a connection string change
+                messageConverter.convert(
+                    resolvedResponse.virtualNodeOperationStatus,
+                    OperationTypes.CHANGE_VIRTUAL_NODE_DB.toString(),
+                    null
+                )
+            }
             is VirtualNodeOperationStatusResponse -> {
                 resolvedResponse.run {
                     val x = this.operationHistory.first()
@@ -347,6 +363,64 @@ internal class VirtualNodeRestResourceImpl(
                         null
                     )
                 }
+            }
+            is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
+            else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
+        }
+    }
+
+    override fun getCreateCryptoSchemaSQL(): String {
+        return getSchemaSql(DbTypes.CRYPTO, null, null)
+    }
+
+    override fun getCreateUniquenessSchemaSQL(): String {
+        return getSchemaSql(DbTypes.UNIQUENESS, null, null)
+    }
+
+    override fun getCreateVaultSchemaSQL(cpiChecksum: String): String {
+        return getSchemaSql(DbTypes.VAULT, null, cpiChecksum)
+    }
+
+    override fun getUpdateSchemaSQL(virtualNodeShortId: String, newCpiChecksum: String): String {
+        return getSchemaSql(DbTypes.VAULT, virtualNodeShortId, newCpiChecksum)
+    }
+
+    private fun getSchemaSql(
+        dbType: DbTypes,
+        virtualNodeShortId: String?,
+        cpiChecksum: String?
+    ): String {
+        val instant = clock.instant()
+
+        val managementRequest = VirtualNodeManagementRequest(
+            instant,
+            VirtualNodeSchemaRequest(
+                dbType,
+                virtualNodeShortId,
+                cpiChecksum
+            )
+        )
+
+        val operationLog = when (dbType) {
+            DbTypes.CRYPTO -> "get Schema SQL to create Crypto DB"
+            DbTypes.UNIQUENESS -> "get Schema SQL to create Uniqueness DB"
+            DbTypes.VAULT -> {
+                if (virtualNodeShortId.isNullOrBlank()) {
+                    "get Schema SQL to create Vault DB and CPI"
+                } else {
+                    "get Schema SQL to update CPI"
+                }
+            }
+        }
+
+        // Send request and await response message on bus
+        val resp = tryWithExceptionHandling(logger, operationLog) {
+            sendAndReceive(managementRequest)
+        }
+
+        return when (val resolvedResponse = resp.responseType) {
+            is VirtualNodeSchemaResponse -> {
+                resolvedResponse.schemaSql
             }
 
             is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
@@ -367,7 +441,9 @@ internal class VirtualNodeRestResourceImpl(
         sendAsync(
             virtualNodeShortId,
             VirtualNodeAsynchronousRequest(
-                requestTime, requestId, VirtualNodeUpgradeRequest(virtualNodeShortId, targetCpiFileChecksum, actor, forceUpgrade)
+                requestTime,
+                requestId,
+                VirtualNodeUpgradeRequest(virtualNodeShortId, targetCpiFileChecksum, actor, forceUpgrade)
             )
         )
 
@@ -380,7 +456,9 @@ internal class VirtualNodeRestResourceImpl(
      * triggering more than once.
      */
     private fun generateUpgradeRequestId(
-        virtualNodeShortId: String, currentCpiFileChecksum: String, targetCpiFileChecksum: String
+        virtualNodeShortId: String,
+        currentCpiFileChecksum: String,
+        targetCpiFileChecksum: String
     ): String {
         return virtualNodeShortId.take(12) + currentCpiFileChecksum.take(12) + targetCpiFileChecksum.take(12)
     }
@@ -423,6 +501,36 @@ internal class VirtualNodeRestResourceImpl(
         return ResponseEntity.accepted(AsyncResponse(asyncRequest.requestId))
     }
 
+    override fun updateVirtualNodeDb(
+        virtualNodeShortId: String,
+        request: UpdateVirtualNodeDbRequest
+    ): ResponseEntity<AsyncResponse> {
+        // Check vnode exists
+        val virtualNode = virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.parse(virtualNodeShortId))
+            ?: throw ResourceNotFoundException("Virtual node not found")
+
+        // Log user making change
+        logger.debug {
+            // Lookup actor to keep track of which REST user triggered an update
+            val instant = clock.instant()
+            val actor = restContextProvider.principal
+            "Received request to update vnode ${virtualNode.holdingIdentity.shortHash} connection strings by $actor at $instant"
+        }
+
+        // Build and send change request
+        val asyncRequest = requestFactory.updateVirtualNodeDbRequest(virtualNode.holdingIdentity, request)
+
+        sendAsync(asyncRequest.requestId, asyncRequest)
+
+        // Write through status cache.
+        virtualNodeStatusCacheService.setStatus(
+            asyncRequest.requestId,
+            createVirtualNodeOperationStatus(asyncRequest.requestId)
+        )
+
+        return ResponseEntity.accepted(AsyncResponse(asyncRequest.requestId))
+    }
+
     // Lookup and update the virtual node for the given virtual node short ID.
     // This will update the last instance of said virtual node, sorted by CPI version
     @Suppress("ForbiddenComment")
@@ -435,7 +543,8 @@ internal class VirtualNodeRestResourceImpl(
         val actor = restContextProvider.principal
         logger.debug { "Received request to update state for $virtualNodeShortId to $newState by $actor at $instant" }
 
-        val virtualNodeState = when (validateStateChange(virtualNodeShortId, newState)
+        val virtualNodeState = when (
+            validateStateChange(virtualNodeShortId, newState)
         ) {
             VirtualNodeStateTransitions.ACTIVE -> VirtualNodeOperationalState.ACTIVE
             VirtualNodeStateTransitions.MAINTENANCE -> VirtualNodeOperationalState.INACTIVE
@@ -477,8 +586,10 @@ internal class VirtualNodeRestResourceImpl(
         val virtualNode = getVirtualNode(virtualNodeShortId)
 
         if (state == VirtualNodeStateTransitions.ACTIVE && virtualNode.operationInProgress != null) {
-            throw BadRequestException("The Virtual Node with shortHash ${virtualNode.holdingIdentity.shortHash} " +
-                    "has an operation in progress and cannot be set to Active")
+            throw BadRequestException(
+                "The Virtual Node with shortHash ${virtualNode.holdingIdentity.shortHash} " +
+                    "has an operation in progress and cannot be set to Active"
+            )
         }
 
         return state
@@ -493,7 +604,6 @@ internal class VirtualNodeRestResourceImpl(
             "Remote request failed with exception of type ${exception.errorType}: ${exception.errorMessage}"
         )
         return when (exception.errorType) {
-            InvalidStateChangeRuntimeException::class.java.name -> InvalidStateChangeException(exception.errorMessage)
             VirtualNodeOperationNotFoundException::class.java.name -> ResourceNotFoundException(exception.errorMessage)
             VirtualNodeOperationBadRequestException::class.java.name,
             LiquibaseDiffCheckFailedException::class.java.name,

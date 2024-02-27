@@ -3,6 +3,7 @@ package net.corda.membership.impl.persistence.service.handler
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
@@ -10,13 +11,22 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.SuspendMember
 import net.corda.data.membership.db.response.command.SuspendMemberResponse
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.datamodel.MemberInfoEntity
+import net.corda.membership.lib.GroupParametersNotaryUpdater
+import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
+import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.notary.MemberNotaryDetails
+import net.corda.membership.lib.toSortedMap
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -24,11 +34,15 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
@@ -42,20 +56,6 @@ import javax.persistence.criteria.Order
 import javax.persistence.criteria.Path
 import javax.persistence.criteria.Predicate
 import javax.persistence.criteria.Root
-import net.corda.crypto.cipher.suite.SignatureSpecs
-import net.corda.membership.datamodel.GroupParametersEntity
-import net.corda.membership.lib.GroupParametersNotaryUpdater
-import net.corda.membership.lib.MemberInfoExtension
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
-import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
-import net.corda.membership.lib.exceptions.MembershipPersistenceException
-import net.corda.membership.lib.notary.MemberNotaryDetails
-import net.corda.membership.lib.toSortedMap
-import net.corda.v5.membership.MemberContext
-import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.verify
-import java.nio.ByteBuffer
 
 class SuspendMemberHandlerTest {
 
@@ -124,7 +124,7 @@ class SuspendMemberHandlerTest {
         on { createQuery(MemberInfoEntity::class.java) } doReturn memberCriteriaQuery
         on { desc(any()) } doReturn order
         on { equal(status, MEMBER_STATUS_ACTIVE) } doReturn equalPredicate
-        on { notEqual(memberX500Name, knownX500Name.toString())} doReturn notEqualPredicate
+        on { notEqual(memberX500Name, knownX500Name.toString()) } doReturn notEqualPredicate
     }
     private val em: EntityManager = mock {
         on { persist(any<GroupParametersEntity>()) } doAnswer {}
@@ -137,7 +137,7 @@ class SuspendMemberHandlerTest {
         on { createEntityManager() } doReturn em
     }
     private val dbConnectionManager: DbConnectionManager = mock {
-        on { getOrCreateEntityManagerFactory(any<UUID>(), any()) } doReturn emf
+        on { getOrCreateEntityManagerFactory(any<UUID>(), any(), eq(false)) } doReturn emf
     }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { getByHoldingIdentityShortHash(holdingIdentity.shortHash) } doReturn ourVirtualNodeInfo
@@ -157,32 +157,44 @@ class SuspendMemberHandlerTest {
     private val persistentMemberInfo = mock<PersistentMemberInfo>()
     private val suspensionActivationEntityOperations =
         mock<SuspensionActivationEntityOperations> {
-            on{ mock.findMember(
-                em,
-                holdingIdentity.x500Name.toString(),
-                holdingIdentity.groupId,
-                SERIAL_NUMBER,
-                MEMBER_STATUS_ACTIVE
-            )} doReturn(memberInfoEntity)
-            on {mock.updateStatus(
-                em,
-                holdingIdentity.x500Name.toString(),
-                holdingIdentity.toAvro(),
-                memberInfoEntity,
-                mgmContext,
-                MEMBER_STATUS_SUSPENDED
-            )}.doReturn(persistentMemberInfo)
+            on {
+                mock.findMember(
+                    em,
+                    holdingIdentity.x500Name.toString(),
+                    holdingIdentity.groupId,
+                    SERIAL_NUMBER,
+                    MEMBER_STATUS_ACTIVE
+                )
+            } doReturn(memberInfoEntity)
+            on {
+                mock.updateStatus(
+                    em,
+                    holdingIdentity.x500Name.toString(),
+                    holdingIdentity.toAvro(),
+                    memberInfoEntity,
+                    mgmContext,
+                    MEMBER_STATUS_SUSPENDED
+                )
+            }.doReturn(persistentMemberInfo)
         }
     private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>> {
         on { serialize(any()) } doReturn byteArrayOf(0)
     }
-    private val groupParametersWithNotary = KeyValuePairList(listOf(
-        KeyValuePair(GroupParametersNotaryUpdater.EPOCH_KEY, EPOCH.toString()),
-        KeyValuePair(String.format(GroupParametersNotaryUpdater.NOTARY_SERVICE_NAME_KEY, NOTARY_SERVICE_NUMBER), KNOWN_NOTARY_SERVICE),
-        KeyValuePair(String.format(GroupParametersNotaryUpdater.NOTARY_SERVICE_PROTOCOL_KEY, NOTARY_SERVICE_NUMBER), KNOWN_NOTARY_PROTOCOL),
-        KeyValuePair(String.format(GroupParametersNotaryUpdater.NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, NOTARY_SERVICE_NUMBER, 0), "1"),
-        KeyValuePair(String.format(GroupParametersNotaryUpdater.NOTARY_SERVICE_KEYS_KEY, NOTARY_SERVICE_NUMBER, 0), "existing-test-key"),
-    ))
+    private val groupParametersWithNotary = KeyValuePairList(
+        listOf(
+            KeyValuePair(GroupParametersNotaryUpdater.EPOCH_KEY, EPOCH.toString()),
+            KeyValuePair(String.format(GroupParametersNotaryUpdater.NOTARY_SERVICE_NAME_KEY, NOTARY_SERVICE_NUMBER), KNOWN_NOTARY_SERVICE),
+            KeyValuePair(
+                String.format(GroupParametersNotaryUpdater.NOTARY_SERVICE_PROTOCOL_KEY, NOTARY_SERVICE_NUMBER),
+                KNOWN_NOTARY_PROTOCOL
+            ),
+            KeyValuePair(String.format(GroupParametersNotaryUpdater.NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, NOTARY_SERVICE_NUMBER, 0), "1"),
+            KeyValuePair(
+                String.format(GroupParametersNotaryUpdater.NOTARY_SERVICE_KEYS_KEY, NOTARY_SERVICE_NUMBER, 0),
+                "existing-test-key"
+            ),
+        )
+    )
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
         on { deserialize(serializedMgmContext) } doReturn mgmContext
         on { deserialize(previousGroupParameters) } doReturn groupParametersWithNotary
@@ -246,9 +258,9 @@ class SuspendMemberHandlerTest {
         }
         val memberNotaryDetails = mock<MemberNotaryDetails> {
             on { serviceName } doReturn MemberX500Name.parse(KNOWN_NOTARY_SERVICE)
-            on { serviceProtocol } doReturn  "Protocol"
+            on { serviceProtocol } doReturn "Protocol"
             on { serviceProtocolVersions } doReturn listOf(1, 2, 3)
-         }
+        }
         val mockMemberInfo = mock<MemberInfo> {
             on { memberProvidedContext } doReturn mockMemberContext
             on { notaryDetails } doReturn memberNotaryDetails
@@ -281,7 +293,7 @@ class SuspendMemberHandlerTest {
         }
         val memberNotaryDetails = mock<MemberNotaryDetails> {
             on { serviceName } doReturn MemberX500Name.parse(KNOWN_NOTARY_SERVICE)
-            on { serviceProtocol } doReturn  "Protocol"
+            on { serviceProtocol } doReturn "Protocol"
             on { serviceProtocolVersions } doReturn listOf(1, 2, 3)
         }
         val mockMemberInfo = mock<MemberInfo> {
@@ -309,7 +321,7 @@ class SuspendMemberHandlerTest {
         }
         val memberNotaryDetails = mock<MemberNotaryDetails> {
             on { serviceName } doReturn MemberX500Name.parse(KNOWN_NOTARY_SERVICE)
-            on { serviceProtocol } doReturn  "Protocol"
+            on { serviceProtocol } doReturn "Protocol"
             on { serviceProtocolVersions } doReturn listOf(1, 2, 3)
         }
         val mockMemberInfo = mock<MemberInfo> {
@@ -330,16 +342,20 @@ class SuspendMemberHandlerTest {
         whenever(keyValuePairListDeserializer.deserialize(otherNotaryMemberContext)).doReturn(deserializedOtherNotaryMemberContext)
         whenever(keyValuePairListDeserializer.deserialize(otherNotaryMgmContext)).doReturn(deserializedOtherNotaryMgmContext)
         whenever(membersQuery.resultStream).doAnswer { listOf(otherMemberOfNotaryService).stream() }
-        whenever(memberInfoFactory.createMemberInfo(
-            deserializedOtherNotaryMemberContext.toSortedMap(),
-            deserializedOtherNotaryMgmContext.toSortedMap())
+        whenever(
+            memberInfoFactory.createMemberInfo(
+                deserializedOtherNotaryMemberContext.toSortedMap(),
+                deserializedOtherNotaryMgmContext.toSortedMap()
+            )
         ).thenReturn(mockMemberInfo)
 
         val updatedSerializedGroupParameters = mock<KeyValuePairList>()
         val serializedGroupParameters = "101112".toByteArray()
         whenever(keyValuePairListSerializer.serialize(updatedSerializedGroupParameters)).doReturn(serializedGroupParameters)
-        whenever(notaryUpdater
-            .removeNotaryFromExistingNotaryService(any(), any(), eq(NOTARY_SERVICE_NUMBER), eq(listOf(memberNotaryDetails))))
+        whenever(
+            notaryUpdater
+                .removeNotaryFromExistingNotaryService(any(), any(), eq(NOTARY_SERVICE_NUMBER), eq(listOf(memberNotaryDetails)))
+        )
             .doReturn(10 to updatedSerializedGroupParameters)
 
         val result = invokeTestFunction()
@@ -362,7 +378,7 @@ class SuspendMemberHandlerTest {
         }
         val memberNotaryDetails = mock<MemberNotaryDetails> {
             on { serviceName } doReturn MemberX500Name.parse(KNOWN_NOTARY_SERVICE)
-            on { serviceProtocol } doReturn  "Protocol"
+            on { serviceProtocol } doReturn "Protocol"
             on { serviceProtocolVersions } doReturn listOf(1, 2, 3)
         }
         val mockMemberInfo = mock<MemberInfo> {
@@ -383,16 +399,20 @@ class SuspendMemberHandlerTest {
         whenever(keyValuePairListDeserializer.deserialize(otherNotaryMemberContext)).doReturn(deserializedOtherNotaryMemberContext)
         whenever(keyValuePairListDeserializer.deserialize(otherNotaryMgmContext)).doReturn(deserializedOtherNotaryMgmContext)
         whenever(membersQuery.resultStream).doAnswer { listOf(otherMemberOfNotaryService).stream() }
-        whenever(memberInfoFactory.createMemberInfo(
-            deserializedOtherNotaryMemberContext.toSortedMap(),
-            deserializedOtherNotaryMgmContext.toSortedMap())
+        whenever(
+            memberInfoFactory.createMemberInfo(
+                deserializedOtherNotaryMemberContext.toSortedMap(),
+                deserializedOtherNotaryMgmContext.toSortedMap()
+            )
         ).thenReturn(mockMemberInfo)
 
         val updatedSerializedGroupParameters = mock<KeyValuePairList>()
         val serializedGroupParameters = "101112".toByteArray()
         whenever(keyValuePairListSerializer.serialize(updatedSerializedGroupParameters)).doReturn(serializedGroupParameters)
-        whenever(notaryUpdater
-            .removeNotaryFromExistingNotaryService(any(), any(), eq(NOTARY_SERVICE_NUMBER), eq(listOf(memberNotaryDetails))))
+        whenever(
+            notaryUpdater
+                .removeNotaryFromExistingNotaryService(any(), any(), eq(NOTARY_SERVICE_NUMBER), eq(listOf(memberNotaryDetails)))
+        )
             .doReturn(newEpoch to updatedSerializedGroupParameters)
 
         invokeTestFunction()
@@ -403,7 +423,7 @@ class SuspendMemberHandlerTest {
     @Test
     fun `invoke throws a MembershipPersistenceException if the mgmContext can't be deserialized`() {
         whenever(keyValuePairListDeserializer.deserialize(serializedMgmContext)).thenReturn(null)
-        assertThrows<MembershipPersistenceException> {  invokeTestFunction() }.also {
+        assertThrows<MembershipPersistenceException> { invokeTestFunction() }.also {
             assertThat(it).hasMessageContaining("Failed to deserialize")
         }
     }

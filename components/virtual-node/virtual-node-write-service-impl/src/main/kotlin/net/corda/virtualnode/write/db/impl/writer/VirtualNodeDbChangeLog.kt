@@ -25,7 +25,6 @@ class VirtualNodeDbChangeLog(
         const val MASTER_CHANGE_LOG = "migration/db.changelog-master.xml"
     }
 
-
     private val all by lazy {
         changeLogs.associate {
             it.id.filePath to it.content

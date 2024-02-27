@@ -34,6 +34,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.softwareVersion
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.SelfSignedMemberInfo
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
@@ -69,7 +70,6 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
-import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import kotlin.test.assertFailsWith
 
 class MgmSynchronisationServiceImplTest {
@@ -300,7 +300,10 @@ class MgmSynchronisationServiceImplTest {
                 syncId,
                 clock.instant()
             ),
-            secureHash, BloomFilter(1, 1, 1, byteBuffer), secureHash, secureHash
+            secureHash,
+            BloomFilter(1, 1, 1, byteBuffer),
+            secureHash,
+            secureHash
         )
     )
 
@@ -353,7 +356,8 @@ class MgmSynchronisationServiceImplTest {
                 mapOf(
                     MEMBERSHIP_CONFIG to membershipConfig,
                 )
-            ), coordinator
+            ),
+            coordinator
         )
     }
 

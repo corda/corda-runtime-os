@@ -1,6 +1,5 @@
 package net.corda.flow.application.persistence
 
-import java.nio.ByteBuffer
 import net.corda.flow.application.persistence.external.events.FindExternalEventFactory
 import net.corda.flow.application.persistence.external.events.FindParameters
 import net.corda.flow.application.persistence.external.events.MergeExternalEventFactory
@@ -141,7 +140,7 @@ class PersistenceServiceImpl @Activate constructor(
         return pagedQueryFactory.createNamedParameterizedQuery(queryName, entityClass)
     }
 
-    private fun serialize(payload: Any): ByteBuffer {
-        return ByteBuffer.wrap(serializationService.serialize(payload).bytes)
+    private fun serialize(payload: Any): ByteArray {
+        return serializationService.serialize(payload).bytes
     }
 }

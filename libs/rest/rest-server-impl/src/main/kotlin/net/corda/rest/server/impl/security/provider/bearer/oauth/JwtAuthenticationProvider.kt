@@ -3,7 +3,7 @@ package net.corda.rest.server.impl.security.provider.bearer.oauth
 import com.nimbusds.jose.proc.BadJOSEException
 import com.nimbusds.jwt.JWT
 import com.nimbusds.jwt.JWTParser
-import net.corda.rest.security.AuthorizingSubject
+import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.security.read.RestSecurityManager
 import net.corda.rest.server.impl.security.provider.bearer.BearerTokenAuthenticationProvider
 import net.corda.rest.server.impl.security.provider.credentials.tokens.BearerTokenAuthenticationCredentials

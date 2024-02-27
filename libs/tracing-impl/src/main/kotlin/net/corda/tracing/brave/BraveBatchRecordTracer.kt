@@ -1,14 +1,13 @@
 package net.corda.tracing.brave
 
 import brave.Span
-import brave.propagation.TraceContext
 import net.corda.messaging.api.records.Record
 import net.corda.tracing.BatchRecordTracer
 
 class BraveBatchRecordTracer(
     private val operationName: String,
     private val recordTracing: BraveRecordTracing,
-    private val recordInjector: TraceContext.Injector<MutableList<Pair<String,String>>>
+    private val recordInjector: BraveRecordInjector
 ) : BatchRecordTracer {
 
     private val spanMap = mutableMapOf<String, Span>()

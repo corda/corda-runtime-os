@@ -7,6 +7,7 @@ sealed class MembershipQueryResult<T> {
      *  result was returned.
      */
     data class Success<T>(val payload: T) : MembershipQueryResult<T>()
+
     /**
      * Data class representing the result of a failed membership query operation.
      * @param errorMsg If there was an error during persistence this field is the message for that error.

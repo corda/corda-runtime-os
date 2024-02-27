@@ -4,7 +4,6 @@ import net.corda.e2etest.utilities.ClusterInfo
 import net.corda.e2etest.utilities.P2PEndpointInfo
 import net.corda.e2etest.utilities.RestEndpointInfo
 import net.corda.e2etest.utilities.SimpleResponse
-import net.corda.e2etest.utilities.exportGroupPolicy
 import net.corda.e2etest.utilities.lookup
 import net.corda.e2etest.utilities.onboardMember
 import net.corda.e2etest.utilities.onboardMgm
@@ -28,12 +27,12 @@ import java.time.format.FormatStyle
 import java.util.UUID
 import kotlin.concurrent.thread
 
-@EnabledIfEnvironmentVariable(named = "CLUSTERS_COUNT", matches = "\\d+")
-@EnabledIfEnvironmentVariable(named = "MEMBER_COUNT", matches = "\\d+")
 // To run from the terminal use:
 //   CLUSTERS_COUNT=1 MEMBER_COUNT=5 ./gradlew :applications:tools:p2p-test:app-simulator:test --tests="*LargeNetworkTest*"
 // Or from the script
 //  CLUSTERS_COUNT=1 MEMBER_COUNT=5 ./applications/tools/p2p-test/app-simulator/scripts/large-network-testing/runScenario.sh
+@EnabledIfEnvironmentVariable(named = "CLUSTERS_COUNT", matches = "\\d+")
+@EnabledIfEnvironmentVariable(named = "MEMBER_COUNT", matches = "\\d+")
 class LargeNetworkTest {
     private companion object {
         private val userName by lazy {
@@ -73,7 +72,7 @@ class LargeNetworkTest {
         val holdingId: String,
         val memberX500Name: MemberX500Name,
     )
-    private class PortForward(clusterName: String): AutoCloseable {
+    private class PortForward(clusterName: String) : AutoCloseable {
         val port = ServerSocket(0).use {
             it.localPort
         }
@@ -83,12 +82,12 @@ class LargeNetworkTest {
             "--namespace",
             clusterName,
             "deployment/corda-rest-worker",
-            "$port:8888"
+            "$port:8888",
         ).start().also { process ->
             Runtime.getRuntime().addShutdownHook(
                 thread(false) {
                     process.destroy()
-                }
+                },
             )
             // When port forward is running it will output two lines (one for ipv4 and one for ipv6).
             // For example:
@@ -102,12 +101,11 @@ class LargeNetworkTest {
 
         private val created = clock.instant()
 
-        fun isValid() : Boolean {
+        fun isValid(): Boolean {
             return if (!process.isAlive) {
                 println("forward process had died")
                 false
-            }
-            else if (Duration.between(created, clock.instant()) > Duration.ofMinutes(30)) {
+            } else if (Duration.between(created, clock.instant()) > Duration.ofMinutes(30)) {
                 println("forward process had been alive for too long")
                 false
             } else {
@@ -161,7 +159,7 @@ class LargeNetworkTest {
         logDuration("cleaning") {
             val tearDownScript = File(scriptDir, "tearDown.sh")
             val tearDown = ProcessBuilder(
-                listOf(tearDownScript.absolutePath) + clusters.map { it.id }
+                listOf(tearDownScript.absolutePath) + clusters.map { it.id },
             )
                 .inheritIO()
                 .start()
@@ -182,7 +180,11 @@ class LargeNetworkTest {
             clusterOutputDir.deleteRecursively()
             clusterOutputDir.mkdirs()
             val getPods = ProcessBuilder(
-                "kubectl", "get", "pod", "-n", clusterName
+                "kubectl",
+                "get",
+                "pod",
+                "-n",
+                clusterName,
             ).start()
             getPods.waitFor()
             val pods = getPods.inputStream
@@ -197,7 +199,7 @@ class LargeNetworkTest {
                 }.map {
                     it[0]
                 }
-            pods.forEach {  podName ->
+            pods.forEach { podName ->
                 logDuration("saving logs of $podName in $clusterName") {
                     val logFile = File(clusterOutputDir, "$podName.log")
                     val getLogs = ProcessBuilder(
@@ -233,14 +235,14 @@ class LargeNetworkTest {
                     val holdingId = cluster.onboardMember(
                         null,
                         testName,
-                        groupPolicy,
+                        groupPolicyFactory,
                         memberX500Name.toString(),
                     ).holdingId
                     cluster.onboardedMembers.add(
                         OnboardedMember(
                             holdingId = holdingId,
                             memberX500Name = memberX500Name,
-                        )
+                        ),
                     )
                 }
             }
@@ -272,12 +274,12 @@ class LargeNetworkTest {
                 .shuffled()
                 .take(20)
                 .forEach { member ->
-                assertThat(
-                    cluster.
-                    lookup(member.holdingId)
-                        .toMembersNames()
-                ).containsAll(expectedNodes)
-            }
+                    assertThat(
+                        cluster
+                            .lookup(member.holdingId)
+                            .toMembersNames(),
+                    ).containsAll(expectedNodes)
+                }
         }
         println("All seemed valid - took ${Duration.between(start, clock.instant()).toMillis() / 1000.0} seconds")
     }
@@ -290,19 +292,14 @@ class LargeNetworkTest {
                 MemberX500Name.parse(it)
             }
     }
-    private val groupPolicy by lazy {
-        println("Onboarding MGM")
-        val mgmInfo = mgmCluster.onboardMgm(mgmName.toString())
-        mgmCluster.exportGroupPolicy(mgmInfo.holdingId).also {
-            assertThat(it).isNotEmpty.isNotBlank
-            println("MGM was onboarded")
-        }
+    private val groupPolicyFactory by lazy {
+        mgmCluster.onboardMgm(mgmName.toString()).getGroupPolicyFactory()
     }
 
     private fun deployClusters() {
         val prereqsEksFile = File(
             File(scriptDir, "large-network-testing"),
-            "prereqs-eks-large-network.yaml"
+            "prereqs-eks-large-network.yaml",
         )
         val cordaEksFile = File(scriptDir, "corda-eks-large.yaml")
         val deployScript = File(scriptDir, "deploy.sh")
@@ -311,7 +308,7 @@ class LargeNetworkTest {
         println("cordaEksFile = $cordaEksFile")
         logDuration("deploy clusters") {
             val deploy = ProcessBuilder(
-                listOf(deployScript.absolutePath) + clusters.map { it.id }
+                listOf(deployScript.absolutePath) + clusters.map { it.id },
             )
                 .also {
                     it.environment()["PREREQS_EKS_FILE"] = prereqsEksFile.absolutePath
@@ -328,7 +325,7 @@ class LargeNetworkTest {
     private fun Duration.format(): String {
         return "${this.toMillis() / 1000.0} seconds"
     }
-    private fun logDuration(what: String, block: ()->Unit) {
+    private fun logDuration(what: String, block: () -> Unit) {
         val start = clock.instant()
         println("${formatter.format(start)}: Starting $what.")
         block()

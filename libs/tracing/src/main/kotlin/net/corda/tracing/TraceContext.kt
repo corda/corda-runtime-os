@@ -14,4 +14,6 @@ interface TraceContext {
     fun errorAndFinish(e: Exception)
 
     fun finish()
+
+    val traceIdString: String
 }

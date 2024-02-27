@@ -1,9 +1,9 @@
 package net.corda.membership.impl.persistence.service.handler
 
 import io.micrometer.core.instrument.Timer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.ShortHash
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
@@ -57,7 +57,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
         val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
             ?: throw MembershipPersistenceException(
                 "Virtual node info can't be retrieved for " +
-                        "holding identity ID $holdingIdentityShortHash"
+                    "holding identity ID $holdingIdentityShortHash"
             )
         val factory = getEntityManagerFactory(virtualNodeInfo)
         return transactionTimer.recordCallable { factory.transaction(block) }!!
@@ -74,7 +74,8 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
             entitiesSet = jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
                 ?: throw java.lang.IllegalStateException(
                     "persistenceUnitName ${CordaDb.Vault.persistenceUnitName} is not registered."
-                )
+                ),
+            enablePool = false
         )
     }
 }

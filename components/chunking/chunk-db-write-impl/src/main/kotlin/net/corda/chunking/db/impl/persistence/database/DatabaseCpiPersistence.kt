@@ -184,8 +184,8 @@ class DatabaseCpiPersistence(
 
         if (existingCpks.isNotEmpty()) {
             log.info(
-                "When persisting CPK files for CPI $cpiFileChecksum, ${existingCpks.size} file entities already" +
-                        "existed with checksums ${existingCpkMap.keys.joinToString()}. No changes were made to these" +
+                "When persisting CPK files for CPI $cpiFileChecksum, ${existingCpks.size} file entities already " +
+                        "existed with checksums ${existingCpkMap.keys.joinToString()}. No changes were made to these " +
                         "files."
             )
         }

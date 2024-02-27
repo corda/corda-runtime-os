@@ -1,9 +1,9 @@
 package net.corda.virtualnode
 
-import java.time.Instant
-import java.util.UUID
 import net.corda.data.virtualnode.VirtualNodeOperationalState
 import net.corda.libs.packaging.core.CpiIdentifier
+import java.time.Instant
+import java.util.UUID
 
 /**
  * Contains information relevant to a particular virtual node (a CPI and a holding identity).
@@ -57,20 +57,19 @@ data class VirtualNodeInfo(
     }
 }
 
-
 typealias VirtualNodeInfoAvro = net.corda.data.virtualnode.VirtualNodeInfo
 
 fun VirtualNodeInfo.toAvro(): VirtualNodeInfoAvro =
-    with (holdingIdentity) {
+    with(holdingIdentity) {
         VirtualNodeInfoAvro.newBuilder()
             .setHoldingIdentity(toAvro())
             .setCpiIdentifier(cpiIdentifier.toAvro())
-            .setVaultDdlConnectionId(vaultDdlConnectionId?.let{ vaultDdlConnectionId.toString() })
+            .setVaultDdlConnectionId(vaultDdlConnectionId?.let { vaultDdlConnectionId.toString() })
             .setVaultDmlConnectionId(vaultDmlConnectionId.toString())
-            .setCryptoDdlConnectionId(cryptoDdlConnectionId?.let{ cryptoDdlConnectionId.toString() })
+            .setCryptoDdlConnectionId(cryptoDdlConnectionId?.let { cryptoDdlConnectionId.toString() })
             .setCryptoDmlConnectionId(cryptoDmlConnectionId.toString())
-            .setUniquenessDdlConnectionId(uniquenessDdlConnectionId?.let{ uniquenessDdlConnectionId.toString() })
-            .setUniquenessDmlConnectionId(uniquenessDmlConnectionId?.let{ uniquenessDmlConnectionId.toString() })
+            .setUniquenessDdlConnectionId(uniquenessDdlConnectionId?.let { uniquenessDdlConnectionId.toString() })
+            .setUniquenessDmlConnectionId(uniquenessDmlConnectionId?.let { uniquenessDmlConnectionId.toString() })
             .setHsmConnectionId(hsmConnectionId?.let { hsmConnectionId.toString() })
             .setFlowP2pOperationalStatus(flowP2pOperationalStatus.toAvro())
             .setFlowStartOperationalStatus(flowStartOperationalStatus.toAvro())

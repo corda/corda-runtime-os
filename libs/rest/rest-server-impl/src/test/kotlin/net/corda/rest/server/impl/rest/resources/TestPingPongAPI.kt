@@ -1,8 +1,8 @@
 package net.corda.rest.server.impl.rest.resources
 
 import net.corda.rest.RestResource
-import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.ClientRequestBodyParameter
+import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.HttpRestResource
 
 @HttpRestResource(

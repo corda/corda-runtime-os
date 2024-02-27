@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
 enum class LedgerPersistenceMetricOperationName {
-
+    FindFilteredTransactionsAndSignatures,
     FindGroupParameters,
     FindSignedLedgerTransactionWithStatus,
     FindTransactionIdsAndStatuses,
@@ -10,7 +10,9 @@ enum class LedgerPersistenceMetricOperationName {
     FindWithNamedQuery,
     PersistSignedGroupParametersIfDoNotExist,
     PersistTransaction,
+    PersistFilteredTransaction,
     PersistTransactionIfDoesNotExist,
+    PersistTransactionSignatures,
     ResolveStateRefs,
     UpdateTransactionStatus
 }

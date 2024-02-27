@@ -17,6 +17,7 @@ import net.corda.v5.base.types.MemberX500Name
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.time.Duration
 
 @Component(service = [FlowFactory::class])
 @Suppress("Unused")
@@ -49,6 +50,7 @@ class FlowFactoryImpl @Activate constructor(
     override fun createInitiatedFlow(
         flowStartContext: FlowStartContext,
         requireClose: Boolean,
+        sessionTimeout: Duration?,
         sandboxGroupContext: SandboxGroupContext,
         contextProperties: Map<String, String>
     ): FlowLogicAndArgs {
@@ -61,6 +63,7 @@ class FlowFactoryImpl @Activate constructor(
             val flowSession = flowSessionFactory.createInitiatedFlowSession(
                 flowStartContext.statusKey.id, // The ID on a start context is the session ID
                 requireClose,
+                sessionTimeout,
                 MemberX500Name.parse(flowStartContext.initiatedBy.x500Name),
                 contextProperties
             )

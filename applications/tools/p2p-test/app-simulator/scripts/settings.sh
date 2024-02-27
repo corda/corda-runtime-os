@@ -5,7 +5,7 @@
 NAMESPACE_PREFIX="${USER//./}"
 
 # Chart and Docker Image versions to deploy
-CORDA_CHART_VERSION="^5.1.0-beta"
+CORDA_CHART_VERSION="^5.2.0-beta"
 REPO_TOP_LEVEL_DIR=$(cd "$SCRIPT_DIR"; git rev-parse --show-toplevel)
 CORDA_VERSION="$(cat $REPO_TOP_LEVEL_DIR/gradle.properties | grep cordaProductVersion | awk -F= '{print $2}' | xargs).0"
 if [ -z $DOCKER_IMAGE_VERSION ]; then
@@ -15,6 +15,8 @@ fi
 
 # Uncomment to enable mutual TLS
 # MTLS="Y"
+
+RUN_MODE="ONE_WAY"
 
 # K8s namespaces
 if [ "$CLUSTER_MODE" == "SINGLE_CLUSTER" ]
@@ -27,7 +29,14 @@ else
   B_CLUSTER_NAMESPACE=$NAMESPACE_PREFIX-cluster-b
   MGM_CLUSTER_NAMESPACE=$NAMESPACE_PREFIX-mgm
 fi
-APP_SIMULATOR_DB_NAMESPACE=$NAMESPACE_PREFIX-db
+
+if [ "$RUN_MODE" == "ONE_WAY" ]
+then
+  APP_SIMULATOR_DB_NAMESPACE=$NAMESPACE_PREFIX-db
+else
+  APP_SIMULATOR_DB_NAMESPACE_A=$NAMESPACE_PREFIX-db-a
+  APP_SIMULATOR_DB_NAMESPACE_B=$NAMESPACE_PREFIX-db-b
+fi
 
 #KAFKA Settings
 if [ -z $KAFKA_REPLICAS ]; then
@@ -85,6 +94,9 @@ CORDA_CLI_DIR="$REPO_TOP_LEVEL_DIR/../corda-cli-plugin-host"
 MGM_X500_NAME="C=GB,L=London,O=MGM"
 A_X500_NAME="C=GB,L=London,O=Alice"
 B_X500_NAME="C=GB,L=London,O=Bob"
+
+NUM_OF_MEMBERS_PER_CLUSTER_A=1
+NUM_OF_MEMBERS_PER_CLUSTER_B=1
 
 WORKING_DIR="$SCRIPT_DIR/build/working"
 MGM_HOLDING_ID_FILE="$WORKING_DIR"/mgmHoldingIdShortHash

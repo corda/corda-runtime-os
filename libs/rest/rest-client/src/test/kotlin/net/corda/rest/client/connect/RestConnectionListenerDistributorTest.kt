@@ -33,7 +33,8 @@ internal class RestConnectionListenerDistributorTest {
         val listener1 = mockListener<TestHealthCheckAPI>()
         val listener2 = mockListener<TestHealthCheckAPI>()
         val distributor = RestConnectionListenerDistributor(
-            listOf(listener1, listener2), credentialsProvider
+            listOf(listener1, listener2),
+            credentialsProvider
         )
 
         distributor.onConnect()
@@ -50,7 +51,8 @@ internal class RestConnectionListenerDistributorTest {
         val listener1 = mockErrorListener<TestHealthCheckAPI>()
         val listener2 = mockListener<TestHealthCheckAPI>()
         val distributor = RestConnectionListenerDistributor(
-            listOf(listener1, listener2), credentialsProvider
+            listOf(listener1, listener2),
+            credentialsProvider
         )
 
         distributor.onConnect()
@@ -64,7 +66,8 @@ internal class RestConnectionListenerDistributorTest {
         val listener1 = mockListener<TestHealthCheckAPI>()
         val listener2 = mockListener<TestHealthCheckAPI>()
         val distributor = RestConnectionListenerDistributor(
-            listOf(listener1, listener2), credentialsProvider
+            listOf(listener1, listener2),
+            credentialsProvider
         )
         distributor.connectionOpt = mock()
 
@@ -80,7 +83,8 @@ internal class RestConnectionListenerDistributorTest {
         val listener1 = mockErrorListener<TestHealthCheckAPI>()
         val listener2 = mockListener<TestHealthCheckAPI>()
         val distributor = RestConnectionListenerDistributor(
-            listOf(listener1, listener2), credentialsProvider
+            listOf(listener1, listener2),
+            credentialsProvider
         )
         distributor.connectionOpt = mock()
         distributor.onConnect()
@@ -88,9 +92,11 @@ internal class RestConnectionListenerDistributorTest {
         distributor.onDisconnect(throwable)
 
         verify(listener1, times(1)).onDisconnect(
-            argThat { this.credentialsProvider == credentialsProvider && this.throwableOpt === throwable })
+            argThat { this.credentialsProvider == credentialsProvider && this.throwableOpt === throwable }
+        )
         verify(listener2, times(1)).onDisconnect(
-            argThat { this.credentialsProvider == credentialsProvider && this.throwableOpt === throwable })
+            argThat { this.credentialsProvider == credentialsProvider && this.throwableOpt === throwable }
+        )
     }
 
     @Test
@@ -98,7 +104,8 @@ internal class RestConnectionListenerDistributorTest {
         val listener1 = mockListener<TestHealthCheckAPI>()
         val listener2 = mockListener<TestHealthCheckAPI>()
         val distributor = RestConnectionListenerDistributor(
-            listOf(listener1, listener2), credentialsProvider
+            listOf(listener1, listener2),
+            credentialsProvider
         )
         distributor.connectionOpt = null
 

@@ -284,7 +284,7 @@ class GroupParametersReaderServiceImplTest {
         fun `calling get all returns versioned records as expected`() {
             postConfigChangedEvent()
             postRegistrationStatusChangeEvent(LifecycleStatus.UP, subscriptionHandle)
-            val versionedRecords = groupParametersReaderService.getAllVersionedRecords()?.collect(Collectors.toList())
+            val versionedRecords = groupParametersReaderService.getAllVersionedRecords().collect(Collectors.toList())
             assertThat(versionedRecords?.size).isEqualTo(3)
 
             with(versionedRecords?.first { it.key == alice }) {
@@ -342,7 +342,8 @@ class GroupParametersReaderServiceImplTest {
                     ConfigKeys.BOOT_CONFIG to testConfig,
                     ConfigKeys.MESSAGING_CONFIG to testConfig
                 )
-            ), coordinator
+            ),
+            coordinator
         )
     }
 }

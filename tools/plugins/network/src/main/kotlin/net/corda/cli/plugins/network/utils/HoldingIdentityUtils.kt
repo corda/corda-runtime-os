@@ -8,7 +8,7 @@ object HoldingIdentityUtils {
     fun getHoldingIdentity(
         holdingIdentityShortHash: String?,
         name: String?,
-        group: String?
+        group: String?,
     ): String {
         return holdingIdentityShortHash ?: name?.let {
             val x500Name = MemberX500Name.parse(it)
@@ -22,7 +22,7 @@ object HoldingIdentityUtils {
     private fun readDefaultGroup(): String {
         val groupIdFile = File(
             File(File(File(System.getProperty("user.home")), ".corda"), "groupId"),
-            "groupId.txt"
+            "groupId.txt",
         )
         return if (groupIdFile.exists()) {
             groupIdFile.readText().trim()

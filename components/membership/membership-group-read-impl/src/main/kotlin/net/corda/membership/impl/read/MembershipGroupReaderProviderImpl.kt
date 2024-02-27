@@ -53,7 +53,7 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val ILLEGAL_ACCESS = "Tried to read group data before starting the component " +
-                "or while the component is down."
+            "or while the component is down."
     }
 
     // Handler for lifecycle events.
@@ -83,7 +83,6 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
         impl = InactiveImpl
         current.close()
     }
-
 
     // Component is running when it's coordinator has started.
     override val isRunning
@@ -117,7 +116,10 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     ) : InnerMembershipGroupReaderProvider {
         // Factory responsible for creating group readers or taking existing instances from the cache.
         private val membershipGroupReaderFactory: MembershipGroupReaderFactory = MembershipGroupReaderFactory.Impl(
-            membershipGroupReadCache, groupParametersReaderService, memberInfoFactory, platformInfoProvider
+            membershipGroupReadCache,
+            groupParametersReaderService,
+            memberInfoFactory,
+            platformInfoProvider
         )
 
         /**

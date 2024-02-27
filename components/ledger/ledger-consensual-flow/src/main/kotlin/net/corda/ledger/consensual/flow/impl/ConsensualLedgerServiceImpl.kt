@@ -59,12 +59,14 @@ class ConsensualLedgerServiceImpl @Activate constructor(
         /*
         Need [doPrivileged] due to [contextLogger] being used in the flow's constructor.
         Creating the executing the SubFlow must be independent otherwise the security manager causes issues with Quasar.
-        */
+         */
         val consensualFinalityFlow = try {
             @Suppress("deprecation", "removal")
-            java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
-                ConsensualFinalityFlow(signedTransaction as ConsensualSignedTransactionInternal, sessions)
-            })
+            java.security.AccessController.doPrivileged(
+                PrivilegedExceptionAction {
+                    ConsensualFinalityFlow(signedTransaction as ConsensualSignedTransactionInternal, sessions)
+                }
+            )
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
@@ -78,9 +80,11 @@ class ConsensualLedgerServiceImpl @Activate constructor(
     ): ConsensualSignedTransaction {
         val consensualReceiveFinalityFlow = try {
             @Suppress("deprecation", "removal")
-            java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
-                ConsensualReceiveFinalityFlow(session, validator)
-            })
+            java.security.AccessController.doPrivileged(
+                PrivilegedExceptionAction {
+                    ConsensualReceiveFinalityFlow(session, validator)
+                }
+            )
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }

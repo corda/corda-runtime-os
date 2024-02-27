@@ -5,6 +5,8 @@ plugins {
 
 description "Permission REST Resource Implementations"
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly "org.osgi:org.osgi.service.component.annotations"
@@ -29,8 +31,5 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
-
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    implementation libs.slf4j.api
 }

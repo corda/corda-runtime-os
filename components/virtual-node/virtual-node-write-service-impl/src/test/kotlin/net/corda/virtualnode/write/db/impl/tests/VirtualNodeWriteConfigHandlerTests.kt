@@ -37,7 +37,7 @@ class VirtualNodeWriteConfigHandlerTests {
         val coordinator = mock<LifecycleCoordinator>()
         val vnodeWriter = mock<VirtualNodeWriter>()
         val vnodeWriterFactory = mock<VirtualNodeWriterFactory>().apply {
-            whenever(create(eq(config), any(), any())).thenReturn(vnodeWriter)
+            whenever(create(eq(config), any(), any(), any())).thenReturn(vnodeWriter)
         }
 
         val eventHandler = VirtualNodeWriteEventHandler(mock(), vnodeWriterFactory)
@@ -53,7 +53,7 @@ class VirtualNodeWriteConfigHandlerTests {
         )
         eventHandler.processEvent(event, coordinator)
 
-        verify(vnodeWriterFactory).create(eq(config), any(), any())
+        verify(vnodeWriterFactory).create(eq(config), any(), any(), any())
         verify(vnodeWriter).start()
         verify(coordinator).updateStatus(UP)
     }
@@ -62,7 +62,7 @@ class VirtualNodeWriteConfigHandlerTests {
     fun `sets coordinator to down and throws if virtual node writer cannot be created`() {
         val coordinator = mock<LifecycleCoordinator>()
         val vnodeWriterFactory = mock<VirtualNodeWriterFactory>().apply {
-            whenever(create(any(), any(), any())).thenAnswer { throw IllegalStateException() }
+            whenever(create(any(), any(), any(), any())).thenAnswer { throw IllegalStateException() }
         }
 
         val eventHandler = VirtualNodeWriteEventHandler(mock(), vnodeWriterFactory)
@@ -96,7 +96,7 @@ class VirtualNodeWriteConfigHandlerTests {
     fun `sets status to UP if VirtualNodeRPCOps is running`() {
         val coordinator = mock<LifecycleCoordinator>()
         val vnodeWriterFactory = mock<VirtualNodeWriterFactory>().apply {
-            whenever(create(any(), any(), any())).thenReturn(mock())
+            whenever(create(any(), any(), any(), any())).thenReturn(mock())
         }
         val eventHandler = VirtualNodeWriteEventHandler(mock(), vnodeWriterFactory)
 

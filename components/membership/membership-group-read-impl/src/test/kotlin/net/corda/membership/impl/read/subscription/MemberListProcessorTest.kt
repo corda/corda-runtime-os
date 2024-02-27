@@ -3,8 +3,13 @@ package net.corda.membership.impl.read.subscription
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.impl.converter.PublicKeyConverter
+import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedData
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
@@ -16,6 +21,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PEND
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
@@ -29,12 +35,6 @@ import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.messaging.api.records.Record
 import net.corda.test.util.time.TestClock
-import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.wire.CryptoSignatureSpec
-import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.membership.SignedData
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -191,7 +191,7 @@ class MemberListProcessorTest {
                 ) to keyEncodingService.encodeAsString(ledgerKey)
             }
 
-        private fun mockSerializer(members : List<MemberInfo>) = members.forEach { member ->
+        private fun mockSerializer(members: List<MemberInfo>) = members.forEach { member ->
             whenever(
                 keyValuePairListDeserializer.deserialize(member.mgmProvidedContext.toAvro().toByteBuffer().array())
             ).thenReturn(member.mgmProvidedContext.toAvro())

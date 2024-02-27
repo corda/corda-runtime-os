@@ -7,7 +7,7 @@ interface LocallyHostedIdentitiesService : Lifecycle {
     /**
      * Returns [true] if an identity is locally hosted. This shouldn't be used before the [identity] has been registered.
      */
-    fun isHostedLocally(identity: HoldingIdentity) : Boolean
+    fun isHostedLocally(identity: HoldingIdentity): Boolean
 
     /**
      * Returns information about a locally hosted identity. If the identity is not yet available from the message bus then the function

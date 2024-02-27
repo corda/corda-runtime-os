@@ -37,6 +37,16 @@ class FlowFiberImpl(
     @Transient
     private var suspensionOutcome: FlowContinuation? = null
 
+    /**
+     * See [bindToSandbox]
+     */
+    @Transient
+    private var boundSandboxUUID: UUID? = null
+
+    override fun getSandboxGroupId(): UUID? {
+        return boundSandboxUUID
+    }
+
     override fun getExecutionContext(): FlowFiberExecutionContext {
         return flowFiberExecutionContext!!
     }
@@ -44,6 +54,12 @@ class FlowFiberImpl(
     @Suspendable
     override fun startFlow(flowFiberExecutionContext: FlowFiberExecutionContext): Future<FlowIORequest<*>> {
         this.flowFiberExecutionContext = flowFiberExecutionContext
+
+        if (boundSandboxUUID != null) {
+            log.warn("startFlow was called twice on the same fiber")
+        } else {
+            bindToSandbox(flowFiberExecutionContext)
+        }
 
         start()
         return flowCompletion
@@ -65,8 +81,10 @@ class FlowFiberImpl(
                 // suspended by Corda for the last time to mark it was finished already. Logging the callstack here would be
                 // misleading as it would point the log entry to the internal rethrow in Corda. In this case nothing has
                 // gone wrong, so we shouldn't log that it has.
-                log.warn(FiberExceptionConstants.FLOW_DISCONTINUED.format(
-                    e.cause?.javaClass?.canonicalName, e.cause?.message ?: "No exception message provided.")
+                log.warn(
+                    FiberExceptionConstants.FLOW_DISCONTINUED.format(
+                        e.cause?.javaClass?.canonicalName, e.cause?.message ?: "No exception message provided."
+                    )
                 )
                 failTopLevelSubFlow(e.cause!!)
             } catch (t: Throwable) {
@@ -116,11 +134,35 @@ class FlowFiberImpl(
         suspensionOutcome: FlowContinuation,
         scheduler: FiberScheduler
     ): Future<FlowIORequest<*>> {
+        bindToSandbox(flowFiberExecutionContext)
+
         this.flowFiberExecutionContext = flowFiberExecutionContext
         this.suspensionOutcome = suspensionOutcome
         this.flowCompletion = CompletableFuture<FlowIORequest<*>>()
         unparkDeserialized(this, scheduler)
         return flowCompletion
+    }
+
+    /**
+     * This is a defensive function designed to highlight where an attempt is being made to execute a FlowFiberImpl in more
+     * than one sandbox.
+     *
+     * Each instance of a FlowFiberImpl is permanently bound to a single sandbox. This is the sandbox from which the
+     * flow class itself was instantiated, and also the one which was used to inject services into the flow. Whilst the
+     * FlowFiberImpl can be serialized and deserialized, at the point of deserialization it is then bound to a different sandbox
+     * (the deserializer used to instantiate it is bound to the appropriate sandbox in this case).
+     *
+     * If the same FlowFiberImpl is ever executed against more than one sandbox, it cannot work, and we should flag this as a
+     * problem in the log.
+     */
+    private fun bindToSandbox(flowFiberExecutionContext: FlowFiberExecutionContext) {
+        if (this.boundSandboxUUID != null && boundSandboxUUID != flowFiberExecutionContext.sandboxGroupContext.sandboxGroup.id) {
+            log.warn(
+                "Attempting to execute a flow created against one sandbox inside a different one for holding id " +
+                    "${flowFiberExecutionContext.holdingIdentity.shortHash}"
+            )
+        }
+        boundSandboxUUID = flowFiberExecutionContext.sandboxGroupContext.sandboxGroup.id
     }
 
     @Suspendable
@@ -131,19 +173,29 @@ class FlowFiberImpl(
             log.trace { "Parking..." }
             val fiberState = CordaMetrics.Metric.FlowFiberSerializationTime.builder()
                 .forVirtualNode(getExecutionContext().flowCheckpoint.holdingIdentity.shortHash.toString())
-                .withTag(CordaMetrics.Tag.FlowClass, getExecutionContext().flowCheckpoint.flowStartContext.flowClassName)
+                .withTag(
+                    CordaMetrics.Tag.FlowClass,
+                    getExecutionContext().flowCheckpoint.flowStartContext.flowClassName
+                )
                 .build()
                 .recordCallable {
                     getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(this)
                 }!!
-            flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request, prepareForCaching()))
+            flowCompletion.complete(
+                FlowIORequest.FlowSuspended(
+                    ByteBuffer.wrap(fiberState),
+                    request,
+                    prepareForCaching()
+                )
+            )
         }
 
         resetLoggingContext()
         setCurrentSandboxGroupContext()
 
         @Suppress("unchecked_cast")
-        return when (val outcome = suspensionOutcome ?: throw IllegalStateException("FlowFiber suspensionOutcome is missing!")) {
+        return when (val outcome =
+            suspensionOutcome ?: throw IllegalStateException("FlowFiber suspensionOutcome is missing!")) {
             is FlowContinuation.Run -> outcome.value as SUSPENDRETURN
             is FlowContinuation.Error -> throw FlowContinuationErrorException(
                 // We populate the container exception message in case user code has a try/catch around the failing statement.
@@ -154,6 +206,7 @@ class FlowFiberImpl(
                     // that it might be filled with less useful information.
                     fillInStackTrace()
                 })
+
             else -> throw IllegalStateException(FiberExceptionConstants.INVALID_FLOW_RETURN)
         }
     }
@@ -203,24 +256,36 @@ class FlowFiberImpl(
         return when {
             flowStackService == null -> {
                 log.debug { FiberExceptionConstants.NULL_FLOW_STACK_SERVICE.format(flowId) }
-                throw CordaRuntimeException( FiberExceptionConstants.NULL_FLOW_STACK_SERVICE.format(flowId) )
+                throw CordaRuntimeException(FiberExceptionConstants.NULL_FLOW_STACK_SERVICE.format(flowId))
             }
+
             flowStackService.size > 1 -> {
-                log.debug { FiberExceptionConstants.INCORRECT_ITEM_COUNT.format(flowId, flowFiberExecutionContext?.flowStackService) }
+                log.debug {
+                    FiberExceptionConstants.INCORRECT_ITEM_COUNT.format(
+                        flowId,
+                        flowFiberExecutionContext?.flowStackService
+                    )
+                }
                 throw CordaRuntimeException(
-                    FiberExceptionConstants.INCORRECT_ITEM_COUNT.format(flowId, flowFiberExecutionContext?.flowStackService?.size)
+                    FiberExceptionConstants.INCORRECT_ITEM_COUNT.format(
+                        flowId,
+                        flowFiberExecutionContext?.flowStackService?.size
+                    )
                 )
             }
+
             flowStackService.size == 0 -> {
                 log.debug { FiberExceptionConstants.EMPTY_FLOW_STACK.format(flowId) }
                 throw CordaRuntimeException(FiberExceptionConstants.EMPTY_FLOW_STACK.format(flowId))
             }
+
             else -> {
                 when (val item = flowStackService.peek()) {
                     null -> {
                         log.debug { FiberExceptionConstants.EMPTY_FLOW_STACK.format(flowId) }
                         throw CordaRuntimeException(FiberExceptionConstants.EMPTY_FLOW_STACK.format(flowId))
                     }
+
                     else -> item
                 }
             }

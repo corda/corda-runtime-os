@@ -11,14 +11,14 @@ deploy() {
    kubectl delete ns $namespace || echo ''
    kubectl create ns $namespace
    prereqs_args="--install prereqs -n $namespace  \
-                oci://corda-os-docker.software.r3.com/helm-charts/corda-dev  \
+                oci://corda-os-docker.software.r3.com/helm-charts/corda-dev --version 0.1.0  \
                 --set image.registry=\"corda-os-docker.software.r3.com\"  \
                 --set kafka.replicaCount=$KAFKA_REPLICAS,kafka.zookeeper.replicaCount=$KAFKA_ZOOKEEPER_REPLICAS  \
                 -f \"$PREREQS_EKS_FILE\"  \
                 --render-subchart-notes  \
                 --timeout 10m  \
                 --wait"
-   corda_args="--install corda -n $namespace oci://corda-os-docker.software.r3.com/helm-charts/release/os/5.1/corda \
+   corda_args="--install corda -n $namespace oci://corda-os-docker.software.r3.com/helm-charts/release/os/5.2/corda \
               --set imagePullSecrets={docker-registry-cred} --set image.tag=$DOCKER_IMAGE_VERSION \
               --set image.registry=corda-os-docker.software.r3.com --values $REPO_TOP_LEVEL_DIR/values.yaml \
               --set bootstrap.kafka.partitions=$KAFKA_PARTITION_COUNT \

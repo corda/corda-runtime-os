@@ -19,30 +19,30 @@ import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
-import net.corda.data.membership.p2p.v2.SetOwnRegistrationStatus
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.p2p.VerificationResponse
+import net.corda.data.membership.p2p.v2.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.membership.impl.registration.VerificationResponseKeys
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM
+import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.messaging.api.records.Record
-import net.corda.data.p2p.app.AppMessage
-import net.corda.data.p2p.app.AuthenticatedMessage
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM
-import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
-import net.corda.membership.lib.SelfSignedMemberInfo
-import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.messaging.api.processor.StateAndEventProcessor.State
+import net.corda.messaging.api.records.Record
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.EndpointInfo
@@ -65,7 +65,7 @@ import java.security.PublicKey
 import java.time.Instant
 import java.util.*
 
-class  RegistrationProcessorTest {
+class RegistrationProcessorTest {
 
     private companion object {
         val clock = TestClock(Instant.now())
@@ -341,6 +341,7 @@ class  RegistrationProcessorTest {
                 assertThat((it.value as? AppMessage)?.message).isInstanceOf(AuthenticatedMessage::class.java)
             }
     }
+
     @Test
     fun `process member verification request command - onNext update the registration request state`() {
         val record = Record(

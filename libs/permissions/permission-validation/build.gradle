@@ -5,12 +5,14 @@ plugins {
 
 description 'Permission Validation API'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
 
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:permissions:permission-validation-cache")

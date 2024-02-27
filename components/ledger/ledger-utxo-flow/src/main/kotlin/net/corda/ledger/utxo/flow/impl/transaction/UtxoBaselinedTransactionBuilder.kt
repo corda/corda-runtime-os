@@ -76,17 +76,17 @@ class UtxoBaselinedTransactionBuilder private constructor(
 
     @Suppress("ComplexMethod")
     override fun equals(other: Any?): Boolean {
-        return this === other
-                || other is UtxoBaselinedTransactionBuilder
-                && other.baselineTransactionBuilder == baselineTransactionBuilder
-                && other.notaryName == notaryName
-                && other.notaryKey == notaryKey
-                && other.timeWindow == timeWindow
-                && other.commands == commands
-                && other.inputStateRefs == inputStateRefs
-                && other.referenceStateRefs == referenceStateRefs
-                && other.outputStates == outputStates
-                && other.signatories == signatories
+        return this === other ||
+            other is UtxoBaselinedTransactionBuilder &&
+            other.baselineTransactionBuilder == baselineTransactionBuilder &&
+            other.notaryName == notaryName &&
+            other.notaryKey == notaryKey &&
+            other.timeWindow == timeWindow &&
+            other.commands == commands &&
+            other.inputStateRefs == inputStateRefs &&
+            other.referenceStateRefs == referenceStateRefs &&
+            other.outputStates == outputStates &&
+            other.signatories == signatories
     }
 
     override fun hashCode(): Int = Objects.hash(
@@ -103,14 +103,14 @@ class UtxoBaselinedTransactionBuilder private constructor(
 
     override fun toString(): String {
         return "UtxoBaselinedTransactionBuilder(" +
-                "notary=$notaryName (key: $notaryKey) (orig: ${baselineTransactionBuilder.getNotaryName()}), " +
-                "timeWindow=$timeWindow (orig: ${baselineTransactionBuilder.timeWindow}), " +
-                "commands=$commands (orig: ${baselineTransactionBuilder.commands}), " +
-                "signatories=$signatories (orig: ${baselineTransactionBuilder.signatories}), " +
-                "inputStateRefs=$inputStateRefs (orig: ${baselineTransactionBuilder.inputStateRefs}), " +
-                "referenceStateRefs=$referenceStateRefs (orig: ${baselineTransactionBuilder.referenceStateRefs}), " +
-                "outputStates=$outputStates (orig: ${baselineTransactionBuilder.outputStates})" +
-                ")"
+            "notary=$notaryName (key: $notaryKey) (orig: ${baselineTransactionBuilder.getNotaryName()}), " +
+            "timeWindow=$timeWindow (orig: ${baselineTransactionBuilder.timeWindow}), " +
+            "commands=$commands (orig: ${baselineTransactionBuilder.commands}), " +
+            "signatories=$signatories (orig: ${baselineTransactionBuilder.signatories}), " +
+            "inputStateRefs=$inputStateRefs (orig: ${baselineTransactionBuilder.inputStateRefs}), " +
+            "referenceStateRefs=$referenceStateRefs (orig: ${baselineTransactionBuilder.referenceStateRefs}), " +
+            "outputStates=$outputStates (orig: ${baselineTransactionBuilder.outputStates})" +
+            ")"
     }
 
     // Unfortunately we cannot just simply delegate everything to currentTransactionBuilder since that would return itself

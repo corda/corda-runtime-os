@@ -17,7 +17,7 @@ cordapp {
 }
 
 dependencies {
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion") {
+    implementation(libs.jackson.module.kotlin) {
         // this transitive dependency is not needed as it is shaded in the jackson module, but there is a bug in
         //  the metadata: https://github.com/FasterXML/jackson-core/issues/999
         exclude group: "ch.randelshofer"

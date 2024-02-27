@@ -32,12 +32,12 @@ import net.corda.metrics.CordaMetrics
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.v5.crypto.SecureHash
-import java.io.InvalidObjectException
 import java.time.Instant
-import java.util.*
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.persistence.SigningKeyMaterialInfo
+import java.util.UUID
 
 @Suppress("LongParameterList")
 class SigningRepositoryImpl(
@@ -57,28 +57,14 @@ class SigningRepositoryImpl(
         val keyMainId = UUID.randomUUID()
         val now = Instant.now()
 
-        val wrappingKeyId = entityManagerFactory.createEntityManager().use { it ->
-            with(it.criteriaBuilder ?: throw InvalidObjectException("could not get criteria builder")) {
-                val queryBuilder = with(
-                    createQuery(WrappingKeyEntity::class.java)
-                        ?: throw InvalidObjectException("unable to create query on wrapping key")
-                ) {
-                    val root = from(WrappingKeyEntity::class.java)
-                    where(
-                        equal(
-                            root.get<String>("alias"),
-                            context.wrappingKeyAlias
-                        )
-                    ) // do not care about generation for now
-                }
-
-
-                it.createQuery(queryBuilder)
-                    .setMaxResults(1).resultList.singleOrNull()
-                    ?.let {
-                        it.id
-                    }
-            }
+        val wrappingKeyId = entityManagerFactory.createEntityManager().use { em ->
+            em.createQuery(
+                "SELECT w FROM ${WrappingKeyEntity::class.java.simpleName} w WHERE w.alias=:alias " +
+                    "AND w.generation = (SELECT MAX(w.generation) FROM ${WrappingKeyEntity::class.java.simpleName} w WHERE w.alias=:alias)",
+                WrappingKeyEntity::class.java
+            ).setParameter("alias", context.wrappingKeyAlias)
+                .setMaxResults(1)
+                .resultList.firstOrNull()?.id
                 ?: throw InvalidParamsException("unable to find master wrapping key ${context.wrappingKeyAlias} in tenant $tenantId")
         }
 
@@ -133,7 +119,6 @@ class SigningRepositoryImpl(
                 throw IllegalStateException("There are more than one key with alias=$alias for tenant=$tenantId")
             }
 
-
             return result.firstOrNull()?.joinSigningKeyInfo(em, keyEncodingService)
         }
     }
@@ -144,8 +129,8 @@ class SigningRepositoryImpl(
             em.transaction {
                 em.createQuery(
                     "FROM ${SigningKeyEntity::class.java.simpleName} " +
-                            "WHERE tenantId=:tenantId " +
-                            "AND fullKeyId=:fullKeyId",
+                        "WHERE tenantId=:tenantId " +
+                        "AND fullKeyId=:fullKeyId",
                     SigningKeyEntity::class.java
                 ).setParameter("tenantId", tenantId)
                     .setParameter("fullKeyId", requestedFullKeyId.toString())
@@ -213,9 +198,9 @@ class SigningRepositoryImpl(
 
                         em.createQuery<SigningKeyEntity?>(
                             "FROM ${SigningKeyEntity::class.java.simpleName} " +
-                                    "WHERE tenantId=:tenantId " +
-                                    "AND fullKeyId IN(:fullKeyIds) " +
-                                    "ORDER BY created",
+                                "WHERE tenantId=:tenantId " +
+                                "AND fullKeyId IN(:fullKeyIds) " +
+                                "ORDER BY created",
                             SigningKeyEntity::class.java
                         )
                             .setParameter("tenantId", tenantId)
@@ -225,36 +210,68 @@ class SigningRepositoryImpl(
                 }
             }!!
     }
+
+    override fun getKeyMaterials(wrappingKeyId: UUID): Collection<SigningKeyMaterialInfo> =
+        entityManagerFactory.createEntityManager().use { em ->
+            em.transaction {
+                em.createQuery(
+                    "FROM ${SigningKeyMaterialEntity::class.java.simpleName} WHERE wrappingKeyId=:wrappingKeyId",
+                    SigningKeyMaterialEntity::class.java
+                ).setParameter("wrappingKeyId", wrappingKeyId)
+                    .resultList.map {
+                        SigningKeyMaterialInfo(
+                            signingKeyId = it.signingKeyId,
+                            keyMaterial = it.keyMaterial
+                        )
+                    }
+            }
+        }
+
+    override fun saveSigningKeyMaterial(signingKeyMaterialInfo: SigningKeyMaterialInfo, wrappingKeyId: UUID) {
+        val signingKeyMaterialEntity = SigningKeyMaterialEntity(
+            wrappingKeyId,
+            signingKeyMaterialInfo.signingKeyId,
+            signingKeyMaterialInfo.keyMaterial,
+            Instant.now()
+        )
+        entityManagerFactory.createEntityManager().use { em ->
+            em.transaction {
+                em.persist(signingKeyMaterialEntity)
+            }
+        }
+    }
 }
 
-
 fun SigningKeyEntity.joinSigningKeyInfo(em: EntityManager, keyEncodingService: KeyEncodingService): SigningKeyInfo {
-    val signingKeyMaterialEntity = checkNotNull(em.createQuery(
-        "FROM ${SigningKeyMaterialEntity::class.java.simpleName} WHERE signingKeyId=:signingKeyId",
-        SigningKeyMaterialEntity::class.java
-    ).setParameter("signingKeyId", id)
-        .resultList.singleOrNull()) { "private key material for $id not found"}
-    val wrappingKey = checkNotNull(em.createQuery(
-        "FROM WrappingKeyEntity WHERE id=:wrappingKeyId", WrappingKeyEntity::class.java
-    ).setParameter("wrappingKeyId", signingKeyMaterialEntity.wrappingKeyId).resultList.singleOrNull()) { 
-        "wrapping key for $id not found"
-    }
+    em.createQuery(
+        "SELECT m, w FROM ${SigningKeyMaterialEntity::class.java.simpleName} m, ${WrappingKeyEntity::class.java.simpleName} w" +
+            " WHERE m.signingKeyId=:signingKeyId AND m.wrappingKeyId = w.id" +
+            " ORDER BY w.generation DESC"
+    ).setMaxResults(1)
+        .setParameter("signingKeyId", id)
+        .resultList.singleOrNull()?.let { results ->
+            val keyMaterialAndWrappingKey = checkNotNull(results as? Array<*>) { "JPA returned invalid results object" }
+            val signingKeyMaterialEntity = checkNotNull(keyMaterialAndWrappingKey[0] as? SigningKeyMaterialEntity)
+            { "JPA returned wrong entity type for SigningKeyMaterialEntity for signing key id ${id}" }
+            val wrappingKey = checkNotNull(keyMaterialAndWrappingKey[1] as? WrappingKeyEntity)
+            { "JPA returned wrong entity type for WrappingKeyEntity for signing key id ${id}" }
 
-    return SigningKeyInfo(
-        id = ShortHash.parse(keyId),
-        fullId = parseSecureHash(fullKeyId),
-        tenantId = tenantId,
-        category = category,
-        alias = alias,
-        hsmAlias = hsmAlias,
-        publicKey = keyEncodingService.decodePublicKey(publicKey),
-        keyMaterial = signingKeyMaterialEntity.keyMaterial,
-        schemeCodeName = schemeCodeName,
-        wrappingKeyAlias = wrappingKey.alias,
-        externalId = externalId,
-        encodingVersion = encodingVersion,
-        timestamp = created,
-        hsmId = hsmId,
-        status = SigningKeyStatus.valueOf(status.name)
-    )
+            return SigningKeyInfo(
+                id = ShortHash.parse(keyId),
+                fullId = parseSecureHash(fullKeyId),
+                tenantId = tenantId,
+                category = category,
+                alias = alias,
+                hsmAlias = hsmAlias,
+                publicKey = keyEncodingService.decodePublicKey(publicKey),
+                keyMaterial = signingKeyMaterialEntity.keyMaterial,
+                schemeCodeName = schemeCodeName,
+                wrappingKeyAlias = wrappingKey.alias,
+                externalId = externalId,
+                encodingVersion = encodingVersion,
+                timestamp = created,
+                hsmId = hsmId,
+                status = SigningKeyStatus.valueOf(status.name)
+            )
+        } ?: throw IllegalStateException("Cannot match a key material and wrapping key to signing key ${id}")
 }

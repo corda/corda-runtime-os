@@ -5,6 +5,8 @@ plugins {
 
 description 'MTls MGM Allowed list Reader Writer service implementation'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:osgi.annotation"
@@ -17,7 +19,7 @@ dependencies {
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:virtual-node:virtual-node-info')
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-base'
@@ -25,6 +27,4 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'org.slf4j:slf4j-api'
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

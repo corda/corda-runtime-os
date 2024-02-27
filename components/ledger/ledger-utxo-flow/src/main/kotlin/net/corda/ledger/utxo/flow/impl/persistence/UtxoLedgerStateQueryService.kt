@@ -19,7 +19,7 @@ interface UtxoLedgerStateQueryService {
      * @throws CordaPersistenceException if an error happens during find operation.
      */
     @Suspendable
-    fun <T: ContractState> findUnconsumedStatesByType(stateClass: Class<out T>): List<StateAndRef<T>>
+    fun <T : ContractState> findUnconsumedStatesByType(stateClass: Class<out T>): List<StateAndRef<T>>
 
     /**
      * Resolve [StateRef]s to [StateAndRef]s

@@ -42,11 +42,14 @@ class VirtualNodeLoaderImpl @Activate constructor(
 
     override fun loadVirtualNode(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo {
         // TODO - refactor this when CPI loader code moves from api to runtime-os
+        logger.info("Loading virtual node with ID ${holdingIdentity.shortHash} and CPB $resourceName")
         val cpi = cpiResources.computeIfAbsent(resourceName) { key ->
             cpiLoader.loadCPI(key).also { cpi ->
                 resourcesLookup[cpi.metadata.cpiId] = key
             }
         }
+
+        logger.info("Loaded CPI with ${cpi.metadata.cpiId} for virtual node ${holdingIdentity.shortHash} ")
         return VirtualNodeInfo(
             holdingIdentity,
             CpiIdentifier(
@@ -95,7 +98,7 @@ class VirtualNodeLoaderImpl @Activate constructor(
         return AutoCloseable {}
     }
 
-    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>>? {
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>> {
         TODO("Not yet implemented - getAllVersionedRecords")
     }
 

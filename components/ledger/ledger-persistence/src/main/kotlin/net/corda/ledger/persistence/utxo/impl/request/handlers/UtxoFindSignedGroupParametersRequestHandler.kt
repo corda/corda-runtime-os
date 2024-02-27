@@ -14,14 +14,15 @@ class UtxoFindSignedGroupParametersRequestHandler(
     private val externalEventContext: ExternalEventContext,
     private val persistenceService: UtxoPersistenceService,
     private val responseFactory: ResponseFactory
-): RequestHandler {
+) : RequestHandler {
     override fun execute(): List<Record<String, FlowEvent>> {
         val signedGroupParameters = persistenceService.findSignedGroupParameters(
             findSignedGroupParameters.hash,
         )
         return listOf(
             responseFactory.successResponse(
-                externalEventContext, FindSignedGroupParametersResponse(
+                externalEventContext,
+                FindSignedGroupParametersResponse(
                     listOfNotNull(signedGroupParameters)
                 )
             )

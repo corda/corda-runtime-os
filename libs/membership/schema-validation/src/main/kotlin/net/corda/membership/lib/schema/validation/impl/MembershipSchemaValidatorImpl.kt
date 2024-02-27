@@ -36,7 +36,6 @@ class MembershipSchemaValidatorImpl(
         version: Version,
         groupPolicy: String
     ) {
-
         val schemaInput = try {
             membershipSchemaProvider.getSchema(schema, version)
         } catch (ex: MembershipSchemaException) {

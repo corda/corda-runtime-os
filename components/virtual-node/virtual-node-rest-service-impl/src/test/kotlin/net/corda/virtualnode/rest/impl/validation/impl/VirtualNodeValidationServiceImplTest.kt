@@ -158,7 +158,7 @@ class VirtualNodeValidationServiceImplTest {
             "0123456789ABC", // to long
             "0123456789AX", // right length not hex
         )
-        invalidValues.forEach { example->
+        invalidValues.forEach { example ->
             val request = getExampleVirtualNodeRequest(cpiShortFileChecksum = example)
             assertThrows<InvalidInputDataException> { validationService.validateAndGetGroupId(request) }
         }

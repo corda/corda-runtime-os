@@ -6,7 +6,6 @@ import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
 import net.corda.flow.state.FlowCheckpoint
-import net.corda.schema.Schemas
 import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -41,7 +40,6 @@ class AbstractPersistenceExternalEventFactoryTest {
             externalEventContext,
             payload
         )
-        assertEquals(Schemas.Persistence.PERSISTENCE_ENTITY_PROCESSOR_TOPIC, externalEventRecord.topic)
         assertNull(externalEventRecord.key)
         assertEquals(
             EntityRequest(

@@ -5,6 +5,8 @@ plugins {
 
 description 'Member Ops Client implementation'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
@@ -33,7 +35,4 @@ dependencies {
     testImplementation project(":testing:test-utilities")
 
     testImplementation "net.corda:corda-serialization"
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

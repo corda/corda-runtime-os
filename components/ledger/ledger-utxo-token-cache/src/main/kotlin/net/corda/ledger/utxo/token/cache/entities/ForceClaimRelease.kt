@@ -6,6 +6,7 @@ data class ForceClaimRelease(
 ) : TokenEvent {
     // Unused
     override val externalEventRequestId: String = ""
-    //Unused
+
+    // Unused
     override val flowId: String = ""
 }

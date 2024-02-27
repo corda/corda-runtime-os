@@ -1,0 +1,19 @@
+# .git-blame-ignore-revs
+# Ledger code formatting
+3c623c2d660c4c075860be44cbec8dcae57f67ad
+# REST code formatting
+a05941cd4bc4a92ace31b32d7f1450d8fc6043b2
+# State Manager Code Formatting
+85bf2428a0b5ed53a344cae7b75638d97a40fb2c
+# P2P crypto library formatting
+42e98e9d3c9dceb0a6aaeec07ed94c633b42b656
+# Network plugin formatting
+30c40826d619ba157e2a7069bdeab9222fb6af5f
+# Network tools test code formatting
+3f91334c5bb61268ac18a72d8602bf895f7587ca
+# Network workers code
+477af2cf66a4d1208d3b11664fd3e2c80a6131fa
+# Network processors code
+b983ec7c351ef99e518bf16ef88f9489ed7d818a
+# Network Membership Code formatting
+08373a250cdd70a07b55f05c3e1111346b8b5ac6

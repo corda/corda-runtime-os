@@ -11,18 +11,27 @@ import org.assertj.core.api.Assertions.assertThat
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentSkipListMap
+import java.util.concurrent.locks.Lock
+import java.util.concurrent.locks.ReentrantLock
 
 class SingleClusterTestConfigManager(
     private val clusterInfo: ClusterInfo = DEFAULT_CLUSTER
 ) : TestConfigManager {
 
+    private data class LockKey(
+        val clusterKey: String,
+        val configurationSection: String,
+    )
+
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val GET_CONFIG_TIMEOUT_SECONDS = 30L
+        private val lock = ConcurrentHashMap<LockKey, Lock>()
     }
 
     private val originalConfigs: MutableMap<String, Config> = ConcurrentHashMap()
-    private val overrides: MutableMap<String, Config> = ConcurrentHashMap()
+    private val overrides: MutableMap<String, Config> = ConcurrentSkipListMap()
 
     override fun load(section: String, props: Map<String, Any?>): TestConfigManager {
         overrides.compute(section) { _, v ->
@@ -43,45 +52,76 @@ class SingleClusterTestConfigManager(
 
         return this
     }
+    private fun apply(section: String, configOverride: Config) {
+        val currentConfig = getConfig(section)
 
-    override fun apply(): TestConfigManager {
-        overrides.forEach { (section, configOverride) ->
-            val currentConfig = getConfig(section)
+        val (previousVersion, previousSourceConfig) = with(currentConfig) {
+            version to sourceConfig
+        }
+        val previousConfig = previousSourceConfig.takeIf {
+            it.isNotBlank()
+        }?.let {
+            ConfigFactory.parseString(it)
+        } ?: ConfigFactory.empty()
 
-            val (previousVersion, previousSourceConfig) = with(currentConfig) {
-                version to sourceConfig
-            }
-            val previousConfig = previousSourceConfig.takeIf {
-                it.isNotBlank()
-            }?.let {
-                ConfigFactory.parseString(it)
-            } ?: ConfigFactory.empty()
+        // Store original config for later revert.
+        originalConfigs.computeIfAbsent(section) { previousConfig }
 
-            // Store original config for later revert.
-            originalConfigs.computeIfAbsent(section) { previousConfig }
+        val mergedConfig = configOverride.withFallback(previousConfig).root().render(ConfigRenderOptions.concise())
 
-            val mergedConfig = configOverride.withFallback(previousConfig).root().render(ConfigRenderOptions.concise())
+        logger.info(
+            "Updating from config \"$previousSourceConfig\" to \"$mergedConfig\" for section \"$section\" on " +
+                    "cluster \"${clusterInfo.name}\"."
+        )
 
-            logger.info(
-                "Updating from config \"$previousSourceConfig\" to \"$mergedConfig\" for section \"$section\" on " +
-                        "cluster \"${clusterInfo.name}\"."
-            )
+        if(mergedConfig != previousSourceConfig) {
+            updateConfig(mergedConfig, section)
 
-            if(mergedConfig != previousSourceConfig) {
-                updateConfig(mergedConfig, section)
-
-                eventually(duration = Duration.ofSeconds(GET_CONFIG_TIMEOUT_SECONDS)) {
-                    with(getConfig(section)) {
-                        assertThat(version).isNotEqualTo(previousVersion)
-                        assertThat(sourceConfig).isEqualTo(mergedConfig)
-                    }
+            eventually(duration = Duration.ofSeconds(GET_CONFIG_TIMEOUT_SECONDS)) {
+                with(getConfig(section)) {
+                    assertThat(version).isNotEqualTo(previousVersion)
+                    assertThat(sourceConfig).isEqualTo(mergedConfig)
                 }
             }
         }
-        return this
     }
 
-    override fun revert(): TestConfigManager {
+    override fun <T> applyWithoutRevert(block: () -> T): T {
+        val locks = overrides.keys.map { section ->
+            lock.computeIfAbsent(
+                LockKey(
+                    clusterInfo.name,
+                    section,
+                )
+            ) { ReentrantLock() }
+        }
+
+        return try {
+            locks.forEach {
+                it.lock()
+            }
+            overrides.forEach { (section, configOverride) ->
+                apply(section, configOverride)
+            }
+            block()
+        } finally {
+            locks.forEach {
+                it.unlock()
+            }
+        }
+    }
+
+    override fun <T> apply(block: () -> T): T {
+        return applyWithoutRevert {
+            try {
+                block()
+            } finally {
+                revert()
+            }
+        }
+    }
+
+    private fun revert(): TestConfigManager {
         originalConfigs.forEach { (section, originalConfig) ->
             val (previousVersion, previousSourceConfig) = with(getConfig(section)) {
                 version to sourceConfig
@@ -100,14 +140,8 @@ class SingleClusterTestConfigManager(
                 assertThat(newConfig.sourceConfig).isEqualTo(preTestConfig)
             }
         }
+        originalConfigs.clear()
         return this
-    }
-
-    /**
-     * Revert back to the original config on close.
-     */
-    override fun close() {
-        revert()
     }
 
     private fun getConfig(section: String) = clusterInfo.getConfig(section)

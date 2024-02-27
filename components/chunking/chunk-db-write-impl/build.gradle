@@ -33,6 +33,7 @@ dependencies {
     implementation project(':libs:db:db-orm')
     implementation project(':libs:db:db-admin')
     implementation project(':libs:configuration:configuration-validation')
+    implementation project(':libs:platform-info')
 
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
@@ -48,8 +49,8 @@ dependencies {
     implementation project(':components:membership:certificates-service')
     integrationTestImplementation project(":libs:serialization:serialization-avro")
 
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation libs.jackson.databind
+    implementation libs.jackson.module.kotlin
 
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":components:reconciliation:reconciliation")
@@ -67,11 +68,9 @@ dependencies {
     integrationTestImplementation project(':libs:platform-info')
 
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    testRuntimeOnly libs.postgresql.jdbc
 
     cpis project(path: ':testing:cpbs:extendable-cpb', configuration: 'cordaCPB')
 }

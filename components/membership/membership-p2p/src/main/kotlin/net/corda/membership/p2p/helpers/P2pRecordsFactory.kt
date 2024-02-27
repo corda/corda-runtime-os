@@ -1,8 +1,5 @@
 package net.corda.membership.p2p.helpers
 
-import java.nio.ByteBuffer
-import java.time.temporal.ChronoUnit
-import java.util.UUID
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.app.AppMessage
@@ -17,6 +14,9 @@ import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.time.temporal.ChronoUnit
+import java.util.UUID
 
 class P2pRecordsFactory(
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,

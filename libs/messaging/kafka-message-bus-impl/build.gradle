@@ -6,6 +6,11 @@ plugins {
 description 'Kafka Message Bus Impl'
 
 dependencies {
+
+    constraints {
+        implementation(libs.slf4j.api)
+    }
+    
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
@@ -24,21 +29,12 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-config-schema"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
-    constraints {
-        implementation("org.xerial.snappy:snappy-java:$xerialSnappyVersion") {
-            because 'Kafka Client uses an older version of Snappy library which is exposed to CVE-2023-34455. ' +
-                    'This might be resolved in the future versions of Kafka Client.'
-        }
-    }
+    implementation libs.kafka.client
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:test-utilities")
 
     testRuntimeOnly 'org.osgi:osgi.core'
-    testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    testRuntimeOnly libs.log4j.slf4j
 }

@@ -60,7 +60,6 @@ class MessageConverterImpl(
         operation: String,
         resourceId: String?
     ): AsyncOperationStatus {
-
         return when (status.state) {
             ACCEPTED -> {
                 AsyncOperationStatus.accepted(status.requestId, operation, status.latestUpdateTimestamp)

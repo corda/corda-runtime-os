@@ -33,7 +33,7 @@ class RestSSLClientIntegrationTest : RestIntegrationTestBase() {
         @JvmStatic
         @Suppress("unused")
         fun setUpBeforeClass() {
-            //System.setProperty("javax.net.debug", "all")
+            // System.setProperty("javax.net.debug", "all")
             val keyStoreInfo = sslService.getOrCreateKeyStoreInfo(mock())
             val sslConfig = RestSSLSettings(keyStoreInfo.path, keyStoreInfo.password)
             val restServerSettings = RestServerSettings(
@@ -80,7 +80,7 @@ class RestSSLClientIntegrationTest : RestIntegrationTestBase() {
 
         client.use {
             val connection = client.start()
-            with (connection.proxy) {
+            with(connection.proxy) {
                 assertEquals(3, this.plus(2L))
                 assertEquals(Unit::class.java, this.voidResponse()::class.java)
                 assertEquals("Pong for str = value", this.ping(TestHealthCheckAPI.PingPongData("value")))
@@ -106,7 +106,7 @@ class RestSSLClientIntegrationTest : RestIntegrationTestBase() {
 
         client.use {
             val connection = client.start()
-            with (connection.proxy) {
+            with(connection.proxy) {
                 assertEquals("custom custom test", this.printString(CustomString("test")).s)
             }
         }
@@ -128,7 +128,7 @@ class RestSSLClientIntegrationTest : RestIntegrationTestBase() {
 
         client.use {
             val connection = client.start()
-            with (connection.proxy) {
+            with(connection.proxy) {
                 assertEquals(3, this.plus(2L))
                 assertEquals(Unit::class.java, this.voidResponse()::class.java)
                 assertEquals("Pong for str = value", this.ping(TestHealthCheckAPI.PingPongData("value")))

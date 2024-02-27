@@ -11,11 +11,6 @@ import net.corda.data.virtualnode.VirtualNodeDBResetResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
-import net.corda.rest.HttpFileUpload
-import net.corda.rest.PluggableRestResource
-import net.corda.rest.exception.InternalServerException
-import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
-import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.platform.PlatformInfoProvider
@@ -31,6 +26,11 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.rest.HttpFileUpload
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.InternalServerException
+import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
+import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.debug
 import net.corda.utilities.time.UTCClock
@@ -129,7 +129,9 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {
                         virtualNodeSenderFactory.createSender(
-                            duration, messagingConfig, PublisherConfig(
+                            duration,
+                            messagingConfig,
+                            PublisherConfig(
                                 VIRTUAL_NODE_MAINTENANCE_ASYNC_OPERATION_CLIENT_ID
                             )
                         )
@@ -142,9 +144,11 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
 
     override fun forceCpiUpload(upload: HttpFileUpload): CpiUploadRestResource.CpiUploadResponse {
         logger.info("Force uploading CPI: ${upload.fileName}")
-        if (!isRunning) throw IllegalStateException(
-            "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
-        )
+        if (!isRunning) {
+            throw IllegalStateException(
+                "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
+            )
+        }
         val properties = mapOf<String, String?>(PropertyKeys.FORCE_UPLOAD to true.toString(), CHUNK_FILENAME_KEY to upload.fileName)
         val cpiUploadRequestId = tryWithExceptionHandling(logger, "Force CPI upload") {
             cpiUploadService.cpiUploadManager.uploadCpi(
@@ -189,9 +193,11 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
      */
     @Suppress("ThrowsCount")
     private fun sendAndReceive(request: VirtualNodeManagementRequest): VirtualNodeManagementResponse {
-        if (!isRunning) throw IllegalStateException(
-            "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
-        )
+        if (!isRunning) {
+            throw IllegalStateException(
+                "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
+            )
+        }
 
         val sender = lifecycleCoordinator.getManagedResource<VirtualNodeSender>(SENDER)
             ?: throw CordaRuntimeException("Sender not initialized, check component status for ${this.javaClass.name}")

@@ -27,14 +27,6 @@ interface FlowMessageFactory {
     fun createFlowStartedStatusMessage(checkpoint: FlowCheckpoint): FlowStatus
 
     /**
-     * Creates [FlowStatus] message with a [FlowStates.RETRYING] status
-     *
-     * @param checkpoint of the flow being started.
-     * @return a new instance of a [FlowStatus] record.
-     */
-    fun createFlowRetryingStatusMessage(checkpoint: FlowCheckpoint): FlowStatus
-
-    /**
      * Creates [FlowStatus] message with a [FlowStates.FAILED] status
      *
      * @param checkpoint of the flow that failed.
@@ -48,7 +40,7 @@ interface FlowMessageFactory {
      * Creates [FlowStatus] message with a [FlowStates.KILLED] status.
      *
      * @param checkpoint of the flow
-     * @param details about flow termination
+     * @param message about flow termination
      * @return a new instance of a [FlowStatus] record.
      */
     fun createFlowKilledStatusMessage(checkpoint: FlowCheckpoint, message: String?): FlowStatus

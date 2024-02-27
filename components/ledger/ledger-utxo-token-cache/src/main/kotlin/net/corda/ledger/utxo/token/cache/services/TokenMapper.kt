@@ -1,8 +1,8 @@
 package net.corda.ledger.utxo.token.cache.services
 
+import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import java.sql.SQLException
 import javax.persistence.Tuple
-import net.corda.ledger.utxo.token.cache.entities.CachedToken
 
 interface TokenMapper {
     @Throws(SQLException::class)

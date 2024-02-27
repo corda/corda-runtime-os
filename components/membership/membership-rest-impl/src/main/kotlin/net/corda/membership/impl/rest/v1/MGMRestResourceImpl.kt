@@ -12,11 +12,6 @@ import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
 import net.corda.data.membership.common.ApprovalRuleType.STANDARD
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.libs.platform.PlatformInfoProvider
-import net.corda.rest.PluggableRestResource
-import net.corda.rest.exception.BadRequestException
-import net.corda.rest.exception.InvalidInputDataException
-import net.corda.rest.exception.ResourceNotFoundException
-import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -24,31 +19,36 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.client.CouldNotFindEntityException
 import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
-import net.corda.membership.rest.v1.MGMRestResource
-import net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams
-import net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
-import net.corda.membership.rest.v1.types.request.ManualDeclinationReason
-import net.corda.membership.rest.v1.types.response.ApprovalRuleInfo
-import net.corda.membership.rest.v1.types.response.PreAuthToken
-import net.corda.membership.rest.v1.types.response.PreAuthTokenStatus
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
 import net.corda.membership.lib.ContextDeserializationException
-import net.corda.membership.rest.v1.types.response.MemberInfoSubmitted
-import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
-import net.corda.membership.rest.v1.types.response.RegistrationStatus
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.deserializeContext
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.verifiers.GroupParametersUpdateVerifier
+import net.corda.membership.rest.v1.MGMRestResource
+import net.corda.membership.rest.v1.types.RestGroupParameters
+import net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams
+import net.corda.membership.rest.v1.types.request.ManualDeclinationReason
+import net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
+import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
+import net.corda.membership.rest.v1.types.response.ApprovalRuleInfo
+import net.corda.membership.rest.v1.types.response.MemberInfoSubmitted
+import net.corda.membership.rest.v1.types.response.PreAuthToken
+import net.corda.membership.rest.v1.types.response.PreAuthTokenStatus
+import net.corda.membership.rest.v1.types.response.RegistrationStatus
+import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.InternalServerException
+import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.exception.InvalidStateChangeException
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
-import net.corda.membership.rest.v1.types.RestGroupParameters
-import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
-import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
-import net.corda.rest.exception.InternalServerException
-import net.corda.rest.exception.InvalidStateChangeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.read.rest.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
@@ -264,15 +264,20 @@ class MGMRestResourceImpl internal constructor(
         impl.deletePreAuthGroupApprovalRule(holdingIdentityShortHash, ruleId)
 
     override fun viewRegistrationRequests(
-        holdingIdentityShortHash: String, requestSubjectX500Name: String?, viewHistoric: Boolean
+        holdingIdentityShortHash: String,
+        requestSubjectX500Name: String?,
+        viewHistoric: Boolean
     ) = impl.viewRegistrationRequests(holdingIdentityShortHash, requestSubjectX500Name, viewHistoric)
 
     override fun approveRegistrationRequest(
-        holdingIdentityShortHash: String, requestId: String
+        holdingIdentityShortHash: String,
+        requestId: String
     ) = impl.approveRegistrationRequest(holdingIdentityShortHash, requestId)
 
     override fun declineRegistrationRequest(
-        holdingIdentityShortHash: String, requestId: String, reason: ManualDeclinationReason
+        holdingIdentityShortHash: String,
+        requestId: String,
+        reason: ManualDeclinationReason
     ) = impl.declineRegistrationRequest(holdingIdentityShortHash, requestId, reason)
 
     @Deprecated("Deprecated in favour of suspendMember")
@@ -312,7 +317,7 @@ class MGMRestResourceImpl internal constructor(
     private object InactiveImpl : InnerMGMRestResource {
 
         private val NOT_RUNNING_ERROR = "${MGMRestResourceImpl::class.java.simpleName} is not running. " +
-                "Operation cannot be fulfilled."
+            "Operation cannot be fulfilled."
 
         override fun generateGroupPolicy(
             holdingIdentityShortHash: String
@@ -388,7 +393,9 @@ class MGMRestResourceImpl internal constructor(
             throwNotRunningException()
 
         override fun declineRegistrationRequest(
-            holdingIdentityShortHash: String, requestId: String, reason: ManualDeclinationReason
+            holdingIdentityShortHash: String,
+            requestId: String,
+            reason: ManualDeclinationReason
         ): Unit = throwNotRunningException()
 
         override fun suspendMember(
@@ -586,7 +593,9 @@ class MGMRestResourceImpl internal constructor(
             try {
                 handleCommonErrors(holdingIdentityShortHash) {
                     mgmResourceClient.reviewRegistrationRequest(
-                        it, registrationId, true
+                        it,
+                        registrationId,
+                        true
                     )
                 }
             } catch (e: IllegalArgumentException) {
@@ -605,7 +614,10 @@ class MGMRestResourceImpl internal constructor(
             try {
                 handleCommonErrors(holdingIdentityShortHash) {
                     mgmResourceClient.reviewRegistrationRequest(
-                        it, registrationId, false, reason
+                        it,
+                        registrationId,
+                        false,
+                        reason
                     )
                 }
             } catch (e: IllegalArgumentException) {
@@ -750,7 +762,8 @@ class MGMRestResourceImpl internal constructor(
         private fun AvroPreAuthToken.fromAvro(): PreAuthToken = PreAuthToken(
             this.id,
             this.ownerX500Name,
-            this.ttl, status.fromAvro(),
+            this.ttl,
+            status.fromAvro(),
             this.creationRemark,
             this.removalRemark
         )

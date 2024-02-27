@@ -1,9 +1,9 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.core.ShortHash
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.core.ShortHash
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -111,9 +111,13 @@ class PersistMemberInfoHandlerTest {
     }
 
     private val dbConnectionManager: DbConnectionManager = mock {
-        on { getOrCreateEntityManagerFactory(
-            eq(vaultDmlConnectionId),
-            any()) } doReturn entityManagerFactory
+        on {
+            getOrCreateEntityManagerFactory(
+                eq(vaultDmlConnectionId),
+                any(),
+                eq(false)
+            )
+        } doReturn entityManagerFactory
     }
     private val jpaEntitiesRegistry: JpaEntitiesRegistry = mock {
         on { get(eq(CordaDb.Vault.persistenceUnitName)) } doReturn mock()
@@ -123,7 +127,7 @@ class PersistMemberInfoHandlerTest {
     }
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
-        on { createAvroDeserializer<KeyValuePairList>(any(), any())} doReturn keyValuePairListDeserializer
+        on { createAvroDeserializer<KeyValuePairList>(any(), any()) } doReturn keyValuePairListDeserializer
     }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { getByHoldingIdentityShortHash(eq(ourHoldingIdentity.shortHash)) } doReturn virtualNodeInfo
@@ -160,7 +164,8 @@ class PersistMemberInfoHandlerTest {
 
     // deprecated
     private fun getPersistMemberInfo(memberInfos: List<PersistentMemberInfo>) = PersistMemberInfo(
-        null, memberInfos
+        null,
+        memberInfos
     )
 
     private fun getPersistentMemberInfo() = PersistentMemberInfo(
@@ -185,7 +190,7 @@ class PersistMemberInfoHandlerTest {
         assertThat(result).isInstanceOf(Unit::class.java)
         verify(memberInfoFactory, never()).createMemberInfo(any())
         verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
-        verify(dbConnectionManager, never()).getOrCreateEntityManagerFactory(any(), any(), any())
+        verify(dbConnectionManager, never()).getOrCreateEntityManagerFactory(any<String>(), any(), any())
         verify(jpaEntitiesRegistry, never()).get(any())
     }
 
@@ -272,10 +277,12 @@ class PersistMemberInfoHandlerTest {
 
     @Test
     fun `invoke does not persist or throw if persisted mgm context differs only by time`() {
-        val mgmContextPairList = KeyValuePairList(mutableListOf(
-            KeyValuePair(MemberInfoExtension.CREATION_TIME, "a"),
-            KeyValuePair(MemberInfoExtension.MODIFIED_TIME, "b")
-        ))
+        val mgmContextPairList = KeyValuePairList(
+            mutableListOf(
+                KeyValuePair(MemberInfoExtension.CREATION_TIME, "a"),
+                KeyValuePair(MemberInfoExtension.MODIFIED_TIME, "b")
+            )
+        )
         val memberContextPairList = KeyValuePairList(emptyList())
         val mgmContextBytes = byteArrayOf(1)
         val memberContextBytes = byteArrayOf(2)

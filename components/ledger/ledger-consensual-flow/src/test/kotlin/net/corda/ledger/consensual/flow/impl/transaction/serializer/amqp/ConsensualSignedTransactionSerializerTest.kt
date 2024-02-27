@@ -9,7 +9,7 @@ import org.junit.jupiter.api.assertThrows
 import java.io.NotSerializableException
 import kotlin.test.assertEquals
 
-class ConsensualSignedTransactionSerializerTest: ConsensualLedgerTest() {
+class ConsensualSignedTransactionSerializerTest : ConsensualLedgerTest() {
     private val serializationService = TestSerializationService.getTestSerializationService({
         it.register(wireTransactionAMQPSerializer, it)
         it.register(consensualSignedTransactionAMQPSerializer, it)

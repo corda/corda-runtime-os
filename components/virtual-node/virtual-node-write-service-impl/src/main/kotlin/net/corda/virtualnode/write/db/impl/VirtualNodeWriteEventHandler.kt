@@ -26,7 +26,7 @@ internal class VirtualNodeWriteEventHandler(
 ) : LifecycleEventHandler {
 
     private companion object {
-         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private var registrationHandle: AutoCloseable? = null
@@ -50,13 +50,14 @@ internal class VirtualNodeWriteEventHandler(
         val msgConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
         val externalMsgConfig = event.config.getConfig(ConfigKeys.EXTERNAL_MESSAGING_CONFIG)
         val vnodeDatasourceConfig = event.config.getConfig(ConfigKeys.VNODE_DATASOURCE_CONFIG)
+        val bootConfig = event.config.getConfig(ConfigKeys.BOOT_CONFIG)
 
         logger.info("Configuration changed event received")
         try {
             virtualNodeWriter?.close()
             logger.info("Current virtual node writer has been closed")
             virtualNodeWriter = virtualNodeWriterFactory
-                .create(msgConfig, externalMsgConfig, vnodeDatasourceConfig)
+                .create(msgConfig, externalMsgConfig, vnodeDatasourceConfig, bootConfig)
                 .apply { start() }
             logger.info("New virtual node write has been created")
 
@@ -64,7 +65,8 @@ internal class VirtualNodeWriteEventHandler(
         } catch (e: Exception) {
             coordinator.updateStatus(ERROR)
             throw VirtualNodeWriteServiceException(
-                "Could not start the virtual node writer for handling virtual node creation requests.", e
+                "Could not start the virtual node writer for handling virtual node creation requests.",
+                e
             )
         }
     }
@@ -95,7 +97,8 @@ internal class VirtualNodeWriteEventHandler(
                             setOf(
                                 ConfigKeys.MESSAGING_CONFIG,
                                 ConfigKeys.EXTERNAL_MESSAGING_CONFIG,
-                                ConfigKeys.VNODE_DATASOURCE_CONFIG
+                                ConfigKeys.VNODE_DATASOURCE_CONFIG,
+                                ConfigKeys.BOOT_CONFIG
                             )
                         )
                 }

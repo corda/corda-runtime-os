@@ -11,7 +11,7 @@ import java.nio.ByteBuffer
  */
 data class OffsetResultSetImpl<R> internal constructor(
     private val serializationService: SerializationService,
-    private var serializedParameters: Map<String, ByteBuffer>,
+    private var serializedParameters: Map<String, ByteBuffer?>,
     private var limit: Int,
     private var offset: Int,
     private val resultClass: Class<R>,
@@ -49,7 +49,7 @@ data class OffsetResultSetImpl<R> internal constructor(
         hasNext = numberOfRowsFromQuery != 0  // If there are no rows left there are no more pages to fetch
                 && serializedResults.size == limit // If the current page is full, it means we might have more records, so we go and check
         offset += numberOfRowsFromQuery
-        results = serializedResults.map { serializationService.deserialize(it.array(), resultClass) }
+        results = serializedResults.map { serializationService.deserialize(it, resultClass) }
         return results
     }
 }

@@ -177,7 +177,6 @@ class LayeredPropertyMapTest {
         assertEquals(dummySet, parsedDummySet)
     }
 
-
     @Test
     fun `parseList should be able to parse second time around by fetching from cache`() {
         val propertyMap = createLayeredPropertyMapImpl()
@@ -201,9 +200,9 @@ class LayeredPropertyMapTest {
         val propertyMap = createLayeredPropertyMapImpl()
         val parsedList = propertyMap.parseList<DummyEndpointInfo>("corda.endpoints")
         assertEquals(3, parsedList.size)
-        for( i in 0 until  3) {
-            assertEquals("localhost${i+1}", parsedList[i].url)
-            assertEquals(i+1, parsedList[i].protocolVersion)
+        for (i in 0 until 3) {
+            assertEquals("localhost${i + 1}", parsedList[i].url)
+            assertEquals(i + 1, parsedList[i].protocolVersion)
         }
     }
 
@@ -213,9 +212,9 @@ class LayeredPropertyMapTest {
         val parsedSet = propertyMap.parseSet<DummyEndpointInfo>("corda.endpoints")
         assertEquals(3, parsedSet.size)
         val parsedSetContents = parsedSet.toList()
-        for( i in 0 until  3) {
-            assertEquals("localhost${i+1}", parsedSetContents[i].url)
-            assertEquals(i+1, parsedSetContents[i].protocolVersion)
+        for (i in 0 until 3) {
+            assertEquals("localhost${i + 1}", parsedSetContents[i].url)
+            assertEquals(i + 1, parsedSetContents[i].protocolVersion)
         }
     }
 
@@ -469,7 +468,7 @@ class LayeredPropertyMapTest {
         val mapCount = 1_000
         val threadCount = 20
         val propertyMaps = mutableListOf<LayeredPropertyMap>()
-        val results = ConcurrentHashMap<Pair<Int,LayeredPropertyMap>, Set<Int>>()
+        val results = ConcurrentHashMap<Pair<Int, LayeredPropertyMap>, Set<Int>>()
         for (i in 0 until mapCount) {
             propertyMaps.add(createLayeredPropertyMapImpl())
         }
@@ -493,7 +492,7 @@ class LayeredPropertyMapTest {
         val mapCount = 1_000
         val threadCount = 20
         val propertyMaps = mutableListOf<LayeredPropertyMap>()
-        val results = ConcurrentHashMap<Pair<Int,LayeredPropertyMap>, List<Int>>()
+        val results = ConcurrentHashMap<Pair<Int, LayeredPropertyMap>, List<Int>>()
         for (i in 0 until mapCount) {
             propertyMaps.add(createLayeredPropertyMapImpl())
         }
@@ -517,7 +516,7 @@ class LayeredPropertyMapTest {
         val mapCount = 1_000
         val threadCount = 20
         val propertyMaps = mutableListOf<LayeredPropertyMap>()
-        val results = ConcurrentHashMap<Pair<Int,LayeredPropertyMap>, Instant>()
+        val results = ConcurrentHashMap<Pair<Int, LayeredPropertyMap>, Instant>()
         for (i in 0 until mapCount) {
             propertyMaps.add(createLayeredPropertyMapImpl())
         }
@@ -541,7 +540,7 @@ class LayeredPropertyMapTest {
         val mapCount = 1_000
         val threadCount = 20
         val propertyMaps = mutableListOf<LayeredPropertyMap>()
-        val results = ConcurrentHashMap<Pair<Int,LayeredPropertyMap>, Instant?>()
+        val results = ConcurrentHashMap<Pair<Int, LayeredPropertyMap>, Instant?>()
         for (i in 0 until mapCount) {
             propertyMaps.add(createLayeredPropertyMapImpl())
         }

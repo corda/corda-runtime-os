@@ -38,4 +38,3 @@ class TokenSelectionImpl @Activate constructor(
         )
     }
 }
-

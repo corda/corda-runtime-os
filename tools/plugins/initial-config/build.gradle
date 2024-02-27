@@ -16,11 +16,12 @@ dependencies {
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
     implementation 'javax.persistence:javax.persistence-api'
 
-    compileOnly "org.pf4j:pf4j:$pf4jVersion"
-    kapt "org.pf4j:pf4j:$pf4jVersion"
+    compileOnly libs.pf4j
+    kapt libs.pf4j
     kapt "info.picocli:picocli:$picocliVersion"
 
     implementation 'net.corda:corda-config-schema'
+    implementation libs.jackson.module.kotlin
 
     implementation project(':libs:permissions:permission-common')
     implementation project(':libs:permissions:permission-datamodel')
@@ -32,8 +33,9 @@ dependencies {
     implementation project(':libs:db:db-core')
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
 
+    testImplementation libs.bundles.test
     testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
-    testImplementation "org.pf4j:pf4j:$pf4jVersion"
+    testImplementation libs.pf4j
     testImplementation "com.github.stefanbirkner:system-lambda:$systemLambdaVersion"
     testImplementation "net.corda.cli.host:api:$pluginHostVersion"
 }

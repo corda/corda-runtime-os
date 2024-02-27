@@ -1,11 +1,14 @@
 package net.corda.cli.plugins.dbconfig
 
+import net.corda.cli.api.AbstractCordaCliVersionProvider
 import net.corda.cli.api.CordaCliPlugin
 import org.pf4j.Extension
 import org.pf4j.Plugin
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
+
+class VersionProvider : AbstractCordaCliVersionProvider()
 
 class DatabaseBootstrapAndUpgrade : Plugin() {
 
@@ -27,7 +30,8 @@ class DatabaseBootstrapAndUpgrade : Plugin() {
         name = "database",
         subcommands = [Spec::class],
         mixinStandardHelpOptions = true,
-        description = ["Does Database bootstrapping and upgrade"]
+        description = ["Does Database bootstrapping and upgrade"],
+        versionProvider = VersionProvider::class
     )
     class PluginEntryPoint : CordaCliPlugin
 }

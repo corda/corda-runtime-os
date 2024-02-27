@@ -9,6 +9,8 @@ ext {
 
 description 'Custom converter for layered property map intergration tests'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly 'org.osgi:org.osgi.service.component.annotations'

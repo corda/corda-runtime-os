@@ -16,7 +16,4 @@ dependencies {
     api project(':libs:sandbox-types')
     api project(':libs:virtual-node:virtual-node-info')
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

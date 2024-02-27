@@ -1,9 +1,9 @@
 package net.corda.membership.service.impl
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.actions.request.DistributeGroupParameters
 import net.corda.data.membership.actions.request.DistributeMemberInfo
@@ -33,7 +33,7 @@ class MembershipActionsProcessor(
     membershipConfig: SmartConfig,
     groupReaderProvider: MembershipGroupReaderProvider,
     locallyHostedIdentitiesService: LocallyHostedIdentitiesService,
-): DurableProcessor<String, MembershipActionsRequest> {
+) : DurableProcessor<String, MembershipActionsRequest> {
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }

@@ -23,7 +23,7 @@ class PostgresVaultNamedQueryConverter @Activate constructor(
     }
 
     override fun writeCustom(output: StringBuilder, token: Token) {
-        when(token) {
+        when (token) {
             is JsonField -> writeBinaryOperator(output, " -> ", token)
             is JsonArrayOrObjectAsText -> writeBinaryOperator(output, " ->> ", token)
             is JsonCast -> writeBinaryOperator(output, "\\:\\:", token)

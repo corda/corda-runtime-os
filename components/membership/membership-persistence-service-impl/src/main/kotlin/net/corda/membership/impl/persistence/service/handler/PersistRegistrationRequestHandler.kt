@@ -24,14 +24,16 @@ internal class PersistRegistrationRequestHandler(
             )
             currentRegistrationRequest?.status?.toStatus()?.let {
                 if (it == request.status) {
-                    logger.info("Registration request [$registrationId] with status: ${currentRegistrationRequest.status}" +
-                            " is already persisted. Persistence request was discarded.")
+                    logger.info(
+                        "Registration request [$registrationId] with status: ${currentRegistrationRequest.status}" +
+                            " is already persisted. Persistence request was discarded."
+                    )
                     return@transaction
                 }
                 if (!it.canMoveToStatus(request.status)) {
                     logger.info(
                         "Registration request [$registrationId] has status: ${currentRegistrationRequest.status}" +
-                                " can not move it to status ${request.status}"
+                            " can not move it to status ${request.status}"
                     )
                     // In case of processing persistence requests in an unordered manner we need to make sure the serial
                     // gets persisted. All other existing data of the request will remain the same.

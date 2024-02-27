@@ -1,16 +1,16 @@
 package net.corda.membership.impl.registration
 
 import com.typesafe.config.ConfigFactory
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.parseSecureHash
-import net.corda.avro.serialization.CordaAvroDeserializer
-import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -28,9 +28,9 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.impl.registration.dummy.TestCryptoOpsClient
 import net.corda.membership.grouppolicy.test.common.TestGroupPolicy
 import net.corda.membership.grouppolicy.test.common.TestGroupPolicyProvider
+import net.corda.membership.impl.registration.dummy.TestCryptoOpsClient
 import net.corda.membership.impl.registration.dummy.TestGroupReaderProvider
 import net.corda.membership.impl.registration.dummy.TestPlatformInfoProvider.Companion.TEST_ACTIVE_PLATFORM_VERSION
 import net.corda.membership.impl.registration.dummy.TestPlatformInfoProvider.Companion.TEST_SOFTWARE_VERSION
@@ -141,8 +141,6 @@ class MemberRegistrationIntegrationTest {
 
         @InjectService(timeout = 5000)
         lateinit var hsmRegistrationClient: HSMRegistrationClient
-
-
 
         lateinit var keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList>
         lateinit var requestDeserializer: CordaAvroDeserializer<MembershipRegistrationRequest>

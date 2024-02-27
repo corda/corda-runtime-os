@@ -15,6 +15,5 @@ interface EventConverter {
      *
      * @return A new instance of [TokenEvent]
      */
-    fun convert(tokenPoolCacheEvent: TokenPoolCacheEvent?): TokenEvent
+    fun convert(tokenPoolCacheEvent: TokenPoolCacheEvent): TokenEvent
 }
-

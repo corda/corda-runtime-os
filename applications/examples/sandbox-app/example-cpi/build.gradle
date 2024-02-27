@@ -25,5 +25,5 @@ dependencies {
     cordaProvided 'net.corda:corda-application'
     cordaProvided 'net.corda:corda-crypto-extensions'
     cordaProvided 'org.slf4j:slf4j-api'
-    implementation "com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion"
+    implementation libs.jackson.annotations
 }

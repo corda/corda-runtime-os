@@ -13,7 +13,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import org.osgi.service.component.annotations.Activate
@@ -28,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 interface TestCryptoOpsClient : CryptoOpsClient
 
+@Suppress("TooManyFunctions")
 @ServiceRanking(Int.MAX_VALUE)
 @Component(service = [CryptoOpsClient::class, TestCryptoOpsClient::class])
 class TestCryptoOpsClientImpl @Activate constructor(

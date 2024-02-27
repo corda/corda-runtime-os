@@ -11,7 +11,7 @@ class GroupParametersUpdateVerifierTest {
         const val CUSTOM_KEY = "ext.customKey"
         const val CUSTOM_VALUE = "customValue"
     }
-    private val longString = StringBuilder().apply { for(i in 0..800){ this.append("a") } }.toString()
+    private val longString = StringBuilder().apply { for (i in 0..800) { this.append("a") } }.toString()
 
     private val verifier = GroupParametersUpdateVerifier()
 

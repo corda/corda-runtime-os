@@ -10,31 +10,32 @@ plugins {
 group 'net.corda.cli.deployment'
 
 dependencies {
-    compileOnly "org.pf4j:pf4j:$pf4jVersion"
+    compileOnly libs.pf4j
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
 
-    kapt "org.pf4j:pf4j:$pf4jVersion"
+    kapt libs.pf4j
     kapt "info.picocli:picocli:$picocliVersion"
 
-    testImplementation "org.pf4j:pf4j:$pf4jVersion"
+    testImplementation libs.bundles.test
+    testImplementation libs.pf4j
     testCompileOnly "net.corda.cli.host:api:$pluginHostVersion"
     testImplementation "com.github.stefanbirkner:system-lambda:$systemLambdaVersion"
     testImplementation "info.picocli:picocli:$picocliVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
-    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    implementation "io.fabric8:kubernetes-client:$kubernetesClientVersion"
-
-    implementation "org.postgresql:postgresql:$postgresDriverVersion"
-    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    implementation libs.jackson.dataformat.yaml
+    implementation libs.jackson.databind
+    implementation libs.jackson.module.kotlin
+    implementation libs.kubernetes.client
     constraints {
-        implementation("org.xerial.snappy:snappy-java:$xerialSnappyVersion") {
-            because 'Kafka Client uses an older version of Snappy library which is exposed to CVE-2023-34455. ' +
-                    'This might be resolved in the future versions of Kafka Client.'
+        implementation(libs.okio) {
+            because 'kubernetes-client uses an older version of Okio library, needs to be at least 3.4.0 to avoid CVE-2023-0833.'
+        }
+        implementation(libs.okHttp) {
+            because 'kubernetes-client uses an older version of okhttp3 library, needs to be at least 4.9.2 to avoid CVE-2023-0833.'
         }
     }
+    implementation libs.postgresql.jdbc
+    implementation libs.kafka.client
 }
 
 cliPlugin {

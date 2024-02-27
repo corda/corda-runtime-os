@@ -8,6 +8,8 @@ plugins {
 
 description 'Corda consensual ledger - flow implementation'
 
+ext.cordaEnableFormatting = true
+
 configurations {
     cpis {
         canBeConsumed = false
@@ -34,9 +36,6 @@ dependencies {
     implementation project(':libs:utilities')
     implementation project(':libs:virtual-node:sandbox-group-context')
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(':testing:ledger:ledger-consensual-base-test')
     testImplementation project(':testing:kryo-serialization-testkit')
     testImplementation project(':libs:serialization:serialization-amqp')

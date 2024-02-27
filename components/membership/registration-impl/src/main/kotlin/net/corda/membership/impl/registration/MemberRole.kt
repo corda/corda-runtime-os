@@ -4,6 +4,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_BACKCHAIN_REQUIRED
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
@@ -51,21 +52,24 @@ internal sealed class MemberRole {
         @Suppress("ThrowsCount")
         private fun readNotary(context: Map<String, String>): Notary {
             val serviceName = context[NOTARY_SERVICE_NAME]
-            if(serviceName.isNullOrEmpty()) throw IllegalArgumentException("Notary must have a non-empty service name.")
+            if (serviceName.isNullOrEmpty()) throw IllegalArgumentException("Notary must have a non-empty service name.")
             val protocol = context[NOTARY_SERVICE_PROTOCOL]
             if (protocol == null) {
                 throw IllegalArgumentException("No value provided for $NOTARY_SERVICE_PROTOCOL, which is required for a notary.")
             }
             if (protocol.isBlank()) {
-                throw IllegalArgumentException("Value provided for $NOTARY_SERVICE_PROTOCOL was a blank string." )
+                throw IllegalArgumentException("Value provided for $NOTARY_SERVICE_PROTOCOL was a blank string.")
             }
             val protocolVersions = NOTARY_SERVICE_PROTOCOL_VERSIONS.format("([0-9]+)").toRegex().let { regex ->
                 context.filter { it.key.matches(regex) }.mapTo(mutableSetOf()) { it.value.toInt() }
             }
+            val isBackchainRequired = context[NOTARY_SERVICE_BACKCHAIN_REQUIRED]?.toBoolean() ?: true
+
             return Notary(
                 serviceName = MemberX500Name.parse(serviceName),
                 protocol = protocol,
-                protocolVersions = protocolVersions
+                protocolVersions = protocolVersions,
+                isBackchainRequired = isBackchainRequired
             )
         }
     }
@@ -79,6 +83,7 @@ internal sealed class MemberRole {
         val serviceName: MemberX500Name,
         val protocol: String,
         val protocolVersions: Collection<Int>,
+        val isBackchainRequired: Boolean
     ) : MemberRole() {
         override fun toMemberInfo(
             notariesKeysFactory: () -> List<KeyDetails>,
@@ -99,7 +104,8 @@ internal sealed class MemberRole {
             return keys + versions + listOf(
                 "$ROLES_PREFIX.$index" to NOTARY_ROLE,
                 NOTARY_SERVICE_NAME to serviceName.toString(),
-                NOTARY_SERVICE_PROTOCOL to protocol
+                NOTARY_SERVICE_PROTOCOL to protocol,
+                NOTARY_SERVICE_BACKCHAIN_REQUIRED to isBackchainRequired.toString()
             )
         }
     }

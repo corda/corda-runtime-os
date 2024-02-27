@@ -33,6 +33,7 @@ foreach ($release in $(helm ls -q --namespace "${namespace}").Split([System.Envi
   helm get manifest "${release}" --namespace "${namespace}" > (Join-Path $releaseDir "manifest.txt")
 }
 
+$job = Start-Job -ScriptBlock {kubectl proxy}
 foreach ($podName in $(kubectl --namespace "$namespace" get pods -o jsonpath="{.items[*].metadata.name}").Split(" "))
 {
   Write-Output "Collecting configuration and logs for pod ${podName}"
@@ -49,31 +50,43 @@ foreach ($podName in $(kubectl --namespace "$namespace" get pods -o jsonpath="{.
   if ($podName -match '.*-worker-.*')
   {
     Write-Output "Collecting status for pod ${podName}"
-    $job=Start-Job -ScriptBlock {kubectl port-forward --namespace $args[0] $args[1] 7000:7000} -ArgumentList $namespace,$podName
-    $ProgressPreference = 'SilentlyContinue'
-    # Retry needed as, at least on macOS, the forwarded port is not immediately available
-    $count = 0
-    do
-    {
-      $count++
-      try
-      {
-        Invoke-RestMethod -Uri http://localhost:7000/status -OutFile (Join-Path $podDir "status.json")
+    Invoke-RestMethod -Uri "http://localhost:8001/api/v1/namespaces/${namespace}/pods/${podName}:7000/proxy/status" -OutFile (Join-Path $podDir "status.json")
+  }
+}
+Stop-Job $job
+
+foreach ($restSvcName in (kubectl get svc --namespace $namespace -l app.kubernetes.io/component=rest-worker -o jsonpath="{.items[*].metadata.name}").Split(" ")) {
+  $instance = (kubectl get --namespace $namespace svc $restSvcName -o go-template='{{ index .metadata.labels "app.kubernetes.io/instance" }}')
+
+  if (kubectl get secret --namespace $namespace "$instance-rest-api-admin") {
+    $configDir = Join-Path $namespaceDir "config" $instance
+    $null = New-Item -ItemType Directory -Force -Path $configDir
+
+    Write-Output "Collecting Corda configuration via service $restSvcName"
+    $username = (kubectl get secret --namespace $namespace "$instance-rest-api-admin" -o go-template='{{ .data.username | base64decode }}')
+    $password = (kubectl get secret --namespace $namespace "$instance-rest-api-admin" -o go-template='{{ .data.password | base64decode }}')
+
+    $job = Start-Job -ScriptBlock {kubectl port-forward --namespace $args[0] $args[1] 9443:443} -ArgumentList $namespace, "svc/${restSvcName}"
+    $remainingAttempts = 10
+    while ($remainingAttempts -gt 0) {
+      if (Test-Connection -ComputerName 'localhost' -TcpPort '9443' -Quiet) {
         break
       }
-      catch
-      {
-        if ($count -eq 10)
-        {
-          Write-Error $_.Exception.InnerException.Message -ErrorAction Continue
-        }
-        else
-        {
-          Start-Sleep -Seconds 10
-        }
+      Start-Sleep -Seconds 1
+      $remainingAttempts--
+    }
+
+    if ($remainingAttempts -gt 0) {
+      $sections = "crypto", "externalMessaging", "flow", "ledger.utxo", "membership", "messaging", "p2p.gateway", "p2p.linkManager", "rbac", "reconciliation", "rest", "sandbox", "secrets", "security", "stateManager", "vnode.datasource"
+      foreach ($section in $sections) {
+        Invoke-RestMethod -Uri "https://localhost:9443/api/v1/config/corda.$section" -Method Get -SkipCertificateCheck -Headers @{ Authorization = "Basic " + [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("${username}:${password}")) } -OutFile (Join-Path $configDir "corda.$section.json")
       }
-    } while ($count -lt 5)
+    }
+
     Stop-Job $job
+  }
+  else {
+    Write-Output "Unable to collect Corda configuration via service $restSvcName as REST API credentials unavailable"
   }
 }
 

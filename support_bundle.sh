@@ -31,6 +31,8 @@ for release in $(helm ls -q --namespace "${namespace}"); do
   helm get manifest "${release}" --namespace "${namespace}" > "${releaseDir}/manifest.txt"
 done
 
+kubectl proxy >/dev/null 2>&1 &
+pid=$!
 for podName in $(kubectl --namespace "$namespace" get pods -o jsonpath="{.items[*].metadata.name}"); do
   echo "Collecting configuration and logs for pod ${podName}"
   podDir="${namespaceDir}/${podName}"
@@ -44,12 +46,33 @@ for podName in $(kubectl --namespace "$namespace" get pods -o jsonpath="{.items[
   fi
   if [[ "$podName" == *-worker-* ]]; then
     echo "Collecting status for pod ${podName}"
-    kubectl port-forward --namespace "${namespace}" "${podName}" 7000:7000  >/dev/null 2>&1 &
-    pid=$!
-    curl -s localhost:7000/status -o "${podDir}/status.json"
-    disown $pid
-    kill $pid
+    curl -s "localhost:8001/api/v1/namespaces/${namespace}/pods/${podName}:7000/proxy/status" -o "${podDir}/status.json"
   fi
+done
+disown $pid
+kill $pid
+
+for restSvcName in $(kubectl get svc --namespace "$namespace" -l app.kubernetes.io/component=rest-worker -o jsonpath="{.items[*].metadata.name}"); do
+    instance=$(kubectl get --namespace "$namespace" svc "$restSvcName" -o go-template='{{ index .metadata.labels "app.kubernetes.io/instance" }}')
+    if kubectl get secret --namespace "$namespace" "$instance-rest-api-admin" > /dev/null 2>&1; then
+      configDir="${namespaceDir}/config/${instance}"
+      mkdir -p "$configDir"
+      echo "Collecting Corda configuration via service ${restSvcName}"
+      username=$(kubectl get secret --namespace "$namespace" "$instance-rest-api-admin" -o go-template='{{ .data.username | base64decode }}')
+      password=$(kubectl get secret --namespace "$namespace" "$instance-rest-api-admin" -o go-template='{{ .data.password | base64decode }}')
+      kubectl port-forward --namespace "${namespace}" "svc/${restSvcName}" 9443:443 > /dev/null 2>&1 &
+      pid=$!
+      if curl -sk "https://localhost:9443" --retry 10 --retry-delay 1 --retry-all-errors > /dev/null 2>&1; then
+        sections="crypto externalMessaging flow ledger.utxo membership messaging p2p.gateway p2p.linkManager rbac reconciliation rest sandbox secrets security stateManager vnode.datasource"
+        for section in $sections; do
+            curl -sk -u "${username}:${password}" "https://localhost:9443/api/v1/config/corda.${section}" -o "${configDir}/corda.${section}.json"
+        done
+      fi
+      disown $pid
+      kill $pid
+    else
+      echo "Unable to collect Corda configuration via service ${restSvcName} as REST API credentials unavailable"
+    fi
 done
 
 bundle="${namespace}-support-bundle-$(date +"%Y-%m-%dT%H_%M_%S").tgz"

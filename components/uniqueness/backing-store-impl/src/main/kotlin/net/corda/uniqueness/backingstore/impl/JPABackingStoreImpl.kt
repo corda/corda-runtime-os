@@ -3,9 +3,8 @@ package net.corda.uniqueness.backingstore.impl
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.bytes
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.connection.manager.VirtualNodeDbType
-import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
+import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
 import net.corda.metrics.CordaMetrics
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.uniqueness.backingstore.BackingStore
@@ -27,6 +26,7 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.hibernate.Session
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -48,7 +48,9 @@ open class JPABackingStoreImpl @Activate constructor(
     @Reference(service = JpaEntitiesRegistry::class)
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = DbConnectionManager::class)
-    private val dbConnectionManager: DbConnectionManager
+    private val dbConnectionManager: DbConnectionManager,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
 ) : BackingStore {
 
     private companion object {
@@ -69,9 +71,13 @@ open class JPABackingStoreImpl @Activate constructor(
 
         val sessionStartTime = System.nanoTime()
 
+        val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentity.shortHash) ?:
+            throw VirtualNodeNotFoundException("Virtual node ${holdingIdentity.shortHash} not found")
+        val uniquenessDmlConnectionId = virtualNodeInfo.uniquenessDmlConnectionId
+        requireNotNull(uniquenessDmlConnectionId) {"uniquenessDmlConnectionId is null"}
+
         val entityManagerFactory = dbConnectionManager.getOrCreateEntityManagerFactory(
-            VirtualNodeDbType.UNIQUENESS.getSchemaName(holdingIdentity.shortHash),
-            DbPrivilege.DML,
+            uniquenessDmlConnectionId,
             entitiesSet = jpaEntitiesRegistry.get(CordaDb.Uniqueness.persistenceUnitName)
                 ?: throw IllegalStateException(
                     "persistenceUnitName " +

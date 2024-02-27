@@ -40,14 +40,14 @@ class LateInitDbConnectionOps: DbConnectionOps {
 
     override fun getClusterDataSource(): DataSource = delegate.getClusterDataSource()
 
-    override fun createDatasource(connectionId: UUID): CloseableDataSource =
-        delegate.createDatasource(connectionId)
+    override fun createDatasource(connectionId: UUID, enablePool: Boolean): CloseableDataSource =
+        delegate.createDatasource(connectionId, enablePool)
 
     override fun getDataSource(name: String, privilege: DbPrivilege): DataSource? =
         delegate.getDataSource(name, privilege)
 
-    override fun getDataSource(config: SmartConfig): CloseableDataSource =
-        delegate.getDataSource(config)
+    override fun getDataSource(config: SmartConfig, enablePool: Boolean): CloseableDataSource =
+        delegate.getDataSource(config, enablePool)
 
     override fun getClusterEntityManagerFactory(): EntityManagerFactory =
         delegate.getClusterEntityManagerFactory()
@@ -62,12 +62,17 @@ class LateInitDbConnectionOps: DbConnectionOps {
     ): EntityManagerFactory =
         delegate.getOrCreateEntityManagerFactory(name, privilege, entitiesSet)
 
-    override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet):
-            EntityManagerFactory = delegate.createEntityManagerFactory(connectionId, entitiesSet)
+    override fun createEntityManagerFactory(
+        connectionId: UUID,
+        entitiesSet: JpaEntitiesSet,
+        enablePool: Boolean,
+        ):
+            EntityManagerFactory = delegate.createEntityManagerFactory(connectionId, entitiesSet, enablePool)
 
     override fun getOrCreateEntityManagerFactory(
         connectionId: UUID,
-        entitiesSet: JpaEntitiesSet
+        entitiesSet: JpaEntitiesSet,
+        enablePool: Boolean,
     ): EntityManagerFactory =
-        delegate.getOrCreateEntityManagerFactory(connectionId, entitiesSet)
+        delegate.getOrCreateEntityManagerFactory(connectionId, entitiesSet, enablePool)
 }

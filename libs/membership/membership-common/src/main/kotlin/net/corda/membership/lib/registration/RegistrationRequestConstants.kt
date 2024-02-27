@@ -1,4 +1,5 @@
 @file:JvmName("RegistrationRequestConstants")
+
 package net.corda.membership.lib.registration
 
 const val REGISTRATION_PUBLIC_KEY = "corda.registration.request.public.key"
@@ -12,12 +13,13 @@ const val PRE_AUTH_TOKEN = "corda.auth.token"
  * Reasons for declination of a registration request.
  */
 const val DECLINED_REASON_FOR_USER_INTERNAL_ERROR = "Internal error on the MGM side. " +
-        "Please reach out to the network operator to find out the reason the request was declined."
+    "Please reach out to the network operator to find out the reason the request was declined."
+
 // The below should be used in scenarios where we don't want to leak sensitive information.
 const val DECLINED_REASON_FOR_USER_GENERAL_INVALID_REASON = "Invalid request. " +
-        "Please reach out to the network operator to find out the reason the request was declined."
+    "Please reach out to the network operator to find out the reason the request was declined."
 const val DECLINED_REASON_FOR_USER_GENERAL_MANUAL_DECLINED = "The request was manually declined by the network operator. " +
-        "Please reach out to them to find out the reason the request was declined."
+    "Please reach out to them to find out the reason the request was declined."
 const val DECLINED_REASON_EMPTY_REGISTRATION_CONTEXT = "Empty member context in the registration request."
 const val DECLINED_REASON_NOT_MGM_IDENTITY = "Registration request is targeted at non-MGM holding identity."
 const val DECLINED_REASON_NAME_IN_REQUEST_NOT_MATCHING_NAME_IN_P2P_MSG =

@@ -4,6 +4,8 @@ plugins {
 }
 description 'Corda REST Client'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
 
     compileOnly "org.osgi:osgi.annotation"
@@ -23,14 +25,10 @@ dependencies {
     implementation project(":libs:rest:json-serialization")
     implementation project(":libs:utilities")
 
-    implementation "com.konghq:unirest-java:$unirestVersion"
-    implementation "com.konghq:unirest-objectmapper-jackson:$unirestVersion"
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation libs.unirest.java
+    implementation libs.unirest.objectmapper.jackson
+    implementation libs.jackson.module.kotlin
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(":testing:test-utilities")
 
     testImplementation project(":libs:rest:rest-test-common")

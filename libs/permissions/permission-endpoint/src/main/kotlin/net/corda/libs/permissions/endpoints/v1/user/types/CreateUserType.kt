@@ -1,7 +1,7 @@
 package net.corda.libs.permissions.endpoints.v1.user.types
 
-import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rbac.schema.RbacKeys.USER_REGEX
+import net.corda.rest.exception.InvalidInputDataException
 import java.time.Instant
 import java.util.UUID
 
@@ -44,7 +44,7 @@ data class CreateUserType(
         val errors = mutableMapOf<String, String>()
 
         var errCount = 0
-        fun nextErrKey() : String = "Error #${++errCount}"
+        fun nextErrKey(): String = "Error #${++errCount}"
 
         if (fullName.length > 255) {
             errors[nextErrKey()] = "Full name exceed maximum length of 255."

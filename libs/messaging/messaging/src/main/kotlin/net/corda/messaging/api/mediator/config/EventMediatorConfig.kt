@@ -7,7 +7,8 @@ import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.schema.configuration.MessagingConfig
+import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_POLL_TIMEOUT
+import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_PROCESSOR_TIMEOUT
 import java.time.Duration
 
 /**
@@ -25,6 +26,8 @@ import java.time.Duration
  * @property threads Number of threads used by task manager.
  * @property threadName Name (prefix) for task manager threads.
  * @property stateManager State manager.
+ * @property minGroupSize Minimum size for group of records passed to task manager for processing in a single thread. Does not block if
+ * group size is not met by polled record count.
  */
 data class EventMediatorConfig<K: Any, S: Any, E: Any>(
     val name: String,
@@ -36,16 +39,17 @@ data class EventMediatorConfig<K: Any, S: Any, E: Any>(
     val threads: Int,
     val threadName: String,
     val stateManager: StateManager,
+    val minGroupSize: Int,
 ) {
     /**
      * Timeout for polling consumers.
      */
     val pollTimeout: Duration
-        get() = Duration.ofMillis(messagingConfig.getLong(MessagingConfig.Subscription.POLL_TIMEOUT))
+        get() = Duration.ofMillis(messagingConfig.getLong(MEDIATOR_PROCESSING_POLL_TIMEOUT))
 
     /**
-     * Maximal number of event processing retries.
+     * The length of time to block for on event processing before timing out the processing group.
      */
-    val processorRetries: Int
-        get() = messagingConfig.getInt(MessagingConfig.Subscription.PROCESSOR_RETRIES)
+    val processorTimeout: Duration
+        get() = Duration.ofMillis(messagingConfig.getLong(MEDIATOR_PROCESSING_PROCESSOR_TIMEOUT))
 }

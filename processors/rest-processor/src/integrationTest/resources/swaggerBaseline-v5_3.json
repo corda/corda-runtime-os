@@ -1,0 +1,17 @@
+{
+  "openapi" : "3.0.1",
+  "info" : {
+    "title" : "Corda REST API",
+    "description" : "All the endpoints for publicly visible Open API calls",
+    "version" : "v5_3"
+  },
+  "servers" : [ {
+    "url" : "/api/v5_3"
+  } ],
+  "security" : [ {
+    "basicAuth" : [ ]
+  } ],
+  "tags" : [],
+  "paths" : {},
+  "components" : {}
+}

@@ -3,6 +3,7 @@ package net.corda.p2p.gateway.messaging.internal
 import io.micrometer.core.instrument.Timer
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -15,12 +16,17 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.NetworkType
+import net.corda.data.p2p.gateway.GatewayResponse
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.metrics.CordaMetrics
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.TlsType
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpResponse
 import net.corda.p2p.gateway.messaging.http.SniCalculator
+import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.LINK_OUT_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.debug
@@ -28,6 +34,7 @@ import net.corda.v5.base.types.MemberX500Name
 import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
 import java.net.URI
+import java.nio.ByteBuffer
 import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -44,6 +51,7 @@ internal class OutboundMessageHandler(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
     subscriptionFactory: SubscriptionFactory,
+    publisherFactory: PublisherFactory,
     messagingConfiguration: SmartConfig,
     private val avroSchemaRegistry: AvroSchemaRegistry,
     private val commonComponents: CommonComponents,
@@ -77,6 +85,12 @@ internal class OutboundMessageHandler(
         setOf(connectionManager.dominoTile.coordinatorName, gatewayConfigReader.dominoTile.coordinatorName),
         setOf(connectionManager.dominoTile.toNamedLifecycle(), gatewayConfigReader.dominoTile.toNamedLifecycle())
     )
+    private var p2pInPublisher = PublisherWithDominoLogic(
+        publisherFactory,
+        lifecycleCoordinatorFactory,
+        PublisherConfig("outbound-message-handler", false),
+        messagingConfiguration,
+    )
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
@@ -85,9 +99,11 @@ internal class OutboundMessageHandler(
         dependentChildren = listOf(
             outboundSubscriptionTile.coordinatorName,
             commonComponents.dominoTile.coordinatorName,
+            p2pInPublisher.dominoTile.coordinatorName,
         ),
         managedChildren = listOf(
             outboundSubscriptionTile.toNamedLifecycle(),
+            p2pInPublisher.dominoTile.toNamedLifecycle(),
         ),
     )
 
@@ -214,6 +230,34 @@ internal class OutboundMessageHandler(
                 } else {
                     logger.warn("Request (${pendingRequest.gatewayMessage.id}) failed with status code ${response.statusCode}.")
                 }
+            } else if (commonComponents.features.enableP2PGatewayToLinkManagerOverHttp) {
+                publishResponse(response)
+            }
+        }
+    }
+
+    private fun publishResponse(
+        response: HttpResponse,
+    ) {
+        val gatewayResponse = avroSchemaRegistry.deserialize(
+            ByteBuffer.wrap(response.payload),
+            GatewayResponse::class.java,
+            null,
+        )
+        val payload = gatewayResponse.payload
+        if (payload != null) {
+            p2pInPublisher.publish(
+                listOf(
+                    Record(
+                        Schemas.P2P.LINK_IN_TOPIC,
+                        UUID.randomUUID().toString(),
+                        LinkInMessage(
+                            payload,
+                        ),
+                    ),
+                )
+            ).forEach {
+                it.join()
             }
         }
     }

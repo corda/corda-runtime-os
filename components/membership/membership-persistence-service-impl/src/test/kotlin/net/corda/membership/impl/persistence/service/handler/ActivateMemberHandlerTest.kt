@@ -6,16 +6,20 @@ import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedGroupParameters
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.ActivateMember
 import net.corda.data.membership.db.response.command.ActivateMemberResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.membership.datamodel.MemberInfoEntity
+import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
+import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
@@ -27,8 +31,8 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -42,10 +46,6 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
-import net.corda.data.membership.SignedGroupParameters
-import net.corda.membership.lib.MemberInfoExtension
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import javax.persistence.PessimisticLockException
 
 class ActivateMemberHandlerTest {
@@ -71,7 +71,7 @@ class ActivateMemberHandlerTest {
         on { createEntityManager() } doReturn em
     }
     private val dbConnectionManager: DbConnectionManager = mock {
-        on { getOrCreateEntityManagerFactory(any<UUID>(), any()) } doReturn emf
+        on { getOrCreateEntityManagerFactory(any<UUID>(), any(), eq(false)) } doReturn emf
     }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { getByHoldingIdentityShortHash(holdingIdentity.shortHash) } doReturn ourVirtualNodeInfo
@@ -90,27 +90,31 @@ class ActivateMemberHandlerTest {
     )
     private val persistentMemberInfo = mock<PersistentMemberInfo>()
     private val suspensionActivationEntityOperations = mock<SuspensionActivationEntityOperations> {
-        on { findMember(
-            em,
-            holdingIdentity.x500Name.toString(),
-            holdingIdentity.groupId,
-            SERIAL_NUMBER,
-            MEMBER_STATUS_SUSPENDED
-        ) } doReturn memberInfoEntity
-        on { updateStatus(
-            em,
-            holdingIdentity.x500Name.toString(),
-            holdingIdentity.toAvro(),
-            memberInfoEntity,
-            mgmContext,
-            MEMBER_STATUS_ACTIVE
-        ) } doReturn persistentMemberInfo
+        on {
+            findMember(
+                em,
+                holdingIdentity.x500Name.toString(),
+                holdingIdentity.groupId,
+                SERIAL_NUMBER,
+                MEMBER_STATUS_SUSPENDED
+            )
+        } doReturn memberInfoEntity
+        on {
+            updateStatus(
+                em,
+                holdingIdentity.x500Name.toString(),
+                holdingIdentity.toAvro(),
+                memberInfoEntity,
+                mgmContext,
+                MEMBER_STATUS_ACTIVE
+            )
+        } doReturn persistentMemberInfo
     }
 
     private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>> {
         on { serialize(any()) } doReturn byteArrayOf(0)
     }
-    private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>() {
+    private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
         on { deserialize(serializedMgmContext) } doReturn mgmContext
     }
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
@@ -188,7 +192,7 @@ class ActivateMemberHandlerTest {
     @Test
     fun `invoke throws a MembershipPersistenceException if the mgmContext can't be deserialized`() {
         whenever(keyValuePairListDeserializer.deserialize(serializedMgmContext)).thenReturn(null)
-        assertThrows<MembershipPersistenceException> {  invokeTestFunction() }.also {
+        assertThrows<MembershipPersistenceException> { invokeTestFunction() }.also {
             assertThat(it).hasMessageContaining("Failed to deserialize")
         }
     }
@@ -207,5 +211,4 @@ class ActivateMemberHandlerTest {
             invokeTestFunction()
         }
     }
-
 }

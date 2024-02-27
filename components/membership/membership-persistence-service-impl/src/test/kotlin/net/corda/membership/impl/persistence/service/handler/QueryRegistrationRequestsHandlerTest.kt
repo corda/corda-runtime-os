@@ -90,7 +90,7 @@ class QueryRegistrationRequestsHandlerTest {
         on { createEntityManager() } doReturn entityManager
     }
     private val dbConnectionManager = mock<DbConnectionManager> {
-        on { getOrCreateEntityManagerFactory(any<UUID>(), any()) } doReturn entityManagerFactory
+        on { getOrCreateEntityManagerFactory(any<UUID>(), any(), eq(false)) } doReturn entityManagerFactory
     }
     private val nodeInfo = mock<VirtualNodeInfo> {
         on { vaultDmlConnectionId } doReturn UUID(0, 0)
@@ -178,7 +178,9 @@ class QueryRegistrationRequestsHandlerTest {
         handler.invoke(
             context,
             QueryRegistrationRequests(
-                holdingIdentity.x500Name, listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL), null
+                holdingIdentity.x500Name,
+                listOf(RegistrationStatus.PENDING_MANUAL_APPROVAL),
+                null
             )
         )
 

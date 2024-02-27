@@ -6,6 +6,8 @@ plugins {
 
 description 'Member Processor'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:osgi.annotation"
@@ -65,8 +67,6 @@ dependencies {
     runtimeOnly project(':components:membership:members-client-certificate-publisher-service-impl')
     runtimeOnly project(":libs:web:web-impl")
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:test-utilities")
     testImplementation "net.corda:corda-topic-schema"
     testImplementation "net.corda:corda-config-schema"
@@ -113,6 +113,6 @@ dependencies {
     integrationTestRuntimeOnly "org.hibernate:hibernate-core:$hibernateVersion"
     integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
-    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    integrationTestRuntimeOnly libs.postgresql.jdbc
+    integrationTestRuntimeOnly libs.slf4j.simple
 }

@@ -10,12 +10,12 @@ import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.WaitingFor
+import net.corda.data.flow.state.waiting.start.WaitingForStartFlow
 import net.corda.flow.pipeline.CheckpointInitializer
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
-import net.corda.flow.pipeline.handlers.waiting.WaitingForStartFlow
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.protocol.FlowAndProtocolVersion
@@ -28,6 +28,7 @@ import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSIONS_SUPPORTED
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSION_USED
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
+import net.corda.session.manager.Constants.Companion.FLOW_SESSION_TIMEOUT_MS
 import net.corda.session.manager.SessionManager
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.debug
@@ -120,10 +121,14 @@ class SessionEventHandler @Activate constructor(
         val counterpartySessionPropertiesMap = counterpartySessionProperties.toMap()
         val requireClose = counterpartySessionPropertiesMap[FLOW_SESSION_REQUIRE_CLOSE] ?: throw FlowFatalException("RequireClose was not" +
                 " set in the session properties")
+        val sessionTimeoutMs = counterpartySessionPropertiesMap[FLOW_SESSION_TIMEOUT_MS]
         val sessionContext = KeyValueStore().apply {
             put(FLOW_PROTOCOL, protocolVersion.protocol)
             put(FLOW_PROTOCOL_VERSION_USED, protocolVersion.protocolVersion.toString())
             put(FLOW_SESSION_REQUIRE_CLOSE, requireClose)
+            if (sessionTimeoutMs != null) {
+                put(FLOW_SESSION_TIMEOUT_MS, sessionTimeoutMs)
+            }
         }
 
         return sessionContext.avro
@@ -178,7 +183,7 @@ class SessionEventHandler @Activate constructor(
 
         checkpointInitializer.initialize(
             context.checkpoint,
-            WaitingFor(WaitingForStartFlow),
+            WaitingFor(WaitingForStartFlow()),
             holdingIdentity
         ) {
             val protocolStore = try {

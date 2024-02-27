@@ -13,8 +13,4 @@ dependencies {
     implementation project(":libs:utilities")
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
 }

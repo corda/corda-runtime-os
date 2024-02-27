@@ -34,7 +34,7 @@ class StateAndRefSerializer : BaseProxySerializer<StateAndRefImpl<ContractState>
     }
 
     override fun fromProxy(proxy: StateAndRefProxy): StateAndRefImpl<ContractState> {
-        return when(proxy.version) {
+        return when (proxy.version) {
             VERSION_1 ->
                 StateAndRefImpl(
                     proxy.state,

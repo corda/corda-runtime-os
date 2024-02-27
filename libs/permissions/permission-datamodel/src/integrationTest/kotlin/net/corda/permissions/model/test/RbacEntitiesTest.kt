@@ -35,6 +35,7 @@ class RbacEntitiesTest {
 
         @InjectService
         lateinit var entityManagerFactoryFactory: EntityManagerFactoryFactory
+
         @InjectService
         lateinit var lbm: LiquibaseSchemaMigrator
 
@@ -46,7 +47,6 @@ class RbacEntitiesTest {
         @JvmStatic
         @BeforeAll
         fun setupEntities() {
-
             val schemaClass = DbSchema::class.java
             val bundle = FrameworkUtil.getBundle(schemaClass)
             logger.info("RBAC schema bundle $bundle".emphasise())

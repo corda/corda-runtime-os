@@ -9,14 +9,16 @@ ext {
     releasable = false
 }
 
+ext.cordaEnableFormatting = true
+
 group 'net.corda.cli.deployment'
 
 dependencies {
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
 
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
-    compileOnly "org.pf4j:pf4j:$pf4jVersion"
-    kapt "org.pf4j:pf4j:$pf4jVersion"
+    compileOnly libs.pf4j
+    kapt libs.pf4j
     kapt "info.picocli:picocli:$picocliVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")

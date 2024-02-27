@@ -4,6 +4,8 @@ plugins {
 }
 description 'Corda REST Server'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     implementation platform("net.corda:corda-api:$cordaApiVersion")

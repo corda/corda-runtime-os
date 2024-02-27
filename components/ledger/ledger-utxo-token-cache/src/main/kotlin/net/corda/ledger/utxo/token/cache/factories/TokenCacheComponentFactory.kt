@@ -50,7 +50,7 @@ class TokenCacheComponentFactory @Activate constructor(
         val clock = UTCClock()
         val entityConverter = EntityConverterImpl(serviceConfiguration, clock)
         val eventConverter = EventConverterImpl(entityConverter)
-        val tokenSerialization= TokenPoolCacheStateSerializationImpl(cordaAvroSerializationFactory)
+        val tokenSerialization = TokenPoolCacheStateSerializationImpl(cordaAvroSerializationFactory)
         val tokenCacheEventProcessorFactory = TokenCacheEventProcessorFactoryImpl(
             serviceConfiguration,
             externalEventResponseFactory,
@@ -69,7 +69,6 @@ class TokenCacheComponentFactory @Activate constructor(
             tokenCacheEventProcessorFactory,
             serviceConfiguration,
             stateManagerFactory,
-            { cfg -> cfg.getConfig(ConfigKeys.MESSAGING_CONFIG) },
             { cfg -> cfg.getConfig(ConfigKeys.UTXO_LEDGER_CONFIG) },
             { cfg -> cfg.getConfig(ConfigKeys.STATE_MANAGER_CONFIG) }
         )

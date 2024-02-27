@@ -9,16 +9,13 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation "net.corda:corda-config-schema"
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation libs.jackson.databind
+    implementation libs.jackson.module.kotlin
     
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:packaging:packaging-core")
     implementation project(":libs:virtual-node:virtual-node-info")
     implementation project(":libs:configuration:configuration-core")
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

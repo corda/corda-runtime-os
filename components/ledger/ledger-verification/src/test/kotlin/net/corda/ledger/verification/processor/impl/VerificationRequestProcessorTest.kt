@@ -4,11 +4,14 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
+import net.corda.flow.external.events.responses.exceptions.NotAllowedCpkException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.utxo.verification.CordaPackageSummary
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.verification.processor.VerificationRequestHandler
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
+import net.corda.messaging.api.exception.CordaHTTPServerTransientException
 import net.corda.messaging.api.records.Record
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -17,11 +20,18 @@ import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.io.NotSerializableException
 import java.time.Instant
 
 class VerificationRequestProcessorTest {
+
     private companion object {
         const val ALICE_X500 = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
         val ALICE_X500_HOLDING_ID = HoldingIdentity(ALICE_X500, "group1")
@@ -39,6 +49,7 @@ class VerificationRequestProcessorTest {
     private val sandbox = mock<SandboxGroupContext>()
     private val virtualNodeContext = mock<VirtualNodeContext>()
     private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
+    private val flowEvent = mock<FlowEvent>()
 
     private val verificationRequestProcessor = VerificationRequestProcessor(
         currentSandboxGroupContext,
@@ -46,63 +57,6 @@ class VerificationRequestProcessorTest {
         verificationRequestHandler,
         responseFactory
     )
-
-    @BeforeEach
-    fun setup() {
-        whenever(verificationSandboxService.get(cordaHoldingIdentity, cpkSummaries)).thenReturn(sandbox)
-        whenever(sandbox.virtualNodeContext).thenReturn(virtualNodeContext)
-        whenever(virtualNodeContext.holdingIdentity).thenReturn(cordaHoldingIdentity)
-        whenever(currentSandboxGroupContext.get()).thenReturn(sandbox)
-    }
-
-    @Test
-    fun `key should be of type String`() {
-        assertThat(verificationRequestProcessor.keyClass).isEqualTo(String::class.java)
-    }
-
-    @Test
-    fun `value should be of type TransactionVerificationRequest`() {
-        assertThat(verificationRequestProcessor.valueClass).isEqualTo(TransactionVerificationRequest::class.java)
-    }
-
-    @Test
-    fun `successful response messages`() {
-        val request1 = createRequest("r1")
-        val requestRecord1 = Record("", "1", request1)
-        val responseRecord1 = Record("", "1", "")
-        whenever(verificationRequestHandler.handleRequest(sandbox, request1)).thenReturn(responseRecord1)
-
-        val request2 = createRequest("r2")
-        val requestRecord2 = Record("", "2", request2)
-        val responseRecord2 = Record("", "2", "")
-        whenever(verificationRequestHandler.handleRequest(sandbox, request2)).thenReturn(responseRecord2)
-
-        val results = verificationRequestProcessor.onNext(listOf(requestRecord1, requestRecord2))
-
-        assertThat(results).containsOnly(responseRecord1, responseRecord2)
-    }
-
-    @Test
-    fun `failed request returns failure response back to the flow`() {
-        // Success response for request 1
-        val request1 = createRequest("r1")
-        val requestRecord1 = Record("", "1", request1)
-        val responseRecord1 = Record("", "1", "")
-        whenever(verificationRequestHandler.handleRequest(sandbox, request1)).thenReturn(responseRecord1)
-
-        // Failure response for request 2
-        val request2 = createRequest("r2")
-        val requestRecord2 = Record("", "2", request2)
-        val failureResponseRecord = Record("", "3", FlowEvent())
-        val request2Response = IllegalStateException()
-        whenever(verificationRequestHandler.handleRequest(sandbox, request2)).thenThrow(request2Response)
-        whenever(responseFactory.transientError(request2.flowExternalEventContext, request2Response))
-            .thenReturn(failureResponseRecord)
-
-        val results = verificationRequestProcessor.onNext(listOf(requestRecord1, requestRecord2))
-
-        assertThat(results).containsOnly(responseRecord1, failureResponseRecord)
-    }
 
     private fun createRequest(requestId: String) =
         TransactionVerificationRequest().apply {
@@ -113,4 +67,88 @@ class VerificationRequestProcessorTest {
                 CordaPackageSummary(CPK_NAME, CPK_VERSION, SIGNER_SUMMARY_HASH, CPK_CHECKSUM)
             )
         }
+
+    @BeforeEach
+    fun setup() {
+        whenever(verificationSandboxService.get(cordaHoldingIdentity, cpkSummaries)).thenReturn(sandbox)
+        whenever(sandbox.virtualNodeContext).thenReturn(virtualNodeContext)
+        whenever(virtualNodeContext.holdingIdentity).thenReturn(cordaHoldingIdentity)
+        whenever(currentSandboxGroupContext.get()).thenReturn(sandbox)
+    }
+
+    @Test
+    fun `successful response messages`() {
+        val request = createRequest("r1")
+        val responseRecord = Record("", "1", flowEvent)
+        whenever(verificationRequestHandler.handleRequest(sandbox, request)).thenReturn(responseRecord)
+
+        val results = verificationRequestProcessor.process(request)
+
+        assertThat(results).isNotNull
+        assertThat(results).isEqualTo(flowEvent)
+    }
+
+    @Test
+    fun `failed request returns transient failure response back to the flow`() {
+        val request = createRequest("r2")
+        val response = IllegalStateException()
+
+        whenever(verificationRequestHandler.handleRequest(sandbox, request)).thenThrow(response)
+
+        val e = assertThrows<CordaHTTPServerTransientException> {
+            verificationRequestProcessor.process(request)
+        }
+
+        assertThat(e.cause!!.javaClass).isEqualTo(IllegalStateException::class.java)
+    }
+
+    @Test
+    fun `not allowed cpk exception results in platform exception`() {
+        val request = createRequest("r2")
+        val failureResponseRecord = Record("", "3", FlowEvent())
+        val response = NotAllowedCpkException("not allowed cpk")
+
+        whenever(verificationRequestHandler.handleRequest(sandbox, request)).thenThrow(response)
+        whenever(responseFactory.platformError(request.flowExternalEventContext, response))
+            .thenReturn(failureResponseRecord)
+
+        val results = verificationRequestProcessor.process(request)
+
+        assertThat(results).isNotNull
+        assertThat(results).isEqualTo(failureResponseRecord.value)
+    }
+
+    @Test
+    fun `not serializable exception results in platform exception`() {
+        val request = createRequest("r2")
+        val failureResponseRecord = Record("", "3", FlowEvent())
+        val response = NotSerializableException("not serializable")
+
+        whenever(verificationRequestHandler.handleRequest(sandbox, request)).doAnswer { throw response }
+        whenever(responseFactory.platformError(request.flowExternalEventContext, response))
+            .thenReturn(failureResponseRecord)
+
+        val results = verificationRequestProcessor.process(request)
+
+        assertThat(results).isNotNull
+        assertThat(results).isEqualTo(failureResponseRecord.value)
+    }
+
+    @Test
+    fun `CPK not available transient error throws transient exception`() {
+        val request = createRequest("r2")
+        val response = CpkNotAvailableException("cpk not there")
+
+        whenever(verificationSandboxService.get(cordaHoldingIdentity, cpkSummaries)).thenThrow(response)
+
+        val e = assertThrows<CordaHTTPServerTransientException> {
+            verificationRequestProcessor.process(request)
+        }
+
+        assertThat(e.cause!!.javaClass).isEqualTo(CpkNotAvailableException::class.java)
+        assertThat(e.cause!!.message).isEqualTo("cpk not there")
+
+        verify(currentSandboxGroupContext, times(0)).set(any())
+        verify(currentSandboxGroupContext, times(1)).remove()
+    }
 }

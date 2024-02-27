@@ -4,11 +4,9 @@ import net.corda.e2etest.utilities.ClusterInfo
 
 class MultiClusterTestConfigManager(
     clusterInfos: Collection<ClusterInfo>
-): TestConfigManager, AutoCloseable {
-    private val configManagers: MutableSet<TestConfigManager> = mutableSetOf()
-
-    init {
-        configManagers.addAll(clusterInfos.map { SingleClusterTestConfigManager(it) })
+): TestConfigManager {
+    private val configManagers = clusterInfos.map {
+        SingleClusterTestConfigManager(it)
     }
 
     override fun load(section: String, props: Map<String, Any?>): TestConfigManager {
@@ -19,13 +17,33 @@ class MultiClusterTestConfigManager(
         configManagers.forEach { it.load(section, prop, value) }
         return this
     }
-    override fun apply(): TestConfigManager {
-        configManagers.forEach { it.apply() }
-        return this
+
+    override fun <T> apply(block: () -> T): T {
+        return configManagers.iterator().apply(block)
     }
-    override fun revert(): TestConfigManager {
-        configManagers.forEach { it.revert() }
-        return this
+
+    override fun <T> applyWithoutRevert(block: () -> T): T {
+        return configManagers.iterator().applyWithoutRevert(block)
     }
-    override fun close() = configManagers.forEach { it.close() }
+
+    private fun <T> Iterator<TestConfigManager>.apply(block: () -> T): T {
+        return if(!hasNext()) {
+            block()
+        } else {
+            next().apply {
+                this.apply(block)
+            }
+        }
+    }
+
+    private fun <T> Iterator<TestConfigManager>.applyWithoutRevert(block: () -> T): T {
+        return if(!hasNext()) {
+            block()
+        } else {
+            next().applyWithoutRevert {
+                this.applyWithoutRevert(block)
+            }
+        }
+    }
+
 }

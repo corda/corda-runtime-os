@@ -19,11 +19,18 @@ import kotlin.test.assertTrue
 class RestServerMaxContentLengthTest : RestServerTestBase() {
     companion object {
         private const val MAX_CONTENT_LENGTH = 100
+
         @BeforeAll
         @JvmStatic
         fun setUpBeforeClass() {
-            val restServerSettings = RestServerSettings(NetworkHostAndPort("localhost",  0), context, null,
-                null, MAX_CONTENT_LENGTH, 20000L)
+            val restServerSettings = RestServerSettings(
+                NetworkHostAndPort("localhost", 0),
+                context,
+                null,
+                null,
+                MAX_CONTENT_LENGTH,
+                20000L
+            )
             server = RestServerImpl(
                 listOf(TestHealthCheckAPIImpl()),
                 ::securityManager,
@@ -31,8 +38,10 @@ class RestServerMaxContentLengthTest : RestServerTestBase() {
                 multipartDir,
                 true
             ).apply { start() }
-            client = TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${server.port}/" +
-                    "${restServerSettings.context.basePath}/${apiVersion.versionPath}/")
+            client = TestHttpClientUnirestImpl(
+                "http://${restServerSettings.address.host}:${server.port}/" +
+                    "${restServerSettings.context.basePath}/${apiVersion.versionPath}/"
+            )
         }
 
         @AfterAll
@@ -46,8 +55,7 @@ class RestServerMaxContentLengthTest : RestServerTestBase() {
 
     @Test
     fun `Content length exceeding maxContentLength returns Bad Request`() {
-
-        val dataExceedsMax="1".repeat(MAX_CONTENT_LENGTH + 5)
+        val dataExceedsMax = "1".repeat(MAX_CONTENT_LENGTH + 5)
         val pingResponse = client.call(HttpVerb.POST, WebRequest("health/ping", dataExceedsMax), userName, password)
         assertEquals(HttpStatus.SC_BAD_REQUEST, pingResponse.responseStatus)
         val actual = pingResponse.body
@@ -57,7 +65,6 @@ class RestServerMaxContentLengthTest : RestServerTestBase() {
 
     @Test
     fun `Content length below maxContentLength returns 200`() {
-
         fun WebResponse<String>.doAssert() {
             assertEquals(HttpStatus.SC_OK, responseStatus)
             assertEquals("Pong for str = stringdata", body)
@@ -74,7 +81,10 @@ class RestServerMaxContentLengthTest : RestServerTestBase() {
         // Call without explicit "pingPongData" in the root JSON
         client.call(
             HttpVerb.POST,
-            WebRequest("health/ping", """{"str": "stringdata"}"""), userName, password)
+            WebRequest("health/ping", """{"str": "stringdata"}"""),
+            userName,
+            password
+        )
             .doAssert()
     }
 }

@@ -1,6 +1,7 @@
 package net.corda.libs.statemanager.impl.repository.impl
 
 import net.corda.libs.statemanager.api.MetadataFilter
+import java.util.TimeZone
 
 /**
  * Provider for SQL queries executed by [StateRepositoryImpl].
@@ -10,7 +11,9 @@ import net.corda.libs.statemanager.api.MetadataFilter
  */
 interface QueryProvider {
 
-    val createState: String
+    val timeZone: TimeZone
+
+    fun createStates(size: Int): String
 
     val deleteStatesByKey: String
 
@@ -24,5 +27,7 @@ interface QueryProvider {
 
     fun findStatesByMetadataMatchingAny(filters: Collection<MetadataFilter>): String
 
-    fun findStatesUpdatedBetweenAndFilteredByMetadataKey(filter: MetadataFilter): String
+    fun findStatesUpdatedBetweenWithMetadataMatchingAll(filters: Collection<MetadataFilter>): String
+
+    fun findStatesUpdatedBetweenWithMetadataMatchingAny(filters: Collection<MetadataFilter>): String
 }

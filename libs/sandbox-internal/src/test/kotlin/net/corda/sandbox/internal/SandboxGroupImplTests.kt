@@ -253,6 +253,22 @@ class SandboxGroupImplTests {
             sandboxGroupImpl.getClass(nonSandboxClass.name, CPK_STATIC_TAG)
         }
     }
+
+    @Test
+    fun `throws if multiple sandboxes with shared CPK name`() {
+        val otherCpkSandbox =
+            CpkSandboxImpl(randomUUID(), mockCpkMeta(), mockCpkMainBundle, setOf(mockCpkLibraryBundle))
+
+        assertThrows<SandboxException> {
+            SandboxGroupImpl(
+                randomUUID(),
+                setOf(cpkSandbox, otherCpkSandbox),
+                setOf(publicSandbox),
+                DummyClassTagFactory(cpkSandbox.cpkMetadata),
+                mockBundleUtils
+            )
+        }
+    }
 }
 
 /** A dummy [StaticTag] implementation. */

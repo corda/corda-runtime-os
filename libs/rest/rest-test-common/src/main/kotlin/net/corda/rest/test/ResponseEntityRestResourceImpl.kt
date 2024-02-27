@@ -10,6 +10,10 @@ class ResponseEntityRestResourceImpl : ResponseEntityRestResource, PluggableRest
         return ResponseEntity.ok("{\"somejson\": \"for confusion\"}")
     }
 
+    override fun postReturnsCreatedWithEscapedJson(): ResponseEntity<String> {
+        return ResponseEntity.created("{\"somejson\": \"for confusion\"}")
+    }
+
     override fun postReturnsRawEntity(): ResponseEntityRestResource.TestHttpEntity {
         return ResponseEntityRestResource.TestHttpEntity("no response entity used")
     }

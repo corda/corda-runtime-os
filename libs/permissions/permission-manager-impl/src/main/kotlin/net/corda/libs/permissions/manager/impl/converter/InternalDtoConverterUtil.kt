@@ -2,12 +2,9 @@ package net.corda.libs.permissions.manager.impl.converter
 
 import net.corda.data.permissions.management.permission.BulkCreatePermissionsResponse
 import net.corda.data.permissions.management.permission.CreatePermissionRequest
-import net.corda.data.permissions.summary.PermissionSummary as AvroPermissionSummary
 import net.corda.libs.permissions.manager.common.PermissionTypeDto
 import net.corda.libs.permissions.manager.request.CreatePermissionRequestDto
 import net.corda.libs.permissions.manager.response.PermissionAssociationResponseDto
-import net.corda.data.permissions.PermissionAssociation as AvroPermissionAssociation
-import net.corda.data.permissions.PermissionType as AvroPermissionType
 import net.corda.libs.permissions.manager.response.PermissionResponseDto
 import net.corda.libs.permissions.manager.response.PermissionSummaryResponseDto
 import net.corda.libs.permissions.manager.response.PermissionsResponseDto
@@ -15,9 +12,12 @@ import net.corda.libs.permissions.manager.response.PropertyResponseDto
 import net.corda.libs.permissions.manager.response.RoleAssociationResponseDto
 import net.corda.libs.permissions.manager.response.RoleResponseDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
-import net.corda.data.permissions.User as AvroUser
-import net.corda.data.permissions.Role as AvroRole
 import net.corda.data.permissions.Permission as AvroPermission
+import net.corda.data.permissions.PermissionAssociation as AvroPermissionAssociation
+import net.corda.data.permissions.PermissionType as AvroPermissionType
+import net.corda.data.permissions.Role as AvroRole
+import net.corda.data.permissions.User as AvroUser
+import net.corda.data.permissions.summary.PermissionSummary as AvroPermissionSummary
 
 /**
  * Avro objects are versioned, serialized and put onto the messaging bus.
@@ -68,7 +68,7 @@ fun AvroRole.convertToResponseDto(): RoleResponseDto {
     )
 }
 
-fun AvroPermissionAssociation.convertToResponseDto() : PermissionAssociationResponseDto {
+fun AvroPermissionAssociation.convertToResponseDto(): PermissionAssociationResponseDto {
     return PermissionAssociationResponseDto(
         permissionId,
         changeDetails.updateTimestamp
@@ -76,7 +76,7 @@ fun AvroPermissionAssociation.convertToResponseDto() : PermissionAssociationResp
 }
 
 private fun AvroPermissionType.toResponseDtoType(): PermissionTypeDto {
-    return when(this) {
+    return when (this) {
         AvroPermissionType.ALLOW -> PermissionTypeDto.ALLOW
         AvroPermissionType.DENY -> PermissionTypeDto.DENY
     }
@@ -91,7 +91,7 @@ fun CreatePermissionRequestDto.convertToAvro(): CreatePermissionRequest {
 }
 
 fun PermissionTypeDto.toAvroType(): AvroPermissionType {
-    return when(this) {
+    return when (this) {
         PermissionTypeDto.ALLOW -> AvroPermissionType.ALLOW
         PermissionTypeDto.DENY -> AvroPermissionType.DENY
     }

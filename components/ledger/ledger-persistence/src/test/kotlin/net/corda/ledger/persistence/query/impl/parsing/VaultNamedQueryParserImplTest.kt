@@ -1,11 +1,11 @@
 package net.corda.ledger.persistence.query.impl.parsing
 
-import net.corda.ledger.persistence.query.parsing.converters.VaultNamedQueryConverter
-import net.corda.ledger.persistence.query.parsing.expressions.VaultNamedQueryExpressionParser
-import net.corda.ledger.persistence.query.parsing.expressions.VaultNamedQueryExpressionValidator
 import net.corda.ledger.persistence.query.parsing.PathReference
 import net.corda.ledger.persistence.query.parsing.VaultNamedQueryParserImpl
 import net.corda.ledger.persistence.query.parsing.Where
+import net.corda.ledger.persistence.query.parsing.converters.VaultNamedQueryConverter
+import net.corda.ledger.persistence.query.parsing.expressions.VaultNamedQueryExpressionParser
+import net.corda.ledger.persistence.query.parsing.expressions.VaultNamedQueryExpressionValidator
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any

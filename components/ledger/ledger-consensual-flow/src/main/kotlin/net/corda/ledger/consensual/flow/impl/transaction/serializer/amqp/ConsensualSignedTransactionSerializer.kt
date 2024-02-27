@@ -50,7 +50,7 @@ class ConsensualSignedTransactionSerializer @Activate constructor(
     }
 
     override fun fromProxy(proxy: ConsensualSignedTransactionProxy): ConsensualSignedTransactionInternal {
-        return when(proxy.version) {
+        return when (proxy.version) {
             VERSION_1 ->
                 ConsensualSignedTransactionImpl(
                     serializationService,

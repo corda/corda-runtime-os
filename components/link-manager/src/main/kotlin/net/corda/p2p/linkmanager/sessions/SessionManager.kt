@@ -1,41 +1,46 @@
 package net.corda.p2p.linkmanager.sessions
 
-import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
-import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.virtualnode.HoldingIdentity
 
 internal interface SessionManager : LifecycleWithDominoTile {
-    fun processOutboundMessage(message: AuthenticatedMessageAndKey): SessionState
-    fun getSessionById(uuid: String): SessionDirection
-    fun processSessionMessage(message: LinkInMessage): LinkOutMessage?
+    fun <T> processOutboundMessages(
+        wrappedMessages: Collection<T>,
+        getMessage: (T) -> AuthenticatedMessageAndKey,
+    ): Collection<Pair<T, SessionState>>
+
+    fun <T> getSessionsById(uuids: Collection<T>, getSessionId: (T) -> String): Collection<Pair<T, SessionDirection>>
+    fun <T> processSessionMessages(
+        wrappedMessages: Collection<T>,
+        getMessage: (T) -> LinkInMessage,
+    ): Collection<Pair<T, LinkOutMessage?>>
+
     fun inboundSessionEstablished(sessionId: String)
     fun messageAcknowledged(sessionId: String)
-    fun sessionMessageReceived(sessionId: String)
-    fun dataMessageReceived(sessionId: String)
-
-    fun recordsForSessionEstablished(
-        session: Session,
-        messageAndKey: AuthenticatedMessageAndKey,
-        serial: Long,
-    ): List<Record<String, *>>
-
+    fun dataMessageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity)
+    fun dataMessageSent(session: Session)
+    fun deleteOutboundSession(counterParties: Counterparties, message: AuthenticatedMessage)
 
     data class SessionCounterparties(
         override val ourId: HoldingIdentity,
         override val counterpartyId: HoldingIdentity,
         val status: MembershipStatusFilter,
         val serial: Long,
-    ): BaseCounterparties
+        val communicationWithMgm: Boolean,
+    ) : BaseCounterparties
 
     data class Counterparties(
         override val ourId: HoldingIdentity,
         override val counterpartyId: HoldingIdentity,
-    ): BaseCounterparties
+    ) : BaseCounterparties {
+        fun reverse() = Counterparties(ourId = counterpartyId, counterpartyId = ourId)
+    }
 
     interface BaseCounterparties {
         val ourId: HoldingIdentity
@@ -43,11 +48,17 @@ internal interface SessionManager : LifecycleWithDominoTile {
     }
 
     sealed class SessionState {
-        data class NewSessionsNeeded(val messages: List<Pair<String, LinkOutMessage>>,
-                                     val sessionCounterparties: SessionCounterparties) : SessionState()
+        data class NewSessionsNeeded(
+            val messages: List<Pair<String, LinkOutMessage>>,
+            val sessionCounterparties: SessionCounterparties,
+        ) : SessionState()
+
         data class SessionAlreadyPending(val sessionCounterparties: SessionCounterparties) : SessionState()
-        data class SessionEstablished(val session: Session,
-                                      val sessionCounterparties: SessionCounterparties) : SessionState()
+        data class SessionEstablished(
+            val session: Session,
+            val sessionCounterparties: SessionCounterparties,
+        ) : SessionState()
+
         object CannotEstablishSession : SessionState()
     }
 

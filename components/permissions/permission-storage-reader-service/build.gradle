@@ -5,6 +5,8 @@ plugins {
 
 description "Permission storage reader service"
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'
@@ -32,8 +34,5 @@ dependencies {
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "javax.persistence:javax.persistence-api"
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
-
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    implementation libs.slf4j.api
 }

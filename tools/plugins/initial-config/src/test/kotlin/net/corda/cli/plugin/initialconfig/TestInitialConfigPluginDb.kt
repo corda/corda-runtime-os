@@ -1,6 +1,8 @@
 package net.corda.cli.plugin.initialconfig
 
 import com.github.stefanbirkner.systemlambda.SystemLambda
+import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
+import net.corda.libs.configuration.secret.SecretsCreateService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import picocli.CommandLine
@@ -58,7 +60,7 @@ class TestInitialConfigPluginDb {
             "'connection name'," +
                 " 'DML'," +
                 " 'Setup Script',"
-        ).endsWith("Z', 0)\n")
+        ).endsWith("Z', 0);\n")
     }
 
     @Test
@@ -128,6 +130,54 @@ class TestInitialConfigPluginDb {
             "'connection name'," +
                     " 'DML'," +
                     " 'Setup Script',"
-        ).endsWith("Z', 0)\n")
+        ).endsWith("Z', 0);\n")
+    }
+
+    @Test
+    fun `test DbConfig creation directly with escaped string`() {
+        val jdbcUrl = ""
+        val jdbcPoolMaxSize = 10
+        val jdbcPoolMinSize: Int? = null
+        val idleTimeout: Int = 120
+        val maxLifetime: Int = 1800
+        val keepaliveTime: Int = 0
+        val validationTimeout: Int = 5
+        val username = "test\"user"
+        val password = ""
+        val salt = "123"
+        val passphrase = "123"
+        val vaultKey = "corda-config-database-password"
+        val secretsService: SecretsCreateService = EncryptionSecretsServiceImpl(passphrase, salt)
+
+        val outText = createConfigDbConfig(jdbcUrl, username, password, vaultKey, jdbcPoolMaxSize, jdbcPoolMinSize,
+            idleTimeout, maxLifetime, keepaliveTime, validationTimeout, secretsService)
+
+        assertThat(outText).contains("\"user\":\"test\\\"user\"")
+    }
+
+    // Running the command via command line applies additional escaping
+    @Test
+    fun `test DbConfig creation via command line with escaped string`() {
+        val app = InitialConfigPlugin.PluginEntryPoint()
+
+        val outText = SystemLambda.tapSystemOutNormalized {
+            CommandLine(
+                app
+            ).execute(
+                "create-db-config",
+                "-n", "connection name",
+                "-j", "jdbd:postgres://test\"url",
+                "--jdbc-pool-max-size", "3",
+                "--jdbc-pool-min-size", "1",
+                "--idle-timeout", "121",
+                "--max-lifetime", "1801",
+                "--keepalive-time", "1",
+                "--validation-timeout", "6",
+                "-u", "test\"user",
+                "-p", "password",
+                "-s", "not so secure",
+                "-e", "not so secret")
+        }
+        assertThat(outText).contains("\"user\":\"test\\\"user\"")
     }
 }

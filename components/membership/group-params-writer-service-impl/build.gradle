@@ -5,6 +5,8 @@ plugins {
 
 description 'Group Parameters Writer Service Implementation'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
@@ -22,8 +24,6 @@ dependencies {
     implementation project(':libs:layered-property-map')
     implementation project(':libs:messaging:messaging')
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(':libs:membership:membership-impl')
     testImplementation project(":testing:layered-property-map-testkit")
     testImplementation project(":testing:test-utilities")

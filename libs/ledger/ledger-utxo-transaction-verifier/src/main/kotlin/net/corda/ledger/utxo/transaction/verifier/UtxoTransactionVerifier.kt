@@ -8,12 +8,12 @@ import java.security.PublicKey
  * Shared verification for [UtxoTransactionBuilder] and [UtxoLedgerTransaction].
  */
 abstract class UtxoTransactionVerifier {
-    protected open val subjectClass: String= "transaction"
+    protected open val subjectClass: String = "transaction"
 
     protected fun verifySignatories(signatories: List<PublicKey>) {
         check(signatories.isNotEmpty()) {
             "At least one signatory signing key must be applied to the current $subjectClass" +
-                    " in order to create a signed transaction."
+                " in order to create a signed transaction."
         }
     }
 
@@ -37,7 +37,7 @@ abstract class UtxoTransactionVerifier {
         val intersection = inputStateRefs intersect referenceStateRefs.toSet()
         check(intersection.isEmpty()) {
             "A state cannot be both an input and a reference input in the same transaction. Offending " +
-                    "states: $intersection"
+                "states: $intersection"
         }
     }
 

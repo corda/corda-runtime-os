@@ -27,7 +27,7 @@ class MembershipGroupPolicyValidatorImpl @Activate constructor(
     private val groupPolicyParser: GroupPolicyParser,
     @Reference(service = ConfigurationGetService::class)
     private val configurationGetService: ConfigurationGetService,
-): MembershipGroupPolicyValidator {
+) : MembershipGroupPolicyValidator {
     private companion object {
         const val FOLLOW_STATUS_NAME = "MEMBERSHIP_GROUP_POLICY_VALIDATOR_IMPL_FOLLOW_STATUS"
     }

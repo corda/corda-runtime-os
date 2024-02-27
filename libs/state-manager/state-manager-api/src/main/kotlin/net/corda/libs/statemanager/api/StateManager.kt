@@ -27,11 +27,12 @@ interface StateManager : Lifecycle {
      * Control is only returned to the caller once all [states] that were successfully created have been fully
      * persisted and replicas of the underlying persistent storage, if any, are synced.
      *
+     * If the [states] contains more than one state with the same key, an exception will be thrown.
+     *
      * @param states Collection of states to be persisted.
-     * @return Collection of keys for all those states that could not be persisted on the underlying persistent storage,
-     *          along with the actual reason for the failures.
+     * @return Collection of keys for all those states that could not be persisted on the underlying persistent storage.
      */
-    fun create(states: Collection<State>): Map<String, Exception>
+    fun create(states: Collection<State>): Set<String>
 
     /**
      * Get all states referenced by [keys].
@@ -56,11 +57,25 @@ interface StateManager : Lifecycle {
      * is only returned to the caller once all updatable [states] have been updated and replicas of the underlying
      * persistent storage, if any, are synced.
      *
-     * @param states Collection of states to be updated.
+     * Typical usage is to get some states, e.g. using `findByMetadataMatchingAll`, then make changes to the
+     * state content while leaving the version number alone, then try calling `update`.  If the result is non-empty,
+     * see if the update you wanted has already been made, and if not sleep for a random time, try the update again.
+     *
+     * If we have `X` and `Y` trying to update the same state and `Y` wins the race, and:
+     *
+     * - `X` and `Y` are doing different things, then `X` needs to remake its change and try again.
+     * - `X` and `Y` are doing the same thing, then `X` can check and move on. You may not want to sleep
+     *    before rechecking the first time around if this is the common case.
+     *
+     * @param states Collection of states to be updated. Each state record has a version field; it should be the
+     *      version currently in the database. The State Manager will increment the version it stores by one
+     *      if the update succeeds; calling code must not change the version.
+     *
      * @return Map with the most up-to-date version of the states, associated by key for easier access, that failed
-     *      the optimistic locking check.
+     *      the optimistic locking check. If this state failed to be updated because the key was deleted the key is
+     *      associated with null.
      */
-    fun update(states: Collection<State>): Map<String, State>
+    fun update(states: Collection<State>): Map<String, State?>
 
     /**
      * Delete existing [states].
@@ -133,5 +148,50 @@ interface StateManager : Lifecycle {
     fun findUpdatedBetweenWithMetadataFilter(
         intervalFilter: IntervalFilter,
         metadataFilter: MetadataFilter
+    ): Map<String, State> = findUpdatedBetweenWithMetadataMatchingAll(intervalFilter, listOf(metadataFilter))
+
+    /**
+     * Retrieve all states, updated for the last time between [IntervalFilter.start] (inclusive) and
+     * [IntervalFilter.finish] (inclusive), for which all the specified [metadataFilters] exclusively match.
+     * Each [MetadataFilter.value] is evaluated through the [MetadataFilter.operation] against the value stored inside
+     * the [State.metadata] under the [MetadataFilter.key].
+     * Only states that have been successfully committed and distributed within the underlying
+     * persistent storage are returned.
+     *
+     * @param intervalFilter Time filter to use when searching for states.
+     * @param metadataFilters Filter parameters to use when searching for states.
+     * @return states matching the specified filters.
+     */
+    fun findUpdatedBetweenWithMetadataMatchingAll(
+        intervalFilter: IntervalFilter,
+        metadataFilters: Collection<MetadataFilter>
     ): Map<String, State>
+
+    /**
+     * Retrieve all states, updated for the last time between [IntervalFilter.start] (inclusive) and
+     * [IntervalFilter.finish] (inclusive), for which any of the specified [metadataFilters] match.
+     * Each [MetadataFilter.value] is evaluated through the [MetadataFilter.operation] against the value stored inside
+     * the [State.metadata] under the [MetadataFilter.key].
+     * Only states that have been successfully committed and distributed within the underlying
+     * persistent storage are returned.
+     *
+     * @param intervalFilter Time filter to use when searching for states.
+     * @param metadataFilters Filter parameters to use when searching for states.
+     * @return states matching the specified filters.
+     */
+    fun findUpdatedBetweenWithMetadataMatchingAny(
+        intervalFilter: IntervalFilter,
+        metadataFilters: Collection<MetadataFilter>
+    ): Map<String, State>
+
+    /**
+     * Create a new operation group.
+     *
+     * An operation group can be used to logically group together a set of create, update and delete operations. These
+     * operations will use the same underlying context for communicating with the implementation backend. For example,
+     * with the database backend, all these operations will be completed as part of the same database transaction.
+     *
+     * @return The group builder to which operations can be added.
+     */
+    fun createOperationGroup(): StateOperationGroup
 }

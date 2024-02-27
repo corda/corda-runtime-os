@@ -5,6 +5,8 @@ plugins {
 
 description 'Membership P2P message handling implementation'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
@@ -28,9 +30,6 @@ dependencies {
     implementation project(':components:membership:membership-group-read')
     implementation project(':components:membership:membership-p2p')
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation project(':testing:test-utilities')
 
 }

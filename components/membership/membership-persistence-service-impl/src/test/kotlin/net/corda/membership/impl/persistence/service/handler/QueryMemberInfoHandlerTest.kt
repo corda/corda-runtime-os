@@ -126,6 +126,7 @@ class QueryMemberInfoHandlerTest {
             getOrCreateEntityManagerFactory(
                 eq(vaultDmlConnectionId),
                 any(),
+                eq(false)
             )
         } doReturn entityManagerFactory
     }
@@ -220,7 +221,6 @@ class QueryMemberInfoHandlerTest {
 
     private fun getQueryMemberInfo(holdingIdentityFilter: List<HoldingIdentity>, statusFilter: List<String> = emptyList()) =
         QueryMemberInfo(holdingIdentityFilter.map { it.toAvro() }, statusFilter)
-
 
     @Test
     fun `invoke with no query identity returns results if results are available`() {
@@ -378,7 +378,6 @@ class QueryMemberInfoHandlerTest {
         verify(entityTransaction).commit()
         verify(entityManager).close()
     }
-
 
     @Test
     fun `invoke with query identities and statuses returns results if results are available`() {

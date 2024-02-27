@@ -66,8 +66,7 @@ class ConsensualFinalityFlowV1(
 
     @Suppress("MaxLineLength")
     @Suspendable
-    private fun receiveSignaturesAndAddToTransaction(): Pair<ConsensualSignedTransactionInternal, Map<FlowSession, List<DigitalSignatureAndMetadata>>>  {
-
+    private fun receiveSignaturesAndAddToTransaction(): Pair<ConsensualSignedTransactionInternal, Map<FlowSession, List<DigitalSignatureAndMetadata>>> {
         // TODO [CORE-7032] Use [FlowMessaging] bulk send and receives instead of the sends and receives in the loop below
         val signaturesPayloads = sessions.associateWith { session ->
             try {
@@ -89,7 +88,7 @@ class ConsensualFinalityFlowV1(
                 is Payload.Success -> signaturesPayload.value
                 is Payload.Failure<*> -> {
                     val message = "Failed to receive signatures from ${session.counterparty} for transaction " +
-                            "$transactionId with message: ${signaturesPayload.message}"
+                        "$transactionId with message: ${signaturesPayload.message}"
                     log.warn(message)
                     persistInvalidTransaction(initialTransaction)
                     throw CordaRuntimeException(message)
@@ -102,7 +101,7 @@ class ConsensualFinalityFlowV1(
                 transaction = verifyAndAddSignature(transaction, signature)
                 log.debug {
                     "Added signature $signature by (key id) ${signature.by} from ${session.counterparty} for transaction " +
-                            transactionId
+                        transactionId
                 }
             }
             session to signatures
@@ -123,7 +122,7 @@ class ConsensualFinalityFlowV1(
         } catch (e: TransactionMissingSignaturesException) {
             val counterpartiesToSignatoriesMessages = signaturesReceivedFromSessions.map { (session, signatures) ->
                 "${session.counterparty} provided ${signatures.size} signature(s) to satisfy the signatories (key ids) " +
-                        signatures.map { it.by }
+                    signatures.map { it.by }
             }
             val counterpartiesToSignatoriesMessage = if (counterpartiesToSignatoriesMessages.isNotEmpty()) {
                 "\n${counterpartiesToSignatoriesMessages.joinToString(separator = "\n")}"
@@ -131,8 +130,8 @@ class ConsensualFinalityFlowV1(
                 "[]"
             }
             val message = "Transaction $transactionId is missing signatures for signatories (key ids) " +
-                    "${e.missingSignatories.map { it.fullId() }}. The following counterparties provided signatures while finalizing " +
-                    "the transaction: $counterpartiesToSignatoriesMessage"
+                "${e.missingSignatories.map { it.fullId() }}. The following counterparties provided signatures while finalizing " +
+                "the transaction: $counterpartiesToSignatoriesMessage"
             log.warn(message)
             persistInvalidTransaction(transaction)
             throw TransactionMissingSignaturesException(transactionId, e.missingSignatories, message)
@@ -152,8 +151,8 @@ class ConsensualFinalityFlowV1(
     ) {
         val notSeenSignaturesBySessions = signaturesReceivedFromSessions.map { (session, signatures) ->
             session to transaction.signatures.filter {
-                it !in initialTransaction.signatures &&             // These have already been distributed with the first go
-                it !in signatures                                   // These came from that party
+                it !in initialTransaction.signatures && // These have already been distributed with the first go
+                    it !in signatures // These came from that party
             }
         }.toMap()
         flowMessaging.sendAllMap(notSeenSignaturesBySessions)

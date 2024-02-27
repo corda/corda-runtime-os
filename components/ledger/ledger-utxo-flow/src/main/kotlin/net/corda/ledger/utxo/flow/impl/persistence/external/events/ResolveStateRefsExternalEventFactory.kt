@@ -11,7 +11,7 @@ import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
-import net.corda.schema.Schemas
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
@@ -22,8 +22,7 @@ import java.time.Clock
 @Component(service = [ExternalEventFactory::class])
 class ResolveStateRefsExternalEventFactory(
     private val clock: Clock = Clock.systemUTC()
-) : ExternalEventFactory<ResolveStateRefsParameters, UtxoTransactionOutputs, List<UtxoVisibleTransactionOutputDto>>
-{
+) : ExternalEventFactory<ResolveStateRefsParameters, UtxoTransactionOutputs, List<UtxoVisibleTransactionOutputDto>> {
     @Activate
     constructor() : this(Clock.systemUTC())
 
@@ -35,7 +34,6 @@ class ResolveStateRefsExternalEventFactory(
         parameters: ResolveStateRefsParameters
     ): ExternalEventRecord {
         return ExternalEventRecord(
-            topic = Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC,
             payload = LedgerPersistenceRequest.newBuilder()
                 .setTimestamp(clock.instant())
                 .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())
@@ -47,14 +45,17 @@ class ResolveStateRefsExternalEventFactory(
     }
 
     private fun createRequest(parameters: ResolveStateRefsParameters): Any {
-        return ResolveStateRefs(parameters.stateRefs.map {
-            net.corda.data.ledger.utxo.StateRef(
-                SecureHash(
-                    it.transactionId.algorithm,
-                    ByteBuffer.wrap(it.transactionId.bytes)
-                ), it.index
-            )
-        })
+        return ResolveStateRefs(
+            parameters.stateRefs.map {
+                net.corda.data.ledger.utxo.StateRef(
+                    SecureHash(
+                        it.transactionId.algorithm,
+                        ByteBuffer.wrap(it.transactionId.bytes)
+                    ),
+                    it.index
+                )
+            }
+        )
     }
 
     override fun resumeWith(checkpoint: FlowCheckpoint, response: UtxoTransactionOutputs): List<UtxoVisibleTransactionOutputDto> {
@@ -64,6 +65,7 @@ class ResolveStateRefsExternalEventFactory(
     }
 }
 
+@CordaSerializable
 data class ResolveStateRefsParameters(
-    val stateRefs: Iterable<StateRef>
+    val stateRefs: List<StateRef>
 )

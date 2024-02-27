@@ -33,7 +33,7 @@ class DummyEndpointInfoConverter : CustomPropertyConverter<DummyEndpointInfo> {
         get() = DummyEndpointInfo::class.java
 
     override fun convert(context: ConversionContext): DummyEndpointInfo {
-        if(context.key.isEmpty()) {
+        if (context.key.isEmpty()) {
             assertTrue(context.isListItem)
         } else {
             assertFalse(context.isListItem)
@@ -52,7 +52,7 @@ class DummyPublicKeyHashConverter : CustomPropertyConverter<SecureHash> {
         get() = SecureHash::class.java
 
     override fun convert(context: ConversionContext): SecureHash? {
-        if(context.key.isEmpty()) {
+        if (context.key.isEmpty()) {
             assertTrue(context.isListItem)
         } else {
             assertFalse(context.isListItem)

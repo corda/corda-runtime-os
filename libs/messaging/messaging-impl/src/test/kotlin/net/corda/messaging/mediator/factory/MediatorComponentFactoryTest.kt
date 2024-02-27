@@ -2,8 +2,10 @@ package net.corda.messaging.mediator.factory
 
 
 import net.corda.messaging.api.mediator.MediatorConsumer
+import net.corda.messaging.api.mediator.MediatorInputService
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
+import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.config.MediatorConsumerConfig
 import net.corda.messaging.api.mediator.config.MessagingClientConfig
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
@@ -13,6 +15,11 @@ import net.corda.messaging.api.mediator.factory.MessagingClientFinder
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.mediator.GroupAllocator
+import net.corda.messaging.mediator.MediatorSubscriptionState
+import net.corda.messaging.mediator.StateManagerHelper
+import net.corda.taskmanager.TaskManager
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -25,6 +32,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.concurrent.atomic.AtomicBoolean
 
 class MediatorComponentFactoryTest {
     private lateinit var mediatorComponentFactory: MediatorComponentFactory<String, String, String>
@@ -49,6 +57,16 @@ class MediatorComponentFactoryTest {
         mock<MessagingClientFactory>(),
     )
     private val messageRouterFactory = mock<MessageRouterFactory>()
+    private val groupAllocator = mock<GroupAllocator>()
+    private val stateManagerHelper = mock<StateManagerHelper<String>>()
+    private val taskManager = mock<TaskManager>()
+    private val messageRouter = mock<MessageRouter>()
+    private val mediatorInputService = mock<MediatorInputService>()
+    private val mediatorSubscriptionState = MediatorSubscriptionState(AtomicBoolean(false), AtomicBoolean(false))
+    private val eventMediatorConfig = mock<EventMediatorConfig<String, String, String>>().apply {
+        whenever(name).thenReturn("name")
+        whenever(stateManager).thenReturn(mock())
+    }
 
     @BeforeEach
     fun beforeEach() {
@@ -73,6 +91,9 @@ class MediatorComponentFactoryTest {
             consumerFactories,
             clientFactories,
             messageRouterFactory,
+            groupAllocator,
+            stateManagerHelper,
+            mediatorInputService
         )
     }
 
@@ -104,6 +125,9 @@ class MediatorComponentFactoryTest {
             emptyList(),
             clientFactories,
             messageRouterFactory,
+            groupAllocator,
+            stateManagerHelper,
+            mediatorInputService
         )
 
         assertThrows<IllegalStateException> {
@@ -137,6 +161,9 @@ class MediatorComponentFactoryTest {
             consumerFactories,
             emptyList(),
             messageRouterFactory,
+            groupAllocator,
+            stateManagerHelper,
+            mediatorInputService
         )
 
         assertThrows<IllegalStateException> {
@@ -168,5 +195,13 @@ class MediatorComponentFactoryTest {
         assertThrows<IllegalStateException> {
             messagingClientFinder.find("unknownId")
         }
+    }
+
+    @Test
+    fun `create a consumer processor`() {
+        val consumerProcessor = mediatorComponentFactory.createConsumerProcessor(eventMediatorConfig, taskManager, messageRouter,
+        mediatorSubscriptionState)
+
+        assertThat(consumerProcessor).isNotNull()
     }
 }

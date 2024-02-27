@@ -4,6 +4,8 @@ plugins {
 }
 description 'Corda REST Server Impl'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
@@ -26,43 +28,34 @@ dependencies {
 
     implementation project(":libs:rest:rest-server")
     implementation "net.corda:corda-crypto"
-    implementation "io.javalin:javalin-osgi:$javalinVersion"
+    implementation libs.javalin
     constraints {
-        implementation("org.eclipse.jetty:jetty-server:$jettyVersion") {
+        implementation(libs.bundles.jetty) {
             because 'Javalin uses an older version of Jetty which is exposed to CVE-2023-26048 and CVE-2023-26049. ' +
                     'This might be resolved in the future versions of Javalin.'
         }
     }
-    implementation "com.nimbusds:oauth2-oidc-sdk:$nimbusVersion"
-    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.jcip-annotations:$jcipAnnotationsVersion"
-    implementation "org.eclipse.jetty.websocket:websocket-servlet:$jettyVersion"
-    implementation "org.eclipse.jetty.websocket:websocket-server:$jettyVersion"
-    implementation "org.eclipse.jetty.http2:http2-server:$jettyVersion"
-    implementation "io.swagger.core.v3:swagger-core:$swaggerVersion"
+    implementation libs.nimbus.sdk
+    implementation libs.jcip.annotations
+    implementation libs.swagger.core
+    implementation libs.jetty.http2.server
 
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation libs.jackson.module.kotlin
     implementation project(":libs:rest:rest-common")
 
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    implementation libs.jackson.datatype.jsr310
 
     testImplementation project(":libs:rest:rest-test-common")
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly 'org.osgi:osgi.core'
-    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    testRuntimeOnly libs.slf4j.simple
 
-    runtimeOnly "org.webjars:swagger-ui:$swaggeruiVersion"
-    runtimeOnly "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
-    runtimeOnly "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    runtimeOnly libs.swagger.ui
+    runtimeOnly libs.jackson.databind
+    runtimeOnly libs.jackson.datatype.jsr310
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
 
-    integrationTestImplementation "com.konghq:unirest-java:$unirestVersion"
-
-    integrationTestImplementation "org.mockito:mockito-core:$mockitoVersion"
-    integrationTestImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-
-    integrationTestImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    integrationTestImplementation libs.unirest.java
 
     integrationTestImplementation project(':libs:rest:ssl-cert-read-impl')
     integrationTestImplementation project(":testing:test-utilities")

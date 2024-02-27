@@ -5,6 +5,11 @@ plugins {
 description 'Domino logic'
 
 dependencies {
+
+    constraints {
+        implementation(libs.slf4j.api)
+    }
+    
     compileOnly 'org.osgi:osgi.annotation'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
@@ -15,10 +20,8 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:utilities")
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
-    testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    testImplementation libs.log4j.core
+    testRuntimeOnly libs.log4j.slf4j
 }

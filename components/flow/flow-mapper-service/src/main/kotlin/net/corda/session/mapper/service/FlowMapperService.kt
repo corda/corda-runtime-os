@@ -21,10 +21,12 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_CLEANUP_TOPIC
 import net.corda.schema.Schemas.ScheduledTask.SCHEDULED_TASK_TOPIC_MAPPER_PROCESSOR
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 import net.corda.schema.configuration.FlowConfig
+import net.corda.schema.configuration.StateManagerConfig
 import net.corda.session.mapper.messaging.mediator.FlowMapperEventMediatorFactory
 import net.corda.session.mapper.service.executor.CleanupProcessor
 import net.corda.session.mapper.service.executor.ScheduledTaskProcessor
@@ -85,7 +87,7 @@ class FlowMapperService @Activate constructor(
                     coordinator.createManagedResource(CONFIG_HANDLE) {
                         configurationReadService.registerComponentForUpdates(
                             coordinator,
-                            setOf(FLOW_CONFIG, MESSAGING_CONFIG, STATE_MANAGER_CONFIG)
+                            setOf(FLOW_CONFIG, MESSAGING_CONFIG, BOOT_CONFIG, STATE_MANAGER_CONFIG)
                         )
                     }
                 } else {
@@ -112,13 +114,17 @@ class FlowMapperService @Activate constructor(
             val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
             val flowConfig = event.config.getConfig(FLOW_CONFIG)
             val stateManagerConfig = event.config.getConfig(STATE_MANAGER_CONFIG)
+            val bootConfig = event.config.getConfig(BOOT_CONFIG)
 
             stateManager?.stop()
-            stateManager = stateManagerFactory.create(stateManagerConfig).also { it.start() }
+            stateManager = stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.FLOW_MAPPING)
+                .also { it.start() }
+
             coordinator.createManagedResource(EVENT_MEDIATOR) {
                 flowMapperEventMediatorFactory.create(
                     flowConfig,
                     messagingConfig,
+                    bootConfig,
                     stateManager!!,
                 )
             }.also {
@@ -139,7 +145,7 @@ class FlowMapperService @Activate constructor(
         flowConfig: SmartConfig,
         stateManager: StateManager
     ) {
-        val window = flowConfig.getLong(FlowConfig.PROCESSING_FLOW_CLEANUP_TIME)
+        val window = flowConfig.getLong(FlowConfig.PROCESSING_FLOW_MAPPER_CLEANUP_TIME)
         val scheduledTaskProcessor = ScheduledTaskProcessor(
             stateManager,
             Clock.systemUTC(),

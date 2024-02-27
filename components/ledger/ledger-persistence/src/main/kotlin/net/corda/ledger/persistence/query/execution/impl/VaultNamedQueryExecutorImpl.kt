@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.query.execution.impl
 
+import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindWithNamedQuery
@@ -9,7 +10,6 @@ import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.orm.utils.transaction
-import net.corda.persistence.common.exceptions.NullParameterException
 import net.corda.utilities.debug
 import net.corda.utilities.serialization.deserialize
 import net.corda.utilities.trace
@@ -120,7 +120,6 @@ class VaultNamedQueryExecutorImpl(
     override fun executeQuery(
         request: FindWithNamedQuery
     ): EntityResponse {
-
         log.debug { "Executing query: ${request.queryName}" }
 
         // Get the query from the registry and make sure it exists
@@ -132,8 +131,8 @@ class VaultNamedQueryExecutorImpl(
         }
 
         // Deserialize the parameters into readable objects instead of bytes
-        val deserializedParams = request.parameters.mapValues {
-            serializationService.deserialize<Any>(it.value.array())
+        val deserializedParams = request.parameters.mapValues { (_, param) ->
+            param?.let { serializationService.deserialize<Any>(it.array()) }
         }
 
         // Fetch and filter the results and try to fill up the page size then map the results
@@ -144,8 +143,10 @@ class VaultNamedQueryExecutorImpl(
             deserializedParams
         )
 
-        log.trace { "Fetched ${fetchedRecords.size} records in this page " +
-                "(${numberOfRowsReturned - fetchedRecords.size} records filtered)" }
+        log.trace {
+            "Fetched ${fetchedRecords.size} records in this page " +
+                "(${numberOfRowsReturned - fetchedRecords.size} records filtered)"
+        }
 
         val filteredAndTransformedResults = fetchedRecords.mapNotNull {
             vaultNamedQuery.mapper?.transform(it, deserializedParams) ?: it
@@ -162,7 +163,18 @@ class VaultNamedQueryExecutorImpl(
             .setResults(collectedResults.map { ByteBuffer.wrap(serializationService.serialize(it).bytes) })
 
         response.resumePoint = resumePoint?.let { ByteBuffer.wrap(serializationService.serialize(it).bytes) }
-        response.metadata = KeyValuePairList(emptyList())
+
+        val useOffset = vaultNamedQuery.orderBy != null
+        response.metadata =
+            KeyValuePairList(
+                if (useOffset) {
+                    listOf(
+                        KeyValuePair("numberOfRowsFromQuery", numberOfRowsReturned.toString())
+                    )
+                } else {
+                    emptyList()
+                }
+            )
 
         return response.build()
     }
@@ -190,7 +202,7 @@ class VaultNamedQueryExecutorImpl(
     private fun filterResultsAndFillPageSize(
         request: FindWithNamedQuery,
         vaultNamedQuery: VaultNamedQuery,
-        deserializedParams: Map<String, Any>
+        deserializedParams: Map<String, Any?>
     ): ProcessedQueryResults {
         val filteredRawData = mutableListOf<RawQueryData>()
 
@@ -200,21 +212,42 @@ class VaultNamedQueryExecutorImpl(
             serializationService.deserialize<ResumePoint>(request.resumePoint.array())
         }
 
-        while (filteredRawData.size < request.limit && currentRetry < RESULT_SET_FILL_RETRY_LIMIT ) {
+        val useOffset = vaultNamedQuery.orderBy != null
+        var currentOffset = request.offset
+
+        while (filteredRawData.size < request.limit && currentRetry < RESULT_SET_FILL_RETRY_LIMIT) {
             ++currentRetry
 
             log.trace { "Executing try: $currentRetry, fetched ${filteredRawData.size} number of results so far." }
 
             // Fetch the state and refs for the given transaction IDs
-            val rawResults = fetchStateAndRefs(
-                request,
-                vaultNamedQuery.query.query,
-                currentResumePoint
-            )
+            val rawResults = try {
+                if (useOffset) {
+                    fetchStateAndRefsOrderBy(
+                        request,
+                        vaultNamedQuery.query.query,
+                        vaultNamedQuery.orderBy!!.query,
+                        currentOffset
+                    )
+                } else {
+                    fetchStateAndRefsTimeOrder(
+                        request,
+                        vaultNamedQuery.query.query,
+                        currentResumePoint
+                    )
+                }
+            } catch (e: Exception) {
+                log.warn(
+                    "Failed to query \"${request.queryName}\" " +
+                        "with parameters \"${deserializedParams}\" limit \"${request.limit}\".",
+                    e
+                )
+                throw e
+            }
 
             // If we have no filter, there's no need to continue the loop
             if (vaultNamedQuery.filter == null) {
-                with (rawResults) {
+                with(rawResults) {
                     return ProcessedQueryResults(
                         results.map { it.stateAndRef },
                         if (hasMore) results.last().resumePoint else null,
@@ -229,7 +262,6 @@ class VaultNamedQueryExecutorImpl(
                     filteredRawData.add(result)
                 }
 
-
                 if (filteredRawData.size >= request.limit) {
                     // Page filled. We need to set the resume point based on the final filtered
                     // result (as we may be throwing out additional records returned by the query).
@@ -239,8 +271,8 @@ class VaultNamedQueryExecutorImpl(
                     // There are more results if either we didn't get through all the results
                     // returned by the query invocation, or if the query itself indicated there are
                     // more results to return.
-                    val moreResults = (result != rawResults.results.last()) || rawResults.hasMore
-
+                    val reachedEndOfRawResults = result != rawResults.results.last()
+                    val moreResults = reachedEndOfRawResults || rawResults.hasMore
                     return ProcessedQueryResults(
                         filteredRawData.map { it.stateAndRef },
                         if (moreResults) filteredRawData.last().resumePoint else null,
@@ -254,6 +286,7 @@ class VaultNamedQueryExecutorImpl(
                 currentResumePoint = null
                 break
             } else {
+                currentOffset += if (useOffset) request.limit else 0
                 currentResumePoint = rawResults.results.last().resumePoint
             }
         }
@@ -265,6 +298,60 @@ class VaultNamedQueryExecutorImpl(
         )
     }
 
+    private fun fetchStateAndRefsOrderBy(
+        request: FindWithNamedQuery,
+        whereJson: String?,
+        orderBy: String?,
+        offset: Int
+    ): RawQueryResults {
+        @Suppress("UNCHECKED_CAST")
+        val resultList = entityManagerFactory.transaction { em ->
+
+            val query = em.createNativeQuery(
+                """
+                        SELECT tc_output.transaction_id,
+                            tc_output.leaf_idx,
+                            tc_output_info.data as output_info_data,
+                            tc_output.data AS output_data,
+                            visible_states.created AS created
+                            FROM $UTXO_VISIBLE_TX_TABLE AS visible_states
+                            JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output_info
+                                 ON tc_output_info.transaction_id = visible_states.transaction_id
+                                 AND tc_output_info.leaf_idx = visible_states.leaf_idx
+                                 AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
+                            JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output
+                                 ON tc_output_info.transaction_id = tc_output.transaction_id
+                                 AND tc_output_info.leaf_idx = tc_output.leaf_idx
+                                 AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
+                            WHERE ($whereJson)
+                            AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME
+                            ORDER BY $orderBy
+                    """,
+                Tuple::class.java
+            )
+            request.parameters.forEach { rec ->
+                query.setParameter(rec.key, rec.value?.let { serializationService.deserialize(it.array()) })
+            }
+
+            query.firstResult = offset
+            // Getting one more than requested allows us to identify if there are more results to
+            // return in a subsequent page
+            // CORE-15061 By default the limit will be `Int.MAX_VALUE` and adding +1 to that value
+            // will cause integer to overflow, that's why we need this extra `minOf` here.
+            query.maxResults = minOf(Int.MAX_VALUE - 1, request.limit) + 1
+
+            query.resultList as List<Tuple>
+        }
+
+        if (resultList.size > request.limit) {
+            // We need to truncate the list to the number requested, but also flag that there is
+            // another page to be returned
+            return RawQueryResults(resultList.subList(0, request.limit).map { RawQueryData(it) }, hasMore = true)
+        } else {
+            return RawQueryResults(resultList.map { RawQueryData(it) }, hasMore = false)
+        }
+    }
+
     /**
      * A function that fetches the contract states that belong to the given transaction IDs.
      * The data stored in the component table will be deserialized into contract states using
@@ -272,21 +359,18 @@ class VaultNamedQueryExecutorImpl(
      *
      * Each invocation of this function represents a single distinct query to the database.
      */
-    private fun fetchStateAndRefs(
+    private fun fetchStateAndRefsTimeOrder(
         request: FindWithNamedQuery,
         whereJson: String?,
         resumePoint: ResumePoint?
     ): RawQueryResults {
-
-        validateParameters(request)
-
         @Suppress("UNCHECKED_CAST")
         val resultList = entityManagerFactory.transaction { em ->
 
             val resumePointExpr = resumePoint?.let {
-                " AND ((tx.created > :created) OR " +
-                "(tx.created = :created AND tc_output.transaction_id > :txId) OR " +
-                "(tx.created = :created AND tc_output.transaction_id = :txId AND tc_output.leaf_idx > :leafIdx))"
+                " AND ((visible_states.created > :created) OR " +
+                    "(visible_states.created = :created AND tc_output.transaction_id > :txId) OR " +
+                    "(visible_states.created = :created AND tc_output.transaction_id = :txId AND tc_output.leaf_idx > :leafIdx))"
             } ?: ""
 
             val query = em.createNativeQuery(
@@ -295,7 +379,7 @@ class VaultNamedQueryExecutorImpl(
                         tc_output.leaf_idx,
                         tc_output_info.data as output_info_data,
                         tc_output.data AS output_data,
-                        tx.created AS created
+                        visible_states.created AS created
                         FROM $UTXO_VISIBLE_TX_TABLE AS visible_states
                         JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output_info
                              ON tc_output_info.transaction_id = visible_states.transaction_id
@@ -305,14 +389,13 @@ class VaultNamedQueryExecutorImpl(
                              ON tc_output_info.transaction_id = tc_output.transaction_id
                              AND tc_output_info.leaf_idx = tc_output.leaf_idx
                              AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
-                        JOIN $UTXO_TX_TABLE AS tx
-                             ON tc_output.transaction_id = tx.id
                         WHERE ($whereJson)
                         $resumePointExpr
                         AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME
-                        ORDER BY tx.created, tc_output.transaction_id, tc_output.leaf_idx
+                        ORDER BY visible_states.created, tc_output.transaction_id, tc_output.leaf_idx
                 """,
-                Tuple::class.java)
+                Tuple::class.java
+            )
 
             if (resumePoint != null) {
                 log.trace { "Query is resuming from $resumePoint" }
@@ -321,15 +404,16 @@ class VaultNamedQueryExecutorImpl(
                 query.setParameter("leafIdx", resumePoint.leafIdx)
             }
 
-            request.parameters.filter { it.value != null }.forEach { rec ->
-                val bytes = rec.value.array()
-                query.setParameter(rec.key, serializationService.deserialize(bytes))
+            request.parameters.forEach { rec ->
+                query.setParameter(rec.key, rec.value?.let { serializationService.deserialize(it.array()) })
             }
 
             query.firstResult = request.offset
             // Getting one more than requested allows us to identify if there are more results to
             // return in a subsequent page
-            query.maxResults = request.limit + 1
+            // CORE-15061 By default the limit will be `Int.MAX_VALUE` and adding +1 to that value
+            // will cause integer to overflow, that's why we need this extra `minOf` here.
+            query.maxResults = minOf(Int.MAX_VALUE - 1, request.limit) + 1
 
             query.resultList as List<Tuple>
         }
@@ -340,16 +424,6 @@ class VaultNamedQueryExecutorImpl(
             RawQueryResults(resultList.subList(0, request.limit).map { RawQueryData(it) }, hasMore = true)
         } else {
             RawQueryResults(resultList.map { RawQueryData(it) }, hasMore = false)
-        }
-    }
-
-    private fun validateParameters(request: FindWithNamedQuery) {
-        val nullParamNames = request.parameters.filter { it.value == null }.map { it.key }
-
-        if (nullParamNames.isNotEmpty()) {
-            val msg = "Null value found for parameters ${nullParamNames.joinToString(", ")}"
-            log.error(msg)
-            throw NullParameterException(msg)
         }
     }
 }

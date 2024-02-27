@@ -8,7 +8,7 @@ import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.SchemaM
 internal class JsonSchemaBuilder : SchemaBuilder {
     override val keys = listOf(JsonObject::class.java)
 
-    override fun build(clazz: Class<*>, parameterizedClassList: List<GenericParameterizedType>): SchemaModel{
+    override fun build(clazz: Class<*>, parameterizedClassList: List<GenericParameterizedType>): SchemaModel {
         return JsonSchemaModel()
     }
 }

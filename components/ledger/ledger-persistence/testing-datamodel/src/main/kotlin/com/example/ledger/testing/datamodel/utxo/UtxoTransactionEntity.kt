@@ -1,15 +1,15 @@
 package com.example.ledger.testing.datamodel.utxo
 
+import net.corda.v5.base.annotations.CordaSerializable
 import java.time.Instant
 import javax.persistence.CascadeType
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
-import javax.persistence.OneToMany
-import javax.persistence.Table
-import net.corda.v5.base.annotations.CordaSerializable
 import javax.persistence.JoinColumn
 import javax.persistence.ManyToOne
+import javax.persistence.OneToMany
+import javax.persistence.Table
 
 @CordaSerializable
 @Entity
@@ -37,6 +37,9 @@ data class UtxoTransactionEntity(
     @get:ManyToOne
     @get:JoinColumn(name = "metadata_hash", nullable = false, updatable = false)
     var metadata: UtxoTransactionMetadataEntity,
+
+    @get:Column(name = "is_filtered", nullable = true)
+    var isFiltered: Boolean = false,
 ) {
     @get:OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
     var components: MutableList<UtxoTransactionComponentEntity> = mutableListOf()
@@ -54,6 +57,7 @@ data class UtxoTransactionEntity(
         if (!privacySalt.contentEquals(other.privacySalt)) return false
         if (accountId != other.accountId) return false
         if (created != other.created) return false
+        if (isFiltered != other.isFiltered) return false
 
         return true
     }

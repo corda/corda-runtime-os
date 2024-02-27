@@ -53,7 +53,8 @@ class TransactionBackchainSenderFlowV1Test {
     @Test
     fun `does nothing when receiving an initial stop request`() {
         whenever(session.receive(TransactionBackchainRequestV1::class.java)).thenReturn(
-            TransactionBackchainRequestV1.Stop)
+            TransactionBackchainRequestV1.Stop
+        )
 
         flow.call()
 

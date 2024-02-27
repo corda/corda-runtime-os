@@ -1,8 +1,8 @@
 package net.corda.ledger.utxo.flow.impl.groupparameters.verifier
 
 import net.corda.crypto.cipher.suite.SignatureVerificationService
-import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.flow.application.GroupParametersLookupInternal
+import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
@@ -27,15 +27,15 @@ class SignedGroupParametersVerifierImpl @Activate constructor(
     private val signatureVerificationService: SignatureVerificationService,
     @Reference(service = GroupParametersLookupInternal::class)
     private val groupParametersLookup: GroupParametersLookupInternal
-): SignedGroupParametersVerifier, UsedByFlow, SingletonSerializeAsToken {
+) : SignedGroupParametersVerifier, UsedByFlow, SingletonSerializeAsToken {
 
     override fun verify(
         transaction: UtxoLedgerTransaction,
         signedGroupParameters: SignedGroupParameters?
     ) {
-        requireNotNull(signedGroupParameters){
+        requireNotNull(signedGroupParameters) {
             "Signed group parameters referenced in the transaction metadata not found. [" +
-                    (transaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash() + "]"
+                (transaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash() + "]"
         }
         verifyHash(transaction, signedGroupParameters)
         verifySignature(signedGroupParameters)
@@ -44,7 +44,7 @@ class SignedGroupParametersVerifierImpl @Activate constructor(
     private fun verifyHash(transaction: UtxoLedgerTransaction, signedGroupParameters: SignedGroupParameters) {
         check(
             (transaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash() ==
-                    signedGroupParameters.hash.toString()
+                signedGroupParameters.hash.toString()
         ) {
             "The referenced hash in the metadata did not match with the one returned from the database."
         }

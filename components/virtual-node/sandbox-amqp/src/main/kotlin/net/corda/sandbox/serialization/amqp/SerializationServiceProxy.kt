@@ -1,5 +1,6 @@
 package net.corda.sandbox.serialization.amqp
 
+import net.corda.internal.serialization.amqp.api.SerializationServiceInternal
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
@@ -18,6 +19,7 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 @Component(
     service = [
         SerializationService::class,
+        SerializationServiceInternal::class,
         SerializationServiceProxy::class,
         UsedByFlow::class,
         UsedByPersistence::class,
@@ -27,10 +29,10 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
     scope = PROTOTYPE
 )
 class SerializationServiceProxy
-    : SerializationService, SingletonSerializeAsToken, UsedByFlow, UsedByPersistence, UsedByVerification {
-    private var serializationService: SerializationService? = null
+    : SerializationServiceInternal, SingletonSerializeAsToken, UsedByFlow, UsedByPersistence, UsedByVerification {
+    private var serializationService: SerializationServiceInternal? = null
 
-    fun wrap(serializer: SerializationService) {
+    fun wrap(serializer: SerializationServiceInternal) {
         serializationService = serializer
     }
 
@@ -47,5 +49,10 @@ class SerializationServiceProxy
     override fun <T : Any> serialize(obj: T): SerializedBytes<T> {
         return checkNotNull(serializationService) { "serialize(Object): Not initialized" }
             .serialize(obj)
+    }
+
+    override fun <T : Any> serialize(obj: T, withCompression: Boolean): SerializedBytes<T> {
+        return checkNotNull(serializationService) { "serialize(Object, Boolean): Not initialized" }
+            .serialize(obj, withCompression)
     }
 }

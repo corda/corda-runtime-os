@@ -52,19 +52,20 @@ internal class TestVirtualNodeInfoReadServiceImpl @Activate constructor(
             it.holdingIdentity.shortHash == holdingIdentityShortHash
         }
 
-
     override fun registerCallback(listener: VirtualNodeInfoListener) = AutoCloseable { return@AutoCloseable }
 
     override val isRunning = true
     override val lifecycleCoordinatorName =
         LifecycleCoordinatorName.forComponent<TestVirtualNodeInfoReadServiceImpl>()
 
-    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>>? = null
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>> {
+        throw UnsupportedOperationException()
+    }
+
     override fun stop() {
         coordinator.stop()
     }
     override fun start() {
         coordinator.start()
     }
-
 }

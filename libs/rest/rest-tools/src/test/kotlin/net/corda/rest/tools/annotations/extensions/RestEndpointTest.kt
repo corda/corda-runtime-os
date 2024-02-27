@@ -12,7 +12,6 @@ class RestEndpointTest {
 
     @Test
     fun `path from GET method name will be converted to lowercase`() {
-
         abstract class TestClass {
             @HttpGET
             abstract fun sampleGetMethod(): String
@@ -25,7 +24,6 @@ class RestEndpointTest {
 
     @Test
     fun `path from HttpGET annotation will be converted to lowercase`() {
-
         abstract class TestClass {
             @HttpGET(
                 path = "SampleGetMethodPath",
@@ -40,7 +38,6 @@ class RestEndpointTest {
 
     @Test
     fun `path from POST method name will be converted to lowercase`() {
-
         abstract class TestClass {
             @HttpPOST
             abstract fun samplePostMethod(): String
@@ -53,7 +50,6 @@ class RestEndpointTest {
 
     @Test
     fun `path from HttpPOST annotation will be converted to lowercase`() {
-
         abstract class TestClass {
             @HttpPOST(
                 path = "samplePostMethodPath",

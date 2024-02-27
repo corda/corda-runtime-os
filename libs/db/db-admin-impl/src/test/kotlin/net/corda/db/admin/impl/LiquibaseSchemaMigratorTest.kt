@@ -82,6 +82,6 @@ class LiquibaseSchemaMigratorTest {
     @Test
     fun `when listUnrunChangeSets call liquibase API` (){
         migrator.listUnrunChangeSets(connection, dbChange)
-        verify(lb).listUnrunChangeSets(any<Contexts>(), any())
+        verify(lb).listUnrunChangeSets(any<Contexts>(), any(), eq(false))
     }
 }

@@ -225,6 +225,7 @@ class EntityManagerUtilsTest {
         }
     }
 
+    @Suppress("TooGenericExceptionThrown")
     @Test
     fun `EntityManager#transaction rolls back the transaction if an exception is thrown`() {
         val expectedTag = "initialTag"

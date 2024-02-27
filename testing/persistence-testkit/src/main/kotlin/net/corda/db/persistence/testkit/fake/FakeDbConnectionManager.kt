@@ -13,6 +13,7 @@ import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import org.slf4j.LoggerFactory
+import java.sql.SQLException
 import java.time.Duration
 import java.util.UUID
 import javax.persistence.EntityManager
@@ -25,7 +26,7 @@ import javax.sql.DataSource
 //@Component(service = [DbConnectionManager::class, FakeDbConnectionManager::class])
 @Suppress("TooManyFunctions")
 class FakeDbConnectionManager(
-    connections: List<Pair<UUID, String>>,
+    private val connections: List<Pair<UUID, String>>,
     private val schemaName: String,
     private val emff: EntityManagerFactoryFactory = EntityManagerFactoryFactoryImpl()
 ): DbConnectionManager, DbConnectionOps, DataSourceFactory {
@@ -33,21 +34,52 @@ class FakeDbConnectionManager(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private data class NamedDataSources(val id: UUID, val name: String, val dataSource: CloseableDataSource)
+    private data class NamedDataSources(
+        val id: UUID,
+        val persistenceUnitName: String,
+        val schemaName: String,
+        val dataSource: CloseableDataSource
+    )
 
-    private val dbSources: List<NamedDataSources> = connections.map {
+    private var dbSources: List<NamedDataSources> = connections.map {
         val source = DbUtils.getEntityManagerConfiguration(
             "fake-db-manager-db-$schemaName",
-            schemaName = "$schemaName${it.second.replace("-","")}",
-            createSchema = true).dataSource
-        NamedDataSources(it.first, it.second, source)
+            dbUser = "user_$schemaName",
+            schemaName = schemaName,
+            createSchema = true
+        ).dataSource
+        NamedDataSources(it.first, it.second, schemaName, source)
     }
 
-    override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet):
+    override fun createEntityManagerFactory(
+        connectionId: UUID,
+        entitiesSet: JpaEntitiesSet,
+        enablePool: Boolean,):
             EntityManagerFactory {
-        val source = dbSources.single { it.id == connectionId }
+        var source = dbSources.single { it.id == connectionId }
+        // During sandbox tests, the dataSources may get closed when sandboxes are evicted. Upon sandbox being re-created,
+        // the datasources need to be recreated as well. Check if it's closed and re-create if needed
+        try {
+            // This will throw if the datasource is actually closed. This means we need to re-create it
+            // Ideally we'd re-place it in the dbSources list
+            println(source.dataSource.connection.isClosed)
+        } catch (e: SQLException) {
+            if (e.message!!.contains("has been closed")) {
+                val conn = connections.single { it.first == connectionId }
+                source = DbUtils.getEntityManagerConfiguration(
+                    "fake-db-manager-db-$schemaName",
+                    schemaName = "$schemaName${conn.second.replace("-","")}",
+                    createSchema = true).dataSource.let {
+
+                    NamedDataSources(conn.first, conn.second, schemaName, it)
+                }
+                dbSources = dbSources.map { if (it.id == connectionId) source else it }
+            } else {
+                throw e
+            }
+        }
         return emff.create(
-            source.name,
+            source.persistenceUnitName,
             entitiesSet.classes.toList(),
             DbEntityManagerConfiguration(source.dataSource),
         )
@@ -55,13 +87,18 @@ class FakeDbConnectionManager(
 
     override fun getOrCreateEntityManagerFactory(
         connectionId: UUID,
-        entitiesSet: JpaEntitiesSet
+        entitiesSet: JpaEntitiesSet,
+        enablePool: Boolean,
     ): EntityManagerFactory {
         TODO("Not yet implemented")
     }
 
     fun getDataSource(id: UUID): CloseableDataSource {
-        return dbSources.single { it.id ==  id}.dataSource
+        return dbSources.single { it.id == id }.dataSource
+    }
+
+    fun getSchemaName(id: UUID): String {
+        return dbSources.single { it.id == id }.schemaName
     }
 
     private var smartConfig: SmartConfig? = null
@@ -120,7 +157,7 @@ class FakeDbConnectionManager(
         TODO("Not yet implemented")
     }
 
-    override fun createDatasource(connectionId: UUID): CloseableDataSource {
+    override fun createDatasource(connectionId: UUID, enablePool: Boolean): CloseableDataSource {
         TODO("Not yet implemented")
     }
 
@@ -128,7 +165,7 @@ class FakeDbConnectionManager(
         TODO("Not yet implemented")
     }
 
-    override fun getDataSource(config: SmartConfig): CloseableDataSource {
+    override fun getDataSource(config: SmartConfig, enablePool: Boolean): CloseableDataSource {
         TODO("Not yet implemented")
     }
 
@@ -149,6 +186,7 @@ class FakeDbConnectionManager(
     }
 
     override fun create(
+        enablePool: Boolean,
         driverClass: String,
         jdbcUrl: String,
         username: String,

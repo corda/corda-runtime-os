@@ -73,7 +73,9 @@ class UpdateGroupParametersHandlerTest {
     private val sigContent = "signature-bytes".toByteArray()
 
     private val signatureSpec = CryptoSignatureSpec(
-        SignatureSpecs.ECDSA_SHA256.signatureName, null, null
+        SignatureSpecs.ECDSA_SHA256.signatureName,
+        null,
+        null
     )
 
     private val signedParams = SignedGroupParameters(
@@ -167,7 +169,8 @@ class UpdateGroupParametersHandlerTest {
         on {
             getOrCreateEntityManagerFactory(
                 eq(vaultDmlConnectionId),
-                any()
+                any(),
+                eq(false)
             )
         } doReturn entityManagerFactory
     }

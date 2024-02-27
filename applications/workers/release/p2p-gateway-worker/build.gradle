@@ -6,6 +6,8 @@ plugins {
 
 description 'P2P Gateway Worker'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'
@@ -38,5 +40,5 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
-    runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"
+    runtimeOnly libs.typesafe.config
 }

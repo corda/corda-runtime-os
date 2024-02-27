@@ -1,9 +1,5 @@
 package net.corda.libs.virtualnode.datamodel.repository
 
-import java.time.Instant
-import java.util.UUID
-import java.util.stream.Stream
-import javax.persistence.EntityManager
 import net.corda.crypto.core.ShortHash
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
@@ -21,6 +17,10 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
+import java.time.Instant
+import java.util.UUID
+import java.util.stream.Stream
+import javax.persistence.EntityManager
 
 class VirtualNodeRepositoryImpl : VirtualNodeRepository {
     /**
@@ -62,7 +62,7 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
         entityManager.transaction {
             val operationStatuses = entityManager.createQuery(
                 "from ${VirtualNodeOperationEntity::class.java.simpleName} where requestId = :requestId " +
-                        "order by latestUpdateTimestamp desc",
+                    "order by latestUpdateTimestamp desc",
                 VirtualNodeOperationEntity::class.java
             )
                 .setParameter("requestId", requestId)
@@ -85,6 +85,24 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
                 )
             }
         }
+    }
+
+    override fun putVirtualNodeOperation(entityManager: EntityManager, operation: VirtualNodeOperationDto) {
+        entityManager.merge(
+            with(operation) {
+                VirtualNodeOperationEntity(
+                    id = requestId,
+                    requestId = requestId,
+                    data = requestData,
+                    state = enumValueOf(state),
+                    operationType = enumValueOf(operationType),
+                    requestTimestamp = requestTimestamp,
+                    latestUpdateTimestamp = latestUpdateTimestamp,
+                    heartbeatTimestamp = heartbeatTimestamp,
+                    errors = errors
+                )
+            }
+        )
     }
 
     /**
@@ -161,9 +179,13 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
     override fun upgradeVirtualNodeCpi(
         entityManager: EntityManager,
         holdingIdentityShortHash: String,
-        cpiName: String, cpiVersion: String, cpiSignerSummaryHash: String,
+        cpiName: String,
+        cpiVersion: String,
+        cpiSignerSummaryHash: String,
         externalMessagingRouteConfig: String?,
-        requestId: String, requestTimestamp: Instant, serializedRequest: String
+        requestId: String,
+        requestTimestamp: Instant,
+        serializedRequest: String
     ): VirtualNodeInfo {
         val virtualNode = entityManager.find(VirtualNodeEntity::class.java, holdingIdentityShortHash)
             ?: throw VirtualNodeNotFoundException(holdingIdentityShortHash)
@@ -211,7 +233,7 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
         val virtualNode = entityManager.find(VirtualNodeEntity::class.java, holdingIdentityShortHash)
             ?: throw VirtualNodeNotFoundException(holdingIdentityShortHash)
 
-        if(virtualNode.operationInProgress == null) {
+        if (virtualNode.operationInProgress == null) {
             entityManager.persist(
                 VirtualNodeOperationEntity(
                     UUID.randomUUID().toString(),

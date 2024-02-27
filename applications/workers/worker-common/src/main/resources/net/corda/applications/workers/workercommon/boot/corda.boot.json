@@ -193,123 +193,8 @@
       }
     },
     "stateManager": {
-      "description": "Configuration options for the state manager.",
-      "properties": {
-        "type": {
-          "description": "The type of state manager.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "database": {
-          "description": "Connection parameters when using database as the persistent storage",
-          "properties": {
-            "jdbc": {
-              "description": "The JDBC database info",
-              "properties": {
-                "url": {
-                  "description": "The JDBC URL to use by the state manager when using database as the persistent storage",
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "directory": {
-                  "description": "The JDBC directory to use by the state manager when using database as the persistent storage",
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "driver": {
-                  "description": "The JDBC driver to use by the state manager when using database as the persistent storage",
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "additionalProperties": false
-              },
-              "additionalProperties": false
-            },
-            "user": {
-              "description": "Admin username to use by the state manager when connecting to the database used as the persistent storage",
-              "type": [
-                "string",
-                "null"
-              ]
-            },
-            "pass": {
-              "description": "Admin password to use by the state manager when connecting to the database used as the persistent storage",
-              "type": [
-                "string",
-                "null"
-              ]
-            },
-            "pool": {
-              "description": "State Manager database pool connection properties",
-              "properties": {
-                "maxSize": {
-                  "description": "Maximum connection pool size for State Manager DB",
-                  "default": 5,
-                  "type": [
-                    "integer",
-                    "null"
-                  ]
-                },
-                "minSize": {
-                  "description": "Minimum connection pool size for State Manager DB",
-                  "default": 0,
-                  "type": [
-                    "integer",
-                    "null"
-                  ]
-                },
-                "idleTimeoutSeconds": {
-                  "description": "Maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool",
-                  "default": 120,
-                  "minimum": 0,
-                  "type": [
-                    "integer",
-                    "null"
-                  ]
-                },
-                "maxLifetimeSeconds": {
-                  "description": "Maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle",
-                  "default": 1800,
-                  "minimum": 1,
-                  "type": [
-                    "integer",
-                    "null"
-                  ]
-                },
-                "keepAliveTimeSeconds": {
-                  "description": "Interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled",
-                  "default": 0,
-                  "minimum": 0,
-                  "type": [
-                    "integer",
-                    "null"
-                  ]
-                },
-                "validationTimeoutSeconds": {
-                  "description": "Maximum time (in seconds) that the pool will wait for a connection to be validated as alive",
-                  "minimum": 1,
-                  "default": 5,
-                  "type": [
-                    "integer",
-                    "null"
-                  ]
-                }
-              },
-              "additionalProperties": false
-            }
-          },
-          "additionalProperties": false
-        }
-      },
-      "additionalProperties": true
+      "description": "State Manager configuration.",
+      "$ref": "https://corda.r3.com/net/corda/schema/configuration/stateManager/1.0/corda.stateManager.json"
     },
     "worker": {
       "description": "HTTP connection information for the Corda workers",
@@ -347,6 +232,33 @@
             }
           },
           "additionalProperties": true
+        },
+        "mediatorReplicas" : {
+          "description": "Number of replicas for the mediator",
+          "properties": {
+            "flowSession": {
+              "description": "Number of mediator replicas that consume the flow session messages.",
+              "type": "integer",
+              "default": 1,
+              "minimum": 1,
+              "maximum": 64
+            },
+            "flowMapperSessionIn": {
+              "description": "Number of mediator replicas that consume the flow mapper session in messages.",
+              "type": "integer",
+              "default": 1,
+              "minimum": 1,
+              "maximum": 64
+            },
+            "flowMapperSessionOut": {
+              "description": "Number of mediator replicas that consume the flow mapper session out messages.",
+              "type": "integer",
+              "default": 1,
+              "minimum": 1,
+              "maximum": 64
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false

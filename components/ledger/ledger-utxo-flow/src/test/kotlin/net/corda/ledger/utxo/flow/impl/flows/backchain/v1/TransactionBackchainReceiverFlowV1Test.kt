@@ -3,8 +3,8 @@ package net.corda.ledger.utxo.flow.impl.flows.backchain.v1
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.flow.application.services.FlowConfigService
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
-import net.corda.ledger.common.data.transaction.TransactionStatus.INVALID
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
+import net.corda.ledger.common.data.transaction.TransactionStatus.INVALID
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerMetricRecorder
@@ -148,10 +148,12 @@ class TransactionBackchainReceiverFlowV1Test {
     @Test
     fun `transaction that is in the DB and referenced by multiple transactions - one in DB and one retrievable will only be retrieved once`() {
         whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
-            .thenReturn(mapOf(
-                TX_ID_1 to UNVERIFIED,
-                TX_ID_3 to UNVERIFIED
-            ))
+            .thenReturn(
+                mapOf(
+                    TX_ID_1 to UNVERIFIED,
+                    TX_ID_3 to UNVERIFIED
+                )
+            )
 
         whenever(session.sendAndReceive(eq(SignedGroupParameters::class.java), any())).thenReturn(
             groupParameters,
@@ -164,10 +166,12 @@ class TransactionBackchainReceiverFlowV1Test {
             .thenReturn(Pair(retrievedTransaction1, UNVERIFIED))
 
         whenever(retrievedTransaction1.id).thenReturn(TX_ID_1)
-        whenever(retrievedTransaction1.inputStateRefs).thenReturn(listOf(
-            StateRef(TX_ID_2, 0),
-            StateRef(TX_ID_3, 0)
-        ))
+        whenever(retrievedTransaction1.inputStateRefs).thenReturn(
+            listOf(
+                StateRef(TX_ID_2, 0),
+                StateRef(TX_ID_3, 0)
+            )
+        )
         whenever(retrievedTransaction1.referenceStateRefs).thenReturn(emptyList())
         whenever(retrievedTransaction1.metadata).thenReturn(tx1Metadata)
 
@@ -250,12 +254,20 @@ class TransactionBackchainReceiverFlowV1Test {
         )
         whenever(groupParameters.hash).thenReturn(groupParametersHash1)
 
-        whenever(session.sendAndReceive(eq(List::class.java),
-            eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_2))))).thenReturn(
+        whenever(
+            session.sendAndReceive(
+                eq(List::class.java),
+                eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_2)))
+            )
+        ).thenReturn(
             listOf(retrievedTransaction1)
         )
-        whenever(session.sendAndReceive(eq(List::class.java),
-            eq(TransactionBackchainRequestV1.Get(setOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1.transactionId))))).thenReturn(
+        whenever(
+            session.sendAndReceive(
+                eq(List::class.java),
+                eq(TransactionBackchainRequestV1.Get(setOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1.transactionId)))
+            )
+        ).thenReturn(
             listOf(retrievedTransaction2)
         )
 
@@ -286,11 +298,13 @@ class TransactionBackchainReceiverFlowV1Test {
     @Test
     fun `dependency of dependency of transaction will be fetched if it is in the database but group params not known`() {
         whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
-            .thenReturn(mapOf(
-                TX_ID_1 to UNVERIFIED,
-                TX_ID_2 to UNVERIFIED,
-                TX_ID_3 to UNVERIFIED,
-            ))
+            .thenReturn(
+                mapOf(
+                    TX_ID_1 to UNVERIFIED,
+                    TX_ID_2 to UNVERIFIED,
+                    TX_ID_3 to UNVERIFIED,
+                )
+            )
 
         whenever(tx1Metadata.getMembershipGroupParametersHash())
             .thenReturn(groupParametersHash1.toString())
@@ -298,14 +312,18 @@ class TransactionBackchainReceiverFlowV1Test {
         whenever(session.sendAndReceive(eq(SignedGroupParameters::class.java), any()))
             .thenReturn(groupParameters)
 
-        whenever(session.sendAndReceive(
-            eq(SignedGroupParameters::class.java),
-            eq(TransactionBackchainRequestV1.GetSignedGroupParameters(groupParametersHash1)))
+        whenever(
+            session.sendAndReceive(
+                eq(SignedGroupParameters::class.java),
+                eq(TransactionBackchainRequestV1.GetSignedGroupParameters(groupParametersHash1))
+            )
         ).thenReturn(groupParameters)
 
-        whenever(session.sendAndReceive(
-            eq(SignedGroupParameters::class.java),
-            eq(TransactionBackchainRequestV1.GetSignedGroupParameters(groupParametersHash2)))
+        whenever(
+            session.sendAndReceive(
+                eq(SignedGroupParameters::class.java),
+                eq(TransactionBackchainRequestV1.GetSignedGroupParameters(groupParametersHash2))
+            )
         ).thenReturn(groupParameters2)
 
         whenever(groupParameters.hash)
@@ -328,9 +346,11 @@ class TransactionBackchainReceiverFlowV1Test {
             .thenReturn(tx1Metadata)
 
         // Dependency
-        whenever(utxoLedgerPersistenceService.findSignedTransactionWithStatus(
-            eq(TX_ID_2),
-            eq(UNVERIFIED))
+        whenever(
+            utxoLedgerPersistenceService.findSignedTransactionWithStatus(
+                eq(TX_ID_2),
+                eq(UNVERIFIED)
+            )
         ).thenReturn(Pair(retrievedTransaction2, UNVERIFIED))
 
         whenever(retrievedTransaction2.id)
@@ -343,9 +363,11 @@ class TransactionBackchainReceiverFlowV1Test {
             .thenReturn(tx1Metadata)
 
         // Dependency of dependency
-        whenever(utxoLedgerPersistenceService.findSignedTransactionWithStatus(
-            eq(TX_ID_3),
-            eq(UNVERIFIED))
+        whenever(
+            utxoLedgerPersistenceService.findSignedTransactionWithStatus(
+                eq(TX_ID_3),
+                eq(UNVERIFIED)
+            )
         ).thenReturn(Pair(retrievedTransaction3, UNVERIFIED))
 
         whenever(retrievedTransaction3.id)
@@ -367,14 +389,17 @@ class TransactionBackchainReceiverFlowV1Test {
         whenever(utxoLedgerGroupParametersPersistenceService.find(groupParametersHash2))
             .thenReturn(null)
 
-        whenever(session.sendAndReceive(eq(List::class.java),
-            eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_3))))).thenReturn(
+        whenever(
+            session.sendAndReceive(
+                eq(List::class.java),
+                eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_3)))
+            )
+        ).thenReturn(
             listOf(retrievedTransaction3)
         )
 
         whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
             .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
-
 
         // Since both the base, dependency and dependency of dependency transaction were present in the database,
         // but TX_ID_4's group params not know it should have been retrieved and all should be in the topological sort
@@ -411,9 +436,13 @@ class TransactionBackchainReceiverFlowV1Test {
         whenever(retrievedTransaction1.referenceStateRefs).thenReturn(emptyList())
         whenever(retrievedTransaction1.metadata).thenReturn(tx1Metadata)
 
-        whenever(session.sendAndReceive(eq(List::class.java),
-            eq(TransactionBackchainRequestV1.Get(setOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1.transactionId))))).thenReturn(
-                listOf(retrievedTransaction2)
+        whenever(
+            session.sendAndReceive(
+                eq(List::class.java),
+                eq(TransactionBackchainRequestV1.Get(setOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1.transactionId)))
+            )
+        ).thenReturn(
+            listOf(retrievedTransaction2)
         )
         whenever(retrievedTransaction2.id).thenReturn(TX_3_INPUT_DEPENDENCY_STATE_REF_1.transactionId)
         whenever(retrievedTransaction2.inputStateRefs).thenReturn(emptyList())
@@ -445,10 +474,12 @@ class TransactionBackchainReceiverFlowV1Test {
     @Test
     fun `flow will throw exception if any of the transactions are invalid`() {
         whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
-            .thenReturn(mapOf(
-                TX_ID_2 to UNVERIFIED,
-                TX_3_INPUT_DEPENDENCY_STATE_REF_1.transactionId to INVALID
-            ))
+            .thenReturn(
+                mapOf(
+                    TX_ID_2 to UNVERIFIED,
+                    TX_3_INPUT_DEPENDENCY_STATE_REF_1.transactionId to INVALID
+                )
+            )
 
         whenever(utxoLedgerPersistenceService.findSignedTransactionWithStatus(eq(TX_ID_2), eq(UNVERIFIED)))
             .thenReturn(Pair(retrievedTransaction1, UNVERIFIED))
@@ -465,8 +496,10 @@ class TransactionBackchainReceiverFlowV1Test {
             callTransactionBackchainReceiverFlow(setOf(TX_ID_2))
         }
 
-        assertThat(exception).hasStackTraceContaining("Found the following invalid transaction(s) during back-chain resolution: " +
-            "[${TX_3_INPUT_DEPENDENCY_STATE_REF_1.transactionId}]. Back-chain resolution cannot be continued.")
+        assertThat(exception).hasStackTraceContaining(
+            "Found the following invalid transaction(s) during back-chain resolution: " +
+                "[${TX_3_INPUT_DEPENDENCY_STATE_REF_1.transactionId}]. Back-chain resolution cannot be continued."
+        )
     }
 
     /**
@@ -478,11 +511,13 @@ class TransactionBackchainReceiverFlowV1Test {
     @Test
     fun `dependency of dependency of transaction will not be fetched if it is in the database`() {
         whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
-            .thenReturn(mapOf(
-                TX_ID_1 to UNVERIFIED,
-                TX_ID_2 to UNVERIFIED,
-                TX_ID_3 to UNVERIFIED,
-            ))
+            .thenReturn(
+                mapOf(
+                    TX_ID_1 to UNVERIFIED,
+                    TX_ID_2 to UNVERIFIED,
+                    TX_ID_3 to UNVERIFIED,
+                )
+            )
 
         whenever(session.sendAndReceive(eq(SignedGroupParameters::class.java), any())).thenReturn(
             groupParameters,
@@ -503,9 +538,11 @@ class TransactionBackchainReceiverFlowV1Test {
         whenever(retrievedTransaction1.metadata).thenReturn(tx1Metadata)
 
         // Dependency
-        whenever(utxoLedgerPersistenceService.findSignedTransactionWithStatus(
-            eq(TX_ID_2),
-            eq(UNVERIFIED))
+        whenever(
+            utxoLedgerPersistenceService.findSignedTransactionWithStatus(
+                eq(TX_ID_2),
+                eq(UNVERIFIED)
+            )
         ).thenReturn(Pair(retrievedTransaction2, UNVERIFIED))
 
         whenever(retrievedTransaction2.metadata).thenReturn(tx1Metadata)
@@ -518,9 +555,11 @@ class TransactionBackchainReceiverFlowV1Test {
             .thenReturn(emptyList())
 
         // Dependency of dependency
-        whenever(utxoLedgerPersistenceService.findSignedTransactionWithStatus(
-            eq(TX_ID_3),
-            eq(UNVERIFIED))
+        whenever(
+            utxoLedgerPersistenceService.findSignedTransactionWithStatus(
+                eq(TX_ID_3),
+                eq(UNVERIFIED)
+            )
         ).thenReturn(Pair(retrievedTransaction3, UNVERIFIED))
 
         whenever(retrievedTransaction3.id)
@@ -554,10 +593,12 @@ class TransactionBackchainReceiverFlowV1Test {
     @Test
     fun `dependency of dependency of transaction will be fetched if it is not in the database`() {
         whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
-            .thenReturn(mapOf(
-                TX_ID_1 to UNVERIFIED,
-                TX_ID_2 to UNVERIFIED
-            ))
+            .thenReturn(
+                mapOf(
+                    TX_ID_1 to UNVERIFIED,
+                    TX_ID_2 to UNVERIFIED
+                )
+            )
 
         whenever(session.sendAndReceive(eq(SignedGroupParameters::class.java), any())).thenReturn(
             groupParameters,
@@ -578,9 +619,11 @@ class TransactionBackchainReceiverFlowV1Test {
             .thenReturn(emptyList())
 
         // Dependency
-        whenever(utxoLedgerPersistenceService.findSignedTransactionWithStatus(
-            eq(TX_ID_2),
-            eq(UNVERIFIED))
+        whenever(
+            utxoLedgerPersistenceService.findSignedTransactionWithStatus(
+                eq(TX_ID_2),
+                eq(UNVERIFIED)
+            )
         ).thenReturn(Pair(retrievedTransaction2, UNVERIFIED))
         whenever(retrievedTransaction2.metadata).thenReturn(tx1Metadata)
 
@@ -592,9 +635,11 @@ class TransactionBackchainReceiverFlowV1Test {
             .thenReturn(emptyList())
 
         // Dependency of dependency
-        whenever(utxoLedgerPersistenceService.findSignedTransactionWithStatus(
-            eq(TX_ID_3),
-            eq(UNVERIFIED))
+        whenever(
+            utxoLedgerPersistenceService.findSignedTransactionWithStatus(
+                eq(TX_ID_3),
+                eq(UNVERIFIED)
+            )
         ).thenReturn(Pair(retrievedTransaction3, UNVERIFIED))
         whenever(retrievedTransaction3.metadata).thenReturn(tx1Metadata)
 
@@ -605,8 +650,12 @@ class TransactionBackchainReceiverFlowV1Test {
         whenever(retrievedTransaction3.referenceStateRefs)
             .thenReturn(emptyList())
 
-        whenever(session.sendAndReceive(eq(List::class.java),
-            eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_3))))).thenReturn(
+        whenever(
+            session.sendAndReceive(
+                eq(List::class.java),
+                eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_3)))
+            )
+        ).thenReturn(
             listOf(retrievedTransaction3)
         )
 
@@ -634,12 +683,16 @@ class TransactionBackchainReceiverFlowV1Test {
     @Test
     fun `if transaction status changed to invalid from unverified exception will be thrown`() {
         whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
-            .thenReturn(mapOf(
-                TX_ID_1 to UNVERIFIED,
-            ))
-            .thenReturn(mapOf(
-                TX_ID_1 to INVALID
-            ))
+            .thenReturn(
+                mapOf(
+                    TX_ID_1 to UNVERIFIED,
+                )
+            )
+            .thenReturn(
+                mapOf(
+                    TX_ID_1 to INVALID
+                )
+            )
 
         whenever(session.sendAndReceive(eq(SignedGroupParameters::class.java), any())).thenReturn(
             groupParameters,
@@ -668,9 +721,11 @@ class TransactionBackchainReceiverFlowV1Test {
     @Test
     fun `if transaction status was unverified then it disappeared from the DB it will be retrieved`() {
         whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
-            .thenReturn(mapOf(
-                TX_ID_1 to UNVERIFIED,
-            ))
+            .thenReturn(
+                mapOf(
+                    TX_ID_1 to UNVERIFIED,
+                )
+            )
 
         whenever(session.sendAndReceive(eq(SignedGroupParameters::class.java), any())).thenReturn(
             groupParameters,
@@ -681,8 +736,12 @@ class TransactionBackchainReceiverFlowV1Test {
         whenever(utxoLedgerPersistenceService.findSignedTransactionWithStatus(eq(TX_ID_1), eq(UNVERIFIED)))
             .thenReturn(null)
 
-        whenever(session.sendAndReceive(eq(List::class.java),
-            eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_1))))).thenReturn(
+        whenever(
+            session.sendAndReceive(
+                eq(List::class.java),
+                eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_1)))
+            )
+        ).thenReturn(
             listOf(retrievedTransaction1)
         )
 
@@ -722,9 +781,11 @@ class TransactionBackchainReceiverFlowV1Test {
     @Test
     fun `if transaction status was unverified then its status could not be fetched it will be retrieved`() {
         whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
-            .thenReturn(mapOf(
-                TX_ID_1 to UNVERIFIED,
-            ))
+            .thenReturn(
+                mapOf(
+                    TX_ID_1 to UNVERIFIED,
+                )
+            )
 
         whenever(session.sendAndReceive(eq(SignedGroupParameters::class.java), any())).thenReturn(
             groupParameters,
@@ -744,8 +805,12 @@ class TransactionBackchainReceiverFlowV1Test {
         whenever(retrievedTransaction1.metadata)
             .thenReturn(tx1Metadata)
 
-        whenever(session.sendAndReceive(eq(List::class.java),
-            eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_1))))).thenReturn(
+        whenever(
+            session.sendAndReceive(
+                eq(List::class.java),
+                eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_1)))
+            )
+        ).thenReturn(
             listOf(retrievedTransaction1)
         )
 
@@ -776,9 +841,11 @@ class TransactionBackchainReceiverFlowV1Test {
     @Test
     fun `if transaction status changed to verified from unverified it will not be retrieved`() {
         whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
-            .thenReturn(mapOf(
-                TX_ID_1 to UNVERIFIED,
-            ))
+            .thenReturn(
+                mapOf(
+                    TX_ID_1 to UNVERIFIED,
+                )
+            )
 
         whenever(session.sendAndReceive(eq(SignedGroupParameters::class.java), any())).thenReturn(
             groupParameters,
@@ -808,10 +875,12 @@ class TransactionBackchainReceiverFlowV1Test {
     @Test
     fun `if transaction's dependency status changed to verified from unverified it will not be retrieved`() {
         whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
-            .thenReturn(mapOf(
-                TX_ID_1 to UNVERIFIED,
-                TX_ID_2 to UNVERIFIED
-            ))
+            .thenReturn(
+                mapOf(
+                    TX_ID_1 to UNVERIFIED,
+                    TX_ID_2 to UNVERIFIED
+                )
+            )
 
         whenever(session.sendAndReceive(eq(SignedGroupParameters::class.java), any())).thenReturn(
             groupParameters,
@@ -901,7 +970,10 @@ class TransactionBackchainReceiverFlowV1Test {
         verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_1)))
         verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_2)))
         verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_3)))
-        verify(session, times(3)).sendAndReceive(SignedGroupParameters::class.java, TransactionBackchainRequestV1.GetSignedGroupParameters(groupParametersHash1))
+        verify(
+            session,
+            times(3)
+        ).sendAndReceive(SignedGroupParameters::class.java, TransactionBackchainRequestV1.GetSignedGroupParameters(groupParametersHash1))
         verify(session).send(TransactionBackchainRequestV1.Stop)
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction1, UNVERIFIED)
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction2, UNVERIFIED)
@@ -961,7 +1033,10 @@ class TransactionBackchainReceiverFlowV1Test {
         verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_1)))
         verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_2)))
         verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_3)))
-        verify(session, times(3)).sendAndReceive(SignedGroupParameters::class.java, TransactionBackchainRequestV1.GetSignedGroupParameters(groupParametersHash1))
+        verify(
+            session,
+            times(3)
+        ).sendAndReceive(SignedGroupParameters::class.java, TransactionBackchainRequestV1.GetSignedGroupParameters(groupParametersHash1))
         verify(session).send(TransactionBackchainRequestV1.Stop)
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction1, UNVERIFIED)
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction2, UNVERIFIED)
@@ -1006,7 +1081,10 @@ class TransactionBackchainReceiverFlowV1Test {
         verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_1)))
         verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_2)))
         verify(session, never()).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_3)))
-        verify(session, times(2)).sendAndReceive(SignedGroupParameters::class.java, TransactionBackchainRequestV1.GetSignedGroupParameters(groupParametersHash1))
+        verify(
+            session,
+            times(2)
+        ).sendAndReceive(SignedGroupParameters::class.java, TransactionBackchainRequestV1.GetSignedGroupParameters(groupParametersHash1))
         verify(session).send(TransactionBackchainRequestV1.Stop)
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction1, UNVERIFIED)
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction2, UNVERIFIED)
@@ -1045,7 +1123,10 @@ class TransactionBackchainReceiverFlowV1Test {
         verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_1)))
         verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_2)))
         verify(session, never()).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_3)))
-        verify(session, times(2)).sendAndReceive(SignedGroupParameters::class.java, TransactionBackchainRequestV1.GetSignedGroupParameters(groupParametersHash1))
+        verify(
+            session,
+            times(2)
+        ).sendAndReceive(SignedGroupParameters::class.java, TransactionBackchainRequestV1.GetSignedGroupParameters(groupParametersHash1))
         verify(session).send(TransactionBackchainRequestV1.Stop)
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction1, UNVERIFIED)
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction2, UNVERIFIED)
@@ -1165,7 +1246,6 @@ class TransactionBackchainReceiverFlowV1Test {
         whenever(retrievedTransaction1.metadata).thenReturn(tx1Metadata)
         whenever(tx1Metadata.getMembershipGroupParametersHash()).thenReturn(null)
 
-
         assertThatThrownBy { callTransactionBackchainReceiverFlow(setOf(TX_ID_1)) }
             .isExactlyInstanceOf(IllegalArgumentException::class.java)
 
@@ -1194,7 +1274,7 @@ class TransactionBackchainReceiverFlowV1Test {
        transactions depend on it.
 
        TX5 is not referenced in the test because the dependencies of the transaction are passed into the flow as IDs.
-       */
+         */
         val groupParameters4 = mock<SignedGroupParameters>()
         val groupParameters3 = mock<SignedGroupParameters>()
         val groupParameters2 = mock<SignedGroupParameters>()
@@ -1209,7 +1289,6 @@ class TransactionBackchainReceiverFlowV1Test {
         whenever(groupParameters3.hash).thenReturn(groupParametersHash3)
         whenever(groupParameters2.hash).thenReturn(groupParametersHash2)
         whenever(groupParameters1.hash).thenReturn(groupParametersHash1)
-
 
         val tx4Metadata = mock<TransactionMetadataInternal>()
         val tx3Metadata = mock<TransactionMetadataInternal>()
@@ -1281,15 +1360,26 @@ class TransactionBackchainReceiverFlowV1Test {
 
         session.inOrder {
             verify().sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(transactionId3)))
-            verify().sendAndReceive(SignedGroupParameters::class.java, TransactionBackchainRequestV1.GetSignedGroupParameters(groupParametersHash3))
+            verify().sendAndReceive(
+                SignedGroupParameters::class.java,
+                TransactionBackchainRequestV1.GetSignedGroupParameters(groupParametersHash3)
+            )
             verify().sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(transactionId4)))
-            verify().sendAndReceive(SignedGroupParameters::class.java, TransactionBackchainRequestV1.GetSignedGroupParameters(groupParametersHash4))
+            verify().sendAndReceive(
+                SignedGroupParameters::class.java,
+                TransactionBackchainRequestV1.GetSignedGroupParameters(groupParametersHash4)
+            )
             verify().sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(transactionId1)))
-            verify().sendAndReceive(SignedGroupParameters::class.java, TransactionBackchainRequestV1.GetSignedGroupParameters(groupParametersHash1))
+            verify().sendAndReceive(
+                SignedGroupParameters::class.java,
+                TransactionBackchainRequestV1.GetSignedGroupParameters(groupParametersHash1)
+            )
             verify().sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(transactionId2)))
-            verify().sendAndReceive(SignedGroupParameters::class.java, TransactionBackchainRequestV1.GetSignedGroupParameters(groupParametersHash2))
+            verify().sendAndReceive(
+                SignedGroupParameters::class.java,
+                TransactionBackchainRequestV1.GetSignedGroupParameters(groupParametersHash2)
+            )
             Unit
-
         }
 
         utxoLedgerPersistenceService.inOrder {
@@ -1304,7 +1394,8 @@ class TransactionBackchainReceiverFlowV1Test {
     private fun callTransactionBackchainReceiverFlow(originalTransactionsToRetrieve: Set<SecureHash>): TopologicalSort {
         return TransactionBackchainReceiverFlowV1(
             setOf(SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))),
-            originalTransactionsToRetrieve, session
+            originalTransactionsToRetrieve,
+            session
         ).apply {
             utxoLedgerPersistenceService = this@TransactionBackchainReceiverFlowV1Test.utxoLedgerPersistenceService
             utxoLedgerMetricRecorder = this@TransactionBackchainReceiverFlowV1Test.utxoLedgerMetricRecorder

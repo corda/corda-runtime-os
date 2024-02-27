@@ -13,37 +13,28 @@ group 'net.corda.cli.deployment'
 
 dependencies {
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
-    compileOnly "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    compileOnly "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
+    compileOnly libs.jackson.module.kotlin
+    compileOnly libs.jackson.dataformat.yaml
 
-    compileOnly "org.pf4j:pf4j:$pf4jVersion"
+    compileOnly libs.pf4j
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
-    kapt "org.pf4j:pf4j:$pf4jVersion"
+    kapt libs.pf4j
     kapt "info.picocli:picocli:$picocliVersion"
 
     compileOnly platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-topic-schema:$cordaApiVersion"
-    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    implementation libs.kafka.client
     constraints {
-        implementation("org.xerial.snappy:snappy-java:$xerialSnappyVersion") {
-            because 'Kafka Client uses an older version of Snappy library which is exposed to CVE-2023-34455. ' +
-                    'This might be resolved in the future versions of Kafka Client.'
-        }
-        implementation('org.slf4j:slf4j-api') {
-            version {
-                strictly slf4jV2Version
-            }
-        }
+        implementation(libs.slf4j.v2.api)
     }
 
+    testImplementation libs.bundles.test
     testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.pf4j:pf4j:$pf4jVersion"
+    testImplementation libs.pf4j
     testImplementation "net.corda.cli.host:api:$pluginHostVersion"
-    testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    testImplementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
-    testImplementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    testImplementation libs.jackson.module.kotlin
+    testImplementation libs.jackson.dataformat.yaml
+    testImplementation libs.kafka.client
 }
 
 cliPlugin {

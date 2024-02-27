@@ -1,5 +1,6 @@
 package net.corda.processors.db.internal.reconcile.db
 
+import net.corda.db.connection.manager.DbConnectionManager
 import java.util.stream.Collectors
 import java.util.stream.Stream
 import javax.persistence.EntityManager
@@ -28,9 +29,11 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.spy
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import javax.persistence.EntityManagerFactory
 
 class DbReconcilerReaderTest {
 
@@ -47,13 +50,26 @@ class DbReconcilerReaderTest {
     private val mockVersionedRecord2: VersionedRecord<String, Int> = mock()
     private val realStream1 = Stream.of(mockVersionedRecord1)
     private val realStream2 = Stream.of(mockVersionedRecord2)
-    private val reconciliationContext1: ReconciliationContext = mock {
-        on { getOrCreateEntityManager() } doReturn em1
+
+    private val entityManagerFactory1 = mock<EntityManagerFactory> {
+        on { createEntityManager() } doReturn em1
     }
-    private val reconciliationContext2: ReconciliationContext = mock {
-        on { getOrCreateEntityManager() } doReturn em2
+    
+    private val dbConnectionManager1: DbConnectionManager = mock {
+        on { getClusterEntityManagerFactory() } doReturn entityManagerFactory1
+    }
+    private val reconciliationContext1: ReconciliationContext = spy(ClusterReconciliationContext(dbConnectionManager1))
+
+
+    private val entityManagerFactory2 = mock<EntityManagerFactory> {
+        on { createEntityManager() } doReturn em2
     }
 
+    private val dbConnectionManager2: DbConnectionManager = mock {
+        on { getClusterEntityManagerFactory() } doReturn entityManagerFactory2
+    }
+    private val reconciliationContext2: ReconciliationContext = spy(ClusterReconciliationContext(dbConnectionManager2))
+    
     private val dependencyMock: LifecycleCoordinatorName = LifecycleCoordinatorName("dependency")
     private val dependenciesMock: Set<LifecycleCoordinatorName> = setOf(dependencyMock)
     private val reconciliationContexts = Stream.of(
@@ -237,7 +253,7 @@ class DbReconcilerReaderTest {
         @Test
         fun `Expected services called when get versioned records executed successfully`() {
             // call terminal operation to process stream
-            dbReconcilerReader.getAllVersionedRecords()?.count()
+            dbReconcilerReader.getAllVersionedRecords().count()
 
             verify(reconciliationContextFactory).invoke()
 
@@ -265,7 +281,7 @@ class DbReconcilerReaderTest {
             verify(reconciliationContext2, never()).close()
 
             // run terminal operation on stream to process and close
-            versionedRecordsStream?.collect(Collectors.toList())
+            versionedRecordsStream.collect(Collectors.toList())
 
             verify(transaction1).rollback()
             verify(transaction2).rollback()
@@ -288,45 +304,6 @@ class DbReconcilerReaderTest {
             }
 
             verify(reconciliationContextFactory).invoke()
-            assertThat(ex.message).isEqualTo(errorMsg)
-        }
-
-        @Test
-        fun `Failure to get entity transaction rethrows exception`() {
-            whenever(em1.transaction) doThrow RuntimeException(errorMsg)
-
-            val ex = assertThrows<RuntimeException> {
-                // call terminal operation to process stream
-                dbReconcilerReader.getAllVersionedRecords()?.count()
-            }
-
-            verify(em1).transaction
-            assertThat(ex.message).isEqualTo(errorMsg)
-        }
-
-        @Test
-        fun `Failure to start transaction rethrows exception`() {
-            whenever(transaction1.begin()) doThrow RuntimeException(errorMsg)
-
-            val ex = assertThrows<RuntimeException> {
-                // call terminal operation to process stream
-                dbReconcilerReader.getAllVersionedRecords()?.count()
-            }
-
-            verify(transaction1).begin()
-            assertThat(ex.message).isEqualTo(errorMsg)
-        }
-
-        @Test
-        fun `Failure to get all versioned records rethrows exception`() {
-            whenever(getAllVersionRecordsMock.invoke(eq(reconciliationContext2))) doThrow RuntimeException(errorMsg)
-
-            val ex = assertThrows<RuntimeException> {
-                // call terminal operation to process stream
-                dbReconcilerReader.getAllVersionedRecords()?.count()
-            }
-
-            verify(getAllVersionRecordsMock, times(2)).invoke(any())
             assertThat(ex.message).isEqualTo(errorMsg)
         }
     }

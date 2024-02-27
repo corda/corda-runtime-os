@@ -16,8 +16,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Config.CONFIG_TOPIC
 import net.corda.schema.configuration.BootConfig.BOOT_JDBC_URL
 import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
-import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_JDBC_URL
-import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_TYPE
+import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
@@ -42,25 +41,29 @@ import java.util.concurrent.TimeUnit
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 class ConfigurationReadServiceImplTest {
 
+
     companion object {
         private const val JDBC_URL_DATA = "testDataToTriggerBootDBParamLogic"
         private const val STATE_MANAGER_JDBC_URL_DATA = "testDataToTriggerBootStateManagerDBParamLogic"
-        private const val BOOT_CONFIG_STRING = """
+        private val stateConfig = "$BOOT_STATE_MANAGER.${StateManagerConfig.StateType.FLOW_CHECKPOINT}"
+        private val stateManagerTypeKey = "$stateConfig.${StateManagerConfig.TYPE}"
+        private val stateManagerJdbcKey = "$stateConfig.${StateManagerConfig.Database.JDBC_URL}"
+        private val BOOT_CONFIG_STRING = """
             $INSTANCE_ID = 1
             $BUS_TYPE = DATABASE
             $BOOT_JDBC_URL = $JDBC_URL_DATA
             $BOOT_MAX_ALLOWED_MSG_SIZE = 1000000000
-            $BOOT_STATE_MANAGER_TYPE = DATABASE
-            $BOOT_STATE_MANAGER_JDBC_URL = $STATE_MANAGER_JDBC_URL_DATA
+            $stateManagerTypeKey = Database
+            $stateManagerJdbcKey = $STATE_MANAGER_JDBC_URL_DATA
         """
 
         private const val DB_CONFIG_STRING = """
             $JDBC_URL = $JDBC_URL_DATA
         """
 
-        private const val STATE_MANAGER_CONFIG_STRING = """
-            ${StateManagerConfig.TYPE} = "DATABASE"
-            ${StateManagerConfig.Database.JDBC_URL} = $STATE_MANAGER_JDBC_URL_DATA
+        private val STATE_MANAGER_CONFIG_STRING = """
+            ${StateManagerConfig.StateType.FLOW_CHECKPOINT}.${StateManagerConfig.TYPE} = "Database"
+            ${StateManagerConfig.StateType.FLOW_CHECKPOINT}.${StateManagerConfig.Database.JDBC_URL} = $STATE_MANAGER_JDBC_URL_DATA
         """
 
         private const val TIMEOUT = 10000L
@@ -138,10 +141,20 @@ class ConfigurationReadServiceImplTest {
         latch.await(TIMEOUT, TimeUnit.MILLISECONDS)
 
         assertEquals(expectedKeys, receivedKeys, "Incorrect keys")
-        assertEquals(expectedConfig[BOOT_CONFIG], receivedConfig[BOOT_CONFIG], "Incorrect config for key $BOOT_CONFIG")
-        assertEquals(expectedConfig[FLOW_CONFIG], receivedConfig[FLOW_CONFIG], "Incorrect config for key $FLOW_CONFIG")
-        assertEquals(expectedConfig[DB_CONFIG], receivedConfig[DB_CONFIG], "Incorrect config for key $DB_CONFIG")
-        assertEquals(expectedConfig[STATE_MANAGER_CONFIG], receivedConfig[STATE_MANAGER_CONFIG], "Incorrect config for key $STATE_MANAGER_CONFIG")
+        assertEquals(
+            expectedConfig[BOOT_CONFIG],
+            receivedConfig[BOOT_CONFIG],
+            "Incorrect config for key $BOOT_CONFIG")
+        assertEquals(
+            expectedConfig[FLOW_CONFIG],
+            receivedConfig[FLOW_CONFIG],
+            "Incorrect config for key $FLOW_CONFIG")
+        assertEquals(
+            expectedConfig[DB_CONFIG], receivedConfig[DB_CONFIG], "Incorrect config for key $DB_CONFIG")
+        assertEquals(
+            expectedConfig[STATE_MANAGER_CONFIG],
+            receivedConfig[STATE_MANAGER_CONFIG],
+            "Incorrect config for key $STATE_MANAGER_CONFIG")
 
         // Cleanup
         reg.close()

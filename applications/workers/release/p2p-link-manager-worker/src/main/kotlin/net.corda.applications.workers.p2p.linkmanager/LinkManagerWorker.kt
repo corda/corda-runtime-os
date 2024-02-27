@@ -13,6 +13,7 @@ import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
+import net.corda.schema.configuration.BootConfig.BOOT_WORKER_SERVICE
 import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
 import net.corda.web.api.WebServer
@@ -21,6 +22,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
+import picocli.CommandLine.Option
 
 @Component
 @Suppress("LongParameterList")
@@ -55,7 +57,12 @@ class LinkManagerWorker @Activate constructor(
 
         val params = WorkerHelpers.getParams(args, LinkManagerWorkerParams())
         if (WorkerHelpers.printHelpOrVersion(params.defaultParams, this::class.java, shutDownService)) return
-        Metrics.configure(webServer, this.javaClass.simpleName)
+        Metrics.configure(
+            webServer,
+            this.javaClass.simpleName,
+            params.defaultParams.metricsKeepNames?.toRegex(),
+            params.defaultParams.metricsDropLabels?.toRegex()
+        )
         Health.configure(webServer, lifecycleRegistry)
 
         configureTracing("P2P Link Manager Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
@@ -63,7 +70,8 @@ class LinkManagerWorker @Activate constructor(
         val config = WorkerHelpers.getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
-            configurationValidatorFactory.createConfigValidator()
+            configurationValidatorFactory.createConfigValidator(),
+            listOf(WorkerHelpers.createConfigFromParams(BOOT_WORKER_SERVICE, params.workerEndpoints)),
         )
         webServer.start(params.defaultParams.workerServerPort)
         linkManagerProcessor.start(config)
@@ -76,8 +84,16 @@ class LinkManagerWorker @Activate constructor(
         shutdownTracing()
     }
 }
+
 /** Additional parameters for the member worker are added here. */
 private class LinkManagerWorkerParams {
     @CommandLine.Mixin
     var defaultParams = DefaultWorkerParams()
+
+    @Option(
+        names = ["--serviceEndpoint"],
+        description = ["Internal REST endpoints for Corda workers"],
+        required = true,
+    )
+    val workerEndpoints: Map<String, String> = emptyMap()
 }

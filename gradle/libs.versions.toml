@@ -1,0 +1,148 @@
+[versions]
+kotlinVersion = "1.8.21"
+
+apacheCommonsCodecVersion="1.16.1"
+apacheCommonsCompressVersion = "1.26.0"
+bouncycastleVersion = "1.77"
+braveVersion = "6.0.1"
+caffeineVersion = "3.1.8"
+guavaVersion = "33.0.0-jre"
+hikariCpVersion = "5.1.0"
+jacksonVersion = "2.16.1"
+javalinVersion = "4.6.8"
+jcipAnnotationsVersion = "1.0_2"
+# This version of Jetty must be the same major version as used by Javalin, please see above.
+# Once Javalin version is upgraded to the latest, this override may be removed.
+jettyVersion = "9.4.54.v20240208"
+micrometerVersion = "1.12.3"
+nimbusVersion = "11.9.1"
+kafkaClientVersion = "3.6.1_1"
+kubernetesClientVersion = "6.10.0"
+log4jVersion = "2.22.1"
+mssqlDriverVersion = "11.2.3.jre17"
+postgresDriverVersion = "42.7.2"
+# SLF4J cannot be ugraded to 2.x due to CorDapps requiring the 1.7 <= x < 2.0
+slf4jVersion = { strictly = "1.7.36" }
+# The CLI plugins use SLF4J version 2 because PF4j requires it
+# Since slf4jVersion is "strictly" enforced from `corda-api`, in order to override version we need to specify
+# version strictly here as well
+slf4jV2Version = { strictly = "2.0.6" }
+snakeyamlVersion = "2.2"
+# Please also update SWAGGERUI.version in net.corda.rest.server.impl.internal.OptionalDependency
+swaggeruiVersion = "5.10.3"
+# Note: We cannot go to the higher versions as they transitively depend on SLF4J 2.X
+swaggerVersion = "2.2.16"
+#Snappy used for compression
+snappyJavaVersion="1.1.10.5"
+typeSafeConfigVersion = "1.4.3"
+okHttpVersion = { strictly = "4.9.2" }
+okioVersion = { strictly = "3.4.0" }
+pf4jVersion = "3.10.0"
+unirestVersion = "3.14.5"
+zipkinCoreVersion = "2.27.1"
+zipkinReporterVersion = "3.3.0"
+
+# Testing
+assertjVersion = "3.25.3"
+junitVersion = "5.10.2"
+mockitoVersion = "5.10.0"
+mockitoKotlinVersion = "5.2.1"
+
+# Plugins
+gradleDataVersion = "1.12.1"
+gradleEnterpriseVersion = "3.16.1"
+detektVersion = "1.23.5"
+dependencyCheckVersion = "0.51.0"
+snykVersion = "0.5.1"
+cyclonedxVersion = "1.8.2"
+dokkaVersion = "1.9.10"
+testLoggerVersion = "4.0.0"
+
+[libraries]
+apache-commons-codec = { group = "commons-codec", name = "commons-codec", version.ref = "apacheCommonsCodecVersion" }
+apache-commons-compress = { group = "org.apache.commons", name = "commons-compress", version.ref = "apacheCommonsCompressVersion" }
+assertj-core = { group = "org.assertj", name = "assertj-core", version.ref = "assertjVersion" }
+bouncycastle-pkix = { group = "org.bouncycastle", name = "bcpkix-jdk18on", version.ref = "bouncycastleVersion" }
+bouncycastle-prov = { group = "org.bouncycastle", name = "bcprov-jdk18on", version.ref = "bouncycastleVersion" }
+brave-context-slf4j = { group = "io.zipkin.brave", name = "brave-context-slf4j", version.ref = "braveVersion" }
+brave-instrumentation-servlet = { group = "io.zipkin.brave", name = "brave-instrumentation-servlet", version.ref = "braveVersion" }
+caffeine = { group = "com.github.ben-manes.caffeine", name = "caffeine", version.ref = "caffeineVersion" }
+guava = { group = "com.google.guava", name = "guava", version.ref = "guavaVersion" }
+hikaricp = { group = "com.zaxxer", name = "HikariCP", version.ref = "hikariCpVersion" }
+jackson-annotations = { group = "com.fasterxml.jackson.core", name = "jackson-annotations", version.ref = "jacksonVersion" }
+jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jacksonVersion" }
+jackson-core = { group = "com.fasterxml.jackson.core", name = "jackson-core", version.ref = "jacksonVersion" }
+jackson-datatype-jsr310 = { group = "com.fasterxml.jackson.datatype", name = "jackson-datatype-jsr310", version.ref = "jacksonVersion" }
+jackson-dataformat-yaml = { group = "com.fasterxml.jackson.dataformat", name = "jackson-dataformat-yaml", version.ref = "jacksonVersion" }
+jackson-module-kotlin = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version.ref = "jacksonVersion" }
+javalin = { group = "io.javalin", name = "javalin-osgi", version.ref = "javalinVersion" }
+jcip-annotations = { group = "org.apache.servicemix.bundles", name = "org.apache.servicemix.bundles.jcip-annotations", version.ref = "jcipAnnotationsVersion" }
+jetty-server = { group = "org.eclipse.jetty", name = "jetty-server", version.ref = "jettyVersion" }
+jetty-xml = { group = "org.eclipse.jetty", name = "jetty-xml", version.ref = "jettyVersion" }
+jetty-websocket-servlet = { group = "org.eclipse.jetty.websocket", name = "websocket-servlet", version.ref = "jettyVersion" }
+jetty-websocket-server = { group = "org.eclipse.jetty.websocket", name = "websocket-server", version.ref = "jettyVersion" }
+jetty-websocket-client = { group = "org.eclipse.jetty.websocket", name = "websocket-client", version.ref = "jettyVersion" }
+jetty-http2-server = { group = "org.eclipse.jetty.http2", name = "http2-server", version.ref = "jettyVersion" }
+junit = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junitVersion" }
+junit-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "junitVersion" }
+junit-params = { group = "org.junit.jupiter", name = "junit-jupiter-params", version.ref = "junitVersion" }
+junit-engine = { group = "org.junit.jupiter", name = "junit-jupiter-engine", version.ref = "junitVersion" }
+junit-platform = { group = "org.junit.platform", name = "junit-platform-launcher" }
+kafka-client = { group = "org.apache.servicemix.bundles", name = "org.apache.servicemix.bundles.kafka-clients", version.ref = "kafkaClientVersion" }
+kotlin-stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version.ref = "kotlinVersion" }
+kotlin-stdlib-common = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib-common", version.ref = "kotlinVersion" }
+kotlin-stdlib-jdk7 = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk7", version.ref = "kotlinVersion" }
+kotlin-stdlib-jdk8 = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8", version.ref = "kotlinVersion" }
+kotlin-osgi-bundle = { group = "org.jetbrains.kotlin", name = "kotlin-osgi-bundle", version.ref = "kotlinVersion" }
+kotlin-reflect= { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlinVersion" }
+kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.ref = "kotlinVersion" }
+kubernetes-client = { group = "io.fabric8", name = "kubernetes-client", version.ref = "kubernetesClientVersion" }
+log4j-core = { group = "org.apache.logging.log4j", name = "log4j-core", version.ref = "log4jVersion" }
+log4j-layout-json = { group = "org.apache.logging.log4j", name = "log4j-layout-template-json", version.ref = "log4jVersion" }
+log4j-slf4j = { group = "org.apache.logging.log4j", name = "log4j-slf4j-impl", version.ref = "log4jVersion" }
+log4j-slf4j2 = { group = "org.apache.logging.log4j", name = "log4j-slf4j2-impl", version.ref = "log4jVersion" }
+micrometer-core = { group = "io.micrometer", name = "micrometer-core", version.ref = "micrometerVersion" }
+micrometer-registry-prometheus = { group = "io.micrometer", name = "micrometer-registry-prometheus", version.ref = "micrometerVersion" }
+mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockitoVersion" }
+mockito-kotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version.ref = "mockitoKotlinVersion" }
+mssql-jdbc = { group = "com.microsoft.sqlserver", name = "mssql-jdbc", version.ref = "mssqlDriverVersion" }
+nimbus-sdk = { group = "com.nimbusds", name = "oauth2-oidc-sdk", version.ref = "nimbusVersion" }
+pf4j = { group = "org.pf4j", name = "pf4j", version.ref = "pf4jVersion" }
+postgresql-jdbc = { group = "org.postgresql", name = "postgresql", version.ref = "postgresDriverVersion" }
+slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4jVersion" }
+slf4j-jul = { group = "org.slf4j", name = "jul-to-slf4j", version.ref = "slf4jVersion" }
+slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4jVersion" }
+slf4j-v2-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4jV2Version" }
+snakeyaml = { group = "org.yaml", name = "snakeyaml", version.ref = "snakeyamlVersion" }
+typesafe-config = { group = "com.typesafe", name = "config", version.ref = "typeSafeConfigVersion" }
+unirest-java = { group = "com.konghq", name = "unirest-java", version.ref = "unirestVersion"}
+unirest-objectmapper-jackson = { group = "com.konghq", name = "unirest-objectmapper-jackson", version.ref = "unirestVersion" }
+okio = { group = "com.squareup.okio", name = "okio", version.ref = "okioVersion" }
+okHttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okHttpVersion" }
+swagger-core = { group = "io.swagger.core.v3", name = "swagger-core", version.ref = "swaggerVersion" }
+swagger-ui = { group = "org.webjars", name = "swagger-ui", version.ref = "swaggeruiVersion" }
+snappy-java = { group = "org.xerial.snappy", name = "snappy-java", version.ref = "snappyJavaVersion" }
+zipkin-core = { group = "io.zipkin.zipkin2", name = "zipkin", version.ref = "zipkinCoreVersion" }
+zipkin-sender-urlconnection = { group = "io.zipkin.reporter2", name = "zipkin-sender-urlconnection", version.ref = "zipkinReporterVersion" }
+zipkin-reporter-brave = { group = "io.zipkin.reporter2", name = "zipkin-reporter-brave", version.ref = "zipkinReporterVersion" }
+
+gradle-enterprise = { group = "com.gradle", name = "gradle-enterprise-gradle-plugin", version.ref = "gradleEnterpriseVersion" }
+
+[bundles]
+bouncycastle = ["bouncycastle-prov", "bouncycastle-pkix"]
+jetty = ["jetty-server", "jetty-xml", "jetty-websocket-servlet", "jetty-websocket-server"]
+test = ["junit", "junit-api", "junit-params", "mockito-core", "mockito-kotlin", "assertj-core", "kotlin-test"]
+test-runtime = ["junit-engine", "junit-platform"]
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlinVersion" }
+kotlin-allopen = { id = "org.jetbrains.kotlin.plugin.allopen", version.ref = "kotlinVersion" }
+kotlin-jpa = { id = "org.jetbrains.kotlin.plugin.jpa", version.ref = "kotlinVersion" }
+gradle-data = { id = "com.gradle.common-custom-user-data-gradle-plugin", version.ref = "gradleDataVersion" }
+gradle-enterprise = { id = "com.gradle.enterprise", version.ref = "gradleEnterpriseVersion" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detektVersion" }
+dependency-check-versions = { id = "com.github.ben-manes.versions", version.ref = "dependencyCheckVersion" }
+snyk = { id = "io.snyk.gradle.plugin.snykplugin", version.ref = "snykVersion" }
+cyclonedx-bom = { id = "org.cyclonedx.bom", version.ref = "cyclonedxVersion" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokkaVersion" }
+test-logger = { id = "com.adarshr.test-logger", version.ref = "testLoggerVersion" }

@@ -9,7 +9,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "com.esotericsoftware:kryo:$kryoVersion"
-    implementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    implementation libs.mockito.kotlin
 
     implementation project(":libs:serialization:serialization-kryo")
     implementation project(":libs:serialization:serialization-checkpoint-api")

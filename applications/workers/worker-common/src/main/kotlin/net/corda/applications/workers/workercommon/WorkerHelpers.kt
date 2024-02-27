@@ -143,15 +143,12 @@ class WorkerHelpers {
             val secretsConfig =
                 defaultParams.secrets.mapKeys { (key, _) -> "${BootConfig.BOOT_SECRETS}.${key.trim()}" }
 
-            val stateManagerConfig =
-                defaultParams.stateManagerParams.mapKeys { (key, _) -> "${BootConfig.BOOT_STATE_MANAGER}.${key.trim()}" }
+            val builtConfig = ConfigFactory.parseMap(messagingParams + defaultParamsMap + secretsConfig)
 
-            val builtConfig = ConfigFactory.parseMap(messagingParams + defaultParamsMap + secretsConfig + stateManagerConfig)
-
-            val config = extraConfigs.mergeOver(builtConfig)
+            val configWithExtras = extraConfigs.mergeOver(builtConfig)
 
             // merge with all files
-            val configWithFiles = defaultParams.configFiles.reversed().fold(config) { acc, next ->
+            val configWithFiles = defaultParams.configFiles.reversed().fold(configWithExtras) { acc, next ->
                 val fileConfig = ConfigFactory.parseFile(next.toFile())
                 acc.withFallback(fileConfig)
             }.withFallback(ConfigFactory.parseMap(defaultParamsDefaultValuesMap))
@@ -159,7 +156,8 @@ class WorkerHelpers {
             val smartConfigFactory = SmartConfigFactory
                 .createWith(
                     configWithFiles.getConfig(BootConfig.BOOT_SECRETS).atPath(BootConfig.BOOT_SECRETS),
-                    secretsServiceFactoryResolver.findAll())
+                    secretsServiceFactoryResolver.findAll()
+                )
 
             val bootConfig = smartConfigFactory.create(configWithFiles.withoutPath(BootConfig.BOOT_SECRETS))
             validator.validate(ConfigKeys.BOOT_CONFIG, bootConfig, loadResource(BOOT_CONFIG_PATH), true)
@@ -231,8 +229,9 @@ class WorkerHelpers {
 
             val arguments = processInfo.arguments()
             if (arguments.isPresent) {
-                arguments.get().map { arg -> SENSITIVE_ARGS.firstOrNull { arg.trim().startsWith(it) }
-                    .let { prefix -> if (prefix == null) arg else "$prefix=[REDACTED]" }
+                arguments.get().map { arg ->
+                    SENSITIVE_ARGS.firstOrNull { arg.trim().startsWith(it) }
+                        .let { prefix -> if (prefix == null) arg else "$prefix=[REDACTED]" }
                 }.forEachIndexed { i, redactedArg -> info("argument $i, $redactedArg") }
             } else {
                 info("arguments: Null")

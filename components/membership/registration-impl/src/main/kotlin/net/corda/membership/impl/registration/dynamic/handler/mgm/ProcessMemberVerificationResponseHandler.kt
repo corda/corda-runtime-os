@@ -12,6 +12,7 @@ import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.impl.registration.RegistrationLogger
 import net.corda.membership.impl.registration.VerificationResponseKeys.FAILURE_REASONS
 import net.corda.membership.impl.registration.VerificationResponseKeys.VERIFIED
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
@@ -19,12 +20,12 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
+import net.corda.membership.lib.VersionedMessageBuilder.retrieveRegistrationStatusMessage
 import net.corda.membership.lib.approval.RegistrationRule
 import net.corda.membership.lib.approval.RegistrationRulesEngine
-import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
-import net.corda.membership.lib.VersionedMessageBuilder.retrieveRegistrationStatusMessage
 import net.corda.membership.lib.deserializeContext
 import net.corda.membership.lib.registration.DECLINED_REASON_FOR_USER_INTERNAL_ERROR
+import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.toMap
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
@@ -75,12 +76,20 @@ internal class ProcessMemberVerificationResponseHandler(
         key: String,
         command: ProcessMemberVerificationResponse
     ): RegistrationHandlerResult {
-        if(processingShouldBeSkipped(state)) {
+        if (processingShouldBeSkipped(state)) {
             return RegistrationHandlerResult(state, emptyList(), skipped = true)
         }
         val registrationId = state!!.registrationId
         val mgm = state.mgm
         val member = state.registeringMember
+
+        val registrationLogger = RegistrationLogger(logger)
+            .setRegistrationId(registrationId)
+            .setMember(member)
+            .setMgm(member)
+
+        registrationLogger.info("Processing member verification response.")
+
         val messages = try {
             val success = command.verificationResponse.payload.items.firstOrNull {
                 it.key == VERIFIED
@@ -89,32 +98,34 @@ internal class ProcessMemberVerificationResponseHandler(
                 val reasons = command.verificationResponse.payload.items
                     .filter { it.key == FAILURE_REASONS }
                     .map { it.value }
-                val message = "Could not verify registration request: '$registrationId' - $reasons"
+                val message = "Could not verify registration request. $reasons"
                 throw CordaRuntimeException(message)
             }
             if (memberTypeChecker.isMgm(member)) {
                 throw CordaRuntimeException(
-                    "Member ${member.x500Name} is an MGM and can not register."
+                    "Member is an MGM and cannot register."
                 )
             }
             if (!memberTypeChecker.isMgm(mgm)) {
                 throw CordaRuntimeException(
-                    "Member ${mgm.x500Name} is not an MGM and can not process member's registration."
+                    "Member is not an MGM and cannot process member's registration."
                 )
             }
 
             val groupReader = membershipGroupReaderProvider.getGroupReader(mgm.toCorda())
-            val status = getNextRegistrationStatus(mgm.toCorda(), member.toCorda(), registrationId, groupReader)
+            val status = getNextRegistrationStatus(mgm.toCorda(), member.toCorda(), registrationId, groupReader, registrationLogger)
             val pendingInfo = groupReader.lookup(member.toCorda().x500Name, MembershipStatusFilter.PENDING)
-                ?: throw CordaRuntimeException("Could not find pending information " +
-                        "for member with holding ID '${member.toCorda().shortHash}'.")
+                ?: throw CordaRuntimeException("Could not find pending information for member.")
             val setRegistrationRequestStatusCommands = membershipPersistenceClient.setRegistrationRequestStatus(
                 mgm.toCorda(),
                 registrationId,
                 status
             ).createAsyncCommands()
             val statusUpdateMessage = retrieveRegistrationStatusMessage(
-                pendingInfo.platformVersion, registrationId, status.name, null
+                pendingInfo.platformVersion,
+                registrationId,
+                status.name,
+                null
             )
             val persistStatusMessage = if (statusUpdateMessage != null) {
                 p2pRecordsFactory.createAuthenticatedMessageRecord(
@@ -131,14 +142,16 @@ internal class ProcessMemberVerificationResponseHandler(
                     key,
                     RegistrationCommand(ApproveRegistration())
                 )
-            } else null
+            } else {
+                null
+            }
 
             listOfNotNull(
                 persistStatusMessage,
                 approveRecord,
             ) + setRegistrationRequestStatusCommands
         } catch (e: Exception) {
-            logger.warn("Could not process member verification response for registration request: '$registrationId'", e)
+            registrationLogger.warn("Could not process member verification response for registration request.", e)
             listOf(
                 Record(
                     REGISTRATION_COMMAND_TOPIC,
@@ -157,6 +170,7 @@ internal class ProcessMemberVerificationResponseHandler(
         member: HoldingIdentity,
         registrationId: String,
         groupReader: MembershipGroupReader,
+        registrationLogger: RegistrationLogger
     ): RegistrationStatus {
         val registrationRequest = membershipQueryClient
             .queryRegistrationRequest(mgm, registrationId)
@@ -164,8 +178,7 @@ internal class ProcessMemberVerificationResponseHandler(
         val proposedMemberInfo = registrationRequest
             ?.memberProvidedContext?.data?.array()?.deserializeContext(deserializer)
             ?: throw CordaRuntimeException(
-                "Could not read the proposed MemberInfo for registration request " +
-                        "(ID=$registrationId) submitted by ${member.x500Name}."
+                "Could not read the proposed MemberInfo for registration request."
             )
         val registrationContext = registrationRequest.registrationContext.data.array().deserializeContext(deserializer)
 
@@ -202,7 +215,7 @@ internal class ProcessMemberVerificationResponseHandler(
             membershipPersistenceClient.consumePreAuthToken(
                 mgm,
                 member.x500Name,
-                parsePreAuthToken(it)
+                parsePreAuthToken(it, registrationLogger)
             ).getOrThrow()
         }
 
@@ -218,13 +231,14 @@ internal class ProcessMemberVerificationResponseHandler(
         command: ProcessMemberVerificationResponse
     ) = state?.mgm
 
-    private fun parsePreAuthToken(input: String): UUID {
+    private fun parsePreAuthToken(input: String, registrationLogger: RegistrationLogger): UUID {
         return try {
             UUID.fromString(input)
         } catch (e: IllegalArgumentException) {
-            logger.warn(
+            registrationLogger.warn(
                 "Pre-auth token is incorrectly formatted and should have been handled when starting the " +
-                        "registration.", e
+                    "registration.",
+                e
             )
             throw InvalidPreAuthTokenException("Pre-auth token provided is not valid. A valid UUID is expected.")
         }
@@ -238,13 +252,14 @@ internal class ProcessMemberVerificationResponseHandler(
     private fun processingShouldBeSkipped(state: RegistrationState?): Boolean = if (state == null) {
         logger.info(
             "${ProcessMemberVerificationResponse::class.java.simpleName} command ignored. " +
-                    "Registration state is null indicating that registration processing has completed."
+                "Registration state is null indicating that registration processing has completed."
         )
         true
-    } else if(isCommandPreviouslyProcessed(state)) {
+    } else if (isCommandPreviouslyProcessed(state)) {
         logger.info(
             "${ProcessMemberVerificationResponse::class.java.simpleName} command ignored. " +
-                    "Command was processed already.")
+                "Command was processed already."
+        )
         true
     } else {
         false

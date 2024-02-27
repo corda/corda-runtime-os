@@ -2,6 +2,13 @@
 {{- printf "%s-nginx" . }}
 {{- end }}
 
+{{- define "corda.nginxClusterUniqueName" -}}
+{{- $workerName := index . 1 }}
+{{- with ( index . 0 ) }}
+{{- printf "%s-%s" .Release.Namespace ( include "corda.nginxName" $workerName ) }}
+{{- end }}
+{{- end }}
+
 {{- define "corda.nginxComponent" -}}
 {{ printf "%s-nginx" . }}
 {{- end }}
@@ -54,6 +61,37 @@ metadata:
   name: {{ include "corda.nginxName" $workerName | quote }}
 data:
   allow-snippet-annotations: "false"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    {{- include "corda.nginxLabels" ( list . $workerName ) | nindent 4 }}
+  name: {{ include "corda.nginxClusterUniqueName" ( list . $workerName ) | quote }}
+rules:
+  - apiGroups:
+      - networking.k8s.io
+    resources:
+      - ingressclasses
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    {{- include "corda.nginxLabels" ( list . $workerName ) | nindent 4 }}
+  name: {{ include "corda.nginxClusterUniqueName" ( list . $workerName ) | quote }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "corda.nginxClusterUniqueName" ( list . $workerName ) | quote }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "corda.nginxName" $workerName | quote }}
+    namespace: {{ .Release.Namespace | quote }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -192,6 +230,7 @@ spec:
     metadata:
       labels:
         {{- include "corda.nginxLabels" ( list . $workerName ) | nindent 8 }}
+        {{- include "corda.workerCommonPodLabels" . | nindent 8 }}
       {{- with .Values.annotations }}
       annotations:
         {{- toYaml . | nindent 8 }}

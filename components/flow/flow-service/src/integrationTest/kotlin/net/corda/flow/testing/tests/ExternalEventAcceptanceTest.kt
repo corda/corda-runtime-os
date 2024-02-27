@@ -289,6 +289,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
+    @Suppress("MaxLineLength")
     @Test
     fun `Given a 'transient' error response has been received receiving a successful response resumes the flow and does not resend the event`() {
         given {

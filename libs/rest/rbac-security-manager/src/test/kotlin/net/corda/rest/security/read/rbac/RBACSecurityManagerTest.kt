@@ -1,9 +1,8 @@
 package net.corda.rest.security.read.rbac
 
-import javax.security.auth.login.FailedLoginException
-import net.corda.rest.security.read.Password
 import net.corda.libs.permission.PermissionValidator
 import net.corda.libs.permissions.manager.BasicAuthenticationService
+import net.corda.rest.security.read.Password
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -11,6 +10,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import javax.security.auth.login.FailedLoginException
 
 class RBACSecurityManagerTest {
 

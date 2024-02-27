@@ -17,7 +17,7 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 class GroupParametersWriterServiceDummy @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-): GroupParametersWriterService {
+) : GroupParametersWriterService {
     private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName) { event, coordinator ->
         if (event is StartEvent) {
             coordinator.updateStatus(LifecycleStatus.UP)

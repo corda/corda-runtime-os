@@ -6,11 +6,15 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
+import net.corda.db.admin.impl.ClassloaderChangeLog
+import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.DBConfigurationException
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
+import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
-import net.corda.db.testkit.TestDbInfo
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock
@@ -27,10 +31,14 @@ import net.corda.uniqueness.utils.UniquenessAssertions.assertUniqueCommitTimesta
 import net.corda.uniqueness.utils.UniquenessAssertions.assertUnknownInputStateResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertUnknownReferenceStateResponse
 import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.apache.avro.AvroRuntimeException
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertAll
+import org.junit.jupiter.api.Assertions.assertIterableEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -45,8 +53,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
-import java.util.LinkedList
-import java.util.UUID
+import java.util.*
 import javax.persistence.EntityManagerFactory
 import kotlin.test.assertEquals
 
@@ -55,11 +62,14 @@ import kotlin.test.assertEquals
  * and an associated JPA compatible DB. This mostly duplicates the test cases of
  * [UniquenessCheckerImplTests].
  */
-// TODO: Find an elegant way to avoid duplication of unit tests
+// TODO - Find an elegant way to avoid duplication of unit tests
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class UniquenessCheckerImplDBIntegrationTests {
 
-    private val clusterDbConfig = DbUtils.getEntityManagerConfiguration("clusterdb")
+    private val clusterDbConfig = DbUtils.getEntityManagerConfiguration(
+        inMemoryDbName = "clusterdb",
+        showSql = false
+    )
 
     private val baseTime: Instant = Instant.EPOCH
 
@@ -70,6 +80,7 @@ class UniquenessCheckerImplDBIntegrationTests {
         "C=GB, L=London, O=Alice", groupId)
     private val defaultHoldingIdentityDbName =
         VirtualNodeDbType.UNIQUENESS.getSchemaName(defaultHoldingIdentity.shortHash)
+    private val defaultHoldingIdentityDbId = UUID.randomUUID()
     private val defaultHoldingIdentityDb: EntityManagerFactory
 
     // Additional holding identities
@@ -77,12 +88,14 @@ class UniquenessCheckerImplDBIntegrationTests {
         "C=GB, L=London, O=Bob", groupId)
     private val bobHoldingIdentityDbName =
         VirtualNodeDbType.UNIQUENESS.getSchemaName(bobHoldingIdentity.shortHash)
+    private val bobHoldingIdentityDbId = UUID.randomUUID()
     private val bobHoldingIdentityDb: EntityManagerFactory
 
     private val charlieHoldingIdentity = createTestHoldingIdentity(
         "C=GB, L=London, O=Charlie", groupId)
     private val charlieHoldingIdentityDbName =
         VirtualNodeDbType.UNIQUENESS.getSchemaName(charlieHoldingIdentity.shortHash)
+    private val charlieHoldingIdentityDbId = UUID.randomUUID()
     private val charlieHoldingIdentityDb: EntityManagerFactory
 
     // Holding id that has no associated uniqueness DB
@@ -90,6 +103,7 @@ class UniquenessCheckerImplDBIntegrationTests {
         "C=GB, L=London, O=Nobody", groupId)
     private val noDbHoldingIdentityDbName =
         VirtualNodeDbType.UNIQUENESS.getSchemaName(noDbHoldingIdentity.shortHash)
+    private val noDbHoldingIdentityDbId = UUID.randomUUID()
 
     private val originatorX500Name = "C=GB, L=London, O=David"
 
@@ -155,30 +169,75 @@ class UniquenessCheckerImplDBIntegrationTests {
      * Creates an in-memory database and applies the relevant migration scripts
      */
     init {
+        val persistenceUnitName = "uniq_test_default"
         // Each DB uses both a different db name and schema name, as HSQLDB does not appear to
         // respect schema name
-        defaultHoldingIdentityDb = JPABackingStoreTestUtilities.setupUniquenessDatabase(
-            TestDbInfo(
-                "uniq_test_default",
-                defaultHoldingIdentityDbName,
-                rewriteBatchedInserts = true
-            )
+
+        // Create users and schemas
+        val defaultEMConfig = DbUtils.getEntityManagerConfiguration(
+            dbUser = "user_$defaultHoldingIdentityDbName",
+            schemaName = defaultHoldingIdentityDbName,
+            createSchema = true,
+            showSql = false,
+            rewriteBatchedInserts = true,
         )
 
-        bobHoldingIdentityDb =  JPABackingStoreTestUtilities.setupUniquenessDatabase(
-            TestDbInfo(
-                "uniq_test_bob",
-                bobHoldingIdentityDbName,
-                rewriteBatchedInserts = true
-            )
+        val bobEMConfig = DbUtils.getEntityManagerConfiguration(
+            dbUser = "user_$bobHoldingIdentityDbName",
+            schemaName = bobHoldingIdentityDbName,
+            createSchema = true,
+            showSql = false,
+            rewriteBatchedInserts = true,
         )
 
-        charlieHoldingIdentityDb = JPABackingStoreTestUtilities.setupUniquenessDatabase(
-            TestDbInfo(
-                "uniq_test_charlie",
-                charlieHoldingIdentityDbName,
-                rewriteBatchedInserts = true
-            )
+        val charlieEMConfig = DbUtils.getEntityManagerConfiguration(
+            dbUser = "user_$charlieHoldingIdentityDbName",
+            schemaName = charlieHoldingIdentityDbName,
+            createSchema = true,
+            showSql = false,
+            rewriteBatchedInserts = true,
+        )
+
+        // Populate schemas with tables
+        val resourceSubPath = "vnode-uniqueness"
+        val uniquenessSchema = ClassloaderChangeLog.ChangeLogResourceFiles(
+            DbSchema::class.java.packageName,
+            listOf("net/corda/db/schema/$resourceSubPath/db.changelog-master.xml"),
+            DbSchema::class.java.classLoader
+        )
+
+        val lbm = LiquibaseSchemaMigratorImpl()
+        val cl = ClassloaderChangeLog(linkedSetOf(uniquenessSchema))
+        listOf(
+            Pair(defaultEMConfig.dataSource, defaultHoldingIdentityDbName),
+            Pair(bobEMConfig.dataSource, bobHoldingIdentityDbName),
+            Pair(charlieEMConfig.dataSource, charlieHoldingIdentityDbName)
+        ).forEach { (ds, schemaName) ->
+            ds.connection.use {
+                it.prepareStatement("SET search_path TO $schemaName;").execute()
+                it.commit()
+                lbm.updateDb(it, cl)
+            }
+        }
+
+        val emff = EntityManagerFactoryFactoryImpl()
+        val jpaBackingStoreEntities = JPABackingStoreTestUtilities.getJPABackingStoreEntities().toList()
+        defaultHoldingIdentityDb = emff.create(
+            persistenceUnitName,
+            jpaBackingStoreEntities,
+            defaultEMConfig
+        )
+
+        bobHoldingIdentityDb = emff.create(
+            persistenceUnitName,
+            jpaBackingStoreEntities,
+            bobEMConfig
+        )
+
+        charlieHoldingIdentityDb = emff.create(
+            persistenceUnitName,
+            jpaBackingStoreEntities,
+            charlieEMConfig
         )
     }
 
@@ -197,14 +256,57 @@ class UniquenessCheckerImplDBIntegrationTests {
             JpaEntitiesRegistryImpl(),
             mock<DbConnectionManager>().apply {
                 whenever(getOrCreateEntityManagerFactory(
-                    eq(defaultHoldingIdentityDbName), any(), any())) doReturn defaultHoldingIdentityDb
+                    eq(defaultHoldingIdentityDbId), any(), any())) doReturn defaultHoldingIdentityDb
                 whenever(getOrCreateEntityManagerFactory(
-                    eq(bobHoldingIdentityDbName), any(), any())) doReturn bobHoldingIdentityDb
+                    eq(bobHoldingIdentityDbId), any(), any())) doReturn bobHoldingIdentityDb
                 whenever(getOrCreateEntityManagerFactory(
-                    eq(charlieHoldingIdentityDbName), any(), any())) doReturn charlieHoldingIdentityDb
+                    eq(charlieHoldingIdentityDbId), any(), any())) doReturn charlieHoldingIdentityDb
                 whenever(getOrCreateEntityManagerFactory(
-                    eq(noDbHoldingIdentityDbName), any(), any())) doThrow DBConfigurationException("")
+                    eq(noDbHoldingIdentityDbId), any(), any())) doThrow DBConfigurationException("")
                 whenever(getClusterDataSource()) doReturn clusterDbConfig.dataSource
+            },
+            mock<VirtualNodeInfoReadService>().apply {
+                whenever(getByHoldingIdentityShortHash(eq(defaultHoldingIdentity.shortHash))).thenReturn(
+                    VirtualNodeInfo(
+                        holdingIdentity = defaultHoldingIdentity,
+                        cpiIdentifier = CpiIdentifier("", "", SecureHashUtils.randomSecureHash()),
+                        vaultDmlConnectionId = UUID.randomUUID(),
+                        cryptoDmlConnectionId = UUID.randomUUID(),
+                        uniquenessDmlConnectionId = defaultHoldingIdentityDbId,
+                        timestamp = Instant.now()
+                    )
+                )
+                whenever(getByHoldingIdentityShortHash(eq(bobHoldingIdentity.shortHash))).thenReturn(
+                    VirtualNodeInfo(
+                        holdingIdentity = bobHoldingIdentity,
+                        cpiIdentifier = CpiIdentifier("", "", SecureHashUtils.randomSecureHash()),
+                        vaultDmlConnectionId = UUID.randomUUID(),
+                        cryptoDmlConnectionId = UUID.randomUUID(),
+                        uniquenessDmlConnectionId = bobHoldingIdentityDbId,
+                        timestamp = Instant.now()
+                    )
+                )
+                whenever(getByHoldingIdentityShortHash(eq(charlieHoldingIdentity.shortHash))).thenReturn(
+                    VirtualNodeInfo(
+                        holdingIdentity = charlieHoldingIdentity,
+                        cpiIdentifier = CpiIdentifier("", "", SecureHashUtils.randomSecureHash()),
+                        vaultDmlConnectionId = UUID.randomUUID(),
+                        cryptoDmlConnectionId = UUID.randomUUID(),
+                        uniquenessDmlConnectionId = charlieHoldingIdentityDbId,
+                        timestamp = Instant.now()
+                    )
+                )
+                whenever(getByHoldingIdentityShortHash(eq(noDbHoldingIdentity.shortHash))).thenReturn(
+                    VirtualNodeInfo(
+                        holdingIdentity = noDbHoldingIdentity,
+                        cpiIdentifier = CpiIdentifier("", "", SecureHashUtils.randomSecureHash()),
+                        vaultDmlConnectionId = UUID.randomUUID(),
+                        cryptoDmlConnectionId = UUID.randomUUID(),
+                        uniquenessDmlConnectionId = noDbHoldingIdentityDbId,
+                        timestamp = Instant.now()
+                    )
+                )
+
             }
         )
 
@@ -1602,6 +1704,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             }
         }
 
+        @Suppress("SpreadOperator")
         @Test
         fun `Complex test scenario with multiple successes and failures in one batch`() {
             val priorSpentStates = List(2) { generateUnspentStates(1).single() }

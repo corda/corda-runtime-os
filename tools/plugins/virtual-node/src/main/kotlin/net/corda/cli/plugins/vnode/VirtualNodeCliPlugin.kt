@@ -1,5 +1,6 @@
 package net.corda.cli.plugins.vnode
 
+import net.corda.cli.api.AbstractCordaCliVersionProvider
 import net.corda.cli.api.CordaCliPlugin
 import net.corda.cli.plugins.vnode.commands.PlatformMigration
 import net.corda.cli.plugins.vnode.commands.ResetCommand
@@ -8,6 +9,8 @@ import org.pf4j.Plugin
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
+
+class VersionProvider : AbstractCordaCliVersionProvider()
 
 @Suppress("unused")
 class VirtualNodeCliPlugin : Plugin() {
@@ -29,7 +32,8 @@ class VirtualNodeCliPlugin : Plugin() {
         name = "vnode",
         subcommands = [ResetCommand::class, PlatformMigration::class],
         mixinStandardHelpOptions = true,
-        description = ["Manages a virtual node"]
+        description = ["Manages a virtual node"],
+        versionProvider = VersionProvider::class
     )
     class PluginEntryPoint : CordaCliPlugin
 }

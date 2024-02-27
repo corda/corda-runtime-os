@@ -36,8 +36,8 @@ class ApprovalRulesEntity(
         if (other === this) return true
         if (other == null) return false
         if (other !is ApprovalRulesEntity) return false
-        return other.ruleId == this.ruleId
-                && other.ruleType == this.ruleType
+        return other.ruleId == this.ruleId &&
+            other.ruleType == this.ruleType
     }
 
     override fun hashCode(): Int {

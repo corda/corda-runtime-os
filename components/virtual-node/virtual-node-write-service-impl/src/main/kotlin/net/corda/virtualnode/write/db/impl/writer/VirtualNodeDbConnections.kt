@@ -18,4 +18,5 @@ class VirtualNodeDbConnections(
     /** Uniqueness DDL DB connection ID */
     val uniquenessDdlConnectionId: UUID? = null,
     /** Uniqueness DML DB connection ID */
-    val uniquenessDmlConnectionId: UUID? = null)
+    val uniquenessDmlConnectionId: UUID? = null
+)

@@ -24,10 +24,10 @@ object JavalinStarter {
     private val serverStartLock = ReentrantLock()
 
     /**
-     * Start the Javalin server and ensuring only one starts at a time.
+     * Creates and starts the Javalin server and ensuring only one actioned at a time.
      *
      * @param name Name of the server (to be used in logging only)
-     * @param server the Javalin server object
+     * @param javalinFactory to create the Javalin server object
      * @param port the port to start the server on
      * @param host the host to use (default: localhost)
      * @param threadLocalClassLoaderBundles any bundles to use in the ThreadLocal class loader
@@ -35,12 +35,13 @@ object JavalinStarter {
     @Suppress("TooGenericExceptionThrown")
     fun startServer(
         name: String,
-        server: Javalin,
+        javalinFactory: () -> Javalin,
         port: Int,
         host: String? = null,
         threadLocalClassLoaderBundles: List<Bundle> = emptyList(),
-    ) {
-        serverStartLock.withLock {
+    ): Javalin {
+        return serverStartLock.withLock {
+            val server = javalinFactory()
             val existingSystemErrStream = System.err
             try {
                 logger.trace { "Starting the $name Javalin server." }
@@ -78,6 +79,7 @@ object JavalinStarter {
             } finally {
                 System.setErr(existingSystemErrStream)
             }
+            server
         }
     }
 }

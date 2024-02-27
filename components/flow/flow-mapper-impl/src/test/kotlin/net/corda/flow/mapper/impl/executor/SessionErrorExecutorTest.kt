@@ -1,6 +1,7 @@
 package net.corda.flow.mapper.impl.executor
 
 import com.typesafe.config.ConfigValueFactory
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
@@ -26,12 +27,16 @@ class SessionErrorExecutorTest {
         on { forwardError(any(), any(), any(), any(), any()) } doReturn record
     }
 
+    private val exceptionEnvelope = ExceptionEnvelope("type", "message")
+    private val sessionError = SessionError(exceptionEnvelope)
+
     @Test
     fun `Session error event received with null state`() {
-        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError())
+        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, sessionError)
         val result = SessionErrorExecutor(
             sessionId,
             payload,
+            sessionError,
             null,
             flowConfig,
             recordFactory,
@@ -47,10 +52,12 @@ class SessionErrorExecutorTest {
 
     @Test
     fun `Session error received with CLOSING state`() {
-        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError())
+        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, sessionError)
 
         val result = SessionErrorExecutor(
-            sessionId, payload, FlowMapperState(
+            sessionId, payload,
+            sessionError,
+            FlowMapperState(
                 "flowId1", null, FlowMapperStateType.CLOSING
             ),
             flowConfig,
@@ -66,10 +73,12 @@ class SessionErrorExecutorTest {
 
     @Test
     fun `Session error received with ERROR state`() {
-        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError())
+        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, sessionError)
 
         val result = SessionErrorExecutor(
-            sessionId, payload, FlowMapperState(
+            sessionId, payload,
+            sessionError,
+            FlowMapperState(
                 "flowId1", null, FlowMapperStateType.ERROR
             ),
             flowConfig,
@@ -85,16 +94,18 @@ class SessionErrorExecutorTest {
 
     @Test
     fun `Session error received with OPEN state`() {
-        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError())
+        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, sessionError)
 
         val result = SessionErrorExecutor(
-            sessionId, payload, FlowMapperState(
+            sessionId, payload,
+            sessionError,
+            FlowMapperState(
                 "flowId1", null, FlowMapperStateType.OPEN
             ),
             flowConfig,
             recordFactory,
             Instant.now()
-            ).execute()
+        ).execute()
         val outboundEvents = result.outputEvents
         val state = result.flowMapperState
         assertThat(state?.status).isEqualTo(FlowMapperStateType.ERROR)

@@ -14,11 +14,7 @@ group 'net.corda.cli.deployment'
 
 dependencies {
     constraints {
-        implementation('org.slf4j:slf4j-api') {
-            version {
-                strictly slf4jV2Version
-            }
-        }
+        implementation(libs.slf4j.v2.api)
     }
 
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
@@ -26,16 +22,16 @@ dependencies {
     implementation project(':libs:packaging:packaging-verify')
     implementation project(':libs:membership:schema-validation')
     implementation project(':libs:membership:membership-common')
-    implementation "org.pf4j:pf4j:${pf4jVersion}"
-    kapt "org.pf4j:pf4j:${pf4jVersion}"
+    implementation libs.pf4j
+    kapt libs.pf4j
 
+    testImplementation libs.bundles.test
     testImplementation "net.corda.cli.host:api:$pluginHostVersion"
-    testImplementation "org.pf4j:pf4j:${pf4jVersion}"
-    testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
+    testImplementation libs.pf4j
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:packaging-test-utilities")
 
-    testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j2-impl:$log4jVersion"
+    testRuntimeOnly libs.log4j.slf4j2
 }
 
 cliPlugin {

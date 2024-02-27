@@ -1,7 +1,5 @@
 package net.corda.libs.permissions.cache.impl
 
-import java.time.Instant
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.data.permissions.PermissionType
 import net.corda.data.permissions.summary.PermissionSummary
 import net.corda.data.permissions.summary.UserPermissionSummary
@@ -12,6 +10,8 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
 
 internal class PermissionValidationCacheImplTest {
 
@@ -54,11 +54,18 @@ internal class PermissionValidationCacheImplTest {
         val permissionSummariesMap = permissionValidationCache.permissionSummaries
         val permissionIds = permissionSummariesMap.keys
         val permissions = permissionSummariesMap.values
-        assertEquals(2, permissionSummariesMap.size,
-            "GetPermissionSummaries should return all permission summaries in the map.")
-        assertTrue(permissionIds.containsAll(listOf("userLogin1", "userLogin2")),
-            "GetPermissions result should contain permission IDs as keys.")
-        assertTrue(permissions.containsAll(listOf(permissionSummary1, permissionSummary2)),
-            "GetPermissions result should contain expected permissions in the map.")
+        assertEquals(
+            2,
+            permissionSummariesMap.size,
+            "GetPermissionSummaries should return all permission summaries in the map."
+        )
+        assertTrue(
+            permissionIds.containsAll(listOf("userLogin1", "userLogin2")),
+            "GetPermissions result should contain permission IDs as keys."
+        )
+        assertTrue(
+            permissions.containsAll(listOf(permissionSummary1, permissionSummary2)),
+            "GetPermissions result should contain expected permissions in the map."
+        )
     }
 }

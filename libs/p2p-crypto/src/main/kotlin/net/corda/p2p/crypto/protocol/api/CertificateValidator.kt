@@ -3,6 +3,7 @@ package net.corda.p2p.crypto.protocol.api
 import net.corda.crypto.utils.AllowAllRevocationChecker
 import net.corda.crypto.utils.PemCertificate
 import net.corda.crypto.utils.convertToKeyStore
+import net.corda.data.p2p.crypto.protocol.RevocationCheckMode
 import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
 import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
 import net.corda.data.p2p.gateway.certificates.RevocationMode
@@ -37,19 +38,21 @@ class CertificateValidator(
 
     fun validate(pemCertificateChain: List<String>, expectedX500Name: MemberX500Name, expectedPublicKey: PublicKey) {
         val certificateChain = try {
-            certificateFactory.generateCertPath(pemCertificateChain.map { pemCertificate ->
-                ByteArrayInputStream(pemCertificate.toByteArray()).use {
-                    certificateFactory.generateCertificate(it)
-                }
-            })
+            certificateFactory.generateCertPath(
+                pemCertificateChain.map { pemCertificate ->
+                    ByteArrayInputStream(pemCertificate.toByteArray()).use {
+                        certificateFactory.generateCertificate(it)
+                    }
+                },
+            )
         } catch (except: CertificateException) {
             throw InvalidPeerCertificate("Error parsing the certificate from a pem file: \n" + except.message)
         }
-        //By convention, the certificates in a CertPath object of type X.509 are ordered starting with the target certificate
-        //and ending with a certificate issued by the trust anchor. So we check the subjectX500Principal of the first certificate
-        //matches the x500Name of the peer's identity.
-        val x509LeafCert = (certificateChain.certificates.firstOrNull() as? X509Certificate) ?:
-            throw InvalidPeerCertificate("Leaf session certificate is not an X509 certificate.")
+        // By convention, the certificates in a CertPath object of type X.509 are ordered starting with the target certificate
+        // and ending with a certificate issued by the trust anchor. So we check the subjectX500Principal of the first certificate
+        // matches the x500Name of the peer's identity.
+        val x509LeafCert = (certificateChain.certificates.firstOrNull() as? X509Certificate)
+            ?: throw InvalidPeerCertificate("Leaf session certificate is not an X509 certificate.")
 
         validateX500NameMatches(x509LeafCert, expectedX500Name)
         validateKeyUsage(x509LeafCert)
@@ -63,7 +66,7 @@ class CertificateValidator(
         if (!certificate.publicKey.encoded.contentEquals(expectedPublicKey.encoded)) {
             throw InvalidPeerCertificate(
                 "The certificate does not contain the expected public key: ${expectedPublicKey.encoded.toBase64()}",
-                certificate
+                certificate,
             )
         }
     }
@@ -75,28 +78,30 @@ class CertificateValidator(
         } catch (exception: IllegalArgumentException) {
             throw InvalidPeerCertificate(
                 "X500 principal in leaf session certificate ($x500PrincipalFromCert) is not a valid corda X500 Name.",
-                certificate
+                certificate,
             )
         }
         if (x500NameFromCert != expectedX500Name) {
             throw InvalidPeerCertificate(
                 "X500 principal in leaf session certificate ($x500NameFromCert) is different from expected ($expectedX500Name).",
-                certificate
+                certificate,
             )
         }
     }
 
     private fun validateKeyUsage(certificate: X509Certificate) {
         if (!certificate.keyUsage[digitalSignatureBit]) {
-            throw InvalidPeerCertificate("The key usages extension of the session certificate does not contain " +
-                "'Digital Signature', as expected.", certificate
+            throw InvalidPeerCertificate(
+                "The key usages extension of the session certificate does not contain " +
+                    "'Digital Signature', as expected.",
+                certificate,
             )
         }
     }
 
     private fun validateRevocation(certificateChain: CertPath, pemCertificates: List<String>, trustStore: List<String>) {
         val revocationMode = when (revocationCheckMode) {
-            RevocationCheckMode.OFF -> return //No check to do
+            RevocationCheckMode.OFF -> return // No check to do
             RevocationCheckMode.HARD_FAIL -> RevocationMode.HARD_FAIL
             RevocationCheckMode.SOFT_FAIL -> RevocationMode.SOFT_FAIL
         }

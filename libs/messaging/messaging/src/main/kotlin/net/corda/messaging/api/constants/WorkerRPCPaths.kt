@@ -12,4 +12,5 @@ object WorkerRPCPaths {
     const val UNIQUENESS_PATH = "/uniqueness-checker"
     const val VERIFICATION_PATH = "/verification"
     const val TOKEN_SELECTION_PATH = "/token-selection"
+    const val P2P_LINK_MANAGER_PATH = "/p2p-link-manager"
 }

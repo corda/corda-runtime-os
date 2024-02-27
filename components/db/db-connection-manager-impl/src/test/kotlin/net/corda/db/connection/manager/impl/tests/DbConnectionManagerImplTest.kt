@@ -30,12 +30,12 @@ import org.mockito.ArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.firstValue
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.secondValue
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import org.mockito.kotlin.times
-import org.mockito.kotlin.firstValue
-import org.mockito.kotlin.secondValue
 import java.sql.Connection
 import java.time.Duration
 import java.time.Instant
@@ -230,7 +230,7 @@ class DbConnectionManagerImplTest {
         dbConnectionManager.initialise(clusterDbConfig)
         dbConnectionManager.getDataSource(connectionJPA.name, connectionJPA.privilege)
 
-        verify(dataSourceFactory).createFromConfig(otherDbConfig)
+        verify(dataSourceFactory).createFromConfig(otherDbConfig, false)
 
         val paramNameCaptor = ArgumentCaptor.forClass(String::class.java)
         val paramValueCaptor = ArgumentCaptor.forClass(Any::class.java)

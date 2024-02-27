@@ -2,27 +2,31 @@ package net.corda.p2p.crypto.protocol.api
 
 import net.corda.data.p2p.crypto.CommonHeader
 import net.corda.data.p2p.crypto.MessageType
+import net.corda.data.p2p.crypto.protocol.AuthenticatedSessionDetails
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.HMAC_ALGO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.PROTOCOL_VERSION
+import net.corda.p2p.crypto.protocol.api.AuthenticationProtocol.Companion.secureRandom
+import net.corda.p2p.crypto.protocol.api.Session.Companion.toAvro
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.time.Instant
-import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantLock
 import javax.crypto.Mac
 import javax.crypto.SecretKey
 import kotlin.concurrent.withLock
+import net.corda.data.p2p.crypto.protocol.Session as AvroSession
 
 /**
  * A session established between two parties that allows authentication of data (prior to transmission) & validation of them (post receipt).
  *
  * This class is thread-safe, which means multiple threads can try to create & validate MACs concurrently using the same session.
  */
-class AuthenticatedSession(override val sessionId: String,
-                           nextSequenceNo: Long,
-                           private val outboundSecretKey: SecretKey,
-                           private val inboundSecretKey: SecretKey,
-                           val maxMessageSize: Int): Session {
+class AuthenticatedSession(
+    override val sessionId: String,
+    private val outboundSecretKey: SecretKey,
+    private val inboundSecretKey: SecretKey,
+    val maxMessageSize: Int,
+) : Session {
 
     private val provider = BouncyCastleProvider.PROVIDER_NAME
     private val generationHMac = Mac.getInstance(HMAC_ALGO, provider).apply {
@@ -33,7 +37,6 @@ class AuthenticatedSession(override val sessionId: String,
     }
     private val generationLock = ReentrantLock()
     private val validationLock = ReentrantLock()
-    private val sequenceNo = AtomicLong(nextSequenceNo)
 
     /**
      * Creates a message authentication code for the given payload and a header that is generated internally.
@@ -44,8 +47,13 @@ class AuthenticatedSession(override val sessionId: String,
             throw MessageTooLargeError(payload.size, maxMessageSize)
         }
 
-        val commonHeader = CommonHeader(MessageType.DATA, PROTOCOL_VERSION, sessionId,
-                                        sequenceNo.getAndIncrement(), Instant.now().toEpochMilli())
+        val commonHeader = CommonHeader(
+            MessageType.DATA,
+            PROTOCOL_VERSION,
+            sessionId,
+            secureRandom.nextLong(),
+            Instant.now().toEpochMilli(),
+        )
         val tag = generationLock.withLock {
             generationHMac.reset()
             generationHMac.update(commonHeader.toByteBuffer().array())
@@ -77,6 +85,16 @@ class AuthenticatedSession(override val sessionId: String,
         }
     }
 
+    override fun toAvro(): AvroSession {
+        return AvroSession(
+            this.sessionId,
+            this.maxMessageSize,
+            AuthenticatedSessionDetails(
+                outboundSecretKey.toAvro(),
+                inboundSecretKey.toAvro(),
+            ),
+        )
+    }
 }
 
 data class AuthenticationResult(val header: CommonHeader, val mac: ByteArray) {
@@ -99,4 +117,4 @@ data class AuthenticationResult(val header: CommonHeader, val mac: ByteArray) {
     }
 }
 
-class InvalidMac: CordaRuntimeException("The provided MAC was invalid.")
+class InvalidMac : CordaRuntimeException("The provided MAC was invalid.")

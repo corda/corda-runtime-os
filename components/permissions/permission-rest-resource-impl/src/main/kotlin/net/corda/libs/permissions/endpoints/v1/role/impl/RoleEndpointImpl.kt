@@ -1,10 +1,5 @@
 package net.corda.libs.permissions.endpoints.v1.role.impl
 
-import net.corda.rest.PluggableRestResource
-import net.corda.rest.exception.BadRequestException
-import net.corda.rest.exception.ResourceNotFoundException
-import net.corda.rest.response.ResponseEntity
-import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.libs.permissions.common.constant.RoleKeys.DEFAULT_SYSTEM_ADMIN_ROLE
 import net.corda.libs.permissions.endpoints.common.PermissionEndpointEventHandler
 import net.corda.libs.permissions.endpoints.common.withPermissionManager
@@ -21,6 +16,11 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.permissions.management.PermissionManagementService
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.response.ResponseEntity
+import net.corda.rest.security.CURRENT_REST_CONTEXT
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -45,8 +45,8 @@ class RoleEndpointImpl @Activate constructor(
 
         @Suppress("ThrowsCount")
         private fun PermissionManager.checkProtectedRole(roleId: String, principal: String) {
-            val role = getRole(GetRoleRequestDto(principal, roleId)) ?:
-                throw ResourceNotFoundException("Role ID", roleId)
+            val role = getRole(GetRoleRequestDto(principal, roleId))
+                ?: throw ResourceNotFoundException("Role ID", roleId)
 
             if (role.initialAdminRole) {
                 throw BadRequestException("$DEFAULT_SYSTEM_ADMIN_ROLE cannot be changed", mapOf("roleId" to roleId))

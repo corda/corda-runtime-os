@@ -6,9 +6,9 @@ import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.HttpPUT
 import net.corda.rest.annotations.HttpRestResource
-import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.HttpWS
 import net.corda.rest.annotations.RestApiVersion
+import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.isRestEndpointAnnotation
 import net.corda.rest.tools.annotations.extensions.path
 import net.corda.rest.tools.isStaticallyExposedGet
@@ -73,8 +73,11 @@ internal val Method.restApiVersions: MinMaxRestApiVersions
 internal val HttpRestResource.versions get() = MinMaxRestApiVersions(this.minVersion, this.maxVersion)
 
 private val Method.staticExposedEndpointType: EndpointType
-    get() = if (isStaticallyExposedGet()) EndpointType.GET
-    else throw IllegalArgumentException("Unknown statically exposed endpoint type for: '$name'")
+    get() = if (isStaticallyExposedGet()) {
+        EndpointType.GET
+    } else {
+        throw IllegalArgumentException("Unknown statically exposed endpoint type for: '$name'")
+    }
 
 internal enum class EndpointType {
     GET, POST, PUT, DELETE, WS

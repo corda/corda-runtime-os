@@ -28,7 +28,7 @@ class EncumbranceGroupSerializer : BaseProxySerializer<EncumbranceGroupImpl, Enc
     }
 
     override fun fromProxy(proxy: EncumbranceGroupProxy): EncumbranceGroupImpl {
-        return when(proxy.version) {
+        return when (proxy.version) {
             VERSION_1 ->
                 EncumbranceGroupImpl(proxy.size, proxy.tag)
             else ->

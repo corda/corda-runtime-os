@@ -75,6 +75,13 @@ internal class FlowEventPipelineImpl(
                         "'HoldingIdentity(x500Name=${holdingIdentity.x500Name}, groupId=${holdingIdentity.groupId})'"
             )
 
+        if (virtualNode.flowStartOperationalStatus == OperationalStatus.INACTIVE) {
+            throw FlowMarkedForKillException(
+                "flowStartOperationalStatus is INACTIVE, new flows cannot be started for virtual node with " +
+                        "shortHash ${holdingIdentity.shortHash}"
+            )
+        }
+
         if (virtualNode.flowOperationalStatus == OperationalStatus.INACTIVE) {
             throw FlowMarkedForKillException("Flow operational status is ${virtualNode.flowOperationalStatus.name}")
         }

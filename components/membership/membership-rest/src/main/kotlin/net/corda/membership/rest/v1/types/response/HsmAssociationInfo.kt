@@ -1,6 +1,5 @@
 package net.corda.membership.rest.v1.types.response
 
-
 /**
  * Information on a hardware security module (HSM)
  */
@@ -30,4 +29,3 @@ data class HsmAssociationInfo(
      */
     val deprecatedAt: Long
 )
-

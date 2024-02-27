@@ -2413,6 +2413,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
+                "required" : [ "reason" ],
                 "type" : "object",
                 "properties" : {
                   "reason" : {
@@ -3178,7 +3179,7 @@
           "required" : true
         },
         "responses" : {
-          "200" : {
+          "201" : {
             "description" : "\n        id: The server-side generated ID of the new permission\n        permissionType: Defines whether this is an ALLOW or DENY type of permission\n        permissionString: A machine-parseable string representing an individual permission; \n            it can be any arbitrary string as long as the authorization code can make use of it in the context of user \n            permission matching\n        groupVisibility: An optional group visibility identifier of the permission\n        virtualNode: An optional identifier of the virtual node to which the physical node permission applies\n        version: The version number of the permission; a value of 0 is assigned to a newly-created permission\n        updateTimestamp: The server-side timestamp showing when the permission was created\n    ",
             "content" : {
               "application/json" : {
@@ -3215,7 +3216,7 @@
           "required" : true
         },
         "responses" : {
-          "200" : {
+          "201" : {
             "description" : "A set of identifiers for permissions created along with role identifiers they were associated with.",
             "content" : {
               "application/json" : {
@@ -3347,7 +3348,7 @@
           "required" : true
         },
         "responses" : {
-          "200" : {
+          "201" : {
             "description" : "\n        Newly created role with attributes:\n        id: The unique identifier of the role\n        version: The version number of the role\n        updateTimestamp: The date and time when the role was last updated\n        roleName: The name of the role\n        groupVisibility: An optional group visibility of the role\n        permissions: The list of permissions associated with the role",
             "content" : {
               "application/json" : {
@@ -3544,7 +3545,7 @@
           "required" : true
         },
         "responses" : {
-          "200" : {
+          "201" : {
             "description" : "\n            A newly created user with the following attributes:\n            id: Unique server generated identifier for the user\n            version: The version of the user; version 0 is assigned to a newly created user\n            updateTimestamp: The date and time when the user was last updated\n            fullName: The full name for the new user\n            loginName: The login name for the new user\n            enabled: If true, the user account is enabled; false, the account is disabled\n            ssoAuth: If true, the user account is enabled for SSO authentication; \n                false, the account is enabled for password authentication\n            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire\n            parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n            properties: An optional set of key/value properties associated with a user account\n            roleAssociations: A set of roles associated with the user account",
             "content" : {
               "application/json" : {

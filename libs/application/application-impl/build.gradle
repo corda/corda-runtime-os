@@ -18,11 +18,9 @@ dependencies {
     api project(":libs:serialization:json-serializers")
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation libs.jackson.module.kotlin
     implementation 'org.slf4j:slf4j-api'
+    implementation libs.jackson.datatype.jsr310
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

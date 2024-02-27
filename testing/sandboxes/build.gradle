@@ -16,7 +16,7 @@ dependencies {
     api project(":libs:packaging:packaging")
     api project(':libs:packaging:packaging-core')
     api project(':libs:virtual-node:virtual-node-info')
-    api "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+    api libs.junit.api
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'

@@ -25,7 +25,7 @@ private fun assertMatches(context: MatchContext, actual: Collection<Token>, expe
             "$context: Expected ${expectedToken::class.java.simpleName} but was ${actualToken::class.java.simpleName}"
         }
 
-        when(expectedToken) {
+        when (expectedToken) {
             is BinaryKeyword ->
                 assertAll(
                     { assertMatches(context.push(expectedToken), (actualToken as BinaryKeyword).op1, expectedToken.op1) },

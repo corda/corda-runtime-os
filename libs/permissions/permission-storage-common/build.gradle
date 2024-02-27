@@ -5,6 +5,8 @@ plugins {
 
 description 'Common Permission Storage Utilities'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'

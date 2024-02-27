@@ -1,12 +1,12 @@
 package net.corda.virtualnode.rest.impl.v1
 
 import net.corda.data.ExceptionEnvelope
+import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
+import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
 import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.HttpApiException
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.ResourceAlreadyExistsException
-import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
-import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
 import org.slf4j.LoggerFactory
 
 class ExceptionTranslator {
@@ -25,11 +25,11 @@ class ExceptionTranslator {
             return when (exception.errorType) {
                 IllegalArgumentException::class.java.name,
                 CpiNotFoundException::class.java.name
-                    -> BadRequestException(exception.errorMessage)
+                -> BadRequestException(exception.errorMessage)
                 VirtualNodeAlreadyExistsException::class.java.name
-                    -> ResourceAlreadyExistsException(exception.errorMessage)
+                -> ResourceAlreadyExistsException(exception.errorMessage)
                 else
-                    -> InternalServerException(exception.errorMessage)
+                -> InternalServerException(exception.errorMessage)
             }
         }
     }

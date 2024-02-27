@@ -5,7 +5,7 @@ import net.corda.data.flow.state.checkpoint.FlowStackItemSession
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.ALICE_X500_NAME
-import net.corda.flow.application.serialization.SerializationServiceInternal
+import net.corda.flow.application.serialization.FlowSerializationService
 import net.corda.flow.application.services.impl.FlowMessagingImpl
 import net.corda.flow.application.sessions.FlowSessionInternal
 import net.corda.flow.application.sessions.SessionInfo
@@ -27,6 +27,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -68,10 +69,10 @@ class FlowMessagingImplTest {
     private val mockFlowFiberService = MockFlowFiberService()
     private val flowStackService = mockFlowFiberService.flowStack
     private val flowSession = mock<FlowSession>()
-    private val serializationService = mock<SerializationServiceInternal>()
+    private val serializationService = mock<FlowSerializationService>()
 
     private val flowSessionFactory = mock<FlowSessionFactory>().apply {
-        whenever(createInitiatingFlowSession(any(), any(), eq(ALICE_X500_NAME), any())).thenReturn(flowSession)
+        whenever(createInitiatingFlowSession(any(), any(), anyOrNull(), eq(ALICE_X500_NAME), any())).thenReturn(flowSession)
     }
 
     private val normalSessionOne = mock<FlowSessionInternal>()
@@ -135,7 +136,7 @@ class FlowMessagingImplTest {
             )
         )
         flowMessaging.initiateFlow(ALICE_X500_NAME)
-        verify(flowSessionFactory).createInitiatingFlowSession(any(), any(), eq(ALICE_X500_NAME), eq(null))
+        verify(flowSessionFactory).createInitiatingFlowSession(any(), any(), anyOrNull(),  eq(ALICE_X500_NAME), eq(null))
     }
 
     @Test
@@ -155,7 +156,7 @@ class FlowMessagingImplTest {
         }
 
         flowMessaging.initiateFlow(ALICE_X500_NAME, false, builder)
-        verify(flowSessionFactory).createInitiatingFlowSession(any(), any(), eq(ALICE_X500_NAME), eq(builder))
+        verify(flowSessionFactory).createInitiatingFlowSession(any(), any(), anyOrNull(),  eq(ALICE_X500_NAME), eq(builder))
     }
 
     @Test

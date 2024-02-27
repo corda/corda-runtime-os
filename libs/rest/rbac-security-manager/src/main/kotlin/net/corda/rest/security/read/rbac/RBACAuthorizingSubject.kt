@@ -1,7 +1,7 @@
 package net.corda.rest.security.read.rbac
 
-import net.corda.rest.security.AuthorizingSubject
 import net.corda.libs.permission.PermissionValidator
+import net.corda.rest.authorization.AuthorizingSubject
 import java.util.function.Supplier
 
 /**

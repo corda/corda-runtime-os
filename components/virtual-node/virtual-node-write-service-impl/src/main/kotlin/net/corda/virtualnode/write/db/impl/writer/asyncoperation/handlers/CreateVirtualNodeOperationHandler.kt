@@ -1,25 +1,24 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers
 
-import java.time.Instant
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
-import net.corda.data.virtualnode.VirtualNodeOperationStatus
 import net.corda.db.connection.manager.VirtualNodeDbType
+import net.corda.db.core.DbPrivilege.DML
 import net.corda.libs.external.messaging.ExternalMessagingRouteConfigGenerator
-import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_OPERATION_STATUS_TOPIC
-import net.corda.tracing.trace
-import net.corda.utilities.time.Clock
-import net.corda.utilities.time.UTCClock
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
+import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
+import net.corda.virtualnode.write.db.impl.writer.VirtualNodeConnectionStrings
+import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDb
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbFactory
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterProcessor
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.factories.RecordFactory
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.services.CreateVirtualNodeService
 import org.slf4j.Logger
+import java.time.Instant
 
 @Suppress("LongParameterList")
 internal class CreateVirtualNodeOperationHandler(
@@ -27,17 +26,16 @@ internal class CreateVirtualNodeOperationHandler(
     private val virtualNodeDbFactory: VirtualNodeDbFactory,
     private val recordFactory: RecordFactory,
     private val policyParser: GroupPolicyParser,
-    private val statusPublisher: Publisher,
+    statusPublisher: Publisher,
     private val externalMessagingRouteConfigGenerator: ExternalMessagingRouteConfigGenerator,
     private val logger: Logger
-) : VirtualNodeAsyncOperationHandler<VirtualNodeCreateRequest> {
+) : VirtualNodeAsyncOperationHandler<VirtualNodeCreateRequest>, AbstractVirtualNodeOperationHandler(statusPublisher, logger) {
 
     override fun handle(
         requestTimestamp: Instant,
         requestId: String,
         request: VirtualNodeCreateRequest
     ) {
-
         publishStartProcessingStatus(requestId)
 
         try {
@@ -45,7 +43,7 @@ internal class CreateVirtualNodeOperationHandler(
             val x500Name = holdingId.x500Name.toString()
 
             logger.info("Create new Virtual Node: $x500Name and ${request.cpiFileChecksum}")
-            val execLog = ExecutionTimeLogger(x500Name, requestTimestamp.toEpochMilli(), logger)
+            val execLog = ExecutionTimeLogger("Update", x500Name, requestTimestamp.toEpochMilli(), logger)
 
             val requestValidationResult = execLog.measureExecTime("validation") {
                 createVirtualNodeService.validateRequest(request)
@@ -64,7 +62,19 @@ internal class CreateVirtualNodeOperationHandler(
             }
 
             val vNodeDbs = execLog.measureExecTime("get virtual node databases") {
-                virtualNodeDbFactory.createVNodeDbs(holdingId.shortHash, request)
+                virtualNodeDbFactory.createVNodeDbs(
+                    holdingId.shortHash,
+                    with(request) {
+                        VirtualNodeConnectionStrings(
+                            vaultDdlConnection,
+                            vaultDmlConnection,
+                            cryptoDdlConnection,
+                            cryptoDmlConnection,
+                            uniquenessDdlConnection,
+                            uniquenessDmlConnection
+                        )
+                    }
+                )
             }
 
             // For each of the platform DB's run the creation process
@@ -90,12 +100,14 @@ internal class CreateVirtualNodeOperationHandler(
                 }
             }
 
+            checkSchemasArePresentOnExternalDbs(vNodeDbs.values, cpiMetadata, holdingId)
+
             val externalMessagingRouteConfig = externalMessagingRouteConfigGenerator.generateNewConfig(
                 holdingId,
                 cpiMetadata.cpiId,
                 cpiMetadata.cpksMetadata
             )
-            
+
             logger.info("Generated new ExternalMessagingRouteConfig as: $externalMessagingRouteConfig")
 
             val vNodeConnections = execLog.measureExecTime("persist holding ID and virtual node") {
@@ -141,66 +153,31 @@ internal class CreateVirtualNodeOperationHandler(
         publishProcessingCompletedStatus(requestId)
     }
 
-    private fun publishStartProcessingStatus(requestId: String) {
-        publishStatusMessage(requestId, getAvroStatusObject(requestId, VirtualNodeOperationStateDto.IN_PROGRESS))
-    }
-
-    private fun publishProcessingCompletedStatus(requestId: String) {
-        publishStatusMessage(requestId, getAvroStatusObject(requestId, VirtualNodeOperationStateDto.COMPLETED))
-    }
-
-    private fun publishErrorStatus(requestId: String, reason: String) {
-        val message = getAvroStatusObject(requestId, VirtualNodeOperationStateDto.UNEXPECTED_FAILURE)
-        message.errors = reason
-        publishStatusMessage(requestId, message)
-    }
-
-    private fun publishStatusMessage(requestId: String, message: VirtualNodeOperationStatus) {
-        try {
-            statusPublisher.publish(
-                listOf(
-                    Record(
-                        VIRTUAL_NODE_OPERATION_STATUS_TOPIC,
-                        requestId,
-                        message
-                    )
-                )
-            )
-        } catch (e: Exception) {
-            logger.error("Failed to publish status update to Kafka for request ID = '$requestId'", e)
-        }
-    }
-
-    private fun getAvroStatusObject(
-        requestId: String,
-        status: VirtualNodeOperationStateDto
-    ): VirtualNodeOperationStatus {
-        val now = Instant.now()
-        return VirtualNodeOperationStatus.newBuilder()
-            .setRequestId(requestId)
-            .setRequestData("{}")
-            .setRequestTimestamp(now)
-            .setLatestUpdateTimestamp(now)
-            .setHeartbeatTimestamp(null)
-            .setState(status.name)
-            .setErrors(null)
-            .build()
-    }
-
-    class ExecutionTimeLogger(
-        private val vNodeName: String,
-        private val creationTime: Long,
-        private val logger: Logger,
-        private val clock: Clock = UTCClock()
+    private fun checkSchemasArePresentOnExternalDbs(
+        vNodeDbs: Collection<VirtualNodeDb>,
+        cpiMetadata: CpiMetadata,
+        holdingId: HoldingIdentity
     ) {
-        fun <T> measureExecTime(stage: String, call: () -> T): T {
-            return trace(stage) {
-                val start = clock.instant().toEpochMilli()
-                val result = call()
-                val end = clock.instant().toEpochMilli()
-                logger.debug("[Create ${vNodeName}] ${stage} took ${end - start}ms, elapsed ${end - creationTime}ms")
-                result
-            }
+        // Select externally managed VNode DBs
+        val dbaManagedDbs = vNodeDbs.filterNot {
+            it.isPlatformManagedDb || it.ddlConnectionProvided || it.dbConnections[DML] == null
+        }
+
+        // Are any platform schemas missing?
+        val missingPlatformSchemas = dbaManagedDbs.filterNot { it.checkDbMigrationsArePresent() }
+            .map { it.dbType.toString() }
+
+        // Are any CPI schemas missing?
+        val missingCpiSchemas = dbaManagedDbs.filter { it.dbType == VirtualNodeDbType.VAULT }
+            .filterNot { createVirtualNodeService.checkCpiMigrations(cpiMetadata, it, holdingId) }
+            .map { cpiMetadata.cpiId.name }
+
+        // If any schemas are missing, throw exception listing them
+        val allMissingSchemas = missingPlatformSchemas + missingCpiSchemas
+        if (allMissingSchemas.any()) {
+            throw VirtualNodeWriteServiceException(
+                "DB schemas missing from external DB: ${allMissingSchemas.joinToString(",")}"
+            )
         }
     }
 }

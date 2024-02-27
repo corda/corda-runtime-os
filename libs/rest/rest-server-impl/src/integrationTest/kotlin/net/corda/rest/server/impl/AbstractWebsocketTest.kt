@@ -48,7 +48,6 @@ abstract class AbstractWebsocketTest : RestServerTestBase() {
 
     @Test
     fun `valid path returns 200 OK`() {
-
         val getPathResponse = client.call(HttpVerb.GET, WebRequest<Any>("health/sanity"), userName, password)
         assertEquals(HttpStatus.SC_OK, getPathResponse.responseStatus)
         assertEquals("localhost", getPathResponse.headers[Header.ACCESS_CONTROL_ALLOW_ORIGIN])
@@ -87,7 +86,7 @@ abstract class AbstractWebsocketTest : RestServerTestBase() {
             }
         }
 
-        val upgradeListener = object: UpgradeListener {
+        val upgradeListener = object : UpgradeListener {
             override fun onHandshakeRequest(request: UpgradeRequest) {
                 val headerValue = toBasicAuthValue(userName, password)
                 log.info("Header value: $headerValue")
@@ -103,7 +102,7 @@ abstract class AbstractWebsocketTest : RestServerTestBase() {
 
         val uri = URI(
             "$wsProtocol://${restServerSettings.address.host}:$port/" +
-                    "${restServerSettings.context.basePath}/${apiVersion.versionPath}/health/counterfeed/$start?range=$range"
+                "${restServerSettings.context.basePath}/${apiVersion.versionPath}/health/counterfeed/$start?range=$range"
         )
 
         log.info("Connecting to: $uri")
@@ -119,8 +118,10 @@ abstract class AbstractWebsocketTest : RestServerTestBase() {
         assertThat(list).isEqualTo(expectedContent)
 
         assertThat(securityManager.checksExecuted).hasSize(1)
-            .allMatch { it.action == "WS:/${restServerSettings.context.basePath}/${apiVersion.versionPath}/" +
-                    "health/counterfeed/{start}?range=$range" }
+            .allMatch {
+                it.action == "WS:/${restServerSettings.context.basePath}/${apiVersion.versionPath}/" +
+                    "health/counterfeed/{start}?range=$range"
+            }
     }
 
     private fun toBasicAuthValue(username: String, password: String): String {
@@ -129,7 +130,7 @@ abstract class AbstractWebsocketTest : RestServerTestBase() {
 
     @Test
     fun `check WebSocket wrong credentials connectivity`() {
-        val upgradeListener = object: UpgradeListener {
+        val upgradeListener = object : UpgradeListener {
             override fun onHandshakeRequest(request: UpgradeRequest) {
                 request.setHeader(Header.AUTHORIZATION, toBasicAuthValue("alienUser", "wrongPassword"))
             }
@@ -143,7 +144,6 @@ abstract class AbstractWebsocketTest : RestServerTestBase() {
 
     @Test
     fun `check WebSocket no credentials connectivity`() {
-
         performUnauthorizedTest(null)
     }
 
@@ -165,7 +165,6 @@ abstract class AbstractWebsocketTest : RestServerTestBase() {
                 super.onWebSocketClose(statusCode, reason)
                 closeStatus = CloseStatus(statusCode, reason)
                 latch.countDown()
-
             }
 
             override fun onWebSocketError(cause: Throwable?) {
@@ -175,7 +174,7 @@ abstract class AbstractWebsocketTest : RestServerTestBase() {
 
         val uri = URI(
             "$wsProtocol://${restServerSettings.address.host}:$port/" +
-                    "${restServerSettings.context.basePath}/${apiVersion.versionPath}/health/counterfeed/100"
+                "${restServerSettings.context.basePath}/${apiVersion.versionPath}/health/counterfeed/100"
         )
 
         log.info("Connecting to: $uri")

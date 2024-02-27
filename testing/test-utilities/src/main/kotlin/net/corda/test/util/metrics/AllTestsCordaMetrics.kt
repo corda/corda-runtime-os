@@ -19,7 +19,7 @@ class AllTestsCordaMetrics(
     constructor(workerType: String) : this(workerType, SimpleMeterRegistry())
 
     override fun beforeAll(ctx: ExtensionContext) {
-        CordaMetrics.configure(workerType, registry)
+        CordaMetrics.configure(workerType, registry, null, null)
         assertEquals(1, CordaMetrics.registry.registries.size)
     }
 

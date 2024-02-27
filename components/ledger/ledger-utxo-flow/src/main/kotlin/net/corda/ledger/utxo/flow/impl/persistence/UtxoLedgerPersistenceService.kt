@@ -2,11 +2,17 @@ package net.corda.ledger.utxo.flow.impl.persistence
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedLedgerTransaction
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
+import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndSignatures
+import java.security.PublicKey
 
 /**
  * [UtxoLedgerPersistenceService] allows to insert and find UTXO signed transactions in the persistent store provided
@@ -84,6 +90,21 @@ interface UtxoLedgerPersistenceService {
     ): Pair<UtxoSignedLedgerTransaction?, TransactionStatus>?
 
     /**
+     * Retrieve a map of transaction id to its corresponding filtered transaction and notary signature.
+     *
+     * @param stateRefs a list of [StateRef]
+     * @param notaryKey an expected notary key of stateRefs
+     * @param notaryName an expected notary name of stateRefs
+     * @return The fetch result in a map of transaction ID to [UtxoFilteredTransaction] and [DigitalSignatureAndMetadata]
+     * */
+    @Suspendable
+    fun findFilteredTransactionsAndSignatures(
+        stateRefs: List<StateRef>,
+        notaryKey: PublicKey,
+        notaryName: MemberX500Name
+    ): Map<SecureHash, UtxoFilteredTransactionAndSignatures>
+
+    /**
      * Persist a [UtxoSignedTransaction] to the store.
      *
      * @param transaction UTXO signed transaction to persist.
@@ -119,4 +140,20 @@ interface UtxoLedgerPersistenceService {
         transaction: UtxoSignedTransaction,
         transactionStatus: TransactionStatus
     ): Pair<TransactionExistenceStatus, List<CordaPackageSummary>>
+
+    @Suspendable
+    fun persistTransactionSignatures(id: SecureHash, startingIndex: Int, signatures: List<DigitalSignatureAndMetadata>)
+
+    /**
+     * Persists a list of filtered transactions and their signatures represented as [UtxoFilteredTransactionAndSignatures]
+     * objects.
+     *
+     * @param filteredTransactionsAndSignatures A list containing the filtered transactions and signatures to persist.
+     *
+     * @throws CordaPersistenceException if an error happens during persist operation.
+     */
+    @Suspendable
+    fun persistFilteredTransactionsAndSignatures(
+        filteredTransactionsAndSignatures: List<UtxoFilteredTransactionAndSignatures>
+    )
 }

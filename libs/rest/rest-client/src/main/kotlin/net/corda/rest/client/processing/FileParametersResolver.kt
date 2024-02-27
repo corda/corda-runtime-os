@@ -1,13 +1,13 @@
 package net.corda.rest.client.processing
 
-import java.io.InputStream
+import net.corda.rest.HttpFileUpload
 import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.tools.annotations.extensions.name
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
+import java.io.InputStream
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter
-import net.corda.rest.HttpFileUpload
 
 private val log = LoggerFactory.getLogger("net.corda.rest.client.processing.FileParametersResolver.kt")
 

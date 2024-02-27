@@ -1,8 +1,5 @@
 package net.corda.ledger.utxo.token.cache.factories
 
-import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
-import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
-import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.utxo.token.cache.converters.EntityConverter
@@ -21,21 +18,19 @@ import net.corda.ledger.utxo.token.cache.services.ClaimStateStoreCacheImpl
 import net.corda.ledger.utxo.token.cache.services.ClaimStateStoreFactoryImpl
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
 import net.corda.ledger.utxo.token.cache.services.SimpleTokenFilterStrategy
-import net.corda.ledger.utxo.token.cache.services.TokenCacheEventProcessor
+import net.corda.ledger.utxo.token.cache.services.TokenPoolCacheManager
 import net.corda.ledger.utxo.token.cache.services.TokenPoolCacheStateSerialization
-import net.corda.ledger.utxo.token.cache.services.TokenSelectionDelegatedProcessor
-import net.corda.ledger.utxo.token.cache.services.TokenSelectionDelegatedProcessorImpl
+import net.corda.ledger.utxo.token.cache.services.TokenSelectionMetrics
 import net.corda.ledger.utxo.token.cache.services.TokenSelectionMetricsImpl
+import net.corda.ledger.utxo.token.cache.services.TokenSelectionSyncRPCProcessor
 import net.corda.ledger.utxo.token.cache.services.internal.AvailableTokenServiceImpl
 import net.corda.libs.statemanager.api.StateManager
-import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.utilities.time.Clock
-import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
 @Suppress("LongParameterList")
-class TokenCacheEventProcessorFactoryImpl constructor(
+class TokenCacheEventProcessorFactoryImpl(
     private val serviceConfiguration: ServiceConfiguration,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     private val virtualNodeInfoService: VirtualNodeInfoReadService,
@@ -47,14 +42,28 @@ class TokenCacheEventProcessorFactoryImpl constructor(
     private val clock: Clock
 ) : TokenCacheEventProcessorFactory {
 
-    private val tokenPoolCache = TokenPoolCacheImpl()
+    override fun createTokenSelectionSyncRPCProcessor(
+        stateManager: StateManager
+    ): TokenSelectionSyncRPCProcessor {
+        val tokenSelectionMetrics = TokenSelectionMetricsImpl()
+        val tokenPoolCacheManager = TokenPoolCacheManager(TokenPoolCacheImpl(), createEventHandlerMap(tokenSelectionMetrics))
+        val claimStateStoreFactory = ClaimStateStoreFactoryImpl(stateManager, serialization, tokenPoolCacheManager, clock)
 
-    override fun create(): StateAndEventProcessor<TokenPoolCacheKey, TokenPoolCacheState, TokenPoolCacheEvent> {
+        return TokenSelectionSyncRPCProcessor(
+            eventConverter,
+            entityConverter,
+            tokenPoolCacheManager,
+            ClaimStateStoreCacheImpl(claimStateStoreFactory),
+            externalEventResponseFactory,
+            tokenSelectionMetrics
+        )
+    }
+
+    private fun createEventHandlerMap(tokenSelectionMetrics: TokenSelectionMetrics): Map<Class<*>, TokenEventHandler<in TokenEvent>> {
         val recordFactory = RecordFactoryImpl(externalEventResponseFactory)
         val tokenFilterStrategy = SimpleTokenFilterStrategy()
-        val sqlQueryProvider = SqlQueryProviderTokens()
-        val utxoTokenRepository = UtxoTokenRepositoryImpl(sqlQueryProvider)
-        val tokenSelectionMetrics = TokenSelectionMetricsImpl(clock)
+        val utxoTokenRepository = UtxoTokenRepositoryImpl(SqlQueryProviderTokens())
+
         val availableTokenService = AvailableTokenServiceImpl(
             virtualNodeInfoService,
             dbConnectionManager,
@@ -63,7 +72,7 @@ class TokenCacheEventProcessorFactoryImpl constructor(
             tokenSelectionMetrics
         )
 
-        val eventHandlerMap = mapOf<Class<*>, TokenEventHandler<in TokenEvent>>(
+        return mapOf(
             createHandler(
                 TokenClaimQueryEventHandler(
                     tokenFilterStrategy,
@@ -76,29 +85,6 @@ class TokenCacheEventProcessorFactoryImpl constructor(
             createHandler(TokenForceClaimReleaseEventHandler()),
             createHandler(TokenLedgerChangeEventHandler()),
             createHandler(TokenBalanceQueryEventHandler(recordFactory, availableTokenService)),
-        )
-        return TokenCacheEventProcessor(
-            eventConverter,
-            entityConverter,
-            tokenPoolCache,
-            eventHandlerMap,
-            externalEventResponseFactory
-        )
-    }
-
-    override fun createDelegatedProcessor(
-        stateManager: StateManager,
-        processor: StateAndEventProcessor<TokenPoolCacheKey, TokenPoolCacheState, TokenPoolCacheEvent>
-    ): TokenSelectionDelegatedProcessor {
-        val claimStateStoreFactory = ClaimStateStoreFactoryImpl(stateManager, serialization, tokenPoolCache, clock)
-        val tokenSelectionMetrics = TokenSelectionMetricsImpl(UTCClock())
-        return TokenSelectionDelegatedProcessorImpl(
-            eventConverter,
-            entityConverter,
-            create(),
-            ClaimStateStoreCacheImpl(stateManager, serialization, claimStateStoreFactory, clock),
-            externalEventResponseFactory,
-            tokenSelectionMetrics
         )
     }
 

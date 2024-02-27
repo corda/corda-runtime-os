@@ -146,14 +146,16 @@ class TransactionBackchainVerifierImplTest {
 
     @Test
     fun `throws an exception if a transaction cannot be retrieved from the database`() {
-        whenever(utxoLedgerPersistenceService.findSignedLedgerTransactionWithStatus(TX_ID_1, UNVERIFIED)).thenReturn(null )
-        assertThrows<CordaRuntimeException>{transactionBackchainVerifier.verify(setOf(RESOLVING_TX_ID), topologicalSort())}
+        whenever(utxoLedgerPersistenceService.findSignedLedgerTransactionWithStatus(TX_ID_1, UNVERIFIED)).thenReturn(null)
+        assertThrows<CordaRuntimeException> { transactionBackchainVerifier.verify(setOf(RESOLVING_TX_ID), topologicalSort()) }
         verify(utxoLedgerPersistenceService, never()).persist(any(), eq(VERIFIED), any())
     }
 
     @Test
     fun `returns false if a transaction comes as invalid from the database`() {
-        whenever(utxoLedgerPersistenceService.findSignedLedgerTransactionWithStatus(TX_ID_1, UNVERIFIED)).thenReturn(null to TransactionStatus.INVALID)
+        whenever(
+            utxoLedgerPersistenceService.findSignedLedgerTransactionWithStatus(TX_ID_1, UNVERIFIED)
+        ).thenReturn(null to TransactionStatus.INVALID)
         assertThat(transactionBackchainVerifier.verify(setOf(RESOLVING_TX_ID), topologicalSort())).isFalse
         verify(utxoLedgerPersistenceService, never()).persist(any(), eq(VERIFIED), any())
     }
@@ -161,7 +163,7 @@ class TransactionBackchainVerifierImplTest {
     @Test
     fun `updates the statuses of transactions that pass verification even when a later transaction cannot be retrieved from the database`() {
         whenever(utxoLedgerPersistenceService.findSignedLedgerTransactionWithStatus(TX_ID_3, UNVERIFIED)).thenReturn(null)
-        assertThrows<CordaRuntimeException>{transactionBackchainVerifier.verify(setOf(RESOLVING_TX_ID), topologicalSort())}
+        assertThrows<CordaRuntimeException> { transactionBackchainVerifier.verify(setOf(RESOLVING_TX_ID), topologicalSort()) }
 
         verify(utxoLedgerPersistenceService).persist(transaction1, VERIFIED, emptyList())
         verify(utxoLedgerPersistenceService).persist(transaction2, VERIFIED, listOf(0))

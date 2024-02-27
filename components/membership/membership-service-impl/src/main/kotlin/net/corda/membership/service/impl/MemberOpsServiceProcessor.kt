@@ -170,7 +170,7 @@ class MemberOpsServiceProcessor(
             } else {
                 mapOf(
                     SESSION_TRUST_ROOTS to
-                            persistedGroupPolicyProperties.parseList<String>(PropertyKeys.SESSION_TRUST_ROOTS)
+                        persistedGroupPolicyProperties.parseList<String>(PropertyKeys.SESSION_TRUST_ROOTS)
                 )
             }
             val p2pParameters = mapOf(

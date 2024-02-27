@@ -26,7 +26,7 @@ fun Any.toInsertStatement(): String {
     }
 
     return "insert into ${formatTableName(this)} (${values.joinToString { it.first }}) " +
-            "values (${values.joinToString { it.second }})"
+            "values (${values.joinToString { it.second }});"
 }
 
 private fun formatValue(value: Any?): String? {
@@ -74,14 +74,17 @@ private fun <T : Annotation> KProperty1<*, *>.getVarAnnotation(type: Class<T>): 
 
 private fun String.simpleSqlEscaping(): String {
     val output = StringBuilder()
+    var i = 0
     for (c in this) {
         output.append(
             when (c) {
                 '\'' -> "\\'"
-                '\\' -> "\\\\"
+                // This prevents escaping backslash if it is part of already escaped double quotes
+                '\\' -> if (this.length > i+1 && this[i+1] == '\"') {"\\"} else {"\\\\"}
                 else -> c
             }
         )
+        i++
     }
     return output.toString()
 }

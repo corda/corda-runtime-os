@@ -86,7 +86,7 @@ class CpiInfoReadServiceFake internal constructor(
         return cpiData[identifier]
     }
 
-    override fun getAllVersionedRecords(): Stream<VersionedRecord<CpiIdentifier, CpiMetadata>>? {
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<CpiIdentifier, CpiMetadata>> {
         TODO("Not yet implemented")
     }
 

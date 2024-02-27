@@ -14,7 +14,7 @@ ext {
     kryoProtobufVersion = '3.6.1'
     kryoWicketVersion = '1.4.17'
     guavaOsgiVersion = provider {
-        parseMavenString(guavaVersion).getOSGiVersion()
+        parseMavenString(libs.versions.guavaVersion.get()).getOSGiVersion()
     }
 }
 

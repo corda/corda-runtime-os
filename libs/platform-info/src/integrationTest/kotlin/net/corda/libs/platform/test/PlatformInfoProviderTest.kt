@@ -1,7 +1,7 @@
 package net.corda.libs.platform.test
 
 import net.corda.libs.platform.PlatformInfoProvider
-import net.corda.libs.platform.PlatformVersion.CORDA_5_1
+import net.corda.libs.platform.PlatformVersion.CORDA_5_2
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -13,7 +13,7 @@ class PlatformInfoProviderTest {
     lateinit var platformInfoProvider: PlatformInfoProvider
 
     private companion object {
-        val EXPECTED_STUB_PLATFORM_VERSION = CORDA_5_1.value
+        val EXPECTED_STUB_PLATFORM_VERSION = CORDA_5_2.value
     }
 
     @Test

@@ -18,8 +18,10 @@ internal class AzureAdIssuersImpl(private val settings: AzureAdSettingsProvider)
         issuers = issuerBaseList
             .map { root -> root + settings.getTenantId() + PATH }
             .toSet()
-            .plus(issuerBaseList
-                .map { root -> root + settings.getTenantId() + PATH_V2 })
+            .plus(
+                issuerBaseList
+                    .map { root -> root + settings.getTenantId() + PATH_V2 }
+            )
             .toMutableSet()
     }
 

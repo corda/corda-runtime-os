@@ -21,6 +21,7 @@ dependencies {
     implementation project(':libs:rest:json-serialization')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:messaging:messaging')
+    implementation project(':libs:serialization:serialization-avro')
     implementation project(':libs:virtual-node:virtual-node-info')
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:flows:flow-utils')
@@ -35,12 +36,9 @@ dependencies {
     implementation 'net.corda:corda-topic-schema'
     implementation 'net.corda:corda-rbac-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
-    implementation "com.google.guava:guava:$guavaVersion"
+    implementation libs.slf4j.api
     implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation project(':testing:test-utilities')
 }

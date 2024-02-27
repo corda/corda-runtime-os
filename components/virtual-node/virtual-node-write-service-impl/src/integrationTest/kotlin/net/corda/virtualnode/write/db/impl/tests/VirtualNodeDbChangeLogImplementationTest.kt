@@ -4,16 +4,15 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
 import java.util.UUID
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
-import net.corda.v5.crypto.SecureHash
 
-class VirtualNodeDbChangeLogImplementationTest  {
+class VirtualNodeDbChangeLogImplementationTest {
     // It hardly seems worth bringing in a template system for one expansion, so we'll just do string replacement on _INCLUDETARGET_
     val primaryTemplate = """<?xml version="1.1" encoding="UTF-8" standalone="no"?>
 <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
@@ -48,13 +47,33 @@ class VirtualNodeDbChangeLogImplementationTest  {
 
     private final fun doMigration(includeElement: String, failureText: String? = null) {
         dbConfig.dataSource.connection.use {
-                it.createStatement().execute("DROP TABLE IF EXISTS dog")
-                it.commit()
-            }
+            it.createStatement().execute("DROP TABLE IF EXISTS dog")
+            it.commit()
+        }
         val lbm = LiquibaseSchemaMigratorImpl()
         val primaryContent = primaryTemplate.replace("_INCLUDETARGET_", includeElement)
-        val primary = CpkDbChangeLog(CpkDbChangeLogIdentifier(SecureHashImpl("SHA-256","abc".toByteArray()),"migration/db.changelog-master.xml"), primaryContent)
-        val secondary = CpkDbChangeLog(CpkDbChangeLogIdentifier(SecureHashImpl("SHA-256","abc".toByteArray()),"migration/dogs-migration-v1.0.xml"), secondaryContent)
+        val primary =
+            CpkDbChangeLog(
+                CpkDbChangeLogIdentifier(
+                    SecureHashImpl(
+                        "SHA-256",
+                        "abc".toByteArray()
+                    ),
+                    "migration/db.changelog-master.xml"
+                ),
+                primaryContent
+            )
+        val secondary =
+            CpkDbChangeLog(
+                CpkDbChangeLogIdentifier(
+                    SecureHashImpl(
+                        "SHA-256",
+                        "abc".toByteArray()
+                    ),
+                    "migration/dogs-migration-v1.0.xml"
+                ),
+                secondaryContent
+            )
         val cl = VirtualNodeDbChangeLog(listOf(primary, secondary))
         assertThat(cl.masterChangeLogFiles.size).isEqualTo(1)
         if (failureText != null) {
@@ -62,15 +81,19 @@ class VirtualNodeDbChangeLogImplementationTest  {
                 lbm.updateDb(dbConfig.dataSource.connection, cl)
             }.hasMessageContaining(failureText)
         } else {
-            lbm.updateDb( dbConfig.dataSource.connection, cl)
+            lbm.updateDb(dbConfig.dataSource.connection, cl)
         }
     }
-    @Test
-    fun `Liquibase migration with included absolute filename`() = doMigration("<include file=\"migration/dogs-migration-v1.0.xml\" />")
 
     @Test
-    fun `Liquibase migration with include dot slash fails`() = doMigration("<include file=\"./dogs-migration-v1.0.xml\" />", "Cannot find changelog file")
+    fun `Liquibase migration with included absolute filename`() =
+        doMigration("<include file=\"migration/dogs-migration-v1.0.xml\" />")
 
     @Test
-    fun `Liquibase migration with plain include fails`() = doMigration("<include file=\"dogs-migration-v1.0.xml\" />", "Cannot find changelog file")
+    fun `Liquibase migration with include dot slash fails`() =
+        doMigration("<include file=\"./dogs-migration-v1.0.xml\" />", "Cannot find changelog file")
+
+    @Test
+    fun `Liquibase migration with plain include fails`() =
+        doMigration("<include file=\"dogs-migration-v1.0.xml\" />", "Cannot find changelog file")
 }

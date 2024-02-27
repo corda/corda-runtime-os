@@ -94,7 +94,8 @@ class PermissionValidationCacheService @Activate constructor(
                     if (configHandle == null) {
                         log.info("Registering for configuration updates.")
                         configHandle = configurationReadService.registerComponentForUpdates(
-                            coordinator, setOf(BOOT_CONFIG, MESSAGING_CONFIG))
+                            coordinator, setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+                        )
                     }
                 } else {
                     downTransition()
@@ -146,10 +147,12 @@ class PermissionValidationCacheService @Activate constructor(
             createPermissionSummarySubscription(permissionSummaryData, config).also { it.start() }
 
         permissionValidationCacheRef.get()?.stop()
-        permissionValidationCacheRef.set(permissionValidationCacheFactory.createPermissionValidationCache(
-            permissionSummaryData
+        permissionValidationCacheRef.set(
+            permissionValidationCacheFactory.createPermissionValidationCache(
+                permissionSummaryData
+            )
+                .also { it.start() }
         )
-            .also { it.start() })
     }
 
     private fun createPermissionSummarySubscription(

@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 
+@Suppress("TooManyFunctions", "LongParameterList")
 class OutputAssertionsImpl(
     private val serializer: CordaAvroSerializer<Any>,
     private val stringDeserializer: CordaAvroDeserializer<String>,
@@ -63,9 +64,11 @@ class OutputAssertionsImpl(
         }
     }
 
-    override fun sessionCounterpartyInfoRequestEvents(vararg sessionIds: String, initiatingIdentity: HoldingIdentity?, initiatedIdentity: HoldingIdentity?) {
+    override fun sessionCounterpartyInfoRequestEvents(
+        vararg sessionIds: String, initiatingIdentity: HoldingIdentity?, initiatedIdentity: HoldingIdentity?) {
         asserts.add { testRun ->
-            findAndAssertSessionEvents<SessionCounterpartyInfoRequest>(testRun, sessionIds.toSet(), initiatingIdentity, initiatedIdentity)
+            findAndAssertSessionEvents<SessionCounterpartyInfoRequest>(
+                testRun, sessionIds.toSet(), initiatingIdentity, initiatedIdentity)
         }
     }
 
@@ -276,30 +279,6 @@ class OutputAssertionsImpl(
         }
     }
 
-    override fun checkpointHasRetry(expectedCount: Int) {
-        asserts.add { testRun ->
-            assertThat(testRun.response?.updatedState?.value?.pipelineState?.retryState).isNotNull
-            val retry = testRun.response!!.updatedState!!.value?.pipelineState!!.retryState
-
-            assertThat(retry.retryCount).isEqualTo(expectedCount)
-
-            /** we can't assert the event the second time around as it's a wakeup event (initially)
-             * so the testRun.event, which records the event we send into the system, will not match
-             * the retry.failedEvent as internally the pipeline switches from the wakeup to the event that needs
-             * to be retried.
-             */
-            if (retry.retryCount == 1) {
-                assertThat(retry.failedEvent).isEqualTo(testRun.event.value)
-            }
-        }
-    }
-
-    override fun checkpointDoesNotHaveRetry() {
-        asserts.add { testRun ->
-            assertThat(testRun.response?.updatedState?.value?.pipelineState?.retryState).isNull()
-        }
-    }
-
     override fun flowStatus(state: FlowStates, result: String?, errorType: String?, errorMessage: String?, flowTerminatedReason: String?) {
         asserts.add { testRun ->
             assertNotNull(testRun.response)
@@ -307,7 +286,8 @@ class OutputAssertionsImpl(
                 testRun.response!!.responseEvents.any {
                     matchStatusRecord(flowId, state, result, errorType, errorMessage, flowTerminatedReason, it)
                 },
-                "Expected Flow Status: ${state}, result = ${result ?: "NA"}, errorType = ${errorType ?: "NA"}, error = ${errorMessage ?: "NA"}"
+                "Expected Flow Status: ${state}, result = ${result ?: "NA"}, errorType = ${errorType ?: "NA"}, " +
+                        "error = ${errorMessage ?: "NA"}"
             )
         }
     }
@@ -340,6 +320,7 @@ class OutputAssertionsImpl(
         return filteredEvents
     }
 
+    @Suppress("LongParameterList")
     private fun matchStatusRecord(
         flowId: String,
         state: FlowStates,
@@ -384,16 +365,19 @@ class OutputAssertionsImpl(
             }
 
             assertTrue(entityRequests.isNotEmpty(), "No entity request found in response output events")
-            assertTrue(entityRequests.size == 1, "More than one entity request found in response output events")
+            assertTrue(entityRequests.size == 1,
+                "More than one entity request found in response output events")
             val foundEntityRequest = entityRequests.first().value as EntityRequest
 
             assertNotNull(foundEntityRequest, "No entity request found in response events.")
             val outputRequestPayload = foundEntityRequest.request
             assertTrue(
                 outputRequestPayload::class.java == expectedRequestPayload::class.java,
-                "Entity request found is of the wrong type. Expected ${expectedRequestPayload::class.java}, found: ${expectedRequestPayload::class.java}"
+                "Entity request found is of the wrong type. Expected ${expectedRequestPayload::class.java}, " +
+                        "found: ${expectedRequestPayload::class.java}"
             )
-            assertTrue(expectedRequestPayload == outputRequestPayload, "Entity request payload found does not match the expected payload")
+            assertTrue(expectedRequestPayload == outputRequestPayload,
+                "Entity request payload found does not match the expected payload")
         }
     }
 
@@ -414,9 +398,11 @@ class OutputAssertionsImpl(
             assertNotNull(testRun.response)
             assertTrue(
                 testRun.response!!.responseEvents.any {
-                    matchStatusRecord(flowId, FlowStates.KILLED, null, null, null, flowTerminatedReason, it)
+                    matchStatusRecord(
+                        flowId, FlowStates.KILLED, null, null, null, flowTerminatedReason, it)
                 },
-                "Expected Flow Status: KILLED result = null, errorType = null, error = null, processingTerminatedReason: $flowTerminatedReason"
+                "Expected Flow Status: KILLED result = null, errorType = null, error = null, " +
+                        "processingTerminatedReason: $flowTerminatedReason"
             )
         }
     }

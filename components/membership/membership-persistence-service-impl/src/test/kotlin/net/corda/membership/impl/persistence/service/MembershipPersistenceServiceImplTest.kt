@@ -1,10 +1,10 @@
 package net.corda.membership.impl.persistence.service
 
 import com.typesafe.config.ConfigFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequest
 import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequestState
@@ -190,7 +190,8 @@ class MembershipPersistenceServiceImplTest {
                     BOOT_CONFIG to testConfig,
                     MESSAGING_CONFIG to testConfig
                 )
-            ), coordinator
+            ),
+            coordinator
         )
     }
 

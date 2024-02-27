@@ -12,7 +12,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 @Component(service = [LocallyHostedIdentitiesService::class])
-internal class TestLocallyHostedIdentitiesServiceImpl  @Activate constructor(
+internal class TestLocallyHostedIdentitiesServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
 ) : LocallyHostedIdentitiesService {

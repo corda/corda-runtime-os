@@ -18,7 +18,7 @@ import javax.persistence.metamodel.Metamodel
 
 /** Manual stubs to avoid Mockito in OSGi tests. */
 object Stubs {
-
+    @Suppress("TooManyFunctions")
     class EntityManagerStub : EntityManager {
         companion object {
             private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)

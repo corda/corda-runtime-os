@@ -1,6 +1,7 @@
 package net.corda.rest.test
 
 import net.corda.rest.RestResource
+import net.corda.rest.SC_CREATED
 import net.corda.rest.annotations.HttpDELETE
 import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.HttpPUT
@@ -18,6 +19,13 @@ interface ResponseEntityRestResource : RestResource {
 
     @HttpPOST(path = "post-returns-ok-string-json")
     fun postReturnsOkWithEscapedJson(): ResponseEntity<String>
+
+    @HttpPOST(
+        path = "post-returns-created-string-json",
+        responseDescription = "Description of postReturnsCreatedWithEscapedJson",
+        successCode = SC_CREATED
+    )
+    fun postReturnsCreatedWithEscapedJson(): ResponseEntity<String>
 
     @HttpPOST(path = "post-returns-raw-entity")
     fun postReturnsRawEntity(): TestHttpEntity
@@ -39,5 +47,4 @@ interface ResponseEntityRestResource : RestResource {
 
     @HttpDELETE(path = "async-delete-returns-accepted")
     fun asyncDeleteReturnsAccepted(): ResponseEntity<DeleteStatus>
-
 }

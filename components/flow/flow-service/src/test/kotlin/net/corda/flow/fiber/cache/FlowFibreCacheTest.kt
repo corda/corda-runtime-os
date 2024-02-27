@@ -9,36 +9,57 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
+import java.util.UUID
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class FlowFibreCacheTest {
-    private val cacheEviction = mock< CacheEviction>()
+    private val cacheEviction = mock<CacheEviction>()
     private val key = mock<FlowKey>()
     private val value = mock<FlowFiber>()
+    private val sandboxGroupId = UUID.randomUUID()
+
+    @BeforeAll
+    fun setup() {
+        whenever(value.getSandboxGroupId()).thenReturn(sandboxGroupId)
+    }
 
     @Test
     fun `when get and no entry return null`() {
         val cache = FlowFiberCacheImpl(cacheEviction)
-        val entry = cache.get(mock(), 123)
+        val entry = cache.get(mock(), 123, sandboxGroupId)
         assertThat(entry).isNull()
     }
 
     @Test
-    fun `when get and entry wrong version return null`() {
+    fun `when get and entry wrong version return null and entry evicted`() {
         val cache = FlowFiberCacheImpl(cacheEviction)
         cache.put(key, 1, value)
-        val entry = cache.get(mock(), 123)
+        val entry = cache.get(key, 123, sandboxGroupId)
         assertThat(entry).isNull()
+        assertThat(cache.get(key, 1, sandboxGroupId)).isNull()
     }
 
     @Test
-    fun `when get and entry and version exist return`() {
+    fun `when get and entry wrong sandbox group ID return null and entry evicted`() {
         val cache = FlowFiberCacheImpl(cacheEviction)
         cache.put(key, 1, value)
-        val entry = cache.get(key, 1)
+        val entry = cache.get(key, 1, UUID.randomUUID())
+        assertThat(entry).isNull()
+        assertThat(cache.get(key, 1, sandboxGroupId)).isNull()
+    }
+
+    @Test
+    fun `when get and entry and version exist and matches sandbox group ID return`() {
+        val cache = FlowFiberCacheImpl(cacheEviction)
+        cache.put(key, 1, value)
+        val entry = cache.get(key, 1, sandboxGroupId)
         assertThat(entry).isSameAs(value)
     }
 
@@ -55,7 +76,7 @@ class FlowFibreCacheTest {
         val cache = FlowFiberCacheImpl(cacheEviction)
         cache.put(key, 1, value)
         cache.remove(key)
-        assertThat(cache.get(key, 1)).isNull()
+        assertThat(cache.get(key, 1, sandboxGroupId)).isNull()
     }
 
     @Test
@@ -78,7 +99,7 @@ class FlowFibreCacheTest {
         cache.put(key1, 1, mock())
         cache.put(key2, 1, mock())
         cache.remove(vnodeContext)
-        assertThat(cache.get(key1, 1)).isNull()
-        assertThat(cache.get(key2, 1)).isNull()
+        assertThat(cache.get(key1, 1, sandboxGroupId)).isNull()
+        assertThat(cache.get(key2, 1, sandboxGroupId)).isNull()
     }
 }

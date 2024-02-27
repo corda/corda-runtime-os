@@ -1,5 +1,6 @@
 package net.corda.rest.server.impl.utils
 
+import net.corda.rest.SC_OK
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.server.impl.apigen.models.Endpoint
 import net.corda.rest.server.impl.apigen.models.EndpointMethod
@@ -14,224 +15,226 @@ import net.corda.rest.test.TestHealthCheckAPIImpl
 import kotlin.reflect.jvm.javaMethod
 
 internal fun getHealthCheckApiTestResource(): Resource {
+    val apiVersions = setOf(RestApiVersion.C5_0, RestApiVersion.C5_1)
 
-  val apiVersions = setOf(RestApiVersion.C5_0, RestApiVersion.C5_1)
+    val endpointVoid = Endpoint(
+        method = EndpointMethod.GET,
+        title = "Void",
+        description = "Void endpoint",
+        path = "void",
+        parameters = listOf(),
+        responseBody = ResponseBody(description = "", successCode = SC_OK, type = Void.TYPE),
+        invocationMethod = InvocationMethod(method = TestHealthCheckAPI::voidResponse.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+        apiVersions
+    )
+    val endpointSanity = Endpoint(
+        method = EndpointMethod.GET,
+        title = "Sanity",
+        description = "Sanity endpoint",
+        path = "sanity",
+        parameters = listOf(),
+        responseBody = ResponseBody(description = "", successCode = SC_OK, type = String::class.java),
+        invocationMethod = InvocationMethod(method = TestHealthCheckAPI::void.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+        apiVersions
+    )
 
-  val endpointVoid = Endpoint(
-    method = EndpointMethod.GET,
-    title = "Void",
-    description = "Void endpoint",
-    path = "void",
-    parameters = listOf(),
-    responseBody = ResponseBody(description = "", type = Void.TYPE),
-    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::voidResponse.javaMethod!!, instance = TestHealthCheckAPIImpl()),
-    apiVersions
-  )
-  val endpointSanity = Endpoint(
-    method = EndpointMethod.GET,
-    title = "Sanity",
-    description = "Sanity endpoint",
-    path = "sanity",
-    parameters = listOf(),
-    responseBody = ResponseBody(description = "", type = String::class.java),
-    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::void.javaMethod!!, instance = TestHealthCheckAPIImpl()),
-    apiVersions
-  )
+    val endpointHello2 = Endpoint(
+        method = EndpointMethod.GET,
+        title = "Hello2",
+        description = "Hello endpoint",
+        path = "hello2/{name}",
+        parameters = listOf(
+            EndpointParameter(
+                id = "queryParam",
+                name = "id",
+                description = "id",
+                required = false,
+                classType = String::class.java,
+                type = ParameterType.QUERY,
+                default = null
+            ),
+            EndpointParameter(
+                id = "pathParam",
+                name = "name",
+                description = "The name",
+                required = true,
+                classType = String::class.java,
+                type = ParameterType.PATH,
+                default = null
+            )
 
-  val endpointHello2 = Endpoint(
-    method = EndpointMethod.GET,
-    title = "Hello2",
-    description = "Hello endpoint",
-    path = "hello2/{name}",
-    parameters = listOf(
-      EndpointParameter(
-        id = "queryParam",
-        name = "id",
-        description = "id",
-        required = false,
-        classType = String::class.java,
-        type = ParameterType.QUERY,
-        default = null
-      ),
-      EndpointParameter(
-        id = "pathParam",
-        name = "name",
-        description = "The name",
-        required = true,
-        classType = String::class.java,
-        type = ParameterType.PATH,
-        default = null
-      )
+        ),
+        responseBody = ResponseBody(description = "", successCode = SC_OK, type = String::class.java),
+        invocationMethod = InvocationMethod(method = TestHealthCheckAPI::hello2.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+        apiVersions
+    )
 
-    ),
-    responseBody = ResponseBody(description = "", type = String::class.java),
-    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::hello2.javaMethod!!, instance = TestHealthCheckAPIImpl()),
-    apiVersions
-  )
+    val endpointHello = Endpoint(
 
-  val endpointHello = Endpoint(
+        method = EndpointMethod.GET,
+        title = "Hello",
+        description = "Hello endpoint",
+        path = "hello/{name}",
+        parameters = listOf(
+            EndpointParameter(
+                id = "pathParam",
+                name = "name",
+                description = "The name",
+                required = true,
+                classType = String::class.java,
+                type = ParameterType.PATH,
+                default = null
+            ),
+            EndpointParameter(
+                id = "param",
+                name = "id",
+                description = "id",
+                required = false,
+                classType = Integer::class.java,
+                type = ParameterType.QUERY,
+                default = null
+            )
+        ),
+        responseBody = ResponseBody(description = "", successCode = SC_OK, type = String::class.java),
+        invocationMethod = InvocationMethod(method = TestHealthCheckAPI::hello.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+        apiVersions
+    )
 
-    method = EndpointMethod.GET,
-    title = "Hello",
-    description = "Hello endpoint",
-    path = "hello/{name}",
-    parameters = listOf(
-      EndpointParameter(
-        id = "pathParam",
-        name = "name",
-        description = "The name",
-        required = true,
-        classType = String::class.java,
-        type = ParameterType.PATH,
-        default = null
-      ),
-      EndpointParameter(
-        id = "param",
-        name = "id",
-        description = "id",
-        required = false,
-        classType = Integer::class.java,
-        type = ParameterType.QUERY,
-        default = null
-      )
-    ),
-    responseBody = ResponseBody(description = "", type = String::class.java),
-    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::hello.javaMethod!!, instance = TestHealthCheckAPIImpl()),
-    apiVersions
-  )
-
-  val endpointPing = Endpoint(
-    method = EndpointMethod.POST,
-    title = "ping",
-    description = "",
-    path = "ping",
-    parameters = listOf(
-      EndpointParameter(
-        id = "data",
-        description = "Data",
-        name = "data",
-        required = false,
-        classType = TestHealthCheckAPI.PingPongData::class.java,
-        type = ParameterType.BODY,
-        default = null
-      )
-    ),
-    responseBody = ResponseBody(description = "", type = String::class.java),
-    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::ping.javaMethod!!, instance = TestHealthCheckAPIImpl()),
-    apiVersions
-  )
-
-  val endpointplusOne = Endpoint(
-    method = EndpointMethod.GET,
-    title = "plusOne",
-    description = "",
-    path = "plusone",
-    parameters = listOf(
-      EndpointParameter(
-        id = "data",
+    val endpointPing = Endpoint(
+        method = EndpointMethod.POST,
+        title = "ping",
         description = "",
-        name = "data",
-        required = true,
-        classType = List::class.java,
-        type = ParameterType.QUERY,
-        default = null,
-        parameterizedTypes = listOf(GenericParameterizedType(String::class.java))
-      )
-    ),
-    responseBody = ResponseBody(
-      description = "Increased by one",
-      type = List::class.java,
-      parameterizedTypes = listOf(GenericParameterizedType(java.lang.Double::class.java))
-    ),
-    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::plusOne.javaMethod!!, instance = TestHealthCheckAPIImpl()),
-    apiVersions
-  )
+        path = "ping",
+        parameters = listOf(
+            EndpointParameter(
+                id = "data",
+                description = "Data",
+                name = "data",
+                required = false,
+                classType = TestHealthCheckAPI.PingPongData::class.java,
+                type = ParameterType.BODY,
+                default = null
+            )
+        ),
+        responseBody = ResponseBody(description = "", successCode = SC_OK, type = String::class.java),
+        invocationMethod = InvocationMethod(method = TestHealthCheckAPI::ping.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+        apiVersions
+    )
 
-  val endpointPlus = Endpoint(
-    method = EndpointMethod.POST,
-    title = "AddOne",
-    description = "Add One",
-    path = "plusone/{number}",
-    parameters = listOf(
-      EndpointParameter(
-        id = "number",
+    val endpointplusOne = Endpoint(
+        method = EndpointMethod.GET,
+        title = "plusOne",
         description = "",
-        name = "number",
-        required = true,
-        classType = Long::class.java,
-        type = ParameterType.PATH,
-        default = null
-      )
-    ),
-    responseBody = ResponseBody(description = "", type = Long::class.java),
-    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::plus.javaMethod!!, instance = TestHealthCheckAPIImpl()),
-    apiVersions
-  )
+        path = "plusone",
+        parameters = listOf(
+            EndpointParameter(
+                id = "data",
+                description = "",
+                name = "data",
+                required = true,
+                classType = List::class.java,
+                type = ParameterType.QUERY,
+                default = null,
+                parameterizedTypes = listOf(GenericParameterizedType(String::class.java))
+            )
+        ),
+        responseBody = ResponseBody(
+            description = "Increased by one",
+            successCode = SC_OK,
+            type = List::class.java,
+            parameterizedTypes = listOf(GenericParameterizedType(java.lang.Double::class.java))
+        ),
+        invocationMethod = InvocationMethod(method = TestHealthCheckAPI::plusOne.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+        apiVersions
+    )
 
-  val endpointBodyPlayground = Endpoint(
-    method = EndpointMethod.POST,
-    title = "bodyPlayground",
-    description = "",
-    path = "bodyplayground",
-    parameters = listOf(
-      EndpointParameter(
-        id = "s1",
-        description = "",
-        name = "s1",
-        required = true,
-        classType = String::class.java,
-        type = ParameterType.BODY,
-        default = null
-      ),
-      EndpointParameter(
-        id = "s2",
-        description = "",
-        name = "s2",
-        required = false,
-        classType = String::class.java,
-        type = ParameterType.BODY,
-        default = null
-      )
-    ),
-    responseBody = ResponseBody(description = "", type = String::class.java),
-    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::bodyPlayground.javaMethod!!, instance = TestHealthCheckAPIImpl()),
-    apiVersions
-  )
+    val endpointPlus = Endpoint(
+        method = EndpointMethod.POST,
+        title = "AddOne",
+        description = "Add One",
+        path = "plusone/{number}",
+        parameters = listOf(
+            EndpointParameter(
+                id = "number",
+                description = "",
+                name = "number",
+                required = true,
+                classType = Long::class.java,
+                type = ParameterType.PATH,
+                default = null
+            )
+        ),
+        responseBody = ResponseBody(description = "", successCode = SC_OK, type = Long::class.java),
+        invocationMethod = InvocationMethod(method = TestHealthCheckAPI::plus.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+        apiVersions
+    )
 
-  val endpointTimeCall = Endpoint(
-    method = EndpointMethod.POST,
-    title = "timeCall",
-    description = "",
-    path = "timecall",
-    parameters = listOf(
-      EndpointParameter(
-        id = "time",
+    val endpointBodyPlayground = Endpoint(
+        method = EndpointMethod.POST,
+        title = "bodyPlayground",
         description = "",
-        name = "time",
-        required = true,
-        classType = TestHealthCheckAPI.TimeCallDto::class.java,
-        type = ParameterType.BODY,
-        default = null
-      )
-    ),
-    responseBody = ResponseBody(description = "", type = String::class.java),
-    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::timeCall.javaMethod!!, instance = TestHealthCheckAPIImpl()),
-    apiVersions
-  )
+        path = "bodyplayground",
+        parameters = listOf(
+            EndpointParameter(
+                id = "s1",
+                description = "",
+                name = "s1",
+                required = true,
+                classType = String::class.java,
+                type = ParameterType.BODY,
+                default = null
+            ),
+            EndpointParameter(
+                id = "s2",
+                description = "",
+                name = "s2",
+                required = false,
+                classType = String::class.java,
+                type = ParameterType.BODY,
+                default = null
+            )
+        ),
+        responseBody = ResponseBody(description = "", successCode = SC_OK, type = String::class.java),
+        invocationMethod = InvocationMethod(method = TestHealthCheckAPI::bodyPlayground.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+        apiVersions
+    )
 
-  return Resource(
-    "HealthCheckAPI", "Health Check", "health/",
-    setOf(
-      endpointVoid,
-      endpointSanity,
-      endpointHello2,
-      endpointHello,
-      endpointPing,
-      endpointplusOne,
-      endpointPlus,
-      endpointBodyPlayground,
-      endpointTimeCall
-    ),
-    apiVersions
-  )
+    val endpointTimeCall = Endpoint(
+        method = EndpointMethod.POST,
+        title = "timeCall",
+        description = "",
+        path = "timecall",
+        parameters = listOf(
+            EndpointParameter(
+                id = "time",
+                description = "",
+                name = "time",
+                required = true,
+                classType = TestHealthCheckAPI.TimeCallDto::class.java,
+                type = ParameterType.BODY,
+                default = null
+            )
+        ),
+        responseBody = ResponseBody(description = "", successCode = SC_OK, type = String::class.java),
+        invocationMethod = InvocationMethod(method = TestHealthCheckAPI::timeCall.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+        apiVersions
+    )
+
+    return Resource(
+        "HealthCheckAPI",
+        "Health Check",
+        "health/",
+        setOf(
+            endpointVoid,
+            endpointSanity,
+            endpointHello2,
+            endpointHello,
+            endpointPing,
+            endpointplusOne,
+            endpointPlus,
+            endpointBodyPlayground,
+            endpointTimeCall
+        ),
+        apiVersions
+    )
 }

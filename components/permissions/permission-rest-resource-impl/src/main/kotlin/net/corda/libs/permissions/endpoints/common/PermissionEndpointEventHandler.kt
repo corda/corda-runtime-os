@@ -24,18 +24,18 @@ internal class PermissionEndpointEventHandler(private val endpointName: String) 
     internal var registration: RegistrationHandle? = null
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        log.debug { "${endpointName}: Received event: $event" }
+        log.debug { "$endpointName: Received event: $event" }
         when (event) {
             is StartEvent -> {
-                log.info("${endpointName}: Received start event, following PermissionServiceComponent for status updates.")
+                log.info("$endpointName: Received start event, following PermissionServiceComponent for status updates.")
                 followServicesForStatusUpdates(coordinator)
             }
             is RegistrationStatusChangeEvent -> {
-                log.info("${endpointName}: Received status update from PermissionServiceComponent: ${event.status}.")
+                log.info("$endpointName: Received status update from PermissionServiceComponent: ${event.status}.")
                 coordinator.updateStatus(event.status)
             }
             is StopEvent -> {
-                log.info("${endpointName}: Received stop event, closing dependencies and setting status to DOWN.")
+                log.info("$endpointName: Received stop event, closing dependencies and setting status to DOWN.")
                 registration?.close()
                 registration = null
                 coordinator.updateStatus(LifecycleStatus.DOWN)

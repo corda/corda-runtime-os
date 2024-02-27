@@ -1,6 +1,8 @@
 package net.corda.crypto.softhsm.impl
 
 import net.corda.crypto.persistence.WrappingKeyInfo
+import net.corda.crypto.persistence.db.model.SigningKeyEntity
+import net.corda.crypto.persistence.db.model.SigningKeyMaterialEntity
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.orm.utils.transaction
@@ -23,14 +25,14 @@ class WrappingRepositoryImpl(
 
     override fun close() = entityManagerFactory.close()
 
-    override fun saveKeyWithId(alias: String, key: WrappingKeyInfo, id: UUID?): WrappingKeyInfo =
-        entityManagerFactory.createEntityManager().use {
-            return it.transaction {
-                it.merge(
+    override fun saveKeyWithId(key: WrappingKeyInfo, id: UUID?): WrappingKeyInfo =
+        entityManagerFactory.createEntityManager().use { em ->
+            em.transaction { t ->
+                t.merge(
                     WrappingKeyEntity(
-                        id = id?:UUID.randomUUID(),
+                        id = id ?: UUID.randomUUID(),
                         generation = key.generation,
-                        alias = alias,
+                        alias = key.alias,
                         created = Instant.now(),
                         rotationDate = LocalDate.parse("9999-12-31").atStartOfDay().toInstant(ZoneOffset.UTC),
                         encodingVersion = key.encodingVersion,
@@ -41,22 +43,71 @@ class WrappingRepositoryImpl(
                     )
                 )
             }.toDto().also {
-                logger.info("Storing wrapping key with alias $alias in tenant $tenantId")
+                logger.info("Storing wrapping key with alias ${key.alias} generation ${key.generation} in tenant $tenantId")
             }
         }
 
-    override fun saveKey(alias: String, key: WrappingKeyInfo): WrappingKeyInfo =
-        saveKeyWithId(alias, key, null)
+    override fun saveKey(key: WrappingKeyInfo): WrappingKeyInfo =
+        saveKeyWithId(key, null)
 
     override fun findKey(alias: String): WrappingKeyInfo? = findKeyAndId(alias)?.second
     override fun findKeyAndId(alias: String): Pair<UUID, WrappingKeyInfo>? =
         entityManagerFactory.createEntityManager().use { it ->
             it.createQuery(
-                "FROM ${WrappingKeyEntity::class.simpleName} AS k WHERE k.alias = :alias",
+                "FROM ${WrappingKeyEntity::class.simpleName} AS k WHERE k.alias = :alias " +
+                    "AND k.generation = (SELECT MAX(k.generation) FROM ${WrappingKeyEntity::class.java.simpleName} k WHERE k.alias=:alias)",
                 WrappingKeyEntity::class.java
-            ).setParameter("alias", alias).setMaxResults(1).resultList.singleOrNull()?.let {dao ->
+            ).setParameter("alias", alias).setMaxResults(1).resultList.singleOrNull()?.let { dao ->
                 Pair(dao.id, dao.toDto())
             }
+        }
+
+    override fun findKeysNotWrappedByParentKey(parentKeyAlias: String): List<WrappingKeyInfo> =
+        entityManagerFactory.createEntityManager().use {
+            it.createQuery(
+                "FROM ${WrappingKeyEntity::class.simpleName} AS k WHERE k.parentKeyReference != :parentKeyAlias",
+                WrappingKeyEntity::class.java
+            ).setParameter("parentKeyAlias", parentKeyAlias).resultList
+                .map { dao -> dao.toDto() }
+                .groupBy { it.alias } // bucket into aliases
+                .map { it.value.sortedBy { it.generation }.lastOrNull() } // grab only the highest generation per alias
+                .filterNotNull()
+        }
+
+    override fun getKeyById(id: UUID): WrappingKeyInfo? = entityManagerFactory.createEntityManager().use {
+        it.createQuery(
+            "FROM ${WrappingKeyEntity::class.simpleName} AS k WHERE k.id = :id",
+            WrappingKeyEntity::class.java
+        ).setParameter("id", id).resultStream.map { dao -> dao.toDto() }.findFirst().orElse(null)
+    }
+
+    override fun getAllKeyIdsAndAliases(): Set<Pair<UUID, String>> =
+        entityManagerFactory.createEntityManager().use { it ->
+            // We can have multiple key materials per signing key, all of which point to different wrapping keys with different
+            // generation numbers. So it's important to group results from this query by signing key id and then grab only the
+            // one with the highest generation number of the wrapping key. This leaves us with the single mapping of
+            // signing key <-> key material <-> wrapping key (highest generation).
+            it.createQuery(
+                "SELECT s, w FROM ${SigningKeyEntity::class.java.simpleName} s, ${SigningKeyMaterialEntity::class.java.simpleName} m," +
+                    " ${WrappingKeyEntity::class.java.simpleName} w " +
+                    "WHERE s.tenantId = :tenantId AND m.signingKeyId = s.id AND m.wrappingKeyId = w.id "
+            ).setParameter("tenantId", tenantId).resultList
+                .map {
+                    val signingKeyAndWrappingKey =
+                        checkNotNull(it as? Array<*>) { "JPA returned invalid results object" }
+                    val signingKeyEntity = checkNotNull(signingKeyAndWrappingKey[0] as? SigningKeyEntity)
+                    { "JPA returned wrong entity type for SigningKeyEntity" }
+                    val wrappingKeyEntity = checkNotNull(signingKeyAndWrappingKey[1] as? WrappingKeyEntity)
+                    { "JPA returned wrong entity type for WrappingKeyEntity" }
+                    Pair(signingKeyEntity, wrappingKeyEntity)
+                }
+                .groupBy { it.first.id } // group by signing key id
+                .map {
+                    it.value.sortedBy { it.second.generation }.lastOrNull()
+                } // highest generation wrapping key per signing key only
+                .filterNotNull()
+                .map { Pair(it.second.id, it.second.alias) } // extract UUID and alias of wrapping keys
+                .toSet()
         }
 }
 
@@ -68,6 +119,7 @@ fun WrappingKeyEntity.toDto() =
         algorithmName = this.algorithmName,
         keyMaterial = this.keyMaterial,
         generation = this.generation,
-        parentKeyAlias = this.parentKeyReference
+        parentKeyAlias = this.parentKeyReference,
+        alias = this.alias
     )
         

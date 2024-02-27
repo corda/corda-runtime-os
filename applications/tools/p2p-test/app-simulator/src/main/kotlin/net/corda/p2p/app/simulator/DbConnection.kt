@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentLinkedDeque
 class DbConnection(
     dbParams: DBParams,
     sql: String,
-): AutoCloseable {
+) : AutoCloseable {
     private val resources = ConcurrentLinkedDeque<AutoCloseable>()
     val connection by lazy {
         val properties = Properties()
@@ -30,11 +30,9 @@ class DbConnection(
         }
     }
 
-
     override fun close() {
         resources.forEach {
             it.close()
         }
     }
-
 }

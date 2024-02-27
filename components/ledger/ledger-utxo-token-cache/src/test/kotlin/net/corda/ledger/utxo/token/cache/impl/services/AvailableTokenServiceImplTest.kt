@@ -1,12 +1,5 @@
 package net.corda.ledger.utxo.token.cache.impl.services
 
-import java.math.BigDecimal
-import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
-import java.util.UUID
-import javax.persistence.EntityManager
-import javax.persistence.EntityManagerFactory
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
@@ -16,14 +9,20 @@ import net.corda.ledger.utxo.token.cache.services.TokenSelectionMetricsImpl
 import net.corda.ledger.utxo.token.cache.services.internal.AvailableTokenServiceImpl
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
-import net.corda.utilities.time.UTCClock
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import org.mockito.kotlin.any
-import org.mockito.kotlin.isNull
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
+import java.math.BigDecimal
+import java.util.UUID
+import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
 
 class AvailableTokenServiceImplTest {
     private val totalBalance = BigDecimal(10)
@@ -39,7 +38,7 @@ class AvailableTokenServiceImplTest {
         whenever(getByHoldingIdentityShortHash(any())).thenReturn(virtualNode)
     }
     private val dbConnectionManager = mock<DbConnectionManager>().apply {
-        whenever(getOrCreateEntityManagerFactory(eq(uuid), any())).thenReturn(entityManagerFactory)
+        whenever(getOrCreateEntityManagerFactory(eq(uuid), any(), any())).thenReturn(entityManagerFactory)
     }
     private val utxoTokenRepository = mock<UtxoTokenRepository>().apply {
         whenever(queryBalance(any(), any(), isNull(), isNull())).thenReturn(totalBalance)
@@ -53,7 +52,7 @@ class AvailableTokenServiceImplTest {
         whenever(get(any())).thenReturn(JpaEntitiesSet.create("empty", emptySet()))
     }
 
-    private val tokenSelectionMetrics = TokenSelectionMetricsImpl(UTCClock())
+    private val tokenSelectionMetrics = TokenSelectionMetricsImpl()
     private val availableTokenService = AvailableTokenServiceImpl(
         virtualNodeInfoService,
         dbConnectionManager,

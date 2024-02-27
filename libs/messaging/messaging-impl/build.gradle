@@ -34,23 +34,28 @@ dependencies {
     implementation 'net.corda:corda-config-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
+    implementation libs.guava
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:test-utilities")
     testImplementation project(':libs:platform-info')
     testImplementation project(':libs:web:web-impl')
 
-    testImplementation "io.javalin:javalin-osgi:$javalinVersion"
+    testImplementation libs.javalin
     constraints {
-        implementation("org.eclipse.jetty:jetty-server:$jettyVersion") {
+        testImplementation(libs.bundles.jetty) {
             because 'Javalin uses an older version of Jetty which is exposed to CVE-2023-26048 and CVE-2023-26049. ' +
                     'This might be resolved in the future versions of Javalin.'
         }
     }
 
     testRuntimeOnly 'org.osgi:osgi.core'
-    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    testRuntimeOnly libs.slf4j.simple
+
+    integrationTestImplementation project(':libs:web:web-impl')
+    integrationTestImplementation project(':libs:lifecycle:lifecycle-impl')
+    integrationTestImplementation project(':libs:lifecycle:registry')
+    integrationTestImplementation project(':libs:schema-registry:schema-registry-impl')
+    integrationTestImplementation project(':libs:messaging:kafka-message-bus-impl')
+    integrationTestImplementation libs.kafka.client
 }

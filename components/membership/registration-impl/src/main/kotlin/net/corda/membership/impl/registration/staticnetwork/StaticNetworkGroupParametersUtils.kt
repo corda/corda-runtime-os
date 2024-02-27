@@ -1,7 +1,7 @@
 package net.corda.membership.impl.registration.staticnetwork
 
-import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -11,15 +11,14 @@ import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.GroupParametersNotaryUpdater
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.toMap
-import net.corda.membership.registration.MembershipRegistrationException
+import net.corda.membership.network.writer.staticnetwork.StaticNetworkInfoMappingUtils.toCorda
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmSignatureSpec
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmSigningKeyProvider
-import net.corda.membership.network.writer.staticnetwork.StaticNetworkInfoMappingUtils.toCorda
+import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.utilities.time.Clock
 import net.corda.v5.membership.MemberInfo
 import java.nio.ByteBuffer
 import java.security.Signature
-
 
 object StaticNetworkGroupParametersUtils {
     /**

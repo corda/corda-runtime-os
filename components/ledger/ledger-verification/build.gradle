@@ -8,6 +8,8 @@ plugins {
 
 description 'Corda ledger verification'
 
+ext.cordaEnableFormatting = true
+
 configurations {
     cpis {
         canBeConsumed = false
@@ -28,7 +30,6 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'org.slf4j:slf4j-api'
 
-    implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:virtual-node:cpk-read-service')
     implementation project(':components:virtual-node:sandbox-group-context-service')
 
@@ -52,8 +53,6 @@ dependencies {
     runtimeOnly project(":libs:crypto:crypto-serialization-impl")
     runtimeOnly project(':libs:crypto:merkle-impl')
 
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-
     testImplementation project(':libs:ledger:ledger-utxo-data')
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
     testImplementation project(":libs:lifecycle:lifecycle-impl")
@@ -70,8 +69,8 @@ dependencies {
     // IMPORTANT:  do NOT attempt to use mockito-kotlin in the integration tests.
     // It's not an OSGi bundle, so you will get errors (despite Intellij appearing to allow you to use it).
 
-    integrationTestImplementation("org.mockito:mockito-core:$mockitoVersion")
-    integrationTestImplementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
+    integrationTestImplementation libs.mockito.core
+    integrationTestImplementation(libs.jackson.module.kotlin)
 
     integrationTestImplementation project(':components:virtual-node:cpi-info-read-service')
     integrationTestImplementation project(':components:virtual-node:virtual-node-info-read-service')

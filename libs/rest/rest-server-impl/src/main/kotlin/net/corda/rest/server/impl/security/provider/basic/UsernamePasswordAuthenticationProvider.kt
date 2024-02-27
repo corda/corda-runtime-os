@@ -1,6 +1,6 @@
 package net.corda.rest.server.impl.security.provider.basic
 
-import net.corda.rest.security.AuthorizingSubject
+import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.security.read.Password
 import net.corda.rest.security.read.RestSecurityManager
 import net.corda.rest.server.impl.security.provider.AuthenticationProvider
@@ -31,6 +31,10 @@ internal class UsernamePasswordAuthenticationProvider(private val restSecurityMa
     }
 
     override fun provideParameters(): Map<String, String> {
-        return mapOf(REALM_KEY to restSecurityManagerSupplier.get().id.value)
+        return mapOf(REALM_KEY to REALM_VALUE)
+    }
+
+    companion object {
+        const val REALM_VALUE = "Corda REST Worker"
     }
 }

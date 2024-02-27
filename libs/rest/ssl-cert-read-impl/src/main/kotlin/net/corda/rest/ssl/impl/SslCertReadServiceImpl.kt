@@ -80,7 +80,7 @@ class SslCertReadServiceImpl(private val createDirectory: () -> Path) : SslCertR
             val bootKeyStorePath = config.getString(BOOT_REST_TLS_KEYSTORE_FILE_PATH)
             val keyStorePassword = config.getString(BOOT_REST_TLS_KEYSTORE_PASSWORD)
             KeyStoreInfo(Path.of(bootKeyStorePath), keyStorePassword)
-        } else if(config.hasPath(BOOT_REST_TLS_CRT_PATH)) {
+        } else if (config.hasPath(BOOT_REST_TLS_CRT_PATH)) {
             val tlsCertPath = config.getString(BOOT_REST_TLS_CRT_PATH)
             val tlsKeyPath = config.getString(BOOT_REST_TLS_KEY_PATH)
             val caChainPath = config.getString(BOOT_REST_TLS_CA_CRT_PATH)
@@ -88,12 +88,12 @@ class SslCertReadServiceImpl(private val createDirectory: () -> Path) : SslCertR
         } else {
             log.warn(
                 "Using default self-signed TLS certificate for REST endpoint. To stop seeing this message, please use bootstrap " +
-                        "parameters: " +
-                        "('-r${BOOT_REST_TLS_KEYSTORE_FILE_PATH.withoutPrefix}' and " +
-                            "'-r${BOOT_REST_TLS_KEYSTORE_PASSWORD.withoutPrefix}')" +
-                        " or " +
-                        "('-r${BOOT_REST_TLS_CRT_PATH.withoutPrefix}', '-r${BOOT_REST_TLS_KEY_PATH.withoutPrefix}' " +
-                            "and '-r${BOOT_REST_TLS_CA_CRT_PATH.withoutPrefix}')."
+                    "parameters: " +
+                    "('-r${BOOT_REST_TLS_KEYSTORE_FILE_PATH.withoutPrefix}' and " +
+                    "'-r${BOOT_REST_TLS_KEYSTORE_PASSWORD.withoutPrefix}')" +
+                    " or " +
+                    "('-r${BOOT_REST_TLS_CRT_PATH.withoutPrefix}', '-r${BOOT_REST_TLS_KEY_PATH.withoutPrefix}' " +
+                    "and '-r${BOOT_REST_TLS_CA_CRT_PATH.withoutPrefix}')."
             )
             val tempDirectoryPath = createDirectory()
             val keyStorePath = Path.of(tempDirectoryPath.toString(), KEYSTORE_NAME)
@@ -105,7 +105,6 @@ class SslCertReadServiceImpl(private val createDirectory: () -> Path) : SslCertR
     }
 
     private fun createKeyStoreInfoFromCrt(tlsCertPath: String, tlsKeyPath: String, caChainPath: String): KeyStoreInfo {
-
         val ks = KeyStore.getInstance(KEYSTORE_TYPE)
         ks.load(null, PASSWORD.toCharArray())
 
@@ -138,7 +137,6 @@ class SslCertReadServiceImpl(private val createDirectory: () -> Path) : SslCertR
     }
 
     private fun readPrivateKey(tlsKeyPath: String): PrivateKey {
-
         val privateKeyInfo = File(tlsKeyPath).reader().use { keyReader ->
             val pemParser = PEMParser(keyReader)
             val pemObject = pemParser.readObject()

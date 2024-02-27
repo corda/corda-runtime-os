@@ -60,12 +60,12 @@ class KeySpecExtractor(
             val validSpecs = if (type == KeySpecType.SESSION) {
                 requireNotNull(validSpecsNamesForSessionKeys[this.schemeCodeName]) {
                     "Invalid key scheme ${this.schemeCodeName}. The following " +
-                            "schemes could be used when generating session keys: ${validSpecsNamesForSessionKeys.keys}"
+                        "schemes could be used when generating session keys: ${validSpecsNamesForSessionKeys.keys}"
                 }
             } else {
                 requireNotNull(validSpecsNames[this.schemeCodeName]) {
                     "Invalid key scheme ${this.schemeCodeName}. The following " +
-                            "schemes could be used when generating keys: ${validSpecsNames.keys}"
+                        "schemes could be used when generating keys: ${validSpecsNames.keys}"
                 }
             }
             specName?.let {

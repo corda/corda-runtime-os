@@ -5,4 +5,4 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 open class MembershipInvalidGroupPolicyException(
     message: String,
     cause: Throwable? = null,
-): CordaRuntimeException(message, cause)
+) : CordaRuntimeException(message, cause)

@@ -3,6 +3,8 @@ package net.corda.membership.impl.registration.dynamic.mgm
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.virtualnode.HoldingIdentity
@@ -10,6 +12,7 @@ import net.corda.virtualnode.HoldingIdentity
 internal class MGMRegistrationGroupPolicyHandler(
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
     private val membershipPersistenceClient: MembershipPersistenceClient,
+    private val membershipQueryClient: MembershipQueryClient
 ) {
     private companion object {
         const val GROUP_POLICY_VERSION = 1L
@@ -37,6 +40,15 @@ internal class MGMRegistrationGroupPolicyHandler(
         }
 
         return groupPolicy
+    }
+
+    fun getLastGroupPolicy(holdingIdentity: HoldingIdentity): LayeredPropertyMap {
+        return when (val result = membershipQueryClient.queryGroupPolicy(holdingIdentity)) {
+            is MembershipQueryResult.Failure -> throw MGMRegistrationGroupPolicyHandlingException(
+                "Retrieving group policy failed due to: ${result.errorMsg}"
+            )
+            is MembershipQueryResult.Success -> result.payload.first
+        }
     }
 }
 

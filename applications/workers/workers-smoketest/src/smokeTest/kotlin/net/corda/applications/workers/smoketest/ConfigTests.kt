@@ -1,5 +1,7 @@
 package net.corda.applications.workers.smoketest
 
+import net.corda.e2etest.utilities.ClusterReadiness
+import net.corda.e2etest.utilities.ClusterReadinessChecker
 import net.corda.e2etest.utilities.config.configWithDefaultsNode
 import net.corda.e2etest.utilities.config.getConfig
 import net.corda.e2etest.utilities.config.managedConfig
@@ -9,12 +11,20 @@ import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
 import net.corda.schema.configuration.ReconciliationConfig
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CONFIG_INTERVAL_MS
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
+import java.time.Duration
 
 @Order(40)
 @Suppress("FunctionName")
-class ConfigTests {
+class ConfigTests : ClusterReadiness by ClusterReadinessChecker() {
+
+    @BeforeEach
+    fun setupEach() {
+        // check cluster is ready
+        assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(100))
+    }
 
     @Test
     fun `get config includes defaults`() {
@@ -35,13 +45,13 @@ class ConfigTests {
         val initialValue = getReconConfigValue(defaults = true)
         val newValue = (initialValue * 2)
 
-        managedConfig { configManager ->
-            configManager.load(RECONCILIATION_CONFIG, RECONCILIATION_CONFIG_INTERVAL_MS, newValue).apply()
-            waitForConfigurationChange(RECONCILIATION_CONFIG, RECONCILIATION_CONFIG_INTERVAL_MS, newValue.toString(), false)
-
-            val updatedValue = getReconConfigValue(defaults = false)
-            assertThat(updatedValue).isEqualTo(newValue)
-        }
+        managedConfig()
+            .load(RECONCILIATION_CONFIG, RECONCILIATION_CONFIG_INTERVAL_MS, newValue)
+            .apply {
+                waitForConfigurationChange(RECONCILIATION_CONFIG, RECONCILIATION_CONFIG_INTERVAL_MS, newValue.toString(), false)
+                val updatedValue = getReconConfigValue(defaults = false)
+                assertThat(updatedValue).isEqualTo(newValue)
+            }
     }
 
     private fun getReconConfigValue(defaults: Boolean): Int {

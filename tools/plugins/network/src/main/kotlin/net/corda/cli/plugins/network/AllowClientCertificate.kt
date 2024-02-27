@@ -10,22 +10,22 @@ import picocli.CommandLine.Parameters
 @Command(
     name = "allow-client-certificate",
     description = [
-        "Allow client certificate in mutual TLS."
+        "Allow client certificate in mutual TLS.",
     ],
-    mixinStandardHelpOptions = true
+    mixinStandardHelpOptions = true,
 )
 class AllowClientCertificate : Runnable, RestCommand() {
     @Parameters(
         description = ["The MGM holding identity short hash"],
         paramLabel = "MGM_HASH",
-        index = "0"
+        index = "0",
     )
     lateinit var mgmShortHash: String
 
     @Parameters(
         description = ["The certificate subject to allow"],
         paramLabel = "SUBJECTS",
-        index = "1..*"
+        index = "1..*",
     )
     var subjects: Collection<String> = emptyList()
 
@@ -42,7 +42,7 @@ class AllowClientCertificate : Runnable, RestCommand() {
         }
 
         createRestClient(MGMRestResource::class).use { it ->
-            
+
             val proxy = it.start().proxy
             println("Allowing certificates...")
 

@@ -45,14 +45,14 @@ class GenerateGroupPolicyTest {
             CommandLine(app).execute()
         }.apply {
             val memberList = memberList(this)
-            memberList.find { it["name"].asText()=="C=GB, L=London, O=Alice" }.apply {
+            memberList.find { it["name"].asText() == "C=GB, L=London, O=Alice" }.apply {
                 assertEquals("ACTIVE", this?.get("memberStatus")?.asText())
                 assertEquals("https://alice.corda5.r3.com:10000", this?.get("endpointUrl-1")?.asText())
                 assertEquals("1", this?.get("endpointProtocol-1")?.asText())
             }
 
-            assertNotNull(memberList.find { it["name"].asText()=="C=GB, L=London, O=Bob" })
-            assertNotNull(memberList.find { it["name"].asText()=="C=GB, L=London, O=Charlie" })
+            assertNotNull(memberList.find { it["name"].asText() == "C=GB, L=London, O=Bob" })
+            assertNotNull(memberList.find { it["name"].asText() == "C=GB, L=London, O=Charlie" })
         }
     }
 
@@ -84,11 +84,11 @@ class GenerateGroupPolicyTest {
         tapSystemErrAndOutNormalized {
             CommandLine(app).execute(
                 "--endpoint=http://dummy-url",
-                "--endpoint-protocol=5"
+                "--endpoint-protocol=5",
             )
         }.apply {
             assertTrue(
-                this.contains("\"members\" : [ ]")
+                this.contains("\"members\" : [ ]"),
             )
         }
     }
@@ -102,7 +102,7 @@ class GenerateGroupPolicyTest {
                 "--name=C=GB, L=London, O=Member1",
                 "--name=C=GB, L=London, O=Member2",
                 "--endpoint=http://dummy-url",
-                "--endpoint-protocol=5"
+                "--endpoint-protocol=5",
             )
         }.apply {
             memberList(this).forEach {
@@ -142,19 +142,19 @@ class GenerateGroupPolicyTest {
         val filePath = Files.createFile(tempDir.resolve("src.json"))
         filePath.toFile().writeText(
             "{\n" +
-                    "  \"endpoint\": \"http://dummy-url\",\n" +
-                    "  \"endpointProtocol\": 5,\n" +
-                    "  \"members\": [\n" +
-                    "    {\n" +
-                    "      \"name\": \"C=GB, L=London, O=Member1\",\n" +
-                    "      \"status\": \"PENDING\",\n" +
-                    "      \"endpointProtocol\": 10\n" +
-                    "    },\n" +
-                    "    {\n" +
-                    "      \"name\": \"C=GB, L=London, O=Member2\"\n" +
-                    "    }\n" +
-                    "  ]\n" +
-                    "}"
+                "  \"endpoint\": \"http://dummy-url\",\n" +
+                "  \"endpointProtocol\": 5,\n" +
+                "  \"members\": [\n" +
+                "    {\n" +
+                "      \"name\": \"C=GB, L=London, O=Member1\",\n" +
+                "      \"status\": \"PENDING\",\n" +
+                "      \"endpointProtocol\": 10\n" +
+                "    },\n" +
+                "    {\n" +
+                "      \"name\": \"C=GB, L=London, O=Member2\"\n" +
+                "    }\n" +
+                "  ]\n" +
+                "}",
         )
 
         tapSystemErrAndOutNormalized {
@@ -174,8 +174,8 @@ class GenerateGroupPolicyTest {
         val filePath = Files.createFile(tempDir.resolve("src.yaml"))
         filePath.toFile().writeText(
             "endpoint: \"http://dummy-url\"\n" +
-                    "endpointProtocol: 5\n" +
-                    "memberNames: [\"C=GB, L=London, O=Member1\", \"C=GB, L=London, O=Member2\"]\n"
+                "endpointProtocol: 5\n" +
+                "memberNames: [\"C=GB, L=London, O=Member1\", \"C=GB, L=London, O=Member2\"]\n",
         )
 
         tapSystemErrAndOutNormalized {
@@ -196,17 +196,17 @@ class GenerateGroupPolicyTest {
         val filePath = Files.createFile(tempDir.resolve("src.yaml"))
         filePath.toFile().writeText(
             "endpoint: \"http://dummy-url\"\n" +
-                    "endpointProtocol: 5\n" +
-                    "memberNames:\n" +
-                    "  - \"C=GB, L=London, O=Member1\"\n" +
-                    "  - \"C=GB, L=London, O=Member2\"\n" +
-                    "members:\n" +
-                    "  - member:\n" +
-                    "      name: \"C=GB, L=London, O=Member1\"\n" +
-                    "      status: \"PENDING\"\n" +
-                    "      endpointProtocol: 10\n" +
-                    "  - member:\n" +
-                    "      name: \"C=GB, L=London, O=Member2\""
+                "endpointProtocol: 5\n" +
+                "memberNames:\n" +
+                "  - \"C=GB, L=London, O=Member1\"\n" +
+                "  - \"C=GB, L=London, O=Member2\"\n" +
+                "members:\n" +
+                "  - member:\n" +
+                "      name: \"C=GB, L=London, O=Member1\"\n" +
+                "      status: \"PENDING\"\n" +
+                "      endpointProtocol: 10\n" +
+                "  - member:\n" +
+                "      name: \"C=GB, L=London, O=Member2\"",
         )
 
         tapSystemErrAndOutNormalized {
@@ -243,8 +243,8 @@ class GenerateGroupPolicyTest {
         val filePath2 = Files.createFile(tempDir.resolve("src2.yaml"))
         filePath2.toFile().writeText(
             "members:\n" +
-                    "    - name: \"C=GB, L=London, O=Member1\"\n" +
-                    "      status: \"PENDING\""
+                "    - name: \"C=GB, L=London, O=Member1\"\n" +
+                "      status: \"PENDING\"",
         )
 
         tapSystemErrAndOutNormalized {

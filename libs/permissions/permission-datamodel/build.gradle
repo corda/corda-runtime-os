@@ -6,6 +6,8 @@ plugins {
 
 description 'Permission data model'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -31,7 +33,7 @@ dependencies {
 
     integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly libs.postgresql.jdbc
 
     integrationTestRuntimeOnly("org.hibernate:hibernate-core:$hibernateVersion")
     integrationTestImplementation("org.hibernate:hibernate-osgi:$hibernateVersion") {

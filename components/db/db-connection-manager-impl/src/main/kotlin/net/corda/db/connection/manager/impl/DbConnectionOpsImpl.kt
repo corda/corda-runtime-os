@@ -34,15 +34,16 @@ class DbConnectionOpsImpl(
     override fun getClusterDataSource(): CloseableDataSource =
         dbConnectionsRepository.getClusterDataSource()
 
-    override fun createDatasource(connectionId: UUID): CloseableDataSource {
+    override fun createDatasource(connectionId: UUID, enablePool: Boolean): CloseableDataSource {
         logger.debug { "Creating datasource for connection $connectionId" }
-        return dbConnectionsRepository.create(connectionId) ?: throw DBConfigurationException("Details for $connectionId cannot be found")
+        return dbConnectionsRepository.create(connectionId, enablePool)
+            ?: throw DBConfigurationException("Details for $connectionId cannot be found")
     }
 
     override fun getDataSource(name: String, privilege: DbPrivilege): DataSource? =
         dbConnectionsRepository.create(name, privilege)
 
-    override fun getDataSource(config: SmartConfig): CloseableDataSource =
+    override fun getDataSource(config: SmartConfig, enablePool: Boolean): CloseableDataSource =
         dbConnectionsRepository.create(config)
 
     override fun putConnection(name: String, privilege: DbPrivilege, config: SmartConfig,
@@ -81,10 +82,14 @@ class DbConnectionOpsImpl(
         )
     }
 
-    override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet):
+    override fun createEntityManagerFactory(
+        connectionId: UUID,
+        entitiesSet: JpaEntitiesSet,
+        enablePool: Boolean,
+        ):
             EntityManagerFactory {
         logger.trace { "Loading DB connection details for $connectionId" }
-        val dataSource = dbConnectionsRepository.create(connectionId) ?:
+        val dataSource = dbConnectionsRepository.create(connectionId, enablePool) ?:
         throw DBConfigurationException("Details for $connectionId cannot be found")
         return entityManagerFactoryFactory.create(
             connectionId.toString(),
@@ -95,7 +100,8 @@ class DbConnectionOpsImpl(
 
     override fun getOrCreateEntityManagerFactory(
         connectionId: UUID,
-        entitiesSet: JpaEntitiesSet
+        entitiesSet: JpaEntitiesSet,
+        enablePool: Boolean,
     ): EntityManagerFactory {
         throw UnsupportedOperationException("You should be using ${DbConnectionOpsImpl::createEntityManagerFactory} instead")
     }

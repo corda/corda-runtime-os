@@ -3,61 +3,80 @@ package net.corda.libs.statemanager.impl
 import net.corda.db.core.CloseableDataSource
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.metadata
-import net.corda.libs.statemanager.impl.model.v1.StateEntity
+import net.corda.libs.statemanager.impl.metrics.MetricsRecorder
+import net.corda.libs.statemanager.impl.metrics.MetricsRecorderImpl
 import net.corda.libs.statemanager.impl.repository.StateRepository
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.Assertions.entry
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.spy
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import java.sql.Connection
 import java.time.Instant
-import javax.persistence.PersistenceException
 
 class StateManagerImplTest {
-    private val connection: Connection = mock { }
+    private val connection: Connection = mock()
     private val stateRepository: StateRepository = mock()
+    private val metricsRecorder: MetricsRecorder = spy<MetricsRecorderImpl>()
     private val dataSource: CloseableDataSource = mock {
         on { connection } doReturn connection
     }
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock {}
-    private val stateManager = StateManagerImpl(lifecycleCoordinatorFactory, dataSource, stateRepository)
+    private val stateManager =
+        StateManagerImpl(lifecycleCoordinatorFactory, dataSource, stateRepository, metricsRecorder)
 
-    private val persistentStateOne = StateEntity("key1", "state1".toByteArray(), "{}", 1, Instant.now())
-    private val apiStateOne = persistentStateOne.toState()
-    private val persistentStateTwo = StateEntity("key2", "state2".toByteArray(), "{}", 2, Instant.now())
-    private val apiStateTwo = persistentStateTwo.toState()
-    private val persistentStateThree = StateEntity("key3", "state3".toByteArray(), "{}", 3, Instant.now())
-    private val apiStateThree = persistentStateThree.toState()
+    private val stateOne = State("key1", "state1".toByteArray(), 1, metadata(), Instant.now())
+    private val stateTwo = State("key2", "state2".toByteArray(), 2, metadata(), Instant.now())
+    private val stateThree = State("key3", "state3".toByteArray(), 3, metadata(), Instant.now())
 
-    private fun StateEntity.toState() = State(key, value, version, metadata(), modifiedTime)
-
-    private fun StateEntity.newVersion() = StateEntity(key, value, metadata, version + 1, modifiedTime)
+    private fun State.newVersion() = State(key, value, version + 1, metadata, modifiedTime)
 
     @Test
     fun createReturnsEmptyMapWhenAllInsertsSucceed() {
-        assertThat(stateManager.create(listOf(apiStateOne, apiStateTwo))).isEmpty()
-        verify(stateRepository).create(connection, persistentStateOne)
-        verify(stateRepository).create(connection, persistentStateTwo)
+        doReturn(setOf(stateOne.key, stateTwo.key))
+            .whenever(stateRepository).create(connection, listOf(stateOne, stateTwo))
+        assertThat(stateManager.create(listOf(stateOne, stateTwo))).isEmpty()
+        verify(stateRepository).create(connection, listOf(stateOne, stateTwo))
+    }
+
+    @Test
+    fun `create throws an error if two states with the same key are created`() {
+        val states = listOf(
+            stateOne,
+            stateTwo,
+            stateOne,
+        )
+
+        assertThatThrownBy {
+            stateManager.create(states)
+        }.isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining("Creating multiple states with the same key is not supported")
     }
 
     @Test
     fun createReturnsMapWithStatesThatAlreadyExist() {
-        val persistenceException = PersistenceException("Mock Exception")
-        doThrow(persistenceException).whenever(stateRepository).create(connection, persistentStateOne)
+        doReturn(setOf(stateTwo.key))
+            .whenever(stateRepository).create(connection, listOf(stateOne, stateTwo))
 
-        assertThat(stateManager.create(listOf(apiStateOne, apiStateTwo)))
-            .containsExactly(entry(apiStateOne.key, persistenceException))
-        verify(stateRepository).create(connection, persistentStateOne)
-        verify(stateRepository).create(connection, persistentStateTwo)
+        assertThat(stateManager.create(listOf(stateOne, stateTwo)))
+            .contains(stateOne.key)
+        verify(stateRepository).create(connection, listOf(stateOne, stateTwo))
+    }
+
+    @Test
+    fun createReturnsEmptyWithEmptyInput() {
+        assertThat(stateManager.create(listOf())).isEmpty()
+        verify(stateRepository, never()).create(any(), any())
     }
 
     @Test
@@ -71,31 +90,57 @@ class StateManagerImplTest {
     @Test
     fun updateReturnsEmptyMapWhenOptimisticLockingCheckSucceedsForAllStates() {
         whenever(stateRepository.update(any(), any()))
-            .thenReturn(StateRepository.StateUpdateSummary(
-                listOf(apiStateTwo.key, apiStateTwo.key, apiStateThree.key),
-                emptyList()
-            ))
+            .thenReturn(
+                StateRepository.StateUpdateSummary(
+                    listOf(stateTwo.key, stateTwo.key, stateThree.key),
+                    emptyList()
+                )
+            )
 
-        val result = stateManager.update(listOf(apiStateOne, apiStateTwo, apiStateThree))
+        val result = stateManager.update(listOf(stateOne, stateTwo, stateThree))
         assertThat(result).isEmpty()
-        verify(stateRepository).update(connection, listOf(persistentStateOne, persistentStateTwo, persistentStateThree))
+        verify(stateRepository).update(connection, listOf(stateOne, stateTwo, stateThree))
         verifyNoMoreInteractions(stateRepository)
     }
 
     @Test
     fun updateReturnsLatestPersistedViewForStatesThatFailedOptimisticLockingCheck() {
-        val persistedStateTwo = persistentStateTwo.newVersion()
+        val persistedStateTwo = stateTwo.newVersion()
         whenever(stateRepository.get(any(), any())).thenReturn(listOf(persistedStateTwo))
         whenever(stateRepository.update(any(), any()))
-            .thenReturn(StateRepository.StateUpdateSummary(
-                listOf(apiStateTwo.key, apiStateThree.key),
-                listOf(apiStateTwo.key)
-            ))
+            .thenReturn(
+                StateRepository.StateUpdateSummary(
+                    listOf(stateTwo.key, stateThree.key),
+                    listOf(stateTwo.key)
+                )
+            )
 
-        val result = stateManager.update(listOf(apiStateOne, apiStateTwo, apiStateThree))
-        assertThat(result).containsExactly(entry(persistedStateTwo.key, persistedStateTwo.toState()))
-        verify(stateRepository).get(connection, listOf(apiStateTwo.key))
-        verify(stateRepository).update(connection, listOf(persistentStateOne, persistentStateTwo, persistentStateThree))
+        val result = stateManager.update(listOf(stateOne, stateTwo, stateThree))
+        assertThat(result).containsExactly(entry(persistedStateTwo.key, persistedStateTwo))
+        verify(stateRepository).get(connection, listOf(stateTwo.key))
+        verify(stateRepository).update(connection, listOf(stateOne, stateTwo, stateThree))
+        verifyNoMoreInteractions(stateRepository)
+    }
+
+    @Test
+    fun `update returns null for states that failed because they were already deleted`() {
+        val persistedStateTwo = stateTwo.newVersion()
+        whenever(stateRepository.get(any(), any())).thenReturn(listOf(persistedStateTwo))
+        whenever(stateRepository.update(any(), any()))
+            .thenReturn(
+                StateRepository.StateUpdateSummary(
+                    listOf(stateTwo.key),
+                    listOf(stateTwo.key, stateThree.key)
+                )
+            )
+
+        val result = stateManager.update(listOf(stateOne, stateTwo, stateThree))
+        assertThat(result).containsExactly(
+            entry(persistedStateTwo.key, persistedStateTwo),
+            entry(stateThree.key, null)
+        )
+        verify(stateRepository).get(connection, listOf(stateTwo.key, stateThree.key))
+        verify(stateRepository).update(connection, listOf(stateOne, stateTwo, stateThree))
         verifyNoMoreInteractions(stateRepository)
     }
 
@@ -111,22 +156,22 @@ class StateManagerImplTest {
     fun deleteReturnsEmptyMapWhenOptimisticLockingCheckSucceedsForAllStates() {
         whenever(stateRepository.delete(any(), any())).thenReturn(emptyList())
 
-        val result = stateManager.delete(listOf(apiStateOne, apiStateTwo, apiStateThree))
+        val result = stateManager.delete(listOf(stateOne, stateTwo, stateThree))
         assertThat(result).isEmpty()
-        verify(stateRepository).delete(connection, listOf(persistentStateOne, persistentStateTwo, persistentStateThree))
+        verify(stateRepository).delete(connection, listOf(stateOne, stateTwo, stateThree))
         verifyNoMoreInteractions(stateRepository)
     }
 
     @Test
     fun deleteReturnsLatestPersistedViewForStatesThatFailedOptimisticLockingCheck() {
-        val persistedStateThree = persistentStateThree.newVersion()
+        val persistedStateThree = stateThree.newVersion()
         whenever(stateRepository.get(any(), any())).thenReturn(listOf(persistedStateThree))
         whenever(stateRepository.delete(any(), any())).thenReturn(listOf(persistedStateThree.key))
 
-        val result = stateManager.delete(listOf(apiStateOne, apiStateTwo, apiStateThree))
-        assertThat(result).containsExactly(entry(persistedStateThree.key, persistedStateThree.toState()))
-        verify(stateRepository).get(connection, listOf(apiStateThree.key))
-        verify(stateRepository).delete(connection, listOf(persistentStateOne, persistentStateTwo, persistentStateThree))
+        val result = stateManager.delete(listOf(stateOne, stateTwo, stateThree))
+        assertThat(result).containsExactly(entry(persistedStateThree.key, persistedStateThree))
+        verify(stateRepository).get(connection, listOf(stateThree.key))
+        verify(stateRepository).delete(connection, listOf(stateOne, stateTwo, stateThree))
         verifyNoMoreInteractions(stateRepository)
     }
 

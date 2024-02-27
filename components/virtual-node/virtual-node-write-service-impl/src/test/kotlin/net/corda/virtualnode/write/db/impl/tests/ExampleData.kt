@@ -1,6 +1,5 @@
 package net.corda.virtualnode.write.db.impl.tests
 
-import java.time.Instant
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.parseSecureHash
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
@@ -13,8 +12,10 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.write.db.impl.writer.DbConnection
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDb
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.time.Instant
 import net.corda.data.identity.HoldingIdentity as AvroHoldingIdentity
 
 internal const val ALICE_X500 = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
@@ -29,7 +30,7 @@ internal val MGM_HOLDING_ID1 = HoldingIdentity(MGM_X500_NAME, GROUP_ID1)
 
 internal const val CPI_NAME1 = "CPI1"
 internal const val CPI_VERSION1 = "1.0"
-internal val CPI_CHECKSUM1 = SecureHashImpl("SHA-256","CPI_CHECKSUM1".toByteArray())
+internal val CPI_CHECKSUM1 = SecureHashImpl("SHA-256", "CPI_CHECKSUM1".toByteArray())
 internal val CPI_SIGNER_HASH1 = parseSecureHash("SHA-256:1234567890123456")
 internal val CPI_IDENTIFIER1 = CpiIdentifier(CPI_NAME1, CPI_VERSION1, CPI_SIGNER_HASH1)
 internal val CPI_METADATA1 = CpiMetadata(CPI_IDENTIFIER1, CPI_CHECKSUM1, emptySet(), GROUP_POLICY1, -1, Instant.now())
@@ -58,7 +59,7 @@ internal fun getVNodeDb(
     ddlConnection: DbConnection? = mock(),
     dmlConnection: DbConnection? = mock(),
 ): VirtualNodeDb {
-    return  mock<VirtualNodeDb>().apply {
+    return mock<VirtualNodeDb>().apply {
         whenever(this.isPlatformManagedDb).thenReturn(isPlatformManagedDb)
         whenever(this.dbType).thenReturn(dbType)
         whenever(this.dbConnections).thenReturn(
@@ -67,6 +68,8 @@ internal fun getVNodeDb(
                 DbPrivilege.DML to dmlConnection,
             )
         )
+        whenever(this.checkDbMigrationsArePresent()).thenReturn(true)
+        whenever(this.checkCpiMigrationsArePresent(any())).thenReturn(true)
     }
 }
 

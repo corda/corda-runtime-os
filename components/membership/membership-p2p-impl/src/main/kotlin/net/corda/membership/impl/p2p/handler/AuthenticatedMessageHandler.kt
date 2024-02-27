@@ -1,7 +1,7 @@
 package net.corda.membership.impl.p2p.handler
 
-import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.messaging.api.records.Record
 import java.nio.ByteBuffer
 
 internal abstract class AuthenticatedMessageHandler : MessageHandler {

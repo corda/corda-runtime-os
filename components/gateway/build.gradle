@@ -27,18 +27,17 @@ dependencies {
     implementation project(":libs:crypto:crypto-utils")
     implementation project(":libs:utilities")
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation libs.typesafe.config
     implementation "io.netty:netty-codec-http:$nettyVersion"
     implementation "commons-validator:commons-validator:$commonsVersion"
-    implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
+    implementation libs.caffeine
     implementation project(':libs:schema-registry:schema-registry')
     implementation project(":libs:metrics")
+    implementation project(':libs:platform-info')
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:test-utilities")
-    integrationTestRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
-    integrationTestImplementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    integrationTestRuntimeOnly libs.log4j.slf4j
+    integrationTestImplementation libs.log4j.core
     integrationTestImplementation project(":libs:schema-registry:schema-registry-impl")
     integrationTestImplementation "net.corda:corda-avro-schema"
 
@@ -69,4 +68,5 @@ sourceSets {
 tasks.named('integrationTest') {
     final String hostsFilePath = new File(project.sourceSets["integrationTest"].output.resourcesDir.absolutePath, "hosts").absolutePath
     jvmArgs "-Djdk.net.hosts.file=$hostsFilePath"
+    jvmArgs "-Djdk.tls.client.enableCAExtension=true"
 }

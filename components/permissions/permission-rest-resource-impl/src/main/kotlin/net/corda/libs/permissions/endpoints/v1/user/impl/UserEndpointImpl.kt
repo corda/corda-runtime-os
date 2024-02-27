@@ -1,10 +1,5 @@
 package net.corda.libs.permissions.endpoints.v1.user.impl
 
-import net.corda.rest.PluggableRestResource
-import net.corda.rest.exception.BadRequestException
-import net.corda.rest.exception.ResourceNotFoundException
-import net.corda.rest.response.ResponseEntity
-import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.libs.permissions.common.constant.RoleKeys.DEFAULT_SYSTEM_ADMIN_ROLE
 import net.corda.libs.permissions.common.constant.UserKeys.DEFAULT_ADMIN_FULL_NAME
 import net.corda.libs.permissions.endpoints.common.PermissionEndpointEventHandler
@@ -18,6 +13,7 @@ import net.corda.libs.permissions.endpoints.v1.user.types.UserPermissionSummaryR
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
+import net.corda.libs.permissions.manager.request.ChangeUserPasswordDto
 import net.corda.libs.permissions.manager.request.GetPermissionSummaryRequestDto
 import net.corda.libs.permissions.manager.request.GetRoleRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
@@ -27,11 +23,22 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.permissions.management.PermissionManagementService
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.annotations.HttpPOST
+import net.corda.rest.authorization.AuthorizationProvider
+import net.corda.rest.authorization.AuthorizingSubject
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.response.ResponseEntity
+import net.corda.rest.security.CURRENT_REST_CONTEXT
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import kotlin.reflect.full.findAnnotation
+import kotlin.reflect.full.memberFunctions
 
 /**
  * A REST resource endpoint for User operations.
@@ -46,20 +53,47 @@ class UserEndpointImpl @Activate constructor(
     private val platformInfoProvider: PlatformInfoProvider,
 ) : UserEndpoint, PluggableRestResource<UserEndpoint>, Lifecycle {
 
+    private val changeSelfPasswordMethodPath: String
+
+    init {
+        changeSelfPasswordMethodPath = this::class.memberFunctions
+            .firstOrNull { it.name == ::changeUserPasswordSelf.name }
+            ?.let { method ->
+                UserEndpoint::class.memberFunctions.find { it.name == method.name }?.findAnnotation<HttpPOST>()
+            }
+            ?.path ?: throw IllegalStateException("changeUserPasswordSelf method path not found")
+    }
+
+    override val authorizationProvider = object : AuthorizationProvider {
+        override fun isAuthorized(subject: AuthorizingSubject, action: String): Boolean {
+            val requestedPath = action.split(":", limit = 2).last()
+
+            // if requested Path is for /selfpassword we override the default authorization, as all users
+            // should be able to change their password
+            return if (requestedPath.endsWith(changeSelfPasswordMethodPath)) {
+                true
+            } else {
+                AuthorizationProvider.Default.isAuthorized(subject, action)
+            }
+        }
+    }
+
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         @Suppress("ThrowsCount")
         private fun PermissionManager.checkProtectedRole(loginName: String, roleId: String, principal: String) {
-            val role = getRole(GetRoleRequestDto(principal, roleId)) ?:
-                throw ResourceNotFoundException("Role ID", roleId)
+            val role = getRole(GetRoleRequestDto(principal, roleId))
+                ?: throw ResourceNotFoundException("Role ID", roleId)
 
-            val user = getUser(GetUserRequestDto(principal, loginName)) ?:
-                throw ResourceNotFoundException("User login", loginName)
+            val user = getUser(GetUserRequestDto(principal, loginName))
+                ?: throw ResourceNotFoundException("User login", loginName)
 
             if (role.initialAdminRole && user.fullName == DEFAULT_ADMIN_FULL_NAME) {
-                throw BadRequestException("$DEFAULT_SYSTEM_ADMIN_ROLE cannot be removed from $DEFAULT_ADMIN_FULL_NAME",
-                    mapOf("roleId" to roleId, "loginName" to loginName))
+                throw BadRequestException(
+                    "$DEFAULT_SYSTEM_ADMIN_ROLE cannot be removed from $DEFAULT_ADMIN_FULL_NAME",
+                    mapOf("roleId" to roleId, "loginName" to loginName)
+                )
             }
         }
     }
@@ -75,8 +109,12 @@ class UserEndpointImpl @Activate constructor(
     override fun createUser(createUserType: CreateUserType): ResponseEntity<UserResponseType> {
         val principal = getRestThreadLocalContext()
 
-        val createUserResult = withPermissionManager(permissionManagementService.permissionManager, logger) {
-            createUser(createUserType.convertToDto(principal))
+        val createUserResult = try {
+            withPermissionManager(permissionManagementService.permissionManager, logger) {
+                createUser(createUserType.convertToDto(principal))
+            }
+        } catch (e: IllegalArgumentException) {
+            throw InvalidInputDataException(e.message ?: "Invalid argument in request.")
         }
 
         return ResponseEntity.created(createUserResult.convertToEndpointType())
@@ -102,6 +140,38 @@ class UserEndpointImpl @Activate constructor(
         }
 
         return userResponseDto?.convertToEndpointType() ?: throw ResourceNotFoundException("User", loginName)
+    }
+
+    override fun changeUserPasswordSelf(password: String): UserResponseType {
+        val principal = getRestThreadLocalContext()
+
+        val userResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            try {
+                changeUserPasswordSelf(ChangeUserPasswordDto(principal, principal.lowercase(), password))
+            } catch (e: NoSuchElementException) {
+                throw ResourceNotFoundException(e.message ?: "No resource found for this request.")
+            } catch (e: IllegalArgumentException) {
+                throw InvalidInputDataException(e.message ?: "Invalid argument in request.")
+            }
+        }
+
+        return userResponseDto.convertToEndpointType()
+    }
+
+    override fun changeOtherUserPassword(username: String, password: String): UserResponseType {
+        val principal = getRestThreadLocalContext()
+
+        val userResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            try {
+                changeUserPasswordOther(ChangeUserPasswordDto(principal, username.lowercase(), password))
+            } catch (e: NoSuchElementException) {
+                throw ResourceNotFoundException(e.message ?: "No resource found for this request.")
+            } catch (e: IllegalArgumentException) {
+                throw InvalidInputDataException(e.message ?: "Invalid argument in request.")
+            }
+        }
+
+        return userResponseDto.convertToEndpointType()
     }
 
     override fun addRole(loginName: String, roleId: String): ResponseEntity<UserResponseType> {

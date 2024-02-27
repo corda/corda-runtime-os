@@ -1,8 +1,8 @@
 package net.corda.libs.permissions.validation.cache.factory
 
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.data.permissions.summary.UserPermissionSummary
 import net.corda.libs.permissions.validation.cache.PermissionValidationCache
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Factory for creating permission validation cache implementations.

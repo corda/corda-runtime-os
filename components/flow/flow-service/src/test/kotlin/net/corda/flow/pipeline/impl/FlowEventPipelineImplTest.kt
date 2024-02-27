@@ -27,33 +27,29 @@ import org.mockito.kotlin.whenever
 import net.corda.data.flow.state.waiting.Wakeup as WakeUpWaitingFor
 
 class FlowEventPipelineImplTest {
-
+    private val runOrContinueTimeout = 60000L
     private val payload = ExternalEventResponse("foo")
     private val waitingForWakeup = WaitingFor(WakeUpWaitingFor())
-
-    private val RUN_OR_CONTINUE_TIMEOUT = 60000L
-
     private val mockHoldingIdentity = mock<HoldingIdentity>().apply {
         whenever(shortHash).thenReturn(ShortHash.Companion.of("0123456789abc"))
     }
     private val mockFlowId = "flow_id_111"
     private val checkpoint = mock<FlowCheckpoint>().apply {
         whenever(waitingFor).thenReturn(waitingForWakeup)
-        whenever(inRetryState).thenReturn(false)
         whenever(holdingIdentity).thenReturn(mockHoldingIdentity)
         whenever(flowId).thenReturn(mockFlowId)
         whenever(flowStartContext).thenReturn(FlowStartContext().apply {
-            this.flowClassName="f1"
-            this.requestId="r1"
-            this.initiatedBy = net.corda.data.identity.HoldingIdentity(BOB_X500,"group1")
+            this.flowClassName = "f1"
+            this.requestId = "r1"
+            this.initiatedBy = net.corda.data.identity.HoldingIdentity(BOB_X500, "group1")
         })
     }
 
-    private val defaultinputContext = buildFlowEventContext<Any>(checkpoint, payload)
+    private val defaultInputContext = buildFlowEventContext<Any>(checkpoint, payload)
     private val outputContext = buildFlowEventContext<Any>(checkpoint, payload)
 
     private val startFlowEventHandler = mock<FlowEventHandler<Any>>().apply {
-        whenever(preProcess(defaultinputContext)).thenReturn(outputContext)
+        whenever(preProcess(defaultInputContext)).thenReturn(outputContext)
     }
 
     private val externalEventResponseEventHandler = mock<FlowEventHandler<Any>>().apply {
@@ -61,7 +57,7 @@ class FlowEventPipelineImplTest {
     }
 
     private val flowGlobalPostProcessor = mock<FlowGlobalPostProcessor>().apply {
-        whenever(postProcess(defaultinputContext)).thenReturn(outputContext)
+        whenever(postProcess(defaultInputContext)).thenReturn(outputContext)
     }
 
     private val mockFlowExecutionPipelineStage = mock<FlowExecutionPipelineStage>().apply {
@@ -73,11 +69,12 @@ class FlowEventPipelineImplTest {
         whenever(get(any())).thenReturn(virtualNodeInfo)
     }
 
-    private fun buildPipeline(inputContext: FlowEventContext<Any> = defaultinputContext): FlowEventPipelineImpl {
+    private fun buildPipeline(inputContext: FlowEventContext<Any> = defaultInputContext): FlowEventPipelineImpl {
         return FlowEventPipelineImpl(
             mapOf(
                 StartFlow::class.java to startFlowEventHandler,
-                ExternalEventResponse::class.java to externalEventResponseEventHandler),
+                ExternalEventResponse::class.java to externalEventResponseEventHandler
+            ),
             mockFlowExecutionPipelineStage,
             flowGlobalPostProcessor,
             inputContext,
@@ -114,23 +111,51 @@ class FlowEventPipelineImplTest {
     }
 
     @Test
+    fun `pipeline exits if flow start operational status is inactive`() {
+        val mockCheckpoint = mock<FlowCheckpoint> {
+            whenever(it.doesExist).thenReturn(true)
+            whenever(it.holdingIdentity).thenReturn(mockHoldingIdentity)
+        }
+        val mockContext = mock<FlowEventContext<Any>> {
+            whenever(it.checkpoint).thenReturn(mockCheckpoint)
+        }
+        val pipeline =
+            FlowEventPipelineImpl(
+                mapOf(),
+                mock(),
+                mock(),
+                mockContext,
+                virtualNodeInfoReadService
+            )
+
+        val mockVirtualNode = mock<VirtualNodeInfo> {
+            whenever(it.flowStartOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
+        }
+        whenever(virtualNodeInfoReadService.get(mockHoldingIdentity)).thenReturn(mockVirtualNode)
+
+        assertThrows<FlowMarkedForKillException> {
+            pipeline.virtualNodeFlowOperationalChecks()
+        }
+    }
+
+    @Test
     fun `execute flow invokes the execute flow pipeline stage`() {
         val pipeline = buildPipeline()
-        pipeline.executeFlow(RUN_OR_CONTINUE_TIMEOUT)
-        verify(mockFlowExecutionPipelineStage).runFlow(eq(defaultinputContext), eq(RUN_OR_CONTINUE_TIMEOUT), any())
+        pipeline.executeFlow(runOrContinueTimeout)
+        verify(mockFlowExecutionPipelineStage).runFlow(eq(defaultInputContext), eq(runOrContinueTimeout), any())
     }
 
     @Test
     fun `globalPostProcessing calls the FlowGlobalPostProcessor when output is set`() {
         val pipeline = buildPipeline()
         assertEquals(outputContext, pipeline.globalPostProcessing().context)
-        verify(flowGlobalPostProcessor).postProcess(defaultinputContext)
+        verify(flowGlobalPostProcessor).postProcess(defaultInputContext)
     }
 
     @Test
     fun `globalPostProcessing calls the FlowGlobalPostProcessor when output is not set`() {
         val pipeline = buildPipeline()
         assertEquals(outputContext, pipeline.globalPostProcessing().context)
-        verify(flowGlobalPostProcessor).postProcess(defaultinputContext)
+        verify(flowGlobalPostProcessor).postProcess(defaultInputContext)
     }
 }

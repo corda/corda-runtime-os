@@ -32,7 +32,9 @@ class VirtualNodeSenderFactoryImpl @Activate constructor(
      * @see VirtualNodeSender
      */
     override fun createSender(
-        timeout: Duration, messagingConfig: SmartConfig, asyncPublisherConfig: PublisherConfig
+        timeout: Duration,
+        messagingConfig: SmartConfig,
+        asyncPublisherConfig: PublisherConfig
     ): VirtualNodeSender {
         try {
             return VirtualNodeSenderImpl(

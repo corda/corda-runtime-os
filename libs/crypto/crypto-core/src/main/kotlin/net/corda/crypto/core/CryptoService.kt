@@ -11,6 +11,7 @@ import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import java.security.PublicKey
+import java.util.UUID
 
 /**
  * Crypto service which can be used to sign and generate new key pairs.
@@ -110,7 +111,7 @@ interface CryptoService {
     ): ByteArray
 
     /**
-     * Generates a new key to be used as a wrapping key. 
+     * Generates a new key to be used as a wrapping key.
      *
      * @param wrappingKeyAlias the alias of the key to be used as a wrapping key.
      * @param failIfExists a flag indicating whether the method should fail if a key already exists under
@@ -201,7 +202,7 @@ interface CryptoService {
      *
      * @param tenantId The tenant's id which the keys belong to.
      * @param keyIds Key ids to look keys for.
-     * 
+     *
      * @return the set of keys we could find information about, which may not be all keys. In particular
      *         information about keys for other tenants will be missing.
      */
@@ -215,7 +216,7 @@ interface CryptoService {
      *
      * @param tenantId The tenant's id which the keys belong to.
      * @param fullKeyIds Key ids to look keys for.
-     * 
+     *
      * @return the set of keys we could find information about, which may not be all keys. In particular
      *         information about keys for other tenants will be missing.
      */
@@ -240,7 +241,7 @@ interface CryptoService {
         masterKeyAlias: String,
         context: Map<String, String>,
     )
-    
+
     /**
      * Generates a new random key pair using the configured default key scheme and adds it to the internal key storage.
      *
@@ -308,9 +309,52 @@ interface CryptoService {
      * @param tenantId the tenant that holds the wrapping key
      * @param targetAlias the alias of the wrapping key that is to be decrypted then encrypted
      * @param newParentKeyAlias the new parent key to use for encrypting the wrapping key at rest
+     * @return the new wrapping generation number
      *
      * @throws IllegalStateException if the newParentKeyAlias or the current parent key alias is not
      *         in the configuration unmanaged keys map or targetAlias is not found
      */
-    fun rewrapWrappingKey(tenantId: String, targetAlias: String, newParentKeyAlias: String)
+    fun rewrapWrappingKey(tenantId: String, targetAlias: String, newParentKeyAlias: String): Int
+
+    /**
+     * Encrypt [plainBytes] using the symmetric key associated with the given tenant.
+     *
+     * If the key is rotated, the ability to decrypt any data previously encrypted using that key will be lost.
+     *
+     * @param tenantId ID of the tenant owning the key. The tenant must have been assigned the HSM category
+     * 'ENCRYPTION_SECRET'.
+     * @param alias Optional. Alias of the symmetric key. If no alias is provided, the default
+     *   alias for [tenantId] under HSM category 'ENCRYPTION_SECRET' will be used.
+     * @param plainBytes The byte array to be encrypted.
+     */
+    fun encrypt(
+        tenantId: String,
+        plainBytes: ByteArray,
+        alias: String? = null,
+    ): ByteArray
+
+    /**
+     * Decrypt [cipherBytes] using the symmetric key associated with the given tenant.
+     *
+     * @param tenantId ID of the tenant owning the key. The tenant must have been assigned the HSM category
+     * 'ENCRYPTION_SECRET'.
+     * @param alias Optional. Alias of the symmetric key. If no alias is provided, the default alias for [tenantId]
+     * under HSM category 'ENCRYPTION_SECRET' will be used.
+     * @param cipherBytes The byte array to be decrypted.
+     */
+    fun decrypt(
+        tenantId: String,
+        cipherBytes: ByteArray,
+        alias: String? = null,
+    ): ByteArray
+
+    /**
+     * Rewrap all signing keys which are wrapped in the specified managed wrappingKey.
+     *
+     * @param managedWrappingKeyId The managed wrapping key which is being rotated away from
+     * @param tenantId The tenant Id which uses the specified wrapping key
+     *
+     * @return The number of keys rewrapped
+     */
+    fun rewrapAllSigningKeysWrappedBy(managedWrappingKeyId: UUID, tenantId: String): Int
 }

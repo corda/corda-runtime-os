@@ -18,7 +18,7 @@ abstract class ClusterInfo {
         private const val DEFAULT_REST_PORT = 8888
         private const val DEFAULT_P2P_HOST = "localhost"
         private const val DEFAULT_P2P_PORT = 8080
-        private val DEFAULT_REST_API_VERSION = RestApiVersion.C5_1.toString()
+        private val DEFAULT_REST_API_VERSION = RestApiVersion.C5_2.toString()
     }
 
     val name: String get() = "E2E_CLUSTER_${id}"
@@ -108,4 +108,22 @@ object ClusterCInfo : ClusterInfo() {
  */
 object ClusterDInfo : ClusterInfo() {
     override val id = "D"
+}
+
+internal enum class TlsType(
+    val groupPolicyMame: String,
+    val configName: String,
+) {
+    ONE_WAY("OneWay", "ONE_WAY"),
+    MUTUAL("Mutual", "MUTUAL");
+
+    companion object {
+        val type by lazy {
+            if (System.getenv("CORDA_E2E_TEST_TLS_TYPE") != null) {
+                MUTUAL
+            } else {
+                ONE_WAY
+            }
+        }
+    }
 }

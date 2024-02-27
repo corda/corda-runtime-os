@@ -10,7 +10,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "org.mockito:mockito-core:$mockitoVersion"
+    implementation libs.mockito.core
 
     implementation project(':components:security-manager')
 }

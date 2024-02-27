@@ -11,9 +11,9 @@ package net.corda.ledger.persistence.utxo.impl
  */
 interface UtxoQueryProvider {
     /**
-     * @property findTransactionPrivacySaltAndMetadata SQL text for [UtxoRepositoryImpl.findTransactionPrivacySaltAndMetadata].
+     * @property findTransactionsPrivacySaltAndMetadata SQL text for [UtxoRepositoryImpl.findTransactionsPrivacySaltAndMetadata].
      */
-    val findTransactionPrivacySaltAndMetadata: String
+    val findTransactionsPrivacySaltAndMetadata: String
 
     /**
      * @property findTransactionComponentLeafs SQL text for [UtxoRepositoryImpl.findTransactionComponentLeafs].
@@ -57,6 +57,16 @@ interface UtxoQueryProvider {
     val persistTransaction: String
 
     /**
+     * @property persistUnverifiedTransaction SQL text for [UtxoRepositoryImpl.persistUnverifiedTransaction].
+     */
+    val persistUnverifiedTransaction: String
+
+    /**
+     * @property persistFilteredTransaction SQL text for [UtxoRepositoryImpl.persistFilteredTransaction].
+     */
+    val persistFilteredTransaction: String
+
+    /**
      * @property persistTransactionMetadata SQL text for [UtxoRepositoryImpl.persistTransactionMetadata].
      */
     val persistTransactionMetadata: String
@@ -64,23 +74,33 @@ interface UtxoQueryProvider {
     /**
      * @property persistTransactionSource SQL text for [UtxoRepositoryImpl.persistTransactionSource].
      */
-    val persistTransactionSource: String
+    val persistTransactionSources: (batchSize: Int) -> String
 
     /**
      * @property persistTransactionComponentLeaf SQL text for [UtxoRepositoryImpl.persistTransactionComponentLeaf].
      */
-    val persistTransactionComponentLeaf: String
+    val persistTransactionComponents: (batchSize: Int) -> String
 
     /**
      * @param consumed Whether the persisted states have been consumed.
-     * @property persistVisibleTransactionOutput SQL text for [UtxoRepositoryImpl.persistVisibleTransactionOutput].
+     * @property persistVisibleTransactionOutput SQL text for [UtxoRepositoryImpl.persistVisibleTransactionOutputs].
      */
-    fun persistVisibleTransactionOutput(consumed: Boolean): String
+    val persistVisibleTransactionOutputs: (batchSize: Int) -> String
 
     /**
      * @property persistTransactionSignature SQL text for [UtxoRepositoryImpl.persistTransactionSignature].
      */
-    val persistTransactionSignature: String
+    val persistTransactionSignatures: (batchSize: Int) -> String
+
+    /**
+     * @property persistMerkleProof SQL text for [UtxoRepositoryImpl.persistMerkleProof].
+     */
+    val persistMerkleProofs: (batchSize: Int) -> String
+
+    /**
+     * @property persistMerkleProofLeaf SQL text for [UtxoRepositoryImpl.persistMerkleProofLeaf]
+     */
+    val persistMerkleProofLeaves: (batchSize: Int) -> String
 
     /**
      * @property updateTransactionStatus SQL text for [UtxoRepositoryImpl.updateTransactionStatus].
@@ -91,4 +111,14 @@ interface UtxoQueryProvider {
      * @property persistSignedGroupParameters SQL text for [UtxoRepositoryImpl.persistSignedGroupParameters].
      */
     val persistSignedGroupParameters: String
+
+    /**
+     * @property findTransactionIdsAndStatuses SQL text for [UtxoRepositoryImpl.findTransactionIdsAndStatuses].
+     */
+    val findTransactionIdsAndStatuses: String
+
+    /**
+     * @property findMerkleProofs SQL text for [UtxoRepositoryImpl.findMerkleProofs].
+     */
+    val findMerkleProofs: String
 }

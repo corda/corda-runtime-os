@@ -49,11 +49,11 @@ class InMemorySessionReplayerTest {
 
     private companion object {
         const val GROUP_ID = "myGroup"
-        val US = createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB",GROUP_ID)
+        val US = createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", GROUP_ID)
         val COUNTER_PARTY = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", GROUP_ID)
         const val SERIAL = 1L
         val SESSION_COUNTERPARTIES = SessionManager.SessionCounterparties(
-            US, COUNTER_PARTY, MembershipStatusFilter.ACTIVE, SERIAL
+            US, COUNTER_PARTY, MembershipStatusFilter.ACTIVE, SERIAL, false
         )
         val id = UUID.randomUUID().toString()
         const val MAX_MESSAGE_SIZE = 100000

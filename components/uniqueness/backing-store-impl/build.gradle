@@ -40,6 +40,7 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     api project(':libs:lifecycle:lifecycle')
+    api project(":components:virtual-node:virtual-node-info-read-service")
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "net.corda:corda-avro-schema"
@@ -53,11 +54,9 @@ dependencies {
     implementation project(":libs:metrics")
     implementation project(":libs:uniqueness:common")
     implementation project(":libs:utilities")
+    implementation project(":libs:virtual-node:virtual-node-common")
 
     testImplementation "org.hibernate:hibernate-core:$hibernateVersion"
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:crypto-testkit")
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:uniqueness:backing-store-fake")
@@ -75,13 +74,13 @@ dependencies {
     integrationTestImplementation project(':testing:db-testkit')
 
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly libs.postgresql.jdbc
 
-    backingStoreBenchmarkRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    backingStoreBenchmarkRuntimeOnly libs.log4j.slf4j
 
     // For JSON serialization to DB
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    implementation libs.jackson.module.kotlin
+    implementation libs.jackson.datatype.jsr310
 }
 
 tasks.named('jar', Jar) {
@@ -102,11 +101,12 @@ tasks.register('backingStoreBenchmark', Test) {
     systemProperty "bsBenchNumIterations", project.getProperty("bsBenchNumIterations")
     systemProperty "bsBenchNumOpsPerIteration", project.getProperty("bsBenchNumOpsPerIteration")
 
-    systemProperty "postgresDb", project.getProperty("postgresDb")
-    systemProperty "postgresHost", project.getProperty("postgresHost")
-    systemProperty "postgresPassword", project.getProperty("postgresPassword")
-    systemProperty "postgresPort", project.getProperty("postgresPort")
-    systemProperty "postgresUser", project.getProperty("postgresUser")
+    systemProperty "databaseName", project.getProperty("databaseName")
+    systemProperty "databaseHost", project.getProperty("databaseHost")
+    systemProperty "databaseAdminPassword", project.getProperty("databaseAdminPassword")
+    systemProperty "databasePort", project.getProperty("databasePort")
+    systemProperty "databaseAdminUser", project.getProperty("databaseAdminUser")
+    systemProperty "databaseType", project.getProperty("databaseType")
 
     // Ensures benchmark is always re-run if executed from the console
     outputs.upToDateWhen { false }

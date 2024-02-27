@@ -31,10 +31,6 @@ dependencies {
     implementation project(":libs:utilities")
     implementation project(":libs:web:web")
 
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-
     testImplementation project(":libs:virtual-node:virtual-node-info")
     testImplementation project(":testing:crypto-testkit")
     testImplementation project(":testing:test-utilities")
@@ -54,5 +50,5 @@ dependencies {
     integrationTestImplementation project(':testing:db-testkit')
 
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly libs.postgresql.jdbc
 }

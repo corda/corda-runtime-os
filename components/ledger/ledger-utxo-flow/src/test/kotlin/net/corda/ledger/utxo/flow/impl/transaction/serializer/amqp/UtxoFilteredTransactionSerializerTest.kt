@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction.serializer.amqp
 
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
-import net.corda.ledger.common.flow.impl.transaction.filtered.serializer.amqp.FilteredTransactionSerializer
+import net.corda.ledger.common.data.transaction.filtered.serializer.amqp.FilteredTransactionSerializer
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionTestBase
 import net.corda.ledger.utxo.test.UtxoLedgerTest
@@ -11,7 +11,7 @@ import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-class UtxoFilteredTransactionSerializerTest: UtxoLedgerTest() {
+class UtxoFilteredTransactionSerializerTest : UtxoLedgerTest() {
     private val testBase = UtxoFilteredTransactionTestBase()
     private val serializationService = TestSerializationService.getTestSerializationService({
         it.register(wireTransactionAMQPSerializer, it)
@@ -20,13 +20,12 @@ class UtxoFilteredTransactionSerializerTest: UtxoLedgerTest() {
     }, cipherSchemeMetadata)
 
     @BeforeEach
-    fun beforeEach()
-    {
+    fun beforeEach() {
         testBase.beforeEach()
     }
 
     @Test
-    fun `should serialize and then deserialize a utxo filtered transaction`(){
+    fun `should serialize and then deserialize a utxo filtered transaction`() {
         val utxoFilteredTransaction: UtxoFilteredTransaction =
             UtxoFilteredTransactionImpl(testBase.serializationService, testBase.filteredTransaction)
         val bytes = serializationService.serialize(utxoFilteredTransaction)
@@ -34,5 +33,4 @@ class UtxoFilteredTransactionSerializerTest: UtxoLedgerTest() {
 
         Assertions.assertThat(deserialized.id).isEqualTo(utxoFilteredTransaction.id)
     }
-
 }

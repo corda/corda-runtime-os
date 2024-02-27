@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.utxo.impl
 
+import net.corda.data.ledger.persistence.FindFilteredTransactionsAndSignatures
 import net.corda.data.ledger.persistence.FindSignedGroupParameters
 import net.corda.data.ledger.persistence.FindSignedLedgerTransaction
 import net.corda.data.ledger.persistence.FindTransaction
@@ -7,9 +8,11 @@ import net.corda.data.ledger.persistence.FindTransactionIdsAndStatuses
 import net.corda.data.ledger.persistence.FindUnconsumedStatesByType
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
+import net.corda.data.ledger.persistence.PersistFilteredTransactionsAndSignatures
 import net.corda.data.ledger.persistence.PersistSignedGroupParametersIfDoNotExist
 import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.data.ledger.persistence.PersistTransactionIfDoesNotExist
+import net.corda.data.ledger.persistence.PersistTransactionSignatures
 import net.corda.data.ledger.persistence.ResolveStateRefs
 import net.corda.data.ledger.persistence.UpdateTransactionStatus
 import net.corda.data.persistence.FindWithNamedQuery
@@ -20,14 +23,17 @@ import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFacto
 import net.corda.ledger.persistence.query.execution.impl.VaultNamedQueryExecutorImpl
 import net.corda.ledger.persistence.utxo.UtxoRequestHandlerSelector
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoExecuteNamedQueryHandler
-import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionIdsAndStatusesRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindFilteredTransactionsAndSignaturesRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedGroupParametersRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedLedgerTransactionRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionIdsAndStatusesRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindUnconsumedStatesByTypeRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistFilteredTransactionRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistSignedGroupParametersIfDoNotExistRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistTransactionIfDoesNotExistRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistTransactionRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistTransactionSignaturesRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoResolveStateRefsRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoUpdateTransactionStatusRequestHandler
 import net.corda.persistence.common.ResponseFactory
@@ -47,7 +53,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     @Reference(service = ResponseFactory::class)
     private val responseFactory: ResponseFactory
-): UtxoRequestHandlerSelector {
+) : UtxoRequestHandlerSelector {
 
     @Suppress("LongMethod")
     override fun selectHandler(sandbox: SandboxGroupContext, request: LedgerPersistenceRequest): RequestHandler {
@@ -59,6 +65,11 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             factoryStorage = sandbox.getSandboxSingletonService(),
             defaultContractStateVaultJsonFactory = DefaultContractStateVaultJsonFactoryImpl(),
             jsonMarshallingService = sandbox.getSandboxSingletonService(),
+            jsonValidator = sandbox.getSandboxSingletonService(),
+            merkleProofFactory = sandbox.getSandboxSingletonService(),
+            merkleTreeProvider = sandbox.getSandboxSingletonService(),
+            filteredTransactionFactory = sandbox.getSandboxSingletonService(),
+            digestService = sandbox.getSandboxSingletonService(),
             UTCClock()
         )
 
@@ -98,6 +109,14 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     outputRecordFactory
                 )
             }
+            is FindFilteredTransactionsAndSignatures -> {
+                UtxoFindFilteredTransactionsAndSignaturesRequestHandler(
+                    req,
+                    externalEventContext,
+                    persistenceService,
+                    outputRecordFactory
+                )
+            }
             is ResolveStateRefs -> {
                 UtxoResolveStateRefsRequestHandler(
                     req,
@@ -123,6 +142,14 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     externalEventResponseFactory,
                     serializationService,
                     persistenceService
+                )
+            }
+            is PersistTransactionSignatures -> {
+                UtxoPersistTransactionSignaturesRequestHandler(
+                    req,
+                    externalEventContext,
+                    persistenceService,
+                    externalEventResponseFactory
                 )
             }
             is UpdateTransactionStatus -> {
@@ -163,6 +190,15 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     externalEventContext,
                     persistenceService,
                     externalEventResponseFactory,
+                    serializationService
+                )
+            }
+            is PersistFilteredTransactionsAndSignatures -> {
+                UtxoPersistFilteredTransactionRequestHandler(
+                    req,
+                    externalEventContext,
+                    externalEventResponseFactory,
+                    persistenceService,
                     serializationService
                 )
             }

@@ -8,6 +8,8 @@ plugins {
 
 description 'Corda UTXO ledger - flow implementation'
 
+ext.cordaEnableFormatting = true
+
 configurations {
     cpis {
         canBeConsumed = false
@@ -23,7 +25,7 @@ dependencies {
     api 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-ledger-utxo'
     implementation 'net.corda:corda-topic-schema'
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation libs.jackson.module.kotlin
     implementation project(':components:ledger:ledger-common-flow-api')
     implementation project(':components:ledger:ledger-common-flow')
     implementation project(':components:ledger:notary-worker-selection')
@@ -49,16 +51,17 @@ dependencies {
     implementation project(':notary-plugins:notary-plugin-common')
     implementation project(':libs:configuration:configuration-core')
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-
     testImplementation project(':testing:test-serialization')
     testImplementation project(':testing:kryo-serialization-testkit')
     testImplementation project(':libs:serialization:serialization-internal')
     testImplementation project(':libs:serialization:serialization-amqp')
     testImplementation project(':libs:serialization:serialization-kryo')
     testImplementation project(':testing:ledger:ledger-utxo-base-test')
+
+    // Dependencies for ProofOfActionSerializationTests:
+    testImplementation libs.jackson.module.kotlin
+    testImplementation libs.jackson.datatype.jsr310
+    testImplementation project(':libs:crypto:merkle-impl')
 
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project(':testing:sandboxes-testkit')
@@ -67,7 +70,7 @@ dependencies {
     integrationTestImplementation project(':testing:group-policy-test-common')
     integrationTestCompileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
 
-    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    testRuntimeOnly libs.slf4j.simple
 
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')

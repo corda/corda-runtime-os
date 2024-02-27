@@ -28,7 +28,6 @@ class MembershipGroupReadCacheTest {
         membershipGroupReadCache = MembershipGroupReadCache.Impl()
     }
 
-
     @Test
     fun `Member list cache is accessible after initialising group cache`() {
         assertNotNull(memberListCache)

@@ -23,4 +23,3 @@ fun jacksonObjectMapper(): JsonMapper = jsonMapper.apply {
 
     registerModule(standardTypesModule())
 }
-

@@ -177,7 +177,7 @@ class VaultNamedParameterizedQueryImplTest {
         query.execute()
 
         val resultSetExecutor = resultSetExecutorCaptor.firstValue
-        assertThatThrownBy { resultSetExecutor.execute(emptyMap(), null) }.isInstanceOf(CordaPersistenceException::class.java)
+        assertThatThrownBy { resultSetExecutor.execute(emptyMap(), null, null) }.isInstanceOf(CordaPersistenceException::class.java)
     }
 
     @Test
@@ -188,6 +188,6 @@ class VaultNamedParameterizedQueryImplTest {
         query.execute()
 
         val resultSetExecutor = resultSetExecutorCaptor.firstValue
-        assertThatThrownBy { resultSetExecutor.execute(emptyMap(), null) }.isInstanceOf(IllegalStateException::class.java)
+        assertThatThrownBy { resultSetExecutor.execute(emptyMap(), null, null) }.isInstanceOf(IllegalStateException::class.java)
     }
 }

@@ -1,7 +1,5 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import javax.persistence.EntityManager
-import javax.persistence.PessimisticLockException
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
@@ -17,16 +15,20 @@ import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
+import javax.persistence.EntityManager
+import javax.persistence.PessimisticLockException
 
 internal class ActivateMemberHandler(
     persistenceHandlerServices: PersistenceHandlerServices,
-    private val addNotaryToGroupParametersHandler: AddNotaryToGroupParametersHandler
-        = AddNotaryToGroupParametersHandler(persistenceHandlerServices),
+    private val addNotaryToGroupParametersHandler: AddNotaryToGroupParametersHandler =
+        AddNotaryToGroupParametersHandler(persistenceHandlerServices),
     suspensionActivationEntityOperationsFactory:
-        (clock: Clock, serializer: CordaAvroSerializer<KeyValuePairList>)
-        -> SuspensionActivationEntityOperations
-        = {clock: Clock, serializer: CordaAvroSerializer<KeyValuePairList>
-        -> SuspensionActivationEntityOperations(clock, serializer, persistenceHandlerServices.memberInfoFactory)}
+    (clock: Clock, serializer: CordaAvroSerializer<KeyValuePairList>)
+    -> SuspensionActivationEntityOperations =
+        { clock: Clock, serializer: CordaAvroSerializer<KeyValuePairList>
+            ->
+            SuspensionActivationEntityOperations(clock, serializer, persistenceHandlerServices.memberInfoFactory)
+        }
 ) : BasePersistenceHandler<ActivateMember, ActivateMemberResponse>(persistenceHandlerServices) {
     override val operation = ActivateMember::class.java
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {

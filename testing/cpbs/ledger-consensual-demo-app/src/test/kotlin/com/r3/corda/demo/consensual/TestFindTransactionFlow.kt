@@ -9,6 +9,7 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import com.r3.corda.demo.consensual.contract.TestConsensualState
+import net.corda.crypto.cipher.suite.merkle.MerkleProofProvider
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -18,7 +19,7 @@ import org.mockito.kotlin.whenever
 import java.security.KeyPairGenerator
 
 class TestFindTransactionFlow {
-    val marshallingService: JsonMarshallingService = JsonMarshallingServiceImpl()
+    val marshallingService: JsonMarshallingService = JsonMarshallingServiceImpl(mock<MerkleProofProvider>{})
 
     private lateinit var digestService: DigestService
 

@@ -42,11 +42,15 @@ class MembershipActionsProcessorTest {
     fun `processor forwards distribute member info request to DistributeMemberInfoAction`() {
         val distributeRequest = mock<DistributeMemberInfo>()
 
-        processor.onNext(listOf(Record(
-            Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC,
-            KEY,
-            MembershipActionsRequest(distributeRequest)
-        )))
+        processor.onNext(
+            listOf(
+                Record(
+                    Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC,
+                    KEY,
+                    MembershipActionsRequest(distributeRequest)
+                )
+            )
+        )
 
         verify(distributeMemberInfoActionHandler.constructed().last()).process(KEY, distributeRequest)
         verify(distributeGroupParametersActionHandler.constructed().last(), never()).process(any(), any())
@@ -56,11 +60,15 @@ class MembershipActionsProcessorTest {
     fun `processor forwards distribute group parameters request to DistributeGroupParametersAction`() {
         val distributeRequest = mock<DistributeGroupParameters>()
 
-        processor.onNext(listOf(Record(
-            Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC,
-            KEY,
-            MembershipActionsRequest(distributeRequest)
-        )))
+        processor.onNext(
+            listOf(
+                Record(
+                    Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC,
+                    KEY,
+                    MembershipActionsRequest(distributeRequest)
+                )
+            )
+        )
 
         verify(distributeGroupParametersActionHandler.constructed().last()).process(KEY, distributeRequest)
         verify(distributeMemberInfoActionHandler.constructed().last(), never()).process(any(), any())
@@ -68,11 +76,15 @@ class MembershipActionsProcessorTest {
 
     @Test
     fun `processor returns an empty list if unknown action`() {
-        val result = processor.onNext(listOf(Record(
-            Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC,
-            KEY,
-            MembershipActionsRequest(Unit),
-        )))
+        val result = processor.onNext(
+            listOf(
+                Record(
+                    Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC,
+                    KEY,
+                    MembershipActionsRequest(Unit),
+                )
+            )
+        )
 
         verify(distributeMemberInfoActionHandler.constructed().last(), never()).process(any(), any())
         verify(distributeGroupParametersActionHandler.constructed().last(), never()).process(any(), any())

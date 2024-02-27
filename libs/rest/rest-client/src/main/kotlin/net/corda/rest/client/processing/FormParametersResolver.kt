@@ -21,7 +21,7 @@ internal fun Method.formParametersFrom(methodArguments: Array<out Any?>): Map<St
     }
 
     return formParametersByName
-        .also { if(formParametersByName.isNotEmpty()) log.trace { """Form parameters from "$methodArguments" completed.""" } }
+        .also { if (formParametersByName.isNotEmpty()) log.trace { """Form parameters from "$methodArguments" completed.""" } }
 }
 
 private fun getFieldNameFromAnnotationOrParameter(it: Pair<Parameter, Any?>): String {

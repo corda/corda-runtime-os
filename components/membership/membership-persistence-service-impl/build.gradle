@@ -6,6 +6,8 @@ plugins {
 
 description 'Membership persistence service implementation'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
@@ -38,12 +40,7 @@ dependencies {
     implementation project(':libs:utilities')
     implementation project(':libs:serialization:serialization-avro')
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(':testing:test-utilities')
-
-    integrationTestImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 
     integrationTestImplementation 'net.corda:corda-crypto'
     integrationTestImplementation 'net.corda:corda-membership'
@@ -55,7 +52,7 @@ dependencies {
     integrationTestImplementation project(':libs:layered-property-map')
     integrationTestImplementation project(':libs:messaging:topic-admin')
     integrationTestImplementation project(':testing:message-patterns')
-    integrationTestImplementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    integrationTestImplementation libs.kafka.client
 
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
@@ -63,8 +60,8 @@ dependencies {
 
     integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
-    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    integrationTestRuntimeOnly libs.postgresql.jdbc
+    integrationTestRuntimeOnly libs.slf4j.simple
 
     integrationTestRuntimeOnly project(':libs:crypto:cipher-suite-impl')
     integrationTestRuntimeOnly project(':libs:db:db-orm-impl')

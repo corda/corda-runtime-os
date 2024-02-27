@@ -12,15 +12,18 @@ import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.checkpoint.FlowState
+import net.corda.data.flow.state.checkpoint.SavedOutputs
 import net.corda.data.flow.state.external.ExternalEventState
 import net.corda.data.flow.state.external.ExternalEventStateStatus
 import net.corda.data.flow.state.external.ExternalEventStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.MINIMUM_SMART_CONFIG
+import net.corda.flow.pipeline.FlowEngineReplayService
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.flow.pipeline.FlowMDCService
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
@@ -30,6 +33,7 @@ import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.flow.pipeline.handlers.FlowPostProcessingHandler
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
+import net.corda.messaging.api.mediator.MediatorInputService.Companion.INPUT_HASH_HEADER
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
@@ -48,9 +52,9 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
+import java.util.UUID
 
 class FlowEventProcessorImplTest {
-
     private val payload = ExternalEventResponse()
     private val aliceHoldingIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1")
     private val bobHoldingIdentity = HoldingIdentity("CN=Bob, O=Alice Corp, L=LDN, C=GB", "1")
@@ -103,12 +107,12 @@ class FlowEventProcessorImplTest {
 
     private val outputResponse = StateAndEventProcessor.Response<Checkpoint>(
         null,
-        listOf(Record("ok","",""))
+        listOf(Record("ok", "", ""))
     )
 
     private val errorResponse = StateAndEventProcessor.Response<Checkpoint>(
         null,
-        listOf(Record("error","",""))
+        listOf(Record("error", "", ""))
     )
 
     private val flowEventPipeline = mock<FlowEventPipeline>().apply {
@@ -132,12 +136,14 @@ class FlowEventProcessorImplTest {
     }
 
     private val flowEventPipelineFactory = mock<FlowEventPipelineFactory>().apply {
-        whenever(create(anyOrNull(), any(), any(), any(), any(), any())).thenReturn(flowEventPipeline)
+        whenever(create(anyOrNull(), any(), any(), any(), any(), any(), anyOrNull())).thenReturn(flowEventPipeline)
     }
 
     private val flowPostProcessingHandler1 = mock<FlowPostProcessingHandler>()
     private val flowPostProcessingHandler2 = mock<FlowPostProcessingHandler>()
     private val flowPostProcessingHandlers = listOf(flowPostProcessingHandler1, flowPostProcessingHandler2)
+
+    private val flowEngineReplayService = mock<FlowEngineReplayService>()
 
     private val processor = FlowEventProcessorImpl(
         flowEventPipelineFactory,
@@ -145,7 +151,8 @@ class FlowEventProcessorImplTest {
         flowEventContextConverter,
         mapOf(FLOW_CONFIG to MINIMUM_SMART_CONFIG),
         flowMDCService,
-        flowPostProcessingHandlers
+        flowPostProcessingHandlers,
+        flowEngineReplayService
     )
 
     @BeforeEach
@@ -157,6 +164,13 @@ class FlowEventProcessorImplTest {
         whenever(externalEventState.requestId).thenReturn("externalEventId")
         whenever(flowStartContext.requestId).thenReturn("requestId")
         whenever(flowStartContext.identity).thenReturn(aliceHoldingIdentity)
+        whenever(flowEngineReplayService.getReplayEvents(any(), anyOrNull())).thenReturn(null)
+        whenever(flowEngineReplayService.generateSavedOutputs(any(), any())).thenReturn(
+            SavedOutputs(
+                UUID.randomUUID().toString(),
+                emptyList()
+            )
+        )
     }
 
     @Test
@@ -195,15 +209,28 @@ class FlowEventProcessorImplTest {
     }
 
     @Test
-    fun `Flow transient exception is handled`() {
+    fun `flow transient exception is processed as fatal when retry window expired`() {
         val error = FlowTransientException("")
 
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
-        whenever(flowEventExceptionProcessor.process(error, flowEventPipeline.context)).thenReturn(errorContext)
+        whenever(flowEventExceptionProcessor.process(any<FlowFatalException>(), any<FlowEventContext<Any>>()))
+            .thenReturn(errorContext)
 
         val response = processor.onNext(state, getFlowEventRecord(FlowEvent(flowKey, payload)))
 
         assertThat(response).isEqualTo(errorResponse)
+    }
+
+    @Test
+    fun `flow transient exception is retried at source and no extra output records are generated`() {
+        val error = FlowTransientException("")
+
+        whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error).thenReturn(flowEventPipeline)
+        whenever(flowEventExceptionProcessor.process(error, flowEventPipeline.context)).thenReturn(errorContext)
+
+        val response = processor.onNext(state, getFlowEventRecord(FlowEvent(flowKey, payload)))
+
+        assertThat(response).isEqualTo(outputResponse)
     }
 
     @Test
@@ -264,7 +291,7 @@ class FlowEventProcessorImplTest {
         )
         val killErrorResponse = StateAndEventProcessor.Response<Checkpoint>(
             null,
-            listOf(Record("killError","",""))
+            listOf(Record("killError", "", ""))
         )
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
         whenever(flowEventExceptionProcessor.process(error, updatedContext)).thenReturn(flowKillErrorContext)
@@ -286,43 +313,6 @@ class FlowEventProcessorImplTest {
     }
 
     @Test
-    fun `Execute flow pipeline with a checkpoint and start flow event`() {
-        val inputEvent = getFlowEventRecord(FlowEvent(flowKey, startFlowEvent))
-
-        val response = processor.onNext(state, inputEvent)
-
-        assertThat(response).isEqualTo(StateAndEventProcessor.Response(state, emptyList(), false))
-        verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
-        verify(flowEventPipelineFactory, times(1)).create(any(),any(),any(),any(),any(),any())
-    }
-
-    @Test
-    fun `Execute flow pipeline with a checkpoint and start flow event in retry mode with no FlowState`() {
-        val inputEvent = getFlowEventRecord(FlowEvent(flowKey, startFlowEvent))
-        whenever(flowCheckpoint.inRetryState).thenReturn(true)
-        whenever(checkpoint.flowState).thenReturn(null)
-
-        val response = processor.onNext(state, inputEvent)
-
-        assertThat(response).isEqualTo(outputResponse)
-        verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
-        verify(flowEventPipelineFactory, times(1)).create(any(),any(),any(),any(),any(),any())
-    }
-
-    @Test
-    fun `Execute flow pipeline with a checkpoint and start flow event in retry mode with a FlowState`() {
-        val inputEvent = getFlowEventRecord(FlowEvent(flowKey, startFlowEvent))
-        whenever(flowCheckpoint.inRetryState).thenReturn(true)
-        whenever(checkpoint.flowState).thenReturn(flowState)
-
-        val response = processor.onNext(state, inputEvent)
-
-        assertThat(response).isEqualTo(StateAndEventProcessor.Response(state, emptyList(), false))
-        verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
-        verify(flowEventPipelineFactory, times(1)).create(any(),any(),any(),any(),any(),any())
-    }
-
-    @Test
     fun `Execute flow pipeline from null checkpoint and session init event`() {
         val inputEvent = getFlowEventRecord(FlowEvent(flowKey, sessionInitFlowEvent))
 
@@ -336,19 +326,19 @@ class FlowEventProcessorImplTest {
     fun `Flow event postprocessing handlers are called`() {
         val inputEvent = getFlowEventRecord(FlowEvent(flowKey, sessionInitFlowEvent))
 
-        val record1 = Record("1","","")
-        val record2 = Record("2","","")
-        val record3 = Record("3","","")
+        val record1 = Record("1", "", "")
+        val record2 = Record("2", "", "")
+        val record3 = Record("3", "", "")
 
-        whenever(flowPostProcessingHandler1.postProcess(updatedContext)).thenReturn(listOf(record1,record2))
+        whenever(flowPostProcessingHandler1.postProcess(updatedContext)).thenReturn(listOf(record1, record2))
         whenever(flowPostProcessingHandler2.postProcess(updatedContext)).thenReturn(listOf(record3))
 
         val expectedContext = updatedContext.copy(
-            outputRecords = updatedContext.outputRecords + listOf(record1,record2,record3)
+            outputRecords = updatedContext.outputRecords + listOf(record1, record2, record3)
         )
         val responseWithPostProcessingRecords = StateAndEventProcessor.Response<Checkpoint>(
             null,
-            listOf(Record("postprocessing","",""))
+            listOf(Record("postprocessing", "", ""))
         )
 
         whenever(flowEventContextConverter.convert(eq(expectedContext))).thenReturn(responseWithPostProcessingRecords)
@@ -362,18 +352,18 @@ class FlowEventProcessorImplTest {
     fun `Flow event postprocessing handler errors don't prevent output`() {
         val inputEvent = getFlowEventRecord(FlowEvent(flowKey, sessionInitFlowEvent))
 
-        val record1 = Record("1","","")
-        val record2 = Record("2","","")
+        val record1 = Record("1", "", "")
+        val record2 = Record("2", "", "")
 
-        whenever(flowPostProcessingHandler1.postProcess(updatedContext)).thenReturn(listOf(record1,record2))
+        whenever(flowPostProcessingHandler1.postProcess(updatedContext)).thenReturn(listOf(record1, record2))
         whenever(flowPostProcessingHandler2.postProcess(updatedContext)).thenThrow(IllegalArgumentException("error"))
 
         val expectedContext = updatedContext.copy(
-            outputRecords = updatedContext.outputRecords + listOf(record1,record2)
+            outputRecords = updatedContext.outputRecords + listOf(record1, record2)
         )
         val responseWithPostProcessingRecords = StateAndEventProcessor.Response<Checkpoint>(
             null,
-            listOf(Record("postprocessing","",""))
+            listOf(Record("postprocessing", "", ""))
         )
 
         whenever(flowEventContextConverter.convert(eq(expectedContext))).thenReturn(responseWithPostProcessingRecords)
@@ -384,6 +374,6 @@ class FlowEventProcessorImplTest {
     }
 
     private fun getFlowEventRecord(flowEvent: FlowEvent?): Record<String, FlowEvent> {
-        return Record(FLOW_SESSION, flowKey, flowEvent)
+        return Record(FLOW_SESSION, flowKey, flowEvent, 0, listOf(Pair(INPUT_HASH_HEADER, UUID.randomUUID().toString())))
     }
 }

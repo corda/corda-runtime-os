@@ -83,13 +83,22 @@ class SoftCryptoServiceGeneralTests {
     private val schemeMetadata = CipherSchemeMetadataImpl()
     private val UNSUPPORTED_SIGNATURE_SCHEME = CipherSchemeMetadataProvider().COMPOSITE_KEY_TEMPLATE.makeScheme("BC")
     private val cryptoRepositoryWrapping = TestWrappingRepository()
-    private val sampleWrappingKeyInfo = WrappingKeyInfo(1, "AES", byteArrayOf(), 1, "root")
+    private val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
+
+    // Crypto service checks for valid decryptable key material before adding to the cache, because the cache holds already
+    // decrypted wrapping keys. So here we wrap the existing rootWrappingKey with itself to achieve this, even though it's
+    // not a sensible real world scenario. It makes the sampleWrappingKeyInfo.keyMaterial decryptable with the root key which
+    // is all that matters.
+    private val sampleWrappingKeyInfo =
+        WrappingKeyInfo(1, "AES", rootWrappingKey.wrap(rootWrappingKey), 1, "root", "key1")
+
     val defaultContext =
         mapOf(CRYPTO_TENANT_ID to UUID.randomUUID().toString(), CRYPTO_CATEGORY to CryptoConsts.Categories.LEDGER)
+
     private val service = makeSoftCryptoService(
         wrappingRepository = cryptoRepositoryWrapping,
         schemeMetadata = schemeMetadata,
-        rootWrappingKey = mock(),
+        rootWrappingKey = rootWrappingKey
     )
 
     companion object {
@@ -298,7 +307,7 @@ class SoftCryptoServiceGeneralTests {
         val exception = assertThrows<CryptoException> {
             cryptoServiceExploding.createWrappingKey("foo", true, emptyMap())
         }
-        assertThat(exception.message).contains("Calling createWrappingKey findKey failed in a potentially recoverable way")
+        assertThat(exception.message).contains("findKey failed in a potentially recoverable way")
     }
 
     @Test
@@ -581,8 +590,10 @@ class SoftCryptoServiceGeneralTests {
         val tenantInfoService = mock<TenantInfoService> {
             on { lookup(eq(tenantId), any()) } doReturn mockAssoicationInfo
         }
-        val cryptoService = makeSoftCryptoService(signingRepository = repo,
-            tenantInfoService = tenantInfoService)
+        val cryptoService = makeSoftCryptoService(
+            signingRepository = repo,
+            tenantInfoService = tenantInfoService
+        )
         var thrown = Assertions.assertThrows(exception::class.java) {
             cryptoService.generateKeyPair(
                 tenantId = tenantId,
@@ -633,7 +644,7 @@ class SoftCryptoServiceGeneralTests {
             signingRepositoryFactory = { repo },
             schemeMetadata = schemeMetadata,
             defaultUnmanagedWrappingKeyName = "root",
-            unmanagedWrappingKeys = mapOf("root" to WrappingKeyImpl.generateWrappingKey(schemeMetadata)),
+            unmanagedWrappingKeys = mapOf("root" to rootWrappingKey),
             digestService = PlatformDigestServiceImpl(schemeMetadata),
             wrappingKeyCache = null,
             privateKeyCache = null,
@@ -666,17 +677,17 @@ class SoftCryptoServiceGeneralTests {
         verify(repo, times(1)).savePrivateKey(
             argThat {
                 key == generatedKey &&
-                        alias == expectedAlias &&
-                        externalId == null &&
-                        keyScheme == scheme
+                    alias == expectedAlias &&
+                    externalId == null &&
+                    keyScheme == scheme
             }
         )
         verify(repo, times(1)).savePrivateKey(
             argThat {
                 key == generatedKey &&
-                        alias == expectedAlias &&
-                        externalId == expectedExternalId &&
-                        keyScheme == scheme
+                    alias == expectedAlias &&
+                    externalId == expectedExternalId &&
+                    keyScheme == scheme
             }
         )
     }
@@ -882,8 +893,6 @@ class SoftCryptoServiceGeneralTests {
     @Test
     fun `can rewrap a managed wrapping key`() {
         cryptoRepositoryWrapping.keys["root"] = sampleWrappingKeyInfo
-        // service has a mock root wrapping key, so we have to make one with a real wrapping key
-        val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val rootWrappingKey2 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val myCryptoService = makeSoftCryptoService(
             wrappingRepository = cryptoRepositoryWrapping,

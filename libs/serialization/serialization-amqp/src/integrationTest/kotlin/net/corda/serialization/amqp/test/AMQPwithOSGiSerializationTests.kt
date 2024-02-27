@@ -412,10 +412,13 @@ class AMQPwithOSGiSerializationTests {
     private fun Any.writeIntegrationTestResource(bytes: OpaqueBytes, testResourceName: String) {
         // Change to the full path of the repository to regenerate resources
         val projectRootDir = "/full-path-to-repo-dir"
-        val dir = projectRootDir / "libs" / "serialization" / "serialization-amqp"/"src"/"integrationTest"/"resources" / javaClass.packageName_.replace('.', File.separatorChar)
+        val dir =
+            projectRootDir / "libs" / "serialization" / "serialization-amqp"/"src"/"integrationTest"/"resources" /
+                    javaClass.packageName_.replace('.', File.separatorChar)
         bytes.open().copyTo(dir / testResourceName, StandardCopyOption.REPLACE_EXISTING)
     }
 
+    @Suppress("TooGenericExceptionThrown")
     @Test
     fun `amqp evolution works when upgrading cpks`() {
         // Build and save original state
@@ -428,7 +431,8 @@ class AMQPwithOSGiSerializationTests {
             val uuid = UUID.fromString("8a1a7d89-20b1-412e-bba2-c8612210284f")
             // Uncomment to rebuild resource file + also uncomment older version of SerializableStateToNewerVersion class
             // and the version number in serializable-cpk-evolution-newer/build.gradle
-//            val originalStateClass = sandboxGroup.loadClassFromMainBundles("com.r3.corda.testing.bundle.evolution.newer.SerializableStateToNewerVersion")
+//            val originalStateClass = sandboxGroup.loadClassFromMainBundles(
+//            "com.r3.corda.testing.bundle.evolution.newer.SerializableStateToNewerVersion")
 //            val originalStateInstance = originalStateClass.getConstructor(UUID::class.java).newInstance(uuid)
 //            val serialize = SerializationOutput(factory).serialize(originalStateInstance, context)
 //            writeIntegrationTestResource(serialize, testResourceName)
@@ -453,6 +457,7 @@ class AMQPwithOSGiSerializationTests {
         }
     }
 
+    @Suppress("TooGenericExceptionThrown")
     @Test
     fun `amqp evolution works when downgrading cpks`() {
         // Build and save original state
@@ -465,8 +470,11 @@ class AMQPwithOSGiSerializationTests {
             val uuid = UUID.fromString("8a1a7d89-20b1-412e-bba2-c8612210284f")
             // Uncomment to rebuild resource file + also uncomment newer version of SerializableStateToOlderVersion class
             // and the version number in serializable-cpk-evolution-older/build.gradle
-//            val originalStateClass = sandboxGroup.loadClassFromMainBundles("com.r3.corda.testing.bundle.evolution.older.SerializableStateToOlderVersion")
-//            val originalStateInstance = originalStateClass.getConstructor(UUID::class.java, String::class.java).newInstance(uuid, "TEST")
+//            val originalStateClass =
+//            sandboxGroup.loadClassFromMainBundles(
+//            "com.r3.corda.testing.bundle.evolution.older.SerializableStateToOlderVersion")
+//            val originalStateInstance =
+//            originalStateClass.getConstructor(UUID::class.java, String::class.java).newInstance(uuid, "TEST")
 //            val serialize = SerializationOutput(factory).serialize(originalStateInstance, context)
 //            writeIntegrationTestResource(serialize, testResourceName)
 
@@ -490,13 +498,16 @@ class AMQPwithOSGiSerializationTests {
     @Test
     fun `amqp evolution blocks swapping cpks`() {
         // Build original state and serialize
-        val originalSandboxGroup = sandboxFactory.loadSandboxGroup("META-INF/TestSerializableEvolutionDifferentOriginal-workflows.cpb")
+        val originalSandboxGroup =
+            sandboxFactory.loadSandboxGroup(
+            "META-INF/TestSerializableEvolutionDifferentOriginal-workflows.cpb")
         val serializedBytes = try {
             val originalFactory = testDefaultFactory(originalSandboxGroup)
             val originalContext = testSerializationContext.withSandboxGroup(originalSandboxGroup)
 
             val originalStateClass =
-                originalSandboxGroup.loadClassFromMainBundles("com.r3.corda.testing.bundle.evolution.different.SerializableStateForDifferentCpk")
+                originalSandboxGroup.loadClassFromMainBundles(
+                    "com.r3.corda.testing.bundle.evolution.different.SerializableStateForDifferentCpk")
             val originalStateInstance =
                 originalStateClass.getConstructor(UUID::class.java).newInstance(UUID.randomUUID())
             SerializationOutput(originalFactory).serialize(originalStateInstance, originalContext)
@@ -505,7 +516,9 @@ class AMQPwithOSGiSerializationTests {
         }
 
         // Test with replacement CPK
-        val replacementSandboxGroup = sandboxFactory.loadSandboxGroup("META-INF/TestSerializableEvolutionDifferentReplacement-workflows.cpb")
+        val replacementSandboxGroup =
+            sandboxFactory.loadSandboxGroup(
+                "META-INF/TestSerializableEvolutionDifferentReplacement-workflows.cpb")
         try {
             val replacementFactory = testDefaultFactory(replacementSandboxGroup)
             val replacementContext = testSerializationContext.withSandboxGroup(replacementSandboxGroup)

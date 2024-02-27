@@ -48,7 +48,7 @@ class TransactionBackchainResolutionFlowV1(
         if (originalTransactionsToRetrieve.isNotEmpty()) {
             log.debug {
                 "Backchain resolution of $initialTransactionIds - Resolving unseen transactions $originalTransactionsToRetrieve" +
-                        ", starting transaction backchain resolution"
+                    ", starting transaction backchain resolution"
             }
             val topologicalSort = flowEngine.subFlow(
                 TransactionBackchainReceiverFlowV1(
@@ -59,7 +59,7 @@ class TransactionBackchainResolutionFlowV1(
             )
             log.debug {
                 "Backchain resolution of $initialTransactionIds - Retrieved dependencies of $originalTransactionsToRetrieve from its " +
-                        "backchain, beginning verification before storing the transactions locally"
+                    "backchain, beginning verification before storing the transactions locally"
             }
             try {
                 if (!transactionBackchainVerifier.verify(initialTransactionIds, topologicalSort)) {
@@ -83,12 +83,12 @@ class TransactionBackchainResolutionFlowV1(
             if (initialTransactionIds.isEmpty()) {
                 log.trace {
                     "Backchain resolution of $initialTransactionIds - Has no dependencies in its backchain, skipping transaction " +
-                            "backchain resolution"
+                        "backchain resolution"
                 }
             } else {
                 log.trace {
                     "Backchain resolution of $initialTransactionIds - Has dependencies $initialTransactionIds which have already " +
-                            "been verified locally, skipping transaction backchain resolution"
+                        "been verified locally, skipping transaction backchain resolution"
                 }
             }
             session.send(TransactionBackchainRequestV1.Stop)

@@ -7,65 +7,68 @@ import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.DbUtils
 import net.corda.db.testkit.TestDbInfo
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.datamodel.common.UniquenessConstants
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateUnknownImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorTimeWindowOutOfBoundsImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateConflictImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateUnknownImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateConflictImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorTimeWindowOutOfBoundsImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
 import net.corda.uniqueness.utils.UniquenessAssertions
 import net.corda.utilities.rootCause
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
-import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
+import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.hibernate.Session
-import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Nested
-import org.junit.jupiter.api.Disabled
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.api.assertDoesNotThrow
-import org.junit.jupiter.api.assertAll
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.RepeatedTest
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.assertAll
+import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mockito
-import org.mockito.kotlin.whenever
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.times
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.LocalDate
-import java.time.ZoneOffset
+import org.mockito.kotlin.times
+import org.mockito.kotlin.whenever
 import java.time.Duration
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.util.UUID
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
-import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityExistsException
-import javax.persistence.RollbackException
+import javax.persistence.EntityManagerFactory
 import javax.persistence.OptimisticLockException
+import javax.persistence.RollbackException
 import kotlin.reflect.full.createInstance
 
 /**
@@ -89,6 +92,7 @@ class JPABackingStoreImplIntegrationTests {
     private val groupId = UUID.randomUUID().toString()
     private val notaryVNodeIdentity = createTestHoldingIdentity("C=GB, L=London, O=NotaryRep1", groupId)
     private val notaryVNodeIdentityDbName = VirtualNodeDbType.UNIQUENESS.getSchemaName(notaryVNodeIdentity.shortHash)
+    private val notaryVNodeIdentityDbId = UUID.randomUUID()
     private val dbConfig = DbUtils.getEntityManagerConfiguration(notaryVNodeIdentityDbName)
     private val databaseInstaller = DatabaseInstaller(
         EntityManagerFactoryFactoryImpl(),
@@ -131,10 +135,21 @@ class JPABackingStoreImplIntegrationTests {
     private fun createBackingStoreImpl(emFactory: EntityManagerFactory): JPABackingStoreImpl {
         val jpaEntitiesRegistry = JpaEntitiesRegistryImpl()
         val dbConnectionManager = mock<DbConnectionManager>().apply {
-            whenever(getOrCreateEntityManagerFactory(any(), any(), any())) doReturn emFactory
+            whenever(getOrCreateEntityManagerFactory(eq(notaryVNodeIdentityDbId), any(), any())) doReturn emFactory
             whenever(getClusterDataSource()) doReturn dbConfig.dataSource
         }
-        return JPABackingStoreImpl(jpaEntitiesRegistry, dbConnectionManager)
+        val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>().apply {
+            whenever(getByHoldingIdentityShortHash(notaryVNodeIdentity.shortHash)).thenReturn(VirtualNodeInfo(
+                holdingIdentity = notaryVNodeIdentity,
+                cpiIdentifier = CpiIdentifier("", "", SecureHashUtils.randomSecureHash()),
+                vaultDmlConnectionId = UUID.randomUUID(),
+                cryptoDmlConnectionId = UUID.randomUUID(),
+                uniquenessDmlConnectionId = notaryVNodeIdentityDbId,
+                timestamp = Instant.now()
+            )
+            )
+        }
+        return JPABackingStoreImpl(jpaEntitiesRegistry, dbConnectionManager, virtualNodeInfoReadService)
     }
 
     private fun createEntityManagerFactory(persistenceUnitName: String = "uniqueness"): EntityManagerFactory {

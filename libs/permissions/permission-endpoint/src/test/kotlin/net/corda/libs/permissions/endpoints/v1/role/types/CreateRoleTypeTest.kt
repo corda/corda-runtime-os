@@ -25,6 +25,6 @@ class CreateRoleTypeTest {
                 "awful-group"
             )
         }.hasMessage("Role name must not be null or blank.")
-         .isInstanceOf(InvalidInputDataException::class.java)
+            .isInstanceOf(InvalidInputDataException::class.java)
     }
 }

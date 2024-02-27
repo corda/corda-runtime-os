@@ -18,7 +18,6 @@ class CalendarRestResourceImpl : CalendarRestResource, PluggableRestResource<Cal
 
     override fun daysOfTheYear(year: Int): FiniteDurableCursorBuilder<CalendarRestResource.CalendarDay> {
         return DurableStreamHelper.withDurableStreamContext {
-
             val calendar = GregorianCalendar().apply {
                 set(Calendar.YEAR, year)
                 set(Calendar.HOUR, 10)

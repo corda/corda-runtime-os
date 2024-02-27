@@ -37,7 +37,7 @@ class TransactionStateSerializer : BaseProxySerializer<TransactionStateImpl<Cont
     }
 
     override fun fromProxy(proxy: TransactionStateProxy): TransactionStateImpl<ContractState> {
-        return when(proxy.version) {
+        return when (proxy.version) {
             VERSION_1 ->
                 TransactionStateImpl(
                     proxy.contractState,

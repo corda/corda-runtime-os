@@ -1,11 +1,11 @@
 package net.corda.membership.impl.client
 
 import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.core.ShortHash
-import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -85,8 +85,10 @@ class MemberResourceClientImpl @Activate constructor(
         const val ASYNC_CLIENT_ID = "membership.ops.async"
 
         const val PUBLISHER_NAME = "MemberOpsClient.publisher"
+
         // for watching the config changes
         const val CONFIG_HANDLE_NAME = "MemberOpsClient.configHandle"
+
         // for checking the components' health
         const val COMPONENT_HANDLE_NAME = "MemberOpsClient.componentHandle"
 
@@ -145,7 +147,8 @@ class MemberResourceClientImpl @Activate constructor(
         holdingIdentityShortHash: ShortHash,
         registrationRequestId: String
     ) = impl.checkSpecificRegistrationProgress(
-        holdingIdentityShortHash, registrationRequestId
+        holdingIdentityShortHash,
+        registrationRequestId
     )
 
     override fun checkRegistrationProgress(holdingIdentityShortHash: ShortHash) =

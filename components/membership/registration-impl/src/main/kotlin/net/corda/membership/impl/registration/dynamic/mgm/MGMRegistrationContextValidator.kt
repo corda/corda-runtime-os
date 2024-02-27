@@ -6,14 +6,19 @@ import net.corda.crypto.core.ShortHashException
 import net.corda.membership.impl.registration.dynamic.mgm.ContextUtils.sessionKeyRegex
 import net.corda.membership.impl.registration.verifiers.OrderVerifier
 import net.corda.membership.impl.registration.verifiers.P2pEndpointVerifier
-import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
+import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
+import net.corda.membership.lib.toMap
 import net.corda.schema.membership.MembershipSchema
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.versioning.Version
+import org.slf4j.LoggerFactory
 import java.security.cert.CertificateException
 import java.security.cert.CertificateExpiredException
 import java.security.cert.CertificateFactory
@@ -50,6 +55,7 @@ internal class MGMRegistrationContextValidator(
         val SUPPORTED_SYNC_PROTOCOLS = setOf(
             "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl"
         )
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val certificateFactory = CertificateFactory.getInstance("X.509")
@@ -74,6 +80,46 @@ internal class MGMRegistrationContextValidator(
             throw MGMRegistrationContextValidationException(
                 "Onboarding MGM failed. Unexpected error occurred during context validation. ${ex.message}",
                 ex
+            )
+        }
+    }
+
+    /**
+     * Validates only endpoint changes are submitted for MGM re-registration.
+     */
+    @Throws(MGMRegistrationContextValidationException::class)
+    fun validateMemberContext(
+        newContext: SelfSignedMemberInfo,
+        lastMemberInfo: SelfSignedMemberInfo
+    ) {
+        val newMemberContext = newContext.memberProvidedContext.toMap()
+        val lastMemberContext = lastMemberInfo.memberProvidedContext.toMap()
+        val diff = ((newMemberContext.entries - lastMemberContext.entries) + (lastMemberContext.entries - newMemberContext.entries))
+            .filterNot {
+                it.key.startsWith(MemberInfoExtension.ENDPOINTS) ||
+                    it.key.startsWith(MemberInfoExtension.PLATFORM_VERSION) ||
+                    it.key.startsWith(MemberInfoExtension.SOFTWARE_VERSION)
+            }
+        if (diff.isNotEmpty()) {
+            throw MGMRegistrationContextValidationException(
+                "Fields ${diff.map { it.key }.toSet()} cannot be added, removed or updated during MGM re-registration.",
+                null
+            )
+        }
+    }
+
+    /**
+     * Validates there were no group policy related updates submitted for MGM re-registration.
+     */
+    @Throws(MGMRegistrationContextValidationException::class)
+    fun validateGroupPolicy(registrationContext: Map<String, String>, lastGroupPolicy: LayeredPropertyMap) {
+        val groupPolicy = registrationContext.filterKeys { it.startsWith(GROUP_POLICY_PREFIX) }
+            .mapKeys { it.key.replace("$GROUP_POLICY_PREFIX.", "") }
+        val diff = ((groupPolicy.entries - lastGroupPolicy.entries) + (lastGroupPolicy.entries - groupPolicy.entries))
+        if (diff.isNotEmpty()) {
+            throw MGMRegistrationContextValidationException(
+                "Fields ${diff.map { it.key }.toSet()} cannot be added, removed or updated during MGM re-registration.",
+                null
             )
         }
     }
@@ -126,19 +172,25 @@ internal class MGMRegistrationContextValidator(
         if (contextRegistrationTlsType != clusterTlsType) {
             throw IllegalArgumentException(
                 "A cluster configured with TLS type of $clusterTlsType can not register " +
-                "an MGM with TLS type $contextRegistrationTlsType"
+                    "an MGM with TLS type $contextRegistrationTlsType"
             )
         }
     }
 
     private fun validateProtocols(context: Map<String, String>) {
         if (context[REGISTRATION_PROTOCOL] !in SUPPORTED_REGISTRATION_PROTOCOLS) {
-            throw MGMRegistrationContextValidationException("Invalid value for key $REGISTRATION_PROTOCOL in registration context. " +
-                    "It should be one of the following values: $SUPPORTED_REGISTRATION_PROTOCOLS.", null)
+            throw MGMRegistrationContextValidationException(
+                "Invalid value for key $REGISTRATION_PROTOCOL in registration context. " +
+                    "It should be one of the following values: $SUPPORTED_REGISTRATION_PROTOCOLS.",
+                null
+            )
         }
         if (context[SYNCHRONISATION_PROTOCOL] !in SUPPORTED_SYNC_PROTOCOLS) {
-            throw MGMRegistrationContextValidationException("Invalid value for key $SYNCHRONISATION_PROTOCOL in registration context. " +
-                    "It should be one of the following values: $SUPPORTED_SYNC_PROTOCOLS.", null)
+            throw MGMRegistrationContextValidationException(
+                "Invalid value for key $SYNCHRONISATION_PROTOCOL in registration context. " +
+                    "It should be one of the following values: $SUPPORTED_SYNC_PROTOCOLS.",
+                null
+            )
         }
     }
 
@@ -167,17 +219,21 @@ internal class MGMRegistrationContextValidator(
         val certificate = try {
             certificateFactory.generateCertificate(pemCert.byteInputStream())
         } catch (ex: CertificateException) {
-            throw IllegalArgumentException("Trust root certificate specified in registration context under key $key " +
-                    "was not a valid PEM certificate.")
+            throw IllegalArgumentException(
+                "Trust root certificate specified in registration context under key $key " +
+                    "was not a valid PEM certificate."
+            )
         }
 
         try {
             (certificate as X509Certificate).checkValidity(Date.from(clock.instant()))
         } catch (ex: Exception) {
-            when(ex) {
+            when (ex) {
                 is CertificateExpiredException, is CertificateNotYetValidException -> {
-                    throw IllegalArgumentException("Trust root certificate specified in registration context under key $key " +
-                    "does not have a valid validity period.")
+                    throw IllegalArgumentException(
+                        "Trust root certificate specified in registration context under key $key " +
+                            "does not have a valid validity period."
+                    )
                 }
                 else -> throw ex
             }

@@ -47,7 +47,7 @@ class WireTransactionSerializer @Activate constructor(
     }
 
     override fun fromProxy(proxy: WireTransactionProxy): WireTransaction {
-        return when(proxy.version) {
+        return when (proxy.version) {
             VERSION_1 ->
                 wireTransactionFactory.create(
                     proxy.componentGroupLists,

@@ -1,5 +1,6 @@
 package net.corda.messaging.publisher
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
@@ -12,22 +13,25 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.config.ResolvedPublisherConfig
 import net.corda.messaging.utils.toCordaProducerRecord
 import net.corda.messaging.utils.toCordaProducerRecords
+import net.corda.tracing.wrapWithTracingExecutor
 import net.corda.utilities.debug
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 /**
  * Publisher will use a [CordaProducer] to communicate with the message bus. Failed producers are closed and recreated.
- * Records are sent via transactions if the instanceId provided in the configuration is not null.
- * Record values are serialized to [ByteBuffer] using [avroSchemaRegistry]
+ * Records are sent via transactions if the producer configured to be transactional.
+ * 
+ * Record values are serialized to [ByteBuffer] using [net.corda.schema.registry.AvroSchemaRegistry].
  * Record keys are serialized using whatever serializer has been configured for the message bus.
  * Producer will automatically attempt resends based on the config.
- * Any Exceptions thrown during publish are returned in a [CompletableFuture]
+ * Any Exceptions thrown during publish are returned in a [CompletableFuture].
  */
 internal class CordaPublisherImpl(
     private val config: ResolvedPublisherConfig,
@@ -39,24 +43,42 @@ internal class CordaPublisherImpl(
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private const val QUEUE_SIZE = 200
+
+        private fun handleUncaughtException(thread: Thread, exception: Throwable) {
+            log.error("Uncaught exception from ${thread.name}", exception)
+        }
     }
 
     private var cordaProducer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)
 
+    // Support for publishing records in batches, saving on the Kafka round trip. 
     private data class Batch(val records: List<Record<*, *>>, val future: CompletableFuture<Unit>)
     private val queue = ArrayBlockingQueue<Batch>(QUEUE_SIZE)
-    private val lock = ReentrantLock(true)
+    // We use a limited queue executor to ensure we only ever queue one new request if we are currently processing
+    // an existing request. It is OK to discard the second request trying to join the queue, as processing of every request
+    // will involve queue draining anyway.
+    private val executor = wrapWithTracingExecutor(ThreadPoolExecutor(
+        1, 1,
+        0L, TimeUnit.MILLISECONDS,
+        LinkedBlockingQueue(1),
+        ThreadFactoryBuilder()
+            .setUncaughtExceptionHandler(::handleUncaughtException)
+            .setNameFormat("corda-publisher-batch-%d")
+            .setDaemon(true)
+            .build(),
+        ThreadPoolExecutor.DiscardPolicy()
+    ))
 
     /**
      * Publish a record.
-     * Records are published via transactions if an [transactionalId] is configured
+     * Records are published via transactions if an [ResolvedPublisherConfig.transactional] is set.
      * Publish will retry recoverable transaction related errors based on the producer config.
      * Any fatal errors are returned in the future as [CordaMessageAPIFatalException]
      * Any intermittent errors are returned in the future as [CordaMessageAPIIntermittentException]
      * Note there is no contractual need to recreate the publisher under these circumstances because it resets itself by
-     * closing and recreating a producer. Clients still hold responsibility for end to end error handling however. For
-     * example you might want to issue an error message to and end user, or retry the publish operation.
-     * If publish is a transaction, sends are executed synchronously and will return a future of size 1.
+     * closing and recreating a producer. Clients still hold responsibility for end to end error handling nevertheless. For
+     * example, you might want to issue an error message to and end user, or retry the publish operation.
+     * If publisher is transactional, sends are executed synchronously and will return a future of size 1.
      */
     override fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
         val futures = mutableListOf<CompletableFuture<Unit>>()
@@ -88,27 +110,29 @@ internal class CordaPublisherImpl(
                 "Cannot use the batch publish API unless the publisher is transactional. Client id: ${config.clientId}"
             )
         }
-        val batch = Batch(records, CompletableFuture())
-        queue.put(batch)
-        lock.withLock {
-            val batches = mutableListOf<Batch>()
+        val batchFuture = CompletableFuture<Unit>()
+        queue.put(Batch(records, batchFuture))
+        
+        // Post publishing asynchronously and release a caller thread as soon as possible
+        executor.execute {
+            val batches = ArrayList<Batch>(QUEUE_SIZE)
             queue.drainTo(batches)
             // Ensure we only go to Kafka if there are records to publish, as empty transactions incur a performance
             // cost.
             if (batches.isNotEmpty()) {
-                val future = publishTransaction(batches.flatMap { it.records })
-                future.whenComplete { _, throwable ->
-                    batches.forEach {
+                val publishFuture = publishTransaction(batches.flatMap { it.records })
+                publishFuture.whenComplete { _, throwable ->
+                    batches.forEach { batch ->
                         if (throwable != null) {
-                            it.future.completeExceptionally(throwable)
+                            batch.future.completeExceptionally(throwable)
                         } else {
-                            it.future.complete(Unit)
+                            batch.future.complete(Unit)
                         }
                     }
                 }
             }
         }
-        return batch.future
+        return batchFuture
     }
 
     /**
@@ -141,11 +165,10 @@ internal class CordaPublisherImpl(
     }
 
     /**
-     * Send list of [records] as a transaction. It is not necessary to handle exceptions for each send in a transaction
+     * Send list of [records] as a transaction. It is not necessary to handle exceptions for each record send in a transaction
      * as this is handled by the [CordaProducer] commitTransaction operation. commitTransaction will execute all sends synchronously
-     * and will fail to send all if any individual sends fail
-     * Set the [future] with the result of the transaction.
-     * @return future set to true if transaction was successful.
+     * and will fail to send all if any individual send fail.
+     * @return future to track transaction success.
      */
     private fun publishTransaction(records: List<Record<*, *>>): CompletableFuture<Unit> {
         return executeInTransaction {
@@ -273,6 +296,7 @@ internal class CordaPublisherImpl(
 
     override fun close() {
         closeProducerAndSuppressExceptions()
+        executor.shutdown()
     }
 
     /**

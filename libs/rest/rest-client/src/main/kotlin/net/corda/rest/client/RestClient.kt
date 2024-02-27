@@ -56,7 +56,9 @@ class RestClient<I : RestResource> internal constructor(
 
         @Suppress("unchecked_cast")
         private fun <I : RestResource> defaultProxyGenerator(
-            rpcOpsClass: Class<I>, proxyHandler: RestClientProxyHandler<I>): I =
+            rpcOpsClass: Class<I>,
+            proxyHandler: RestClientProxyHandler<I>
+        ): I =
             Proxy.newProxyInstance(rpcOpsClass.classLoader, arrayOf(rpcOpsClass), proxyHandler) as I
 
         private fun <T> Logger.logElapsedTime(label: String, body: () -> T): T = logElapsedTime(label, this, body)
@@ -80,7 +82,8 @@ class RestClient<I : RestResource> internal constructor(
 
     private val listeners: MutableSet<RestConnectionListener<I>> = CopyOnWriteArraySet()
     private val connectionEventDistributor = RestConnectionListenerDistributor(
-        listeners, clientConfig.authenticationConfig.getCredentialsProvider()
+        listeners,
+        clientConfig.authenticationConfig.getCredentialsProvider()
     )
     private var serverProtocolVersion: Int? = null
     private lateinit var healthCheckTimer: Timer
@@ -102,8 +105,8 @@ class RestClient<I : RestResource> internal constructor(
                 if (serverProtocolVersion!! < clientConfig.minimumServerProtocolVersion) {
                     throw IllegalArgumentException(
                         "Requested minimum protocol version " +
-                                "(${clientConfig.minimumServerProtocolVersion}) is higher" +
-                                " than the server's supported protocol version ($serverProtocolVersion)"
+                            "(${clientConfig.minimumServerProtocolVersion}) is higher" +
+                            " than the server's supported protocol version ($serverProtocolVersion)"
                     )
                 }
                 proxyHandler.setServerProtocolVersion(serverProtocolVersion!!)
@@ -166,7 +169,7 @@ class RestClient<I : RestResource> internal constructor(
             if (ops.protocolVersion != serverProtocolVersion) {
                 log.warn(
                     "Protocol version previously retrieved (${ops.protocolVersion}) does not match" +
-                            " the initial protocol version ($serverProtocolVersion)"
+                        " the initial protocol version ($serverProtocolVersion)"
                 )
             }
             connectionEventDistributor.onConnect()

@@ -23,10 +23,6 @@ dependencies {
     implementation project(":libs:crypto:crypto-core")
     implementation project(':libs:sandbox-types')
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":libs:crypto:cipher-suite-impl")
     testImplementation project(":testing:test-utilities")
 

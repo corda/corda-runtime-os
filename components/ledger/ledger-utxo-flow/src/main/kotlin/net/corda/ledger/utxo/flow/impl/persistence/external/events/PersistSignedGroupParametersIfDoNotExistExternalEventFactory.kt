@@ -6,6 +6,7 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.ledger.persistence.PersistSignedGroupParametersIfDoNotExist
 import net.corda.flow.external.events.factory.ExternalEventFactory
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.SignatureSpec
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -19,7 +20,7 @@ import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
 class PersistSignedGroupParametersIfDoNotExistExternalEventFactory constructor(
     private val keyEncodingService: KeyEncodingService,
     clock: Clock = Clock.systemUTC()
-):
+) :
     AbstractUtxoLedgerExternalEventFactory<PersistSignedGroupParametersIfDoNotExistParameters>(clock) {
     @Activate
     constructor(
@@ -41,6 +42,7 @@ class PersistSignedGroupParametersIfDoNotExistExternalEventFactory constructor(
     }
 }
 
+@CordaSerializable
 data class PersistSignedGroupParametersIfDoNotExistParameters(
     val bytes: ByteArray,
     val signature: DigitalSignatureWithKey,
@@ -50,8 +52,8 @@ data class PersistSignedGroupParametersIfDoNotExistParameters(
         if (other == null || other !is PersistSignedGroupParametersIfDoNotExistParameters) return false
         if (this === other) return true
         return bytes.contentEquals(other.bytes) &&
-                signature == other.signature &&
-                signatureSpec == other.signatureSpec
+            signature == other.signature &&
+            signatureSpec == other.signatureSpec
     }
 
     override fun hashCode(): Int = Objects.hash(bytes, signature, signatureSpec)
