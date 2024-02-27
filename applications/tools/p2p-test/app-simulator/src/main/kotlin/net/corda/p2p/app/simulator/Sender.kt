@@ -179,14 +179,11 @@ class Sender(
         if (stop) {
             return false
         }
-        logger.info("Start time is: $startTime")
-        logger.info("timeframe is ${loadGenerationParams.timeFrame}")
-        logger.info("Deadline is: ${startTime.plusMillis(Duration.ofMinutes(loadGenerationParams.timeFrame!!.toLong()).toMillis())}")
         return when (loadGenerationParams.loadGenerationType) {
             LoadGenerationType.ONE_OFF -> (messagesSent < loadGenerationParams.totalNumberOfMessages!!)
             LoadGenerationType.CONTINUOUS -> true
             LoadGenerationType.TIME_BASED ->
-                (Instant.now().isBefore(startTime.plusMillis(Duration.ofMinutes(loadGenerationParams.timeFrame.toLong()).toMillis())))
+                (Instant.now().isBefore(startTime.plusMillis(Duration.ofMinutes(loadGenerationParams.timeFrame!!.toLong()).toMillis())))
         }
     }
 

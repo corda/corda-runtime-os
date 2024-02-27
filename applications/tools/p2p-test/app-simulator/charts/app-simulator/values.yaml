@@ -176,7 +176,7 @@ appSimulators:
     interBatchDelay: "PT0S"
     # -- The number of messages sent in parallel on every batch.
     batchSize: 50
-    # -- The total number of messages to send (only used when loadGenerationType is ONE_OFF).
+    # -- The amount of time we should keep sneidng messages (only used when loadGenerationType is TIME_BASED).
     timeFrame: 1
     expireMessages:
       # -- Enable message expiry.
