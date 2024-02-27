@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
+import java.util.concurrent.Executor
 
 class MessagingClientFactoryFactoryTest {
     private lateinit var messagingClientFactoryFactory: MessagingClientFactoryFactoryImpl
@@ -15,6 +16,7 @@ class MessagingClientFactoryFactoryTest {
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>()
     private val platformDigestService = mock<PlatformDigestService>()
     private val messageBusConfig = mock<SmartConfig>()
+    private val executor = mock<Executor>()
 
     @BeforeEach
     fun beforeEach() {
@@ -38,7 +40,8 @@ class MessagingClientFactoryFactoryTest {
     @Test
     fun testCreateRPCClientFactory() {
         val rpcClientFactory = messagingClientFactoryFactory.createRPCClientFactory(
-            "rpcClient1"
+            "rpcClient1",
+            executor
         )
 
         Assertions.assertNotNull(rpcClientFactory)

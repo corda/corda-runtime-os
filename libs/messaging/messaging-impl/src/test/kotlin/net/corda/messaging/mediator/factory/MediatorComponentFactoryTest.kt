@@ -18,7 +18,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.GroupAllocator
 import net.corda.messaging.mediator.MediatorSubscriptionState
 import net.corda.messaging.mediator.StateManagerHelper
-import net.corda.taskmanager.TaskManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -32,6 +31,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicBoolean
 
 class MediatorComponentFactoryTest {
@@ -59,8 +59,8 @@ class MediatorComponentFactoryTest {
     private val messageRouterFactory = mock<MessageRouterFactory>()
     private val groupAllocator = mock<GroupAllocator>()
     private val stateManagerHelper = mock<StateManagerHelper<String>>()
-    private val taskManager = mock<TaskManager>()
     private val messageRouter = mock<MessageRouter>()
+    private val executor: Executor = mock<Executor>()
     private val mediatorInputService = mock<MediatorInputService>()
     private val mediatorSubscriptionState = MediatorSubscriptionState(AtomicBoolean(false), AtomicBoolean(false))
     private val eventMediatorConfig = mock<EventMediatorConfig<String, String, String>>().apply {
@@ -199,8 +199,12 @@ class MediatorComponentFactoryTest {
 
     @Test
     fun `create a consumer processor`() {
-        val consumerProcessor = mediatorComponentFactory.createConsumerProcessor(eventMediatorConfig, taskManager, messageRouter,
-        mediatorSubscriptionState)
+        val consumerProcessor = mediatorComponentFactory.createConsumerProcessor(
+            eventMediatorConfig,
+            mediatorSubscriptionState,
+            messageRouter,
+            executor
+        )
 
         assertThat(consumerProcessor).isNotNull()
     }

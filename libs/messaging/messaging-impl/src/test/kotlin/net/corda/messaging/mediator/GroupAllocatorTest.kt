@@ -123,7 +123,8 @@ class GroupAllocatorTest {
             threadCount,
             "",
             mock<StateManager>(),
-            minGroupSize
+            minGroupSize,
+            mock()
         )
     }
 

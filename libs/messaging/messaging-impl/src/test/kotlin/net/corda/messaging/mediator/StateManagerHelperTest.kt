@@ -6,6 +6,7 @@ import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.STATE_TYPE
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.State.Companion.VERSION_INITIAL_VALUE
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.constants.MessagingMetadataKeys.PROCESSING_FAILURE
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -28,6 +29,7 @@ class StateManagerHelperTest {
 
     private data class StateType(val id: Int)
 
+    private val stateManager = mock<StateManager>()
     private val stateSerializer = mock<CordaAvroSerializer<Any>>()
     private val stateDeserializer = mock<CordaAvroDeserializer<StateType>>()
 
@@ -49,6 +51,7 @@ class StateManagerHelperTest {
             Metadata(),
         )
         val stateManagerHelper = StateManagerHelper(
+            stateManager,
             stateSerializer,
             stateDeserializer,
         )
@@ -78,6 +81,7 @@ class StateManagerHelperTest {
             Metadata(),
         )
         val stateManagerHelper = StateManagerHelper(
+            stateManager,
             stateSerializer,
             stateDeserializer,
         )
@@ -96,6 +100,7 @@ class StateManagerHelperTest {
     @Test
     fun `successfully deserializes state`() {
         val stateManagerHelper = StateManagerHelper(
+            stateManager,
             stateSerializer,
             stateDeserializer,
         )
@@ -118,6 +123,7 @@ class StateManagerHelperTest {
             Metadata()
         )
         val stateManagerHelper = StateManagerHelper(
+            stateManager,
             stateSerializer,
             stateDeserializer,
         )
@@ -132,6 +138,7 @@ class StateManagerHelperTest {
     @Test
     fun `marks state as failed when previous state does not exist`() {
         val stateManagerHelper = StateManagerHelper(
+            stateManager,
             stateSerializer,
             stateDeserializer,
         )

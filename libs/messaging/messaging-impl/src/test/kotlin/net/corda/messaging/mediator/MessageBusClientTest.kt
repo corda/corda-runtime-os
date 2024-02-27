@@ -60,11 +60,14 @@ class MessageBusClientTest {
             callback.onCompletion(null)
         }.whenever(cordaProducer).send(eq(record), any())
 
-        val result = messageBusClient.send(message) as MediatorMessage<CompletableFuture<Unit>>
+        val result = messageBusClient.send(message) as CompletableFuture<MediatorMessage<CompletableFuture<Unit>>>
 
         verify(cordaProducer).send(eq(record), any())
-        assertNotNull(result.payload)
-        result.payload?.let {
+
+        assertNotNull(result.get()?.payload)
+        val payload = result.get()?.payload!!
+
+        payload.let {
             assertTrue(it.isDone)
             assertFalse(it.isCompletedExceptionally)
         }
@@ -93,14 +96,16 @@ class MessageBusClientTest {
             callback.onCompletion(CordaMessageAPIFatalException("test"))
         }.whenever(cordaProducer).send(eq(record), any())
 
-        val result = messageBusClient.send(message) as MediatorMessage<CompletableFuture<Unit>>
+        val result = messageBusClient.send(message) as CompletableFuture<MediatorMessage<CompletableFuture<Unit>>>
 
         verify(cordaProducer).send(eq(record), any())
-        assertNotNull(result.payload)
 
-        result.payload?.isCompletedExceptionally?.let { assertTrue(it) }
+        assertNotNull(result.get()?.payload)
+        val payload = result.get().payload!!
 
-        result.payload?.handle { _, exception ->
+        assertTrue(payload.isCompletedExceptionally)
+
+        payload.handle { _, exception ->
             assertTrue(exception is CordaMessageAPIFatalException)
             assertEquals("Producer clientId client-id for topic topic failed to send.", exception.message)
         }?.get()
@@ -114,14 +119,16 @@ class MessageBusClientTest {
             callback.onCompletion(CordaRuntimeException("test"))
         }.whenever(cordaProducer).send(eq(record), any())
 
-        val result = messageBusClient.send(message) as MediatorMessage<CompletableFuture<Unit>>
+        val result = messageBusClient.send(message) as CompletableFuture<MediatorMessage<CompletableFuture<Unit>>>
 
         verify(cordaProducer).send(eq(record), any())
-        assertNotNull(result.payload)
 
-        result.payload?.isCompletedExceptionally?.let { assertTrue(it) }
+        assertNotNull(result.get()?.payload)
+        val payload = result.get().payload!!
 
-        result.payload?.handle { _, exception ->
+        payload.isCompletedExceptionally.let { assertTrue(it) }
+
+        payload.handle { _, exception ->
             assertTrue(exception is CordaMessageAPIFatalException)
             assertEquals("Producer clientId client-id for topic topic failed to send.", exception.message)
         }?.get()

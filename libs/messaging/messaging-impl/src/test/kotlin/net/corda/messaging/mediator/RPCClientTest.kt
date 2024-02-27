@@ -120,10 +120,10 @@ class RPCClientTest {
     @Test
     fun `send() processes message and returns result`() {
         val result = client.send(message)
-        assertNotNull(result?.payload)
+        assertNotNull(result.get()?.payload)
         assertEquals(
             FlowEvent(),
-            result!!.payload
+            result.get()!!.payload
         )
     }
 
@@ -191,10 +191,10 @@ class RPCClientTest {
         val client = createClient(environment.mocks)
         val result = client.send(message)
 
-        assertNotNull(result?.payload)
+        assertNotNull(result.get()?.payload)
         assertEquals(
             FlowEvent(),
-            result!!.payload
+            result.get()!!.payload
         )
     }
 

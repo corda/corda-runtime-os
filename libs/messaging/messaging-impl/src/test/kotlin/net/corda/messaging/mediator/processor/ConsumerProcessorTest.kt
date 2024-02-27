@@ -44,6 +44,7 @@ import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
+import java.util.concurrent.Executor
 import java.util.concurrent.TimeoutException
 
 @Execution(ExecutionMode.SAME_THREAD)
@@ -79,7 +80,7 @@ class ConsumerProcessorTest {
         eventMediatorConfig = buildStringTestConfig()
         stateManagerHelper = mock()
         consumerProcessor = ConsumerProcessor(
-            eventMediatorConfig, groupAllocator, taskManager, messageRouter, mediatorSubscriptionState, eventProcessor, stateManagerHelper
+            eventMediatorConfig, mediatorSubscriptionState, eventProcessor
         )
     }
 
@@ -298,6 +299,7 @@ class ConsumerProcessorTest {
         1,
         "",
         stateManager,
-        20
+        20,
+        mock<Executor>()
     )
 }

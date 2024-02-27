@@ -17,6 +17,7 @@ class RPCClientFactoryTest {
         rpcClientFactory = RPCClientFactory(
             "RPCClient1",
             mock(),
+            mock(),
             mock()
         )
     }
