@@ -34,6 +34,7 @@ dependencies {
     implementation project(':libs:schema-registry:schema-registry')
     implementation project(":libs:metrics")
     implementation project(':libs:platform-info')
+    implementation libs.kafka.client
 
     testImplementation project(":testing:test-utilities")
     integrationTestRuntimeOnly libs.log4j.slf4j

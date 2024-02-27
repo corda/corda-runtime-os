@@ -75,6 +75,7 @@ dependencies {
     implementation project(":libs:state-manager:state-manager-api")
     implementation project(":libs:utilities")
     runtimeOnly project(":libs:web:web-impl")
+    implementation libs.kafka.client
 
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:p2p:certificates")
