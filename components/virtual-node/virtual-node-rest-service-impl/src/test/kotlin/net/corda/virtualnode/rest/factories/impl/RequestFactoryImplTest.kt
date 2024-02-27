@@ -2,7 +2,8 @@ package net.corda.virtualnode.rest.factories.impl
 
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.JsonCreateVirtualNodeRequest
+import net.corda.rest.json.serialization.JsonObjectAsString
 import net.corda.rest.security.RestContextProvider
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
@@ -26,7 +27,7 @@ class RequestFactoryImplTest {
         val alice = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
         val groupId = "g1"
 
-        val request = CreateVirtualNodeRequest(
+        val request = JsonCreateVirtualNodeRequest(
             alice,
             "cpics",
             null,
@@ -56,15 +57,15 @@ class RequestFactoryImplTest {
         val uniquenessDdlConnection = "uddl"
         val uniquenessDmlConnection = "udml"
 
-        val request = CreateVirtualNodeRequest(
+        val request = JsonCreateVirtualNodeRequest(
             alice,
             cpiChecksum,
-            vaultDdlConnection,
-            vaultDmlConnection,
-            cryptoDdlConnection,
-            cryptoDmlConnection,
-            uniquenessDdlConnection,
-            uniquenessDmlConnection,
+            JsonObjectAsString(vaultDdlConnection),
+            JsonObjectAsString(vaultDmlConnection),
+            JsonObjectAsString(cryptoDdlConnection),
+            JsonObjectAsString(cryptoDmlConnection),
+            JsonObjectAsString(uniquenessDdlConnection),
+            JsonObjectAsString(uniquenessDmlConnection),
         )
 
         val holdingIdentity = HoldingIdentity(MemberX500Name.parse(alice), groupId)

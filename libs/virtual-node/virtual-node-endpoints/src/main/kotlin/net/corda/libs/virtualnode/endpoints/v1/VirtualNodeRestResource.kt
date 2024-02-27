@@ -1,7 +1,8 @@
 package net.corda.libs.virtualnode.endpoints.v1
 
 import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.CreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.JsonCreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity
 import net.corda.libs.virtualnode.endpoints.v1.types.UpdateVirtualNodeDbRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
@@ -32,14 +33,32 @@ interface VirtualNodeRestResource : RestResource {
      *
      * @throws `HttpApiException` If the request returns an exceptional response.
      */
+    @Deprecated("Deprecated in favour of `createVirtualNode()`")
     @HttpPOST(
         title = "Create virtual node",
         description = "This method creates a new virtual node.",
-        responseDescription = "The details of the created virtual node."
+        responseDescription = "The details of the created virtual node.",
+        maxVersion = RestApiVersion.C5_2
+    )
+    fun createVirtualNodeDeprecated(
+        @ClientRequestBodyParameter(description = "Details of the virtual node to be created")
+        request: CreateVirtualNodeRequest
+    ): ResponseEntity<AsyncResponse>
+
+    /**
+     * Requests the creation of a virtual node.
+     *
+     * @throws `HttpApiException` If the request returns an exceptional response.
+     */
+    @HttpPOST(
+        title = "Create virtual node",
+        description = "This method creates a new virtual node.",
+        responseDescription = "The details of the created virtual node.",
+        minVersion = RestApiVersion.C5_3
     )
     fun createVirtualNode(
         @ClientRequestBodyParameter(description = "Details of the virtual node to be created")
-        request: CreateVirtualNodeRequest
+        request: JsonCreateVirtualNodeRequest
     ): ResponseEntity<AsyncResponse>
 
     /**
