@@ -4,7 +4,6 @@ package net.corda.cli.plugins.network
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.cli.plugins.common.RestCommand
-import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
@@ -14,7 +13,7 @@ import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.JsonCreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.CreateVirtualNodeRequest
 import net.corda.membership.rest.v1.CertificatesRestResource
 import net.corda.membership.rest.v1.HsmRestResource
 import net.corda.membership.rest.v1.KeysRestResource
@@ -22,16 +21,13 @@ import net.corda.membership.rest.v1.MemberRegistrationRestResource
 import net.corda.membership.rest.v1.NetworkRestResource
 import net.corda.membership.rest.v1.types.request.HostedIdentitySessionKeyAndCertificate
 import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
-import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
-import net.corda.membership.rest.v1.types.response.RegistrationStatus
-import net.corda.rest.client.exceptions.MissingRequestedResourceException
-import net.corda.rest.client.exceptions.RequestErrorException
 import net.corda.sdk.config.ClusterConfig
 import net.corda.sdk.network.ClientCertificates
 import net.corda.sdk.network.Keys
+import net.corda.sdk.network.RegistrationRequester
+import net.corda.sdk.network.VirtualNode
 import net.corda.sdk.packaging.CpiUploader
 import net.corda.sdk.rest.RestClientUtils.createRestClient
-import net.corda.virtualnode.OperationalStatus
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
@@ -165,8 +161,16 @@ abstract class BaseOnboard : Runnable, RestCommand() {
 
     protected abstract val registrationContext: Map<String, Any?>
 
-    private fun createVirtualNode(): String {
-        val request = JsonCreateVirtualNodeRequest(
+    protected val holdingId: String by lazy {
+        val restClient = createRestClient(
+            VirtualNodeRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        val request = CreateVirtualNodeRequest(
             x500Name = name,
             cpiFileChecksum = cpiFileChecksum,
             vaultDdlConnection = null,
@@ -176,47 +180,8 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             uniquenessDdlConnection = null,
             uniquenessDmlConnection = null,
         )
-        return createRestClient(VirtualNodeRestResource::class).use { client ->
-            checkInvariant(
-                maxAttempts = MAX_ATTEMPTS,
-                waitInterval = WAIT_INTERVAL,
-                errorMessage = "Failed to create virtual node after $MAX_ATTEMPTS attempts.",
-            ) {
-                try {
-                    client.start().proxy.createVirtualNode(request)
-                } catch (e: RequestErrorException) {
-                    // This exception can be thrown while a request to create a virtual node is being made, so we
-                    // catch it and re-try.
-                    null
-                }
-            }
-        }.responseBody.requestId
-    }
-
-    private fun waitForVirtualNode(shortHashId: String) {
-        createRestClient(VirtualNodeRestResource::class).use { client ->
-            checkInvariant(
-                maxAttempts = MAX_ATTEMPTS,
-                waitInterval = WAIT_INTERVAL,
-                errorMessage = "Virtual Node $shortHashId is not active yet!",
-            ) {
-                try {
-                    val response = client.start().proxy.getVirtualNode(shortHashId)
-                    response.flowP2pOperationalStatus == OperationalStatus.ACTIVE
-                } catch (e: MissingRequestedResourceException) {
-                    // This exception can be thrown while the Virtual Node is being processed, so we catch it and re-try.
-                    null
-                }
-            }
-        }
-    }
-
-    protected val holdingId: String by lazy {
-        val shortHashId = createVirtualNode()
-
-        waitForVirtualNode(shortHashId)
+        val shortHashId = VirtualNode().createAndWaitForActive(restClient, request)
         println("Holding identity short hash of '$name' is: '$shortHashId'")
-
         shortHashId
     }
 
@@ -301,6 +266,15 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     }
 
     protected fun setupNetwork() {
+        val restClient = createRestClient(
+            NetworkRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+
         val request = HostedIdentitySetupRequest(
             p2pTlsCertificateChainAlias = P2P_TLS_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = true,
@@ -312,24 +286,23 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             ),
         )
 
-        createRestClient(NetworkRestResource::class).use { client ->
-            client.start().proxy.setupHostedIdentities(holdingId, request)
-        }
+        RegistrationRequester().configureAsNetworkParticipant(restClient = restClient, request = request, holdingId = holdingId)
     }
 
     protected fun register(waitForFinalStatus: Boolean = true) {
-        val registrationContext: Map<String, String> = registrationContext.mapValues { (_, value) ->
-            value.toString()
-        }
-
-        val request = MemberRegistrationRequest(
-            context = registrationContext,
+        val restClient = createRestClient(
+            MemberRegistrationRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
         )
-
-        val response = createRestClient(MemberRegistrationRestResource::class).use { client ->
-            client.start().proxy.startRegistration(holdingId, request)
-        }
-
+        val response = RegistrationRequester().requestRegistration(
+            restClient = restClient,
+            registrationContext = registrationContext,
+            holdingId = holdingId
+        )
         val registrationId = response.registrationId
         val submissionStatus = response.registrationStatus
 
@@ -340,37 +313,11 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         println("Registration ID for '$name' is '$registrationId'")
 
         if (waitForFinalStatus) {
-            waitForFinalStatus(registrationId)
-        }
-    }
-
-    private fun waitForFinalStatus(registrationId: String) {
-        createRestClient(MemberRegistrationRestResource::class).use { client ->
-            checkInvariant(
-                maxAttempts = MAX_ATTEMPTS,
-                waitInterval = WAIT_INTERVAL,
-                errorMessage = "Check Registration Progress failed after maximum number of attempts ($MAX_ATTEMPTS).",
-            ) {
-                try {
-                    val status = client.start().proxy.checkSpecificRegistrationProgress(holdingId, registrationId)
-
-                    when (val registrationStatus = status.registrationStatus) {
-                        RegistrationStatus.APPROVED -> true // Return true to indicate the invariant is satisfied
-                        RegistrationStatus.DECLINED,
-                        RegistrationStatus.INVALID,
-                        RegistrationStatus.FAILED,
-                        -> throw OnboardException("Status of registration is $registrationStatus.")
-
-                        else -> {
-                            println("Status of registration is $registrationStatus")
-                            null
-                        }
-                    }
-                } catch (e: Exception) {
-                    println("Error checking registration progress: ${e.message}")
-                    null // Return null to indicate the invariant is not yet satisfied
-                }
-            }
+            RegistrationRequester().waitForRegistrationApproval(
+                restClient = restClient,
+                registrationId = registrationId,
+                holdingId = holdingId
+            )
         }
     }
 

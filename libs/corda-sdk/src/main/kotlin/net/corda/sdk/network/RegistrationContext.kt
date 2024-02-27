@@ -26,7 +26,7 @@ class RegistrationContext {
 
         return mapOf(
             MemberInfoExtension.PARTY_SESSION_KEYS_ID.format(0) to sessionKeyId,
-            MemberInfoExtension.ECDH_KEY.format(0) to ecdhKeyId,
+            "corda.ecdh.key.id" to ecdhKeyId,
             "corda.group.protocol.registration"
                 to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
             "corda.group.protocol.synchronisation"
