@@ -12,7 +12,7 @@ import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.CreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.JsonCreateVirtualNodeRequest
 import net.corda.membership.rest.v1.CertificatesRestResource
 import net.corda.membership.rest.v1.HsmRestResource
 import net.corda.membership.rest.v1.KeysRestResource
@@ -117,7 +117,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             password = password,
             targetUrl = targetUrl
         )
-        val request = CreateVirtualNodeRequest(
+        val request = JsonCreateVirtualNodeRequest(
             x500Name = name,
             cpiFileChecksum = cpiFileChecksum,
             vaultDdlConnection = null,

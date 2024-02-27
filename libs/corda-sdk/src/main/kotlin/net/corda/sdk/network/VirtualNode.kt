@@ -1,7 +1,7 @@
 package net.corda.sdk.network
 
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.JsonCreateVirtualNodeRequest
 import net.corda.rest.asynchronous.v1.AsyncResponse
 import net.corda.rest.client.RestClient
 import net.corda.rest.client.exceptions.MissingRequestedResourceException
@@ -12,7 +12,7 @@ import net.corda.virtualnode.OperationalStatus
 
 class VirtualNode {
 
-    fun create(restClient: RestClient<VirtualNodeRestResource>, request: CreateVirtualNodeRequest): ResponseEntity<AsyncResponse> {
+    fun create(restClient: RestClient<VirtualNodeRestResource>, request: JsonCreateVirtualNodeRequest): ResponseEntity<AsyncResponse> {
         return restClient.use { client ->
             InvariantUtils.checkInvariant(
                 errorMessage = "Failed to request new virtual node creation after ${InvariantUtils.MAX_ATTEMPTS} attempts."
@@ -45,7 +45,7 @@ class VirtualNode {
         }
     }
 
-    fun createAndWaitForActive(restClient: RestClient<VirtualNodeRestResource>, request: CreateVirtualNodeRequest): String {
+    fun createAndWaitForActive(restClient: RestClient<VirtualNodeRestResource>, request: JsonCreateVirtualNodeRequest): String {
         val requestId = create(restClient, request).responseBody.requestId
         waitForVirtualNodeToBeActive(restClient, requestId)
         return requestId
