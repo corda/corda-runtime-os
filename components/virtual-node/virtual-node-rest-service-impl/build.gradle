@@ -27,7 +27,6 @@ dependencies {
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:membership:membership-common')
-    implementation project(':libs:rest:json-serialization')
     implementation project(':libs:utilities')
     implementation project(':libs:platform-info')
     implementation 'net.corda:corda-avro-schema'
@@ -37,4 +36,6 @@ dependencies {
     implementation 'net.corda:corda-topic-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation libs.slf4j.api
+
+    testImplementation project(':libs:rest:json-serialization')
 }
