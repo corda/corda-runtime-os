@@ -136,3 +136,11 @@ var nonOsgiIntegrationTest = tasks.register('nonOsgiIntegrationTest', Test) {
 tasks.named('integrationTest') {
     dependsOn nonOsgiIntegrationTest
 }
+
+tasks.named('jar', Jar) {
+    bundle {
+        bnd '''\
+Import-Package: org.apache.kafka.common
+'''
+    }
+}

@@ -70,3 +70,11 @@ tasks.named('integrationTest') {
     jvmArgs "-Djdk.net.hosts.file=$hostsFilePath"
     jvmArgs "-Djdk.tls.client.enableCAExtension=true"
 }
+
+tasks.named('jar', Jar) {
+    bundle {
+        bnd '''\
+Import-Package: org.apache.kafka.common
+'''
+    }
+}
