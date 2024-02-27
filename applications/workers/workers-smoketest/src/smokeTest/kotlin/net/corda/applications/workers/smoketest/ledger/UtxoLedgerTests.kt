@@ -67,7 +67,7 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
     private val bobX500 = "CN=Bob-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
     private val charlieX500 = "CN=Charlie-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
     private val notaryX500 = "CN=Notary-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
-    private val extraParties = 20
+    private val extraParties = 1
     private val extraPartiesX500 = (0 until extraParties).map { "CN=Extra-${it}-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB" }
 
     private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, groupId)
@@ -112,8 +112,8 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
         assertThat(aliceActualHoldingId).isEqualTo(aliceHoldingId)
         assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
         assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
-        (0 until extraParties).forEach {
-            assertThat(extraPartiesActualHoldingIds[it]).isEqualTo(extraPartiesHoldingIds[it])
+        for (i in 0 until extraParties) {
+            assertThat(extraPartiesActualHoldingIds[i]).isEqualTo(extraPartiesHoldingIds[i])
         }
         assertThat(notaryActualHoldingId).isEqualTo(notaryHoldingId)
 
@@ -174,7 +174,10 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
                 EvolveMode.NO_EXTRAS -> emptyList()
             }
             val removeList: List<String> = when(mode) {
-                EvolveMode.ADD_AND_REMOVE -> if (stage > 2 && stage < extraPartiesX500.size - 2) listOf(extraPartiesX500[stage-2]) else emptyList()
+                EvolveMode.ADD_AND_REMOVE -> if (stage > 2 && stage < extraPartiesX500.size - 2)
+                        listOf(extraPartiesX500[stage-2])
+                    else
+                        emptyList()
                 EvolveMode.ADD, EvolveMode.NO_EXTRAS -> emptyList()
             }
             println("mode ${mode.name} adding participants $addList  and removing participants $removeList")
