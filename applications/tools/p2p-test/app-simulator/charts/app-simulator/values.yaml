@@ -169,7 +169,7 @@ appSimulators:
     # -- the number of parallel clients/threads (per replica) sending messages to Kafka.
     parallelClientsPerReplica: 1
     # -- the load generation type, either "ONE_OFF" generates a specific number of messages or "CONTINUOUS" send messages in a closed loop.
-    loadGenerationType: "ONE_OFF"
+    loadGenerationType: "TIME_BASED"
     # -- The size of the payload for the generated messages in bytes.
     messageSizeBytes: 10000
     # -- The delay between each batch of messages, in ISO-8601 duration format.
@@ -177,7 +177,7 @@ appSimulators:
     # -- The number of messages sent in parallel on every batch.
     batchSize: 50
     # -- The total number of messages to send (only used when loadGenerationType is ONE_OFF).
-    totalNumberOfMessages: 50
+    timeFrame: 1
     expireMessages:
       # -- Enable message expiry.
       enabled: false
