@@ -50,7 +50,18 @@ class TransactionBackchainSenderFlowV1(
                 is TransactionBackchainRequestV1.Get -> {
                     val transactions = request.transactionIds.map { id ->
                         utxoLedgerPersistenceService.findSignedTransaction(id)
-                            ?: throw CordaRuntimeException("Requested transaction does not exist locally")
+                            ?: run {
+                                log.warn(
+                                    "Transaction $id does not exist locally when requested during backchain resolution. A filtered " +
+                                        "transaction might exist for the same id or the transaction has been deleted locally. " +
+                                        "Sending a backchain containing a filtered transaction suggests incorrect mixing of states " +
+                                        "and transactions in enhanced privacy and non-enhanced privacy mode."
+                                )
+                                throw CordaRuntimeException(
+                                    "Transaction $id does not exist locally when requested during backchain resolution. A filtered " +
+                                        "transaction might exist for the same id or the transaction has been deleted locally."
+                                )
+                            }
                     }
                     session.send(transactions)
                     log.trace {
