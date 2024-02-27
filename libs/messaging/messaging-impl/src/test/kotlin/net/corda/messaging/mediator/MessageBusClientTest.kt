@@ -8,7 +8,6 @@ import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_ENDPO
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -64,10 +63,7 @@ class MessageBusClientTest {
 
         verify(cordaProducer).send(eq(record), any())
 
-        assertNotNull(result.get()?.payload)
-        val payload = result.get()?.payload!!
-
-        payload.let {
+        result.get()?.payload?.let {
             assertTrue(it.isDone)
             assertFalse(it.isCompletedExceptionally)
         }
@@ -100,12 +96,9 @@ class MessageBusClientTest {
 
         verify(cordaProducer).send(eq(record), any())
 
-        assertNotNull(result.get()?.payload)
-        val payload = result.get().payload!!
+        assertTrue(result.isCompletedExceptionally)
 
-        assertTrue(payload.isCompletedExceptionally)
-
-        payload.handle { _, exception ->
+        result.handle { _, exception ->
             assertTrue(exception is CordaMessageAPIFatalException)
             assertEquals("Producer clientId client-id for topic topic failed to send.", exception.message)
         }?.get()
@@ -123,12 +116,9 @@ class MessageBusClientTest {
 
         verify(cordaProducer).send(eq(record), any())
 
-        assertNotNull(result.get()?.payload)
-        val payload = result.get().payload!!
+        assertTrue(result.isCompletedExceptionally)
 
-        payload.isCompletedExceptionally.let { assertTrue(it) }
-
-        payload.handle { _, exception ->
+        result.handle { _, exception ->
             assertTrue(exception is CordaMessageAPIFatalException)
             assertEquals("Producer clientId client-id for topic topic failed to send.", exception.message)
         }?.get()
