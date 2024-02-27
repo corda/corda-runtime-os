@@ -224,9 +224,6 @@ class FlowStatusLookupServiceImplTest {
                 flowStatusLookupService.storeStatus(flowStatus1)
             }
         }
-
     }
-
-
 }
 
