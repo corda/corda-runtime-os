@@ -173,13 +173,15 @@ class FlowStatusLookupServiceImplTest {
             fun `getStatusesPerIdentity returns empty list`() = assertEquals(emptyList<FlowStatus>(), getStatusesPerIdentityForFlowKey2())
         }
 
-        @Nested
-        inner class StateManagerWithContent {
-
-            private val flowStatus1 = FlowStatus(
-                FLOW_KEY_1,
+        /**
+         * Tests shared between StateManagerWithContent and StateManagerWithContentAddedByStartFlow
+         * which add content to the state manager using different approaches.
+         */
+        abstract inner class ContentTests {
+            protected val flowStatus1 = FlowStatus(
+                FlowStatusLookupServiceImplTest.FLOW_KEY_1,
                 FlowInitiatorType.RPC,
-                FLOW_KEY_1.id,
+                FlowStatusLookupServiceImplTest.FLOW_KEY_1.id,
                 "FlowClassName",
                 FlowStates.START_REQUESTED,
                 null,
@@ -189,6 +191,23 @@ class FlowStatusLookupServiceImplTest {
                 Instant.EPOCH
             )
 
+            @Test
+            fun `getStatus returns correct state`() = assertEquals(flowStatus1, getStatusForFlowKey1())
+
+            @Test
+            fun `getStatus returns null for key not in state manager`() = assertNull(getStatusForFlowKey2())
+
+            @Test
+            fun `getStatusesPerIdentity returns correct state`() =
+                assertEquals(listOf(flowStatus1), getStatusesPerIdentityForFlowKey1())
+
+            @Test
+            fun `getStatusesPerIdentity returns empty list for key not in state manager`() =
+                assertEquals(emptyList<FlowStatus>(), getStatusesPerIdentityForFlowKey2())
+        }
+
+        @Nested
+        inner class StateManagerWithContent : ContentTests() {
             @BeforeEach
             fun addContent() {
                 val serializer = cordaSerializationFactory.createAvroSerializer<FlowStatus> {}
@@ -204,20 +223,18 @@ class FlowStatusLookupServiceImplTest {
                     )
                 )
             }
-
-            @Test
-            fun `getStatus returns correct state`() = assertEquals(flowStatus1, getStatusForFlowKey1())
-
-            @Test
-            fun `getStatus returns null for key not in state manager`() = assertNull(getStatusForFlowKey2())
-
-            @Test
-            fun `getStatusesPerIdentity returns correct state`() = assertEquals(listOf(flowStatus1), getStatusesPerIdentityForFlowKey1())
-
-            @Test
-            fun `getStatusesPerIdentity returns empty list for key not in state manager`() =
-                assertEquals(emptyList<FlowStatus>(), getStatusesPerIdentityForFlowKey2())
-
         }
+
+        @Nested
+        inner class StateManagerWithContentAddedByStartFlow : ContentTests() {
+            @BeforeEach
+            fun addContent() {
+                flowStatusLookupService.storeStatus(flowStatus1)
+            }
+        }
+
     }
+
+
 }
+
