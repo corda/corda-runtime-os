@@ -5,7 +5,6 @@ package net.corda.cli.plugins.network
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.cli.plugins.packaging.signing.SigningOptions
-import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
@@ -27,73 +26,21 @@ import net.corda.sdk.network.Keys
 import net.corda.sdk.network.RegistrationRequester
 import net.corda.sdk.network.VirtualNode
 import net.corda.sdk.packaging.CpiUploader
+import net.corda.sdk.packaging.KeyStoreHelper
 import net.corda.sdk.rest.RestClientUtils.createRestClient
-import org.bouncycastle.asn1.x500.X500Name
-import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
-import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
-import org.bouncycastle.crypto.util.PrivateKeyFactory
-import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder
-import org.bouncycastle.operator.DefaultSignatureAlgorithmIdentifierFinder
-import org.bouncycastle.operator.bc.BcRSAContentSignerBuilder
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
 import java.io.File
-import java.math.BigInteger
 import java.net.URI
-import java.security.KeyPairGenerator
 import java.security.KeyStore
-import java.security.cert.CertificateFactory
-import java.util.Date
 
 @Suppress("TooManyFunctions")
 abstract class BaseOnboard : Runnable, RestCommand() {
     private companion object {
-        const val P2P_TLS_KEY_ALIAS = "p2p-tls-key"
         const val P2P_TLS_CERTIFICATE_ALIAS = "p2p-tls-cert"
         const val SIGNING_KEY_ALIAS = "signing key 1"
         const val SIGNING_KEY_STORE_PASSWORD = "keystore password"
         const val GRADLE_PLUGIN_DEFAULT_KEY_ALIAS = "gradle-plugin-default-key"
-
-        fun createKeyStoreFile(keyStoreFile: File) {
-            val keyPair = KeyPairGenerator.getInstance("RSA").genKeyPair()
-            val sigAlgId = DefaultSignatureAlgorithmIdentifierFinder().find(
-                SignatureSpecs.RSA_SHA256.signatureName,
-            )
-            val digAlgId = DefaultDigestAlgorithmIdentifierFinder().find(sigAlgId)
-            val parameter = PrivateKeyFactory.createKey(keyPair.private.encoded)
-            val sigGen = BcRSAContentSignerBuilder(sigAlgId, digAlgId).build(parameter)
-            val now = System.currentTimeMillis()
-            val startDate = Date(now)
-            val dnName = X500Name("CN=Default Signing Key, O=R3, L=London, c=GB")
-            val certSerialNumber = BigInteger.TEN
-            val endDate = Date(now + 100L * 60 * 60 * 24 * 1000)
-            val certificateBuilder =
-                JcaX509v3CertificateBuilder(dnName, certSerialNumber, startDate, endDate, dnName, keyPair.public)
-            val certificate = JcaX509CertificateConverter().getCertificate(
-                certificateBuilder.build(sigGen),
-            )
-            val keyStore = KeyStore.getInstance("pkcs12")
-            keyStore.load(null, SIGNING_KEY_STORE_PASSWORD.toCharArray())
-            keyStore.setKeyEntry(
-                SIGNING_KEY_ALIAS,
-                keyPair.private,
-                SIGNING_KEY_STORE_PASSWORD.toCharArray(),
-                arrayOf(certificate),
-            )
-            BaseOnboard::class.java
-                .getResourceAsStream(
-                    "/certificates/gradle-plugin-default-key.pem",
-                ).use { certificateInputStream ->
-                    keyStore.setCertificateEntry(
-                        GRADLE_PLUGIN_DEFAULT_KEY_ALIAS,
-                        CertificateFactory.getInstance("X.509")
-                            .generateCertificate(certificateInputStream),
-                    )
-                }
-            keyStoreFile.outputStream().use {
-                keyStore.store(it, SIGNING_KEY_STORE_PASSWORD.toCharArray())
-            }
-        }
     }
 
     @Parameters(
@@ -363,8 +310,21 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         options.keyAlias = SIGNING_KEY_ALIAS
         options.keyStorePass = SIGNING_KEY_STORE_PASSWORD
         options.keyStoreFileName = keyStoreFile.absolutePath
+        val keyStoreHelper = KeyStoreHelper()
         if (!keyStoreFile.canRead()) {
-            createKeyStoreFile(keyStoreFile)
+            keyStoreHelper.generateKeyStore(
+                keyStoreFile = keyStoreFile,
+                alias = SIGNING_KEY_ALIAS,
+                password = SIGNING_KEY_STORE_PASSWORD
+            )
+            val defaultGradleCert = keyStoreHelper.getDefaultGradleCertificateStream()
+            KeyStoreHelper().importCertificateIntoKeyStore(
+                keyStoreFile = keyStoreFile,
+                keyStorePassword = SIGNING_KEY_STORE_PASSWORD,
+                certificateInputStream = defaultGradleCert,
+                certificateAlias = GRADLE_PLUGIN_DEFAULT_KEY_ALIAS,
+                certificateFactoryType = "X.509"
+            )
         }
 
         return options
