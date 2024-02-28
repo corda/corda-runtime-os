@@ -51,9 +51,13 @@ object RestClientUtils {
     }
 
     private class ConnectionListener<I : RestResource> : RestConnectionListener<I> {
-        override fun onConnect(context: RestConnectionListener.RestConnectionContext<I>) {}
+        override fun onConnect(context: RestConnectionListener.RestConnectionContext<I>) {
+            // do nothing
+        }
 
-        override fun onDisconnect(context: RestConnectionListener.RestConnectionContext<I>) {}
+        override fun onDisconnect(context: RestConnectionListener.RestConnectionContext<I>) {
+            // do nothing
+        }
 
         override fun onPermanentFailure(context: RestConnectionListener.RestConnectionContext<I>) {
             when (context.throwableOpt) {

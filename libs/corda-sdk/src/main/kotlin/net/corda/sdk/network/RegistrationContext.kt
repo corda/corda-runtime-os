@@ -83,6 +83,8 @@ class RegistrationContext {
         sessionKeyId: String,
         notaryKeyId: String,
     ): Map<String, Any?> {
+        require(!(roles.isNullOrEmpty() && !(roles!!.contains(MemberRole.NOTARY)))) { "Must specify the role as notary" }
+
         val endpoints = mutableMapOf<String, String>()
 
         p2pGatewayUrls.mapIndexed { index, url ->
@@ -111,10 +113,7 @@ class RegistrationContext {
 
         val preAuth = preAuthToken?.let { mapOf("corda.auth.token" to it) } ?: emptyMap()
 
-        if (roles.isNullOrEmpty() || !(roles.contains(MemberRole.NOTARY))) {
-            throw IllegalArgumentException("Must specify the role as notary")
-        }
-        val roleProperty: Map<String, String> = roles.mapIndexed { index: Int, memberRole: MemberRole ->
+        val roleProperty: Map<String, String> = roles!!.mapIndexed { index: Int, memberRole: MemberRole ->
             "${MemberInfoExtension.ROLES_PREFIX}.$index" to memberRole.value
         }.toMap()
 

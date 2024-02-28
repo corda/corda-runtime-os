@@ -5,26 +5,30 @@ import java.util.*
 class GenerateGroupPolicy {
     companion object {
         private const val MEMBER_STATUS_ACTIVE = "ACTIVE"
+        private const val NAME_KEY = "name"
+        private const val MEMBER_STATUS_KEY = "memberStatus"
+        private const val MEMBER_ENDPOINT_URL_1_KEY = "endpointUrl-1"
+        private const val MEMBER_ENDPOINT_PROTOCOL_1_KEY = "endpointProtocol-1"
 
         val defaultMembers by lazy {
             listOf(
                 mapOf(
-                    "name" to "C=GB, L=London, O=Alice",
-                    "memberStatus" to "ACTIVE",
-                    "endpointUrl-1" to "https://alice.corda5.r3.com:10000",
-                    "endpointProtocol-1" to 1,
+                    NAME_KEY to "C=GB, L=London, O=Alice",
+                    MEMBER_STATUS_KEY to MEMBER_STATUS_ACTIVE,
+                    MEMBER_ENDPOINT_URL_1_KEY to "https://alice.corda5.r3.com:10000",
+                    MEMBER_ENDPOINT_PROTOCOL_1_KEY to 1,
                 ),
                 mapOf(
-                    "name" to "C=GB, L=London, O=Bob",
-                    "memberStatus" to "ACTIVE",
-                    "endpointUrl-1" to "https://bob.corda5.r3.com:10000",
-                    "endpointProtocol-1" to 1,
+                    NAME_KEY to "C=GB, L=London, O=Bob",
+                    MEMBER_STATUS_KEY to MEMBER_STATUS_ACTIVE,
+                    MEMBER_ENDPOINT_URL_1_KEY to "https://bob.corda5.r3.com:10000",
+                    MEMBER_ENDPOINT_PROTOCOL_1_KEY to 1,
                 ),
                 mapOf(
-                    "name" to "C=GB, L=London, O=Charlie",
-                    "memberStatus" to "SUSPENDED",
-                    "endpointUrl-1" to "https://charlie.corda5.r3.com:10000",
-                    "endpointProtocol-1" to 1,
+                    NAME_KEY to "C=GB, L=London, O=Charlie",
+                    MEMBER_STATUS_KEY to "SUSPENDED",
+                    MEMBER_ENDPOINT_URL_1_KEY to "https://charlie.corda5.r3.com:10000",
+                    MEMBER_ENDPOINT_PROTOCOL_1_KEY to 1,
                     "endpointUrl-2" to "https://charlie-dr.corda5.r3.com:10001",
                     "endpointProtocol-2" to 1,
                 ),
@@ -41,10 +45,10 @@ class GenerateGroupPolicy {
         names.forEach { name ->
             members.add(
                 mapOf(
-                    "name" to name,
-                    "memberStatus" to MEMBER_STATUS_ACTIVE,
-                    "endpointUrl-1" to endpointUrl,
-                    "endpointProtocol-1" to endpointProtocol,
+                    NAME_KEY to name,
+                    MEMBER_STATUS_KEY to MEMBER_STATUS_ACTIVE,
+                    MEMBER_ENDPOINT_URL_1_KEY to endpointUrl,
+                    MEMBER_ENDPOINT_PROTOCOL_1_KEY to endpointProtocol,
                 ),
             )
         }
