@@ -5,6 +5,7 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.p2p.linkmanager.metrics.recordOutboundSessionTimeoutMetric
 import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata.Companion.toCommonMetadata
 import net.corda.utilities.time.Clock
@@ -162,6 +163,10 @@ internal class SessionCache(
         }.toMap()
     }
 
+    internal fun getEstimatedInboundCacheSize() = cachedInboundSessions.estimatedSize()
+
+    internal fun getEstimatedOutboundCacheSize() = cachedOutboundSessions.estimatedSize()
+
     private fun removeFromScheduler(key: String) {
         tasks.compute(key) { _, currentValue ->
             currentValue?.future?.cancel(false)
@@ -202,6 +207,7 @@ internal class SessionCache(
                 return
             }
             forgetState(state)
+            recordOutboundSessionTimeoutMetric(state.metadata.toCommonMetadata().source)
         } catch (e: Exception) {
             logger.error("Unexpected error while trying to fetch session state for '$key'.", e)
         }

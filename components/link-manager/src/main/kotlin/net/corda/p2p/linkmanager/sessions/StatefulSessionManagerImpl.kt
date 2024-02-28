@@ -23,11 +23,15 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.metrics.CordaMetrics
+import net.corda.metrics.CordaMetrics.Metric.InboundSessionCount
+import net.corda.metrics.CordaMetrics.Metric.OutboundSessionCount
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.Session
+import net.corda.p2p.linkmanager.common.MessageConverter.Companion.createLinkOutMessage
 import net.corda.p2p.linkmanager.membership.lookup
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.CannotEstablishSession
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionsNeeded
@@ -64,7 +68,6 @@ import net.corda.data.p2p.crypto.InitiatorHandshakeMessage as AvroInitiatorHands
 import net.corda.data.p2p.crypto.InitiatorHelloMessage as AvroInitiatorHelloMessage
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage as AvroResponderHandshakeMessage
 import net.corda.data.p2p.crypto.ResponderHelloMessage as AvroResponderHelloMessage
-import net.corda.p2p.linkmanager.common.MessageConverter.Companion.createLinkOutMessage
 
 @Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 internal class StatefulSessionManagerImpl(
@@ -86,6 +89,10 @@ internal class StatefulSessionManagerImpl(
         private val SESSION_VALIDITY_PERIOD: Duration = Duration.ofDays(7)
         private val logger: Logger = LoggerFactory.getLogger(StatefulSessionManagerImpl::class.java)
     }
+
+    // These metrics must be removed on shutdown as the MeterRegistry holds references to their lambdas.
+    private val outboundSessionCount = OutboundSessionCount { sessionCache.getEstimatedOutboundCacheSize() }.builder().build()
+    private val inboundSessionCount = InboundSessionCount { sessionCache.getEstimatedInboundCacheSize() }.builder().build()
 
     override fun <T> processOutboundMessages(
         wrappedMessages: Collection<T>,
@@ -1193,10 +1200,16 @@ internal class StatefulSessionManagerImpl(
         sessionCache,
     )
 
+    private fun onTileClose() {
+        CordaMetrics.registry.remove(inboundSessionCount)
+        CordaMetrics.registry.remove(outboundSessionCount)
+    }
+
     override val dominoTile =
         ComplexDominoTile(
             this::class.java.simpleName,
             coordinatorFactory,
+            onClose = ::onTileClose,
             dependentChildren =
             setOf(
                 stateManager.name,
