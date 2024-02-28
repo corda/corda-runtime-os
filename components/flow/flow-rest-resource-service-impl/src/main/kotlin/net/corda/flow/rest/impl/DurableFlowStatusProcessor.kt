@@ -56,10 +56,8 @@ class DurableFlowStatusProcessor(
         return emptyList()
     }
 
-    private fun getStatus(state: State) : String? {
-        val flowStatus = state.metadata[FLOW_STATUS_METADATA_KEY]
-        return if (flowStatus != null) flowStatus as String else null
-    }
+    private fun getStatus(state: State): String? =
+        state.metadata[FLOW_STATUS_METADATA_KEY] as? String
 
     private fun hasTerminatedStatus(state: State): Boolean {
         val status = getStatus(state)
