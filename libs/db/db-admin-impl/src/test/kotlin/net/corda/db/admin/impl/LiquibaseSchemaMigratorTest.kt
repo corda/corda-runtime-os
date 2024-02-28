@@ -5,7 +5,6 @@ import liquibase.command.CommandArgumentDefinition
 import liquibase.command.CommandScope
 import liquibase.database.Database
 import liquibase.database.DatabaseConnection
-import liquibase.database.DatabaseFactory
 import liquibase.resource.ResourceAccessor
 import net.corda.db.admin.DbChange
 import net.corda.db.admin.LiquibaseSchemaMigrator
