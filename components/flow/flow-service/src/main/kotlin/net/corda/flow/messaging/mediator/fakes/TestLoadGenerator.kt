@@ -24,9 +24,8 @@ class TestLoadGenerator(
     @Suppress("UNCHECKED_CAST")
     override fun <K, V> poll(topic: String, pollRecords: Int): List<CordaConsumerRecord<K, V>> {
         return when (topic) {
-             FLOW_START ->
-                 if (count == 0) {
-                     count++
+            FLOW_START -> {
+                count++
                 (1..pollRecords).map {
                     val flowId = UUID.randomUUID().toString()
                     val flowEvent = createStartFlowEvent(
@@ -45,7 +44,7 @@ class TestLoadGenerator(
                         timestamp = 0
                     )
                 }
-            } else emptyList()
+            }
 
             else -> emptyList()
         }

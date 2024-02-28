@@ -71,25 +71,8 @@ class RestSmokeTestFlow : ClientStartableFlow {
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
-        val request = requestBody.getRequestBodyAs(jsonMarshallingService, RestSmokeTestInput::class.java)
-
-        val x500Name = request.getValue("memberX500")
-        log.info("Called for $x500Name")
-//        val bytesToSign = byteArrayOf(1, 2, 3, 4, 5)
-        val eventIterations = 10
-
-        log.info("Processing $eventIterations signing events.")
-
-//        for (i in 1..eventIterations) {
-//            signingService.sign(bytesToSign, mockPublicKey, mockSignatureSpec)
-//
-////            if (i % 10 == 0) {
-//            log.info("Progress: $i out of $eventIterations signing events processed.")
-////            }
-//        }
-
-        log.info("All $eventIterations signing events processed successfully.")
-
+        requestBody.getRequestBodyAs(jsonMarshallingService, RestSmokeTestInput::class.java)
+        log.info("Processed flow count successfully.")
         return true.toString()
     }
 

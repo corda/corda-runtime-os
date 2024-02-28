@@ -23,19 +23,7 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
-import net.corda.processors.crypto.CryptoProcessor
-import net.corda.processors.db.DBProcessor
 import net.corda.processors.flow.FlowProcessor
-import net.corda.processors.flow.mapper.FlowMapperProcessor
-import net.corda.processors.member.MemberProcessor
-import net.corda.processors.p2p.gateway.GatewayProcessor
-import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
-import net.corda.processors.persistence.PersistenceProcessor
-import net.corda.processors.rest.RestProcessor
-import net.corda.processors.scheduler.SchedulerProcessor
-import net.corda.processors.token.cache.TokenCacheProcessor
-import net.corda.processors.uniqueness.UniquenessProcessor
-import net.corda.processors.verification.VerificationProcessor
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.BOOT_JDBC_URL
 import net.corda.schema.configuration.BootConfig.BOOT_WORKER_SERVICE
@@ -61,30 +49,8 @@ const val COMBINED_WORKER_MONITOR_PORT = 7004
 @Suppress("Unused", "LongParameterList")
 @Component(service = [Application::class])
 class CombinedWorker @Activate constructor(
-    @Reference(service = CryptoProcessor::class)
-    private val cryptoProcessor: CryptoProcessor,
-    @Reference(service = DBProcessor::class)
-    private val dbProcessor: DBProcessor,
-    @Reference(service = PersistenceProcessor::class)
-    private val persistenceProcessor: PersistenceProcessor,
-    @Reference(service = UniquenessProcessor::class)
-    private val uniquenessProcessor: UniquenessProcessor,
-    @Reference(service = TokenCacheProcessor::class)
-    private val tokenCacheProcessor: TokenCacheProcessor,
     @Reference(service = FlowProcessor::class)
     private val flowProcessor: FlowProcessor,
-    @Reference(service = FlowMapperProcessor::class)
-    private val flowMapperProcessor: FlowMapperProcessor,
-    @Reference(service = VerificationProcessor::class)
-    private val verificationProcessor: VerificationProcessor,
-    @Reference(service = RestProcessor::class)
-    private val restProcessor: RestProcessor,
-    @Reference(service = MemberProcessor::class)
-    private val memberProcessor: MemberProcessor,
-    @Reference(service = LinkManagerProcessor::class)
-    private val linkManagerProcessor: LinkManagerProcessor,
-    @Reference(service = GatewayProcessor::class)
-    private val gatewayProcessor: GatewayProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = LifecycleRegistry::class)
@@ -99,8 +65,6 @@ class CombinedWorker @Activate constructor(
     val applicationBanner: ApplicationBanner,
     @Reference(service = SecretsServiceFactoryResolver::class)
     val secretsServiceFactoryResolver: SecretsServiceFactoryResolver,
-    @Reference(service = SchedulerProcessor::class)
-    val schedulerProcessor: SchedulerProcessor,
 ) : Application {
 
     private companion object {
@@ -196,19 +160,8 @@ class CombinedWorker @Activate constructor(
         logger.info("CONFIG = $config")
 
         webServer.start(params.defaultParams.workerServerPort)
-        cryptoProcessor.start(config)
-        dbProcessor.start(config)
-        persistenceProcessor.start(config)
-        uniquenessProcessor.start(config)
-        tokenCacheProcessor.start(config)
         flowProcessor.start(config)
-        flowMapperProcessor.start(config)
-        verificationProcessor.start(config)
-        memberProcessor.start(config)
-        restProcessor.start(config)
-        linkManagerProcessor.start(config)
-        gatewayProcessor.start(config)
-        schedulerProcessor.start(config)
+
     }
 
     /**
@@ -228,19 +181,7 @@ class CombinedWorker @Activate constructor(
     override fun shutdown() {
         logger.info("Combined worker stopping.")
 
-        cryptoProcessor.stop()
-        uniquenessProcessor.stop()
-        tokenCacheProcessor.stop()
-        persistenceProcessor.stop()
-        dbProcessor.stop()
         flowProcessor.stop()
-        flowMapperProcessor.stop()
-        verificationProcessor.stop()
-        memberProcessor.stop()
-        restProcessor.stop()
-        linkManagerProcessor.stop()
-        gatewayProcessor.stop()
-        schedulerProcessor.stop()
 
         webServer.stop()
         shutdownTracing()
