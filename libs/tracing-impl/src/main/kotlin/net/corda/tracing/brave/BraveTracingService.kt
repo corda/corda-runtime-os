@@ -35,8 +35,7 @@ import zipkin2.reporter.BytesMessageSender
 import zipkin2.reporter.Reporter
 import zipkin2.reporter.brave.ZipkinSpanHandler
 import zipkin2.reporter.urlconnection.URLConnectionSender
-import java.util.EnumSet
-import java.util.Stack
+import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -113,7 +112,7 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
     private val serverSampler: SamplerFunction<HttpRequest> = HttpRuleSampler.newBuilder()
         .putRule(and(methodEquals("POST"), pathStartsWith("/api/v5_1/flow")), sampler(samplesPerSecond))
         .putRule(and(methodEquals("POST"), pathStartsWith("/api/v1/flow")), sampler(samplesPerSecond))
-        .putRule(and(methodEquals("GET"), pathStartsWith("/metrics")), sampler(PerSecond(0))) // Disable tracing for the specified path
+        .putRule(and(methodEquals("GET"), pathStartsWith("/metrics")), Sampler.NEVER_SAMPLE) // Disable tracing for the specified path
         .putRule(pathStartsWith("/"), sampler(samplesPerSecond))
         .build()
 
