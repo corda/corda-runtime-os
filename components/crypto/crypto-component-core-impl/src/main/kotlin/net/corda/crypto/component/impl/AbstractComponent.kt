@@ -30,8 +30,6 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
 
     val lifecycleCoordinator = coordinatorFactory.createCoordinator(myName, ::eventHandler)
 
-    private val activationFailureCounter = AtomicInteger(0)
-
     @Volatile
     private var _impl: IMPL? = null
 
@@ -103,23 +101,9 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
 
     private fun doActivate(coordinator: LifecycleCoordinator) {
         logger.trace { "Creating active implementation" }
-        try {
-            _impl = createActiveImpl()
-            activationFailureCounter.set(0)
-        } catch (e: Throwable) {
-            if(activationFailureCounter.incrementAndGet() <= 5) {
-                logger.debug { "$myName failed activate..., will try again. Cause: ${e.message}" }
-                coordinator.postEvent(TryAgainCreateActiveImpl())
-            } else {
-                logger.error("$myName failed activate, giving up", e)
-                coordinator.updateStatus(LifecycleStatus.ERROR)
-            }
-            return
-        }
+        _impl = createActiveImpl()
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     protected abstract fun createActiveImpl(): IMPL
-
-    class TryAgainCreateActiveImpl : LifecycleEvent
 }
