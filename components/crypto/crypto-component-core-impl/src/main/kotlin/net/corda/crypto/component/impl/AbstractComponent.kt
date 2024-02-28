@@ -21,7 +21,6 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
 ) : Lifecycle {
     interface AbstractImpl: AutoCloseable {
         override fun close() = Unit
-        fun onRegistrationStatusChange(upstreamIsUp: Boolean) = Unit
     }
 
     protected val logger: Logger = LoggerFactory.getLogger(this::class.java)
