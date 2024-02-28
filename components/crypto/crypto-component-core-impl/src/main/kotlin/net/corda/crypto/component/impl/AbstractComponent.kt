@@ -71,7 +71,6 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
                     if(_impl != null) {
                         val status = if(upstream.isUp) LifecycleStatus.UP else LifecycleStatus.DOWN
                         coordinator.updateStatus(status)
-                        _impl?.onRegistrationStatusChange(upstream.isUp)
                     } else {
                         if (upstream.isUp) {
                             doActivate(coordinator)
