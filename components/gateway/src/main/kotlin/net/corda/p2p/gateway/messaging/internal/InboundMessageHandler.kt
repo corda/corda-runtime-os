@@ -42,6 +42,7 @@ import java.nio.ByteBuffer
 import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import net.corda.utilities.time.UTCClock
 
 /**
  * This class implements a simple message processor for p2p messages received from other Gateways.
@@ -75,6 +76,7 @@ internal class InboundMessageHandler(
     companion object {
         const val AVRO_LIMIT = 5_000_000
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private const val START_FAILURE = 20 * 60 * 1000 // 20 minutes in ms
     }
 
     private var p2pInPublisher = PublisherWithDominoLogic(
@@ -217,6 +219,12 @@ internal class InboundMessageHandler(
     }
 
     private val seenSessions = ConcurrentHashMap.newKeySet<String>()
+    private val clock = UTCClock()
+    private val startTime = clock.instant().toEpochMilli()
+
+    private fun timeExpired(): Boolean {
+        return clock.instant().toEpochMilli() > (startTime + START_FAILURE)
+    }
 
     private fun processSessionMessage(p2pMessage: LinkInMessage): HttpResponseStatus {
         val sessionId = getSessionId(p2pMessage) ?: return INTERNAL_SERVER_ERROR
@@ -230,7 +238,9 @@ internal class InboundMessageHandler(
         if (commonComponents.features.useStatefulSessionManager) {
             if (p2pMessage.payload is ResponderHelloMessage && !seenSessions.contains(sessionId)) {
                 seenSessions += sessionId
-                return HttpResponseStatus.OK
+                if (timeExpired()) {
+                    return HttpResponseStatus.OK
+                }
             }
             p2pInPublisher.publish(listOf(record))
             return HttpResponseStatus.OK
