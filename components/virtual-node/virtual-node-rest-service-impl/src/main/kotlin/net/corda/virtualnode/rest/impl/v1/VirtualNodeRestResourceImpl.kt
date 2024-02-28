@@ -29,7 +29,8 @@ import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationBadReques
 import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationNotFoundException
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.CreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.JsonCreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.UpdateVirtualNodeDbRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
@@ -272,9 +273,9 @@ internal class VirtualNodeRestResourceImpl(
         virtualNodeShortId: String,
         targetCpiFileChecksum: String
     ): ResponseEntity<AsyncResponse> {
-        "Deprecated, please use next version where loginName is passed as a path parameter.".let { msg ->
+        "Deprecated, please use next version where forceUpgrade is passed as a query parameter.".let { msg ->
             logger.warn(msg)
-            return ResponseEntity.okButDeprecated(doUpgradeVirtualNode(virtualNodeShortId, targetCpiFileChecksum, false), msg)
+            return ResponseEntity.acceptedButDeprecated(doUpgradeVirtualNode(virtualNodeShortId, targetCpiFileChecksum, false), msg)
         }
     }
 
@@ -481,7 +482,40 @@ internal class VirtualNodeRestResourceImpl(
      * @throws ServiceUnavailableException is thrown if the component isn't running.
      * @return [ResponseEntity] containing the request ID for the create virtual node request.
      */
-    override fun createVirtualNode(request: CreateVirtualNodeRequest): ResponseEntity<AsyncResponse> {
+    @Deprecated("Deprecated in favour of `createVirtualNode()`")
+    override fun createVirtualNodeDeprecated(request: CreateVirtualNodeRequest): ResponseEntity<AsyncResponse> {
+        val groupId = virtualNodeValidationService.validateAndGetGroupId(request)
+
+        val holdingIdentity = requestFactory.createHoldingIdentity(groupId, request)
+
+        virtualNodeValidationService.validateVirtualNodeDoesNotExist(holdingIdentity)
+
+        val asyncRequest = requestFactory.createVirtualNodeRequest(holdingIdentity, request)
+
+        sendAsync(asyncRequest.requestId, asyncRequest)
+
+        // Write through status cache.
+        virtualNodeStatusCacheService.setStatus(
+            asyncRequest.requestId,
+            createVirtualNodeOperationStatus(asyncRequest.requestId)
+        )
+
+        "Deprecated, please use next version where non-escaped JSON strings can be passed in the body parameter.".let { msg ->
+            logger.warn(msg)
+            return ResponseEntity.acceptedButDeprecated(AsyncResponse(asyncRequest.requestId), msg)
+        }
+    }
+
+    /**
+     * Publishes a virtual node create request onto the message bus.
+     *
+     * @property JsonCreateVirtualNodeRequest contains the data we want to use to construct our virtual node
+     * @throws InvalidInputDataException if the request in invalid.
+     * @throws InternalServerException if the requested CPI has invalid metadata.
+     * @throws ServiceUnavailableException is thrown if the component isn't running.
+     * @return [ResponseEntity] containing the request ID for the create virtual node request.
+     */
+    override fun createVirtualNode(request: JsonCreateVirtualNodeRequest): ResponseEntity<AsyncResponse> {
         val groupId = virtualNodeValidationService.validateAndGetGroupId(request)
 
         val holdingIdentity = requestFactory.createHoldingIdentity(groupId, request)

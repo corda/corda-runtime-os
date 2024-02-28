@@ -71,7 +71,6 @@ class FlowStatusLookupServiceImplTest {
     private val mockSubscription = mock<Subscription<Any, Any>>()
     private lateinit var flowStatusLookupService: FlowStatusLookupServiceImpl
 
-    private val bootConfig = mock<SmartConfig>()
     private val messagingConfig = mock<SmartConfig> {
         whenever(it.getInt(INSTANCE_ID)).thenReturn(2)
         whenever(it.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)).thenReturn(mock())
@@ -79,16 +78,9 @@ class FlowStatusLookupServiceImplTest {
     private val stateManagerConfig = mock<SmartConfig>()
     private val restConfig = mock<SmartConfig>()
 
-    private val configs = mapOf(
-        ConfigKeys.BOOT_CONFIG to bootConfig,
-        ConfigKeys.MESSAGING_CONFIG to messagingConfig,
-        ConfigKeys.STATE_MANAGER_CONFIG to stateManagerConfig,
-        ConfigKeys.REST_CONFIG to restConfig
-    )
-
     companion object {
-        const val ALICE_X500 = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
-        const val BOB_X500 = "CN=Bob, O=Bob Corp, L=LDN, C=GB"
+        private const val ALICE_X500 = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
+        private const val BOB_X500 = "CN=Bob, O=Bob Corp, L=LDN, C=GB"
 
         val FLOW_KEY_1 = FlowKey("a1", HoldingIdentity(ALICE_X500, "c1"))
         val FLOW_KEY_2 = FlowKey("a2", HoldingIdentity(BOB_X500, "c2"))
@@ -173,10 +165,12 @@ class FlowStatusLookupServiceImplTest {
             fun `getStatusesPerIdentity returns empty list`() = assertEquals(emptyList<FlowStatus>(), getStatusesPerIdentityForFlowKey2())
         }
 
-        @Nested
-        inner class StateManagerWithContent {
-
-            private val flowStatus1 = FlowStatus(
+        /**
+         * Tests shared between StateManagerWithContent and StateManagerWithContentAddedByStartFlow
+         * which add content to the state manager using different approaches.
+         */
+        abstract inner class ContentTests {
+            protected val flowStatus1 = FlowStatus(
                 FLOW_KEY_1,
                 FlowInitiatorType.RPC,
                 FLOW_KEY_1.id,
@@ -189,6 +183,23 @@ class FlowStatusLookupServiceImplTest {
                 Instant.EPOCH
             )
 
+            @Test
+            fun `getStatus returns correct state`() = assertEquals(flowStatus1, getStatusForFlowKey1())
+
+            @Test
+            fun `getStatus returns null for key not in state manager`() = assertNull(getStatusForFlowKey2())
+
+            @Test
+            fun `getStatusesPerIdentity returns correct state`() =
+                assertEquals(listOf(flowStatus1), getStatusesPerIdentityForFlowKey1())
+
+            @Test
+            fun `getStatusesPerIdentity returns empty list for key not in state manager`() =
+                assertEquals(emptyList<FlowStatus>(), getStatusesPerIdentityForFlowKey2())
+        }
+
+        @Nested
+        inner class StateManagerWithContent : ContentTests() {
             @BeforeEach
             fun addContent() {
                 val serializer = cordaSerializationFactory.createAvroSerializer<FlowStatus> {}
@@ -204,20 +215,15 @@ class FlowStatusLookupServiceImplTest {
                     )
                 )
             }
+        }
 
-            @Test
-            fun `getStatus returns correct state`() = assertEquals(flowStatus1, getStatusForFlowKey1())
-
-            @Test
-            fun `getStatus returns null for key not in state manager`() = assertNull(getStatusForFlowKey2())
-
-            @Test
-            fun `getStatusesPerIdentity returns correct state`() = assertEquals(listOf(flowStatus1), getStatusesPerIdentityForFlowKey1())
-
-            @Test
-            fun `getStatusesPerIdentity returns empty list for key not in state manager`() =
-                assertEquals(emptyList<FlowStatus>(), getStatusesPerIdentityForFlowKey2())
-
+        @Nested
+        inner class StateManagerWithContentAddedByStartFlow : ContentTests() {
+            @BeforeEach
+            fun addContent() {
+                flowStatusLookupService.storeStatus(flowStatus1)
+            }
         }
     }
 }
+

@@ -15,7 +15,7 @@ jcipAnnotationsVersion = "1.0_2"
 # Once Javalin version is upgraded to the latest, this override may be removed.
 jettyVersion = "9.4.54.v20240208"
 micrometerVersion = "1.12.3"
-nimbusVersion = "11.9.1"
+nimbusVersion = "11.10.1"
 kafkaClientVersion = "3.6.1_1"
 kubernetesClientVersion = "6.10.0"
 log4jVersion = "2.22.1"
@@ -29,7 +29,7 @@ slf4jVersion = { strictly = "1.7.36" }
 slf4jV2Version = { strictly = "2.0.6" }
 snakeyamlVersion = "2.2"
 # Please also update SWAGGERUI.version in net.corda.rest.server.impl.internal.OptionalDependency
-swaggeruiVersion = "5.10.3"
+swaggeruiVersion = "5.11.8"
 # Note: We cannot go to the higher versions as they transitively depend on SLF4J 2.X
 swaggerVersion = "2.2.16"
 #Snappy used for compression

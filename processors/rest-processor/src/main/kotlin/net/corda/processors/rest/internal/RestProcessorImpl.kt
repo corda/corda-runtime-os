@@ -25,13 +25,13 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.processors.rest.RestProcessor
 import net.corda.utilities.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 /** The processor for a `RestWorker`. */
@@ -44,8 +44,6 @@ class RestProcessorImpl @Activate constructor(
     private val configReadService: ConfigurationReadService,
     @Reference(service = RestGateway::class)
     private val restGateway: RestGateway,
-    @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory,
     @Reference(service = FlowRestResourceService::class)
     private val flowRestResourceService: FlowRestResourceService,
     @Reference(service = CpiUploadService::class)
@@ -79,7 +77,7 @@ class RestProcessorImpl @Activate constructor(
 ) : RestProcessor {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val CLIENT_ID_REST_PROCESSOR = "rest.processor"
     }
@@ -138,4 +136,4 @@ class RestProcessorImpl @Activate constructor(
     }
 }
 
-data class BootConfigEvent(val config: SmartConfig) : LifecycleEvent
+private data class BootConfigEvent(val config: SmartConfig) : LifecycleEvent
