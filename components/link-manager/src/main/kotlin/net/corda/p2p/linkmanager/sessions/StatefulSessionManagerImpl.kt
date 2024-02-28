@@ -768,9 +768,7 @@ internal class StatefulSessionManagerImpl(
             val result =
                 when (val lastMessage = lastContext.outboundSessionMessage) {
                     is OutboundSessionMessage.ResponderHelloMessage -> {
-                        processResponderHello(state, lastMessage)?.let { (message, stateUpdate) ->
-                            Result(message, UpdateAction(stateUpdate), null)
-                        }
+                        processResponderHello(state, lastMessage)
                     }
                     is OutboundSessionMessage.ResponderHandshakeMessage -> {
                         processResponderHandshake(state, lastMessage)?.let { (message, stateUpdate, session) ->
@@ -856,7 +854,7 @@ internal class StatefulSessionManagerImpl(
     private fun processResponderHello(
         state: State?,
         message: OutboundSessionMessage.ResponderHelloMessage,
-    ): Pair<LinkOutMessage?, State>? {
+    ): Result? {
         val metadata = state?.metadata?.toOutbound()
         return when (metadata?.status) {
             OutboundSessionStatus.SentInitiatorHello -> {
@@ -893,7 +891,8 @@ internal class StatefulSessionManagerImpl(
                             version = state.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
-                    responseMessage to newState
+                    val session = sessionState.getSession()
+                    Result(responseMessage, UpdateAction(newState), session)
                 }
             }
 
@@ -916,7 +915,7 @@ internal class StatefulSessionManagerImpl(
                             version = state.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
-                    initiatorHandshakeToResend to newState
+                    Result(initiatorHandshakeToResend, UpdateAction(newState), null)
                 } else {
                     null
                 }
