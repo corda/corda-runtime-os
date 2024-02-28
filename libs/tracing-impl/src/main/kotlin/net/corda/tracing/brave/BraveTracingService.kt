@@ -111,7 +111,7 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
     }
 
     private val serverSampler: SamplerFunction<HttpRequest> = HttpRuleSampler.newBuilder()
-        .putRule(and(methodEquals("GET"), pathStartsWith("/metrics")), Sampler.NEVER_SAMPLE) // Disable tracing for the specified path
+        .putRule(pathStartsWith("/metrics"), Sampler.NEVER_SAMPLE) // Disable tracing for the specified path
         .putRule(pathStartsWith("/"), sampler(samplesPerSecond))
         .build()
 
