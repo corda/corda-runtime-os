@@ -1,6 +1,5 @@
 package net.corda.cli.plugin.initialRbac.commands
 
-import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestClientUtils.executeWithRetry
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
@@ -9,6 +8,7 @@ import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermission
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
+import net.corda.sdk.rest.RestClientUtils.createRestClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
@@ -42,7 +42,24 @@ internal object RoleCreationUtils {
 
         val start = System.currentTimeMillis()
 
-        createRestClient(RoleEndpoint::class).use { roleEndpointClient ->
+        val roleClient = createRestClient(
+            restResource = RoleEndpoint::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        val permissionClient = createRestClient(
+            restResource = PermissionEndpoint::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+
+        roleClient.use { roleEndpointClient ->
             val waitDuration = Duration.of(waitDurationSeconds.toLong(), ChronoUnit.SECONDS)
             val roleEndpoint = executeWithRetry(waitDuration, "Connect to role HTTP endpoint") {
                 roleEndpointClient.start().proxy
@@ -59,7 +76,7 @@ internal object RoleCreationUtils {
                 roleEndpoint.createRole(CreateRoleType(roleName, null)).responseBody.id
             }
 
-            createRestClient(PermissionEndpoint::class).use { permissionEndpointClient ->
+            permissionClient.use { permissionEndpointClient ->
                 val permissionEndpoint = executeWithRetry(waitDuration, "Start of permissions HTTP endpoint") {
                     permissionEndpointClient.start().proxy
                 }

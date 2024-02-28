@@ -2,6 +2,7 @@ package net.corda.sdk.network
 
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.JsonCreateVirtualNodeRequest
+import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
 import net.corda.rest.asynchronous.v1.AsyncResponse
 import net.corda.rest.client.RestClient
 import net.corda.rest.client.exceptions.MissingRequestedResourceException
@@ -49,5 +50,19 @@ class VirtualNode {
         val requestId = create(restClient, request).responseBody.requestId
         waitForVirtualNodeToBeActive(restClient, requestId)
         return requestId
+    }
+
+    fun resyncVault(restClient: RestClient<VirtualNodeMaintenanceRestResource>, holdingId: String) {
+        restClient.use { client ->
+            InvariantUtils.checkInvariant(
+                errorMessage = "Unable to resync vault after ${InvariantUtils.MAX_ATTEMPTS} attempts."
+            ) {
+                try {
+                    client.start().proxy.resyncVirtualNodeDb(holdingId)
+                } catch (e: Exception) {
+                    null
+                }
+            }
+        }
     }
 }

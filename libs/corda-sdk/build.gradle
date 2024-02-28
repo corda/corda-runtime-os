@@ -21,6 +21,7 @@ dependencies {
     implementation project(':libs:rest:rest-client')
     implementation project(':libs:virtual-node:cpi-upload-endpoints')
     implementation project(':libs:virtual-node:virtual-node-endpoints')
+    implementation project(path: ':libs:virtual-node:virtual-node-endpoints-maintenance')
 
     testImplementation libs.bundles.test
     testImplementation project(':testing:test-utilities')

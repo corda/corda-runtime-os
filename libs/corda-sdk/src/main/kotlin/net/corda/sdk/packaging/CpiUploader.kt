@@ -2,6 +2,7 @@ package net.corda.sdk.packaging
 
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.cpiupload.endpoints.v1.GetCPIsResponse
+import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.client.RestClient
 import net.corda.rest.client.exceptions.RequestErrorException
@@ -54,6 +55,26 @@ class CpiUploader {
             ) {
                 val resource = client.start().proxy
                 resource.getAllCpis()
+            }
+        }
+    }
+
+    fun forceCpiUpload(
+        restClient: RestClient<VirtualNodeMaintenanceRestResource>,
+        cpiFile: File,
+        cpiName: String
+    ): CpiUploadRestResource.CpiUploadResponse {
+        return restClient.use { client ->
+            InvariantUtils.checkInvariant(
+                errorMessage = "Failed to force upload CPI $cpiName after ${InvariantUtils.MAX_ATTEMPTS} attempts."
+            ) {
+                val resource = client.start().proxy
+                resource.forceCpiUpload(
+                    HttpFileUpload(
+                        content = cpiFile.inputStream(),
+                        fileName = cpiName,
+                    )
+                )
             }
         }
     }
