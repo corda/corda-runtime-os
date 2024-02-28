@@ -17,6 +17,7 @@ import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -44,9 +45,20 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
     @Suspendable
     override fun verify(transaction: UtxoLedgerTransaction) {
         recordSuspendable(::transactionVerificationFlowTimer) @Suspendable {
+            // obtain the group parameters, which is a signed list of [NotaryInfo], i.e. a list
+            // of notary names, public key, and ancillary information like protocol version, and whether
+            // backchain is required.
             val signedGroupParameters = transaction.groupParameters as SignedGroupParameters
+            // check the group parameters signature, and check that the transaction group parameters hash matches the
+            // group parameters.
             signedGroupParametersVerifier.verify(transaction, signedGroupParameters)
-            verifyNotaryAllowed(transaction, signedGroupParameters)
+            // So now we know what the transaction group parameters content and hash match, and that it has
+            // a signature. However, we have not proved the key pair that made that signature is the key pair of the MGM,
+            // so we should put not trust in the signature.
+
+            val transactionMetadata = transaction.metadata as? TransactionMetadataInternal
+                ?: throw CordaRuntimeException("transaction metadata malformed")
+            verifyNotaryAllowed(transaction.notaryName, transaction.notaryKey, transactionMetadata, signedGroupParameters)
 
             val verificationResult = externalEventExecutor.execute(
                 TransactionVerificationExternalEventFactory::class.java,
