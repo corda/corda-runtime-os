@@ -106,10 +106,6 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
         try {
             _impl = createActiveImpl()
             activationFailureCounter.set(0)
-        } catch (e: FatalActivationException) {
-            logger.error("$myName failed activate", e)
-            coordinator.updateStatus(LifecycleStatus.ERROR)
-            return
         } catch (e: Throwable) {
             if(activationFailureCounter.incrementAndGet() <= 5) {
                 logger.debug { "$myName failed activate..., will try again. Cause: ${e.message}" }
