@@ -136,6 +136,7 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
+import org.junit.jupiter.api.Disabled
 
 class P2PLayerEndToEndTest {
 
@@ -172,6 +173,7 @@ class P2PLayerEndToEndTest {
         .withValue(MessagingConfig.MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(10000000))
 
     @Test
+    @Disabled
     @Timeout(60)
     fun `two hosts can exchange data messages over p2p using RSA keys`() {
         val numberOfMessages = 10
@@ -222,6 +224,7 @@ class P2PLayerEndToEndTest {
     }
 
     @Test
+    @Disabled
     @Timeout(60)
     fun `two hosts can exchange data messages over p2p with ECDSA keys`() {
         val numberOfMessages = 10

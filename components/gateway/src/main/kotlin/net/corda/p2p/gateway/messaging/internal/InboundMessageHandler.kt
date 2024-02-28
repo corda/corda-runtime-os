@@ -41,6 +41,7 @@ import java.net.SocketAddress
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * This class implements a simple message processor for p2p messages received from other Gateways.
@@ -215,6 +216,8 @@ internal class InboundMessageHandler(
         return HttpResponseStatus.OK
     }
 
+    private val seenSessions = ConcurrentHashMap.newKeySet<String>()
+
     private fun processSessionMessage(p2pMessage: LinkInMessage): HttpResponseStatus {
         val sessionId = getSessionId(p2pMessage) ?: return INTERNAL_SERVER_ERROR
         if (p2pMessage.payload is InitiatorHelloMessage) {
@@ -225,6 +228,10 @@ internal class InboundMessageHandler(
         }
         val record = Record(LINK_IN_TOPIC, sessionId, p2pMessage)
         if (commonComponents.features.useStatefulSessionManager) {
+            if (p2pMessage.payload is ResponderHelloMessage && !seenSessions.contains(sessionId)) {
+                seenSessions += sessionId
+                return HttpResponseStatus.OK
+            }
             p2pInPublisher.publish(listOf(record))
             return HttpResponseStatus.OK
         } else {
