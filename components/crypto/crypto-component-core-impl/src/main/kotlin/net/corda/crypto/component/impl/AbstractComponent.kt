@@ -10,11 +10,9 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.concurrent.atomic.AtomicInteger
 
 abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -75,18 +73,6 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
                         } else {
                             coordinator.updateStatus(LifecycleStatus.DOWN)
                         }
-                    }
-                }
-            }
-            is AbstractConfigurableComponent.TryAgainCreateActiveImpl -> {
-                if(_impl == null) {
-                    doActivate(coordinator)
-                } else {
-                    if(upstream.isUp) {
-                        logger.trace { "TryAgainCreateActiveImpl - $myName - setting as UP." }
-                        coordinator.updateStatus(LifecycleStatus.UP)
-                    } else {
-                        logger.trace { "TryAgainCreateActiveImpl - $myName - skipping as stale as _impl already created." }
                     }
                 }
             }
