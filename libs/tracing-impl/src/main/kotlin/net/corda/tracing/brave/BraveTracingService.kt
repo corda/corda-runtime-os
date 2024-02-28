@@ -35,7 +35,8 @@ import zipkin2.reporter.BytesMessageSender
 import zipkin2.reporter.Reporter
 import zipkin2.reporter.brave.ZipkinSpanHandler
 import zipkin2.reporter.urlconnection.URLConnectionSender
-import java.util.*
+import java.util.EnumSet
+import java.util.Stack
 import java.util.concurrent.ExecutorService
 import java.util.logging.Level
 import java.util.logging.Logger
