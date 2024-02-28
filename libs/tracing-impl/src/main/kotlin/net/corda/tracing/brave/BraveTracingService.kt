@@ -7,14 +7,12 @@ import brave.baggage.BaggagePropagationConfig
 import brave.baggage.CorrelationScopeConfig
 import brave.context.slf4j.MDCScopeDecorator
 import brave.http.HttpRequest
-import brave.http.HttpRequestMatchers.methodEquals
 import brave.http.HttpRequestMatchers.pathStartsWith
 import brave.http.HttpRequestParser
 import brave.http.HttpRuleSampler
 import brave.http.HttpTracing
 import brave.propagation.B3Propagation
 import brave.propagation.ThreadLocalCurrentTraceContext
-import brave.sampler.Matchers.and
 import brave.sampler.RateLimitingSampler
 import brave.sampler.Sampler
 import brave.sampler.SamplerFunction
