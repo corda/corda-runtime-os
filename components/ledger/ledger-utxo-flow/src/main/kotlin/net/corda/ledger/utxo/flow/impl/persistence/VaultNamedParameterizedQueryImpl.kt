@@ -13,6 +13,7 @@ import net.corda.utilities.toByteArrays
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.query.VaultNamedParameterizedQuery
+import org.slf4j.LoggerFactory
 import java.time.Instant
 
 // TODO CORE-12032 use delegation to create this class
@@ -31,6 +32,7 @@ class VaultNamedParameterizedQueryImpl<T>(
 
     private companion object {
         const val TIMESTAMP_LIMIT_PARAM_NAME = "Corda_TimestampLimit"
+        val logger = LoggerFactory.getLogger(this::class.java)
     }
 
     override fun setLimit(limit: Int): VaultNamedParameterizedQuery<T> {
@@ -90,6 +92,8 @@ class VaultNamedParameterizedQueryImpl<T>(
     }
 
     override fun setCreatedTimestampLimit(timestampLimit: Instant): VaultNamedParameterizedQuery<T> {
+        logger.info("Setting name query created timestamp limit to: $timestampLimit")
+
         require(timestampLimit <= Instant.now()) { "Timestamp limit must not be in the future." }
 
         parameters[TIMESTAMP_LIMIT_PARAM_NAME] = timestampLimit
