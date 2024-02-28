@@ -48,6 +48,8 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
             signedGroupParametersVerifier.verify(transaction, signedGroupParameters)
             verifyNotaryAllowed(transaction, signedGroupParameters)
 
+            // Now context switch to the verification worker, see [VerificationRequestHandlerImpl.handleRequest],
+            // passing in the whole serialized transaction, and the contracts will be checked there.
             val verificationResult = externalEventExecutor.execute(
                 TransactionVerificationExternalEventFactory::class.java,
                 TransactionVerificationParameters(
