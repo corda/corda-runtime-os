@@ -273,8 +273,8 @@ class UtxoFinalityFlowV1(
             // `log.trace {}` and `log.debug {}` are not used in this method due to a Quasar issue.
             if (log.isTraceEnabled) {
                 log.trace(
-                    "Notarizing transaction $transactionId using pluggable notary client flow of ${notarizationFlow::class.java.name} with " +
-                            "notary $notary, attempt number $attemptNumber"
+                    "Notarizing transaction $transactionId using pluggable notary client flow of ${notarizationFlow::class.java.name} " +
+                        "with notary $notary, attempt number $attemptNumber"
                 )
             }
             flowEngine.subFlow(notarizationFlow)

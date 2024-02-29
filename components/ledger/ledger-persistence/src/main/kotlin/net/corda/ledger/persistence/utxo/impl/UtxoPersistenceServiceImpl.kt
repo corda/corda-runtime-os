@@ -360,7 +360,6 @@ class UtxoPersistenceServiceImpl(
 
             // Mark inputs as consumed
             if (transaction.status == TransactionStatus.VERIFIED) {
-
                 repository.persistVisibleTransactionOutputs(
                     em,
                     transactionIdString,
