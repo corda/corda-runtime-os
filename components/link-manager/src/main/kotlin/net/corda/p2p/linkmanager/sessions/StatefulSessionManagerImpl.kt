@@ -833,7 +833,6 @@ internal class StatefulSessionManagerImpl(
                         sessionManagerImpl.revocationCheckerClient::checkRevocation,
                     )
                     val responderHelloToResend = sessionState?.message ?: return null
-                    val session = sessionState.sessionData as? AuthenticationProtocolResponder
                     val newState =
                         State(
                             key = state.key,
@@ -841,7 +840,7 @@ internal class StatefulSessionManagerImpl(
                             version = state.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
-                    Result(responderHelloToResend, UpdateAction(newState), session?.getSession())
+                    Result(responderHelloToResend, UpdateAction(newState), null)
                 } else {
                     null
                 }
