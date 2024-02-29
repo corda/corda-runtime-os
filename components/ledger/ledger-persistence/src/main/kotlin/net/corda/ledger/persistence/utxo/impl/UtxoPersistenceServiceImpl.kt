@@ -34,6 +34,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.data.transaction.toMerkleProof
 import net.corda.libs.packaging.hash
+import net.corda.metrics.CordaMetrics
 import net.corda.orm.utils.transaction
 import net.corda.utilities.serialization.deserialize
 import net.corda.utilities.time.Clock
@@ -55,6 +56,7 @@ import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
@@ -356,15 +358,16 @@ class UtxoPersistenceServiceImpl(
 
             repository.persistTransactionSources(em, transactionIdString, consumedTransactionSources + referenceTransactionSources)
 
-            repository.persistVisibleTransactionOutputs(
-                em,
-                transactionIdString,
-                nowUtc,
-                visibleTransactionOutputs
-            )
-
             // Mark inputs as consumed
             if (transaction.status == TransactionStatus.VERIFIED) {
+
+                repository.persistVisibleTransactionOutputs(
+                    em,
+                    transactionIdString,
+                    nowUtc,
+                    visibleTransactionOutputs
+                )
+
                 val inputStateRefs = transaction.getConsumedStateRefs()
                 if (inputStateRefs.isNotEmpty()) {
                     repository.markTransactionVisibleStatesConsumed(
@@ -543,6 +546,8 @@ class UtxoPersistenceServiceImpl(
                     nowUtc
                 )
 
+                val startTime = System.nanoTime()
+
                 val topLevelTransactionMerkleProof = createTransactionMerkleProof(
                     filteredTransaction.id.toString(),
                     TOP_LEVEL_MERKLE_PROOF_GROUP_INDEX,
@@ -575,6 +580,11 @@ class UtxoPersistenceServiceImpl(
                     }
                     TransactionMerkleProofToPersist(proof, leaves, components)
                 }
+
+                CordaMetrics.Metric.Ledger.FilteredTransactionComputationTime
+                    .builder()
+                    .build()
+                    .record(Duration.ofNanos(System.nanoTime() - startTime))
 
                 // 6. Persist the top level and component group merkle proofs
                 // No need to persist the leaf data for the top level merkle proof as we can reconstruct that

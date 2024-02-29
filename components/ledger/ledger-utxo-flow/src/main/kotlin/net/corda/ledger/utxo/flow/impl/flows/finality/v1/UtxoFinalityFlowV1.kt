@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality.v1
 
+import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
 import net.corda.crypto.core.fullId
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
@@ -266,32 +267,46 @@ class UtxoFinalityFlowV1(
     ): Pair<UtxoSignedTransactionInternal, List<DigitalSignatureAndMetadata>> {
         val notary = transaction.notaryName
 
-        val notarizationFlow = newPluggableNotaryClientFlowInstance(transaction)
+        val notarize = @Suspendable { attemptNumber: Int ->
+            val notarizationFlow = newPluggableNotaryClientFlowInstance(transaction)
 
-        // `log.trace {}` and `log.debug {}` are not used in this method due to a Quasar issue.
-        if (log.isTraceEnabled) {
-            log.trace(
-                "Notarizing transaction $transactionId using pluggable notary client flow of ${notarizationFlow::class.java.name} with " +
-                    "notary $notary"
-            )
+            // `log.trace {}` and `log.debug {}` are not used in this method due to a Quasar issue.
+            if (log.isTraceEnabled) {
+                log.trace(
+                    "Notarizing transaction $transactionId using pluggable notary client flow of ${notarizationFlow::class.java.name} with " +
+                            "notary $notary, attempt number $attemptNumber"
+                )
+            }
+            flowEngine.subFlow(notarizationFlow)
         }
 
-        val notarySignatures = try {
-            flowEngine.subFlow(notarizationFlow)
-        } catch (e: CordaRuntimeException) {
-            val (message, failureReason) = if (e is NotaryExceptionFatal) {
-                persistInvalidTransaction(transaction)
-                "Notarization failed permanently with ${e.message}." to FinalityNotarizationFailureType.FATAL
-            } else {
-                "Notarization failed with ${e.message}." to FinalityNotarizationFailureType.UNKNOWN
-            }
+        var notarySignatures: List<DigitalSignatureAndMetadata>
+        var attemptNumber = 1
 
-            flowMessaging.sendAll(
-                Payload.Failure<List<DigitalSignatureAndMetadata>>(message, failureReason.value),
-                sessions.toSet()
-            )
-            log.warn(message)
-            throw e
+        while (true) {
+            // sleep functionality would be useful to pause things here
+            // notary might get overwhelmed with retries on connection errors?
+            try {
+                notarySignatures = notarize(attemptNumber++)
+                break
+            } catch (e: NotaryExceptionGeneral) {
+                log.warn("Received unknown error from notarization on attempt $attemptNumber. Retrying notarisation.")
+                continue
+            } catch (e: CordaRuntimeException) {
+                val (message, failureReason) = if (e is NotaryExceptionFatal) {
+                    persistInvalidTransaction(transaction)
+                    "Notarization failed permanently with ${e.message}." to FinalityNotarizationFailureType.FATAL
+                } else {
+                    // Shouldn't be possible but put here as a catch all
+                    "Notarization failed with ${e.message}." to FinalityNotarizationFailureType.UNKNOWN
+                }
+                flowMessaging.sendAll(
+                    Payload.Failure<List<DigitalSignatureAndMetadata>>(message, failureReason.value),
+                    sessions.toSet()
+                )
+                log.warn(message)
+                throw e
+            }
         }
 
         if (log.isTraceEnabled) {
