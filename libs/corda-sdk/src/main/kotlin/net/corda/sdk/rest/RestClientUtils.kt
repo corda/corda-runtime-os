@@ -6,6 +6,7 @@ import net.corda.rest.client.RestClient
 import net.corda.rest.client.RestConnectionListener
 import net.corda.rest.client.config.RestClientConfig
 import net.corda.rest.client.exceptions.ClientSslHandshakeException
+import net.corda.rest.exception.ResourceAlreadyExistsException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.MalformedURLException
@@ -97,6 +98,9 @@ object RestClientUtils {
         do {
             try {
                 return block()
+            } catch (ex: ResourceAlreadyExistsException) {
+                logger.info("Re-throwing", ex)
+                throw ex
             } catch (ex: Exception) {
                 lastException = ex
                 logger.warn("""Cannot perform operation "$operationName" yet""")
