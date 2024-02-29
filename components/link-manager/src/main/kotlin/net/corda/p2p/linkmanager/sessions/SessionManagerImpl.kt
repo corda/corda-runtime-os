@@ -33,7 +33,6 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.metrics.CordaMetrics
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.crypto.protocol.RevocationCheckMode
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
@@ -92,9 +91,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.p2p.crypto.protocol.api.InvalidSelectedModeError
 import net.corda.p2p.crypto.protocol.api.NoCommonModeError
-import net.corda.p2p.linkmanager.metrics.recordInboundSessionTimeoutMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundHeartbeatMessagesMetric
-import net.corda.p2p.linkmanager.metrics.recordOutboundSessionTimeoutMetric
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.badGroupPolicy
 import net.corda.utilities.trace
 import kotlin.concurrent.read
@@ -1281,7 +1278,6 @@ internal class SessionManagerImpl(
         private fun tearDownOutboundSession(counterparties: SessionCounterparties, sessionId: String) {
             destroyOutboundSession(counterparties, sessionId)
             trackedOutboundSessions.remove(sessionId)
-            recordOutboundSessionTimeoutMetric(counterparties.ourId)
         }
 
         private fun scheduleOutboundSessionTimeout(
@@ -1320,7 +1316,6 @@ internal class SessionManagerImpl(
                 )
                 destroyInboundSession(sessionId)
                 trackedInboundSessions.remove(sessionId)
-                recordInboundSessionTimeoutMetric(source)
             } else {
                 scheduleInboundSessionTimeout(sessionId, source, destination, Duration.ofMillis(sessionTimeoutMs - timeSinceLastReceived))
             }

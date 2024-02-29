@@ -1,3 +1,4 @@
+@file:Suppress("TooManyFunctions")
 package net.corda.p2p.linkmanager.metrics
 
 import net.corda.data.p2p.app.AuthenticatedMessage
@@ -84,32 +85,17 @@ private fun recordInboundMessagesMetric(group: String?, subsystem: String, messa
     builder.build().increment()
 }
 
-fun recordOutboundSessionTimeoutMetric(source: HoldingIdentity) {
-    CordaMetrics.Metric.OutboundSessionTimeoutCount.builder()
+fun recordSessionTimeoutMetric(source: HoldingIdentity, direction: SessionDirection) {
+    CordaMetrics.Metric.SessionTimeoutCount.builder()
+        .withTag(CordaMetrics.Tag.SessionDirection, direction.toString())
         .withTag(CordaMetrics.Tag.MembershipGroup, source.groupId)
         .build().increment()
 }
 
-fun recordInboundSessionTimeoutMetric(source: HoldingIdentity) {
-    CordaMetrics.Metric.InboundSessionTimeoutCount.builder()
-        .withTag(CordaMetrics.Tag.MembershipGroup, source.groupId)
+fun recordSessionDeletedMetric(direction: SessionDirection) {
+    CordaMetrics.Metric.SessionDeletedCount.builder()
+        .withTag(CordaMetrics.Tag.SessionDirection, direction.toString())
         .build().increment()
-}
-
-fun recordOutboundSessionCreatedMetric() {
-    CordaMetrics.Metric.OutboundSessionCreatedCount.builder().build().increment()
-}
-
-fun recordInboundSessionCreatedMetric() {
-    CordaMetrics.Metric.InboundSessionCreatedCount.builder().build().increment()
-}
-
-fun recordOutboundSessionDeletedMetric() {
-    CordaMetrics.Metric.OutboundSessionDeletedCount.builder().build().increment()
-}
-
-fun recordInboundSessionDeletedMetric() {
-    CordaMetrics.Metric.InboundSessionDeletedCount.builder().build().increment()
 }
 
 fun recordSessionStartedMetric(direction: SessionDirection) {

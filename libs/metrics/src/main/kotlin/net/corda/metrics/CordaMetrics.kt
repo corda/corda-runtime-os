@@ -204,44 +204,19 @@ object CordaMetrics {
         object InboundMessageCount : Metric<Counter>("p2p.message.inbound", Metrics::counter)
 
         /**
-         * Number of outbound peer-to-peer sessions that timed out (indicating communication issues with peers).
+         * Number of peer-to-peer sessions that timed out (indicating communication issues with peers).
          */
-        object OutboundSessionTimeoutCount : Metric<Counter>("p2p.session.outbound.timeout", Metrics::counter)
+        object SessionTimeoutCount : Metric<Counter>("p2p.session.timeout", Metrics::counter)
 
         /**
-         * Number of inbound peer-to-peer sessions that timed out (indicating communication issues with peers).
+         * Number of cached peer-to-peer sessions.
          */
-        object InboundSessionTimeoutCount : Metric<Counter>("p2p.session.inbound.timeout", Metrics::counter)
+        class CachedSessionCount(computation: Supplier<Number>): ComputedValue<Nothing>("p2p.session.cached", computation)
 
         /**
-         * Number of cached outbound peer-to-peer sessions.
+         * Number of peer-to-peer sessions deleted.
          */
-        class OutboundCachedSessionCount(computation: Supplier<Number>): ComputedValue<Nothing>("p2p.session.outbound.cached", computation)
-
-        /**
-         * Number of outbound peer-to-peer sessions created.
-         */
-        object OutboundSessionCreatedCount: Metric<Counter>("p2p.session.outbound.created", Metrics::counter)
-
-        /**
-         * Number of outbound peer-to-peer sessions deleted.
-         */
-        object OutboundSessionDeletedCount: Metric<Counter>("p2p.session.outbound.deleted", Metrics::counter)
-
-        /**
-         * Number of cached inbound peer-to-peer sessions.
-         */
-        class InboundCachedSessionCount(computation: Supplier<Number>): ComputedValue<Nothing>("p2p.session.inbound.cached", computation)
-
-        /**
-         * Number of inbound peer-to-peer sessions created.
-         */
-        object InboundSessionCreatedCount: Metric<Counter>("p2p.session.inbound.created", Metrics::counter)
-
-        /**
-         * Number of inbound peer-to-peer sessions deleted.
-         */
-        object InboundSessionDeletedCount: Metric<Counter>("p2p.session.inbound.deleted", Metrics::counter)
+        object SessionDeletedCount: Metric<Counter>("p2p.session.deleted", Metrics::counter)
 
         /**
          * Number of peer-to-peer sessions started.

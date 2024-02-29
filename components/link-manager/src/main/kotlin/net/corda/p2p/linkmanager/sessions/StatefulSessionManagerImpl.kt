@@ -24,8 +24,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.metrics.CordaMetrics
-import net.corda.metrics.CordaMetrics.Metric.InboundCachedSessionCount
-import net.corda.metrics.CordaMetrics.Metric.OutboundCachedSessionCount
+import net.corda.metrics.CordaMetrics.Metric.CachedSessionCount
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
@@ -91,8 +90,12 @@ internal class StatefulSessionManagerImpl(
     }
 
     // These metrics must be removed on shutdown as the MeterRegistry holds references to their lambdas.
-    private val outboundCachedSessionCount = OutboundCachedSessionCount { sessionCache.getEstimatedOutboundCacheSize() }.builder().build()
-    private val inboundCachedSessionCount = InboundCachedSessionCount { sessionCache.getEstimatedInboundCacheSize() }.builder().build()
+    private val outboundCachedSessionCount =
+        CachedSessionCount { sessionCache.getEstimatedOutboundCacheSize() }.builder()
+            .withTag(CordaMetrics.Tag.SessionDirection, SessionDirection.OUTBOUND.toString()).build()
+    private val inboundCachedSessionCount =
+        CachedSessionCount { sessionCache.getEstimatedInboundCacheSize() }.builder()
+        .withTag(CordaMetrics.Tag.SessionDirection, SessionDirection.INBOUND.toString()).build()
 
     override fun <T> processOutboundMessages(
         wrappedMessages: Collection<T>,

@@ -6,8 +6,7 @@ import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.data.p2p.event.SessionDirection
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
-import net.corda.p2p.linkmanager.metrics.recordInboundSessionTimeoutMetric
-import net.corda.p2p.linkmanager.metrics.recordOutboundSessionTimeoutMetric
+import net.corda.p2p.linkmanager.metrics.recordSessionTimeoutMetric
 import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata.Companion.toCommonMetadata
 import net.corda.p2p.linkmanager.sessions.metadata.direction
@@ -180,8 +179,8 @@ internal class SessionCache(
     private fun recordSessionTimeoutAndForgetState(state: State) {
         val direction = state.metadata.direction()
         when (direction) {
-            SessionDirection.OUTBOUND -> recordOutboundSessionTimeoutMetric(state.metadata.toCommonMetadata().source)
-            SessionDirection.INBOUND -> recordInboundSessionTimeoutMetric(state.metadata.toCommonMetadata().source)
+            SessionDirection.OUTBOUND -> recordSessionTimeoutMetric(state.metadata.toCommonMetadata().source, direction)
+            SessionDirection.INBOUND -> recordSessionTimeoutMetric(state.metadata.toCommonMetadata().source, direction)
         }
         forgetState(state, direction)
     }
