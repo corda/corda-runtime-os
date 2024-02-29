@@ -2,7 +2,7 @@ apiVersion: v2
 name: corda
 description: A Helm chart for Corda
 type: application
-version: 5.2.0-RC.2
+version: 5.2.0-beta.1
 appVersion: unstable-5.2.0
 dependencies:
 - name: corda-lib
