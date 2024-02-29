@@ -346,7 +346,7 @@ class UtxoRepositoryImpl(
         timestamp: Instant,
         visibleTransactionOutputs: List<UtxoRepository.VisibleTransactionOutput>
     ) {
-        logger.info("Persisting visible transaction outputs at timestamp: $timestamp")
+        logger.info("Persisting visible transaction outputs for txId: $transactionId at timestamp: $timestamp")
 
         entityManager.connection { connection ->
             batchPersistenceService.persistBatch(
