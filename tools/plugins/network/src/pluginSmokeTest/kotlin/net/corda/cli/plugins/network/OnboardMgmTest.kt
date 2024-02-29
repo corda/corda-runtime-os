@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test
 import picocli.CommandLine
 import java.io.File
 import java.util.*
+import kotlin.time.Duration.Companion.seconds
 
 class OnboardMgmTest {
     companion object {
@@ -166,7 +167,7 @@ class OnboardMgmTest {
             password = password,
             targetUrl = targetUrl
         )
-        val cpisFromCluster = CpiUploader().getAllCpis(restClient = restClient).cpis
+        val cpisFromCluster = CpiUploader().getAllCpis(restClient = restClient, wait = waitDurationSeconds.seconds).cpis
         return cpisFromCluster
             .first { it.groupPolicy?.contains("CREATE_ID") == true }
             .cpiFileChecksum

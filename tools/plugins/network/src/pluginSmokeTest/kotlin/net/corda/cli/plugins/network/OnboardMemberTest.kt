@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test
 import picocli.CommandLine
 import java.io.File
 import java.util.UUID
+import kotlin.time.Duration.Companion.seconds
 
 class OnboardMemberTest {
     companion object {
@@ -215,7 +216,7 @@ class OnboardMemberTest {
             password = password,
             targetUrl = targetUrl
         )
-        val cpisFromCluster = CpiUploader().getAllCpis(restClient = restClient).cpis
+        val cpisFromCluster = CpiUploader().getAllCpis(restClient = restClient, wait = waitDurationSeconds.seconds).cpis
         return cpisFromCluster.first { it.id.cpiName == cpiName }.cpiFileChecksum
     }
 
@@ -236,7 +237,8 @@ class OnboardMemberTest {
         return MgmGeneratePreAuth().generatePreAuthToken(
             restClient = restClient,
             holdingIdentityShortHash = holdingIdentity,
-            request = PreAuthTokenRequest(member)
+            request = PreAuthTokenRequest(member),
+            wait = waitDurationSeconds.seconds
         ).id
     }
 

@@ -1,6 +1,5 @@
 package net.corda.cli.plugin.initialRbac.commands
 
-import net.corda.cli.plugins.common.RestClientUtils.executeWithRetry
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.BulkCreatePermissionsRequestType
@@ -9,10 +8,10 @@ import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.sdk.rest.RestClientUtils.createRestClient
+import net.corda.sdk.rest.RestClientUtils.executeWithRetry
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.time.Duration
-import java.time.temporal.ChronoUnit
+import kotlin.time.Duration.Companion.seconds
 
 internal object RoleCreationUtils {
 
@@ -60,11 +59,17 @@ internal object RoleCreationUtils {
         )
 
         roleClient.use { roleEndpointClient ->
-            val waitDuration = Duration.of(waitDurationSeconds.toLong(), ChronoUnit.SECONDS)
-            val roleEndpoint = executeWithRetry(waitDuration, "Connect to role HTTP endpoint") {
+            val waitDuration = waitDurationSeconds.seconds
+            val roleEndpoint = executeWithRetry(
+                waitDuration = waitDuration,
+                operationName = "Connect to role HTTP endpoint"
+            ) {
                 roleEndpointClient.start().proxy
             }
-            val allRoles = executeWithRetry(waitDuration, "Obtain list of available roles") {
+            val allRoles = executeWithRetry(
+                waitDuration = waitDuration,
+                operationName = "Obtain list of available roles"
+            ) {
                 roleEndpoint.getRoles()
             }
             if (allRoles.any { it.roleName == roleName }) {
@@ -72,12 +77,18 @@ internal object RoleCreationUtils {
                 return 5
             }
 
-            val roleId = executeWithRetry(waitDuration, "Creating role: $roleName") {
+            val roleId = executeWithRetry(
+                waitDuration = waitDuration,
+                operationName = "Creating role: $roleName"
+            ) {
                 roleEndpoint.createRole(CreateRoleType(roleName, null)).responseBody.id
             }
 
             permissionClient.use { permissionEndpointClient ->
-                val permissionEndpoint = executeWithRetry(waitDuration, "Start of permissions HTTP endpoint") {
+                val permissionEndpoint = executeWithRetry(
+                    waitDuration = waitDuration,
+                    operationName = "Start of permissions HTTP endpoint"
+                ) {
                     permissionEndpointClient.start().proxy
                 }
 
@@ -93,7 +104,10 @@ internal object RoleCreationUtils {
                     setOf(roleId)
                 )
 
-                executeWithRetry(waitDuration, "Creating and assigning permissions to the role") {
+                executeWithRetry(
+                    waitDuration = waitDuration,
+                    operationName = "Creating and assigning permissions to the role"
+                ) {
                     permissionEndpoint.createAndAssignPermissions(bulkRequest)
                 }
             }

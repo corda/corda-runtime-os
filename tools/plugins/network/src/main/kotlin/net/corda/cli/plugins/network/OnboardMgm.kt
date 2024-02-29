@@ -15,6 +15,7 @@ import picocli.CommandLine.Option
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.UUID
+import kotlin.time.Duration.Companion.seconds
 
 @Command(
     name = "onboard-mgm",
@@ -70,7 +71,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
             password = password,
             targetUrl = targetUrl
         )
-        val groupPolicyResponse = ExportGroupPolicyFromMgm().exportPolicy(restClient, holdingId)
+        val groupPolicyResponse = ExportGroupPolicyFromMgm().exportPolicy(restClient, holdingId, waitDurationSeconds.seconds)
         groupPolicyFile.parentFile.mkdirs()
         json.writerWithDefaultPrettyPrinter()
             .writeValue(
@@ -154,7 +155,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
             password = password,
             targetUrl = targetUrl
         )
-        val response = CpiUploader().getAllCpis(restClient = restClient)
+        val response = CpiUploader().getAllCpis(restClient = restClient, wait = waitDurationSeconds.seconds)
         return response.cpis
             .filter { it.cpiFileChecksum == hash || (hash == null && it.groupPolicy?.contains("CREATE_ID") ?: false) }
             .map { it.cpiFileChecksum }

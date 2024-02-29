@@ -11,6 +11,7 @@ import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.sdk.network.RegistrationsLookup
 import net.corda.sdk.rest.RestClientUtils.createRestClient
 import picocli.CommandLine
+import kotlin.time.Duration.Companion.seconds
 
 @CommandLine.Command(
     name = "get-registrations",
@@ -67,9 +68,9 @@ class GetRegistrations(private val output: Output = ConsoleOutput()) :
             targetUrl = targetUrl
         )
         return if (requestId != null) {
-            listOf(RegistrationsLookup().checkRegistration(restClient, holdingIdentity, requestId!!))
+            listOf(RegistrationsLookup().checkRegistration(restClient, holdingIdentity, requestId!!, waitDurationSeconds.seconds))
         } else {
-            RegistrationsLookup().checkRegistrations(restClient, holdingIdentity)
+            RegistrationsLookup().checkRegistrations(restClient, holdingIdentity, waitDurationSeconds.seconds)
         }
     }
 

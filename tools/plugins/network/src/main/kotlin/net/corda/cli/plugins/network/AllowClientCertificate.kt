@@ -7,6 +7,7 @@ import net.corda.sdk.network.ClientCertificates
 import net.corda.sdk.rest.RestClientUtils
 import picocli.CommandLine.Command
 import picocli.CommandLine.Parameters
+import kotlin.time.Duration.Companion.seconds
 
 @Command(
     name = "allow-client-certificate",
@@ -53,9 +54,9 @@ class AllowClientCertificate : Runnable, RestCommand() {
         val clientCertificates = ClientCertificates()
 
         println("Allowing certificates...")
-        clientCertificates.allowMutualTlsForSubjects(restClient, mgmShortHash, subjects)
+        clientCertificates.allowMutualTlsForSubjects(restClient, mgmShortHash, subjects, waitDurationSeconds.seconds)
         println("Success!")
-        clientCertificates.listMutualTlsClientCertificates(restClient, mgmShortHash).forEach { subject ->
+        clientCertificates.listMutualTlsClientCertificates(restClient, mgmShortHash, waitDurationSeconds.seconds).forEach { subject ->
             println("Certificate with subject $subject is allowed")
         }
     }

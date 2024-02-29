@@ -12,11 +12,16 @@ import java.net.MalformedURLException
 import java.net.URL
 import kotlin.reflect.KClass
 import kotlin.system.exitProcess
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 object RestClientUtils {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
     private val errOut: Logger = LoggerFactory.getLogger("SystemErr")
+
+    private val maxWait: Duration = 10.seconds
+    private val cooldownInterval: Duration = 2.seconds
 
     @Suppress("LongParameterList")
     fun <I : RestResource> createRestClient(
@@ -78,5 +83,29 @@ object RestClientUtils {
         } catch (e: MalformedURLException) {
             throw IllegalArgumentException("Error: Invalid target URL")
         }
+    }
+
+    fun <T> executeWithRetry(
+        waitDuration: Duration = maxWait,
+        timeBetweenAttempts: Duration = cooldownInterval,
+        operationName: String,
+        block: () -> T
+    ): T {
+        logger.info("""Performing operation "$operationName"""")
+        val endTime = System.currentTimeMillis() + waitDuration.inWholeMilliseconds
+        var lastException: Exception?
+        do {
+            try {
+                return block()
+            } catch (ex: Exception) {
+                lastException = ex
+                logger.warn("""Cannot perform operation "$operationName" yet""")
+                val remaining = (endTime - System.currentTimeMillis()).coerceAtLeast(0)
+                Thread.sleep(timeBetweenAttempts.inWholeMilliseconds.coerceAtMost(remaining))
+            }
+        } while (System.currentTimeMillis() <= endTime)
+
+        errOut.error("""Unable to perform operation "$operationName"""", lastException)
+        throw lastException!!
     }
 }

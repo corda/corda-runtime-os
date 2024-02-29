@@ -5,16 +5,23 @@ import net.corda.libs.cpiupload.endpoints.v1.GetCPIsResponse
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.client.RestClient
-import net.corda.rest.client.exceptions.RequestErrorException
-import net.corda.sdk.rest.InvariantUtils
+import net.corda.sdk.rest.RestClientUtils.executeWithRetry
 import java.io.File
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 class CpiUploader {
 
-    fun uploadCPI(restClient: RestClient<CpiUploadRestResource>, cpiFile: File, cpiName: String): CpiUploadRestResource.CpiUploadResponse {
+    fun uploadCPI(
+        restClient: RestClient<CpiUploadRestResource>,
+        cpiFile: File,
+        cpiName: String,
+        wait: Duration = 10.seconds
+    ): CpiUploadRestResource.CpiUploadResponse {
         return restClient.use { client ->
-            InvariantUtils.checkInvariant(
-                errorMessage = "Failed to upload CPI $cpiName after ${InvariantUtils.MAX_ATTEMPTS} attempts."
+            executeWithRetry(
+                waitDuration = wait,
+                operationName = "Upload CPI $cpiName"
             ) {
                 val resource = client.start().proxy
                 resource.cpi(
@@ -27,34 +34,36 @@ class CpiUploader {
         }
     }
 
-    fun cpiChecksum(restClient: RestClient<CpiUploadRestResource>, uploadRequestId: String): String {
+    fun cpiChecksum(
+        restClient: RestClient<CpiUploadRestResource>,
+        uploadRequestId: String,
+        wait: Duration = 10.seconds
+    ): String {
         return restClient.use { client ->
-            InvariantUtils.checkInvariant(
-                errorMessage = "CPI request $uploadRequestId is not ready after ${InvariantUtils.MAX_ATTEMPTS} attempts."
+            executeWithRetry(
+                waitDuration = wait,
+                operationName = "Wait for CPI to be ingested and return checksum"
             ) {
-                try {
-                    val resource = client.start().proxy
-                    val status = resource.status(uploadRequestId)
-                    if (status.status == "OK") {
-                        status.cpiFileChecksum
-                    } else {
-                        null
-                    }
-                } catch (e: RequestErrorException) {
-                    // This exception can be thrown while the CPI upload is being processed, so we catch it and re-try.
-                    null
+                val resource = client.start().proxy
+                val status = resource.status(uploadRequestId)
+                if (status.status == "OK") {
+                    status.cpiFileChecksum
+                } else {
+                    throw CpiUploadException("Cpi status is not ok: ${status.status}")
                 }
             }
         }
     }
 
-    fun getAllCpis(restClient: RestClient<CpiUploadRestResource>): GetCPIsResponse {
+    internal class CpiUploadException(message: String) : Exception(message)
+
+    fun getAllCpis(restClient: RestClient<CpiUploadRestResource>, wait: Duration = 10.seconds): GetCPIsResponse {
         return restClient.use { client ->
-            InvariantUtils.checkInvariant(
-                errorMessage = "Failed to list all CPIs after ${InvariantUtils.MAX_ATTEMPTS} attempts."
+            executeWithRetry(
+                waitDuration = wait,
+                operationName = "List all CPIs"
             ) {
-                val resource = client.start().proxy
-                resource.getAllCpis()
+                client.start().proxy.getAllCpis()
             }
         }
     }
@@ -62,11 +71,13 @@ class CpiUploader {
     fun forceCpiUpload(
         restClient: RestClient<VirtualNodeMaintenanceRestResource>,
         cpiFile: File,
-        cpiName: String
+        cpiName: String,
+        wait: Duration = 10.seconds
     ): CpiUploadRestResource.CpiUploadResponse {
         return restClient.use { client ->
-            InvariantUtils.checkInvariant(
-                errorMessage = "Failed to force upload CPI $cpiName after ${InvariantUtils.MAX_ATTEMPTS} attempts."
+            executeWithRetry(
+                waitDuration = wait,
+                operationName = "Force upload CPI $cpiName"
             ) {
                 val resource = client.start().proxy
                 resource.forceCpiUpload(

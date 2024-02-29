@@ -12,6 +12,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
+import kotlin.time.Duration.Companion.seconds
 
 @Command(
     name = "onboard-member",
@@ -115,7 +116,7 @@ class OnboardMember : Runnable, BaseOnboard() {
             password = password,
             targetUrl = targetUrl
         )
-        val cpisFromCluster = CpiUploader().getAllCpis(restClient = restClient).cpis
+        val cpisFromCluster = CpiUploader().getAllCpis(restClient = restClient, wait = waitDurationSeconds.seconds).cpis
         cpisFromCluster.firstOrNull { it.id.cpiName == cpiName && it.id.cpiVersion == CPI_VERSION }?.let {
             println("CPI already exists, using CPI ${it.id}")
             return it.cpiFileChecksum

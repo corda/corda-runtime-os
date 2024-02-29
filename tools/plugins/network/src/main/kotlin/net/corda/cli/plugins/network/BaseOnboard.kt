@@ -33,6 +33,7 @@ import picocli.CommandLine.Parameters
 import java.io.File
 import java.net.URI
 import java.security.KeyStore
+import kotlin.time.Duration.Companion.seconds
 
 @Suppress("TooManyFunctions")
 abstract class BaseOnboard : Runnable, RestCommand() {
@@ -88,7 +89,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             password = password,
             targetUrl = targetUrl
         )
-        val uploadId = CpiUploader().uploadCPI(restClient, cpi, cpiName).id
+        val uploadId = CpiUploader().uploadCPI(restClient, cpi, cpiName, waitDurationSeconds.seconds).id
         return checkCpiStatus(uploadId)
     }
 
@@ -101,7 +102,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             password = password,
             targetUrl = targetUrl
         )
-        return CpiUploader().cpiChecksum(restClient = restClient, uploadRequestId = id)
+        return CpiUploader().cpiChecksum(restClient = restClient, uploadRequestId = id, wait = waitDurationSeconds.seconds)
     }
 
     protected abstract val cpiFileChecksum: String
@@ -127,7 +128,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             uniquenessDdlConnection = null,
             uniquenessDmlConnection = null,
         )
-        val shortHashId = VirtualNode().createAndWaitForActive(restClient, request)
+        val shortHashId = VirtualNode().createAndWaitForActive(restClient, request, waitDurationSeconds.seconds)
         println("Holding identity short hash of '$name' is: '$shortHashId'")
         shortHashId
     }
@@ -149,7 +150,13 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             password = password,
             targetUrl = targetUrl
         )
-        return Keys().assignSoftHsmAndGenerateKey(hsmRestClient, keyRestClient, holdingId, category)
+        return Keys().assignSoftHsmAndGenerateKey(
+            hsmRestClient = hsmRestClient,
+            keysRestClient = keyRestClient,
+            holdingIdentityShortHash = holdingId,
+            category = category,
+            wait = waitDurationSeconds.seconds
+        )
     }
 
     protected val sessionKeyId by lazy {
@@ -191,11 +198,11 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             targetUrl = targetUrl
         )
         val keys = Keys()
-        val hasKeys = keys.hasTlsKey(keyRestClient)
+        val hasKeys = keys.hasTlsKey(restClient = keyRestClient, wait = waitDurationSeconds.seconds)
 
         if (hasKeys) return
 
-        val tlsKeyId = keys.generateTlsKey(keyRestClient)
+        val tlsKeyId = keys.generateTlsKey(restClient = keyRestClient, wait = waitDurationSeconds.seconds)
 
         val certificateRestClient = createRestClient(
             CertificatesRestResource::class,
@@ -207,9 +214,15 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         )
         val clientCertificates = ClientCertificates()
 
-        val csrCertRequest = clientCertificates.generateP2pCsr(certificateRestClient, tlsKeyId, certificateSubject, p2pHosts)
+        val csrCertRequest = clientCertificates.generateP2pCsr(
+            certificateRestClient,
+            tlsKeyId,
+            certificateSubject,
+            p2pHosts,
+            waitDurationSeconds.seconds
+        )
         val certificate = ca.signCsr(csrCertRequest).toPem().byteInputStream()
-        clientCertificates.uploadTlsCertificate(certificateRestClient, certificate)
+        clientCertificates.uploadTlsCertificate(certificateRestClient, certificate, waitDurationSeconds.seconds)
     }
 
     protected fun setupNetwork() {
@@ -233,7 +246,12 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             ),
         )
 
-        RegistrationRequester().configureAsNetworkParticipant(restClient = restClient, request = request, holdingId = holdingId)
+        RegistrationRequester().configureAsNetworkParticipant(
+            restClient = restClient,
+            request = request,
+            holdingId = holdingId,
+            wait = waitDurationSeconds.seconds
+        )
     }
 
     protected fun register(waitForFinalStatus: Boolean = true) {
@@ -263,7 +281,8 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             RegistrationRequester().waitForRegistrationApproval(
                 restClient = restClient,
                 registrationId = registrationId,
-                holdingId = holdingId
+                holdingId = holdingId,
+                wait = waitDurationSeconds.seconds
             )
         }
     }
@@ -278,7 +297,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             targetUrl = targetUrl
         )
         val clusterConfig = ClusterConfig()
-        var currentConfig = clusterConfig.getCurrentConfig(restClient, "corda.p2p.gateway")
+        var currentConfig = clusterConfig.getCurrentConfig(restClient, "corda.p2p.gateway", waitDurationSeconds.seconds)
         val rawConfig = currentConfig.configWithDefaults
         val rawConfigJson = json.readTree(rawConfig)
         val sslConfig = rawConfigJson["sslConfig"]
@@ -286,9 +305,9 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         val currentTlsType = sslConfig["tlsType"]?.asText()
 
         if (currentMode != "OFF") {
-            clusterConfig.configureCrl(restClient, "OFF", currentConfig)
+            clusterConfig.configureCrl(restClient, "OFF", currentConfig, waitDurationSeconds.seconds)
             // Update currentConfig ahead of next check
-            currentConfig = clusterConfig.getCurrentConfig(restClient, "corda.p2p.gateway")
+            currentConfig = clusterConfig.getCurrentConfig(restClient, "corda.p2p.gateway", waitDurationSeconds.seconds)
         }
 
         val tlsType = if (mtls) {
@@ -297,7 +316,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             "ONE_WAY"
         }
         if (currentTlsType != tlsType) {
-            clusterConfig.configureTlsType(restClient, tlsType, currentConfig)
+            clusterConfig.configureTlsType(restClient, tlsType, currentConfig, waitDurationSeconds.seconds)
         }
     }
 
@@ -352,7 +371,8 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                     restClient = restClient,
                     certificate = certificate,
                     usage = "code-signer",
-                    alias = GRADLE_PLUGIN_DEFAULT_KEY_ALIAS
+                    alias = GRADLE_PLUGIN_DEFAULT_KEY_ALIAS,
+                    wait = waitDurationSeconds.seconds
                 )
             }
         keyStore.getCertificate(SIGNING_KEY_ALIAS)
@@ -363,7 +383,8 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                     restClient = restClient,
                     certificate = certificate,
                     usage = "code-signer",
-                    alias = "signingkey1-2022"
+                    alias = "signingkey1-2022",
+                    wait = waitDurationSeconds.seconds
                 )
             }
     }

@@ -3,8 +3,9 @@ package net.corda.sdk.network
 import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.response.RestMemberInfoList
 import net.corda.rest.client.RestClient
-import net.corda.sdk.rest.InvariantUtils.MAX_ATTEMPTS
-import net.corda.sdk.rest.InvariantUtils.checkInvariant
+import net.corda.sdk.rest.RestClientUtils.executeWithRetry
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 class MemberLookup {
 
@@ -18,27 +19,25 @@ class MemberLookup {
         locality: String?,
         state: String?,
         country: String?,
-        status: List<String>
+        status: List<String>,
+        wait: Duration = 10.seconds
     ): RestMemberInfoList {
         return restClient.use { client ->
-            checkInvariant(
-                errorMessage = "Failed to lookup member after $MAX_ATTEMPTS attempts.",
+            executeWithRetry(
+                waitDuration = wait,
+                operationName = "Lookup member"
             ) {
-                try {
-                    val resource = client.start().proxy
-                    resource.lookupV51(
-                        holdingIdentityShortHash,
-                        commonName,
-                        organization,
-                        organizationUnit,
-                        locality,
-                        state,
-                        country,
-                        status.orEmpty(),
-                    )
-                } catch (e: Exception) {
-                    null
-                }
+                val resource = client.start().proxy
+                resource.lookupV51(
+                    holdingIdentityShortHash,
+                    commonName,
+                    organization,
+                    organizationUnit,
+                    locality,
+                    state,
+                    country,
+                    status.orEmpty(),
+                )
             }
         }
     }

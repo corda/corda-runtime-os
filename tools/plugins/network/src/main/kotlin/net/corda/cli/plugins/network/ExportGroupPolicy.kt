@@ -8,6 +8,7 @@ import net.corda.sdk.rest.RestClientUtils.createRestClient
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
+import kotlin.time.Duration.Companion.seconds
 
 @Command(
     name = "export-group-policy",
@@ -42,7 +43,11 @@ class ExportGroupPolicy : Runnable, RestCommand() {
             password = password,
             targetUrl = targetUrl
         )
-        val groupPolicyResponse = ExportGroupPolicyFromMgm().exportPolicy(restClient, holdingIdentityShortHash!!)
+        val groupPolicyResponse = ExportGroupPolicyFromMgm().exportPolicy(
+            restClient,
+            holdingIdentityShortHash!!,
+            wait = waitDurationSeconds.seconds
+        )
         saveLocation.parentFile.mkdirs()
         val objectMapper = ObjectMapper()
         objectMapper.writerWithDefaultPrettyPrinter()

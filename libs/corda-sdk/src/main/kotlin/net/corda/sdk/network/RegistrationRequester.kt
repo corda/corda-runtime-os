@@ -7,14 +7,17 @@ import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.rest.v1.types.response.RegistrationRequestProgress
 import net.corda.membership.rest.v1.types.response.RegistrationStatus
 import net.corda.rest.client.RestClient
-import net.corda.sdk.rest.InvariantUtils
+import net.corda.sdk.rest.RestClientUtils.executeWithRetry
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 class RegistrationRequester {
 
     fun requestRegistration(
         restClient: RestClient<MemberRegistrationRestResource>,
         registrationContext: Map<String, Any?>,
-        holdingId: String
+        holdingId: String,
+        wait: Duration = 10.seconds
     ): RegistrationRequestProgress {
         val castRegistrationContext: Map<String, String> = registrationContext.mapValues { (_, value) ->
             value.toString()
@@ -23,15 +26,12 @@ class RegistrationRequester {
             context = castRegistrationContext,
         )
         return restClient.use { client ->
-            InvariantUtils.checkInvariant(
-                errorMessage = "Failed to request registration after ${InvariantUtils.MAX_ATTEMPTS} attempts."
+            executeWithRetry(
+                waitDuration = wait,
+                operationName = "Request registration"
             ) {
-                try {
-                    val resource = client.start().proxy
-                    resource.startRegistration(holdingId, request)
-                } catch (e: Exception) {
-                    null
-                }
+                val resource = client.start().proxy
+                resource.startRegistration(holdingId, request)
             }
         }
     }
@@ -39,29 +39,23 @@ class RegistrationRequester {
     fun waitForRegistrationApproval(
         restClient: RestClient<MemberRegistrationRestResource>,
         registrationId: String,
-        holdingId: String
+        holdingId: String,
+        wait: Duration = 10.seconds
     ) {
         restClient.use { client ->
-            InvariantUtils.checkInvariant(
-                errorMessage = "Check Registration Progress failed after ${InvariantUtils.MAX_ATTEMPTS} attempts."
+            executeWithRetry(
+                waitDuration = wait,
+                operationName = "Check registration progress"
             ) {
-                try {
-                    val resource = client.start().proxy
-                    val status = resource.checkSpecificRegistrationProgress(holdingId, registrationId)
-                    when (val registrationStatus = status.registrationStatus) {
-                        RegistrationStatus.APPROVED -> true // Return true to indicate the invariant is satisfied
-                        RegistrationStatus.DECLINED,
-                        RegistrationStatus.INVALID,
-                        RegistrationStatus.FAILED,
-                        -> throw OnboardException("Status of registration is $registrationStatus.")
-
-                        else -> {
-                            println("Status of registration is $registrationStatus")
-                            null
-                        }
-                    }
-                } catch (e: Exception) {
-                    null
+                val resource = client.start().proxy
+                val status = resource.checkSpecificRegistrationProgress(holdingId, registrationId)
+                when (val registrationStatus = status.registrationStatus) {
+                    RegistrationStatus.APPROVED -> true // Return true to indicate the condition is satisfied
+                    RegistrationStatus.DECLINED,
+                    RegistrationStatus.INVALID,
+                    RegistrationStatus.FAILED,
+                    -> throw OnboardException("Status of registration is $registrationStatus; reason: ${status.reason}.")
+                    else -> throw OnboardException("Status of registration is $registrationStatus; reason: ${status.reason}.")
                 }
             }
         }
@@ -70,23 +64,26 @@ class RegistrationRequester {
     fun registerAndWaitForApproval(
         restClient: RestClient<MemberRegistrationRestResource>,
         registrationContext: Map<String, Any>,
-        holdingId: String
+        holdingId: String,
+        wait: Duration = 10.seconds
     ) {
-        val response = requestRegistration(restClient, registrationContext, holdingId)
-        waitForRegistrationApproval(restClient, response.registrationId, holdingId)
+        val response = requestRegistration(restClient, registrationContext, holdingId, wait)
+        waitForRegistrationApproval(restClient, response.registrationId, holdingId, wait)
     }
 
-    fun configureAsNetworkParticipant(restClient: RestClient<NetworkRestResource>, request: HostedIdentitySetupRequest, holdingId: String) {
+    fun configureAsNetworkParticipant(
+        restClient: RestClient<NetworkRestResource>,
+        request: HostedIdentitySetupRequest,
+        holdingId: String,
+        wait: Duration = 10.seconds
+    ) {
         restClient.use { client ->
-            InvariantUtils.checkInvariant(
-                errorMessage = "Unable to configure $holdingId as network participant after ${InvariantUtils.MAX_ATTEMPTS} attempts."
+            executeWithRetry(
+                waitDuration = wait,
+                operationName = "Configure $holdingId as network participant"
             ) {
-                try {
-                    val resource = client.start().proxy
-                    resource.setupHostedIdentities(holdingId, request)
-                } catch (e: Exception) {
-                    null
-                }
+                val resource = client.start().proxy
+                resource.setupHostedIdentities(holdingId, request)
             }
         }
     }

@@ -3,21 +3,24 @@ package net.corda.sdk.network
 import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.RestGroupParameters
 import net.corda.rest.client.RestClient
-import net.corda.sdk.rest.InvariantUtils
+import net.corda.sdk.rest.RestClientUtils.executeWithRetry
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 class GroupParametersLookup {
 
-    fun lookupGroupParameters(restClient: RestClient<MemberLookupRestResource>, holdingIdentityShortHash: String): RestGroupParameters {
+    fun lookupGroupParameters(
+        restClient: RestClient<MemberLookupRestResource>,
+        holdingIdentityShortHash: String,
+        wait: Duration = 10.seconds
+    ): RestGroupParameters {
         return restClient.use { client ->
-            InvariantUtils.checkInvariant(
-                errorMessage = "Failed to lookup group parameters after ${InvariantUtils.MAX_ATTEMPTS} attempts.",
+            executeWithRetry(
+                waitDuration = wait,
+                operationName = "Lookup group parameters"
             ) {
-                try {
-                    val resource = client.start().proxy
-                    resource.viewGroupParameters(holdingIdentityShortHash)
-                } catch (e: Exception) {
-                    null
-                }
+                val resource = client.start().proxy
+                resource.viewGroupParameters(holdingIdentityShortHash)
             }
         }
     }

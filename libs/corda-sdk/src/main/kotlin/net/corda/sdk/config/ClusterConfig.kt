@@ -8,29 +8,36 @@ import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
 import net.corda.rest.client.RestClient
 import net.corda.rest.json.serialization.JsonObjectAsString
-import net.corda.sdk.rest.InvariantUtils.MAX_ATTEMPTS
-import net.corda.sdk.rest.InvariantUtils.checkInvariant
+import net.corda.sdk.rest.RestClientUtils.executeWithRetry
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 class ClusterConfig {
 
     private val objectMapper = ObjectMapper()
 
-    fun getCurrentConfig(restClient: RestClient<ConfigRestResource>, configSection: String): GetConfigResponse {
+    fun getCurrentConfig(
+        restClient: RestClient<ConfigRestResource>,
+        configSection: String,
+        wait: Duration = 10.seconds
+    ): GetConfigResponse {
         return restClient.use { client ->
-            checkInvariant(
-                errorMessage = "Failed to get cluster config after $MAX_ATTEMPTS attempts.",
+            executeWithRetry(
+                waitDuration = wait,
+                operationName = "Get current config $configSection"
             ) {
-                try {
-                    val resource = client.start().proxy
-                    resource.get(configSection)
-                } catch (e: Exception) {
-                    null
-                }
+                val resource = client.start().proxy
+                resource.get(configSection)
             }
         }
     }
 
-    fun configureCrl(restClient: RestClient<ConfigRestResource>, mode: String, currentConfig: GetConfigResponse) {
+    fun configureCrl(
+        restClient: RestClient<ConfigRestResource>,
+        mode: String,
+        currentConfig: GetConfigResponse,
+        wait: Duration = 10.seconds
+    ) {
         val newConfig = objectMapper.createObjectNode()
         newConfig.set<ObjectNode>(
             "sslConfig",
@@ -48,10 +55,15 @@ class ClusterConfig {
             schemaVersion = ConfigSchemaVersion(major = currentConfig.schemaVersion.major, minor = currentConfig.schemaVersion.minor),
         )
 
-        updateConfig(restClient, payload)
+        updateConfig(restClient, payload, wait)
     }
 
-    fun configureTlsType(restClient: RestClient<ConfigRestResource>, tlsType: String, currentConfig: GetConfigResponse) {
+    fun configureTlsType(
+        restClient: RestClient<ConfigRestResource>,
+        tlsType: String,
+        currentConfig: GetConfigResponse,
+        wait: Duration = 10.seconds
+    ) {
         val newConfig = objectMapper.createObjectNode()
         newConfig.set<ObjectNode>(
             "sslConfig",
@@ -65,20 +77,17 @@ class ClusterConfig {
             config = JsonObjectAsString(objectMapper.writeValueAsString(newConfig)),
             schemaVersion = ConfigSchemaVersion(major = currentConfig.schemaVersion.major, minor = currentConfig.schemaVersion.minor),
         )
-        updateConfig(restClient, payload)
+        updateConfig(restClient, payload, wait)
     }
 
-    fun updateConfig(restClient: RestClient<ConfigRestResource>, updateConfig: UpdateConfigParameters) {
+    fun updateConfig(restClient: RestClient<ConfigRestResource>, updateConfig: UpdateConfigParameters, wait: Duration = 10.seconds) {
         restClient.use { client ->
-            checkInvariant(
-                errorMessage = "Failed to update cluster config after $MAX_ATTEMPTS attempts.",
+            executeWithRetry(
+                waitDuration = wait,
+                operationName = "Update cluster config"
             ) {
-                try {
-                    val resource = client.start().proxy
-                    resource.updateConfig(updateConfig)
-                } catch (e: Exception) {
-                    null
-                }
+                val resource = client.start().proxy
+                resource.updateConfig(updateConfig)
             }
         }
     }

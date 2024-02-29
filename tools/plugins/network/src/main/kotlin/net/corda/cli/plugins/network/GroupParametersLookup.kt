@@ -11,6 +11,7 @@ import net.corda.membership.rest.v1.types.RestGroupParameters
 import net.corda.sdk.network.GroupParametersLookup
 import net.corda.sdk.rest.RestClientUtils.createRestClient
 import picocli.CommandLine
+import kotlin.time.Duration.Companion.seconds
 
 @CommandLine.Command(
     name = "group-parameters",
@@ -53,7 +54,7 @@ class GroupParametersLookup(private val output: Output = ConsoleOutput()) : Rest
             password = password,
             targetUrl = targetUrl
         )
-        return GroupParametersLookup().lookupGroupParameters(restClient, holdingIdentity)
+        return GroupParametersLookup().lookupGroupParameters(restClient, holdingIdentity, wait = waitDurationSeconds.seconds)
     }
 
     override fun run() {

@@ -11,6 +11,7 @@ import net.corda.membership.rest.v1.types.response.RestMemberInfo
 import net.corda.sdk.network.MemberLookup
 import net.corda.sdk.rest.RestClientUtils.createRestClient
 import picocli.CommandLine
+import kotlin.time.Duration.Companion.seconds
 
 @CommandLine.Command(
     name = "members",
@@ -116,6 +117,7 @@ class MemberLookup(private val output: Output = ConsoleOutput()) : RestCommand()
             state,
             country,
             status.orEmpty(),
+            waitDurationSeconds.seconds
         ).members
     }
 

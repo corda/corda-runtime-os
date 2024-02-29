@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
+import kotlin.time.Duration.Companion.seconds
 
 @Command(
     name = "reset",
@@ -69,7 +70,12 @@ class ResetCommand : RestCommand(), Runnable {
             targetUrl = targetUrl
         )
         println("Uploading CPI to host: $targetUrl")
-        val responseId = CpiUploader().forceCpiUpload(restClient = restClient, cpiFile = cpi, cpiName = cpi.name).id
+        val responseId = CpiUploader().forceCpiUpload(
+            restClient = restClient,
+            cpiFile = cpi,
+            cpiName = cpi.name,
+            wait = waitDurationSeconds.seconds
+        ).id
         if (wait) {
             pollForOKStatus(responseId)
             if (resync.isNotEmpty()) {
@@ -91,7 +97,11 @@ class ResetCommand : RestCommand(), Runnable {
             targetUrl = targetUrl
         )
         println("Polling for result.")
-        CpiUploader().cpiChecksum(restClient = restClient, uploadRequestId = virtualNodeMaintenanceResult)
+        CpiUploader().cpiChecksum(
+            restClient = restClient,
+            uploadRequestId = virtualNodeMaintenanceResult,
+            wait = waitDurationSeconds.seconds
+        )
         println("CPI Successfully Uploaded and applied. ")
     }
 
@@ -107,7 +117,7 @@ class ResetCommand : RestCommand(), Runnable {
         val virtualNodeHelper = VirtualNode()
         try {
             virtualNodeShortIds.forEach { virtualNodeShortId ->
-                virtualNodeHelper.resyncVault(restClient = restClient, holdingId = virtualNodeShortId)
+                virtualNodeHelper.resyncVault(restClient = restClient, holdingId = virtualNodeShortId, wait = waitDurationSeconds.seconds)
                 println("Virtual node $virtualNodeShortId successfully resynced")
             }
         } catch (e: Exception) {
