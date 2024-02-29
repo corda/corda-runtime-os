@@ -60,7 +60,9 @@ class ReceiveSignedTransactionFlowV1(
                 receivedTransaction.id,
                 receivedTransaction.notaryName,
                 receivedTransaction.dependencies,
-                transactionPayload.filteredDependencies
+                transactionPayload.filteredDependencies,
+                receivedTransaction.inputStateRefs,
+                receivedTransaction.referenceStateRefs
             )
         )
 

@@ -238,4 +238,6 @@ interface UtxoRepository {
     data class TransactionMerkleProofLeaf(val merkleProofId: String, val leafIndex: Int)
 
     fun incrementTransactionRepairAttemptCount(entityManager: EntityManager, id: String)
+
+    fun stateRefsExist(entityManager: EntityManager, stateRefs: List<StateRef>): List<Pair<String, Int>>
 }

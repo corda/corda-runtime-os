@@ -622,6 +622,26 @@ class UtxoRepositoryImpl(
             .executeUpdate()
     }
 
+    override fun stateRefsExist(entityManager: EntityManager, stateRefs: List<StateRef>): List<Pair<String, Int>> {
+        val results = mutableListOf<Pair<String, Int>>()
+        if (stateRefs.isNotEmpty()) {
+            entityManager.connection { connection ->
+                connection.prepareStatement(queryProvider.stateRefsExist(stateRefs.size)).use { statement ->
+                    val parameterIndex = generateSequence(1) { it + 1 }.iterator()
+                    for (stateRef in stateRefs) {
+                        statement.setString(parameterIndex.next(), stateRef.transactionId.toString())
+                        statement.setInt(parameterIndex.next(), stateRef.index)
+                    }
+                    val resultSet = statement.executeQuery()
+                    while (resultSet.next()) {
+                        results += resultSet.getString(0) to resultSet.getInt(1)
+                    }
+                }
+            }
+        }
+        return results
+    }
+
     private fun <T> EntityManager.connection(block: (connection: Connection) -> T) {
         val hibernateSession = unwrap(Session::class.java)
         hibernateSession.doWork { connection ->

@@ -513,10 +513,29 @@ class UtxoPersistenceServiceImpl(
 
     override fun persistFilteredTransactions(
         filteredTransactionsAndSignatures: Map<FilteredTransaction, List<DigitalSignatureAndMetadata>>,
+        inputStateRefs: List<StateRef>,
+        referenceStateRefs: List<StateRef>,
         account: String
     ) {
         entityManagerFactory.transaction { em ->
-            filteredTransactionsAndSignatures.forEach { (filteredTransaction, signatures) ->
+
+            val transactionsToSkip = if (referenceStateRefs.isNotEmpty()) {
+                val existingReferenceStates = repository.stateRefsExist(em, referenceStateRefs).map { (transactionId, index) ->
+                    StateRef(digestService.parseSecureHash(transactionId), index)
+                }
+                val missingReferenceStates = referenceStateRefs - existingReferenceStates.toSet()
+                val missingReferenceStateTransactions = missingReferenceStates.distinctTransactionIds()
+                val existingReferenceStateTransactions = existingReferenceStates.distinctTransactionIds()
+                val inputStateTransactions = inputStateRefs.distinctTransactionIds()
+
+                existingReferenceStateTransactions - (missingReferenceStateTransactions + inputStateTransactions)
+            } else {
+                emptySet()
+            }
+
+            filteredTransactionsAndSignatures
+                .filterNot { (filteredTransaction, _) -> filteredTransaction.id in transactionsToSkip }
+                .forEach { (filteredTransaction, signatures) ->
 
                 val nowUtc = utcClock.instant()
 
@@ -795,6 +814,10 @@ class UtxoPersistenceServiceImpl(
             leafIndexes,
             leafHashes
         )
+    }
+
+    private fun List<StateRef>.distinctTransactionIds(): Set<SecureHash> {
+        return map { stateRef -> stateRef.transactionId }.toSet()
     }
 
     private data class TransactionMerkleProofToPersist(

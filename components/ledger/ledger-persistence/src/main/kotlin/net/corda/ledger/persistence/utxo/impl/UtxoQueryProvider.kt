@@ -52,6 +52,11 @@ interface UtxoQueryProvider {
     val resolveStateRefs: String
 
     /**
+     * @property stateRefsExist SQL text for [UtxoRepositoryImpl.stateRefsExist].
+     */
+    val stateRefsExist: (batchSize: Int) -> String
+
+    /**
      * @property persistTransaction SQL text for [UtxoRepositoryImpl.persistTransaction].
      */
     val persistTransaction: String

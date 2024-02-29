@@ -118,6 +118,17 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             ORDER BY tx.created, tc_output.transaction_id, tc_output.leaf_idx"""
             .trimIndent()
 
+    override val stateRefsExist: (batchSize: Int) -> String
+        get() = { _ ->
+            """
+            SELECT transaction_id, leaf_idx
+            FROM {h-schema}utxo_transaction_component
+            WHERE (transaction_id||':'|| leaf_idx) in (:stateRefs)
+            AND group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
+        """.trimIndent()
+
+        }
+
     override val updateTransactionStatus: String
         get() = """
             UPDATE {h-schema}utxo_transaction SET status = :newStatus, updated = :updatedAt

@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.utxo.impl
 
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.orm.DatabaseTypeProvider
 import net.corda.orm.DatabaseTypeProvider.Companion.POSTGRES_TYPE_FILTER
 import net.corda.utilities.debug
@@ -119,6 +120,17 @@ class PostgresUtxoQueryProvider @Activate constructor(
             INSERT INTO utxo_transaction_merkle_proof_leaves(merkle_proof_id, leaf_index)
             VALUES ${List(batchSize) { "(?, ?)" }.joinToString(",")}
             ON CONFLICT DO NOTHING
+            """.trimIndent()
+        }
+
+    override val stateRefsExist: (batchSize: Int) -> String
+        get() = { batchSize ->
+            """
+            SELECT transaction_id, leaf_idx
+            FROM utxo_transaction_component
+            WHERE (transaction_id, group_idx, leaf_idx) in (VALUES
+                ${List(batchSize) { "(?, ${UtxoComponentGroup.OUTPUTS.ordinal}, ?)" }.joinToString(",")}
+            )
             """.trimIndent()
         }
 }
