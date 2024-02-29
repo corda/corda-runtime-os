@@ -77,6 +77,7 @@ metrics:
   scrape: true
   # -- A list of regular expressions for the names of metrics that Corda should keep; if empty, all metrics are kept
   keepNames:
+    - "corda_p2p_.*"
     - "corda_rpc_http_response_time_seconds_(count|sum|max)"
     - "corda_token_selection_execution_time_seconds_(count|sum|max)"
     - "corda_token_selection_db_execution_time_seconds_(count|sum|max)"
