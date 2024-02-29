@@ -277,12 +277,19 @@ abstract class BaseOnboard : Runnable, RestCommand() {
 
         println("Registration ID for '$name' is '$registrationId'")
 
+        // Registrations can take longer than the default 10 seconds, wait for minimum of 30
+        val longerWaitValue = if (waitDurationSeconds.seconds > 30.seconds) {
+            waitDurationSeconds.seconds
+        } else {
+            30.seconds
+        }
+
         if (waitForFinalStatus) {
             RegistrationRequester().waitForRegistrationApproval(
                 restClient = restClient,
                 registrationId = registrationId,
                 holdingId = holdingId,
-                wait = waitDurationSeconds.seconds
+                wait = longerWaitValue
             )
         }
     }
