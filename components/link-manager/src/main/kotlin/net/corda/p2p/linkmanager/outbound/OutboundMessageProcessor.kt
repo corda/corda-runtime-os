@@ -9,6 +9,7 @@ import net.corda.data.p2p.app.InboundUnauthenticatedMessage
 import net.corda.data.p2p.app.InboundUnauthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
+import net.corda.data.p2p.event.SessionDirection
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.Component
 import net.corda.data.p2p.markers.LinkManagerDiscardedMarker
@@ -45,6 +46,7 @@ import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.p2p.linkmanager.TraceableItem
 import net.corda.p2p.linkmanager.metrics.recordOutboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
+import net.corda.p2p.linkmanager.metrics.recordSessionFailedMetric
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class OutboundMessageProcessor(
@@ -407,6 +409,7 @@ internal class OutboundMessageProcessor(
                     TraceableItem(message.item.markerRecords, message.originalRecord)
                 }
                 is SessionManager.SessionState.CannotEstablishSession -> {
+                    recordSessionFailedMetric(SessionDirection.OUTBOUND)
                     TraceableItem(message.item.markerRecords, message.originalRecord)
                 }
             }

@@ -3,9 +3,12 @@ package net.corda.p2p.linkmanager.metrics
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.InboundUnauthenticatedMessage
 import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
+import net.corda.data.p2p.event.SessionDirection
 import net.corda.metrics.CordaMetrics
 import net.corda.metrics.CordaMetrics.NOT_APPLICABLE_TAG_VALUE
 import net.corda.virtualnode.HoldingIdentity
+import java.time.Duration
+import java.time.Instant
 
 const val P2P_SUBSYSTEM = "p2p"
 const val SESSION_MESSAGE_TYPE = "SessionMessage"
@@ -90,5 +93,51 @@ fun recordOutboundSessionTimeoutMetric(source: HoldingIdentity) {
 fun recordInboundSessionTimeoutMetric(source: HoldingIdentity) {
     CordaMetrics.Metric.InboundSessionTimeoutCount.builder()
         .withTag(CordaMetrics.Tag.MembershipGroup, source.groupId)
+        .build().increment()
+}
+
+fun recordOutboundSessionCreatedMetric() {
+    CordaMetrics.Metric.OutboundSessionCreatedCount.builder().build().increment()
+}
+
+fun recordInboundSessionCreatedMetric() {
+    CordaMetrics.Metric.InboundSessionCreatedCount.builder().build().increment()
+}
+
+fun recordOutboundSessionDeletedMetric() {
+    CordaMetrics.Metric.OutboundSessionDeletedCount.builder().build().increment()
+}
+
+fun recordInboundSessionDeletedMetric() {
+    CordaMetrics.Metric.InboundSessionDeletedCount.builder().build().increment()
+}
+
+fun recordSessionStartedMetric(direction: SessionDirection) {
+    CordaMetrics.Metric.SessionStartedCount.builder()
+        .withTag(CordaMetrics.Tag.SessionDirection, direction.toString())
+        .build().increment()
+}
+
+fun recordSessionEstablishedMetric(direction: SessionDirection) {
+    CordaMetrics.Metric.SessionEstablishedCount.builder()
+        .withTag(CordaMetrics.Tag.SessionDirection, direction.toString())
+        .build().increment()
+}
+
+fun recordSessionFailedMetric(direction: SessionDirection) {
+    CordaMetrics.Metric.SessionFailedCount.builder()
+        .withTag(CordaMetrics.Tag.SessionDirection, direction.toString())
+        .build().increment()
+}
+
+fun recordSessionCreationTime(startTime: Long) {
+    CordaMetrics.Metric.SessionCreationTime.builder()
+        .build()
+        .record(Duration.ofNanos(Instant.now().toEpochMilli() - startTime))
+}
+
+fun recordSessionMessageReplayMetric(direction: SessionDirection) {
+    CordaMetrics.Metric.SessionMessageReplayCount.builder()
+        .withTag(CordaMetrics.Tag.SessionDirection, direction.toString())
         .build().increment()
 }

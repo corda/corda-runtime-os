@@ -12,4 +12,5 @@ internal data class CreateAction(
 
 internal data class UpdateAction(
     override val state: State,
+    val isReplay: Boolean = false,
 ) : StateManagerAction

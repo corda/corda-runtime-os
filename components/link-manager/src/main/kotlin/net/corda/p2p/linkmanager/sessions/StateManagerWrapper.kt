@@ -1,8 +1,17 @@
 package net.corda.p2p.linkmanager.sessions
 
+import net.corda.data.p2p.event.SessionDirection
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.api.metadata
+import net.corda.p2p.linkmanager.metrics.recordSessionCreationTime
+import net.corda.p2p.linkmanager.metrics.recordSessionStartedMetric
+import net.corda.p2p.linkmanager.metrics.recordSessionEstablishedMetric
+import net.corda.p2p.linkmanager.metrics.recordSessionMessageReplayMetric
+import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.toOutbound
+import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
+import net.corda.p2p.linkmanager.sessions.metadata.direction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -28,7 +37,8 @@ internal class StateManagerWrapper(
     fun upsert(
         changes: Collection<StateManagerAction>,
     ): Map<String, State?> {
-        val updates = changes.filterIsInstance<UpdateAction>()
+        val updateActions = changes.filterIsInstance<UpdateAction>()
+        val updates = updateActions
             .map {
                 it.state
             }.mapNotNull {
@@ -50,6 +60,7 @@ internal class StateManagerWrapper(
         } else {
             emptyMap()
         }
+        recordSessionUpdateMetrics((updateActions.associateBy { it.state.key } - failedUpdates.keys).values)
         val failedCreates = if (creates.isNotEmpty()) {
             stateManager.create(creates).associateWith {
                 logger.info("Failed to create the state of session with ID $it")
@@ -58,6 +69,29 @@ internal class StateManagerWrapper(
         } else {
             emptyMap()
         }
+        recordSessionStartMetrics((creates.associateBy { it.key } - failedCreates.keys).values)
         return failedUpdates + failedCreates
+    }
+
+    private fun recordSessionStartMetrics(creates: Collection<State>) {
+        creates.forEach {
+            recordSessionStartedMetric(it.metadata.direction())
+        }
+    }
+
+    private fun recordSessionUpdateMetrics(updates: Collection<UpdateAction>) {
+        updates.forEach {
+            val direction = it.state.metadata.direction()
+            if (it.isReplay) {
+                recordSessionMessageReplayMetric(direction)
+            }
+            if (direction == SessionDirection.OUTBOUND) {
+                val outbound = metadata().toOutbound()
+                if (outbound.status == OutboundSessionStatus.SessionReady) {
+                    recordSessionEstablishedMetric(direction)
+                    recordSessionCreationTime(outbound.initiationTimestamp.toEpochMilli())
+                }
+            }
+        }
     }
 }

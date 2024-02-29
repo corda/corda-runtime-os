@@ -3,11 +3,14 @@ package net.corda.p2p.linkmanager.sessions
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cache.caffeine.CacheFactoryImpl
+import net.corda.data.p2p.event.SessionDirection
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.p2p.linkmanager.metrics.recordInboundSessionTimeoutMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionTimeoutMetric
 import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata.Companion.toCommonMetadata
+import net.corda.p2p.linkmanager.sessions.metadata.direction
 import net.corda.utilities.time.Clock
 import org.slf4j.LoggerFactory
 import java.time.Duration
@@ -130,7 +133,7 @@ internal class SessionCache(
         }
         val duration = Duration.between(now, expiry) - noise
         return if (duration.isNegative) {
-            forgetState(stateToForget)
+            recordSessionTimeoutAndForgetState(stateToForget)
             null
         } else {
             tasks.compute(state.key) { _, currentValue ->
@@ -143,7 +146,7 @@ internal class SessionCache(
                         version = stateToForget.version,
                         future = scheduler.schedule(
                             {
-                                forgetState(stateToForget)
+                                recordSessionTimeoutAndForgetState(stateToForget)
                             },
                             duration.toMillis(),
                             TimeUnit.MILLISECONDS,
@@ -174,7 +177,16 @@ internal class SessionCache(
         }
     }
 
-    private fun forgetState(state: State) {
+    private fun recordSessionTimeoutAndForgetState(state: State) {
+        val direction = state.metadata.direction()
+        when (direction) {
+            SessionDirection.OUTBOUND -> recordOutboundSessionTimeoutMetric(state.metadata.toCommonMetadata().source)
+            SessionDirection.INBOUND -> recordInboundSessionTimeoutMetric(state.metadata.toCommonMetadata().source)
+        }
+        forgetState(state, direction)
+    }
+
+    private fun forgetState(state: State, direction: SessionDirection) {
         var stateToDelete = state
         val key = state.key
         var retryCount = 0
@@ -195,7 +207,7 @@ internal class SessionCache(
         }
 
         invalidate(key)
-        eventPublisher.sessionDeleted(key)
+        eventPublisher.sessionDeleted(key, direction)
         tasks.remove(key)
     }
 
@@ -206,8 +218,7 @@ internal class SessionCache(
                 logger.warn("Failed to delete session state for '$key', state does not exist")
                 return
             }
-            forgetState(state)
-            recordOutboundSessionTimeoutMetric(state.metadata.toCommonMetadata().source)
+            forgetState(state, state.metadata.direction())
         } catch (e: Exception) {
             logger.error("Unexpected error while trying to fetch session state for '$key'.", e)
         }

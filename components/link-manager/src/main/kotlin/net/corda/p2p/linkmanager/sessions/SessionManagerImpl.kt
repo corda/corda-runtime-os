@@ -34,8 +34,6 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
-import net.corda.metrics.CordaMetrics.Metric.InboundSessionCount
-import net.corda.metrics.CordaMetrics.Metric.OutboundSessionCount
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.crypto.protocol.RevocationCheckMode
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
@@ -176,10 +174,6 @@ internal class SessionManagerImpl(
 
     internal val revocationCheckerClient = RevocationCheckerClient(publisherFactory, coordinatorFactory, messagingConfiguration)
     private val executorService = executorServiceFactory()
-
-    // These metrics must be removed on shutdown as the MeterRegistry holds references to their lambdas.
-    private val outboundSessionCount = OutboundSessionCount { outboundSessionPool.getAllSessionIds().size }.builder().build()
-    private val inboundSessionCount = InboundSessionCount { activeInboundSessions.size + pendingInboundSessions.size }.builder().build()
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
@@ -441,8 +435,6 @@ internal class SessionManagerImpl(
 
     private fun onTileClose() {
         executorService.shutdownNow()
-        CordaMetrics.registry.remove(inboundSessionCount)
-        CordaMetrics.registry.remove(outboundSessionCount)
     }
 
     private fun tearDownInboundSession(sessionId: String) {

@@ -214,14 +214,59 @@ object CordaMetrics {
         object InboundSessionTimeoutCount : Metric<Counter>("p2p.session.inbound.timeout", Metrics::counter)
 
         /**
-         * Number of outbound peer-to-peer sessions.
+         * Number of cached outbound peer-to-peer sessions.
          */
-        class OutboundSessionCount(computation: Supplier<Number>): ComputedValue<Nothing>("p2p.session.outbound", computation)
+        class OutboundCachedSessionCount(computation: Supplier<Number>): ComputedValue<Nothing>("p2p.session.outbound.cached", computation)
 
         /**
-         * Number of inbound peer-to-peer sessions.
+         * Number of outbound peer-to-peer sessions created.
          */
-        class InboundSessionCount(computation: Supplier<Number>): ComputedValue<Nothing>("p2p.session.inbound", computation)
+        object OutboundSessionCreatedCount: Metric<Counter>("p2p.session.outbound.created", Metrics::counter)
+
+        /**
+         * Number of outbound peer-to-peer sessions deleted.
+         */
+        object OutboundSessionDeletedCount: Metric<Counter>("p2p.session.outbound.deleted", Metrics::counter)
+
+        /**
+         * Number of cached inbound peer-to-peer sessions.
+         */
+        class InboundCachedSessionCount(computation: Supplier<Number>): ComputedValue<Nothing>("p2p.session.inbound.cached", computation)
+
+        /**
+         * Number of inbound peer-to-peer sessions created.
+         */
+        object InboundSessionCreatedCount: Metric<Counter>("p2p.session.inbound.created", Metrics::counter)
+
+        /**
+         * Number of inbound peer-to-peer sessions deleted.
+         */
+        object InboundSessionDeletedCount: Metric<Counter>("p2p.session.inbound.deleted", Metrics::counter)
+
+        /**
+         * Number of peer-to-peer sessions started.
+         */
+        object SessionStartedCount: Metric<Counter>("p2p.session.started", Metrics::counter)
+
+        /**
+         * Number of peer-to-peer sessions established.
+         */
+        object SessionEstablishedCount: Metric<Counter>("p2p.session.established", Metrics::counter)
+
+        /**
+         * Number of peer-to-peer sessions failed.
+         */
+        object SessionFailedCount: Metric<Counter>("p2p.session.failed", Metrics::counter)
+
+        /**
+         * Time it took for a peer-to-peer session to be established.
+         */
+        object SessionCreationTime: Metric<Timer>("p2p.session.creation.time", CordaMetrics::timer)
+
+        /**
+         * Number of peer-to-peer sessions messages replayed.
+         */
+        object SessionMessageReplayCount: Metric<Counter>("p2p.session.replayed", Metrics::counter)
 
         /**
          * Time it took for an inbound request to the p2p gateway to be processed.
@@ -842,6 +887,11 @@ object CordaMetrics {
          * The subsystem that sends or receives a peer-to-peer message from the network layer.
          */
         MessagingSubsystem("subsystem"),
+
+        /**
+         * The direction of a peer-to-peer session.
+         */
+        SessionDirection("p2p.session.direction"),
 
         /**
          * Type of result returned. Currently used by uniqueness client and checker to indicate

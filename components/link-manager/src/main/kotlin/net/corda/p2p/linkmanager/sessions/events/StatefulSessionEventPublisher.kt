@@ -11,6 +11,10 @@ import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.linkmanager.metrics.recordInboundSessionCreatedMetric
+import net.corda.p2p.linkmanager.metrics.recordInboundSessionDeletedMetric
+import net.corda.p2p.linkmanager.metrics.recordOutboundSessionCreatedMetric
+import net.corda.p2p.linkmanager.metrics.recordOutboundSessionDeletedMetric
 import net.corda.schema.Schemas
 
 class StatefulSessionEventPublisher(
@@ -28,10 +32,18 @@ class StatefulSessionEventPublisher(
 
     fun sessionCreated(key: String, direction: SessionDirection) {
         publisher.publish(listOf(Record(Schemas.P2P.SESSION_EVENTS, key, SessionEvent(SessionCreated(direction, key)))))
+        when(direction) {
+            SessionDirection.INBOUND -> recordInboundSessionCreatedMetric()
+            SessionDirection.OUTBOUND -> recordOutboundSessionCreatedMetric()
+        }
     }
 
-    fun sessionDeleted(key: String) {
+    fun sessionDeleted(key: String, direction: SessionDirection) {
         publisher.publish(listOf(Record(Schemas.P2P.SESSION_EVENTS, key, SessionEvent(SessionDeleted(key)))))
+        when(direction) {
+            SessionDirection.INBOUND -> recordInboundSessionDeletedMetric()
+            SessionDirection.OUTBOUND -> recordOutboundSessionDeletedMetric()
+        }
     }
 
     override val dominoTile = publisher.dominoTile
