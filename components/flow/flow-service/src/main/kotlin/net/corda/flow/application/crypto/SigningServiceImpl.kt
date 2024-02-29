@@ -121,28 +121,28 @@ class SigningServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    fun decodePublicKey(encodedKey: ByteArray): PublicKey {
+    override fun decodePublicKey(encodedKey: ByteArray): PublicKey {
         return recordSuspendable({ cryptoFlowTimer("decodePublicKeyFromByteArray") }) @Suspendable {
             keyEncodingService.decodePublicKey(encodedKey)
         }
     }
 
     @Suspendable
-    fun decodePublicKey(encodedKey: String): PublicKey {
+    override fun decodePublicKey(encodedKey: String): PublicKey {
         return recordSuspendable({ cryptoFlowTimer("decodePublicKeyFromString") }) @Suspendable {
             keyEncodingService.decodePublicKey(encodedKey)
         }
     }
 
     @Suspendable
-    fun encodeAsByteArray(publicKey: PublicKey): ByteArray {
+    override fun encodeAsByteArray(publicKey: PublicKey): ByteArray {
         return recordSuspendable({ cryptoFlowTimer("encodePublicKeyToByteArray") }) @Suspendable {
             keyEncodingService.encodeAsByteArray(publicKey)
         }
     }
 
     @Suspendable
-    fun encodeAsString(publicKey: PublicKey): String {
+    override fun encodeAsString(publicKey: PublicKey): String {
         return recordSuspendable({ cryptoFlowTimer("encodePublicKeyToString") }) @Suspendable {
             keyEncodingService.encodeAsString(publicKey)
         }
