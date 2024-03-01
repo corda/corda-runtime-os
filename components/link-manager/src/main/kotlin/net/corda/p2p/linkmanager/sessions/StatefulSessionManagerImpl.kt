@@ -758,9 +758,7 @@ internal class StatefulSessionManagerImpl(
             val result =
                 when (val lastMessage = lastContext.inboundSessionMessage) {
                     is InboundSessionMessage.InitiatorHelloMessage -> {
-                        processInitiatorHello(state, lastMessage)?.let { (message, stateUpdate) ->
-                            Result(message, CreateAction(stateUpdate), null)
-                        }
+                        processInitiatorHello(state, lastMessage)
                     }
                     is InboundSessionMessage.InitiatorHandshakeMessage -> {
                         processInitiatorHandshake(state, lastMessage)?.let { (message, stateUpdate, session) ->
@@ -827,7 +825,7 @@ internal class StatefulSessionManagerImpl(
     private fun processInitiatorHello(
         state: State?,
         message: InboundSessionMessage.InitiatorHelloMessage,
-    ): Pair<LinkOutMessage?, State>? {
+    ): Result? {
         val metadata = state?.metadata?.toInbound()
         return when (metadata?.status) {
             null -> {
@@ -851,7 +849,7 @@ internal class StatefulSessionManagerImpl(
                             version = 0,
                             metadata = newMetadata.toMetadata(),
                         )
-                    responseMessage to newState
+                    Result(responseMessage, CreateAction(newState), null)
                 }
             }
             InboundSessionStatus.SentResponderHello -> {
@@ -862,11 +860,11 @@ internal class StatefulSessionManagerImpl(
                             lastSendTimestamp = timestamp,
                         ),
                     )
-                    val responderHelloToResend =
-                        stateConvertor.toCordaSessionState(
-                            state,
-                            sessionManagerImpl.revocationCheckerClient::checkRevocation,
-                        )?.message ?: return null
+                    val sessionState = stateConvertor.toCordaSessionState(
+                        state,
+                        sessionManagerImpl.revocationCheckerClient::checkRevocation,
+                    )
+                    val responderHelloToResend = sessionState?.message ?: return null
                     val newState =
                         State(
                             key = state.key,
@@ -874,7 +872,7 @@ internal class StatefulSessionManagerImpl(
                             version = state.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
-                    responderHelloToResend to newState
+                    Result(responderHelloToResend, UpdateAction(newState), null)
                 } else {
                     null
                 }
