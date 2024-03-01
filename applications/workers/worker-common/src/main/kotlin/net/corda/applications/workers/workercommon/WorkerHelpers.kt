@@ -241,8 +241,10 @@ class WorkerHelpers {
             }
 
             startupInfoBuilder.append("User: ${processInfo.user().orElse("Null")}$ls")
-            startupInfoBuilder.append("StartInstant: ${if (processInfo.startInstant().isPresent) processInfo.startInstant().get() else "Null"}$ls")
-            startupInfoBuilder.append("TotalCpuDuration: ${if (processInfo.totalCpuDuration().isPresent) processInfo.totalCpuDuration().get() else "Null"}$ls")
+            val startInstant = if (processInfo.startInstant().isPresent) processInfo.startInstant().get() else "Null"
+            startupInfoBuilder.append("StartInstant: $startInstant$ls")
+            val totalCpuDuration = if (processInfo.totalCpuDuration().isPresent) processInfo.totalCpuDuration().get() else "Null"
+            startupInfoBuilder.append("TotalCpuDuration: $totalCpuDuration$ls")
 
             val mxBeanInfo = ManagementFactory.getRuntimeMXBean()
             startupInfoBuilder.append("classpath: ${mxBeanInfo.classPath}$ls")
