@@ -6,6 +6,8 @@ import net.corda.libs.statemanager.api.StateManager
 import net.corda.metrics.CordaMetrics
 import net.corda.p2p.linkmanager.metrics.recordP2PMetric
 import net.corda.p2p.linkmanager.metrics.recordSessionCreationTime
+import net.corda.p2p.linkmanager.metrics.recordSessionTimeoutMetric
+import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata.Companion.toCommonMetadata
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.isOutbound
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.toOutbound
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
@@ -76,6 +78,12 @@ internal class StateManagerWrapper(
     private fun recordSessionStartMetrics(creates: Collection<State>) {
         creates.groupBy { it.direction() }.forEach {
             recordP2PMetric(CordaMetrics.Metric.SessionStartedCount, it.key, it.value.size.toDouble())
+            // TODO remove - sanity check
+            val common = it.value.first().metadata.toCommonMetadata()
+            recordSessionTimeoutMetric(common.source, it.key)
+            recordP2PMetric(CordaMetrics.Metric.SessionFailedCount, it.key, 5.0)
+            recordP2PMetric(CordaMetrics.Metric.SessionDeletedCount, it.key, 5.0)
+            recordP2PMetric(CordaMetrics.Metric.SessionMessageReplayCount, it.key, 5.0)
         }
     }
 
