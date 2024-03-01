@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package net.corda.cli.plugins.network
 
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -15,7 +13,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import picocli.CommandLine
 import java.io.File
-import java.util.*
+import java.util.UUID
 import kotlin.time.Duration.Companion.seconds
 
 class OnboardMgmTest {

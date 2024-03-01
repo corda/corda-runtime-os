@@ -1,6 +1,6 @@
 package net.corda.sdk.network
 
-import java.util.*
+import java.util.UUID
 
 class GenerateStaticGroupPolicy {
     companion object {
