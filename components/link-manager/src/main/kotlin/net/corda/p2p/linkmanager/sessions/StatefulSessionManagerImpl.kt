@@ -67,6 +67,7 @@ import net.corda.data.p2p.crypto.InitiatorHandshakeMessage as AvroInitiatorHands
 import net.corda.data.p2p.crypto.InitiatorHelloMessage as AvroInitiatorHelloMessage
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage as AvroResponderHandshakeMessage
 import net.corda.data.p2p.crypto.ResponderHelloMessage as AvroResponderHelloMessage
+import net.corda.p2p.linkmanager.common.MessageConverter.Companion.createLinkOutMessage
 
 @Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 internal class StatefulSessionManagerImpl(
@@ -202,7 +203,7 @@ internal class StatefulSessionManagerImpl(
                 }
 
                 OutboundSessionStatus.SentInitiatorHello, OutboundSessionStatus.SentInitiatorHandshake -> {
-                    state.state.replaySessionMessage()?.let { (needed, newState) ->
+                    state.state.replaySessionMessage(state.first.message.message.header.statusFilter)?.let { (needed, newState) ->
                         state.toResultsFirstAndOther(
                             action = UpdateAction(newState),
                             firstState = needed,
@@ -664,13 +665,34 @@ internal class StatefulSessionManagerImpl(
         return NewSessionsNeeded(listOf(message), counterParties) to newState
     }
 
-    private fun State.replaySessionMessage(): Pair<NewSessionsNeeded, State>? {
-        val sessionMessage =
+    private fun State.replaySessionMessage(statusFilter: MembershipStatusFilter): Pair<NewSessionsNeeded, State>? {
+        val previousSessionMessage =
             stateConvertor.toCordaSessionState(
                 this,
                 sessionManagerImpl.revocationCheckerClient::checkRevocation,
             )?.message ?: return null
+        val previousHeader = previousSessionMessage.header
         val outboundMetadata = metadata.toOutbound()
+        val linkOutMessage = membershipGroupReaderProvider.lookup(
+            previousHeader.sourceIdentity.toCorda(),
+            previousHeader.destinationIdentity.toCorda(),
+            statusFilter
+        )?.let {
+            createLinkOutMessage(
+                previousSessionMessage.payload,
+                previousHeader.sourceIdentity.toCorda(),
+                it,
+                previousHeader.destinationNetworkType
+            )
+        } ?: return null.also {
+            logger.warn(
+                "Attempted to resend a session negotiation message (type " +
+                        "'${previousSessionMessage.payload::class.java.simpleName}') for session with ID " +
+                        "'${outboundMetadata.sessionId}' between '${outboundMetadata.commonData.source}' and peer " +
+                        "'${outboundMetadata.commonData.destination}' with status '$statusFilter', " +
+                        "but could not construct LinkOutMessage. The message was not resent."
+            )
+        }
         val updatedMetadata = outboundMetadata.copy(
             commonData = outboundMetadata.commonData.copy(
                 lastSendTimestamp = clock.instant(),
@@ -684,7 +706,7 @@ internal class StatefulSessionManagerImpl(
                 metadata = updatedMetadata.toMetadata(),
             )
         return NewSessionsNeeded(
-            listOf(updatedMetadata.sessionId to sessionMessage),
+            listOf(updatedMetadata.sessionId to linkOutMessage),
             updatedState.getSessionCounterparties(),
         ) to updatedState
     }

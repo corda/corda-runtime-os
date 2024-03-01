@@ -234,6 +234,9 @@ class FlowStatus {
 class FlowError {
     var type: String? = null
     var message: String? = null
+    override fun toString(): String {
+        return "FlowError(type=$type, message=$message)"
+    }
 }
 
 data class FlowResult(

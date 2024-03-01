@@ -17,6 +17,7 @@ import net.corda.membership.client.CouldNotFindEntityException
 import net.corda.membership.client.Entity
 import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
+import net.corda.membership.client.ServiceNotReadyException
 import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.InternalGroupParameters
@@ -29,6 +30,7 @@ import net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
 import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
 import net.corda.membership.rest.v1.types.response.PreAuthToken
 import net.corda.membership.rest.v1.types.response.PreAuthTokenStatus
+import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.InvalidInputDataException
@@ -63,6 +65,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
+import java.util.concurrent.TimeoutException
 import javax.persistence.PessimisticLockException
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -173,6 +176,28 @@ class MGMRestResourceTest {
             whenever(mgmResourceClient.generateGroupPolicy(any())).doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
+                mgmRestResource.generateGroupPolicy(HOLDING_IDENTITY_ID)
+            }
+        }
+
+        @Test
+        fun `generateGroupPolicy throws service unavailable after a timeout`() {
+            startService()
+            val error = ServiceNotReadyException(TimeoutException())
+            whenever(mgmResourceClient.generateGroupPolicy(any())).doThrow(error)
+
+            assertThrows<ServiceUnavailableException> {
+                mgmRestResource.generateGroupPolicy(HOLDING_IDENTITY_ID)
+            }
+        }
+
+        @Test
+        fun `generateGroupPolicy throws service unavailable after partition exception`() {
+            startService()
+            val error = CordaRPCAPIPartitionException("")
+            whenever(mgmResourceClient.generateGroupPolicy(any())).doThrow(error)
+
+            assertThrows<ServiceUnavailableException> {
                 mgmRestResource.generateGroupPolicy(HOLDING_IDENTITY_ID)
             }
         }

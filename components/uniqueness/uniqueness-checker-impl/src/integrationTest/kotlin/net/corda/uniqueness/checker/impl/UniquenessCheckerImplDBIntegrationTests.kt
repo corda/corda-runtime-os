@@ -14,7 +14,6 @@ import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -33,6 +32,7 @@ import net.corda.uniqueness.utils.UniquenessAssertions.assertUnknownInputStateRe
 import net.corda.uniqueness.utils.UniquenessAssertions.assertUnknownReferenceStateResponse
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.apache.avro.AvroRuntimeException
 import org.assertj.core.api.Assertions.assertThat
@@ -53,8 +53,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
-import java.util.LinkedList
-import java.util.UUID
+import java.util.*
 import javax.persistence.EntityManagerFactory
 import kotlin.test.assertEquals
 
@@ -253,45 +252,6 @@ class UniquenessCheckerImplDBIntegrationTests {
          */
         testClock = AutoTickTestClock(baseTime, Duration.ofSeconds(1))
 
-        val virtualNodeRepository: VirtualNodeRepository = mock<VirtualNodeRepository>().apply {
-            whenever(find(any(), eq(defaultHoldingIdentity.shortHash))) doReturn VirtualNodeInfo(
-                holdingIdentity = defaultHoldingIdentity,
-                CpiIdentifier("", "", SecureHashUtils.randomSecureHash()),
-                vaultDmlConnectionId = UUID.randomUUID(),
-                cryptoDmlConnectionId = UUID.randomUUID(),
-                uniquenessDmlConnectionId = defaultHoldingIdentityDbId,
-                timestamp = Instant.EPOCH
-            )
-            whenever(find(any(), eq(bobHoldingIdentity.shortHash))) doReturn VirtualNodeInfo(
-                holdingIdentity = bobHoldingIdentity,
-                CpiIdentifier("", "", SecureHashUtils.randomSecureHash()),
-                vaultDmlConnectionId = UUID.randomUUID(),
-                cryptoDmlConnectionId = UUID.randomUUID(),
-                uniquenessDmlConnectionId = bobHoldingIdentityDbId,
-                timestamp = Instant.EPOCH
-            )
-            whenever(find(any(), eq(charlieHoldingIdentity.shortHash))) doReturn VirtualNodeInfo(
-                holdingIdentity = charlieHoldingIdentity,
-                CpiIdentifier("", "", SecureHashUtils.randomSecureHash()),
-                vaultDmlConnectionId = UUID.randomUUID(),
-                cryptoDmlConnectionId = UUID.randomUUID(),
-                uniquenessDmlConnectionId = charlieHoldingIdentityDbId,
-                timestamp = Instant.EPOCH
-            )
-            whenever(find(any(), eq(noDbHoldingIdentity.shortHash))) doReturn VirtualNodeInfo(
-                holdingIdentity = noDbHoldingIdentity,
-                CpiIdentifier("", "", SecureHashUtils.randomSecureHash()),
-                vaultDmlConnectionId = UUID.randomUUID(),
-                cryptoDmlConnectionId = UUID.randomUUID(),
-                uniquenessDmlConnectionId = noDbHoldingIdentityDbId,
-                timestamp = Instant.EPOCH
-            )
-        }
-
-        val clusterEntityManagerFactory = mock<EntityManagerFactory>().apply {
-            whenever(createEntityManager()).thenReturn(mock())
-        }
-
         val backingStore = JPABackingStoreImpl(
             JpaEntitiesRegistryImpl(),
             mock<DbConnectionManager>().apply {
@@ -304,9 +264,50 @@ class UniquenessCheckerImplDBIntegrationTests {
                 whenever(getOrCreateEntityManagerFactory(
                     eq(noDbHoldingIdentityDbId), any(), any())) doThrow DBConfigurationException("")
                 whenever(getClusterDataSource()) doReturn clusterDbConfig.dataSource
-                whenever(getClusterEntityManagerFactory()) doReturn clusterEntityManagerFactory
             },
-            virtualNodeRepository
+            mock<VirtualNodeInfoReadService>().apply {
+                whenever(getByHoldingIdentityShortHash(eq(defaultHoldingIdentity.shortHash))).thenReturn(
+                    VirtualNodeInfo(
+                        holdingIdentity = defaultHoldingIdentity,
+                        cpiIdentifier = CpiIdentifier("", "", SecureHashUtils.randomSecureHash()),
+                        vaultDmlConnectionId = UUID.randomUUID(),
+                        cryptoDmlConnectionId = UUID.randomUUID(),
+                        uniquenessDmlConnectionId = defaultHoldingIdentityDbId,
+                        timestamp = Instant.now()
+                    )
+                )
+                whenever(getByHoldingIdentityShortHash(eq(bobHoldingIdentity.shortHash))).thenReturn(
+                    VirtualNodeInfo(
+                        holdingIdentity = bobHoldingIdentity,
+                        cpiIdentifier = CpiIdentifier("", "", SecureHashUtils.randomSecureHash()),
+                        vaultDmlConnectionId = UUID.randomUUID(),
+                        cryptoDmlConnectionId = UUID.randomUUID(),
+                        uniquenessDmlConnectionId = bobHoldingIdentityDbId,
+                        timestamp = Instant.now()
+                    )
+                )
+                whenever(getByHoldingIdentityShortHash(eq(charlieHoldingIdentity.shortHash))).thenReturn(
+                    VirtualNodeInfo(
+                        holdingIdentity = charlieHoldingIdentity,
+                        cpiIdentifier = CpiIdentifier("", "", SecureHashUtils.randomSecureHash()),
+                        vaultDmlConnectionId = UUID.randomUUID(),
+                        cryptoDmlConnectionId = UUID.randomUUID(),
+                        uniquenessDmlConnectionId = charlieHoldingIdentityDbId,
+                        timestamp = Instant.now()
+                    )
+                )
+                whenever(getByHoldingIdentityShortHash(eq(noDbHoldingIdentity.shortHash))).thenReturn(
+                    VirtualNodeInfo(
+                        holdingIdentity = noDbHoldingIdentity,
+                        cpiIdentifier = CpiIdentifier("", "", SecureHashUtils.randomSecureHash()),
+                        vaultDmlConnectionId = UUID.randomUUID(),
+                        cryptoDmlConnectionId = UUID.randomUUID(),
+                        uniquenessDmlConnectionId = noDbHoldingIdentityDbId,
+                        timestamp = Instant.now()
+                    )
+                )
+
+            }
         )
 
         uniquenessChecker = BatchedUniquenessCheckerImpl(backingStore, testClock)

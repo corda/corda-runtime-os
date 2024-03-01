@@ -6,7 +6,6 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -23,6 +22,7 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestI
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRequest
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.hibernate.MultiIdentifierLoadAccess
 import org.hibernate.Session
@@ -43,7 +43,7 @@ import java.sql.Connection
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
-import java.util.UUID
+import java.util.*
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
@@ -67,6 +67,7 @@ class JPABackingStoreImplTests {
     private lateinit var errorEntities: MutableList<UniquenessRejectedTransactionEntity>
 
     private lateinit var dbConnectionManager: DbConnectionManager
+    private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
 
     private val groupId = UUID.randomUUID().toString()
     private val notaryRepIdentity = createTestHoldingIdentity("C=GB, L=London, O=NotaryRep1", groupId)
@@ -135,30 +136,29 @@ class JPABackingStoreImplTests {
         jpaEntitiesRegistry = mock<JpaEntitiesRegistry>().apply {
             whenever(get(any())) doReturn mock<JpaEntitiesSet>()
         }
-        val clusterEntityManagerFactory = mock<EntityManagerFactory>().apply {
-            whenever(createEntityManager()).thenReturn(mock())
-        }
+
         dbConnectionManager = mock<DbConnectionManager>().apply {
             whenever(getClusterDataSource()) doReturn dummyDataSource
             whenever(getOrCreateEntityManagerFactory(any<UUID>(), any(), any())) doReturn entityManagerFactory
-            whenever(getClusterEntityManagerFactory()) doReturn clusterEntityManagerFactory
         }
 
-        val virtualNodeRepository: VirtualNodeRepository = mock<VirtualNodeRepository>().apply {
-            whenever(find(any(), any())) doReturn VirtualNodeInfo(
-                holdingIdentity = notaryRepIdentity,
-                CpiIdentifier("", "", SecureHashUtils.randomSecureHash()),
+        virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>().apply {
+            whenever(getByHoldingIdentityShortHash(any())).thenReturn(VirtualNodeInfo(
+                holdingIdentity = mock(),
+                cpiIdentifier = CpiIdentifier("", "", SecureHashUtils.randomSecureHash()),
                 vaultDmlConnectionId = UUID.randomUUID(),
                 cryptoDmlConnectionId = UUID.randomUUID(),
                 uniquenessDmlConnectionId = UUID.randomUUID(),
-                timestamp = Instant.EPOCH
+                timestamp = Instant.now()
+            )
             )
         }
+
         backingStoreImpl = JPABackingStoreLifecycleImpl(
             lifecycleCoordinatorFactory,
             jpaEntitiesRegistry,
             dbConnectionManager,
-            JPABackingStoreImpl(jpaEntitiesRegistry, dbConnectionManager, virtualNodeRepository)
+            JPABackingStoreImpl(jpaEntitiesRegistry, dbConnectionManager, virtualNodeInfoReadService)
         )
     }
 
@@ -205,7 +205,7 @@ class JPABackingStoreImplTests {
             val lifeCycleStatus = LifecycleStatus.UP
             backingStoreImpl.eventHandler(RegistrationStatusChangeEvent(mock(), lifeCycleStatus), lifecycleCoordinator)
 
-            Mockito.verify(jpaEntitiesRegistry, times(2)).register(any(), any())
+            Mockito.verify(jpaEntitiesRegistry, times(1)).register(any(), any())
             Mockito.verify(jpaEntitiesRegistry, times(1)).get(CordaDb.Uniqueness.persistenceUnitName)
             Mockito.verify(lifecycleCoordinator, times(1)).updateStatus(lifeCycleStatus)
         }

@@ -40,7 +40,6 @@ import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.rest.response.ResponseEntity
 import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_START
-import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import net.corda.tracing.TraceTag
 import net.corda.tracing.addTraceContextToRecord
 import net.corda.tracing.trace
@@ -205,8 +204,9 @@ class FlowRestResourceImpl @Activate constructor(
                         getKeyForStartEvent(status.key, holdingIdentityShortHash), startEvent
                     )
                 ),
-                Record(FLOW_STATUS_TOPIC, status.key, status),
             )
+
+            flowStatusLookupService.storeStatus(status)
 
             val batchFuture = try {
                 tryWithExceptionHandling(

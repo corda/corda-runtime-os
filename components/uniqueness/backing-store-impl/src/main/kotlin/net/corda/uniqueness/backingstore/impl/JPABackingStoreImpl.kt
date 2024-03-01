@@ -4,12 +4,9 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.bytes
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
-import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
-import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
-import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
+import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
 import net.corda.metrics.CordaMetrics
 import net.corda.orm.JpaEntitiesRegistry
-import net.corda.orm.utils.use
 import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.HIBERNATE_JDBC_BATCH_SIZE
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.RESULT_ACCEPTED_REPRESENTATION
@@ -29,6 +26,7 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.hibernate.Session
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -46,18 +44,14 @@ import javax.persistence.RollbackException
  * JPA backing store implementation, which uses a JPA compliant database to persist data.
  */
 @Component(service = [BackingStore::class])
-open class JPABackingStoreImpl(
+open class JPABackingStoreImpl @Activate constructor(
+    @Reference(service = JpaEntitiesRegistry::class)
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
+    @Reference(service = DbConnectionManager::class)
     private val dbConnectionManager: DbConnectionManager,
-    private val virtualNodeRepository: VirtualNodeRepository)  : BackingStore {
-
-    @Activate
-    constructor(
-        @Reference(service = JpaEntitiesRegistry::class)
-        jpaEntitiesRegistry: JpaEntitiesRegistry,
-        @Reference(service = DbConnectionManager::class)
-        dbConnectionManager: DbConnectionManager,
-    ) : this(jpaEntitiesRegistry, dbConnectionManager, VirtualNodeRepositoryImpl())
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
+) : BackingStore {
 
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -71,20 +65,14 @@ open class JPABackingStoreImpl(
             CordaDb.Uniqueness.persistenceUnitName,
             JPABackingStoreEntities.classes
         )
-        jpaEntitiesRegistry.register(
-            CordaDb.CordaCluster.persistenceUnitName,
-            VirtualNodeEntities.classes
-        )
     }
 
     override fun session(holdingIdentity: HoldingIdentity, block: (BackingStore.Session) -> Unit) {
 
         val sessionStartTime = System.nanoTime()
 
-        val virtualNodeInfo = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().use {em ->
-            virtualNodeRepository.find(em, holdingIdentity.shortHash)
-        }
-        requireNotNull(virtualNodeInfo) {"virtualNodeInfo is null"}
+        val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentity.shortHash) ?:
+            throw VirtualNodeNotFoundException("Virtual node ${holdingIdentity.shortHash} not found")
         val uniquenessDmlConnectionId = virtualNodeInfo.uniquenessDmlConnectionId
         requireNotNull(uniquenessDmlConnectionId) {"uniquenessDmlConnectionId is null"}
 
