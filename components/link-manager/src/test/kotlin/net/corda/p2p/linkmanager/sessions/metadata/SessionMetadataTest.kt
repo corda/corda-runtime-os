@@ -105,6 +105,7 @@ class SessionMetadataTest {
                 "serial" to 4L,
                 "membershipStatus" to MembershipStatusFilter.ACTIVE_OR_SUSPENDED.toString(),
                 "communicationWithMgm" to true,
+                "initiationTimestamp" to 10L,
             ),
         )
 
@@ -247,6 +248,7 @@ class SessionMetadataTest {
             0L,
             mock(),
             true,
+            Instant.ofEpochMilli(SESSION_UNEXPIRED_TIMESTAMP),
         )
 
         @Test
@@ -329,7 +331,8 @@ class SessionMetadataTest {
             status = OutboundSessionStatus.SentInitiatorHello,
             serial = 42L,
             membershipStatus = MembershipStatusFilter.ACTIVE_OR_SUSPENDED,
-            communicationWithMgm = true
+            communicationWithMgm = true,
+            Instant.ofEpochMilli(1001),
         )
 
         @Test

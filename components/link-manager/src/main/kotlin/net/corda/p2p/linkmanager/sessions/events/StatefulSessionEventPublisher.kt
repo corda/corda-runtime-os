@@ -33,10 +33,7 @@ class StatefulSessionEventPublisher(
 
     fun sessionDeleted(key: String, direction: SessionDirection) {
         publisher.publish(listOf(Record(Schemas.P2P.SESSION_EVENTS, key, SessionEvent(SessionDeleted(key)))))
-        when(direction) {
-            SessionDirection.INBOUND -> recordSessionDeletedMetric(direction)
-            SessionDirection.OUTBOUND -> recordSessionDeletedMetric(direction)
-        }
+        recordSessionDeletedMetric(direction)
     }
 
     override val dominoTile = publisher.dominoTile

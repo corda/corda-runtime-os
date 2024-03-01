@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.sessions
 
+import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
@@ -14,7 +15,9 @@ import org.mockito.kotlin.whenever
 
 class StateManagerWrapperTest {
     private val keys = setOf("key1", "key2")
-    private val state = mock<State>()
+    private val state = mock<State> {
+        on { metadata } doReturn Metadata(emptyMap())
+    }
     private val filter = mock<MetadataFilter>()
     private val filters = listOf(filter)
     private val keysToStates = mapOf("key1" to state)

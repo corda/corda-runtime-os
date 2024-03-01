@@ -132,7 +132,7 @@ internal class SessionCache(
         }
         val duration = Duration.between(now, expiry) - noise
         return if (duration.isNegative) {
-            recordSessionTimeoutAndForgetState(stateToForget)
+            forgetState(stateToForget)
             null
         } else {
             tasks.compute(state.key) { _, currentValue ->
@@ -145,7 +145,7 @@ internal class SessionCache(
                         version = stateToForget.version,
                         future = scheduler.schedule(
                             {
-                                recordSessionTimeoutAndForgetState(stateToForget)
+                                forgetState(stateToForget)
                             },
                             duration.toMillis(),
                             TimeUnit.MILLISECONDS,
@@ -176,16 +176,7 @@ internal class SessionCache(
         }
     }
 
-    private fun recordSessionTimeoutAndForgetState(state: State) {
-        val direction = state.metadata.direction()
-        when (direction) {
-            SessionDirection.OUTBOUND -> recordSessionTimeoutMetric(state.metadata.toCommonMetadata().source, direction)
-            SessionDirection.INBOUND -> recordSessionTimeoutMetric(state.metadata.toCommonMetadata().source, direction)
-        }
-        forgetState(state, direction)
-    }
-
-    private fun forgetState(state: State, direction: SessionDirection) {
+    private fun forgetState(state: State) {
         var stateToDelete = state
         val key = state.key
         var retryCount = 0
@@ -193,6 +184,7 @@ internal class SessionCache(
         do {
             try {
                 failedDeletes = stateManager.delete(listOf(stateToDelete))
+                recordSessionTimeoutMetric(state.metadata.toCommonMetadata().source, stateToDelete.metadata.direction())
             } catch (e: Exception) {
                 logger.error("Unexpected error while trying to delete a session from the state manager.", e)
             }
@@ -206,7 +198,7 @@ internal class SessionCache(
         }
 
         invalidate(key)
-        eventPublisher.sessionDeleted(key, direction)
+        eventPublisher.sessionDeleted(key, state.metadata.direction())
         tasks.remove(key)
     }
 
@@ -217,7 +209,7 @@ internal class SessionCache(
                 logger.warn("Failed to delete session state for '$key', state does not exist")
                 return
             }
-            forgetState(state, state.metadata.direction())
+            forgetState(state)
         } catch (e: Exception) {
             logger.error("Unexpected error while trying to fetch session state for '$key'.", e)
         }
