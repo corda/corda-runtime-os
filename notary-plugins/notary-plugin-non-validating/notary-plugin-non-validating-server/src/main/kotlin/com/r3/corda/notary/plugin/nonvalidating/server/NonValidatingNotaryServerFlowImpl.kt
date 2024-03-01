@@ -113,8 +113,8 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
             session.send(uniquenessResult.toNotarizationResponse(txDetails.id, signature))
         } catch (e: Exception) {
-            logger.warn("Error while processing request from client. Cause: $e ${e.stackTraceToString()}")
-            val genericMessage = "Error while processing request from client. "
+            logger.warn("Error while processing request from client", e)
+            val genericMessage = "Error during notarization. "
             val additionalMessage =
                 when (e) {
                     is InvalidBackchainFlagException -> "Cause: ${e.message}"

@@ -457,8 +457,6 @@ object CordaMetrics {
 
         object Ledger {
 
-            object FilteredTransactionComputationTime : Metric<Timer>("ledger.persistence.filtered.comp.time", CordaMetrics::timer)
-
             /**
              * The time taken by transaction verification from the flow side.
              */

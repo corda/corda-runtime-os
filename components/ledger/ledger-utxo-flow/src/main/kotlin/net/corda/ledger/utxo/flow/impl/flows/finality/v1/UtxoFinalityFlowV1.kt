@@ -281,16 +281,18 @@ class UtxoFinalityFlowV1(
         }
 
         var notarySignatures: List<DigitalSignatureAndMetadata>
-        var attemptNumber = 1
+        var attemptNumber = 0
 
         while (true) {
-            // sleep functionality would be useful to pause things here
-            // notary might get overwhelmed with retries on connection errors?
+            // TODO Add backoff for the notarization retries
             try {
-                notarySignatures = notarize(attemptNumber++)
+                notarySignatures = notarize(++attemptNumber)
                 break
             } catch (e: NotaryExceptionUnknown) {
-                log.warn("Received unknown error from notarization on attempt $attemptNumber. Retrying notarisation.", e)
+                log.warn(
+                    "Received unknown error from notarization for transaction: ${transaction.id} on attempt: $attemptNumber. " +
+                        "Error: ${e.message} Retrying notarisation."
+                )
                 continue
             } catch (e: CordaRuntimeException) {
                 val (message, failureReason) = if (e is NotaryExceptionFatal) {
@@ -304,7 +306,7 @@ class UtxoFinalityFlowV1(
                     Payload.Failure<List<DigitalSignatureAndMetadata>>(message, failureReason.value),
                     sessions.toSet()
                 )
-                log.warn(message, e)
+                log.warn(message)
                 throw e
             }
         }
