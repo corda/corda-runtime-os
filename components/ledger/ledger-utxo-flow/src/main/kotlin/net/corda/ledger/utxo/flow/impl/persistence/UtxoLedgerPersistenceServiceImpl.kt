@@ -65,6 +65,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.PublicKey
+import java.time.Instant
 
 @Suppress("LongParameterList", "TooManyFunctions")
 @Component(
@@ -232,14 +233,14 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         transaction: UtxoSignedTransaction,
         transactionStatus: TransactionStatus,
         visibleStatesIndexes: List<Int>
-    ): List<CordaPackageSummary> {
+    ): Instant {
         return recordSuspendable({ ledgerPersistenceFlowTimer(PersistTransaction) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     PersistTransactionExternalEventFactory::class.java,
                     PersistTransactionParameters(serialize(transaction.toContainer()), transactionStatus, visibleStatesIndexes)
                 )
-            }.map { serializationService.deserialize(it.array()) }
+            }.first().let { serializationService.deserialize(it.array()) }
         }
     }
 

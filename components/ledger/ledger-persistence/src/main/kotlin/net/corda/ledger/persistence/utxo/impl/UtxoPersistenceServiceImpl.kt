@@ -55,6 +55,7 @@ import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
@@ -253,7 +254,7 @@ class UtxoPersistenceServiceImpl(
 
     private fun hash(data: ByteArray) = sandboxDigestService.hash(data, DigestAlgorithmName.SHA2_256).toString()
 
-    override fun persistTransaction(transaction: UtxoTransactionReader, utxoTokenMap: Map<StateRef, UtxoToken>): List<CordaPackageSummary> {
+    override fun persistTransaction(transaction: UtxoTransactionReader, utxoTokenMap: Map<StateRef, UtxoToken>): Instant {
         return persistTransaction(transaction, utxoTokenMap) { block ->
             entityManagerFactory.transaction { em -> block(em) }
         }
@@ -263,7 +264,8 @@ class UtxoPersistenceServiceImpl(
         entityManagerFactory.transaction { em ->
             val transactionIdString = transaction.id.toString()
             val (status, isFiltered) = repository.findTransactionStatus(em, transactionIdString) ?: run {
-                return null to persistTransaction(transaction, emptyMap()) { block -> block(em) }
+                persistTransaction(transaction, emptyMap()) { block -> block(em) }
+                return null to emptyList()
             }
             // VERIFIED can exist with is_filtered = true when there is only a filtered transaction
             // UNVERIFIED can exist with is_filtered = true when there is a unverified signed and filtered transaction
@@ -280,7 +282,7 @@ class UtxoPersistenceServiceImpl(
         transaction: UtxoTransactionReader,
         utxoTokenMap: Map<StateRef, UtxoToken>,
         optionalTransactionBlock: ((EntityManager) -> Unit) -> Unit
-    ): List<CordaPackageSummary> {
+    ): Instant {
         val nowUtc = utcClock.instant()
         val transactionIdString = transaction.id.toString()
 
@@ -384,7 +386,7 @@ class UtxoPersistenceServiceImpl(
             )
         }
 
-        return emptyList()
+        return nowUtc
     }
 
     override fun persistTransactionSignatures(id: String, signatures: List<ByteArray>, startingIndex: Int) {

@@ -13,6 +13,7 @@ import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken
+import java.time.Instant
 
 interface UtxoPersistenceService {
 
@@ -59,7 +60,7 @@ interface UtxoPersistenceService {
     fun persistTransaction(
         transaction: UtxoTransactionReader,
         utxoTokenMap: Map<StateRef, UtxoToken> = emptyMap()
-    ): List<CordaPackageSummary>
+    ): Instant
 
     fun persistTransactionIfDoesNotExist(transaction: UtxoTransactionReader): Pair<String?, List<CordaPackageSummary>>
 

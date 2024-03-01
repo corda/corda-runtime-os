@@ -14,6 +14,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.virtualnode.HoldingIdentity
+import java.time.Instant
 
 interface UtxoOutputRecordFactory {
     fun getTokenCacheChangeEventRecords(
@@ -40,6 +41,7 @@ interface UtxoOutputRecordFactory {
     ): Record<String, FlowEvent>
 
     fun getPersistTransactionSuccessRecord(
+        persistedAt: Instant,
         externalEventContext: ExternalEventContext
     ): Record<String, FlowEvent>
 

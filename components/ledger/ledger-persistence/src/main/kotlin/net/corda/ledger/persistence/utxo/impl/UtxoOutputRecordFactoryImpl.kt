@@ -26,6 +26,7 @@ import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.virtualnode.HoldingIdentity
 import java.nio.ByteBuffer
+import java.time.Instant
 
 class UtxoOutputRecordFactoryImpl(
     private val responseFactory: ResponseFactory,
@@ -127,11 +128,16 @@ class UtxoOutputRecordFactoryImpl(
     }
 
     override fun getPersistTransactionSuccessRecord(
+        persistedAt: Instant,
         externalEventContext: ExternalEventContext
     ): Record<String, FlowEvent> {
         return responseFactory.successResponse(
             externalEventContext,
-            EntityResponse(emptyList(), KeyValuePairList(emptyList()), null),
+            EntityResponse(
+                listOf(ByteBuffer.wrap(serializationService.serialize(persistedAt).bytes)),
+                KeyValuePairList(emptyList()),
+                null
+            ),
         )
     }
 
