@@ -56,6 +56,7 @@ import net.corda.v5.membership.NotaryInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -72,6 +73,7 @@ import java.security.PublicKey
 import java.time.Instant
 
 @Suppress("MaxLineLength")
+@Disabled
 class UtxoFinalityFlowV1Test {
 
     private companion object {

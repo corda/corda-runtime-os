@@ -1,6 +1,5 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality.v1
 
-import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
 import net.corda.crypto.core.fullId
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
@@ -29,6 +28,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
+import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionUnknown
 import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -289,8 +289,8 @@ class UtxoFinalityFlowV1(
             try {
                 notarySignatures = notarize(attemptNumber++)
                 break
-            } catch (e: NotaryExceptionGeneral) {
-                log.warn("Received unknown error from notarization on attempt $attemptNumber. Retrying notarisation.")
+            } catch (e: NotaryExceptionUnknown) {
+                log.warn("Received unknown error from notarization on attempt $attemptNumber. Retrying notarisation.", e)
                 continue
             } catch (e: CordaRuntimeException) {
                 val (message, failureReason) = if (e is NotaryExceptionFatal) {
@@ -304,7 +304,7 @@ class UtxoFinalityFlowV1(
                     Payload.Failure<List<DigitalSignatureAndMetadata>>(message, failureReason.value),
                     sessions.toSet()
                 )
-                log.warn(message)
+                log.warn(message, e)
                 throw e
             }
         }
