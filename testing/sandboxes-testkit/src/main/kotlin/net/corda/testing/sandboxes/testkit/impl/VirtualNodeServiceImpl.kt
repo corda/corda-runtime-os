@@ -1,8 +1,9 @@
 package net.corda.testing.sandboxes.testkit.impl
 
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
-import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.testing.sandboxes.testkit.VirtualNodeService
@@ -20,9 +21,6 @@ import java.util.UUID
 @Component(service = [ VirtualNodeService::class ])
 class VirtualNodeServiceImpl @Activate constructor(
     @Reference
-    private val cpiLoader: CpiLoader,
-
-    @Reference
     private val virtualNodeLoader: VirtualNodeLoader,
 
     @Reference(target = SandboxSetup.SANDBOX_SERVICE_FILTER)
@@ -31,7 +29,6 @@ class VirtualNodeServiceImpl @Activate constructor(
     private companion object {
         private const val X500_NAME = "CN=Testing, OU=Application, O=R3, L=London, C=GB"
         private val ONE_SECOND = ofSeconds(1)
-
         private fun generateHoldingIdentity()
             = HoldingIdentity(MemberX500Name.parse(X500_NAME), UUID.randomUUID().toString())
     }
@@ -57,5 +54,9 @@ class VirtualNodeServiceImpl @Activate constructor(
             @Suppress("ExplicitGarbageCollectionCall")
             System.gc()
         } while (!sandboxGroupContextComponent.waitFor(completion, ONE_SECOND))
+    }
+
+    override fun getCpiMetadata(id: CpiIdentifier): CompletableFuture<CpiMetadata?> {
+        return virtualNodeLoader.getCpiMetadata(id)
     }
 }

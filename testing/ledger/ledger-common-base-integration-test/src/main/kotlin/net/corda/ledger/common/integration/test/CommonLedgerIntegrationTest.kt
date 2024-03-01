@@ -16,7 +16,6 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.sandboxgroupcontext.getSandboxSingletonService
 import net.corda.serialization.checkpoint.CheckpointSerializer
-import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
@@ -84,8 +83,7 @@ abstract class CommonLedgerIntegrationTest {
         val virtualNodeInfo = virtualNode.loadVirtualNode(testingCpb)
         logger.info("Created virtual node with ID ${virtualNodeInfo.holdingIdentity.shortHash}")
         logger.info("Reading metadata for CPI ${virtualNodeInfo.cpiIdentifier}")
-        val cpiLoader = setup.fetchService<CpiLoader>(TIMEOUT_MILLIS)
-        val cpiMetadata = cpiLoader.getCpiMetadata(virtualNodeInfo.cpiIdentifier).get()
+        val cpiMetadata = virtualNode.getCpiMetadata(virtualNodeInfo.cpiIdentifier).get()
             ?: fail("CpiMetadata is null ${virtualNodeInfo.cpiIdentifier}")
         val cpks = cpiMetadata.cpksMetadata.mapTo(linkedSetOf(), CpkMetadata::fileChecksum)
 

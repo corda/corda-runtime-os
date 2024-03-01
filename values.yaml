@@ -1,4 +1,4 @@
-# Override file suitable for local deployment of the Corda Helm chart against version 0.1.0 of the corda-dev prereqs Helm chart.
+# Override file suitable for local deployment of the Corda Helm chart against version 0.3.0 of the corda-dev prereqs Helm chart.
 #
 # First use `./gradlew publishOSGiImage --parallel` to create local docker images
 # Then deploy using:
@@ -16,7 +16,7 @@
 imagePullPolicy: "IfNotPresent"
 image:
   registry: "corda-os-docker-dev.software.r3.com"
-  tag: "latest-local-5.2.0"
+  tag: "latest-local-5.3.0"
 
 logging:
   format: "text"

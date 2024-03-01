@@ -15,6 +15,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
@@ -47,6 +48,7 @@ class FlowStatusLookupServiceImpl @Activate constructor(
     private val deSerializer = cordaSerializationFactory.createAvroDeserializer({}, FlowStatus::class.java)
 
     private var stateManager: StateManager? = null
+    private var durableFlowStatusProcessor: DurableFlowStatusProcessor? = null
 
     override fun start() = lifecycleCoordinator.start()
     override fun stop() = lifecycleCoordinator.stop()
@@ -63,12 +65,14 @@ class FlowStatusLookupServiceImpl @Activate constructor(
         stateManager = stateManagerNew
 
         lifecycleCoordinator.createManagedResource("FLOW_STATUS_LOOKUP_SUBSCRIPTION") {
+            val statusProcessor = DurableFlowStatusProcessor(stateManagerNew, serializer)
+            durableFlowStatusProcessor = statusProcessor
             subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig(
                     "flow.status.subscription",
                     FLOW_STATUS_TOPIC
                 ),
-                DurableFlowStatusProcessor(stateManagerNew, serializer),
+                statusProcessor,
                 messagingConfig,
                 null
             )
@@ -97,6 +101,10 @@ class FlowStatusLookupServiceImpl @Activate constructor(
                 null
             )
         }.start()
+    }
+
+    override fun storeStatus(status: FlowStatus) {
+        durableFlowStatusProcessor?.onNext(listOf(Record(FLOW_STATUS_TOPIC, status.key, status)))
     }
 
     override fun getStatus(clientRequestId: String, holdingIdentity: HoldingIdentity): FlowStatus? {
