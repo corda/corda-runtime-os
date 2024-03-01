@@ -49,7 +49,7 @@ abstract class CommonLedgerTest {
 
     private val flowFiberService = TestFlowFiberServiceWithSerialization(currentSandboxGroupContext)
 
-    val flowCheckpointService = FlowCheckpointServiceImpl(flowFiberService.getExecutingFiber().getExecutionContext())
+    val flowCheckpointService = FlowCheckpointServiceImpl(flowFiberService)
 
     val mockPrivacySaltProviderService = mock<PrivacySaltProviderService>().apply {
         whenever(generatePrivacySalt()).thenAnswer {
