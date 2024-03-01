@@ -5,6 +5,9 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.lifecycle.Resource
+import net.corda.metrics.CordaMetrics.Metric.InboundSessionCount
+import net.corda.metrics.CordaMetrics.Metric.OutboundSessionCount
 import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata.Companion.toCommonMetadata
 import net.corda.utilities.time.Clock
@@ -25,7 +28,7 @@ internal class SessionCache(
     private val eventPublisher: StatefulSessionEventPublisher,
     private val scheduler: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(),
     private val noiseFactory: Random = Random(),
-) {
+): Resource {
     private companion object {
         const val CACHE_SIZE = 10_000L
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -62,6 +65,12 @@ internal class SessionCache(
                     key?.let { removeFromScheduler(it) }
                 },
         )
+
+    // These metrics must be removed on shutdown as the MeterRegistry holds references to their lambdas.
+    private val outboundSessionCount = OutboundSessionCount { cachedOutboundSessions.estimatedSize() }
+        .builder().build()
+    private val inboundSessionCount = InboundSessionCount { cachedInboundSessions.estimatedSize() }
+        .builder().build()
 
     fun putOutboundSession(key: String, outboundSession: SessionManager.SessionDirection.Outbound) {
         cachedOutboundSessions.put(key, outboundSession)
@@ -205,5 +214,10 @@ internal class SessionCache(
         } catch (e: Exception) {
             logger.error("Unexpected error while trying to fetch session state for '$key'.", e)
         }
+    }
+
+    override fun close() {
+        outboundSessionCount.close()
+        inboundSessionCount.close()
     }
 }

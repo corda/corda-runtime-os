@@ -2,7 +2,6 @@ package net.corda.p2p.linkmanager.common
 
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.DataMessagePayload
-import net.corda.data.p2p.HeartbeatMessage
 import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutHeader
 import net.corda.data.p2p.LinkOutMessage
@@ -39,7 +38,7 @@ import java.nio.ByteBuffer
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.linkmanager.LinkManager
-import net.corda.p2p.linkmanager.sessions.MessageSent
+import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock
 
@@ -159,35 +158,6 @@ internal class MessageConverter(
                 groupPolicyProvider,
                 membershipGroupReaderProvider,
                 message.message.header.statusFilter,
-                serial
-            )
-        }
-
-        @Suppress("LongParameterList")
-        fun linkOutMessageFromHeartbeat(
-            source: HoldingIdentity,
-            destination: HoldingIdentity,
-            message: HeartbeatMessage,
-            session: Session,
-            groupPolicyProvider: GroupPolicyProvider,
-            membershipGroupReaderProvider: MembershipGroupReaderProvider,
-            filter: MembershipStatusFilter,
-            serial: Long,
-        ): LinkOutMessage? {
-            val serializedMessage = try {
-                DataMessagePayload(message).toByteBuffer()
-            } catch (exception: IOException) {
-                logger.error("Could not serialize message type ${message::class.java.simpleName}. The message was discarded.")
-                return null
-            }
-            return createLinkOutMessageFromPayload(
-                serializedMessage,
-                source,
-                destination,
-                session,
-                groupPolicyProvider,
-                membershipGroupReaderProvider,
-                filter,
                 serial
             )
         }
@@ -315,7 +285,7 @@ internal class MessageConverter(
         }
     }
     fun recordsForSessionEstablished(
-        messageSent: MessageSent,
+        sessionManager: SessionManager,
         session: Session,
         serial: Long,
         messageAndKey: AuthenticatedMessageAndKey,
@@ -331,7 +301,7 @@ internal class MessageConverter(
             val messageRecord = Record(Schemas.P2P.LINK_OUT_TOPIC, key, message)
             val marker = AppMessageMarker(LinkManagerSentMarker(), clock.instant().toEpochMilli())
             val markerRecord = Record(Schemas.P2P.P2P_OUT_MARKERS, messageAndKey.message.header.messageId, marker)
-            messageSent.dataMessageSent(session)
+            sessionManager.dataMessageSent(session)
             listOf(
                 messageRecord,
                 markerRecord,

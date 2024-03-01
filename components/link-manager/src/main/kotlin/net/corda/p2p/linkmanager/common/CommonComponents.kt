@@ -105,8 +105,6 @@ internal class CommonComponents(
             lifecycleCoordinatorFactory,
             messagingConfiguration,
             linkManagerHostingMap,
-            clock = clock,
-            trackSessionHealthAndReplaySessionMessages = false,
         ),
         StateConvertor(
             schemaRegistry,
@@ -184,5 +182,6 @@ internal class CommonComponents(
             mtlsClientCertificatePublisher.dominoTile.toNamedLifecycle(),
         ) + externalManagedDependencies,
         configurationChangeHandler = deadSessionMonitorConfigHandler,
+        onClose = { sessionCache.close() }
     )
 }

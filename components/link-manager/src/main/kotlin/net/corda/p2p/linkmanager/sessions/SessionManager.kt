@@ -9,7 +9,7 @@ import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.virtualnode.HoldingIdentity
 
-internal interface SessionManager : LifecycleWithDominoTile, MessageSent {
+internal interface SessionManager : LifecycleWithDominoTile {
     fun <T> processOutboundMessages(
         wrappedMessages: Collection<T>,
         getMessage: (T) -> AuthenticatedMessageAndKey,
@@ -25,6 +25,8 @@ internal interface SessionManager : LifecycleWithDominoTile, MessageSent {
     fun messageAcknowledged(sessionId: String)
     fun dataMessageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity)
     fun deleteOutboundSession(counterParties: Counterparties, message: AuthenticatedMessage)
+
+    fun dataMessageSent(session: Session)
 
     data class SessionCounterparties(
         override val ourId: HoldingIdentity,
