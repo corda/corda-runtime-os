@@ -1,7 +1,6 @@
 @Library('corda-shared-build-pipeline-steps@5.1') _
 
 cordaPipelineKubernetesAgent(
-    dailyBuildCron: 'H 03 * * *',
     runIntegrationTests: true,
     publishRepoPrefix: 'corda-ent-maven',
     createPostgresDb: true,
