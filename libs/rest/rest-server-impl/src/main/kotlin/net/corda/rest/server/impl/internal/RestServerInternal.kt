@@ -6,6 +6,7 @@ import io.javalin.http.BadRequestResponse
 import io.javalin.http.ContentType
 import io.javalin.http.HandlerType
 import io.javalin.http.HttpResponseException
+import io.javalin.http.NotFoundResponse
 import io.javalin.http.staticfiles.Location
 import io.javalin.http.util.JsonEscapeUtil
 import io.javalin.http.util.MultipartUtil
@@ -44,7 +45,7 @@ import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
-import java.util.LinkedList
+import java.util.*
 import javax.servlet.MultipartConfigElement
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown", "LongParameterList")
@@ -136,11 +137,16 @@ internal class RestServerInternal(
     private fun addExceptionHandlers(app: Javalin) {
         app.exception(HttpResponseException::class.java) { e, ctx ->
             if (ctx.header(Header.ACCEPT)?.contains(ContentType.JSON) == true || ctx.res.contentType == ContentType.JSON) {
+                val details = if (e.javaClass == NotFoundResponse::class.java) {
+                    """"url":"${ctx.req.requestURI}""""
+                } else {
+                    e.details.map { """"${it.key}":"${JsonEscapeUtil.escape(it.value)}"""" }.joinToString(",")
+                }
                 ctx.status(e.status).result(
                     """{
                 |    "title": "${e.message?.let { JsonEscapeUtil.escape(it) }}",
                 |    "status": ${e.status},
-                |    "details": {${e.details.map { """"${it.key}":"${JsonEscapeUtil.escape(it.value)}"""" }.joinToString(",")}}
+                |    "details": {$details}
                 |}
                     """.trimMargin()
                 ).contentType(ContentType.APPLICATION_JSON)
