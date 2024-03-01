@@ -13,7 +13,7 @@
     --add-opens, 'jdk.crypto.ec/sun.security.ec=ALL-UNNAMED'
 
 # Enable debugging.
--runjdb: 1044
+#-runjdb: 1044
 
 -runrequires: \
     bnd.identity;id='${project.archivesBaseName}-tests',\
