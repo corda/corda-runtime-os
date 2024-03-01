@@ -12,7 +12,6 @@ dependencies {
 
     implementation project(':components:ledger:ledger-utxo-flow')
     implementation project(':libs:crypto:cipher-suite')
-    implementation project(':libs:flows:flow-api')
     implementation project(':libs:ledger:ledger-common-data')
     implementation project(':libs:ledger:ledger-utxo-data')
     implementation project(':libs:serialization:json-validator')
