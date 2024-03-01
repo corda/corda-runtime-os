@@ -833,11 +833,11 @@ internal class StatefulSessionManagerImpl(
                             lastSendTimestamp = timestamp,
                         ),
                     )
-                    val responderHelloToResend =
-                        stateConvertor.toCordaSessionState(
-                            state,
-                            sessionManagerImpl.revocationCheckerClient::checkRevocation,
-                        )?.message ?: return null
+                    val sessionState = stateConvertor.toCordaSessionState(
+                        state,
+                        sessionManagerImpl.revocationCheckerClient::checkRevocation,
+                    )
+                    val responderHelloToResend = sessionState?.message ?: return null
                     val newState =
                         State(
                             key = state.key,
