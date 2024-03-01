@@ -143,7 +143,7 @@ class UtxoLedgerPersistenceServiceImplTest {
         ).isEqualTo(expectedObj)
 
         verify(serializationService).serialize(any<Any>())
-        verify(serializationService).deserialize<CordaPackageSummaryImpl>(any<ByteArray>(), any())
+        verify(serializationService).deserialize<Instant>(any<ByteArray>(), any())
         assertThat(argumentCaptor.firstValue).isEqualTo(PersistTransactionExternalEventFactory::class.java)
     }
 
