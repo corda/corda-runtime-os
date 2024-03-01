@@ -3,8 +3,6 @@ package net.corda.p2p.linkmanager.inbound
 import net.corda.data.p2p.AuthenticatedMessageAck
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.DataMessagePayload
-import net.corda.data.p2p.HeartbeatMessage
-import net.corda.data.p2p.HeartbeatMessageAck
 import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutHeader
 import net.corda.data.p2p.LinkOutMessage
@@ -241,37 +239,6 @@ class InboundMessageProcessorTest {
                 it.topic == P2P_OUT_MARKERS && value is AppMessageMarker &&
                     value.marker is LinkManagerReceivedMarker && value.timestamp == 1000000L
             }
-            verify(sessionManager).messageAcknowledged(SESSION_ID)
-            verify(sessionManager, never()).dataMessageReceived(eq(SESSION_ID), any(), any())
-        }
-
-        @Test
-        fun `AuthenticatedDataMessage with Outbound session will process HeartbeatMessageAck`() {
-            val session = mock<AuthenticatedSession>()
-            setupGetSessionsById(
-                SessionManager.SessionDirection.Outbound(
-                    SessionManager.Counterparties(
-                        remoteIdentity,
-                        myIdentity
-                    ),
-                    session
-                )
-            )
-            val messageAck = MessageAck(
-                HeartbeatMessageAck()
-            )
-            val dataMessage = AuthenticatedDataMessage(
-                commonHeader,
-                messageAck.toByteBuffer(), ByteBuffer.wrap(byteArrayOf())
-            )
-
-            val records = processor.onNext(
-                listOf(
-                    EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0),
-                )
-            )
-
-            assertThat(records).hasSize(0)
             verify(sessionManager).messageAcknowledged(SESSION_ID)
             verify(sessionManager, never()).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
@@ -673,58 +640,6 @@ class InboundMessageProcessorTest {
                             " which indicates a spoofing attempt! The message was discarded"
                     )
                 }
-            verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
-        }
-
-        @Test
-        fun `receiving a heatbeat message with Inbound session will produce link out ack message`() {
-            val heartbeatMessage = HeartbeatMessage()
-            val messageAndPayload = DataMessagePayload(heartbeatMessage)
-            val encryptionResult = mock<EncryptionResult> {
-                on { header } doReturn commonHeader
-                on { authTag } doReturn byteArrayOf()
-                on { encryptedPayload } doReturn messageAndPayload.toByteBuffer().array()
-            }
-            val dataMessage = AuthenticatedEncryptedDataMessage(
-                commonHeader,
-                messageAndPayload.toByteBuffer(), ByteBuffer.wrap(byteArrayOf())
-            )
-            val session = mock<AuthenticatedEncryptionSession> {
-                on { encryptData(any()) } doReturn encryptionResult
-                on {
-                    decryptData(
-                        commonHeader, messageAndPayload.toByteBuffer().array(), byteArrayOf()
-                    )
-                } doReturn messageAndPayload.toByteBuffer().array()
-            }
-            setupGetSessionsById(
-                SessionManager.SessionDirection.Inbound(
-                    SessionManager.Counterparties(
-                        remoteIdentity,
-                        myIdentity
-                    ),
-                    session
-                )
-            )
-
-            val records = processor.onNext(
-                listOf(
-                    EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0),
-                )
-            )
-
-            assertThat(records).hasSize(1).anyMatch { record ->
-                val value = record.value
-                if (value is LinkOutMessage) {
-                    val payload = value.payload
-                    if (payload is AuthenticatedEncryptedDataMessage) {
-                        if (payload.encryptedPayload == messageAndPayload.toByteBuffer()) {
-                            return@anyMatch payload.header == commonHeader && record.topic == LINK_OUT_TOPIC
-                        }
-                    }
-                }
-                false
-            }
             verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
 

@@ -8,8 +8,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.AuthenticatedMessageAck
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.DataMessagePayload
-import net.corda.data.p2p.HeartbeatMessage
-import net.corda.data.p2p.HeartbeatMessageAck
 import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.MessageAck
@@ -31,7 +29,6 @@ import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.linkmanager.TraceableItem
-import net.corda.p2p.linkmanager.metrics.recordInboundHeartbeatMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordInboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordInboundSessionMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
@@ -223,11 +220,6 @@ internal class InboundMessageProcessor(
                         val record = makeMarkerForAckMessage(ack)
                         record
                     }
-                    is HeartbeatMessageAck -> {
-                        logger.debug { "Processing heartbeat ack from session $sessionIdAndMessage." }
-                        sessionManager.messageAcknowledged(sessionIdAndMessage.sessionId)
-                        null
-                    }
                     else -> {
                         logger.warn("Received an inbound message with unexpected type for SessionId = $sessionIdAndMessage.")
                         null
@@ -282,11 +274,6 @@ internal class InboundMessageProcessor(
         val messages = mutableListOf<Record<*, *>>()
         MessageConverter.extractPayload(session, sessionId, message, DataMessagePayload::fromByteBuffer)?.let {
             when (val innerMessage = it.message) {
-                is HeartbeatMessage -> {
-                    logger.debug { "Processing heartbeat message from session $sessionId" }
-                    recordInboundHeartbeatMessagesMetric(counterparties.counterpartyId)
-                    makeAckMessageForHeartbeatMessage(counterparties, session)?.let { ack -> messages.add(ack) }
-                }
                 is AuthenticatedMessageAndKey -> {
                     val authenticatedMessage = innerMessage.message
                     recordInboundMessagesMetric(authenticatedMessage)
@@ -304,27 +291,6 @@ internal class InboundMessageProcessor(
             }
         }
         return messages
-    }
-
-    private fun makeAckMessageForHeartbeatMessage(
-        counterparties: SessionManager.Counterparties,
-        session: Session
-    ): Record<String, LinkOutMessage>? {
-        val ackDest = counterparties.counterpartyId
-        val ackSource = counterparties.ourId
-        val ack = MessageConverter.linkOutMessageFromAck(
-            MessageAck(HeartbeatMessageAck()),
-            ackSource,
-            ackDest,
-            session,
-            groupPolicyProvider,
-            membershipGroupReaderProvider,
-        ) ?: return null
-        return Record(
-            Schemas.P2P.LINK_OUT_TOPIC,
-            LinkManager.generateKey(),
-            ack
-        )
     }
 
     private fun makeAckMessageForFlowMessage(
