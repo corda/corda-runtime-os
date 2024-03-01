@@ -1,10 +1,15 @@
 package net.corda.p2p.linkmanager.sessions
 
+import net.corda.data.p2p.event.SessionDirection
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.p2p.linkmanager.metrics.recordSessionCreationTime
+import net.corda.p2p.linkmanager.metrics.recordSessionEstablishedMetric
 import net.corda.p2p.linkmanager.metrics.recordSessionMessageReplayMetric
 import net.corda.p2p.linkmanager.metrics.recordSessionStartedMetric
+import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.toOutbound
+import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
 import net.corda.p2p.linkmanager.sessions.metadata.direction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -79,13 +84,13 @@ internal class StateManagerWrapper(
             if (it.isReplay) {
                 recordSessionMessageReplayMetric(direction)
             }
-//            if (direction == SessionDirection.OUTBOUND) {
-//                val outbound = metadata().toOutbound()
-//                if (outbound.status == OutboundSessionStatus.SessionReady) {
-//                    recordSessionEstablishedMetric(direction)
-//                    recordSessionCreationTime(outbound.initiationTimestamp.toEpochMilli())
-//                }
-//            }
+            if (direction == SessionDirection.OUTBOUND) {
+                val outbound = it.state.metadata.toOutbound()
+                if (outbound.status == OutboundSessionStatus.SessionReady) {
+                    recordSessionEstablishedMetric(direction)
+                    recordSessionCreationTime(outbound.initiationTimestamp.toEpochMilli())
+                }
+            }
         }
     }
 }
