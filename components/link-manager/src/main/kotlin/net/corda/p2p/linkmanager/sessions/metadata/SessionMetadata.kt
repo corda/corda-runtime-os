@@ -123,6 +123,7 @@ internal data class OutboundSessionMetadata(
                     MEMBERSHIP_STATUS to this.membershipStatus.toString(),
                     COMMUNICATION_WITH_MGM to this.communicationWithMgm,
                     SESSION_ID to this.sessionId,
+                    INITIATION_TIMESTAMP to this.initiationTimestamp.toEpochMilli(),
                 ),
         )
     }
