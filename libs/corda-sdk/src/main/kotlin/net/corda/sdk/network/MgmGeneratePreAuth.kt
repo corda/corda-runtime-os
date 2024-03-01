@@ -10,6 +10,14 @@ import kotlin.time.Duration.Companion.seconds
 
 class MgmGeneratePreAuth {
 
+    /**
+     * Generate a PRE_AUTH token
+     * @param restClient of type RestClient<MGMRestResource>
+     * @param holdingIdentityShortHash the holding identity ID of the MGM
+     * @param request of type [PreAuthTokenRequest] used as request payload
+     * @param wait Duration before timing out, default 10 seconds
+     * @return token details
+     */
     fun generatePreAuthToken(
         restClient: RestClient<MGMRestResource>,
         holdingIdentityShortHash: String,

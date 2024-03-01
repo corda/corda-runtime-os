@@ -1,5 +1,6 @@
 package net.corda.sdk.rest
 
+import net.corda.libs.configuration.exception.WrongConfigVersionException
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.client.RestClient
@@ -24,6 +25,17 @@ object RestClientUtils {
     private val maxWait: Duration = 10.seconds
     private val cooldownInterval: Duration = 2.seconds
 
+    /**
+     * Create a restClient to set HTTP requests to a Corda instance
+     * @param restResource the class of the Rest Resource you want to use
+     * @param apiVersion the Corda RestApiVersion, defaults to 5.0.0.0 value
+     * @param insecure allow insecure requests, false by default
+     * @param minimumServerProtocolVersion integer value used in client config, default is 1
+     * @param username the REST username, has default value
+     * @param password the REST password, has default value
+     * @param targetUrl the base of the REST URL, has default value
+     * @return a RestClient of your specified class type
+     */
     @Suppress("LongParameterList")
     fun <I : RestResource> createRestClient(
         restResource: KClass<I>,
@@ -86,6 +98,15 @@ object RestClientUtils {
         }
     }
 
+    /**
+     * Retry a given block of code until we time out
+     * @param waitDuration the overall Duration to wait got before timing out, has default value
+     * @param timeBetweenAttempts the Duration to wait between attempts at executing the block
+     * @param operationName a description to use for logging
+     * @param block the code you want to retry
+     * @return if successful will return whatever the underlying block returns, otherwise will throw exception
+     */
+    @Suppress("ThrowsCount")
     fun <T> executeWithRetry(
         waitDuration: Duration = maxWait,
         timeBetweenAttempts: Duration = cooldownInterval,
@@ -99,7 +120,10 @@ object RestClientUtils {
             try {
                 return block()
             } catch (ex: ResourceAlreadyExistsException) {
-                logger.info("Re-throwing", ex)
+                // Allow an escape without retrying
+                throw ex
+            } catch (ex: WrongConfigVersionException) {
+                // Allow an escape without retrying
                 throw ex
             } catch (ex: Exception) {
                 lastException = ex

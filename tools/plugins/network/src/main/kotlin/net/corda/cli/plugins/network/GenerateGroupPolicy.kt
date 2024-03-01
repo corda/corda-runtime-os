@@ -7,7 +7,7 @@ import net.corda.cli.plugins.network.output.ConsoleOutput
 import net.corda.cli.plugins.network.output.Output
 import net.corda.cli.plugins.network.utils.PrintUtils.printJsonOutput
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
-import net.corda.sdk.network.GenerateGroupPolicy
+import net.corda.sdk.network.GenerateStaticGroupPolicy
 import org.yaml.snakeyaml.Yaml
 import picocli.CommandLine
 import java.nio.file.Path
@@ -64,11 +64,11 @@ class GenerateGroupPolicy(private val output: Output = ConsoleOutput()) : Runnab
      * Creates the content of the GroupPolicy JSON.
      */
     private fun generateGroupPolicyContent(): Map<String, Any> {
-        return GenerateGroupPolicy().generateStaticGroupPolicy(members)
+        return GenerateStaticGroupPolicy().generateStaticGroupPolicy(members)
     }
 
     private val members by lazy {
-        memberListFromInput() ?: GenerateGroupPolicy.defaultMembers
+        memberListFromInput() ?: GenerateStaticGroupPolicy.defaultMembers
     }
 
     /**
@@ -142,7 +142,9 @@ class GenerateGroupPolicy(private val output: Output = ConsoleOutput()) : Runnab
         if (endpoint == null && endpointProtocol == null && names == null) {
             return null
         }
-        return names?.let { GenerateGroupPolicy().createMembersListFromListOfX500Strings(it, endpoint!!, endpointProtocol!!) } ?: listOf()
+        return names?.let {
+            GenerateStaticGroupPolicy().createMembersListFromListOfX500Strings(it, endpoint!!, endpointProtocol!!)
+        } ?: listOf()
     }
 
     /**

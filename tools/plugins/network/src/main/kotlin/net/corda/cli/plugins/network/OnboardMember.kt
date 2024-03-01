@@ -159,7 +159,7 @@ class OnboardMember : Runnable, BaseOnboard() {
 
     override val registrationContext by lazy {
         if (roles.contains(MemberRole.NOTARY)) {
-            RegistrationContext().getNotary(
+            RegistrationContext().createNotaryRegistrationContext(
                 preAuthToken = preAuthToken,
                 roles = roles,
                 customProperties = customProperties,
@@ -168,7 +168,7 @@ class OnboardMember : Runnable, BaseOnboard() {
                 notaryKeyId = notaryKeyId
             )
         } else {
-            RegistrationContext().getMember(
+            RegistrationContext().createMemberRegistrationContext(
                 preAuthToken = preAuthToken,
                 roles = roles,
                 customProperties = customProperties,

@@ -9,6 +9,12 @@ import kotlin.time.Duration.Companion.seconds
 
 class GroupParametersLookup {
 
+    /**
+     * Look up the Group Parameters
+     * @param restClient of type RestClient<MemberLookupRestResource>
+     * @param holdingIdentityShortHash the holding identity of the node
+     * @param wait Duration before timing out, default 10 seconds
+     */
     fun lookupGroupParameters(
         restClient: RestClient<MemberLookupRestResource>,
         holdingIdentityShortHash: String,

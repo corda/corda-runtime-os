@@ -94,7 +94,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
     }
 
     override val registrationContext by lazy {
-        RegistrationContext().getMgm(
+        RegistrationContext().createMgmRegistrationContext(
             mtls = mtls,
             p2pGatewayUrls = p2pGatewayUrls,
             sessionKeyId = sessionKeyId,

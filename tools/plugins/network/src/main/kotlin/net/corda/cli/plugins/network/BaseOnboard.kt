@@ -3,6 +3,7 @@
 package net.corda.cli.plugins.network
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.ObjectNode
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
@@ -10,6 +11,8 @@ import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
+import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
+import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.JsonCreateVirtualNodeRequest
@@ -20,10 +23,12 @@ import net.corda.membership.rest.v1.MemberRegistrationRestResource
 import net.corda.membership.rest.v1.NetworkRestResource
 import net.corda.membership.rest.v1.types.request.HostedIdentitySessionKeyAndCertificate
 import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
+import net.corda.rest.json.serialization.JsonObjectAsString
 import net.corda.sdk.config.ClusterConfig
 import net.corda.sdk.network.ClientCertificates
 import net.corda.sdk.network.Keys
 import net.corda.sdk.network.RegistrationRequester
+import net.corda.sdk.network.RegistrationsLookup
 import net.corda.sdk.network.VirtualNode
 import net.corda.sdk.packaging.CpiUploader
 import net.corda.sdk.packaging.KeyStoreHelper
@@ -33,6 +38,7 @@ import picocli.CommandLine.Parameters
 import java.io.File
 import java.net.URI
 import java.security.KeyStore
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 @Suppress("TooManyFunctions")
@@ -89,8 +95,19 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             password = password,
             targetUrl = targetUrl
         )
-        val uploadId = CpiUploader().uploadCPI(restClient, cpi, cpiName, waitDurationSeconds.seconds).id
+
+        // Cpi upload can take longer than the default 10 seconds, wait for minimum of 30
+        val longerWaitValue = getLongerWait()
+        val uploadId = CpiUploader().uploadCPI(restClient, cpi.inputStream(), cpiName, longerWaitValue).id
         return checkCpiStatus(uploadId)
+    }
+
+    private fun getLongerWait(): Duration {
+        return if (waitDurationSeconds.seconds > 30.seconds) {
+            waitDurationSeconds.seconds
+        } else {
+            30.seconds
+        }
     }
 
     private fun checkCpiStatus(id: String): String {
@@ -128,7 +145,8 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             uniquenessDdlConnection = null,
             uniquenessDmlConnection = null,
         )
-        val shortHashId = VirtualNode().createAndWaitForActive(restClient, request, waitDurationSeconds.seconds)
+        val longerWait = getLongerWait()
+        val shortHashId = VirtualNode().createAndWaitForActive(restClient, request, longerWait)
         println("Holding identity short hash of '$name' is: '$shortHashId'")
         shortHashId
     }
@@ -222,7 +240,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             waitDurationSeconds.seconds
         )
         val certificate = ca.signCsr(csrCertRequest).toPem().byteInputStream()
-        clientCertificates.uploadTlsCertificate(certificateRestClient, certificate, waitDurationSeconds.seconds)
+        clientCertificates.uploadTlsCertificate(certificateRestClient, certificate, P2P_TLS_CERTIFICATE_ALIAS, waitDurationSeconds.seconds)
     }
 
     protected fun setupNetwork() {
@@ -278,14 +296,9 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         println("Registration ID for '$name' is '$registrationId'")
 
         // Registrations can take longer than the default 10 seconds, wait for minimum of 30
-        val longerWaitValue = if (waitDurationSeconds.seconds > 30.seconds) {
-            waitDurationSeconds.seconds
-        } else {
-            30.seconds
-        }
-
+        val longerWaitValue = getLongerWait()
         if (waitForFinalStatus) {
-            RegistrationRequester().waitForRegistrationApproval(
+            RegistrationsLookup().waitForRegistrationApproval(
                 restClient = restClient,
                 registrationId = registrationId,
                 holdingId = holdingId,
@@ -304,26 +317,37 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             targetUrl = targetUrl
         )
         val clusterConfig = ClusterConfig()
-        var currentConfig = clusterConfig.getCurrentConfig(restClient, "corda.p2p.gateway", waitDurationSeconds.seconds)
+        val currentConfig = clusterConfig.getCurrentConfig(restClient, "corda.p2p.gateway", waitDurationSeconds.seconds)
         val rawConfig = currentConfig.configWithDefaults
         val rawConfigJson = json.readTree(rawConfig)
         val sslConfig = rawConfigJson["sslConfig"]
         val currentMode = sslConfig["revocationCheck"]?.get("mode")?.asText()
         val currentTlsType = sslConfig["tlsType"]?.asText()
-
-        if (currentMode != "OFF") {
-            clusterConfig.configureCrl(restClient, "OFF", currentConfig, waitDurationSeconds.seconds)
-            // Update currentConfig ahead of next check
-            currentConfig = clusterConfig.getCurrentConfig(restClient, "corda.p2p.gateway", waitDurationSeconds.seconds)
-        }
-
         val tlsType = if (mtls) {
             "MUTUAL"
         } else {
             "ONE_WAY"
         }
-        if (currentTlsType != tlsType) {
-            clusterConfig.configureTlsType(restClient, tlsType, currentConfig, waitDurationSeconds.seconds)
+
+        if ((currentMode != "OFF") || (currentTlsType != tlsType)) {
+            val objectMapper = ObjectMapper()
+            val newConfig = objectMapper.createObjectNode()
+            newConfig.set<ObjectNode>(
+                "sslConfig",
+                objectMapper.createObjectNode()
+                    .put("tlsType", tlsType.uppercase())
+                    .set<ObjectNode>(
+                        "revocationCheck",
+                        json.createObjectNode().put("mode", "OFF"),
+                    ),
+            )
+            val payload = UpdateConfigParameters(
+                section = "corda.p2p.gateway",
+                version = currentConfig.version,
+                config = JsonObjectAsString(objectMapper.writeValueAsString(newConfig)),
+                schemaVersion = ConfigSchemaVersion(major = currentConfig.schemaVersion.major, minor = currentConfig.schemaVersion.minor),
+            )
+            clusterConfig.updateConfig(restClient = restClient, updateConfig = payload, wait = waitDurationSeconds.seconds)
         }
     }
 

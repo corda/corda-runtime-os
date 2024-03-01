@@ -22,6 +22,13 @@ class KeyStoreHelper {
         const val KEYSTORE_INSTANCE_TYPE = "pkcs12"
     }
 
+    /**
+     * Generate a basic key store
+     * @param keyStoreFile target file to use
+     * @param alias unique name to use
+     * @param password
+     * @param x500Name to use within certificate builder, has default value
+     */
     fun generateKeyStore(
         keyStoreFile: File,
         alias: String,
@@ -58,6 +65,14 @@ class KeyStoreHelper {
         }
     }
 
+    /**
+     * Import a given certificate into an existing key store
+     * @param keyStoreFile file to use
+     * @param keyStorePassword
+     * @param certificateInputStream certificate value to be added
+     * @param certificateAlias unique alias for the certificate
+     * @param certificateFactoryType defaults to X.509
+     */
     fun importCertificateIntoKeyStore(
         keyStoreFile: File,
         keyStorePassword: String,
@@ -77,6 +92,10 @@ class KeyStoreHelper {
         }
     }
 
+    /**
+     * The SDK stores the default gradle cert so others don't have to.
+     * @return the content of the certificate
+     */
     fun getDefaultGradleCertificateStream(): InputStream {
         return this::class.java.getResourceAsStream("/network/certificates/gradle-plugin-default-key.pem")!!
     }

@@ -8,6 +8,13 @@ import kotlin.time.Duration.Companion.seconds
 
 class ExportGroupPolicyFromMgm {
 
+    /**
+     * Export the network policy from an MGM
+     * @param restClient of type RestClient<MGMRestResource>
+     * @param holdingIdentityShortHash the holding identity of the MGM
+     * @param wait Duration before timing out, default 10 seconds
+     * @return policy as a String
+     */
     fun exportPolicy(restClient: RestClient<MGMRestResource>, holdingIdentityShortHash: String, wait: Duration = 10.seconds): String {
         return restClient.use { client ->
             executeWithRetry(

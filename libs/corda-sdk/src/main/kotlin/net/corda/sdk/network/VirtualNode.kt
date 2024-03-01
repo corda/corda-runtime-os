@@ -13,6 +13,13 @@ import kotlin.time.Duration.Companion.seconds
 
 class VirtualNode {
 
+    /**
+     * Request the creation of a virtual node
+     * @param restClient of type RestClient<VirtualNodeRestResource>
+     * @param request of type JsonCreateVirtualNodeRequest to be used as the payload
+     * @param wait Duration before timing out, default 10 seconds
+     * @return an async response which you can get the id from
+     */
     fun create(
         restClient: RestClient<VirtualNodeRestResource>,
         request: JsonCreateVirtualNodeRequest,
@@ -29,7 +36,13 @@ class VirtualNode {
         }
     }
 
-    fun waitForVirtualNodeToBeActive(restClient: RestClient<VirtualNodeRestResource>, holdingId: String, wait: Duration = 10.seconds) {
+    /**
+     * Poll the virtual node until the status becomes ACTIVE
+     * @param restClient of type RestClient<VirtualNodeRestResource>
+     * @param holdingId the holding identity of the node
+     * @param wait Duration before timing out, default 30 seconds
+     */
+    fun waitForVirtualNodeToBeActive(restClient: RestClient<VirtualNodeRestResource>, holdingId: String, wait: Duration = 30.seconds) {
         restClient.use { client ->
             executeWithRetry(
                 waitDuration = wait,
@@ -41,16 +54,28 @@ class VirtualNode {
         }
     }
 
+    /**
+     * Combination method to create and wait for the virtual node to become ACTIVE
+     * @param restClient of type RestClient<VirtualNodeRestResource>
+     * @param request of type JsonCreateVirtualNodeRequest to be used as the payload
+     * @param wait Duration before timing out, default 30 seconds
+     */
     fun createAndWaitForActive(
         restClient: RestClient<VirtualNodeRestResource>,
         request: JsonCreateVirtualNodeRequest,
-        wait: Duration = 10.seconds
+        wait: Duration = 30.seconds
     ): String {
         val requestId = create(restClient, request, wait).responseBody.requestId
         waitForVirtualNodeToBeActive(restClient, requestId, wait)
         return requestId
     }
 
+    /**
+     * Resync the virtual node vault
+     * @param restClient of type RestClient<VirtualNodeMaintenanceRestResource>
+     * @param holdingId the holding identity of the node
+     * @param wait Duration before timing out, default 10 seconds
+     */
     fun resyncVault(restClient: RestClient<VirtualNodeMaintenanceRestResource>, holdingId: String, wait: Duration = 10.seconds) {
         restClient.use { client ->
             executeWithRetry(

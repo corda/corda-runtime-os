@@ -1,4 +1,5 @@
 @file:Suppress("DEPRECATION")
+// Needed for the v1.KeysRestResource import statement
 
 package net.corda.sdk.network
 
@@ -17,7 +18,17 @@ class Keys {
         const val P2P_TLS_CERTIFICATE_ALIAS = "p2p-tls-cert"
     }
 
-    @Suppress("LongParameterList")
+    /**
+     * Combination method, first assign a soft HSM, then generate a key-pair
+     * @param hsmRestClient of type RestClient<HsmRestResource>
+     * @param keysRestClient of type RestClient<KeysRestResource>
+     * @param holdingIdentityShortHash the holding identity of the node
+     * @param category the category of the HSM
+     * @param scheme the key's scheme describing which type of the key pair to generate, has default value
+     * @param wait Duration before timing out, default 10 seconds
+     * @return the ID of the newly generated key pair
+     */
+    @Suppress("LongParameterList", "DEPRECATION")
     fun assignSoftHsmAndGenerateKey(
         hsmRestClient: RestClient<HsmRestResource>,
         keysRestClient: RestClient<KeysRestResource>,
@@ -45,7 +56,17 @@ class Keys {
         )
     }
 
-    @Suppress("LongParameterList")
+    /**
+     * Generate a key-pair
+     * @param keysRestClient of type RestClient<KeysRestResource>
+     * @param tenantId the holding identity of the node
+     * @param alias the alias under which the new key pair will be stored
+     * @param category the category of the HSM
+     * @param scheme the key's scheme describing which type of the key pair to generate, has default value
+     * @param wait Duration before timing out, default 10 seconds
+     * @return the ID of the newly generated key pair
+     */
+    @Suppress("LongParameterList", "DEPRECATION")
     fun generateKeyPair(
         keysRestClient: RestClient<KeysRestResource>,
         tenantId: String,
@@ -70,7 +91,19 @@ class Keys {
         return response.id
     }
 
-    fun hasTlsKey(restClient: RestClient<KeysRestResource>, wait: Duration = 10.seconds): Boolean {
+    /**
+     * Lists the P2P TLS keys to determine if one exists
+     * @param restClient of type RestClient<KeysRestResource>
+     * @param alias the alias under which the P@P TLS key pair is stored, has default value
+     * @param wait Duration before timing out, default 10 seconds
+     * @return true if the key exists, otherwise false
+     */
+    @Suppress("DEPRECATION")
+    fun hasTlsKey(
+        restClient: RestClient<KeysRestResource>,
+        alias: String = P2P_TLS_KEY_ALIAS,
+        wait: Duration = 10.seconds
+    ): Boolean {
         return restClient.use { client ->
             executeWithRetry(
                 waitDuration = wait,
@@ -83,7 +116,7 @@ class Keys {
                     orderBy = "NONE",
                     category = "TLS",
                     schemeCodeName = null,
-                    alias = P2P_TLS_KEY_ALIAS,
+                    alias = alias,
                     masterKeyAlias = null,
                     createdAfter = null,
                     createdBefore = null,
@@ -93,11 +126,23 @@ class Keys {
         }
     }
 
-    fun generateTlsKey(restClient: RestClient<KeysRestResource>, wait: Duration = 10.seconds): String {
+    /**
+     * Helper to specifically generate a P2P TLS key
+     * @param restClient of type RestClient<KeysRestResource>
+     * @param alias the alias under which the P@P TLS key pair is stored, has default value
+     * @param wait Duration before timing out, default 10 seconds
+     * @return the ID of the newly generated key pair
+     */
+    @Suppress("DEPRECATION")
+    fun generateTlsKey(
+        restClient: RestClient<KeysRestResource>,
+        alias: String = P2P_TLS_KEY_ALIAS,
+        wait: Duration = 10.seconds
+    ): String {
         return generateKeyPair(
             keysRestClient = restClient,
             tenantId = "p2p",
-            alias = P2P_TLS_KEY_ALIAS,
+            alias = alias,
             category = "TLS",
             scheme = ECDSA_SECP256R1_CODE_NAME,
             wait = wait

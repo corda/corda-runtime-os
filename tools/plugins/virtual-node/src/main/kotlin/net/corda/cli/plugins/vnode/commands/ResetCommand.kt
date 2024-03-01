@@ -72,7 +72,7 @@ class ResetCommand : RestCommand(), Runnable {
         println("Uploading CPI to host: $targetUrl")
         val responseId = CpiUploader().forceCpiUpload(
             restClient = restClient,
-            cpiFile = cpi,
+            cpiFile = cpi.inputStream(),
             cpiName = cpi.name,
             wait = waitDurationSeconds.seconds
         ).id

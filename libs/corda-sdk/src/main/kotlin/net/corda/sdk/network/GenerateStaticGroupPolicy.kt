@@ -2,7 +2,7 @@ package net.corda.sdk.network
 
 import java.util.*
 
-class GenerateGroupPolicy {
+class GenerateStaticGroupPolicy {
     companion object {
         private const val MEMBER_STATUS_ACTIVE = "ACTIVE"
         private const val NAME_KEY = "name"
@@ -36,6 +36,13 @@ class GenerateGroupPolicy {
         }
     }
 
+    /**
+     * Create an object containing the necessary member info for a given list of X.500 names
+     * @param names a list of X.500 names
+     * @param endpointUrl the URL for all members, has default value
+     * @param endpointProtocol protocol version for all members, has defaul value
+     * @return member information as a List of Maps
+     */
     fun createMembersListFromListOfX500Strings(
         names: List<String>,
         endpointUrl: String = "https://member.corda5.r3.com:10000",
@@ -54,7 +61,13 @@ class GenerateGroupPolicy {
         }
         return members
     }
-    fun generateStaticGroupPolicy(members: List<Map<String, Any>>?): Map<String, Any> {
+
+    /**
+     * Create the static network policy for a given list of members
+     * @param members list of member information, see [createMembersListFromListOfX500Strings], has default value
+     * @return static network policy
+     */
+    fun generateStaticGroupPolicy(members: List<Map<String, Any>>? = defaultMembers): Map<String, Any> {
         return mapOf(
             "fileFormatVersion" to 1,
             "groupId" to UUID.randomUUID().toString(),
@@ -68,14 +81,14 @@ class GenerateGroupPolicy {
             ),
             "p2pParameters" to mapOf(
                 "sessionTrustRoots" to listOf(
-                    GenerateGroupPolicy::class.java.getResource("/network/certificates/certificate0.pem").readText(),
-                    GenerateGroupPolicy::class.java.getResource("/network/certificates/certificate1.pem").readText(),
-                    GenerateGroupPolicy::class.java.getResource("/network/certificates/certificate2.pem").readText(),
+                    GenerateStaticGroupPolicy::class.java.getResource("/network/certificates/certificate0.pem").readText(),
+                    GenerateStaticGroupPolicy::class.java.getResource("/network/certificates/certificate1.pem").readText(),
+                    GenerateStaticGroupPolicy::class.java.getResource("/network/certificates/certificate2.pem").readText(),
                 ),
                 "tlsTrustRoots" to listOf(
-                    GenerateGroupPolicy::class.java.getResource("/network/certificates/certificate3.pem").readText(),
-                    GenerateGroupPolicy::class.java.getResource("/network/certificates/certificate4.pem").readText(),
-                    GenerateGroupPolicy::class.java.getResource("/network/certificates/certificate5.pem").readText(),
+                    GenerateStaticGroupPolicy::class.java.getResource("/network/certificates/certificate3.pem").readText(),
+                    GenerateStaticGroupPolicy::class.java.getResource("/network/certificates/certificate4.pem").readText(),
+                    GenerateStaticGroupPolicy::class.java.getResource("/network/certificates/certificate5.pem").readText(),
                 ),
                 "sessionPki" to "Standard",
                 "tlsPki" to "Standard",

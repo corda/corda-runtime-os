@@ -6,17 +6,24 @@ import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanc
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.client.RestClient
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
-import java.io.File
+import java.io.InputStream
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 class CpiUploader {
 
+    /**
+     * Upload a given CPI
+     * @param restClient of type RestClient<CpiUploadRestResource>
+     * @param cpi value of the CPI to upload
+     * @param cpiName name of the CPI file
+     * @param wait Duration before timing out, default 30 seconds
+     */
     fun uploadCPI(
         restClient: RestClient<CpiUploadRestResource>,
-        cpiFile: File,
+        cpi: InputStream,
         cpiName: String,
-        wait: Duration = 10.seconds
+        wait: Duration = 30.seconds
     ): CpiUploadRestResource.CpiUploadResponse {
         return restClient.use { client ->
             executeWithRetry(
@@ -26,7 +33,7 @@ class CpiUploader {
                 val resource = client.start().proxy
                 resource.cpi(
                     HttpFileUpload(
-                        content = cpiFile.inputStream(),
+                        content = cpi,
                         fileName = cpiName,
                     )
                 )
@@ -34,10 +41,17 @@ class CpiUploader {
         }
     }
 
+    /**
+     * Wait for the CPI to be ingested, where status is OK, and return the CPI checksum
+     * @param restClient of type RestClient<CpiUploadRestResource>
+     * @param uploadRequestId the ID returned from the upload request
+     * @param wait Duration before timing out, default 60 seconds
+     * @return checksum value
+     */
     fun cpiChecksum(
         restClient: RestClient<CpiUploadRestResource>,
         uploadRequestId: String,
-        wait: Duration = 10.seconds
+        wait: Duration = 60.seconds
     ): String {
         return restClient.use { client ->
             executeWithRetry(
@@ -57,6 +71,12 @@ class CpiUploader {
 
     internal class CpiUploadException(message: String) : Exception(message)
 
+    /**
+     * List all CPIs
+     * @param restClient of type RestClient<CpiUploadRestResource>
+     * @param wait Duration before timing out, default 10 seconds
+     * @return list of CPI metadata
+     */
     fun getAllCpis(restClient: RestClient<CpiUploadRestResource>, wait: Duration = 10.seconds): GetCPIsResponse {
         return restClient.use { client ->
             executeWithRetry(
@@ -68,11 +88,18 @@ class CpiUploader {
         }
     }
 
+    /**
+     * Force upload a given CPI
+     * @param restClient of type RestClient<CpiUploadRestResource>
+     * @param cpi value of the CPI to upload
+     * @param cpiName name of the CPI file
+     * @param wait Duration before timing out, default 30 seconds
+     */
     fun forceCpiUpload(
         restClient: RestClient<VirtualNodeMaintenanceRestResource>,
-        cpiFile: File,
+        cpiFile: InputStream,
         cpiName: String,
-        wait: Duration = 10.seconds
+        wait: Duration = 30.seconds
     ): CpiUploadRestResource.CpiUploadResponse {
         return restClient.use { client ->
             executeWithRetry(
@@ -82,7 +109,7 @@ class CpiUploader {
                 val resource = client.start().proxy
                 resource.forceCpiUpload(
                     HttpFileUpload(
-                        content = cpiFile.inputStream(),
+                        content = cpiFile,
                         fileName = cpiName,
                     )
                 )

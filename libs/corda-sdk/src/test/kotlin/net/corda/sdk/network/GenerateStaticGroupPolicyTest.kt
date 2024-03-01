@@ -9,14 +9,14 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-class GenerateGroupPolicyTest {
+class GenerateStaticGroupPolicyTest {
 
     private val om = jacksonObjectMapper()
 
     @Test
     fun generatedOutputIsValidJson() {
-        val ggp = GenerateGroupPolicy()
-        val returnValue = ggp.generateStaticGroupPolicy(GenerateGroupPolicy.defaultMembers)
+        val ggp = GenerateStaticGroupPolicy()
+        val returnValue = ggp.generateStaticGroupPolicy(GenerateStaticGroupPolicy.defaultMembers)
         val returnValueAsString = om.writeValueAsString(returnValue)
         assertNotEquals(0, returnValueAsString.length)
         assertTrue(isValidJson(returnValueAsString))
@@ -26,7 +26,7 @@ class GenerateGroupPolicyTest {
 
     @Test
     fun `when no members are passed, the members array is null`() {
-        val ggp = GenerateGroupPolicy()
+        val ggp = GenerateStaticGroupPolicy()
         val returnValue = ggp.generateStaticGroupPolicy(null)
         val returnValueAsString = om.writeValueAsString(returnValue)
         val memberList = memberList(returnValueAsString)
@@ -35,8 +35,8 @@ class GenerateGroupPolicyTest {
 
     @Test
     fun `when default members are passed, default values are used`() {
-        val ggp = GenerateGroupPolicy()
-        val returnValue = ggp.generateStaticGroupPolicy(GenerateGroupPolicy.defaultMembers)
+        val ggp = GenerateStaticGroupPolicy()
+        val returnValue = ggp.generateStaticGroupPolicy(GenerateStaticGroupPolicy.defaultMembers)
         val returnValueAsString = om.writeValueAsString(returnValue)
         val memberList = memberList(returnValueAsString)
         memberList.find { it["name"].asText() == "C=GB, L=London, O=Alice" }.apply {
@@ -57,7 +57,7 @@ class GenerateGroupPolicyTest {
             "endpointUrl-1" to "https://terry.corda5.r3.com:10000",
             "endpointProtocol-1" to 1,
         )
-        val ggp = GenerateGroupPolicy()
+        val ggp = GenerateStaticGroupPolicy()
         val returnValue = ggp.generateStaticGroupPolicy(listOf(myMember))
         val returnValueAsString = om.writeValueAsString(returnValue)
         val memberList = memberList(returnValueAsString)
@@ -71,7 +71,7 @@ class GenerateGroupPolicyTest {
 
     @Test
     fun `member list from string populates`() {
-        val ggp = GenerateGroupPolicy()
+        val ggp = GenerateStaticGroupPolicy()
         val members = ggp.createMembersListFromListOfX500Strings(listOf("C=GB, L=London, O=Terry"))
         val parsedMembers = om.readTree(om.writeValueAsString(members))
         parsedMembers.find { it["name"].asText() == "C=GB, L=London, O=Terry" }.apply {
@@ -88,7 +88,7 @@ class GenerateGroupPolicyTest {
             "C=GB, L=London, O=Edith",
             "C=GB, L=London, O=Fred"
         )
-        val ggp = GenerateGroupPolicy()
+        val ggp = GenerateStaticGroupPolicy()
         val createdMembersBlock = ggp.createMembersListFromListOfX500Strings(myList)
         val rawPolicyOutput = ggp.generateStaticGroupPolicy(createdMembersBlock)
         val returnValueAsString = om.writeValueAsString(rawPolicyOutput)

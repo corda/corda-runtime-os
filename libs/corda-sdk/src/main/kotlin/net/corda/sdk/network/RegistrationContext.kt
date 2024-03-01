@@ -4,9 +4,18 @@ import net.corda.membership.lib.MemberInfoExtension
 
 class RegistrationContext {
 
-    fun getMgm(
+    /**
+     * Create an object containing the necessary registration context for an MGM
+     * @param mtls if true will use Mutual TLS otherwise will use OneWay
+     * @param p2pGatewayUrls collection of URLs to be used for P2p communication
+     * @param sessionKeyId key ID for the generated session
+     * @param ecdhKeyId key ID for the generated ecdh key
+     * @param tlsTrustRoot value of certificate from Certificate Authority
+     * @return registration context information as a Map
+     */
+    fun createMgmRegistrationContext(
         mtls: Boolean,
-        p2pGatewayUrls: List<String>,
+        p2pGatewayUrls: Collection<String>,
         sessionKeyId: String,
         ecdhKeyId: String,
         tlsTrustRoot: String
@@ -41,12 +50,21 @@ class RegistrationContext {
         ) + endpoints
     }
 
+    /**
+     * Create an object containing the necessary registration context for a member
+     * @param preAuthToken optional pre-auth token
+     * @param roles optional member roles
+     * @param customProperties Map of custom properties
+     * @param sessionKeyId key ID for the generated session
+     * @param ledgerKeyId ID for the generated ledger key
+     * @return registration context information as a Map
+     */
     @Suppress("LongParameterList")
-    fun getMember(
+    fun createMemberRegistrationContext(
         preAuthToken: String?,
         roles: Set<MemberRole>?,
         customProperties: Map<String, String>?,
-        p2pGatewayUrls: List<String>,
+        p2pGatewayUrls: Collection<String>,
         sessionKeyId: String,
         ledgerKeyId: String,
     ): Map<String, Any?> {
@@ -74,12 +92,21 @@ class RegistrationContext {
         return context + preAuth + roleProperty + extProperties + endpoints
     }
 
+    /**
+     * Create an object containing the necessary registration context for a member
+     * @param preAuthToken optional pre-auth token
+     * @param roles collection of member roles, expecting at least one roll to be a NOTARY
+     * @param customProperties Map of custom properties
+     * @param sessionKeyId key ID for the generated session
+     * @param notaryKeyId ID for the generated notary key
+     * @return registration context information as a Map
+     */
     @Suppress("LongParameterList")
-    fun getNotary(
+    fun createNotaryRegistrationContext(
         preAuthToken: String?,
         roles: Set<MemberRole>?,
         customProperties: Map<String, String>?,
-        p2pGatewayUrls: List<String>,
+        p2pGatewayUrls: Collection<String>,
         sessionKeyId: String,
         notaryKeyId: String,
     ): Map<String, Any?> {

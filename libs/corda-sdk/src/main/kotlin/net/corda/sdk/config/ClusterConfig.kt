@@ -1,21 +1,25 @@
 package net.corda.sdk.config
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.node.ObjectNode
 import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
-import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
 import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
+import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
+import net.corda.libs.configuration.exception.WrongConfigVersionException
+import net.corda.rest.ResponseCode
 import net.corda.rest.client.RestClient
-import net.corda.rest.json.serialization.JsonObjectAsString
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 class ClusterConfig {
 
-    private val objectMapper = ObjectMapper()
-
+    /**
+     * Get the current config from the Corda instance
+     * @param restClient of type RestClient<ConfigRestResource>
+     * @param configSection Section name for the configuration
+     * @param wait Duration before timing out, default 10 seconds
+     * @return a GetConfigResponse object
+     */
     fun getCurrentConfig(
         restClient: RestClient<ConfigRestResource>,
         configSection: String,
@@ -32,63 +36,35 @@ class ClusterConfig {
         }
     }
 
-    fun configureCrl(
+    /**
+     * Update the section config from the Corda instance
+     * @param restClient of type RestClient<ConfigRestResource>
+     * @param updateConfig of type UpdateConfigParameters to submit
+     * @param wait Duration before timing out, default 10 seconds
+     * @return a UpdateConfigResponse if successful, or an exception
+     */
+    fun updateConfig(
         restClient: RestClient<ConfigRestResource>,
-        mode: String,
-        currentConfig: GetConfigResponse,
+        updateConfig: UpdateConfigParameters,
         wait: Duration = 10.seconds
-    ) {
-        val newConfig = objectMapper.createObjectNode()
-        newConfig.set<ObjectNode>(
-            "sslConfig",
-            objectMapper.createObjectNode()
-                .set<ObjectNode>(
-                    "revocationCheck",
-                    objectMapper.createObjectNode().put("mode", mode.uppercase()),
-                ),
-        )
-
-        val payload = UpdateConfigParameters(
-            section = "corda.p2p.gateway",
-            version = currentConfig.version,
-            config = JsonObjectAsString(objectMapper.writeValueAsString(newConfig)),
-            schemaVersion = ConfigSchemaVersion(major = currentConfig.schemaVersion.major, minor = currentConfig.schemaVersion.minor),
-        )
-
-        updateConfig(restClient, payload, wait)
-    }
-
-    fun configureTlsType(
-        restClient: RestClient<ConfigRestResource>,
-        tlsType: String,
-        currentConfig: GetConfigResponse,
-        wait: Duration = 10.seconds
-    ) {
-        val newConfig = objectMapper.createObjectNode()
-        newConfig.set<ObjectNode>(
-            "sslConfig",
-            objectMapper.createObjectNode()
-                .put("tlsType", tlsType.uppercase())
-        )
-
-        val payload = UpdateConfigParameters(
-            section = "corda.p2p.gateway",
-            version = currentConfig.version,
-            config = JsonObjectAsString(objectMapper.writeValueAsString(newConfig)),
-            schemaVersion = ConfigSchemaVersion(major = currentConfig.schemaVersion.major, minor = currentConfig.schemaVersion.minor),
-        )
-        updateConfig(restClient, payload, wait)
-    }
-
-    fun updateConfig(restClient: RestClient<ConfigRestResource>, updateConfig: UpdateConfigParameters, wait: Duration = 10.seconds) {
-        restClient.use { client ->
+    ): UpdateConfigResponse {
+        return restClient.use { client ->
             executeWithRetry(
                 waitDuration = wait,
                 operationName = "Update cluster config"
             ) {
                 val resource = client.start().proxy
-                resource.updateConfig(updateConfig)
+                val response = resource.updateConfig(updateConfig)
+                if (response.responseCode == ResponseCode.ACCEPTED) {
+                    response.responseBody
+                } else if (response.responseCode == ResponseCode.CONFLICT) {
+                    throw WrongConfigVersionException("Mismatch between config version: ${response.responseBody}")
+                } else {
+                    throw ConfigException("Error when updating config: ${response.responseBody}")
+                }
             }
         }
     }
 }
+
+internal class ConfigException(message: String) : Exception(message)
