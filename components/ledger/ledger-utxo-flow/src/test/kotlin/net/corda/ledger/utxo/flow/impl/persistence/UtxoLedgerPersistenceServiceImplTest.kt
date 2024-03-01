@@ -129,8 +129,8 @@ class UtxoLedgerPersistenceServiceImplTest {
 
     @Test
     fun `persist executes successfully`() {
-        val expectedObj = mock<CordaPackageSummaryImpl>()
-        whenever(serializationService.deserialize<CordaPackageSummaryImpl>(any<ByteArray>(), any())).thenReturn(expectedObj)
+        val expectedObj = mock<Instant>()
+        whenever(serializationService.deserialize<Instant>(any<ByteArray>(), any())).thenReturn(expectedObj)
         val transaction = mock<UtxoSignedTransactionInternal>()
         whenever(transaction.wireTransaction).thenReturn(mock())
         whenever(transaction.signatures).thenReturn(mock())
@@ -140,7 +140,7 @@ class UtxoLedgerPersistenceServiceImplTest {
                 transaction,
                 VERIFIED
             )
-        ).isEqualTo(listOf(expectedObj))
+        ).isEqualTo(expectedObj)
 
         verify(serializationService).serialize(any<Any>())
         verify(serializationService).deserialize<CordaPackageSummaryImpl>(any<ByteArray>(), any())
