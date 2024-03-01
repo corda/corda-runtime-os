@@ -16,6 +16,8 @@ dependencies {
     api project(':testing:sandboxes')
     api project(':testing:sandboxes-testkit')
     api project(':libs:serialization:serialization-amqp')
+    api project(':libs:flows:flow-api')
+
     implementation project(':testing:test-serialization')
     implementation project(':components:flow:flow-service')
     implementation project(':libs:serialization:serialization-checkpoint-api')

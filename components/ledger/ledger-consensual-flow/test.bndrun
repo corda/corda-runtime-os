@@ -12,6 +12,9 @@
     --add-opens, 'java.base/java.util=ALL-UNNAMED',\
     --add-opens, 'jdk.crypto.ec/sun.security.ec=ALL-UNNAMED'
 
+# Enable debugging.
+-runjdb: 1044
+
 -runrequires: \
     bnd.identity;id='${project.archivesBaseName}-tests',\
     bnd.identity;id='net.corda.ledger-common-flow',\
