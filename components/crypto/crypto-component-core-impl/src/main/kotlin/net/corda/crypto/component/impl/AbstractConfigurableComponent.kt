@@ -99,8 +99,6 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
             is RegistrationStatusChangeEvent -> {
                 if(upstream.handle(event) == DependenciesTracker.EventHandling.HANDLED) {
                     onUpstreamRegistrationStatusChange(coordinator)
-                } else if(_impl?.downstream?.handle(event) == DependenciesTracker.EventHandling.HANDLED) {
-                    onDownstreamRegistrationStatusChange(coordinator)
                 }
             }
             is ConfigChangedEvent -> {
@@ -154,11 +152,6 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
         } else {
             null
         }
-    }
-
-    private fun onDownstreamRegistrationStatusChange(coordinator: LifecycleCoordinator) {
-        logger.trace { "onDownstreamRegistrationStatusChange(upstream=${upstream.isUp}, downstream=${_impl?.downstream?.isUp})." }
-        updateLifecycleStatus(coordinator)
     }
 
     private fun onConfigChange(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
