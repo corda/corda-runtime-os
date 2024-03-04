@@ -45,6 +45,11 @@ interface UtxoOutputRecordFactory {
         externalEventContext: ExternalEventContext
     ): Record<String, FlowEvent>
 
+    fun getPersistTransactionIfDoesNotExistSuccessRecord(
+        transactionStatus: String,
+        externalEventContext: ExternalEventContext
+    ): Record<String, FlowEvent>
+
     fun getFindFilteredTransactionsAndSignaturesSuccessRecord(
         filteredTransactionsAndSignatures: Map<SecureHash, Pair<FilteredTransaction?, List<DigitalSignatureAndMetadata>>>,
         externalEventContext: ExternalEventContext

@@ -139,8 +139,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                 UtxoPersistTransactionIfDoesNotExistRequestHandler(
                     UtxoTransactionReaderImpl(sandbox, externalEventContext, req),
                     externalEventContext,
-                    externalEventResponseFactory,
-                    serializationService,
+                    outputRecordFactory,
                     persistenceService
                 )
             }

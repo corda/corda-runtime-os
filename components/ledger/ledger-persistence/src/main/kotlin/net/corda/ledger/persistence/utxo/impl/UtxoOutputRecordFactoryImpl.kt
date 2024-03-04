@@ -141,6 +141,20 @@ class UtxoOutputRecordFactoryImpl(
         )
     }
 
+    override fun getPersistTransactionIfDoesNotExistSuccessRecord(
+        transactionStatus: String,
+        externalEventContext: ExternalEventContext
+    ): Record<String, FlowEvent> {
+        return responseFactory.successResponse(
+            externalEventContext,
+            EntityResponse(
+                listOf(ByteBuffer.wrap(serializationService.serialize(transactionStatus).bytes)),
+                KeyValuePairList(emptyList()),
+                null
+            ),
+        )
+    }
+
     private fun createPoolKeyRecord(
         holdingIdentity: HoldingIdentity,
         stateTokenPair: Pair<StateAndRef<*>, UtxoToken>
