@@ -52,7 +52,7 @@ class UploadStatusProcessor : CompactedProcessor<UploadStatusKey, UploadStatus> 
         return tracker.status(requestId)
     }
 
-    fun status(publisher: Publisher, requestId: RequestId, sequenceNumber: Int, message: String) {
+    fun publishStatus(publisher: Publisher, requestId: RequestId, sequenceNumber: Int, message: String) {
         val newRecord = Record(
             Schemas.VirtualNode.CPI_UPLOAD_STATUS_TOPIC,
             UploadStatusKey(requestId, sequenceNumber),
