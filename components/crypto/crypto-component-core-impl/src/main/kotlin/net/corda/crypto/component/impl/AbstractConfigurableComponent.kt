@@ -129,7 +129,7 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
     private fun doActivation(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         logger.trace { "Activating $myName" }
         _impl?.downstream?.clear() // doesn't throw
-        _impl?.close() // this delegates to the above under the hood...
+        _impl?.close()
         _impl = createActiveImpl(event) // doesn't throw
         _impl?.downstream?.follow(coordinator) // doesn't throw
         activationFailureCounter.set(0)
