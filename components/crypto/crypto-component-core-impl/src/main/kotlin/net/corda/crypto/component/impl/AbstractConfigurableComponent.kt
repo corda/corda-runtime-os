@@ -12,7 +12,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -103,9 +102,6 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
                 doActivation(event, coordinator)
                 updateLifecycleStatus(coordinator)
             }
-            is TryAgainCreateActiveImpl -> {
-                onTryAgainCreateActiveImpl(event.configChangedEvent, coordinator)
-            }
         }
     }
 
@@ -130,35 +126,14 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
         }
     }
 
-    private fun onTryAgainCreateActiveImpl(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        if(_impl != null || !upstream.isUp) {
-            logger.debug {
-                "onTryAgainCreateActiveImpl skipping as stale (upstream=${upstream.isUp}, _impl=${_impl})."
-            }
-            return
-        }
-        doActivation(event, coordinator)
-        updateLifecycleStatus(coordinator)
-    }
-
     private fun doActivation(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         logger.trace { "Activating $myName" }
-        try {
-            _impl?.downstream?.clear()
-            _impl?.close()
-            _impl = createActiveImpl(event)
-            _impl?.downstream?.follow(coordinator)
-            activationFailureCounter.set(0)
-            logger.trace { "Activated $myName" }
-        } catch (e: Throwable) {
-            if(activationFailureCounter.incrementAndGet() <= 5) {
-                logger.debug { "$myName failed activate..., will try again. Cause: ${e.message}" }
-                coordinator.postEvent(TryAgainCreateActiveImpl(event))
-            } else {
-                logger.error("$myName failed activate, giving up", e)
-                coordinator.updateStatus(LifecycleStatus.ERROR)
-            }
-        }
+        _impl?.downstream?.clear() // doesn't throw
+        _impl?.close() // this delegates to the above under the hood...
+        _impl = createActiveImpl(event) // doesn't throw
+        _impl?.downstream?.follow(coordinator) // doesn't throw
+        activationFailureCounter.set(0)
+        logger.trace { "Activated $myName" }
     }
 
     private fun updateLifecycleStatus(coordinator: LifecycleCoordinator) {
@@ -180,6 +155,4 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
      * Override that method to create the active implementation.
      */
     protected abstract fun createActiveImpl(event: ConfigChangedEvent): IMPL
-
-    data class TryAgainCreateActiveImpl(val configChangedEvent: ConfigChangedEvent) : LifecycleEvent
 }
