@@ -61,9 +61,9 @@ class UploadStatusProcessor : CompactedProcessor<UploadStatusKey, UploadStatus> 
 
         publisher.publish(listOf(newRecord))
 
-        // Update the tracker immediately, so we won't send the 400 error, request not found if the user checks for the
-        // upload request status. Keep in mind that the tracker will be updated again
-        // once the request sent is received. This is unavoidable since we want to let other workers
+        // Update the tracker immediately, so we won't send the 400 code error "request id not found", if the user
+        // checks for the upload request status. Keep in mind that the tracker will be updated again
+        // once the status update message that was sent is received. This is unavoidable since we want to let other workers
         // know about this status update.
         updateTracker(newRecord)
     }
