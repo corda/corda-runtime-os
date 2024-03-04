@@ -58,8 +58,6 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
     @Volatile
     private var _impl: IMPL? = null
 
-    private var unprocessedConfigChanges: MutableList<ConfigChangedEvent> = mutableListOf()
-
     @Volatile
     protected var bootConfig: SmartConfig? = null
 
@@ -110,8 +108,6 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
         }
     }
 
-    protected open fun isReady(): Boolean = true
-
     private fun onStop() {
         upstream.clear()
         _impl?.downstream?.clear()
@@ -134,13 +130,8 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
     }
 
     private fun onConfigChange(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        if(isReady()) {
-            doActivation(event, coordinator)
-            updateLifecycleStatus(coordinator)
-        } else {
-            logger.trace { "The ${event::class.java.simpleName} will not be processed as the component is not ready yet" }
-            unprocessedConfigChanges.add(event)
-        }
+        doActivation(event, coordinator)
+        updateLifecycleStatus(coordinator)
     }
 
     private fun onTryAgainCreateActiveImpl(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
