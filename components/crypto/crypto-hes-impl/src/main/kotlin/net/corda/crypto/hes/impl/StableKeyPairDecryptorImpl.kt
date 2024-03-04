@@ -1,23 +1,23 @@
 package net.corda.crypto.hes.impl
 
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.AbstractComponentNotReadyException
 import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.crypto.hes.core.impl.decryptWithStableKeyPair
-import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.crypto.core.AbstractComponentNotReadyException
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.utilities.trace
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.security.PublicKey
-import net.corda.utilities.trace
 
 @Component(service = [StableKeyPairDecryptor::class])
 class StableKeyPairDecryptorImpl @Activate constructor(
