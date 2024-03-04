@@ -104,27 +104,6 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
             is ConfigChangedEvent -> {
                 onConfigChange(event, coordinator)
             }
-            is BootstrapConfigProvided -> {
-                if (bootConfig != null) {
-                    logger.debug { "New bootstrap configuration received: ${event.config}, Old configuration: $bootConfig" }
-                    if (bootConfig != event.config) {
-                        val errorString = "An attempt was made to set the bootstrap configuration twice with " +
-                                "different config. Current: $bootConfig, New: ${event.config}"
-                        logger.error(errorString)
-                        throw IllegalStateException(errorString)
-                    }
-                } else {
-                    bootConfig = event.config
-                    if(unprocessedConfigChanges.isNotEmpty()) {
-                        logger.trace { "Processing ${event::class.java.simpleName} as the component is ready " +
-                                "and already received the ${event::class.java.simpleName}" }
-                        unprocessedConfigChanges.forEach {
-                            onConfigChange(it, coordinator)
-                        }
-                    }
-                    unprocessedConfigChanges.clear()
-                }
-            }
             is TryAgainCreateActiveImpl -> {
                 onTryAgainCreateActiveImpl(event.configChangedEvent, coordinator)
             }
@@ -214,8 +193,6 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
      * Override that method to create the active implementation.
      */
     protected abstract fun createActiveImpl(event: ConfigChangedEvent): IMPL
-
-    data class BootstrapConfigProvided(val config: SmartConfig) : LifecycleEvent
 
     data class TryAgainCreateActiveImpl(val configChangedEvent: ConfigChangedEvent) : LifecycleEvent
 }
