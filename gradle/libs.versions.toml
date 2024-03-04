@@ -45,7 +45,7 @@ zipkinReporterVersion = "3.3.0"
 # Testing
 assertjVersion = "3.25.3"
 junitVersion = "5.10.2"
-mockitoVersion = "5.10.0"
+mockitoVersion = "5.11.0"
 mockitoKotlinVersion = "5.2.1"
 
 # Plugins
