@@ -91,9 +91,8 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
                 onStop()
             }
             is RegistrationStatusChangeEvent -> {
-                if(upstream.handle(event) == DependenciesTracker.EventHandling.HANDLED) { // coordinator status updated with event's
-                    onUpstreamRegistrationStatusChange(coordinator)
-                }
+                upstream.handle(event) // DependenciesTracker status updated with event's (UP/ DOWN/ ERROR)
+                onUpstreamRegistrationStatusChange(coordinator)
             }
             is ConfigChangedEvent -> {
                 doActivation(event, coordinator)
