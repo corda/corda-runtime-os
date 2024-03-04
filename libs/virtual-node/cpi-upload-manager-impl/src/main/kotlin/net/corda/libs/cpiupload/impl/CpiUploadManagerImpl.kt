@@ -39,7 +39,7 @@ class CpiUploadManagerImpl(
             }
         }
         val resp = chunkWriter.write(cpiContent)
-        statusProcessor.status(publisher, resp.requestId, 0, "Upload started")
+        statusProcessor.publishStatus(publisher, resp.requestId, 0, "Upload started")
         return resp
     }
 
