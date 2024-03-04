@@ -263,7 +263,7 @@ class UtxoPersistenceServiceImpl(
         entityManagerFactory.transaction { em ->
             val transactionIdString = transaction.id.toString()
             val (status, isFiltered) = repository.findTransactionStatus(em, transactionIdString) ?: run {
-               persistTransaction(transaction, emptyMap()) { block -> block(em) }
+                persistTransaction(transaction, emptyMap()) { block -> block(em) }
                 return ""
             }
             // VERIFIED can exist with is_filtered = true when there is only a filtered transaction
