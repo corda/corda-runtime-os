@@ -46,7 +46,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
-import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -260,21 +259,21 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
-    override fun persistTransactionIfDoesNotExist(transaction: UtxoTransactionReader): Pair<String?, List<CordaPackageSummary>> {
+    override fun persistTransactionIfDoesNotExist(transaction: UtxoTransactionReader): String {
         entityManagerFactory.transaction { em ->
             val transactionIdString = transaction.id.toString()
             val (status, isFiltered) = repository.findTransactionStatus(em, transactionIdString) ?: run {
-                persistTransaction(transaction, emptyMap()) { block -> block(em) }
-                return null to emptyList()
+               persistTransaction(transaction, emptyMap()) { block -> block(em) }
+                return ""
             }
             // VERIFIED can exist with is_filtered = true when there is only a filtered transaction
             // UNVERIFIED can exist with is_filtered = true when there is a unverified signed and filtered transaction
             // DRAFT cannot exist with is_filtered = true
             // INVALID filtered transaction cannot exist
             if (status == TransactionStatus.VERIFIED.value && isFiltered) {
-                return null to emptyList()
+                return ""
             }
-            return status to emptyList()
+            return status
         }
     }
 

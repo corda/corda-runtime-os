@@ -140,7 +140,7 @@ interface UtxoLedgerPersistenceService {
     fun persistIfDoesNotExist(
         transaction: UtxoSignedTransaction,
         transactionStatus: TransactionStatus
-    ): Pair<TransactionExistenceStatus, List<CordaPackageSummary>>
+    ): TransactionExistenceStatus
 
     @Suspendable
     fun persistTransactionSignatures(id: SecureHash, startingIndex: Int, signatures: List<DigitalSignatureAndMetadata>)
