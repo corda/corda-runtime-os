@@ -43,10 +43,6 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
         fun onDownstreamRegistrationStatusChange(isUpstreamUp: Boolean, isDownstreamUp: Boolean?) = Unit
     }
 
-    abstract class DownstreamAlwaysUpAbstractImpl : AbstractImpl {
-        override val downstream: DependenciesTracker = DependenciesTracker.AlwaysUp()
-    }
-
     protected val logger: Logger = LoggerFactory.getLogger(this::class.java)
 
     init {
