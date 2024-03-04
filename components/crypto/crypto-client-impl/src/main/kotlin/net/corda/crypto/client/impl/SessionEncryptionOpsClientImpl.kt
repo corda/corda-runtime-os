@@ -29,11 +29,6 @@ class SessionEncryptionOpsClientImpl @Activate constructor(
     coordinatorFactory = coordinatorFactory,
     myName = LifecycleCoordinatorName.forComponent<SessionEncryptionOpsClient>(),
     configurationReadService = configurationReadService,
-    upstream = DependenciesTracker.Default(
-        setOf(
-            LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-        ),
-    ),
     configKeys = setOf(BOOT_CONFIG),
 ),
     SessionEncryptionOpsClient {

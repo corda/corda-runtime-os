@@ -9,6 +9,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
@@ -28,7 +29,6 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val myName: LifecycleCoordinatorName,
     private val configurationReadService: ConfigurationReadService,
-    private val upstream: DependenciesTracker,
     private val configKeys: Set<String>
 ) : Lifecycle {
 
@@ -40,16 +40,6 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
     }
 
     protected val logger: Logger = LoggerFactory.getLogger(this::class.java)
-
-    init {
-        val configReaderName = LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
-        require(upstream.dependencies.contains(configReaderName)) {
-            "The upstream dependencies must contain $configReaderName"
-        }
-    }
-
-    @Volatile
-    private var configHandle: AutoCloseable? = null
 
     @Volatile
     private var _impl: IMPL? = null
@@ -66,6 +56,9 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
     }
 
     val lifecycleCoordinator = coordinatorFactory.createCoordinator(myName, ::eventHandler)
+    private var configReadServiceRegistrationHandle: RegistrationHandle? = null
+    @Volatile
+    private var configHandle: AutoCloseable? = null
 
     override val isRunning: Boolean
         get() = lifecycleCoordinator.isRunning
@@ -85,39 +78,45 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
         logger.trace { "LifecycleEvent received $myName: $event" }
         when (event) {
             is StartEvent -> {
-                upstream.follow(coordinator)
+                configReadServiceRegistrationHandle?.close()
+                configReadServiceRegistrationHandle = coordinator.followStatusChangesByName(
+                    setOf(
+                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+                    )
+                )
             }
             is StopEvent -> {
                 onStop()
             }
             is RegistrationStatusChangeEvent -> {
-                upstream.handle(event) // DependenciesTracker status updated with event's (UP/ DOWN/ ERROR)
-                onUpstreamRegistrationStatusChange(coordinator)
+                onUpstreamRegistrationStatusChange(coordinator, event)
             }
             is ConfigChangedEvent -> {
                 doActivation(event, coordinator)
-                updateLifecycleStatus(coordinator)
+                coordinator.updateStatus(LifecycleStatus.UP)
             }
         }
     }
 
     private fun onStop() {
-        upstream.clear()
         _impl?.downstream?.clear()
         configHandle?.close()
         configHandle = null
+        configReadServiceRegistrationHandle?.close()
+        configReadServiceRegistrationHandle = null
         _impl?.close()
         _impl = null
     }
 
-    private fun onUpstreamRegistrationStatusChange(coordinator: LifecycleCoordinator) {
-        logger.trace { "onUpstreamRegistrationStatusChange(upstream=${upstream.isUp}, downstream=${_impl?.downstream?.isUp})." }
+    private fun onUpstreamRegistrationStatusChange(
+        coordinator: LifecycleCoordinator,
+        event: RegistrationStatusChangeEvent
+    ) {
+        logger.trace { "onUpstreamRegistrationStatusChange(upstream=${event.status}, downstream=${_impl?.downstream?.isUp})." }
         configHandle?.close()
-        configHandle = if (upstream.isUp) {
+        if (event.status == LifecycleStatus.UP) {
             logger.trace { "Registering for configuration updates." }
-            configurationReadService.registerComponentForUpdates(coordinator, configKeys)
-        } else {
-            null
+            configHandle = configurationReadService.registerComponentForUpdates(coordinator, configKeys)
         }
     }
 
@@ -128,21 +127,6 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
         _impl = createActiveImpl(event) // doesn't throw
         _impl?.downstream?.follow(coordinator) // doesn't throw
         logger.trace { "Activated $myName" }
-    }
-
-    private fun updateLifecycleStatus(coordinator: LifecycleCoordinator) {
-        logger.trace {
-            "updateStatus(self=${coordinator.status},upstream=${upstream.isUp}, downstream=${_impl?.downstream?.isUp}, _impl=${_impl})."
-        }
-        if (upstream.isUp && _impl?.downstream?.isUp == true && _impl != null) {
-            logger.trace { "Setting the status of $myName UP" }
-            coordinator.updateStatus(LifecycleStatus.UP)
-        } else {
-            if (coordinator.status == LifecycleStatus.UP) {
-                logger.trace { "Setting the status of $myName DOWN" }
-                coordinator.updateStatus(LifecycleStatus.DOWN)
-            }
-        }
     }
 
     /**

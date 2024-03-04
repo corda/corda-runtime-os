@@ -55,11 +55,6 @@ class CryptoOpsClientComponent @Activate constructor(
     coordinatorFactory = coordinatorFactory,
     myName = LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
     configurationReadService = configurationReadService,
-    upstream = DependenciesTracker.Default(
-        setOf(
-            LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
-        )
-    ),
     configKeys = setOf(MESSAGING_CONFIG, CRYPTO_CONFIG)
 ), CryptoOpsClient, CryptoOpsProxyClient {
     @Suppress("LongParameterList")

@@ -33,11 +33,6 @@ class HSMRegistrationClientComponent @Activate constructor(
     coordinatorFactory = coordinatorFactory,
     myName = LifecycleCoordinatorName.forComponent<HSMRegistrationClient>(),
     configurationReadService = configurationReadService,
-    upstream = DependenciesTracker.Default(
-        setOf(
-            LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
-        )
-    ),
     configKeys = setOf(MESSAGING_CONFIG, CRYPTO_CONFIG)
 ), HSMRegistrationClient {
     companion object {
