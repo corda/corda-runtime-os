@@ -141,7 +141,7 @@ tasks.named('integrationTest') {
 tasks.named('jar', Jar) {
     bundle {
         bnd '''\
-Import-Package: org.apache.kafka.common
+Import-Package: *
 '''
     }
 }
