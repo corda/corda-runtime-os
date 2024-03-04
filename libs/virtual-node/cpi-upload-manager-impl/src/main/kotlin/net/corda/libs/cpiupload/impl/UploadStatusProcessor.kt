@@ -5,7 +5,9 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.chunking.UploadStatus
 import net.corda.data.chunking.UploadStatusKey
 import net.corda.messaging.api.processor.CompactedProcessor
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas
 import org.slf4j.LoggerFactory
 
 /**
@@ -36,11 +38,7 @@ class UploadStatusProcessor : CompactedProcessor<UploadStatusKey, UploadStatus> 
         oldValue: UploadStatus?,
         currentData: Map<UploadStatusKey, UploadStatus>
     ) {
-        if (newRecord.value != null) {
-            tracker.add(newRecord.key, newRecord.value!!)
-        } else {
-            tracker.remove(newRecord.key.requestId)
-        }
+        updateTracker(newRecord)
     }
 
     /**
@@ -50,7 +48,31 @@ class UploadStatusProcessor : CompactedProcessor<UploadStatusKey, UploadStatus> 
      * @return returns the status of the specified chunk upload request
      */
     fun status(requestId: RequestId): UploadStatus? {
-        log.debug("Getting status for $requestId")
+        log.info("Getting status for $requestId")
         return tracker.status(requestId)
+    }
+
+    fun status(publisher: Publisher, requestId: RequestId, sequenceNumber: Int, message: String) {
+        val newRecord = Record(
+            Schemas.VirtualNode.CPI_UPLOAD_STATUS_TOPIC,
+            UploadStatusKey(requestId, sequenceNumber),
+            UploadStatus(false, message, null, null)
+        )
+
+        publisher.publish(listOf(newRecord))
+
+        // Update the tracker immediately, so we won't send the 400 error, request not found if the user checks for the
+        // upload request status. Keep in mind that the tracker will be updated again
+        // once the request sent is received. This is unavoidable since we want to let other workers
+        // know about this status update.
+        updateTracker(newRecord)
+    }
+
+    private fun updateTracker(newRecord: Record<UploadStatusKey, UploadStatus>) {
+        if (newRecord.value != null) {
+            tracker.add(newRecord.key, newRecord.value!!)
+        } else {
+            tracker.remove(newRecord.key.requestId)
+        }
     }
 }
