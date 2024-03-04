@@ -44,9 +44,6 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
     @Volatile
     private var _impl: IMPL? = null
 
-    @Volatile
-    protected var bootConfig: SmartConfig? = null
-
     val impl: IMPL get() {
         val tmp = _impl
         if(tmp == null || lifecycleCoordinator.status != LifecycleStatus.UP) {
