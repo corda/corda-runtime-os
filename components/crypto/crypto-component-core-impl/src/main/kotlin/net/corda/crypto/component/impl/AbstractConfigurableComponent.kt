@@ -113,7 +113,6 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
 
     private fun onUpstreamRegistrationStatusChange(coordinator: LifecycleCoordinator) {
         logger.trace { "onUpstreamRegistrationStatusChange(upstream=${upstream.isUp}, downstream=${_impl?.downstream?.isUp})." }
-        updateLifecycleStatus(coordinator)
         configHandle?.close()
         configHandle = if (upstream.isUp) {
             logger.trace { "Registering for configuration updates." }
