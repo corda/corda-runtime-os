@@ -39,8 +39,6 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
         override fun close() {
             downstream.clear()
         }
-        fun onUpstreamRegistrationStatusChange(isUpstreamUp: Boolean, isDownstreamUp: Boolean?) = Unit
-        fun onDownstreamRegistrationStatusChange(isUpstreamUp: Boolean, isDownstreamUp: Boolean?) = Unit
     }
 
     protected val logger: Logger = LoggerFactory.getLogger(this::class.java)
@@ -156,13 +154,11 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
         } else {
             null
         }
-        _impl?.onUpstreamRegistrationStatusChange(upstream.isUp, _impl?.downstream?.isUp)
     }
 
     private fun onDownstreamRegistrationStatusChange(coordinator: LifecycleCoordinator) {
         logger.trace { "onDownstreamRegistrationStatusChange(upstream=${upstream.isUp}, downstream=${_impl?.downstream?.isUp})." }
         updateLifecycleStatus(coordinator)
-        _impl?.onDownstreamRegistrationStatusChange(upstream.isUp, _impl?.downstream?.isUp)
     }
 
     private fun onConfigChange(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
