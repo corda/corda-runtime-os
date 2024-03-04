@@ -105,7 +105,7 @@ class SessionMetadataTest {
                 "serial" to 4L,
                 "membershipStatus" to MembershipStatusFilter.ACTIVE_OR_SUSPENDED.toString(),
                 "communicationWithMgm" to true,
-                "initiationTimestamp" to 10L,
+                "initiationTimestampMillis" to 10L,
             ),
         )
 

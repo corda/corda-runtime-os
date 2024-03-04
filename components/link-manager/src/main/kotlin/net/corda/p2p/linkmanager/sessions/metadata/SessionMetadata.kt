@@ -76,7 +76,7 @@ internal data class OutboundSessionMetadata(
         private const val MEMBERSHIP_STATUS = "membershipStatus"
         private const val COMMUNICATION_WITH_MGM = "communicationWithMgm"
         private const val SESSION_ID = "sessionId"
-        private const val INITIATION_TIMESTAMP = "initiationTimestamp"
+        private const val INITIATION_TIMESTAMP_MILLIS = "initiationTimestampMillis"
 
         fun Metadata.toOutbound(): OutboundSessionMetadata {
             return OutboundSessionMetadata(
@@ -86,7 +86,7 @@ internal data class OutboundSessionMetadata(
                 (this[SERIAL] as Number).toLong(),
                 this[MEMBERSHIP_STATUS].toString().membershipStatusFromString(),
                 this[COMMUNICATION_WITH_MGM].toString().toBoolean(),
-                Instant.ofEpochMilli((this[INITIATION_TIMESTAMP] as Number).toLong()),
+                Instant.ofEpochMilli((this[INITIATION_TIMESTAMP_MILLIS] as Number).toLong()),
             )
         }
 
@@ -118,7 +118,7 @@ internal data class OutboundSessionMetadata(
                     MEMBERSHIP_STATUS to this.membershipStatus.toString(),
                     COMMUNICATION_WITH_MGM to this.communicationWithMgm,
                     SESSION_ID to this.sessionId,
-                    INITIATION_TIMESTAMP to this.initiationTimestamp.toEpochMilli(),
+                    INITIATION_TIMESTAMP_MILLIS to this.initiationTimestamp.toEpochMilli(),
                 ),
         )
     }

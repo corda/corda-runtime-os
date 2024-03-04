@@ -58,7 +58,9 @@ internal class StateManagerWrapper(
         } else {
             emptyMap()
         }
-        recordSessionUpdateMetrics((updateActions.associateBy { it.state.key } - failedUpdates.keys).values)
+        val completedUpdates = (updateActions.associateBy { it.state.key } - failedUpdates.keys).values
+        recordSessionReplayMetrics(completedUpdates)
+        recordSessionEstablishmentMetrics(completedUpdates.map { it.state })
         val failedCreates = if (creates.isNotEmpty()) {
             stateManager.create(creates).associateWith {
                 logger.info("Failed to create the state of session with ID $it")
@@ -77,19 +79,17 @@ internal class StateManagerWrapper(
         }
     }
 
-    private fun recordSessionUpdateMetrics(updates: Collection<UpdateAction>) {
-        updates.forEach {
-            val direction = it.state.direction()
-            if (it.isReplay) {
-                recordP2PMetric(CordaMetrics.Metric.SessionMessageReplayCount, direction)
-            }
-            if (direction == SessionDirection.OUTBOUND) {
-                val outbound = it.state.metadata.toOutbound()
-                if (outbound.status == OutboundSessionStatus.SessionReady) {
-                    recordP2PMetric(CordaMetrics.Metric.SessionEstablishedCount, direction)
-                    recordSessionCreationTime(outbound.initiationTimestamp)
-                }
-            }
+    private fun recordSessionEstablishmentMetrics(updates: Collection<State>) {
+        val allOutbound = updates.filter { it.direction() == SessionDirection.OUTBOUND }.map { it.metadata.toOutbound() }
+        allOutbound.groupBy { it.status }[OutboundSessionStatus.SessionReady]?.let { established ->
+            recordP2PMetric(CordaMetrics.Metric.SessionEstablishedCount, SessionDirection.OUTBOUND, established.size.toDouble())
+            established.forEach { recordSessionCreationTime(it.initiationTimestamp) }
+        }
+    }
+
+    private fun recordSessionReplayMetrics(updates: Collection<UpdateAction>) {
+        updates.filter { it.isReplay }.groupBy { it.state.direction() }.forEach {
+            recordP2PMetric(CordaMetrics.Metric.SessionMessageReplayCount, it.key, it.value.size.toDouble())
         }
     }
 }
