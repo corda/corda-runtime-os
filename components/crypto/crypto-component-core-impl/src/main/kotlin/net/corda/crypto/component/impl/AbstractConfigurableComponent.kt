@@ -15,7 +15,6 @@ import net.corda.lifecycle.StopEvent
 import net.corda.utilities.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * A base abstract class that can be used to provide basic functionality relating to lifecycle management for components
@@ -92,7 +91,7 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
                 onStop()
             }
             is RegistrationStatusChangeEvent -> {
-                if(upstream.handle(event) == DependenciesTracker.EventHandling.HANDLED) {
+                if(upstream.handle(event) == DependenciesTracker.EventHandling.HANDLED) { // coordinator status updated with event's
                     onUpstreamRegistrationStatusChange(coordinator)
                 }
             }
@@ -141,7 +140,7 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
             logger.trace { "Setting the status of $myName UP" }
             coordinator.updateStatus(LifecycleStatus.UP)
         } else {
-            if (coordinator.status != LifecycleStatus.ERROR && coordinator.status != LifecycleStatus.DOWN) {
+            if (coordinator.status == LifecycleStatus.UP) {
                 logger.trace { "Setting the status of $myName DOWN" }
                 coordinator.updateStatus(LifecycleStatus.DOWN)
             }
