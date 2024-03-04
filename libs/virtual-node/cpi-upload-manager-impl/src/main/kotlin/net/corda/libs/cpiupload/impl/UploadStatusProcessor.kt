@@ -48,7 +48,7 @@ class UploadStatusProcessor : CompactedProcessor<UploadStatusKey, UploadStatus> 
      * @return returns the status of the specified chunk upload request
      */
     fun status(requestId: RequestId): UploadStatus? {
-        log.info("Getting status for $requestId")
+        log.debug("Getting status for $requestId")
         return tracker.status(requestId)
     }
 
