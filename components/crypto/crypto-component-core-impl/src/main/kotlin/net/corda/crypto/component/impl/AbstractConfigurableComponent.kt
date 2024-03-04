@@ -100,7 +100,8 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
                 }
             }
             is ConfigChangedEvent -> {
-                onConfigChange(event, coordinator)
+                doActivation(event, coordinator)
+                updateLifecycleStatus(coordinator)
             }
             is TryAgainCreateActiveImpl -> {
                 onTryAgainCreateActiveImpl(event.configChangedEvent, coordinator)
@@ -127,11 +128,6 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
         } else {
             null
         }
-    }
-
-    private fun onConfigChange(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        doActivation(event, coordinator)
-        updateLifecycleStatus(coordinator)
     }
 
     private fun onTryAgainCreateActiveImpl(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
