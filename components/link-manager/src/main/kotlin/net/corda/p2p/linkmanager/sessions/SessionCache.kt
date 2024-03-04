@@ -3,13 +3,14 @@ package net.corda.p2p.linkmanager.sessions
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cache.caffeine.CacheFactoryImpl
-import net.corda.data.p2p.event.SessionDirection
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.metrics.CordaMetrics
+import net.corda.p2p.linkmanager.metrics.recordP2PMetric
 import net.corda.p2p.linkmanager.metrics.recordSessionTimeoutMetric
 import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata.Companion.toCommonMetadata
-import net.corda.p2p.linkmanager.sessions.metadata.direction
+import net.corda.p2p.linkmanager.state.direction
 import net.corda.utilities.time.Clock
 import org.slf4j.LoggerFactory
 import java.time.Duration
@@ -184,7 +185,7 @@ internal class SessionCache(
         do {
             try {
                 failedDeletes = stateManager.delete(listOf(stateToDelete))
-                recordSessionTimeoutMetric(state.metadata.toCommonMetadata().source, stateToDelete.metadata.direction())
+                recordSessionTimeoutMetric(state.metadata.toCommonMetadata().source, stateToDelete.direction())
             } catch (e: Exception) {
                 logger.error("Unexpected error while trying to delete a session from the state manager.", e)
             }
@@ -198,7 +199,8 @@ internal class SessionCache(
         }
 
         invalidate(key)
-        eventPublisher.sessionDeleted(key, state.metadata.direction())
+        eventPublisher.sessionDeleted(key)
+        recordP2PMetric(CordaMetrics.Metric.SessionDeletedCount, state.direction())
         tasks.remove(key)
     }
 

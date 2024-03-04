@@ -209,9 +209,9 @@ object CordaMetrics {
         object SessionTimeoutCount : Metric<Counter>("p2p.session.timeout", Metrics::counter)
 
         /**
-         * Number of cached peer-to-peer sessions.
+         * Estimated size of the peer-to-peer session cache.
          */
-        class CachedSessionCount(computation: Supplier<Number>): ComputedValue<Nothing>("p2p.session.cached", computation)
+        class EstimatedSessionCacheSize(computation: Supplier<Number>): ComputedValue<Nothing>("p2p.session.cached", computation)
 
         /**
          * Number of peer-to-peer sessions deleted.

@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.sessions
 
+import io.micrometer.core.instrument.Gauge
 import net.corda.crypto.client.SessionEncryptionOpsClient
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.bytes
@@ -24,7 +25,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.metrics.CordaMetrics
-import net.corda.metrics.CordaMetrics.Metric.CachedSessionCount
+import net.corda.metrics.CordaMetrics.Metric.EstimatedSessionCacheSize
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
@@ -90,12 +91,8 @@ internal class StatefulSessionManagerImpl(
     }
 
     // These metrics must be removed on shutdown as the MeterRegistry holds references to their lambdas.
-    private val outboundCachedSessionCount =
-        CachedSessionCount { sessionCache.getEstimatedOutboundCacheSize() }.builder()
-            .withTag(CordaMetrics.Tag.SessionDirection, SessionDirection.OUTBOUND.toString()).build()
-    private val inboundCachedSessionCount =
-        CachedSessionCount { sessionCache.getEstimatedInboundCacheSize() }.builder()
-        .withTag(CordaMetrics.Tag.SessionDirection, SessionDirection.INBOUND.toString()).build()
+    private lateinit var outboundCacheSize: Gauge
+    private lateinit var inboundCacheSize: Gauge
 
     override fun <T> processOutboundMessages(
         wrappedMessages: Collection<T>,
@@ -212,7 +209,7 @@ internal class StatefulSessionManagerImpl(
                 OutboundSessionStatus.SentInitiatorHello, OutboundSessionStatus.SentInitiatorHandshake -> {
                     state.state.replaySessionMessage(state.first.message.message.header.statusFilter)?.let { (needed, newState) ->
                         state.toResultsFirstAndOther(
-                            action = UpdateAction(newState),
+                            action = UpdateAction(newState, true),
                             firstState = needed,
                             otherStates = SessionAlreadyPending(counterparties),
                         )
@@ -896,7 +893,7 @@ internal class StatefulSessionManagerImpl(
                             version = state.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
-                    Result(responseMessage, UpdateAction(newState), null)
+                    Result(responseMessage, UpdateAction(newState, false), null)
                 }
             }
 
@@ -982,7 +979,7 @@ internal class StatefulSessionManagerImpl(
                             version = state.version,
                             metadata = newMetadata.toMetadata(),
                         )
-                    Result(responseMessage, UpdateAction(newState), session)
+                    Result(responseMessage, UpdateAction(newState, false), session)
                 }
             }
             InboundSessionStatus.SentResponderHandshake -> {
@@ -1050,7 +1047,7 @@ internal class StatefulSessionManagerImpl(
                             version = state.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
-                    Result(null, UpdateAction(newState), session)
+                    Result(null, UpdateAction(newState, false), session)
                 }
             }
 
@@ -1190,15 +1187,25 @@ internal class StatefulSessionManagerImpl(
         sessionCache,
     )
 
+    private fun onTileOpen() {
+        outboundCacheSize =
+            EstimatedSessionCacheSize { sessionCache.getEstimatedOutboundCacheSize() }.builder()
+                .withTag(CordaMetrics.Tag.SessionDirection, SessionDirection.OUTBOUND.toString()).build()
+        inboundCacheSize =
+            EstimatedSessionCacheSize { sessionCache.getEstimatedInboundCacheSize() }.builder()
+                .withTag(CordaMetrics.Tag.SessionDirection, SessionDirection.INBOUND.toString()).build()
+    }
+
     private fun onTileClose() {
-        CordaMetrics.registry.remove(inboundCachedSessionCount)
-        CordaMetrics.registry.remove(outboundCachedSessionCount)
+        CordaMetrics.registry.remove(inboundCacheSize)
+        CordaMetrics.registry.remove(outboundCacheSize)
     }
 
     override val dominoTile =
         ComplexDominoTile(
             this::class.java.simpleName,
             coordinatorFactory,
+            onStart = ::onTileOpen,
             onClose = ::onTileClose,
             dependentChildren =
             setOf(

@@ -4,13 +4,12 @@ import net.corda.data.p2p.event.SessionDirection
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.metrics.CordaMetrics
+import net.corda.p2p.linkmanager.metrics.recordP2PMetric
 import net.corda.p2p.linkmanager.metrics.recordSessionCreationTime
-import net.corda.p2p.linkmanager.metrics.recordSessionEstablishedMetric
-import net.corda.p2p.linkmanager.metrics.recordSessionMessageReplayMetric
-import net.corda.p2p.linkmanager.metrics.recordSessionStartedMetric
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.toOutbound
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
-import net.corda.p2p.linkmanager.sessions.metadata.direction
+import net.corda.p2p.linkmanager.state.direction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -73,22 +72,22 @@ internal class StateManagerWrapper(
     }
 
     private fun recordSessionStartMetrics(creates: Collection<State>) {
-        creates.forEach {
-            recordSessionStartedMetric(it.metadata.direction())
+        creates.groupBy { it.direction() }.forEach {
+            recordP2PMetric(CordaMetrics.Metric.SessionStartedCount, it.key, it.value.size.toDouble())
         }
     }
 
     private fun recordSessionUpdateMetrics(updates: Collection<UpdateAction>) {
         updates.forEach {
-            val direction = it.state.metadata.direction()
+            val direction = it.state.direction()
             if (it.isReplay) {
-                recordSessionMessageReplayMetric(direction)
+                recordP2PMetric(CordaMetrics.Metric.SessionMessageReplayCount, direction)
             }
             if (direction == SessionDirection.OUTBOUND) {
                 val outbound = it.state.metadata.toOutbound()
                 if (outbound.status == OutboundSessionStatus.SessionReady) {
-                    recordSessionEstablishedMetric(direction)
-                    recordSessionCreationTime(outbound.initiationTimestamp.toEpochMilli())
+                    recordP2PMetric(CordaMetrics.Metric.SessionEstablishedCount, direction)
+                    recordSessionCreationTime(outbound.initiationTimestamp)
                 }
             }
         }

@@ -1,7 +1,6 @@
 package net.corda.p2p.linkmanager.sessions.metadata
 
 import net.corda.data.p2p.app.MembershipStatusFilter
-import net.corda.data.p2p.event.SessionDirection
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata.Companion.toCommonMetadata
 import net.corda.utilities.time.Clock
@@ -19,12 +18,6 @@ internal enum class InboundSessionStatus {
     SentResponderHello,
     SentResponderHandshake,
 }
-
-fun Metadata.direction() =
-    when (OutboundSessionStatus.values().firstOrNull { it.toString() == this[OutboundSessionMetadata.STATUS] }) {
-        null -> SessionDirection.INBOUND
-        else -> SessionDirection.OUTBOUND
-    }
 
 /**
  * [InboundSessionMetadata] represents the metadata stored in the State Manager for an inbound session.
@@ -78,7 +71,7 @@ internal data class OutboundSessionMetadata(
     val initiationTimestamp: Instant,
 ) {
     companion object {
-        internal const val STATUS = "status"
+        private const val STATUS = "status"
         private const val SERIAL = "serial"
         private const val MEMBERSHIP_STATUS = "membershipStatus"
         private const val COMMUNICATION_WITH_MGM = "communicationWithMgm"
@@ -104,6 +97,8 @@ internal data class OutboundSessionMetadata(
         private fun String.membershipStatusFromString(): MembershipStatusFilter {
             return MembershipStatusFilter.values().first { it.toString() == this }
         }
+
+        fun Metadata.isOutbound(): Boolean = this[SESSION_ID] != null
     }
 
     fun lastSendExpired(clock: Clock): Boolean {

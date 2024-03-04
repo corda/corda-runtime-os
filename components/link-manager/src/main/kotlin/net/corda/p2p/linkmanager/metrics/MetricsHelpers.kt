@@ -1,6 +1,6 @@
-@file:Suppress("TooManyFunctions")
 package net.corda.p2p.linkmanager.metrics
 
+import io.micrometer.core.instrument.Counter
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.InboundUnauthenticatedMessage
 import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
@@ -92,38 +92,14 @@ fun recordSessionTimeoutMetric(source: HoldingIdentity, direction: SessionDirect
         .build().increment()
 }
 
-fun recordSessionDeletedMetric(direction: SessionDirection) {
-    CordaMetrics.Metric.SessionDeletedCount.builder()
-        .withTag(CordaMetrics.Tag.SessionDirection, direction.toString())
-        .build().increment()
-}
-
-fun recordSessionStartedMetric(direction: SessionDirection) {
-    CordaMetrics.Metric.SessionStartedCount.builder()
-        .withTag(CordaMetrics.Tag.SessionDirection, direction.toString())
-        .build().increment()
-}
-
-fun recordSessionEstablishedMetric(direction: SessionDirection) {
-    CordaMetrics.Metric.SessionEstablishedCount.builder()
-        .withTag(CordaMetrics.Tag.SessionDirection, direction.toString())
-        .build().increment()
-}
-
-fun recordSessionFailedMetric(direction: SessionDirection) {
-    CordaMetrics.Metric.SessionFailedCount.builder()
-        .withTag(CordaMetrics.Tag.SessionDirection, direction.toString())
-        .build().increment()
-}
-
-fun recordSessionCreationTime(startTime: Long) {
+fun recordSessionCreationTime(startTime: Instant) {
     CordaMetrics.Metric.SessionCreationTime.builder()
         .build()
-        .record(Duration.ofNanos(Instant.now().toEpochMilli() - startTime))
+        .record(Duration.between(startTime, Instant.now()))
 }
 
-fun recordSessionMessageReplayMetric(direction: SessionDirection) {
-    CordaMetrics.Metric.SessionMessageReplayCount.builder()
+fun recordP2PMetric(metric: CordaMetrics.Metric<Counter>, direction: SessionDirection, incrementBy: Double = 1.0) {
+    metric.builder()
         .withTag(CordaMetrics.Tag.SessionDirection, direction.toString())
-        .build().increment()
+        .build().increment(incrementBy)
 }
