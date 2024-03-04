@@ -58,7 +58,6 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -237,14 +236,14 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         transaction: UtxoSignedTransaction,
         transactionStatus: TransactionStatus,
         visibleStatesIndexes: List<Int>
-    ): List<CordaPackageSummary> {
+    ): Instant {
         return recordSuspendable({ ledgerPersistenceFlowTimer(PersistTransaction) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     PersistTransactionExternalEventFactory::class.java,
                     PersistTransactionParameters(serialize(transaction.toContainer()), transactionStatus, visibleStatesIndexes)
                 )
-            }.map { serializationService.deserialize(it.array()) }
+            }.first().let { serializationService.deserialize(it.array()) }
         }
     }
 
@@ -264,7 +263,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     override fun persistIfDoesNotExist(
         transaction: UtxoSignedTransaction,
         transactionStatus: TransactionStatus
-    ): Pair<TransactionExistenceStatus, List<CordaPackageSummary>> {
+    ): TransactionExistenceStatus {
         return recordSuspendable({ ledgerPersistenceFlowTimer(PersistTransactionIfDoesNotExist) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
@@ -272,13 +271,12 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                     PersistTransactionIfDoesNotExistParameters(serialize(transaction.toContainer()), transactionStatus)
                 )
             }.first().let {
-                val (status, summaries) = serializationService.deserialize<Pair<String?, List<CordaPackageSummary>>>(it.array())
-                when (status) {
-                    null -> TransactionExistenceStatus.DOES_NOT_EXIST
+                when (val status = serializationService.deserialize<String>(it.array())) {
+                    "" -> TransactionExistenceStatus.DOES_NOT_EXIST
                     "U" -> TransactionExistenceStatus.UNVERIFIED
                     "V" -> TransactionExistenceStatus.VERIFIED
                     else -> throw IllegalStateException("Invalid status $status")
-                } to summaries
+                }
             }
         }
     }

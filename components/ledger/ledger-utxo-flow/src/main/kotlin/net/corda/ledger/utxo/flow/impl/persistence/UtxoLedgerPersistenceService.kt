@@ -112,7 +112,7 @@ interface UtxoLedgerPersistenceService {
      * @param transactionStatus Transaction's status
      * @param visibleStatesIndexes Indexes of visible states.
      *
-     * @return list of [CordaPackageSummary] for missing CPKs (that were not linked)
+     * @return [Instant] timestamp of when the transaction is stored in DB.
      *
      * @throws CordaPersistenceException if an error happens during persist operation.
      */
@@ -121,7 +121,7 @@ interface UtxoLedgerPersistenceService {
         transaction: UtxoSignedTransaction,
         transactionStatus: TransactionStatus,
         visibleStatesIndexes: List<Int> = emptyList()
-    ): List<CordaPackageSummary>
+    ): Instant
 
     @Suspendable
     fun updateStatus(id: SecureHash, transactionStatus: TransactionStatus)
@@ -140,7 +140,7 @@ interface UtxoLedgerPersistenceService {
     fun persistIfDoesNotExist(
         transaction: UtxoSignedTransaction,
         transactionStatus: TransactionStatus
-    ): Pair<TransactionExistenceStatus, List<CordaPackageSummary>>
+    ): TransactionExistenceStatus
 
     @Suspendable
     fun persistTransactionSignatures(id: SecureHash, startingIndex: Int, signatures: List<DigitalSignatureAndMetadata>)
