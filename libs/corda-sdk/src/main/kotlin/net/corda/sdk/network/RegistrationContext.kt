@@ -1,6 +1,7 @@
 package net.corda.sdk.network
 
 import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 
 class RegistrationContext {
 
@@ -16,8 +17,8 @@ class RegistrationContext {
     fun createMgmRegistrationContext(
         mtls: Boolean,
         p2pGatewayUrls: Collection<String>,
-        sessionKeyId: String,
-        ecdhKeyId: String,
+        sessionKeyId: KeyPairIdentifier,
+        ecdhKeyId: KeyPairIdentifier,
         tlsTrustRoot: String
     ): Map<String, Any?> {
         val tlsType = if (mtls) {
@@ -26,16 +27,16 @@ class RegistrationContext {
             "OneWay"
         }
 
-        val endpoints = mutableMapOf<String, String>()
-
-        p2pGatewayUrls.mapIndexed { index, url ->
-            endpoints[MemberInfoExtension.URL_KEY.format(index)] = url
-            endpoints[MemberInfoExtension.PROTOCOL_VERSION.format(index)] = "1"
+        val endpoints = p2pGatewayUrls.flatMapIndexed { index, url ->
+            listOf(
+                MemberInfoExtension.URL_KEY.format(index) to url,
+                MemberInfoExtension.PROTOCOL_VERSION.format(index) to "1",
+            )
         }
 
         return mapOf(
-            MemberInfoExtension.PARTY_SESSION_KEYS_ID.format(0) to sessionKeyId,
-            "corda.ecdh.key.id" to ecdhKeyId,
+            MemberInfoExtension.PARTY_SESSION_KEYS_ID.format(0) to sessionKeyId.id,
+            "corda.ecdh.key.id" to ecdhKeyId.id,
             "corda.group.protocol.registration"
                 to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
             "corda.group.protocol.synchronisation"
@@ -55,8 +56,8 @@ class RegistrationContext {
      * @param preAuthToken optional pre-auth token
      * @param roles optional member roles
      * @param customProperties Map of custom properties
-     * @param sessionKeyId key ID for the generated session
-     * @param ledgerKeyId ID for the generated ledger key
+     * @param sessionKey key ID for the generated session
+     * @param ledgerKey ID for the generated ledger key
      * @return registration context information as a Map
      */
     @Suppress("LongParameterList")
@@ -65,27 +66,27 @@ class RegistrationContext {
         roles: Set<MemberRole>?,
         customProperties: Map<String, String>?,
         p2pGatewayUrls: Collection<String>,
-        sessionKeyId: String,
-        ledgerKeyId: String,
+        sessionKey: KeyPairIdentifier,
+        ledgerKey: KeyPairIdentifier,
     ): Map<String, Any?> {
-        val endpoints = mutableMapOf<String, String>()
-
-        p2pGatewayUrls.mapIndexed { index, url ->
-            endpoints[MemberInfoExtension.URL_KEY.format(index)] = url
-            endpoints[MemberInfoExtension.PROTOCOL_VERSION.format(index)] = "1"
+        val endpoints = p2pGatewayUrls.flatMapIndexed { index, url ->
+            listOf(
+                MemberInfoExtension.URL_KEY.format(index) to url,
+                MemberInfoExtension.PROTOCOL_VERSION.format(index) to "1",
+            )
         }
 
         val context = mapOf(
-            MemberInfoExtension.PARTY_SESSION_KEYS_ID.format(0) to sessionKeyId,
+            MemberInfoExtension.PARTY_SESSION_KEYS_ID.format(0) to sessionKey.id,
             MemberInfoExtension.SESSION_KEYS_SIGNATURE_SPEC.format(0) to "SHA256withECDSA",
-            MemberInfoExtension.LEDGER_KEYS_ID.format(0) to ledgerKeyId,
+            MemberInfoExtension.LEDGER_KEYS_ID.format(0) to ledgerKey.id,
             MemberInfoExtension.LEDGER_KEY_SIGNATURE_SPEC.format(0) to "SHA256withECDSA",
         )
 
-        val preAuth = preAuthToken?.let { mapOf("corda.auth.token" to it) } ?: emptyMap()
-        val roleProperty: Map<String, String> = roles?.mapIndexed { index: Int, memberRole: MemberRole ->
+        val preAuth = preAuthToken?.let { listOf("corda.auth.token" to it) } ?: emptyList()
+        val roleProperty = roles?.mapIndexed { index: Int, memberRole: MemberRole ->
             "${MemberInfoExtension.ROLES_PREFIX}.$index" to memberRole.value
-        }?.toMap() ?: emptyMap()
+        } ?: emptyList()
 
         val extProperties = customProperties?.filterKeys { it.startsWith("${MemberInfoExtension.CUSTOM_KEY_PREFIX}.") } ?: emptyMap()
 
@@ -97,8 +98,8 @@ class RegistrationContext {
      * @param preAuthToken optional pre-auth token
      * @param roles collection of member roles, expecting at least one roll to be a NOTARY
      * @param customProperties Map of custom properties
-     * @param sessionKeyId key ID for the generated session
-     * @param notaryKeyId ID for the generated notary key
+     * @param sessionKey key ID for the generated session
+     * @param notaryKey ID for the generated notary key
      * @return registration context information as a Map
      */
     @Suppress("LongParameterList")
@@ -107,16 +108,18 @@ class RegistrationContext {
         roles: Set<MemberRole>?,
         customProperties: Map<String, String>?,
         p2pGatewayUrls: Collection<String>,
-        sessionKeyId: String,
-        notaryKeyId: String,
+        sessionKey: KeyPairIdentifier,
+        notaryKey: KeyPairIdentifier,
     ): Map<String, Any?> {
-        require(!(roles.isNullOrEmpty() && !(roles!!.contains(MemberRole.NOTARY)))) { "Must specify the role as notary" }
+        if (roles.isNullOrEmpty() || !(roles.contains(MemberRole.NOTARY))) {
+            throw IllegalArgumentException("Must specify the role as notary")
+        }
 
-        val endpoints = mutableMapOf<String, String>()
-
-        p2pGatewayUrls.mapIndexed { index, url ->
-            endpoints[MemberInfoExtension.URL_KEY.format(index)] = url
-            endpoints[MemberInfoExtension.PROTOCOL_VERSION.format(index)] = "1"
+        val endpoints = p2pGatewayUrls.flatMapIndexed { index, url ->
+            listOf(
+                MemberInfoExtension.URL_KEY.format(index) to url,
+                MemberInfoExtension.PROTOCOL_VERSION.format(index) to "1",
+            )
         }
 
         val notaryServiceName = customProperties?.get(MemberInfoExtension.NOTARY_SERVICE_NAME)
@@ -128,21 +131,21 @@ class RegistrationContext {
         val notaryProtocol = customProperties[MemberInfoExtension.NOTARY_SERVICE_PROTOCOL] ?: "com.r3.corda.notary.plugin.nonvalidating"
 
         val context = mapOf(
-            MemberInfoExtension.PARTY_SESSION_KEYS_ID.format(0) to sessionKeyId,
+            MemberInfoExtension.PARTY_SESSION_KEYS_ID.format(0) to sessionKey.id,
             MemberInfoExtension.SESSION_KEYS_SIGNATURE_SPEC.format(0) to "SHA256withECDSA",
             MemberInfoExtension.NOTARY_SERVICE_NAME to notaryServiceName,
             MemberInfoExtension.NOTARY_SERVICE_BACKCHAIN_REQUIRED to "$isBackchainRequired",
             MemberInfoExtension.NOTARY_SERVICE_PROTOCOL to notaryProtocol,
             MemberInfoExtension.NOTARY_SERVICE_PROTOCOL_VERSIONS.format("0") to "1",
-            MemberInfoExtension.NOTARY_KEYS_ID.format("0") to notaryKeyId,
+            MemberInfoExtension.NOTARY_KEYS_ID.format("0") to notaryKey.id,
             MemberInfoExtension.NOTARY_KEY_SPEC.format("0") to "SHA256withECDSA",
         )
 
-        val preAuth = preAuthToken?.let { mapOf("corda.auth.token" to it) } ?: emptyMap()
+        val preAuth = preAuthToken?.let { listOf("corda.auth.token" to it) } ?: emptyList()
 
-        val roleProperty: Map<String, String> = roles!!.mapIndexed { index: Int, memberRole: MemberRole ->
+        val roleProperty = roles.mapIndexed { index: Int, memberRole: MemberRole ->
             "${MemberInfoExtension.ROLES_PREFIX}.$index" to memberRole.value
-        }.toMap()
+        }
 
         val extProperties = customProperties.filterKeys { it.startsWith("${MemberInfoExtension.CUSTOM_KEY_PREFIX}.") }
 

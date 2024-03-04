@@ -5,6 +5,7 @@ package net.corda.sdk.network
 
 import net.corda.membership.rest.v1.CertificatesRestResource
 import net.corda.membership.rest.v1.MGMRestResource
+import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.client.RestClient
 import net.corda.sdk.network.Keys.Companion.P2P_TLS_CERTIFICATE_ALIAS
@@ -70,7 +71,7 @@ class ClientCertificates {
     /**
      * generate a certificate signing request (CSR) for a tenant
      * @param restClient of type RestClient<CertificatesRestResource>
-     * @param tlsKeyId value of the TLS key ID
+     * @param tlsKey value of the TLS key ID
      * @param subjectX500Name the X.500 name that will be the subject associated with the request
      * @param p2pHostNames used to specify additional subject names
      * @param wait Duration before timing out, default 10 seconds
@@ -79,7 +80,7 @@ class ClientCertificates {
     @Suppress("DEPRECATION")
     fun generateP2pCsr(
         restClient: RestClient<CertificatesRestResource>,
-        tlsKeyId: String,
+        tlsKey: KeyPairIdentifier,
         subjectX500Name: String,
         p2pHostNames: Collection<String>,
         wait: Duration = 10.seconds
@@ -92,7 +93,7 @@ class ClientCertificates {
                 val resource = client.start().proxy
                 resource.generateCsr(
                     tenantId = "p2p",
-                    keyId = tlsKeyId,
+                    keyId = tlsKey.id,
                     x500Name = subjectX500Name,
                     subjectAlternativeNames = p2pHostNames.toList(),
                     contextMap = null,

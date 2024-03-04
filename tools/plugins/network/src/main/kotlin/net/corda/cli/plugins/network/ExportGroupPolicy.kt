@@ -34,7 +34,7 @@ class ExportGroupPolicy : Runnable, RestCommand() {
     }
 
     private fun exportGroupPolicy() {
-        require(holdingIdentityShortHash != null) { "A holding Id must be specified for the MGM." }
+        val holdingId: String = holdingIdentityShortHash ?: throw IllegalArgumentException("A holding Id must be specified for the MGM.")
         val restClient = createRestClient(
             MGMRestResource::class,
             insecure = insecure,
@@ -45,7 +45,7 @@ class ExportGroupPolicy : Runnable, RestCommand() {
         )
         val groupPolicyResponse = ExportGroupPolicyFromMgm().exportPolicy(
             restClient,
-            holdingIdentityShortHash!!,
+            holdingId,
             wait = waitDurationSeconds.seconds
         )
         saveLocation.parentFile.mkdirs()

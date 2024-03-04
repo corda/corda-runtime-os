@@ -5,6 +5,7 @@ package net.corda.sdk.network
 
 import net.corda.membership.rest.v1.HsmRestResource
 import net.corda.membership.rest.v1.KeysRestResource
+import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 import net.corda.rest.client.RestClient
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
@@ -26,7 +27,7 @@ class Keys {
      * @param category the category of the HSM
      * @param scheme the key's scheme describing which type of the key pair to generate, has default value
      * @param wait Duration before timing out, default 10 seconds
-     * @return the ID of the newly generated key pair
+     * @return the KeyPairIdentifier of the newly generated key pair
      */
     @Suppress("LongParameterList", "DEPRECATION")
     fun assignSoftHsmAndGenerateKey(
@@ -36,7 +37,7 @@ class Keys {
         category: String,
         scheme: String = ECDSA_SECP256R1_CODE_NAME,
         wait: Duration = 10.seconds
-    ): String {
+    ): KeyPairIdentifier {
         hsmRestClient.use { hsmClient ->
             executeWithRetry(
                 waitDuration = wait,
@@ -64,7 +65,7 @@ class Keys {
      * @param category the category of the HSM
      * @param scheme the key's scheme describing which type of the key pair to generate, has default value
      * @param wait Duration before timing out, default 10 seconds
-     * @return the ID of the newly generated key pair
+     * @return the KeyPairIdentifier of the newly generated key pair
      */
     @Suppress("LongParameterList", "DEPRECATION")
     fun generateKeyPair(
@@ -74,8 +75,8 @@ class Keys {
         category: String,
         scheme: String = ECDSA_SECP256R1_CODE_NAME,
         wait: Duration = 10.seconds
-    ): String {
-        val response = keysRestClient.use { keyClient ->
+    ): KeyPairIdentifier {
+        return keysRestClient.use { keyClient ->
             executeWithRetry(
                 waitDuration = wait,
                 operationName = "Generate key $category"
@@ -88,7 +89,6 @@ class Keys {
                 )
             }
         }
-        return response.id
     }
 
     /**
@@ -131,14 +131,14 @@ class Keys {
      * @param restClient of type RestClient<KeysRestResource>
      * @param alias the alias under which the P@P TLS key pair is stored, has default value
      * @param wait Duration before timing out, default 10 seconds
-     * @return the ID of the newly generated key pair
+     * @return the KeyPairIdentifier of the newly generated key pair
      */
     @Suppress("DEPRECATION")
     fun generateTlsKey(
         restClient: RestClient<KeysRestResource>,
         alias: String = P2P_TLS_KEY_ALIAS,
         wait: Duration = 10.seconds
-    ): String {
+    ): KeyPairIdentifier {
         return generateKeyPair(
             keysRestClient = restClient,
             tenantId = "p2p",

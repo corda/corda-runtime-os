@@ -164,8 +164,8 @@ class OnboardMember : Runnable, BaseOnboard() {
                 roles = roles,
                 customProperties = customProperties,
                 p2pGatewayUrls = p2pGatewayUrls,
-                sessionKeyId = sessionKeyId,
-                notaryKeyId = notaryKeyId
+                sessionKey = sessionKeyId,
+                notaryKey = notaryKeyId
             )
         } else {
             RegistrationContext().createMemberRegistrationContext(
@@ -173,8 +173,8 @@ class OnboardMember : Runnable, BaseOnboard() {
                 roles = roles,
                 customProperties = customProperties,
                 p2pGatewayUrls = p2pGatewayUrls,
-                sessionKeyId = sessionKeyId,
-                ledgerKeyId = ledgerKeyId
+                sessionKey = sessionKeyId,
+                ledgerKey = ledgerKeyId
             )
         }
     }

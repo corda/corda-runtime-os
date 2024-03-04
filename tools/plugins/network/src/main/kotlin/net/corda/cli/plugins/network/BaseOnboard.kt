@@ -23,6 +23,7 @@ import net.corda.membership.rest.v1.MemberRegistrationRestResource
 import net.corda.membership.rest.v1.NetworkRestResource
 import net.corda.membership.rest.v1.types.request.HostedIdentitySessionKeyAndCertificate
 import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
+import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 import net.corda.rest.json.serialization.JsonObjectAsString
 import net.corda.sdk.config.ClusterConfig
 import net.corda.sdk.network.ClientCertificates
@@ -151,7 +152,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         shortHashId
     }
 
-    protected fun assignSoftHsmAndGenerateKey(category: String): String {
+    protected fun assignSoftHsmAndGenerateKey(category: String): KeyPairIdentifier {
         val hsmRestClient = createRestClient(
             HsmRestResource::class,
             insecure = insecure,
@@ -258,7 +259,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             useClusterLevelTlsCertificateAndKey = true,
             sessionKeysAndCertificates = listOf(
                 HostedIdentitySessionKeyAndCertificate(
-                    sessionKeyId = sessionKeyId,
+                    sessionKeyId = sessionKeyId.id,
                     preferred = true,
                 ),
             ),
