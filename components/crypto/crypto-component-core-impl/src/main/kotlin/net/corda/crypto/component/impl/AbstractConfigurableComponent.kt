@@ -49,8 +49,6 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
         }
     }
 
-    private val activationFailureCounter = AtomicInteger(0)
-
     @Volatile
     private var configHandle: AutoCloseable? = null
 
@@ -132,7 +130,6 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
         _impl?.close()
         _impl = createActiveImpl(event) // doesn't throw
         _impl?.downstream?.follow(coordinator) // doesn't throw
-        activationFailureCounter.set(0)
         logger.trace { "Activated $myName" }
     }
 
