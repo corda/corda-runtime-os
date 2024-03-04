@@ -47,16 +47,6 @@ interface DependenciesTracker {
             }
     }
 
-    class DefaultWithConfigReader(
-        dependencies: Set<LifecycleCoordinatorName>
-    ) : Default(
-        if (dependencies.contains(LifecycleCoordinatorName.forComponent<ConfigurationReadService>())) {
-            dependencies
-        } else {
-            dependencies + LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
-        }
-    )
-
     class AlwaysUp : DependenciesTracker {
         override val dependencies: Set<LifecycleCoordinatorName> = emptySet()
 
