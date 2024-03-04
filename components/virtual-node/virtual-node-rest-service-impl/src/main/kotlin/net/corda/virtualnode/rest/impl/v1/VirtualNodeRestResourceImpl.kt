@@ -7,6 +7,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.virtualnode.DbTypes
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
+import net.corda.data.virtualnode.VirtualNodeCreateStatusResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
@@ -74,7 +75,6 @@ import net.corda.virtualnode.rest.converters.impl.MessageConverterImpl
 import net.corda.virtualnode.rest.factories.RequestFactory
 import net.corda.virtualnode.rest.factories.impl.RequestFactoryImpl
 import net.corda.virtualnode.rest.impl.status.CacheLoadCompleteEvent
-import net.corda.virtualnode.rest.impl.status.VirtualNodeStatusCacheService
 import net.corda.virtualnode.rest.impl.validation.VirtualNodeValidationService
 import net.corda.virtualnode.rest.impl.validation.impl.VirtualNodeValidationServiceImpl
 import org.osgi.service.component.annotations.Activate
@@ -93,7 +93,6 @@ internal class VirtualNodeRestResourceImpl(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val virtualNodeSenderFactory: VirtualNodeSenderFactory,
     private val cpiInfoReadService: CpiInfoReadService,
-    private val virtualNodeStatusCacheService: VirtualNodeStatusCacheService,
     private val requestFactory: RequestFactory,
     private val clock: Clock,
     private val virtualNodeValidationService: VirtualNodeValidationService,
@@ -115,8 +114,6 @@ internal class VirtualNodeRestResourceImpl(
         virtualNodeSenderFactory: VirtualNodeSenderFactory,
         @Reference(service = CpiInfoReadService::class)
         cpiInfoReadService: CpiInfoReadService,
-        @Reference(service = VirtualNodeStatusCacheService::class)
-        virtualNodeStatusCacheService: VirtualNodeStatusCacheService,
         @Reference(service = PlatformInfoProvider::class)
         platformInfoProvider: PlatformInfoProvider
     ) : this(
@@ -125,7 +122,6 @@ internal class VirtualNodeRestResourceImpl(
         virtualNodeInfoReadService,
         virtualNodeSenderFactory,
         cpiInfoReadService,
-        virtualNodeStatusCacheService,
         RequestFactoryImpl(
             RestContextProviderImpl(),
             UTCClock()
@@ -155,7 +151,6 @@ internal class VirtualNodeRestResourceImpl(
         ::configurationReadService,
         ::virtualNodeInfoReadService,
         ::cpiInfoReadService,
-        ::virtualNodeStatusCacheService
     )
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator(
@@ -205,8 +200,6 @@ internal class VirtualNodeRestResourceImpl(
                             PublisherConfig(VIRTUAL_NODE_ASYNC_OPERATION_CLIENT_ID)
                         )
                     }
-
-                    virtualNodeStatusCacheService.onConfiguration(messagingConfig)
                 }
             }
 
@@ -324,18 +317,6 @@ internal class VirtualNodeRestResourceImpl(
     override fun getVirtualNodeOperationStatus(requestId: String): AsyncOperationStatus {
         val instant = clock.instant()
 
-        // HACK: until we can update the upgrade process to use the compacted topic,
-        // we switch on request id to decide which status check to run, because the request id for
-        // virtual node creation is a short hash and upgrade is a UUID, we can simply switch on request id length
-        if (requestId.length == ShortHash.LENGTH) {
-            // TODOs: consider adding a short retry step here to ensure the status is replicated in a multi rest
-            // worker setup
-            val status = virtualNodeStatusCacheService.getStatus(requestId)
-                ?: throw ResourceNotFoundException("Failed to find a status for requestId = '$requestId'")
-
-            return messageConverter.convert(status, OperationTypes.CREATE_VIRTUAL_NODE.toString(), requestId)
-        }
-
         // Send request for update to kafka, processed by the db worker in VirtualNodeWriterProcessor
         val rpcRequest = VirtualNodeManagementRequest(
             instant,
@@ -343,28 +324,25 @@ internal class VirtualNodeRestResourceImpl(
         )
 
         // Actually send request and await response message on bus
-        val resp: VirtualNodeManagementResponse = sendAndReceive(rpcRequest)
+        val resp = sendAndReceive(rpcRequest)
 
         return when (val resolvedResponse = resp.responseType) {
-            is VirtualNodeUpdateDbStatusResponse -> {
-                // It's a connection string change
-                messageConverter.convert(
-                    resolvedResponse.virtualNodeOperationStatus,
-                    OperationTypes.CHANGE_VIRTUAL_NODE_DB.toString(),
-                    null
-                )
-            }
-            is VirtualNodeOperationStatusResponse -> {
-                resolvedResponse.run {
-                    val x = this.operationHistory.first()
-
-                    messageConverter.convert(
-                        x,
-                        OperationTypes.UPGRADE_VIRTUAL_NODE.toString(),
-                        null
-                    )
-                }
-            }
+            is VirtualNodeCreateStatusResponse -> messageConverter.convert(
+                resolvedResponse.virtualNodeOperationStatus,
+                OperationTypes.CREATE_VIRTUAL_NODE.toString(),
+                requestId
+            )
+            // It's a connection string change
+            is VirtualNodeUpdateDbStatusResponse -> messageConverter.convert(
+                resolvedResponse.virtualNodeOperationStatus,
+                OperationTypes.CHANGE_VIRTUAL_NODE_DB.toString(),
+                null
+            )
+            is VirtualNodeOperationStatusResponse -> messageConverter.convert(
+                resolvedResponse.operationHistory.first(),
+                OperationTypes.UPGRADE_VIRTUAL_NODE.toString(),
+                null
+            )
             is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
             else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
         }
@@ -494,12 +472,6 @@ internal class VirtualNodeRestResourceImpl(
 
         sendAsync(asyncRequest.requestId, asyncRequest)
 
-        // Write through status cache.
-        virtualNodeStatusCacheService.setStatus(
-            asyncRequest.requestId,
-            createVirtualNodeOperationStatus(asyncRequest.requestId)
-        )
-
         "Deprecated, please use next version where non-escaped JSON strings can be passed in the body parameter.".let { msg ->
             logger.warn(msg)
             return ResponseEntity.acceptedButDeprecated(AsyncResponse(asyncRequest.requestId), msg)
@@ -526,12 +498,6 @@ internal class VirtualNodeRestResourceImpl(
 
         sendAsync(asyncRequest.requestId, asyncRequest)
 
-        // Write through status cache.
-        virtualNodeStatusCacheService.setStatus(
-            asyncRequest.requestId,
-            createVirtualNodeOperationStatus(asyncRequest.requestId)
-        )
-
         return ResponseEntity.accepted(AsyncResponse(asyncRequest.requestId))
     }
 
@@ -555,12 +521,6 @@ internal class VirtualNodeRestResourceImpl(
         val asyncRequest = requestFactory.updateVirtualNodeDbRequest(virtualNode.holdingIdentity, request)
 
         sendAsync(asyncRequest.requestId, asyncRequest)
-
-        // Write through status cache.
-        virtualNodeStatusCacheService.setStatus(
-            asyncRequest.requestId,
-            createVirtualNodeOperationStatus(asyncRequest.requestId)
-        )
 
         return ResponseEntity.accepted(AsyncResponse(asyncRequest.requestId))
     }

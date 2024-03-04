@@ -26,8 +26,6 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.rest.common.VirtualNodeSender
 import net.corda.virtualnode.rest.converters.MessageConverter
 import net.corda.virtualnode.rest.factories.RequestFactory
-import net.corda.virtualnode.rest.impl.status.VirtualNodeStatusCacheService
-import net.corda.virtualnode.rest.impl.v1.OperationTypes
 import net.corda.virtualnode.rest.impl.v1.VirtualNodeRestResourceImpl
 import net.corda.virtualnode.rest.impl.validation.VirtualNodeValidationService
 import org.assertj.core.api.Assertions.assertThat
@@ -40,7 +38,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import net.corda.data.virtualnode.VirtualNodeOperationStatus as AvroVirtualNodeOperationStatus
 
 class VirtualNodeRestResourceImplTest {
@@ -52,7 +50,6 @@ class VirtualNodeRestResourceImplTest {
         whenever(principal).thenReturn("user1")
     }
     private val messageConverter = mock<MessageConverter>()
-    private val virtualNodeStatusCacheService = mock<VirtualNodeStatusCacheService>()
 
     private val mockCoordinator = mock<LifecycleCoordinator>().apply {
         whenever(isRunning).thenReturn(true)
@@ -153,31 +150,6 @@ class VirtualNodeRestResourceImplTest {
     }
 
     @Test
-    fun `get virtual node status for missing holding id returns 404`() {
-        val holdingId = "0123456789AB"
-        val target = createVirtualNodeRestResourceImpl(mockCoordinatorFactory)
-
-        assertThrows<ResourceNotFoundException> { target.getVirtualNodeOperationStatus(holdingId) }
-    }
-
-    @Test
-    fun `get virtual node status for holding id returns status`() {
-        val holdingId = "0123456789AB"
-        val avroStatus = mock<AvroVirtualNodeOperationStatus>()
-        val status = AsyncOperationStatus.accepted("r1", "op", Instant.ofEpochMilli(1))
-
-        whenever(virtualNodeStatusCacheService.getStatus(any())).thenReturn(avroStatus)
-        whenever(messageConverter.convert(any(), any(), any())).thenReturn(status)
-
-        val target = createVirtualNodeRestResourceImpl(mockCoordinatorFactory)
-
-        assertThat(target.getVirtualNodeOperationStatus(holdingId)).isEqualTo(status)
-
-        verify(virtualNodeStatusCacheService).getStatus(holdingId)
-        verify(messageConverter).convert(avroStatus, OperationTypes.CREATE_VIRTUAL_NODE.toString(), holdingId)
-    }
-
-    @Test
     fun `get upgrade node status for missing request id returns 404`() {
         val requestId = UUID.randomUUID().toString()
         val target = createVirtualNodeRestResourceImpl(mockCoordinatorFactory)
@@ -217,7 +189,6 @@ class VirtualNodeRestResourceImplTest {
             mock(),
             mock(),
             cpiInfoReadService,
-            virtualNodeStatusCacheService,
             requestFactory,
             UTCClock(),
             virtualNodeValidationService,

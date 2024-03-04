@@ -58,7 +58,7 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
             ?.toVirtualNodeInfo()
     }
 
-    override fun findVirtualNodeOperationByRequestId(entityManager: EntityManager, requestId: String): List<VirtualNodeOperationDto> {
+    override fun findVirtualNodeOperationByRequestId(entityManager: EntityManager, requestId: String): VirtualNodeOperationDto {
         entityManager.transaction {
             val operationStatuses = entityManager.createQuery(
                 "from ${VirtualNodeOperationEntity::class.java.simpleName} where requestId = :requestId " +
@@ -66,22 +66,23 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
                 VirtualNodeOperationEntity::class.java
             )
                 .setParameter("requestId", requestId)
+                .setMaxResults(1)
                 .resultList
 
             if (operationStatuses.isEmpty()) {
                 throw VirtualNodeOperationNotFoundException(requestId)
             }
 
-            return operationStatuses.map {
+            return with(operationStatuses.first()) {
                 VirtualNodeOperationDto(
-                    it.requestId,
-                    it.data,
-                    it.operationType.name,
-                    it.requestTimestamp,
-                    it.latestUpdateTimestamp,
-                    it.heartbeatTimestamp,
-                    it.state.name,
-                    it.errors
+                    requestId = requestId,
+                    requestData = data,
+                    operationType = operationType.name,
+                    requestTimestamp = requestTimestamp,
+                    latestUpdateTimestamp = latestUpdateTimestamp,
+                    heartbeatTimestamp = heartbeatTimestamp,
+                    state = state.name,
+                    errors = errors
                 )
             }
         }

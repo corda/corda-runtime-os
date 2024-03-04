@@ -1,15 +1,12 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers
 
 import net.corda.data.virtualnode.VirtualNodeDbConnectionUpdateRequest
-import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationDto
-import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto.COMPLETED
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto.IN_PROGRESS
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto.UNEXPECTED_FAILURE
-import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType.CHANGE_DB
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
-import net.corda.messaging.api.publisher.Publisher
 import net.corda.orm.utils.transaction
 import net.corda.virtualnode.toCorda
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeConnectionStrings
@@ -28,15 +25,20 @@ internal class UpdateVirtualNodeDbOperationHandler(
     private val updateVirtualNodeService: UpdateVirtualNodeService,
     private val virtualNodeDbFactory: VirtualNodeDbFactory,
     private val recordFactory: RecordFactory,
-    statusPublisher: Publisher,
     private val logger: Logger,
     private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
 ) : VirtualNodeAsyncOperationHandler<VirtualNodeDbConnectionUpdateRequest>,
-    AbstractVirtualNodeOperationHandler(statusPublisher, logger) {
+    AbstractVirtualNodeOperationHandler(entityManagerFactory, virtualNodeRepository) {
     override fun handle(requestTimestamp: Instant, requestId: String, request: VirtualNodeDbConnectionUpdateRequest) {
         val requestData = request.toString()
-        recordVirtualNodeOperation(requestId, requestTimestamp, IN_PROGRESS, requestData)
-        publishStartProcessingStatus(requestId)
+        recordVirtualNodeOperation(
+            requestId,
+            requestTimestamp,
+            requestData,
+            operationStateString = IN_PROGRESS.name,
+            operationType = VirtualNodeOperationType.CHANGE_DB.name
+        )
+        publishStartProcessingStatus(requestId, VirtualNodeOperationType.CHANGE_DB)
 
         try {
             val holdingId = request.holdingId.toCorda()
@@ -96,36 +98,25 @@ internal class UpdateVirtualNodeDbOperationHandler(
             }
         } catch (e: Exception) {
             val reason = e.message ?: "Unexpected error"
-            recordVirtualNodeOperation(requestId, requestTimestamp, UNEXPECTED_FAILURE, requestData, reason)
-            publishErrorStatus(requestId, reason)
+            recordVirtualNodeOperation(
+                requestId,
+                requestTimestamp,
+                requestData,
+                reason,
+                UNEXPECTED_FAILURE.name,
+                VirtualNodeOperationType.CHANGE_DB.name
+            )
+            publishErrorStatus(requestId, reason, VirtualNodeOperationType.CHANGE_DB)
             throw e
         }
 
-        recordVirtualNodeOperation(requestId, requestTimestamp, COMPLETED, requestData)
-        publishProcessingCompletedStatus(requestId)
+        recordVirtualNodeOperation(
+            requestId,
+            requestTimestamp,
+            requestData,
+            operationStateString = COMPLETED.name,
+            operationType = VirtualNodeOperationType.CHANGE_DB.name
+        )
+        publishProcessingCompletedStatus(requestId, VirtualNodeOperationType.CHANGE_DB)
     }
-
-    private fun recordVirtualNodeOperation(
-        requestId: String,
-        requestTimestamp: Instant,
-        operationState: VirtualNodeOperationStateDto,
-        requestData: String,
-        errors: String? = null
-    ) =
-        entityManagerFactory.createEntityManager().transaction { em ->
-            val latestUpdateTimestamp = Instant.now()
-            virtualNodeRepository.putVirtualNodeOperation(
-                em,
-                VirtualNodeOperationDto(
-                    requestId = requestId,
-                    requestData = requestData,
-                    operationType = CHANGE_DB.name,
-                    requestTimestamp = requestTimestamp,
-                    latestUpdateTimestamp = latestUpdateTimestamp,
-                    heartbeatTimestamp = latestUpdateTimestamp,
-                    state = operationState.name,
-                    errors = errors
-                )
-            )
-        }
 }
