@@ -66,10 +66,10 @@ class WrappingRepositoryImpl(
         entityManagerFactory.createEntityManager().use {
             it.createQuery(
                 "FROM ${WrappingKeyEntity::class.simpleName} " +
-                        "WHERE (alias, generation) IN (" +
-                            "SELECT alias, MAX(generation) FROM ${WrappingKeyEntity::class.simpleName} " +
-                            "GROUP BY alias" +
-                        ") AND parentKeyReference != :parentKeyAlias",
+                "WHERE (alias, generation) IN (" +
+                    "SELECT alias, MAX(generation) FROM ${WrappingKeyEntity::class.simpleName} " +
+                    "GROUP BY alias" +
+                ") AND parentKeyReference != :parentKeyAlias",
                 WrappingKeyEntity::class.java
             ).setParameter("parentKeyAlias", parentKeyAlias).resultList
                 .map { dao -> dao.toDto() }
