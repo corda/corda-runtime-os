@@ -105,8 +105,6 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
         _impl = null
     }
 
-
-
     private fun onUpstreamRegistrationStatusChange(
         coordinator: LifecycleCoordinator,
         event: RegistrationStatusChangeEvent
