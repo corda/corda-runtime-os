@@ -17,4 +17,5 @@ object MetricsConstants {
     const val RPC_RESPONDER_OPERATION = "rpcResponder"
     const val EVENT_POLL_OPERATION = "eventPoll"
     const val STATE_POLL_OPERATION = "statePoll"
+    const val ASYNC_WAIT_TIME = "asyncWaitTime"
 }

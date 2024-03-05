@@ -28,4 +28,9 @@ class EventMediatorMetrics(
     val eventProcessorFailureCounter = CordaMetrics.Metric.Messaging.EventProcessorFailureCount.builder()
         .withTag(CordaMetrics.Tag.MessagePatternClientId, mediatorName)
         .build()
+
+    val asyncEventWaitTimer = CordaMetrics.Metric.Messaging.AsyncMessageProcessingTime.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, mediatorName)
+        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.ASYNC_WAIT_TIME)
+        .build()
 }

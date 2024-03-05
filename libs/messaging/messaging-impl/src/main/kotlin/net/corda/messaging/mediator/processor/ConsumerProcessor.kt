@@ -42,7 +42,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
 
     private val stateManager = config.stateManager
 
-    private val inFlightStates = ConcurrentHashMap<K, CompletableFuture<State?>>()
+    private val inFlightStates = ConcurrentTimedMap<K, CompletableFuture<State?>>()
 
     /**
      * Creates a message bus consumer and begins processing records from the subscribed topic.
@@ -90,26 +90,35 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         if (messages.isNotEmpty()) {
             log.debug { "Polled ${messages.size} messages" }
             val events = polledRecords.map { (key, records) ->
-                val stateSavedFuture = CompletableFuture<State?>()
-                val stateFuture = inFlightStates.put(key, stateSavedFuture)
-                stateSavedFuture.thenAccept {
-                    inFlightStates.remove(key, stateSavedFuture)
+                val currentEventFuture = CompletableFuture<State?>()
+
+                recordWaitTime(key) // If we're replacing an in-flight state, record its delay
+                val previousEventFuture = inFlightStates.put(key, currentEventFuture)
+
+                currentEventFuture.thenAccept {
+                    recordWaitTime(key) // Record the time event was waiting for its previous event
+                    inFlightStates.remove(key, currentEventFuture)
                 }
-                EventData(key, records, stateSavedFuture, stateFuture)
+                EventData(key, records, currentEventFuture, previousEventFuture)
             }
-            val (eventsInFlightState, eventsWithoutState) = events.partition { it.stateFuture != null }
+
+            // eventsInFlightState are events which are waiting for another event to complete before they can continue
+            // eventsWithoutState are not waiting for any previous event and can be executed immediately
+            val (eventsInFlightState, eventsWithoutState) = events.partition { it.previousEventFuture != null }
 
             eventsInFlightState.forEach {
-                it.stateFuture!!.thenAccept { state ->
-                    eventProcessor.processEvents(it.key, it.records, state, it.stateSavedFuture)
+                it.previousEventFuture!!.thenAccept { state ->
+                    // When our previous event finishes, kick off the current event with prev events output
+                    eventProcessor.processEvents(it.key, it.records, state, it.currentEventFuture)
                 }
             }
 
             val states = stateManager.get(eventsWithoutState.map { it.key.toString() })
             log.debug { "Retrieved ${states.size} states" }
+
             eventsWithoutState.forEach {
                 val state = states[it.key.toString()]
-                eventProcessor.processEvents(it.key, it.records, state, it.stateSavedFuture)
+                eventProcessor.processEvents(it.key, it.records, state, it.currentEventFuture)
             }
             metrics.commitTimer.recordCallable {
                 consumer.syncCommitOffsets()
@@ -118,10 +127,39 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         }
     }
 
+    private fun recordWaitTime(key: K) {
+        inFlightStates.getWaitTime(key)?.let { delay ->
+            metrics.asyncEventWaitTimer.record(delay, TimeUnit.NANOSECONDS)
+        }
+    }
+
     private class EventData<K: Any, E: Any>(
         val key: K,
         val records: List<Record<K, E>>,
-        val stateSavedFuture: CompletableFuture<State?>,
-        val stateFuture: CompletableFuture<State?>?,
+        val currentEventFuture: CompletableFuture<State?>,
+        val previousEventFuture: CompletableFuture<State?>?,
     )
+
+    private class ConcurrentTimedMap<K : Any,V : Any> {
+        private val map: ConcurrentHashMap<K,V> = ConcurrentHashMap()
+        private val timestamps: ConcurrentHashMap<K, Long> = ConcurrentHashMap()
+
+        fun put(key: K, value: V) : V? {
+            timestamps[key] = System.nanoTime()
+            return map.put(key, value)
+        }
+
+        fun remove(key: K, value: V) : Boolean {
+            return map.remove(key, value)
+                .also { timestamps.remove(key) }
+        }
+
+        fun getWaitTime(key: K) : Long? {
+            return map[key]?.let {
+                timestamps[key]?.let {
+                    System.nanoTime() - it
+                }
+            }
+        }
+    }
 }

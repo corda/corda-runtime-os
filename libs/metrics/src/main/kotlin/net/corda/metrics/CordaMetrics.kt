@@ -1,5 +1,6 @@
 package net.corda.metrics
 
+import io.micrometer.core.instrument.Tag as micrometerTag
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.DistributionSummary
 import io.micrometer.core.instrument.Gauge
@@ -19,7 +20,6 @@ import java.nio.file.Path
 import java.util.function.Supplier
 import java.util.function.ToDoubleFunction
 import java.util.function.ToLongFunction
-import io.micrometer.core.instrument.Tag as micrometerTag
 
 
 object CordaMetrics {
@@ -661,6 +661,11 @@ object CordaMetrics {
              * Generic consumer poll time, time taken by kafka to respond to consumer polls for each client ID.
              */
             object ConsumerPollTime : Metric<Timer>("consumer.poll.time", CordaMetrics::timer)
+
+            /**
+             * Measure for various timings within async message processing (wait time, processing time, etc.)
+             */
+            object AsyncMessageProcessingTime : Metric<Timer>("async.message.processing.time", CordaMetrics::timer)
 
             /**
              * Measure for the number of chunks generated when writing records.
