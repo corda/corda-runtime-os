@@ -109,6 +109,8 @@ class UtxoFinalityFlowV1(
             sendNotarySignaturesToCounterparties(notarySignatures)
             log.trace("Finalisation of transaction {} has been finished.", transactionId)
             notarizedTransaction
+        } catch (e: NotaryExceptionFatal) {
+            throw e
         } catch (t: Throwable) {
             throw FlowRetryException("Finality flow encountered an issue during notarization and needs to retry")
         }
