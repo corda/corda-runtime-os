@@ -49,7 +49,7 @@ import java.security.PublicKey
 @Component(service = [CryptoOpsClient::class, CryptoOpsProxyClient::class])
 class CryptoOpsClientComponent @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
-    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = CipherSchemeMetadata::class)
