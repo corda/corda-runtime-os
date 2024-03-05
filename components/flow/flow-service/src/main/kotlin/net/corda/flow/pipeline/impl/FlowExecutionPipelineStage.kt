@@ -10,6 +10,7 @@ import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.runner.FlowRunner
+import net.corda.messaging.api.exception.CordaMessageAPIConsumerResetException
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
@@ -125,6 +126,10 @@ internal class FlowExecutionPipelineStage(
                 fiberCache.remove(context.checkpoint.flowKey)
                 context.flowMetrics.flowFiberExited()
                 fiberResult
+            }
+
+            is FlowIORequest.FlowRetry -> {
+                throw CordaMessageAPIConsumerResetException("Flow ${context.checkpoint.flowId} requested a retry")
             }
 
             else -> throw FlowFatalException("Invalid ${FlowIORequest::class.java.simpleName} returned from flow fiber")
