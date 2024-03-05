@@ -12,14 +12,15 @@ import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.StateManagerHelper
-import net.corda.tracing.addTraceContextToMediatorMessage
 import net.corda.messaging.mediator.metrics.EventMediatorMetrics
+import net.corda.tracing.addTraceContextToMediatorMessage
 import net.corda.tracing.addTraceContextToRecord
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executor
+import java.util.concurrent.TimeUnit
 
 /**
  * Class to process records received from the consumer.
@@ -57,9 +58,10 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         key: K,
         inputRecords: List<Record<K, E>>,
         state: State?,
-        stateSavedFuture: CompletableFuture<State?>,
+        currentEventFuture: CompletableFuture<State?>,
     ) {
-        val context = EventContext<K, S>(key, state, stateSavedFuture)
+        val startTimestamp = System.nanoTime()
+        val context = EventContext<K, S>(key, state, currentEventFuture)
         val allEventsProcessedFuture = CompletableFuture<EventContext<K, S>>()
         CompletableFuture.supplyAsync({
             log.debug { "Processing events for key ${context.key}, version ${state?.version}" }
@@ -70,19 +72,30 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                     persistedState?.metadata
                 )
             }
-            processEvent(
-                events = ArrayDeque(
-                    inputRecords.map { it.withHeader(INPUT_HASH_HEADER, mediatorInputService.getHash(it)) }
-                ),
-                onFinished = { allEventsProcessedFuture.complete(context) },
-                context
-            )
+            metrics.processSingleAsyncEventTimer.recordCallable {
+                processEvent(
+                    events = ArrayDeque(
+                        inputRecords.map { it.withHeader(INPUT_HASH_HEADER, mediatorInputService.getHash(it)) }
+                    ),
+                    onFinished = { allEventsProcessedFuture.complete(context) },
+                    context
+                )
+            } as Unit
         }, executor)
         allEventsProcessedFuture.thenCompose {
-            persistState(context)
+            metrics.persistStateTimer.recordCallable {
+                persistState(context)
+            }
         }.thenCompose {
-            sendAsyncEvents(context)
+            metrics.sendAsyncEventsTimer.recordCallable {
+                sendAsyncEvents(context)
+            }
         }
+
+        metrics.processAsyncEventsTimer.record(
+            System.nanoTime() - startTimestamp,
+            TimeUnit.NANOSECONDS
+        )
     }
 
     private fun processEvent(
@@ -108,7 +121,9 @@ class EventProcessor<K : Any, S : Any, E : Any>(
             val inputInventHash = event.header(INPUT_HASH_HEADER)!!
             Pair(syncEvents, inputInventHash)
         }, executor).thenCompose { (syncEvents, inputInventHash) ->
-            processSyncEvents(context.key, syncEvents, inputInventHash)
+            metrics.processSyncEventsTimer.recordCallable {
+                processSyncEvents(context.key, syncEvents, inputInventHash)
+            }
         }.thenApply { syncEventResponses ->
             syncEventResponses.forEach {
                 events.addFirst(it)
@@ -126,7 +141,9 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         if (syncEvents.isEmpty()) {
             return CompletableFuture.completedFuture(emptyList())
         }
-        val syncResultFutures = syncEvents.map { processSyncEvent(it) }
+        val syncResultFutures = syncEvents.map {
+            metrics.processSingleSyncEventTimer.recordCallable { processSyncEvent(it) }
+        }
         log.debug { "Processing sync events for key $key" }
         return CompletableFuture.allOf(*syncResultFutures.toTypedArray()).thenApply {
             syncResultFutures.mapNotNull { it.join() }
@@ -162,7 +179,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
             val version = stateChangeAndOperation.outputState?.version
             log.debug { "Persisting state for key ${context.key}, version $version" }
             stateManagerHelper.persistState(stateChangeAndOperation)
-            context.stateSavedFuture.complete(stateChangeAndOperation.toPersistedState())
+            context.currentEventFuture.complete(stateChangeAndOperation.toPersistedState())
         }, executor)
     }
 
@@ -172,9 +189,11 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         return CompletableFuture.supplyAsync({
             log.debug { "Sending ${context.asyncOutputs.size} async events for key ${context.key}" }
             context.asyncOutputs.forEach { message ->
-                with(messageRouter.getDestination(message)) {
-                    message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
-                    client.send(message)
+                metrics.sendSingleAsyncEventTimer.recordCallable {
+                    with(messageRouter.getDestination(message)) {
+                        message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
+                        client.send(message)
+                    }
                 }
             }
         }, executor)

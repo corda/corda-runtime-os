@@ -17,5 +17,12 @@ object MetricsConstants {
     const val RPC_RESPONDER_OPERATION = "rpcResponder"
     const val EVENT_POLL_OPERATION = "eventPoll"
     const val STATE_POLL_OPERATION = "statePoll"
-    const val ASYNC_WAIT_TIME = "asyncWaitTime"
+    const val ASYNC_EVENT_WAIT_TIME = "asyncEventWaitTime"
+    const val PROCESS_ASYNC_EVENTS_TIME = "processAsyncEventsTime"
+    const val PROCESS_SINGLE_ASYNC_EVENT_TIME = "processSingleAsyncEventTime"
+    const val PROCESS_SYNC_EVENTS_TIME = "processSyncEventsTime"
+    const val PROCESS_SINGLE_SYNC_EVENT_TIME = "processSingleSyncEventTime"
+    const val PERSIST_STATE_TIME = "persistStateTime"
+    const val SEND_ASYNC_EVENTS_TIME = "sendAsyncEventsTime"
+    const val SEND_SINGLE_ASYNC_EVENT_TIME = "sendSingleAsyncEventTime"
 }
