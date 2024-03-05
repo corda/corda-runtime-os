@@ -137,7 +137,7 @@ internal class RestServerInternal(
 
     private fun addExceptionHandlers(app: Javalin) {
         app.exception(NotFoundResponse::class.java) { e, ctx ->
-            val detailsWithUrl = e.details.plus("url" to ctx.req.requestURI)
+            val detailsWithUrl = e.details.plus("url" to ctx.req.requestURL.toString())
             commonResult(NotFoundResponse(details = detailsWithUrl), ctx)
         }
         app.exception(HttpResponseException::class.java) { e, ctx ->
