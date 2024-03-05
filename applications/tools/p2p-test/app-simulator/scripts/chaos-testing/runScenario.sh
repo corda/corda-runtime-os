@@ -17,6 +17,7 @@ reportDir="$SCRIPT_DIR/build/reports"
 mkdir -p $reportDir
 reportFile="$SCRIPT_DIR/build/reports/report-chaos.txt"
 echo "Report in $reportFile"
+echo "" > "$reportFile"
 
 echo "Running scenario: \"$(echo "$scenario" | jq -r '.name')\""
 export KAFKA_REPLICAS=3
@@ -130,7 +131,7 @@ echo "Running sender..."
 echo "---" >> "$reportFile"
 start=$(date -u '+%Y-%m-%d %H:%M:%S')
 interBatchDelay="PT0.1S"
-batchSize=8
+batchSize=5
 echo $start >> "$reportFile"
 echo "interBatchDelay: $interBatchDelay" >> "$reportFile"
 echo "batchSize: $batchSize" >> "$reportFile"
@@ -163,7 +164,7 @@ introduce_failure() {
 }
 
 echo "Sender is running..."
-for i in {1..45}; do
+for i in {1..20}; do
   echo "Iteration $i, waiting a minute..."
   report_and_sleep
 

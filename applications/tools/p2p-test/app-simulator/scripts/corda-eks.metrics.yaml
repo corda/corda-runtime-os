@@ -2,6 +2,7 @@ tolerations:
   - key: "node"
     effect: "NoSchedule"
     value: "corda"
+nodeSelector: { node: "corda" }
 metrics:
   podMonitor:
     enabled: true
