@@ -227,9 +227,6 @@ class CryptoOpsClientComponent @Activate constructor(
     )
     private val myName = lifecycleCoordinatorName
 
-    private var rpcSender: RPCSender<RpcOpsRequest, RpcOpsResponse>? = null
-    private var rpcSenderRegistrationHandle: RegistrationHandle? = null
-
     private var _impl: Impl? = null
     val impl: Impl get() {
         val tmp = _impl
@@ -238,6 +235,9 @@ class CryptoOpsClientComponent @Activate constructor(
         }
         return tmp
     }
+
+    private var rpcSender: RPCSender<RpcOpsRequest, RpcOpsResponse>? = null
+    private var rpcSenderRegistrationHandle: RegistrationHandle? = null
 
     private var configReadServiceRegistrationHandle: RegistrationHandle? = null
     private var configReadServiceIsUp = false
