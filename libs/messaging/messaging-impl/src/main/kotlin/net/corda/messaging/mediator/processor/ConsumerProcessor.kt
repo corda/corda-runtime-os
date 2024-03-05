@@ -109,6 +109,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             val states = stateManager.get(polledRecords.keys.map { it.toString() })
             val inputs = generateInputs(states.values, polledRecords)
             var groups = groupAllocator.allocateGroups(inputs, config)
+            var failed = false
 
             while (groups.isNotEmpty()) {
                 // Process each group on a thread
@@ -145,6 +146,12 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     it.toString()
                 }
 
+                if (outputs.any { it.value.stateChangeAndOperation.outputState?.metadata?.get(PROCESSING_FAILURE) == true}) {
+                    failed = true
+                    consumer.resetEventOffsetPosition()
+                    break
+                }
+
                 // Persist state changes, send async outputs and setup to reprocess states that fail to persist
                 val (failedStates, deleteStates) = processOutputs(outputs)
                 statesToDelete.addAll(deleteStates)
@@ -153,12 +160,14 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 }
                 groups = groupAllocator.allocateGroups(generateInputs(failedStates.values, failedRecords), config)
             }
-            metrics.commitTimer.recordCallable {
-                consumer.syncCommitOffsets()
+            if (!failed) {
+                metrics.commitTimer.recordCallable {
+                    consumer.syncCommitOffsets()
+                }
+                //Delete occurs after committing offsets bus to satisfy replay requirements in the Flow Engine. Ignore Failures, these are
+                // logged in SM and recorded by a metric
+                stateManager.delete(statesToDelete)
             }
-            //Delete occurs after committing offsets bus to satisfy replay requirements in the Flow Engine. Ignore Failures, these are
-            // logged in SM and recorded by a metric
-            stateManager.delete(statesToDelete)
         }
         metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
     }
