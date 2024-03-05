@@ -1,10 +1,12 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality.v1
 
 import net.corda.flow.application.GroupParametersLookupInternal
+import net.corda.flow.exceptions.FlowRetryException
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.utxo.data.transaction.verifyFilteredTransactionAndSignatures
+import net.corda.ledger.utxo.flow.impl.exceptions.NotarizationProcessError
 import net.corda.ledger.utxo.flow.impl.flows.backchain.InvalidBackchainException
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
@@ -104,9 +106,16 @@ class UtxoReceiveFinalityFlowV1(
         }
 
         transaction = receiveAndPersistSignaturesOrSkip(transaction, transferAdditionalSignatures)
-        transaction = receiveNotarySignaturesAndAddToTransaction(transaction)
-        persistNotarizedTransaction(transaction)
-        return transaction
+        return try {
+            transaction = receiveNotarySignaturesAndAddToTransaction(transaction)
+            persistNotarizedTransaction(transaction)
+            transaction
+        } catch (e: NotarizationProcessError) {
+            throw e
+        } catch (t: Throwable) {
+            log.warn("Exception in ReceiveFinalityFlow in critical region, retrying flow")
+            throw FlowRetryException("Exception in ReceiveFinalityFlow in critical region, retrying flow")
+        }
     }
 
     @Suspendable
@@ -355,7 +364,7 @@ class UtxoReceiveFinalityFlowV1(
                 if (reason != null && reason.toFinalityNotarizationFailureType() == FinalityNotarizationFailureType.FATAL) {
                     persistInvalidTransaction(transaction)
                 }
-                throw CordaRuntimeException(message)
+                throw NotarizationProcessError(message)
             }
         }
 
