@@ -259,10 +259,9 @@ class KeyRotationRestResourceImpl @Activate constructor(
             }
         }
 
-        if (tenantId.isEmpty()) throw InvalidInputDataException(
+        if (tenantId.isEmpty() || tenantId.isBlank()) throw InvalidInputDataException(
             "Cannot start key rotation. TenantId is not specified."
         )
-
 
         return if (tenantId == MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER) {
             doKeyRotation(publishRequests = { publishToKafka!!.publish(it) })
