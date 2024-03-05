@@ -35,7 +35,6 @@ interface ResultSetFactory {
      *
      * @param parameters The parameters of the query.
      * @param limit The limit of the query.
-     * @param offset The offset of the query.
      * @param resultClass The return type of the query.
      * @param resultSetExecutor The operation that is executed to retrieve query results.
      *

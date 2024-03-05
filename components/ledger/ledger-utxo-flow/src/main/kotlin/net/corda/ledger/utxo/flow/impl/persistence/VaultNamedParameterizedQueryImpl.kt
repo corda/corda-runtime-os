@@ -40,7 +40,9 @@ class VaultNamedParameterizedQueryImpl<T>(
     }
 
     override fun setOffset(offset: Int): VaultNamedParameterizedQuery<T> {
-        throw UnsupportedOperationException("This query does not support offset functionality.")
+        require(offset >= 0 { "Offset cannot be negative"})
+        this.offset = offset
+        return this
     }
 
     override fun setParameter(name: String, value: Any?): VaultNamedParameterizedQuery<T> {
