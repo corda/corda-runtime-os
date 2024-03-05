@@ -47,6 +47,14 @@ class EventMediatorMetrics(
         .build()
 
     /**
+     * Records the time between supplying an async event call, and the call being executed
+     */
+    val processSingleAsyncEventWaitTimer = CordaMetrics.Metric.Messaging.AsyncMessageProcessingTime.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, mediatorName)
+        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.PROCESS_SINGLE_ASYNC_EVENT_WAIT_TIME)
+        .build()
+
+    /**
      * Records how long it takes to process a single asynchronous event for a given state
      */
     val processSingleAsyncEventTimer = CordaMetrics.Metric.Messaging.AsyncMessageProcessingTime.builder()
@@ -71,11 +79,27 @@ class EventMediatorMetrics(
         .build()
 
     /**
+     * Records the time between supplying an async state update call, and the call being executed
+     */
+    val persistStateWaitTimer = CordaMetrics.Metric.Messaging.AsyncMessageProcessingTime.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, mediatorName)
+        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.PERSIST_STATE_WAIT_TIME)
+        .build()
+
+    /**
      * Records how long it takes to persist a state following event processing
      */
     val persistStateTimer = CordaMetrics.Metric.Messaging.AsyncMessageProcessingTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternClientId, mediatorName)
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.PERSIST_STATE_TIME)
+        .build()
+
+    /**
+     * Record the time between supplying a batch of async events for processing, and the processing taking place
+     */
+    val sendAsyncEventsWaitTimer = CordaMetrics.Metric.Messaging.AsyncMessageProcessingTime.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, mediatorName)
+        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.SEND_ASYNC_EVENTS_WAIT_TIME)
         .build()
 
     /**

@@ -16,6 +16,7 @@ import net.corda.messaging.mediator.metrics.EventMediatorMetrics
 import net.corda.tracing.addTraceContextToMediatorMessage
 import net.corda.tracing.addTraceContextToRecord
 import net.corda.utilities.debug
+import org.checkerframework.checker.units.qual.K
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.CompletableFuture
@@ -72,24 +73,18 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                     persistedState?.metadata
                 )
             }
-            metrics.processSingleAsyncEventTimer.recordCallable {
-                processEvent(
-                    events = ArrayDeque(
-                        inputRecords.map { it.withHeader(INPUT_HASH_HEADER, mediatorInputService.getHash(it)) }
-                    ),
-                    onFinished = { allEventsProcessedFuture.complete(context) },
-                    context
-                )
-            } as Unit
+            processEvent(
+                events = ArrayDeque(
+                    inputRecords.map { it.withHeader(INPUT_HASH_HEADER, mediatorInputService.getHash(it)) }
+                ),
+                onFinished = { allEventsProcessedFuture.complete(context) },
+                context
+            )
         }, executor)
         allEventsProcessedFuture.thenCompose {
-            metrics.persistStateTimer.recordCallable {
-                persistState(context)
-            }
+            persistState(context)
         }.thenCompose {
-            metrics.sendAsyncEventsTimer.recordCallable {
-                sendAsyncEvents(context)
-            }
+            sendAsyncEvents(context)
         }
 
         metrics.processAsyncEventsTimer.record(
@@ -107,19 +102,29 @@ class EventProcessor<K : Any, S : Any, E : Any>(
             onFinished()
             return
         }
+
+        val startTimestamp = System.nanoTime()
+
         CompletableFuture.supplyAsync({
-            val event = events.removeFirst()
-            log.debug { "Processing event ${event.value?.javaClass?.simpleName} for key ${context.key}" }
-            val response = config.messageProcessor.onNext(context.processorState, event)
-            log.debug { "Got ${response.responseEvents.size} response events" }
-            context.processorState = response.updatedState
-            val (syncEvents, asyncEvents) = response.responseEvents.map { convertToMessage(it) }.partition {
-                messageRouter.getDestination(it).type == RoutingDestination.Type.SYNCHRONOUS
+            metrics.processSingleAsyncEventWaitTimer.record(
+                System.nanoTime() - startTimestamp,
+                TimeUnit.NANOSECONDS
+            )
+
+            metrics.processSingleAsyncEventTimer.recordCallable {
+                val event = events.removeFirst()
+                log.debug { "Processing event ${event.value?.javaClass?.simpleName} for key ${context.key}" }
+                val response = config.messageProcessor.onNext(context.processorState, event)
+                log.debug { "Got ${response.responseEvents.size} response events" }
+                context.processorState = response.updatedState
+                val (syncEvents, asyncEvents) = response.responseEvents.map { convertToMessage(it) }.partition {
+                    messageRouter.getDestination(it).type == RoutingDestination.Type.SYNCHRONOUS
+                }
+                log.debug { "Got ${syncEvents.size} sync and ${asyncEvents.size} async events" }
+                context.asyncOutputs.addAll(asyncEvents)
+                val inputInventHash = event.header(INPUT_HASH_HEADER)!!
+                Pair(syncEvents, inputInventHash)
             }
-            log.debug { "Got ${syncEvents.size} sync and ${asyncEvents.size} async events" }
-            context.asyncOutputs.addAll(asyncEvents)
-            val inputInventHash = event.header(INPUT_HASH_HEADER)!!
-            Pair(syncEvents, inputInventHash)
         }, executor).thenCompose { (syncEvents, inputInventHash) ->
             metrics.processSyncEventsTimer.recordCallable {
                 processSyncEvents(context.key, syncEvents, inputInventHash)
@@ -169,30 +174,48 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     private fun persistState(
         context: EventContext<K, S>,
     ): CompletableFuture<Unit> {
+        val startTimestamp = System.nanoTime()
+
         return CompletableFuture.supplyAsync({
-            val newState = stateManagerHelper.createOrUpdateState(
-                context.key.toString(),
-                context.inputState,
-                context.processorState
+            metrics.persistStateWaitTimer.record(
+                System.nanoTime() - startTimestamp,
+                TimeUnit.NANOSECONDS
             )
-            val stateChangeAndOperation = StateChangeAndOperation.create(context.inputState, newState)
-            val version = stateChangeAndOperation.outputState?.version
-            log.debug { "Persisting state for key ${context.key}, version $version" }
-            stateManagerHelper.persistState(stateChangeAndOperation)
-            context.currentEventFuture.complete(stateChangeAndOperation.toPersistedState())
+
+            metrics.persistStateTimer.recordCallable {
+                val newState = stateManagerHelper.createOrUpdateState(
+                    context.key.toString(),
+                    context.inputState,
+                    context.processorState
+                )
+                val stateChangeAndOperation = StateChangeAndOperation.create(context.inputState, newState)
+                val version = stateChangeAndOperation.outputState?.version
+                log.debug { "Persisting state for key ${context.key}, version $version" }
+                stateManagerHelper.persistState(stateChangeAndOperation)
+                context.currentEventFuture.complete(stateChangeAndOperation.toPersistedState())
+            }
         }, executor)
     }
 
     private fun sendAsyncEvents(
         context: EventContext<K, S>,
     ): CompletableFuture<Unit> {
-        return CompletableFuture.supplyAsync({
-            log.debug { "Sending ${context.asyncOutputs.size} async events for key ${context.key}" }
-            context.asyncOutputs.forEach { message ->
-                metrics.sendSingleAsyncEventTimer.recordCallable {
-                    with(messageRouter.getDestination(message)) {
-                        message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
-                        client.send(message)
+        val startTimestamp = System.nanoTime()
+
+        return CompletableFuture.supplyAsync( {
+            metrics.sendAsyncEventsWaitTimer.record(
+                System.nanoTime() - startTimestamp,
+                TimeUnit.NANOSECONDS
+            )
+
+            metrics.sendAsyncEventsTimer.recordCallable {
+                log.debug { "Sending ${context.asyncOutputs.size} async events for key ${context.key}" }
+                context.asyncOutputs.forEach { message ->
+                    metrics.sendSingleAsyncEventTimer.recordCallable {
+                        with(messageRouter.getDestination(message)) {
+                            message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
+                            client.send(message)
+                        }
                     }
                 }
             }
