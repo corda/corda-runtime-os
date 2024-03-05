@@ -111,7 +111,7 @@ class RegistrationContext {
         sessionKey: KeyPairIdentifier,
         notaryKey: KeyPairIdentifier,
     ): Map<String, String> {
-        require(!(roles.contains(MemberRole.NOTARY))) { "Must specify the role as notary" }
+        require((roles.contains(MemberRole.NOTARY))) { "Must specify the role as notary" }
 
         val endpoints = p2pGatewayUrls.flatMapIndexed { index, url ->
             listOf(
