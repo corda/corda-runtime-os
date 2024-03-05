@@ -569,6 +569,17 @@ class UtxoRepositoryImpl(
         }
     }
 
+    override fun findTransactionsWithStatusBeforeTime(
+        entityManager: EntityManager,
+        status: TransactionStatus,
+        instant: Instant
+    ): List<String> {
+        return entityManager.createNativeQuery(queryProvider.findTransactionsWithStatusBeforeTime)
+            .setParameter("status", status.value)
+            .setParameter("created", instant)
+            .resultList as List<String>
+    }
+
     private fun <T> EntityManager.connection(block: (connection: Connection) -> T) {
         val hibernateSession = unwrap(Session::class.java)
         hibernateSession.doWork { connection ->

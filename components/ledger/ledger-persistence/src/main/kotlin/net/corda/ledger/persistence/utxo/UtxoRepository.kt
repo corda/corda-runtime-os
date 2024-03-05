@@ -201,6 +201,8 @@ interface UtxoRepository {
         ids: List<String>
     ): Map<String, UtxoFilteredTransactionDto>
 
+    fun findTransactionsWithStatusBeforeTime(entityManager: EntityManager, status: TransactionStatus, instant: Instant): List<String>
+
     data class TransactionComponent(val transactionId: String, val groupIndex: Int, val leafIndex: Int, val leafData: ByteArray)
 
     data class VisibleTransactionOutput(

@@ -193,4 +193,11 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             	)
             WHERE utmp.transaction_id IN (:transactionIds)"""
             .trimIndent()
+
+    override val findTransactionsWithStatusBeforeTime: String
+        get() = """
+            SELECT id
+            FROM {h-schema}utxo_transaction
+            WHERE status = :status AND created < :created
+        """.trimIndent()
 }

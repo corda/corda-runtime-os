@@ -55,6 +55,7 @@ import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
@@ -724,6 +725,13 @@ class UtxoPersistenceServiceImpl(
                 // 6. Map the transaction id to the filtered transaction object and signatures
                 filteredTransaction.id to Pair(filteredTransaction, ftxDto.signatures)
             }.filterNotNull().toMap()
+    }
+
+    override fun findTransactionsWithStatusBeforeTime(status: TransactionStatus, instant: Instant): List<SecureHash> {
+        return entityManagerFactory.transaction { em ->
+            repository.findTransactionsWithStatusBeforeTime(em, status, instant)
+                .map { id -> digestService.parseSecureHash(id) }
+        }
     }
 
     fun createTransactionMerkleProof(
