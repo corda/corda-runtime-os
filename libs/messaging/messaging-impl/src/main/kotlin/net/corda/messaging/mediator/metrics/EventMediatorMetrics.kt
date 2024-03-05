@@ -29,6 +29,10 @@ class EventMediatorMetrics(
         .withTag(CordaMetrics.Tag.MessagePatternClientId, mediatorName)
         .build()
 
+    /**
+     * This metric records how long an asynchronous event was waiting for a prior event in the same batch
+     * to complete before it could begin processing.
+     */
     val asyncEventWaitTimer = CordaMetrics.Metric.Messaging.AsyncMessageProcessingTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternClientId, mediatorName)
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.ASYNC_WAIT_TIME)
