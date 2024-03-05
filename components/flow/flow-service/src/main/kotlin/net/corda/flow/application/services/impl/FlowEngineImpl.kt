@@ -6,6 +6,7 @@ import net.corda.data.flow.state.checkpoint.FlowStackItemSession
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.application.versioning.impl.RESET_VERSIONING_MARKER
 import net.corda.flow.application.versioning.impl.VERSIONING_PROPERTY_NAME
+import net.corda.flow.exceptions.FlowRetryException
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
@@ -68,6 +69,10 @@ class FlowEngineImpl @Activate constructor(
             getFiberExecutionContext().flowMetrics.subFlowFinished(FlowStates.COMPLETED)
 
             return result
+        } catch (e: FlowRetryException) {
+            // Rethrow to the top level, but don't do any cleanup actions. The checkpoint will be rewound to the previous
+            // state. Sessions therefore should be intact when the replay happens.
+            throw e
         } catch (t: Throwable) {
             // Stack trace is filled in on demand. Without prodding that process, calls to suspend the flow will
             // serialize and deserialize and not reproduce the stack trace correctly.

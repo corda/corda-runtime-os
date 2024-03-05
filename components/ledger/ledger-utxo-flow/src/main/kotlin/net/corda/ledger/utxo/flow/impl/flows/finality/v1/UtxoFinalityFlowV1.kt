@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality.v1
 
 import net.corda.crypto.core.fullId
+import net.corda.flow.exceptions.FlowRetryException
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
@@ -102,11 +103,17 @@ class UtxoFinalityFlowV1(
             sendUnseenSignaturesToCounterparties(transaction, signaturesReceivedFromSessions)
         }
 
-        val (notarizedTransaction, notarySignatures) = notarize(transaction)
-        persistNotarizedTransaction(notarizedTransaction)
-        sendNotarySignaturesToCounterparties(notarySignatures)
-        log.trace("Finalisation of transaction {} has been finished.", transactionId)
-        return notarizedTransaction
+        return try {
+            val (notarizedTransaction, notarySignatures) = notarize(transaction)
+            persistNotarizedTransaction(notarizedTransaction)
+            sendNotarySignaturesToCounterparties(notarySignatures)
+            log.trace("Finalisation of transaction {} has been finished.", transactionId)
+            notarizedTransaction
+        } catch (e: NotaryExceptionFatal) {
+            throw e
+        } catch (t: Throwable) {
+            throw FlowRetryException("Finality flow encountered an issue during notarization and needs to retry")
+        }
     }
 
     @Suspendable

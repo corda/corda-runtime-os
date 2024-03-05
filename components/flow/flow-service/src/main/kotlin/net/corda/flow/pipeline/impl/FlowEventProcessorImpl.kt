@@ -16,6 +16,7 @@ import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.flow.pipeline.handlers.FlowPostProcessingHandler
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
+import net.corda.messaging.api.exception.CordaMessageAPIConsumerResetException
 import net.corda.messaging.api.mediator.MediatorInputService.Companion.INPUT_HASH_HEADER
 import net.corda.messaging.api.mediator.MediatorInputService.Companion.SYNC_RESPONSE_HEADER
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -141,6 +142,9 @@ class FlowEventProcessorImpl(
                     .globalPostProcessing()
                     .context
             }
+        } catch (e: CordaMessageAPIConsumerResetException) {
+            // Rethrow this for the mediator to catch. This will trigger the events to be replayed.
+            throw e
         } catch (e: FlowEventException) {
             flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (e: FlowPlatformException) {
