@@ -199,9 +199,6 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
             _impl?.downstream?.follow(coordinator)
             activationFailureCounter.set(0)
             logger.trace { "Activated $myName" }
-        } catch (e: FatalActivationException) {
-            logger.error("$myName failed activate", e)
-            coordinator.updateStatus(LifecycleStatus.ERROR)
         } catch (e: Throwable) {
             if(activationFailureCounter.incrementAndGet() <= 5) {
                 logger.debug { "$myName failed activate..., will try again. Cause: ${e.message}" }
