@@ -82,7 +82,7 @@ class RegistrationsLookup {
                     RegistrationStatus.DECLINED,
                     RegistrationStatus.INVALID,
                     RegistrationStatus.FAILED,
-                    -> throw OnboardException("Status of registration is $registrationStatus; reason: ${status.reason}.")
+                    -> throw OnboardFailedException("Onboarding failed with status: $registrationStatus; reason: ${status.reason}.")
                     else -> throw OnboardException("Status of registration is $registrationStatus; reason: ${status.reason}.")
                 }
             }
@@ -99,7 +99,7 @@ class RegistrationsLookup {
      */
     fun registerAndWaitForApproval(
         restClient: RestClient<MemberRegistrationRestResource>,
-        registrationContext: Map<String, Any>,
+        registrationContext: Map<String, String>,
         holdingId: String,
         wait: Duration = 60.seconds
     ) {
@@ -107,3 +107,7 @@ class RegistrationsLookup {
         waitForRegistrationApproval(restClient, response.registrationId, holdingId, wait)
     }
 }
+
+class OnboardException(message: String) : Exception(message)
+
+class OnboardFailedException(message: String) : Exception(message)

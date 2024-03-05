@@ -22,15 +22,12 @@ class RegistrationRequester {
      */
     fun requestRegistration(
         restClient: RestClient<MemberRegistrationRestResource>,
-        registrationContext: Map<String, Any?>,
+        registrationContext: Map<String, String>,
         holdingId: String,
         wait: Duration = 10.seconds
     ): RegistrationRequestProgress {
-        val castRegistrationContext: Map<String, String> = registrationContext.mapValues { (_, value) ->
-            value.toString()
-        }
         val request = MemberRegistrationRequest(
-            context = castRegistrationContext,
+            context = registrationContext,
         )
         return restClient.use { client ->
             executeWithRetry(
@@ -67,5 +64,3 @@ class RegistrationRequester {
         }
     }
 }
-
-class OnboardException(message: String) : Exception(message)

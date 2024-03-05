@@ -8,6 +8,7 @@ import net.corda.rest.client.RestConnectionListener
 import net.corda.rest.client.config.RestClientConfig
 import net.corda.rest.client.exceptions.ClientSslHandshakeException
 import net.corda.rest.exception.ResourceAlreadyExistsException
+import net.corda.sdk.network.OnboardFailedException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.MalformedURLException
@@ -119,17 +120,20 @@ object RestClientUtils {
         do {
             try {
                 return block()
-            } catch (ex: ResourceAlreadyExistsException) {
-                // Allow an escape without retrying
-                throw ex
-            } catch (ex: WrongConfigVersionException) {
-                // Allow an escape without retrying
-                throw ex
             } catch (ex: Exception) {
-                lastException = ex
-                logger.warn("""Cannot perform operation "$operationName" yet""")
-                val remaining = (endTime - System.currentTimeMillis()).coerceAtLeast(0)
-                Thread.sleep(timeBetweenAttempts.inWholeMilliseconds.coerceAtMost(remaining))
+                when (ex) {
+                    // Allow an escape without retrying
+                    is ResourceAlreadyExistsException,
+                    is WrongConfigVersionException,
+                    is OnboardFailedException -> throw ex
+                    // All other exceptions, perform retry
+                    else -> {
+                        lastException = ex
+                        logger.warn("""Cannot perform operation "$operationName" yet""")
+                        val remaining = (endTime - System.currentTimeMillis()).coerceAtLeast(0)
+                        Thread.sleep(timeBetweenAttempts.inWholeMilliseconds.coerceAtMost(remaining))
+                    }
+                }
             }
         } while (System.currentTimeMillis() <= endTime)
 

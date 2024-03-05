@@ -20,7 +20,7 @@ class RegistrationContext {
         sessionKeyId: KeyPairIdentifier,
         ecdhKeyId: KeyPairIdentifier,
         tlsTrustRoot: String
-    ): Map<String, Any?> {
+    ): Map<String, String> {
         val tlsType = if (mtls) {
             "Mutual"
         } else {
@@ -68,7 +68,7 @@ class RegistrationContext {
         p2pGatewayUrls: Collection<String>,
         sessionKey: KeyPairIdentifier,
         ledgerKey: KeyPairIdentifier,
-    ): Map<String, Any?> {
+    ): Map<String, String> {
         val endpoints = p2pGatewayUrls.flatMapIndexed { index, url ->
             listOf(
                 MemberInfoExtension.URL_KEY.format(index) to url,
@@ -105,15 +105,13 @@ class RegistrationContext {
     @Suppress("LongParameterList")
     fun createNotaryRegistrationContext(
         preAuthToken: String?,
-        roles: Set<MemberRole>?,
+        roles: Set<MemberRole>,
         customProperties: Map<String, String>?,
         p2pGatewayUrls: Collection<String>,
         sessionKey: KeyPairIdentifier,
         notaryKey: KeyPairIdentifier,
-    ): Map<String, Any?> {
-        if (roles.isNullOrEmpty() || !(roles.contains(MemberRole.NOTARY))) {
-            throw IllegalArgumentException("Must specify the role as notary")
-        }
+    ): Map<String, String> {
+        require(!(roles.contains(MemberRole.NOTARY))) { "Must specify the role as notary" }
 
         val endpoints = p2pGatewayUrls.flatMapIndexed { index, url ->
             listOf(

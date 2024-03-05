@@ -125,7 +125,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
 
     protected abstract val cpiFileChecksum: String
 
-    protected abstract val registrationContext: Map<String, Any?>
+    protected abstract val registrationContext: Map<String, String>
 
     protected val holdingId: String by lazy {
         val restClient = createRestClient(
