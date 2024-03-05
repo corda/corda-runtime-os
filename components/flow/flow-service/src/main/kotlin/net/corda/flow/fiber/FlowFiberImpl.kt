@@ -3,6 +3,7 @@ package net.corda.flow.fiber
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberScheduler
 import net.corda.data.flow.state.checkpoint.FlowStackItem
+import net.corda.flow.exceptions.FlowRetryException
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.clearMDC
 import net.corda.utilities.setMDC
@@ -115,6 +116,9 @@ class FlowFiberImpl(
             // initiated. The user should see the details and point of origin of the 'cause' exception in the log.
             log.warn("Flow failed", e.cause)
             FlowIORequest.FlowFailed(e.cause!!) // cause is not nullable in a FlowContinuationErrorException
+        } catch (e: FlowRetryException) {
+            log.warn("Flow to be retried from previous checkpoint")
+            FlowIORequest.FlowRetry
         } catch (t: Throwable) {
             // Every other Throwable, including base CordaRuntimeException out of flow user code gets a callstack
             // logged, it is considered an error to allow these to propagate outside the flow.
@@ -125,6 +129,7 @@ class FlowFiberImpl(
         when (outcomeOfFlow) {
             is FlowIORequest.FlowFinished -> finishTopLevelSubFlow(outcomeOfFlow)
             is FlowIORequest.FlowFailed -> failTopLevelSubFlow(outcomeOfFlow.exception)
+            is FlowIORequest.FlowRetry -> flowCompletion.complete(outcomeOfFlow)
             else -> throw IllegalStateException(FiberExceptionConstants.UNEXPECTED_OUTCOME)
         }
     }

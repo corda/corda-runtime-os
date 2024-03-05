@@ -83,6 +83,11 @@ interface FlowIORequest<out R> {
     data class FlowFailed(val exception: Throwable) : FlowIORequest<Unit>
 
     /**
+     * Signals that the flow should be retried from the previous recorded checkpoint.
+     */
+    object FlowRetry : FlowIORequest<Unit>
+
+    /**
      * Indicates a flow has been suspended
      * @property fiber serialized fiber state at the point of suspension.
      * @property output the IO request that caused the suspension.
