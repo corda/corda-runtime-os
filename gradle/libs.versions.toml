@@ -55,7 +55,7 @@ detektVersion = "1.23.5"
 dependencyCheckVersion = "0.51.0"
 snykVersion = "0.5.1"
 cyclonedxVersion = "1.8.2"
-dokkaVersion = "1.9.10"
+dokkaVersion = "1.9.20"
 testLoggerVersion = "4.0.0"
 
 [libraries]
