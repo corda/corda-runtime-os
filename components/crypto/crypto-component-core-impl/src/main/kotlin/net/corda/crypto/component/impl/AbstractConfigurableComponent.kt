@@ -53,6 +53,7 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
 
     val lifecycleCoordinator = coordinatorFactory.createCoordinator(myName, ::eventHandler)
     private var configReadServiceRegistrationHandle: RegistrationHandle? = null
+    private var configReadServiceIsUp = false
     @Volatile
     private var configHandle: AutoCloseable? = null
 
@@ -104,6 +105,8 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
         _impl = null
     }
 
+
+
     private fun onUpstreamRegistrationStatusChange(
         coordinator: LifecycleCoordinator,
         event: RegistrationStatusChangeEvent
@@ -114,6 +117,16 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
             if (event.status == LifecycleStatus.UP) {
                 logger.trace { "Registering for configuration updates." }
                 configHandle = configurationReadService.registerComponentForUpdates(coordinator, configKeys)
+                configReadServiceIsUp = true
+            } else {
+                coordinator.updateStatus(LifecycleStatus.DOWN)
+                configReadServiceIsUp = false
+            }
+        } else { // ex downstream stuff (RPCSender)
+            if (event.status != LifecycleStatus.UP) {
+                coordinator.updateStatus(LifecycleStatus.DOWN)
+            } else if (configReadServiceIsUp && _impl != null) {
+                coordinator.updateStatus(LifecycleStatus.UP)
             }
         }
     }
