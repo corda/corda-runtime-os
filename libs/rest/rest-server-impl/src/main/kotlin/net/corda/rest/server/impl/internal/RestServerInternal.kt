@@ -4,6 +4,7 @@ import io.javalin.Javalin
 import io.javalin.core.util.Header
 import io.javalin.http.BadRequestResponse
 import io.javalin.http.ContentType
+import io.javalin.http.Context
 import io.javalin.http.HandlerType
 import io.javalin.http.HttpResponseException
 import io.javalin.http.NotFoundResponse
@@ -135,39 +136,42 @@ internal class RestServerInternal(
     }
 
     private fun addExceptionHandlers(app: Javalin) {
+        app.exception(NotFoundResponse::class.java) { e, ctx ->
+            val detailsWithUrl = e.details.plus("url" to ctx.req.requestURI)
+            commonResultString(NotFoundResponse(details = detailsWithUrl), ctx)
+        }
         app.exception(HttpResponseException::class.java) { e, ctx ->
-            if (ctx.header(Header.ACCEPT)?.contains(ContentType.JSON) == true || ctx.res.contentType == ContentType.JSON) {
-                val details = if (e.javaClass == NotFoundResponse::class.java) {
-                    """"url":"${ctx.req.requestURI}""""
-                } else {
-                    e.details.map { """"${it.key}":"${JsonEscapeUtil.escape(it.value)}"""" }.joinToString(",")
-                }
-                ctx.status(e.status).result(
-                    """{
+            commonResultString(e, ctx)
+        }
+    }
+
+    private fun commonResultString(e: HttpResponseException, ctx: Context) {
+        if (ctx.header(Header.ACCEPT)?.contains(ContentType.JSON) == true || ctx.res.contentType == ContentType.JSON) {
+            ctx.status(e.status).result(
+                """{
                 |    "title": "${e.message?.let { JsonEscapeUtil.escape(it) }}",
                 |    "status": ${e.status},
-                |    "details": {$details}
+                |    "details": {${e.details.map { """"${it.key}":"${JsonEscapeUtil.escape(it.value)}"""" }.joinToString(",")}}
                 |}
-                    """.trimMargin()
-                ).contentType(ContentType.APPLICATION_JSON)
+                """.trimMargin()
+            ).contentType(ContentType.APPLICATION_JSON)
+        } else {
+            val result = if (e.details.isEmpty()) {
+                "${e.message}"
             } else {
-                val result = if (e.details.isEmpty()) {
-                    "${e.message}"
-                } else {
-                    """
+                """
                 |${e.message}
                 |${
-                        e.details.map {
-                            """
+                    e.details.map {
+                        """
                 |${it.key}:
                 |${it.value}
                 |"""
-                        }.joinToString("")
-                    }
-                    """.trimMargin()
+                    }.joinToString("")
                 }
-                ctx.status(e.status).result(result)
+                """.trimMargin()
             }
+            ctx.status(e.status).result(result)
         }
     }
 
