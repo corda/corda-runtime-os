@@ -230,7 +230,6 @@ class CryptoOpsClientComponent @Activate constructor(
     private var rpcSender: RPCSender<RpcOpsRequest, RpcOpsResponse>? = null
     private var rpcSenderRegistrationHandle: RegistrationHandle? = null
 
-    @Volatile
     private var _impl: Impl? = null
     val impl: Impl get() {
         val tmp = _impl
@@ -242,7 +241,6 @@ class CryptoOpsClientComponent @Activate constructor(
 
     private var configReadServiceRegistrationHandle: RegistrationHandle? = null
     private var configReadServiceIsUp = false
-    @Volatile
     private var configHandle: AutoCloseable? = null
 
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
