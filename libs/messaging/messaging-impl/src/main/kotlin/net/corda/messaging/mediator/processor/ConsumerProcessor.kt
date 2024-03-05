@@ -88,6 +88,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                             "Multi-source event mediator ${config.name} failed to process records, " +
                             "consumer will be reset and events tried again."
                         )
+                        metrics.consumerProcessorResetCounter.increment()
                         consumer?.resetEventOffsetPosition()
                     }
 
@@ -148,9 +149,6 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                             }
                             EventProcessingOutput(listOf(), stateChange)
                         }
-                    } catch (e: CordaMessageAPIConsumerResetException) {
-                        metrics.consumerProcessorResetCounter.increment()
-                        throw e
                     }
                 }.fold(mapOf<K, EventProcessingOutput>()) { acc, cur ->
                     acc + cur
@@ -159,7 +157,6 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 }
 
                 if (outputs.any { it.value.stateChangeAndOperation.outputState?.metadata?.get(PROCESSING_FAILURE) == true }) {
-                    metrics.consumerProcessorResetCounter.increment()
                     throw CordaMessageAPIConsumerResetException("Processing failure from external event processing")
                 }
 
