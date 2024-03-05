@@ -7,8 +7,6 @@ import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.CryptoOpsProxyClient
-import net.corda.crypto.component.impl.AbstractConfigurableComponent
-import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.ShortHash
 import net.corda.data.KeyValuePairList
@@ -21,20 +19,29 @@ import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.utilities.trace
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.security.PublicKey
 
@@ -42,21 +49,16 @@ import java.security.PublicKey
 @Component(service = [CryptoOpsClient::class, CryptoOpsProxyClient::class])
 class CryptoOpsClientComponent @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
-    coordinatorFactory: LifecycleCoordinatorFactory,
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata,
     @Reference(service = ConfigurationReadService::class)
-    configurationReadService: ConfigurationReadService,
+    private val configurationReadService: ConfigurationReadService,
     @Reference(service = PlatformDigestService::class)
     private val digestService: PlatformDigestService,
-) : AbstractConfigurableComponent<CryptoOpsClientComponent.Impl>(
-    coordinatorFactory = coordinatorFactory,
-    myName = LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
-    configurationReadService = configurationReadService,
-    configKeys = setOf(MESSAGING_CONFIG, CRYPTO_CONFIG)
-), CryptoOpsClient, CryptoOpsProxyClient {
+) : CryptoOpsClient, CryptoOpsProxyClient {
     @Suppress("LongParameterList")
     constructor(
         coordinatorFactory: LifecycleCoordinatorFactory,
@@ -79,10 +81,9 @@ class CryptoOpsClientComponent @Activate constructor(
         const val CLIENT_ID = "crypto.ops.rpc.client"
         const val GROUP_NAME = "crypto.ops.rpc.client"
         var retries = 3
-    }
 
-    override fun createActiveImpl(event: ConfigChangedEvent): Impl =
-        Impl(publisherFactory, schemeMetadata, digestService, event, retries)
+        private val logger = LoggerFactory.getLogger(CryptoOpsClient::class.java)
+    }
 
     override fun getSupportedSchemes(tenantId: String, category: String): List<String> =
         impl.ops.getSupportedSchemes(tenantId, category)
@@ -205,13 +206,114 @@ class CryptoOpsClientComponent @Activate constructor(
     ): ByteArray = impl.ops.deriveSharedSecret(tenantId, publicKey, otherPublicKey, context)
 
     class Impl(
-        publisherFactory: PublisherFactory,
+        rpcSender: RPCSender<RpcOpsRequest, RpcOpsResponse>,
         schemeMetadata: CipherSchemeMetadata,
         digestService: PlatformDigestService,
-        event: ConfigChangedEvent,
         retries: Int = 3,
-    ) : AbstractImpl {
-        private val sender: RPCSender<RpcOpsRequest, RpcOpsResponse> = publisherFactory.createRPCSender(
+    ) {
+        val ops: CryptoOpsClientImpl = CryptoOpsClientImpl(
+            schemeMetadata,
+            rpcSender,
+            digestService,
+            rpcRetries = retries
+        )
+    }
+
+    private val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<CryptoOpsClient>()
+    // VisibleForTesting
+    val lifecycleCoordinator = coordinatorFactory.createCoordinator(
+        lifecycleCoordinatorName,
+        ::handleEvent
+    )
+    private val myName = lifecycleCoordinatorName
+
+    private var rpcSender: RPCSender<RpcOpsRequest, RpcOpsResponse>? = null
+    private var rpcSenderRegistrationHandle: RegistrationHandle? = null
+
+    @Volatile
+    private var _impl: Impl? = null
+    val impl: Impl get() {
+        val tmp = _impl
+        if(tmp == null || lifecycleCoordinator.status != LifecycleStatus.UP) {
+            throw IllegalStateException("Component $myName is not ready.")
+        }
+        return tmp
+    }
+
+    private var configReadServiceRegistrationHandle: RegistrationHandle? = null
+    private var configReadServiceIsUp = false
+    @Volatile
+    private var configHandle: AutoCloseable? = null
+
+    private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        logger.trace { "LifecycleEvent received $myName: $event" }
+        when (event) {
+            is StartEvent -> {
+                configReadServiceRegistrationHandle?.close()
+                configReadServiceRegistrationHandle = coordinator.followStatusChangesByName(
+                    setOf(
+                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+                    )
+                )
+            }
+
+            is StopEvent -> {
+                onStop()
+            }
+
+            is RegistrationStatusChangeEvent -> {
+                onUpstreamRegistrationStatusChange(coordinator, event)
+            }
+
+            is ConfigChangedEvent -> {
+                doActivation(event, coordinator)
+                coordinator.updateStatus(LifecycleStatus.UP)
+            }
+        }
+    }
+
+    private fun onUpstreamRegistrationStatusChange(
+        coordinator: LifecycleCoordinator,
+        event: RegistrationStatusChangeEvent
+    ) {
+//        logger.trace { "onUpstreamRegistrationStatusChange(upstream=${event.status}, downstream=${_impl?.downstream?.isUp})." }
+        if (event.registration == configReadServiceRegistrationHandle) {
+            configHandle?.close()
+            if (event.status == LifecycleStatus.UP) {
+                logger.trace { "Registering for configuration updates." }
+                configHandle = configurationReadService.registerComponentForUpdates(
+                    coordinator,
+                    setOf(MESSAGING_CONFIG, CRYPTO_CONFIG)
+                )
+                configReadServiceIsUp = true
+            } else {
+                coordinator.updateStatus(LifecycleStatus.DOWN)
+                configReadServiceIsUp = false
+            }
+        } else { // ex downstream stuff (RPCSender)
+            if (event.status != LifecycleStatus.UP) {
+                coordinator.updateStatus(LifecycleStatus.DOWN)
+            } else if (configReadServiceIsUp && _impl != null) {
+                coordinator.updateStatus(LifecycleStatus.UP)
+            }
+        }
+    }
+
+    private fun doActivation(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
+        logger.trace { "Activating $myName" }
+        rpcSenderRegistrationHandle?.close()
+        rpcSenderRegistrationHandle = null
+        rpcSender?.close()
+        rpcSender = createSender(event).also { rpcSender ->
+            rpcSender.start()
+            rpcSenderRegistrationHandle = coordinator.followStatusChangesByName(setOf(rpcSender.subscriptionName))
+            _impl = Impl(rpcSender, schemeMetadata, digestService)
+        }
+        logger.trace { "Activated $myName" }
+    }
+
+    private fun createSender(event: ConfigChangedEvent): RPCSender<RpcOpsRequest, RpcOpsResponse> =
+        publisherFactory.createRPCSender(
             RPCConfig(
                 groupName = GROUP_NAME,
                 clientName = CLIENT_ID,
@@ -220,19 +322,29 @@ class CryptoOpsClientComponent @Activate constructor(
                 responseType = RpcOpsResponse::class.java
             ),
             event.config.getConfig(MESSAGING_CONFIG)
-        ).also { it.start() }
-
-        val ops: CryptoOpsClientImpl = CryptoOpsClientImpl(
-            schemeMetadata,
-            sender,
-            digestService,
-            rpcRetries = retries
         )
 
-        override val downstream: DependenciesTracker = DependenciesTracker.Default(setOf(sender.subscriptionName))
+    private fun onStop() {
+        rpcSender?.close()
+        rpcSender = null
+        rpcSenderRegistrationHandle?.close()
+        rpcSenderRegistrationHandle = null
+        configHandle?.close()
+        configHandle = null
+        configReadServiceRegistrationHandle?.close()
+        configReadServiceRegistrationHandle = null
+    }
 
-        override fun close() {
-            sender.close()
-        }
+    override val isRunning: Boolean
+        get() = lifecycleCoordinator.isRunning
+
+    override fun start() {
+        logger.trace { "$myName starting..." }
+        lifecycleCoordinator.start()
+    }
+
+    override fun stop() {
+        logger.trace { "$myName stopping..." }
+        lifecycleCoordinator.stop()
     }
 }
