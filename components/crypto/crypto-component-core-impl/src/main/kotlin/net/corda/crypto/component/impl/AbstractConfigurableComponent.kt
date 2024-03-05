@@ -109,10 +109,12 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
         event: RegistrationStatusChangeEvent
     ) {
         logger.trace { "onUpstreamRegistrationStatusChange(upstream=${event.status}, downstream=${_impl?.downstream?.isUp})." }
-        configHandle?.close()
-        if (event.status == LifecycleStatus.UP) {
-            logger.trace { "Registering for configuration updates." }
-            configHandle = configurationReadService.registerComponentForUpdates(coordinator, configKeys)
+        if (event.registration == configReadServiceRegistrationHandle) {
+            configHandle?.close()
+            if (event.status == LifecycleStatus.UP) {
+                logger.trace { "Registering for configuration updates." }
+                configHandle = configurationReadService.registerComponentForUpdates(coordinator, configKeys)
+            }
         }
     }
 
