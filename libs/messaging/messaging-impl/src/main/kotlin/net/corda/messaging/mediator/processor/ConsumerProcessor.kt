@@ -2,6 +2,7 @@ package net.corda.messaging.mediator.processor
 
 import net.corda.libs.statemanager.api.State
 import net.corda.messaging.api.constants.MessagingMetadataKeys.PROCESSING_FAILURE
+import net.corda.messaging.api.exception.CordaMessageAPIConsumerResetException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorConsumer
 import net.corda.messaging.api.mediator.MediatorMessage
@@ -81,6 +82,15 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                         )
                         consumer?.resetEventOffsetPosition()
                     }
+
+                    is CordaMessageAPIConsumerResetException -> {
+                        log.warn(
+                            "Multi-source event mediator ${config.name} failed to process records, " +
+                            "consumer will be reset and events tried again."
+                        )
+                        consumer?.resetEventOffsetPosition()
+                    }
+
                     else -> {
                         log.debug { "${exception.message} Attempts: $attempts. Fatal error occurred!: $exception"}
                         consumer?.close()
@@ -109,7 +119,6 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             val states = stateManager.get(polledRecords.keys.map { it.toString() })
             val inputs = generateInputs(states.values, polledRecords)
             var groups = groupAllocator.allocateGroups(inputs, config)
-            var failed = false
 
             while (groups.isNotEmpty()) {
                 // Process each group on a thread
@@ -139,6 +148,10 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                             }
                             EventProcessingOutput(listOf(), stateChange)
                         }
+                    } catch (e: CordaMessageAPIConsumerResetException) {
+                        // all messages in this poll will fail
+                        metrics.consumerProcessorFailureCounter.increment(messages.size.toDouble())
+                        throw e
                     }
                 }.fold(mapOf<K, EventProcessingOutput>()) { acc, cur ->
                     acc + cur
@@ -146,10 +159,10 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     it.toString()
                 }
 
-                if (outputs.any { it.value.stateChangeAndOperation.outputState?.metadata?.get(PROCESSING_FAILURE) == true}) {
-                    failed = true
-                    consumer.resetEventOffsetPosition()
-                    break
+                if (outputs.any { it.value.stateChangeAndOperation.outputState?.metadata?.get(PROCESSING_FAILURE) == true }) {
+                    // all messages in this poll will fail
+                    metrics.consumerProcessorFailureCounter.increment(messages.size.toDouble())
+                    throw CordaMessageAPIConsumerResetException("Processing failure from external event processing")
                 }
 
                 // Persist state changes, send async outputs and setup to reprocess states that fail to persist
@@ -160,15 +173,14 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 }
                 groups = groupAllocator.allocateGroups(generateInputs(failedStates.values, failedRecords), config)
             }
-            if (!failed) {
-                metrics.commitTimer.recordCallable {
-                    consumer.syncCommitOffsets()
-                }
-                //Delete occurs after committing offsets bus to satisfy replay requirements in the Flow Engine. Ignore Failures, these are
-                // logged in SM and recorded by a metric
-                stateManager.delete(statesToDelete)
+            metrics.commitTimer.recordCallable {
+                consumer.syncCommitOffsets()
             }
+            //Delete occurs after committing offsets bus to satisfy replay requirements in the Flow Engine. Ignore Failures, these are
+            // logged in SM and recorded by a metric
+            stateManager.delete(statesToDelete)
         }
+        // this won't be recorded if we throw the consumer reset exception
         metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
     }
 
