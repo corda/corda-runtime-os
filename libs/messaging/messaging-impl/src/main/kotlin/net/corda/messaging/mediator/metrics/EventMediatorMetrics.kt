@@ -25,6 +25,10 @@ class EventMediatorMetrics(
         .withTag(CordaMetrics.Tag.MessagePatternClientId, mediatorName)
         .build()
 
+    val consumerProcessorResetCounter = CordaMetrics.Metric.Messaging.ConsumerProcessorResetCount.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, mediatorName)
+        .build()
+
     val eventProcessorFailureCounter = CordaMetrics.Metric.Messaging.EventProcessorFailureCount.builder()
         .withTag(CordaMetrics.Tag.MessagePatternClientId, mediatorName)
         .build()

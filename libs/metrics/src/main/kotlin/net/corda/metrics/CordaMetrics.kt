@@ -647,6 +647,11 @@ object CordaMetrics {
             object ConsumerProcessorFailureCount: Metric<Counter>("consumer.processor.failure.count", Metrics::counter)
 
             /**
+             * The number of consumer resets by the [ConsumerProcessor].
+             */
+            object ConsumerProcessorResetCount: Metric<Counter>("consumer.processor.reset.count", Metrics::counter)
+
+            /**
              * The number of states marked as failed to process by the [EventProcessor]
              */
             object EventProcessorFailureCount: Metric<Counter>("event.processor.failure.count", Metrics::counter)

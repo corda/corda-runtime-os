@@ -149,8 +149,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                             EventProcessingOutput(listOf(), stateChange)
                         }
                     } catch (e: CordaMessageAPIConsumerResetException) {
-                        // all messages in this poll will fail
-                        metrics.consumerProcessorFailureCounter.increment(messages.size.toDouble())
+                        metrics.consumerProcessorResetCounter.increment()
                         throw e
                     }
                 }.fold(mapOf<K, EventProcessingOutput>()) { acc, cur ->
@@ -160,8 +159,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 }
 
                 if (outputs.any { it.value.stateChangeAndOperation.outputState?.metadata?.get(PROCESSING_FAILURE) == true }) {
-                    // all messages in this poll will fail
-                    metrics.consumerProcessorFailureCounter.increment(messages.size.toDouble())
+                    metrics.consumerProcessorResetCounter.increment()
                     throw CordaMessageAPIConsumerResetException("Processing failure from external event processing")
                 }
 
