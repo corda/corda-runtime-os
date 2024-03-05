@@ -26,6 +26,8 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransacti
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionIdsAndStatusesExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionIdsAndStatusesParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionParameters
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionsWithStatusBeforeTimeExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionsWithStatusBeforeTimeParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistFilteredTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistFilteredTransactionsExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
@@ -65,6 +67,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.PublicKey
+import java.time.Instant
 
 @Suppress("LongParameterList", "TooManyFunctions")
 @Component(
@@ -314,6 +317,20 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                 )
             }
         }
+    }
+
+    @Suspendable
+    override fun findTransactionsWithStatusCreatedBeforeTime(status: TransactionStatus, instant: Instant): List<SecureHash> {
+        return recordSuspendable(
+            { ledgerPersistenceFlowTimer(LedgerPersistenceMetricOperationName.FindTransactionsWithStatusBeforeTime) }
+        ) @Suspendable {
+            wrapWithPersistenceException {
+                externalEventExecutor.execute(
+                    FindTransactionsWithStatusBeforeTimeExternalEventFactory::class.java,
+                    FindTransactionsWithStatusBeforeTimeParameters(status, instant)
+                )
+            }
+        }.map { serializationService.deserialize(it.array()) }
     }
 
     private fun SignedTransactionContainer.toSignedTransaction(): UtxoSignedTransaction {

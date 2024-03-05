@@ -210,4 +210,11 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             AND status in ('$UNVERIFIED', '$DRAFT') 
             OR (status = '$VERIFIED' AND is_filtered = TRUE)
         """.trimIndent()
+
+    override val findTransactionsWithStatusBeforeTime: String
+        get() = """
+            SELECT id
+            FROM {h-schema}utxo_transaction
+            WHERE status = :status AND created < :created
+        """.trimIndent()
 }

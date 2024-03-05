@@ -2,16 +2,17 @@ package net.corda.ledger.utxo.flow.impl
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.persistence.query.ResultSetFactory
-import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityFlow
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoReceiveFinalityFlow
+import net.corda.ledger.utxo.flow.impl.flows.recovery.UtxoRecoveryFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.ReceiveAndUpdateTransactionBuilderFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.SendTransactionBuilderDiffFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.ReceiveSignedTransactionFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.ReceiveWireTransactionFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.SendSignedTransactionFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.SendWireTransactionFlow
+import net.corda.ledger.utxo.flow.impl.notary.PluggableNotarySelector
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
 import net.corda.ledger.utxo.flow.impl.persistence.VaultNamedParameterizedQueryImpl
@@ -25,18 +26,13 @@ import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFiltered
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
-import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.NotaryLookup
-import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.FinalizationResult
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -68,6 +64,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Reference(service = UtxoLedgerStateQueryService::class) private val utxoLedgerStateQueryService: UtxoLedgerStateQueryService,
     @Reference(service = CurrentSandboxGroupContext::class) private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = NotaryLookup::class) private val notaryLookup: NotaryLookup,
+    @Reference(service = PluggableNotarySelector::class) private val pluggableNotarySelector: PluggableNotarySelector,
     @Reference(service = ExternalEventExecutor::class) private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = ResultSetFactory::class) private val resultSetFactory: ResultSetFactory,
     @Reference(service = UtxoLedgerTransactionVerificationService::class)
@@ -165,7 +162,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
                     UtxoFinalityFlow(
                         signedTransaction as UtxoSignedTransactionInternal,
                         sessions,
-                        getPluggableNotaryDetails(signedTransaction.notaryName)
+                        pluggableNotarySelector.get(signedTransaction.notaryName)
                     )
                 }
             )
@@ -232,42 +229,6 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Suspendable
     override fun findDraftSignedTransaction(id: SecureHash): UtxoSignedTransaction? {
         return utxoLedgerPersistenceService.findSignedTransaction(id, TransactionStatus.DRAFT)
-    }
-
-    // Retrieve notary client plugin class for specified notary service identity. This is done in
-    // a non-suspendable function to avoid trying (and failing) to serialize the objects used
-    // internally.
-    @VisibleForTesting
-    @Suppress("ThrowsCount")
-    internal fun getPluggableNotaryDetails(notary: MemberX500Name): PluggableNotaryDetails {
-        val notaryInfo = notaryLookup.notaryServices.firstOrNull { it.name == notary }
-            ?: throw CordaRuntimeException(
-                "Notary service $notary has not been registered on the network."
-            )
-
-        val sandboxGroupContext = currentSandboxGroupContext.get()
-
-        val protocolStore =
-            sandboxGroupContext.getObjectByKey<FlowProtocolStore>("FLOW_PROTOCOL_STORE") ?: throw CordaRuntimeException(
-                "Cannot get flow protocol store for current sandbox group context"
-            )
-
-        val flowName = protocolStore.initiatorForProtocol(notaryInfo.protocol, notaryInfo.protocolVersions)
-
-        val flowClass = sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(flowName)
-
-        if (!PluggableNotaryClientFlow::class.java.isAssignableFrom(flowClass)) {
-            throw CordaRuntimeException(
-                "Notary client flow class $flowName is invalid because " +
-                    "it does not inherit from ${PluggableNotaryClientFlow::class.simpleName}."
-            )
-        }
-
-        @Suppress("UNCHECKED_CAST")
-        return PluggableNotaryDetails(
-            flowClass as Class<PluggableNotaryClientFlow>,
-            notaryInfo.isBackchainRequired
-        )
     }
 
     @Suspendable
@@ -356,5 +317,10 @@ class UtxoLedgerServiceImpl @Activate constructor(
                 transactionBuilder
             )
         )
+    }
+
+    @Suspendable
+    override fun recoverMissedNotarisedTransactions(instant: Instant) {
+        flowEngine.subFlow(UtxoRecoveryFlow(instant))
     }
 }
