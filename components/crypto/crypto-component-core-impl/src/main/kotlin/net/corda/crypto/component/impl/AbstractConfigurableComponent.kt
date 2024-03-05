@@ -54,6 +54,7 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
     val lifecycleCoordinator = coordinatorFactory.createCoordinator(myName, ::eventHandler)
     private var configReadServiceRegistrationHandle: RegistrationHandle? = null
     private var configReadServiceIsUp = false
+    private var downstreamRegistrationHandle: RegistrationHandle? = null
     @Volatile
     private var configHandle: AutoCloseable? = null
 
@@ -96,7 +97,8 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
     }
 
     private fun onStop() {
-        _impl?.downstream?.clear()
+        downstreamRegistrationHandle?.close()
+        downstreamRegistrationHandle = null
         configHandle?.close()
         configHandle = null
         configReadServiceRegistrationHandle?.close()
@@ -131,10 +133,14 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
 
     private fun doActivation(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         logger.trace { "Activating $myName" }
-        _impl?.downstream?.clear() // doesn't throw
+        downstreamRegistrationHandle?.close()
+        downstreamRegistrationHandle = null
         _impl?.close()
         _impl = createActiveImpl(event) // doesn't throw
-        _impl?.downstream?.follow(coordinator) // doesn't throw
+        val dependencies = _impl?.downstream?.dependencies
+        if (dependencies != null && dependencies.isNotEmpty()) {
+            downstreamRegistrationHandle = coordinator.followStatusChangesByName(dependencies)
+        }
         logger.trace { "Activated $myName" }
     }
 
