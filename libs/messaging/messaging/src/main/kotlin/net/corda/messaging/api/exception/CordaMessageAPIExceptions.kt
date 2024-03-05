@@ -11,6 +11,12 @@ class CordaMessageAPIFatalException(message: String?, exception: Exception? = nu
     CordaRuntimeException(message, exception)
 
 /**
+ * An error occurred that requires message bus consumer to be reset and events tried again.
+ */
+class CordaMessageAPIConsumerResetException(message: String?, exception: Exception? = null) :
+    CordaRuntimeException(message, exception)
+
+/**
  * Intermittent error during operation which can be retried. If this exception is thrown from a producer, the producer
  * is safe to reuse as any transaction will have been aborted on the client's behalf.
  */
