@@ -168,8 +168,7 @@ class InboundMessageHandlerTest {
     @Test
     fun `onMessage will respond with OK with valid message`() {
         setRunning()
-        val sessionId = "aaa"
-        val p2pMessage = authenticatedP2PDataMessage(sessionId)
+        val p2pMessage = authenticatedP2PDataMessage("aaa")
         val gatewayMessage = GatewayMessage(requestId, p2pMessage)
         `when`(avroSchemaRegistry.deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage))).thenReturn(gatewayMessage)
         handler.onRequest(
