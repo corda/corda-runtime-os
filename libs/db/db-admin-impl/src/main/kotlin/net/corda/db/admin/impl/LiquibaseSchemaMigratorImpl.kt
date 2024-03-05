@@ -5,6 +5,8 @@ import liquibase.GlobalConfiguration
 import liquibase.LabelExpression
 import liquibase.Liquibase
 import liquibase.Scope
+import liquibase.UpdateSummaryEnum
+import liquibase.UpdateSummaryOutputEnum
 import liquibase.changelog.DatabaseChangeLog
 import liquibase.command.CommandScope
 import liquibase.command.core.StatusCommandStep
@@ -14,6 +16,7 @@ import liquibase.command.core.UpdateSqlCommandStep
 import liquibase.command.core.helpers.ChangeExecListenerCommandStep
 import liquibase.command.core.helpers.DatabaseChangelogCommandStep
 import liquibase.command.core.helpers.DbUrlConnectionCommandStep
+import liquibase.command.core.helpers.ShowSummaryArgument
 import liquibase.database.Database
 import liquibase.database.DatabaseFactory
 import liquibase.database.OfflineConnection
@@ -249,6 +252,7 @@ class LiquibaseSchemaMigratorImpl(
 
 private fun CommandScope.configure(lb: Liquibase, tag: String?): CommandScope {
     this.addArgumentValue(DbUrlConnectionCommandStep.DATABASE_ARG, lb.database)
+        .addArgumentValue(UpdateCommandStep.CHANGELOG_ARG, lb.databaseChangeLog)
         .addArgumentValue(UpdateCommandStep.CHANGELOG_FILE_ARG, lb.changeLogFile)
         .addArgumentValue(UpdateCommandStep.CONTEXTS_ARG, Contexts().toString())
         .addArgumentValue(UpdateCommandStep.LABEL_FILTER_ARG, LabelExpression().originalString)
@@ -256,10 +260,12 @@ private fun CommandScope.configure(lb: Liquibase, tag: String?): CommandScope {
             ChangeExecListenerCommandStep.CHANGE_EXEC_LISTENER_ARG,
             lb.defaultChangeExecListener
         )
+        .addArgumentValue(ShowSummaryArgument.SHOW_SUMMARY_OUTPUT, UpdateSummaryOutputEnum.LOG)
         .addArgumentValue(
             DatabaseChangelogCommandStep.CHANGELOG_PARAMETERS,
             lb.changeLogParameters
         )
+        .addArgumentValue(ShowSummaryArgument.SHOW_SUMMARY, UpdateSummaryEnum.SUMMARY)
         .addArgumentValue(TagCommandStep.TAG_ARG, tag)
     return this
 }
