@@ -138,14 +138,14 @@ internal class RestServerInternal(
     private fun addExceptionHandlers(app: Javalin) {
         app.exception(NotFoundResponse::class.java) { e, ctx ->
             val detailsWithUrl = e.details.plus("url" to ctx.req.requestURI)
-            commonResultString(NotFoundResponse(details = detailsWithUrl), ctx)
+            commonResult(NotFoundResponse(details = detailsWithUrl), ctx)
         }
         app.exception(HttpResponseException::class.java) { e, ctx ->
-            commonResultString(e, ctx)
+            commonResult(e, ctx)
         }
     }
 
-    private fun commonResultString(e: HttpResponseException, ctx: Context) {
+    private fun commonResult(e: HttpResponseException, ctx: Context) {
         if (ctx.header(Header.ACCEPT)?.contains(ContentType.JSON) == true || ctx.res.contentType == ContentType.JSON) {
             ctx.status(e.status).result(
                 """{
