@@ -1,13 +1,9 @@
 kafka:
-  nodeSelector:
-    node: "prereqs"
   tolerations:
     - effect: "NoSchedule"
       key: "node"
       value: "prereqs"
   zookeeper:
-    nodeSelector:
-      node: "prereqs"
     tolerations:
       - effect: "NoSchedule"
         key: "node"
@@ -15,8 +11,6 @@ kafka:
 
 postgresql:
   primary:
-    nodeSelector:
-      node: "prereqs"
     tolerations:
       - effect: "NoSchedule"
         key: "node"
