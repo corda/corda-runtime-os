@@ -1,4 +1,4 @@
-{{- if and (.Values.appSimulators.sender.enabled) (eq .Values.appSimulators.sender.loadGenerationType "ONE_OFF") }}
+{{- if and (.Values.appSimulators.sender.enabled) (eq .Values.appSimulators.sender.loadGenerationType "TIME_BASED") }}
 {{- $_ := set . "type" "sender" }}
 apiVersion: batch/v1
 kind: Job
@@ -25,13 +25,13 @@ spec:
           args:
             - "--mode=SENDER"
             - "--clients={{ .Values.appSimulators.sender.parallelClientsPerReplica }}"
-            - "-lloadGenerationType=ONE_OFF"
+            - "-lloadGenerationType=TIME_BASED"
             - "-lpeerX500Names={{ .Values.appSimulators.sender.peerX500Names }}"
             - "-lpeerGroupId={{ .Values.appSimulators.sender.peerGroupId }}"
             - "-lsenderX500Names={{ .Values.appSimulators.sender.senderX500Names }}"
             - "-lsenderGroupId={{ .Values.appSimulators.sender.senderGroupId }}"
             - "-lbatchSize={{ .Values.appSimulators.sender.batchSize }}"
-            - "-ltotalNumberOfMessages={{ .Values.appSimulators.sender.totalNumberOfMessages}}"
+            - "-ltimeFrame={{ .Values.appSimulators.sender.timeFrame}}"
             - "-linterBatchDelay={{ .Values.appSimulators.sender.interBatchDelay }}"
             - "-lmessageSizeBytes={{ .Values.appSimulators.sender.messageSizeBytes }}"
             {{- if .Values.appSimulators.sender.expireMessages.enabled }}

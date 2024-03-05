@@ -65,7 +65,7 @@ echo "Deploying receiver in $RUN_MODE mode"
 "$SCRIPT_DIR"/runReceiver.sh "$RUN_MODE"
 if [ "$RUN_MODE" == "ONE_WAY" ]
 then
-  dbPassword=$(kubectl get secret --namespace $APP_SIMULATOR_DB_NAMESPACE-db db-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
+  dbPassword=$(kubectl get secret --namespace $APP_SIMULATOR_DB_NAMESPACE db-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
 else
   dbPasswordA=$(kubectl get secret --namespace $APP_SIMULATOR_DB_NAMESPACE_A db-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
   dbPasswordB=$(kubectl get secret --namespace $APP_SIMULATOR_DB_NAMESPACE_B db-postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
@@ -113,17 +113,17 @@ slowest_messages() {
 
 warm_up_ends=''
 run_sender() {
-  echo "Running use case with $batchSize batch size and $totalNumberOfMessages messages"
+  echo "Running use case with $batchSize batch size and $timeFrame minutes"
   echo "---" >> "$reportFile"
   start=$(date -u '+%Y-%m-%d %H:%M:%S')
   echo $start >> "$reportFile"
-  echo "totalNumberOfMessages: $totalNumberOfMessages" >> "$reportFile"
+  echo "timeFrame: $timeFrame minutes" >> "$reportFile"
   echo "interBatchDelay: $interBatchDelay" >> "$reportFile"
   echo "batchSize: $batchSize" >> "$reportFile"
   export senderDetailsFile=$(mktemp)
 
   echo '{}' \
-    | jq ".appSimulators.sender.totalNumberOfMessages=$totalNumberOfMessages" \
+    | jq ".appSimulators.sender.timeFrame=$timeFrame" \
     | jq ".appSimulators.sender.interBatchDelay=\"$interBatchDelay\"" \
     | jq ".appSimulators.sender.batchSize=$batchSize" \
     | jq '.db.appSimulator.user="postgres"' \
@@ -185,13 +185,13 @@ run_sender() {
   fi
 }
 
-totalNumberOfMessages=200
+timeFrame=1
 interBatchDelay="PT1S"
 batchSize=50
 echo "Warm up"
 run_sender true
 
-totalNumberOfMessages=60000
+timeFrame=5
 interBatchDelay="PT0.3S"
 batchSize=40
 stop="no"

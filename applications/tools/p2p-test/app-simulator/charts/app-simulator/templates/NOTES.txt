@@ -21,6 +21,29 @@ From identities {{ .Values.appSimulators.sender.senderX500Names }} in group {{ .
 The sending app simulator will run until it finishes sending messages.
 {{- end }}
 
+{{- if and (.Values.appSimulators.sender.enabled) (eq .Values.appSimulators.sender.loadGenerationType "TIME_BASED") }}
+
+Deploying a sending app simulator into namespace {{ .Release.Namespace }}.
+Deploying {{ .Values.appSimulators.sender.replicaCount }} replicas each of which will use {{ .Values.appSimulators.sender.parallelClientsPerReplica }} clients in parallel.
+
+The sending app simulator will generate messages to the topic, which is where the p2p layer processes them from by default (`p2p.out`).
+The tool will also (optionally) write some additional metadata (e.g. message ID, sender ID) to the specified database.
+Whether you want to write metadata to the DB from the sender depends on the nature of testing:
+* If you want to perform functional testing, it's useful to write this metadata to the DB so that you can check whether all sent messages were delivered.
+* If you want to perform performance/stress testing, you can disable this part. This will prevent the DB from becoming a bottleneck and you will still get latency statistics for the delivered messages.
+{{- if .Values.appSimulators.sender.sendMessagesToDatabase }}
+The current deployment is configured to send metadata to the database.
+{{- else }}
+The current deployment is configured to not send metadata to the database.
+{{- end }}
+
+The sending app simulator will send messages for {{ .Values.appSimulators.sender.timeFrame }} minutes of size {{ .Values.appSimulators.sender.messageSizeBytes }} bytes, in batches of {{ .Values.appSimulators.sender.batchSize }}.
+With a delay of {{ .Values.appSimulators.sender.interBatchDelay}} between each batch.
+From identities {{ .Values.appSimulators.sender.senderX500Names }} in group {{ .Values.appSimulators.sender.senderGroupId }} to {{ .Values.appSimulators.sender.peerX500Names }} in group {{ .Values.appSimulators.sender.peerGroupId }}.
+
+The sending app simulator will run until it finishes sending messages.
+{{- end }}
+
 {{- if and (.Values.appSimulators.sender.enabled) (eq .Values.appSimulators.sender.loadGenerationType "CONTINUOUS") }}
 
 Deploying a sending app simulator into namespace {{ .Release.Namespace }}.
