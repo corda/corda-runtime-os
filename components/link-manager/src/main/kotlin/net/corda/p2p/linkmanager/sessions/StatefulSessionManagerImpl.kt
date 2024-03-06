@@ -64,6 +64,7 @@ import java.security.MessageDigest
 import java.time.Duration
 import java.util.Base64
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicReference
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage as AvroInitiatorHandshakeMessage
 import net.corda.data.p2p.crypto.InitiatorHelloMessage as AvroInitiatorHelloMessage
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage as AvroResponderHandshakeMessage
@@ -91,8 +92,8 @@ internal class StatefulSessionManagerImpl(
     }
 
     // These metrics must be removed on shutdown as the MeterRegistry holds references to their lambdas.
-    private lateinit var outboundCacheSize: Gauge
-    private lateinit var inboundCacheSize: Gauge
+    private val outboundCacheSize = AtomicReference<Gauge>()
+    private val inboundCacheSize = AtomicReference<Gauge>()
 
     override fun <T> processOutboundMessages(
         wrappedMessages: Collection<T>,
@@ -1188,17 +1189,19 @@ internal class StatefulSessionManagerImpl(
     )
 
     private fun onTileOpen() {
-        outboundCacheSize =
+        outboundCacheSize.set(
             EstimatedSessionCacheSize { sessionCache.getEstimatedOutboundCacheSize() }.builder()
                 .withTag(CordaMetrics.Tag.SessionDirection, SessionDirection.OUTBOUND.toString()).build()
-        inboundCacheSize =
+        )
+        inboundCacheSize.set(
             EstimatedSessionCacheSize { sessionCache.getEstimatedInboundCacheSize() }.builder()
                 .withTag(CordaMetrics.Tag.SessionDirection, SessionDirection.INBOUND.toString()).build()
+        )
     }
 
     private fun onTileClose() {
-        CordaMetrics.registry.remove(inboundCacheSize)
-        CordaMetrics.registry.remove(outboundCacheSize)
+        CordaMetrics.registry.remove(inboundCacheSize.get())
+        CordaMetrics.registry.remove(outboundCacheSize.get())
     }
 
     override val dominoTile =

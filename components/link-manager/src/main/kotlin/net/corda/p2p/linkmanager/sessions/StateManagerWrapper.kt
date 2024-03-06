@@ -1,12 +1,12 @@
 package net.corda.p2p.linkmanager.sessions
 
-import net.corda.data.p2p.event.SessionDirection
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.metrics.CordaMetrics
 import net.corda.p2p.linkmanager.metrics.recordP2PMetric
 import net.corda.p2p.linkmanager.metrics.recordSessionCreationTime
+import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.isOutbound
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.toOutbound
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
 import net.corda.p2p.linkmanager.state.direction
@@ -80,11 +80,11 @@ internal class StateManagerWrapper(
     }
 
     private fun recordSessionEstablishmentMetrics(updates: Collection<State>) {
-        val allOutbound = updates.filter { it.direction() == SessionDirection.OUTBOUND }.map { it.metadata.toOutbound() }
-        allOutbound.groupBy { it.status }[OutboundSessionStatus.SessionReady]?.let { established ->
-            recordP2PMetric(CordaMetrics.Metric.SessionEstablishedCount, SessionDirection.OUTBOUND, established.size.toDouble())
-            established.forEach { recordSessionCreationTime(it.initiationTimestamp) }
-        }
+        val allEstablished = updates.filter { it.metadata.isOutbound() }
+            .map { it.metadata.toOutbound() }
+            .filter { it.status == OutboundSessionStatus.SessionReady }
+        CordaMetrics.Metric.SessionEstablishedCount.builder().build().increment(allEstablished.size.toDouble())
+        allEstablished.forEach { recordSessionCreationTime(it.initiationTimestamp) }
     }
 
     private fun recordSessionReplayMetrics(updates: Collection<UpdateAction>) {
