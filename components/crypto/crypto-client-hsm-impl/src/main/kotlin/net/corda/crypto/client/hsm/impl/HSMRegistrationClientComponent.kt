@@ -20,7 +20,7 @@ import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
-import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.trace
 import org.osgi.service.component.annotations.Activate
@@ -118,7 +118,7 @@ class HSMRegistrationClientComponent @Activate constructor(
                 logger.trace { "Registering for configuration updates." }
                 configHandle = configurationReadService.registerComponentForUpdates(
                     coordinator,
-                    setOf(MESSAGING_CONFIG, ConfigKeys.CRYPTO_CONFIG)
+                    setOf(MESSAGING_CONFIG, CRYPTO_CONFIG)
                 )
                 configReadServiceIsUp = true
             } else {
