@@ -148,7 +148,6 @@ class LiquibaseSchemaMigratorImplTest {
         }
         assertThat(e).hasMessageContaining("IllegalArgumentException")
         assertThat(e).hasMessageContaining("mysteryclass")
-        println(e)
     }
 
     @Test
