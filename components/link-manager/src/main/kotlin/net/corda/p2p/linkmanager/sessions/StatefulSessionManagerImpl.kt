@@ -25,7 +25,6 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.metrics.CordaMetrics
-import net.corda.metrics.CordaMetrics.Metric.EstimatedSessionCacheSize
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
@@ -1190,11 +1189,11 @@ internal class StatefulSessionManagerImpl(
 
     private fun onTileOpen() {
         outboundCacheSize.set(
-            EstimatedSessionCacheSize { sessionCache.getEstimatedOutboundCacheSize() }.builder()
+            CordaMetrics.Metric.EstimatedSessionCacheSize { sessionCache.getEstimatedOutboundCacheSize() }.builder()
                 .withTag(CordaMetrics.Tag.SessionDirection, SessionDirection.OUTBOUND.toString()).build()
         )
         inboundCacheSize.set(
-            EstimatedSessionCacheSize { sessionCache.getEstimatedInboundCacheSize() }.builder()
+            CordaMetrics.Metric.EstimatedSessionCacheSize { sessionCache.getEstimatedInboundCacheSize() }.builder()
                 .withTag(CordaMetrics.Tag.SessionDirection, SessionDirection.INBOUND.toString()).build()
         )
     }
