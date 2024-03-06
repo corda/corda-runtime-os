@@ -11,6 +11,7 @@ import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.crypto.CommonHeader
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage
+import net.corda.data.p2p.crypto.InitiatorHelloMessage
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
@@ -130,7 +131,7 @@ class StatefulSessionManagerImplTest {
         publisherWithDominoLogic.close()
     }
 
-    private fun mockState(id: String): State {
+    private fun mockState(id: String, sent: Long = 50L): State {
         val state = mock<State> {
             on { value } doReturn id.toByteArray()
             on { metadata } doReturn Metadata(
@@ -138,7 +139,7 @@ class StatefulSessionManagerImplTest {
                     "sourceVnode" to "O=Alice, L=London, C=GB",
                     "destinationVnode" to "O=Bob, L=London, C=GB",
                     "groupId" to "group ID",
-                    "lastSendTimestamp" to 50L,
+                    "lastSendTimestamp" to sent,
                     "encryptionKeyId" to "encryptionKeyId",
                     "encryptionTenant" to "encryptionTenant",
                     "status" to "SentResponderHello",
@@ -391,6 +392,71 @@ class StatefulSessionManagerImplTest {
                 ).containsEntry(
                     "groupId",
                     "Group",
+                )
+            }
+        }
+
+        @Test
+        fun `processInitiatorHello updates existing state when expired and getting replayed`() {
+            val sessionIdentity = "id"
+            val state = mockState(
+                sessionIdentity,
+                // setting sent much earlier than instant.now() to make sure it gets expired
+                -120000L,
+            )
+
+            whenever(stateManager.get(any())).thenReturn(
+                mapOf(
+                    sessionIdentity to state,
+                ),
+            )
+
+            val handshakeMessageHeader = mock<CommonHeader> {
+                on { sessionId } doReturn sessionIdentity
+            }
+            val handshakeMessage = mock<InitiatorHelloMessage> {
+                on { header } doReturn handshakeMessageHeader
+            }
+            val message = mock<LinkInMessage> {
+                on { payload } doReturn handshakeMessage
+            }
+            val messages = listOf(Wrapper(message))
+            val session = mock<AuthenticatedSession> {
+                on { sessionId } doReturn sessionIdentity
+            }
+            val responder = mock<AuthenticationProtocolResponder> {
+                on { getSession() } doReturn session
+            }
+            val responseMessage = mock<LinkOutMessage>()
+            val sessionState = SessionState(
+                responseMessage,
+                responder,
+            )
+            whenever(stateConvertor.toCordaSessionState(same(state), any())).doReturn(sessionState)
+
+            val statesUpdates = argumentCaptor<Collection<State>>()
+            whenever(stateManager.update(statesUpdates.capture())).doReturn(emptyMap())
+
+            manager.processSessionMessages(messages) {
+                it.value
+            }
+
+            assertSoftly {
+                assertThat(statesUpdates.firstValue.firstOrNull()?.key).isEqualTo("stateKey")
+                assertThat(statesUpdates.firstValue.firstOrNull()?.value).isEqualTo(sessionIdentity.toByteArray())
+                assertThat(statesUpdates.firstValue.firstOrNull()?.version).isEqualTo(0)
+                assertThat(statesUpdates.firstValue.firstOrNull()?.metadata).containsEntry(
+                    "destinationVnode",
+                    "O=Bob, L=London, C=GB",
+                ).containsEntry(
+                    "sourceVnode",
+                    "O=Alice, L=London, C=GB",
+                ).containsEntry(
+                    "status",
+                    "SentResponderHello",
+                ).containsEntry(
+                    "groupId",
+                    "group ID",
                 )
             }
         }
