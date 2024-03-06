@@ -37,14 +37,15 @@ class DurableFlowStatusProcessor(
     override val valueClass: Class<FlowStatus> get() = FlowStatus::class.java
     override fun onNext(events: List<Record<FlowKey, FlowStatus>>): List<Record<*, *>> {
         val flowKeys = events.map { it.key.hash() }
-        val existingStates = stateManager.get(flowKeys).filterNot { hasTerminatedStatus(it.value) }
+        val existingStates = stateManager.get(flowKeys)
         val existingKeys = existingStates.keys.toSet()
         val (updatedStates, newStates) = events.mapNotNull { record ->
             val key = record.key.hash()
+            val state = existingStates[key]
+            if (hasTerminatedStatus(state)) return@mapNotNull null
             val value = record.value ?: return@mapNotNull null
             val bytes = serializer.serialize(value) ?: return@mapNotNull null
 
-            val state = existingStates[key]
             val metadata = state?.metadata.withHoldingIdentityAndStatus(record.key.identity, value.flowStatus)
 
             state?.copy(value = bytes, metadata = metadata) ?: State(key, bytes, metadata = metadata)
@@ -59,7 +60,8 @@ class DurableFlowStatusProcessor(
     private fun getStatus(state: State): String? =
         state.metadata[FLOW_STATUS_METADATA_KEY] as? String
 
-    private fun hasTerminatedStatus(state: State): Boolean {
+    private fun hasTerminatedStatus(state: State?): Boolean {
+        if (state == null) return false
         val status = getStatus(state)
         return status != null && TERMINATED_STATES.contains(FlowStates.valueOf(status))
     }
