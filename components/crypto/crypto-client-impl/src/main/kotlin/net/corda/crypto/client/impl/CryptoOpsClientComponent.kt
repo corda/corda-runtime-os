@@ -260,7 +260,7 @@ class CryptoOpsClientComponent @Activate constructor(
             }
 
             is RegistrationStatusChangeEvent -> {
-                onUpstreamRegistrationStatusChange(coordinator, event)
+                onRegistrationStatusChangeEvent(coordinator, event)
             }
 
             is ConfigChangedEvent -> {
@@ -270,11 +270,10 @@ class CryptoOpsClientComponent @Activate constructor(
         }
     }
 
-    private fun onUpstreamRegistrationStatusChange(
+    private fun onRegistrationStatusChangeEvent(
         coordinator: LifecycleCoordinator,
         event: RegistrationStatusChangeEvent
     ) {
-//        logger.trace { "onUpstreamRegistrationStatusChange(upstream=${event.status}, downstream=${_impl?.downstream?.isUp})." }
         if (event.registration == configReadServiceRegistrationHandle) {
             configHandle?.close()
             if (event.status == LifecycleStatus.UP) {
