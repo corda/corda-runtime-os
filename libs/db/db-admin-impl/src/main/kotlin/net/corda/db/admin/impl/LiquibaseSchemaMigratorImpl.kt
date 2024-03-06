@@ -7,7 +7,6 @@ import liquibase.Liquibase
 import liquibase.Scope
 import liquibase.UpdateSummaryEnum
 import liquibase.UpdateSummaryOutputEnum
-import liquibase.changelog.DatabaseChangeLog
 import liquibase.command.CommandScope
 import liquibase.command.core.StatusCommandStep
 import liquibase.command.core.TagCommandStep
@@ -31,7 +30,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.Writer
 import java.sql.Connection
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -108,9 +107,14 @@ class LiquibaseSchemaMigratorImpl(
             val database = databaseFactory(datasource)
 
             val masterChangeLogFileName = "master-changelog-${UUID.randomUUID()}.xml"
+            val lb = liquibaseFactory(
+                masterChangeLogFileName,
+                StreamResourceAccessor(masterChangeLogFileName, dbChange),
+                database
+            )
 
             return StatusCommandStep().listUnrunChangeSets(Contexts(), LabelExpression(),
-                DatabaseChangeLog(masterChangeLogFileName), database).map { it.filePath }
+                lb.databaseChangeLog, database).map { it.filePath }
         }
     }
 
