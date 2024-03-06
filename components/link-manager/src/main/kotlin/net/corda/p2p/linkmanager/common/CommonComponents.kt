@@ -117,6 +117,7 @@ internal class CommonComponents(
                 inboundAssignmentListener,
                 linkManagerHostingMap,
                 clock = clock,
+                sessionCache = sessionCache,
                 trackSessionHealthAndReplaySessionMessages = false,
             ),
             StateConvertor(
@@ -143,6 +144,7 @@ internal class CommonComponents(
             inboundAssignmentListener,
             linkManagerHostingMap,
             clock = clock,
+            sessionCache = sessionCache,
         )
     }
 

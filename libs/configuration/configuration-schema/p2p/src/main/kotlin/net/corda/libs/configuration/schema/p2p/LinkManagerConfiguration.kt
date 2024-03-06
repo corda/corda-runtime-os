@@ -17,6 +17,8 @@ class LinkManagerConfiguration {
         const val REPLAY_ALGORITHM_KEY = "replayAlgorithm"
         const val REVOCATION_CHECK_KEY = "revocationCheck.mode"
         const val SESSION_REFRESH_THRESHOLD_KEY = "sessionRefreshThreshold"
+        const val INBOUND_SESSIONS_CACHE_SIZE = "sessionCache.inboundSessionsCacheSize"
+        const val OUTBOUND_SESSIONS_CACHE_SIZE = "sessionCache.outboundSessionsCacheSize"
     }
 
     enum class ReplayAlgorithm {

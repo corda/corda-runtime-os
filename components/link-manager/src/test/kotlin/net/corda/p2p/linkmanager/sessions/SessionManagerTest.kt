@@ -349,6 +349,7 @@ class SessionManagerTest {
             linkManagerHostingMap,
             protocolFactory,
             mockTimeFacilitiesProvider.clock,
+            mock(),
             sessionReplayer,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()

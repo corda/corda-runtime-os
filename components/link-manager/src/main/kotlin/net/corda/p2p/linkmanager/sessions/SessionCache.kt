@@ -17,6 +17,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import kotlin.jvm.optionals.getOrNull
 
 @Suppress("TooManyFunctions")
 internal class SessionCache(
@@ -27,7 +28,7 @@ internal class SessionCache(
     private val noiseFactory: Random = Random(),
 ) {
     private companion object {
-        const val CACHE_SIZE = 10_000L
+        val defaultCacheSize = SessionManagerImpl.CacheSizes()
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
@@ -42,7 +43,7 @@ internal class SessionCache(
     private val cachedInboundSessions: Cache<String, SessionManager.SessionDirection.Inbound> =
         CacheFactoryImpl().build(
             "P2P-inbound-sessions-cache",
-            Caffeine.newBuilder().maximumSize(CACHE_SIZE).evictionListener { key, _, _ ->
+            Caffeine.newBuilder().maximumSize(defaultCacheSize.inbound).evictionListener { key, _, _ ->
                 key?.let { removeFromScheduler(it) }
             },
         )
@@ -53,7 +54,7 @@ internal class SessionCache(
         CacheFactoryImpl().build(
             "P2P-outbound-sessions-cache",
             Caffeine.newBuilder()
-                .maximumSize(CACHE_SIZE)
+                .maximumSize(defaultCacheSize.outbound)
                 .removalListener<String?, SessionManager.SessionDirection.Outbound?> { _, session, _ ->
                     session?.session?.let {
                         counterpartiesForSessionId.remove(it.sessionId)
@@ -205,5 +206,10 @@ internal class SessionCache(
         } catch (e: Exception) {
             logger.error("Unexpected error while trying to fetch session state for '$key'.", e)
         }
+    }
+
+    fun updateCacheSizes(sizes: SessionManagerImpl.CacheSizes) {
+        cachedInboundSessions.policy().eviction().getOrNull()?.maximum = sizes.inbound
+        cachedOutboundSessions.policy().eviction().getOrNull()?.maximum = sizes.outbound
     }
 }

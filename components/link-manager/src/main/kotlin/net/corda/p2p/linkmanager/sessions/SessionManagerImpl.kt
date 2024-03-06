@@ -116,6 +116,7 @@ internal class SessionManagerImpl(
     private val linkManagerHostingMap: LinkManagerHostingMap,
     private val protocolFactory: ProtocolFactory = CryptoProtocolFactory(),
     private val clock: Clock,
+    private val sessionCache: SessionCache,
     private val sessionReplayer: InMemorySessionReplayer = InMemorySessionReplayer(
         publisherFactory,
         configurationReaderService,
@@ -200,6 +201,11 @@ internal class SessionManagerImpl(
         configurationChangeHandler = SessionManagerConfigChangeHandler()
     )
 
+    internal data class CacheSizes(
+        val inbound: Long = 10_000,
+        val outbound: Long = 10_000,
+    )
+
     @VisibleForTesting
     internal data class SessionManagerConfig(
         val maxMessageSize: Int,
@@ -207,7 +213,8 @@ internal class SessionManagerImpl(
         val sessionsPerPeerForMgm: Int,
         val revocationConfigMode: RevocationCheckMode,
         val sessionRefreshThreshold: Int,
-        val heartbeatsEnabled: Boolean
+        val heartbeatsEnabled: Boolean,
+        val cacheSizes: CacheSizes = CacheSizes(),
     )
 
     internal inner class SessionManagerConfigChangeHandler : ConfigurationChangeHandler<SessionManagerConfig>(
@@ -223,6 +230,7 @@ internal class SessionManagerImpl(
             val configUpdateResult = CompletableFuture<Unit>()
             dominoTile.withLifecycleWriteLock {
                 config.set(newConfiguration)
+                sessionCache.updateCacheSizes(newConfiguration.cacheSizes)
                 if (oldConfiguration != null) {
                     logger.info("The Session Manager got new config. All sessions will be cleaned up.")
                     sessionReplayer.removeAllMessagesFromReplay()
@@ -234,6 +242,7 @@ internal class SessionManagerImpl(
                     outboundSessionPool.clearPool()
                     activeInboundSessions.clear()
                     pendingInboundSessions.clear()
+
                     // This is suboptimal we could instead restart session negotiation
                     pendingOutboundSessionMessageQueues.destroyAllQueues()
                     if (tombstoneRecords.isNotEmpty()) {
@@ -247,6 +256,10 @@ internal class SessionManagerImpl(
     }
 
     private fun fromConfig(config: Config): SessionManagerConfig {
+        val cacheSizes = CacheSizes(
+            inbound = config.getLong(LinkManagerConfiguration.INBOUND_SESSIONS_CACHE_SIZE),
+            outbound = config.getLong(LinkManagerConfiguration.OUTBOUND_SESSIONS_CACHE_SIZE),
+        )
         return SessionManagerConfig(
             config.getInt(LinkManagerConfiguration.MAX_MESSAGE_SIZE_KEY),
             if (config.getIsNull(LinkManagerConfiguration.SESSIONS_PER_PEER_KEY)) {
@@ -257,7 +270,8 @@ internal class SessionManagerImpl(
             config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_FOR_MGM_KEY),
             config.getEnum(RevocationCheckMode::class.java, LinkManagerConfiguration.REVOCATION_CHECK_KEY),
             config.getInt(LinkManagerConfiguration.SESSION_REFRESH_THRESHOLD_KEY),
-            config.getBoolean(LinkManagerConfiguration.HEARTBEAT_ENABLED_KEY)
+            config.getBoolean(LinkManagerConfiguration.HEARTBEAT_ENABLED_KEY),
+            cacheSizes = cacheSizes,
         )
     }
 
