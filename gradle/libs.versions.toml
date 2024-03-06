@@ -19,13 +19,6 @@ nimbusVersion = "11.10.1"
 kafkaClientVersion = "3.6.1_1"
 kubernetesClientVersion = "6.10.0"
 log4jVersion = "2.23.0"
-# Note: We cannot go to the higher versions as they transitively depend on SLF4J 2.X
-swaggerVersion = "2.2.16"
-# Please also update SWAGGERUI.version in net.corda.rest.server.impl.internal.OptionalDependency
-swaggeruiVersion = "5.10.3"
-pf4jVersion = "3.10.0"
-zipkinReporterVersion = "3.2.1"
-zipkinCoreVersion = "2.27.1"
 liquibaseVersion = "4.24.0"
 mssqlDriverVersion = "11.2.3.jre17"
 postgresDriverVersion = "42.7.2"
@@ -36,12 +29,19 @@ slf4jVersion = { strictly = "1.7.36" }
 # version strictly here as well
 slf4jV2Version = { strictly = "2.0.6" }
 snakeyamlVersion = "2.2"
+# Please also update SWAGGERUI.version in net.corda.rest.server.impl.internal.OptionalDependency
+swaggeruiVersion = "5.11.8"
+# Note: We cannot go to the higher versions as they transitively depend on SLF4J 2.X
+swaggerVersion = "2.2.16"
 #Snappy used for compression
 snappyJavaVersion="1.1.10.5"
 typeSafeConfigVersion = "1.4.3"
 okHttpVersion = { strictly = "4.9.2" }
 okioVersion = { strictly = "3.4.0" }
+pf4jVersion = "3.10.0"
 unirestVersion = "3.14.5"
+zipkinCoreVersion = "2.27.1"
+zipkinReporterVersion = "3.3.0"
 
 # Testing
 assertjVersion = "3.25.3"
