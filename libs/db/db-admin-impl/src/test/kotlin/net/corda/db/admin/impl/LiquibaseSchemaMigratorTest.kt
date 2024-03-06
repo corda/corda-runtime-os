@@ -1,6 +1,7 @@
 package net.corda.db.admin.impl
 
 import liquibase.Liquibase
+import liquibase.changelog.DatabaseChangeLog
 import liquibase.command.CommandArgumentDefinition
 import liquibase.command.CommandScope
 import liquibase.database.Database
@@ -24,7 +25,10 @@ import java.sql.Connection
 class LiquibaseSchemaMigratorTest {
     private val connection = mock<Connection>()
     private val dbChange = mock<DbChange>()
-    private val lb = mock<Liquibase>()
+    private val mockDatabaseChangeLog = mock<DatabaseChangeLog>()
+    private val lb = mock<Liquibase> {
+        on { databaseChangeLog } doReturn (mockDatabaseChangeLog)
+    }
     private val lbFactory = mock<(String, ResourceAccessor, Database) -> Liquibase> {
         on { invoke(any(), any(), any()) } doReturn (lb)
     }
