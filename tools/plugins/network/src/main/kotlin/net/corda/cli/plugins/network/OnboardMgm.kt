@@ -97,8 +97,8 @@ class OnboardMgm : Runnable, BaseOnboard() {
         RegistrationContext().createMgmRegistrationContext(
             mtls = mtls,
             p2pGatewayUrls = p2pGatewayUrls,
-            sessionKeyId = sessionKeyId,
-            ecdhKeyId = ecdhKeyId,
+            sessionKey = sessionKeyId,
+            ecdhKey = ecdhKeyId,
             tlsTrustRoot = tlsTrustRoot
         )
     }

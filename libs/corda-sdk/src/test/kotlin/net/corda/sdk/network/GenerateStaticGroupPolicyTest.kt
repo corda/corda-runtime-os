@@ -1,13 +1,12 @@
 package net.corda.sdk.network
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.node.JsonNodeType
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 class GenerateStaticGroupPolicyTest {
 
@@ -18,10 +17,10 @@ class GenerateStaticGroupPolicyTest {
         val ggp = GenerateStaticGroupPolicy()
         val returnValue = ggp.generateStaticGroupPolicy(GenerateStaticGroupPolicy.defaultMembers)
         val returnValueAsString = om.writeValueAsString(returnValue)
-        assertNotEquals(0, returnValueAsString.length)
-        assertTrue(isValidJson(returnValueAsString))
+        assertThat(returnValueAsString).isNotBlank()
+        assertThat(isValidJson(returnValueAsString)).isTrue()
         val parsed = om.readValue<Map<String, Any>>(returnValueAsString)
-        assertEquals(1, parsed["fileFormatVersion"])
+        assertThat(parsed["fileFormatVersion"]).isEqualTo(1)
     }
 
     @Test
@@ -30,7 +29,7 @@ class GenerateStaticGroupPolicyTest {
         val returnValue = ggp.generateStaticGroupPolicy(null)
         val returnValueAsString = om.writeValueAsString(returnValue)
         val memberList = memberList(returnValueAsString)
-        assertTrue(memberList.isNull)
+        assertThat(memberList.nodeType).isEqualTo(JsonNodeType.NULL)
     }
 
     @Test
@@ -40,13 +39,12 @@ class GenerateStaticGroupPolicyTest {
         val returnValueAsString = om.writeValueAsString(returnValue)
         val memberList = memberList(returnValueAsString)
         memberList.find { it["name"].asText() == "C=GB, L=London, O=Alice" }.apply {
-            assertEquals("ACTIVE", this?.get("memberStatus")?.asText())
-            assertEquals("https://alice.corda5.r3.com:10000", this?.get("endpointUrl-1")?.asText())
-            assertEquals("1", this?.get("endpointProtocol-1")?.asText())
+            assertThat(this?.get("memberStatus")?.asText()).isEqualTo("ACTIVE")
+            assertThat(this?.get("endpointUrl-1")?.asText()).isEqualTo("https://alice.corda5.r3.com:10000")
+            assertThat(this?.get("endpointProtocol-1")?.asText()).isEqualTo("1")
         }
-
-        assertNotNull(memberList.find { it["name"].asText() == "C=GB, L=London, O=Bob" })
-        assertNotNull(memberList.find { it["name"].asText() == "C=GB, L=London, O=Charlie" })
+        assertThat(memberList.find { it["name"].asText() == "C=GB, L=London, O=Bob" }).isNotEmpty
+        assertThat(memberList.find { it["name"].asText() == "C=GB, L=London, O=Charlie" }).isNotEmpty
     }
 
     @Test
@@ -63,9 +61,9 @@ class GenerateStaticGroupPolicyTest {
         val memberList = memberList(returnValueAsString)
         assertNotNull(memberList.find { it["name"].asText() == "C=GB, L=London, O=Terry" })
         memberList.find { it["name"].asText() == "C=GB, L=London, O=Terry" }.apply {
-            assertEquals("ACTIVE", this?.get("memberStatus")?.asText())
-            assertEquals("https://terry.corda5.r3.com:10000", this?.get("endpointUrl-1")?.asText())
-            assertEquals("1", this?.get("endpointProtocol-1")?.asText())
+            assertThat(this?.get("memberStatus")?.asText()).isEqualTo("ACTIVE")
+            assertThat(this?.get("endpointUrl-1")?.asText()).isEqualTo("https://terry.corda5.r3.com:10000")
+            assertThat(this?.get("endpointProtocol-1")?.asText()).isEqualTo("1")
         }
     }
 
@@ -75,9 +73,9 @@ class GenerateStaticGroupPolicyTest {
         val members = ggp.createMembersListFromListOfX500Strings(listOf("C=GB, L=London, O=Terry"))
         val parsedMembers = om.readTree(om.writeValueAsString(members))
         parsedMembers.find { it["name"].asText() == "C=GB, L=London, O=Terry" }.apply {
-            assertEquals("ACTIVE", this?.get("memberStatus")?.asText())
-            assertEquals("https://member.corda5.r3.com:10000", this?.get("endpointUrl-1")?.asText())
-            assertEquals("1", this?.get("endpointProtocol-1")?.asText())
+            assertThat(this?.get("memberStatus")?.asText()).isEqualTo("ACTIVE")
+            assertThat(this?.get("endpointUrl-1")?.asText()).isEqualTo("https://member.corda5.r3.com:10000")
+            assertThat(this?.get("endpointProtocol-1")?.asText()).isEqualTo("1")
         }
     }
 
@@ -93,9 +91,9 @@ class GenerateStaticGroupPolicyTest {
         val rawPolicyOutput = ggp.generateStaticGroupPolicy(createdMembersBlock)
         val returnValueAsString = om.writeValueAsString(rawPolicyOutput)
         val memberList = memberList(returnValueAsString)
-        assertNotNull(memberList.find { it["name"].asText() == "C=GB, L=London, O=Dave" })
-        assertNotNull(memberList.find { it["name"].asText() == "C=GB, L=London, O=Edith" })
-        assertNotNull(memberList.find { it["name"].asText() == "C=GB, L=London, O=Fred" })
+        assertThat(memberList.find { it["name"].asText() == "C=GB, L=London, O=Dave" }).isNotEmpty
+        assertThat(memberList.find { it["name"].asText() == "C=GB, L=London, O=Edith" }).isNotEmpty
+        assertThat(memberList.find { it["name"].asText() == "C=GB, L=London, O=Fred" }).isNotEmpty
     }
 
     /**

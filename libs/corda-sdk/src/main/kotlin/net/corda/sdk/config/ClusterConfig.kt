@@ -58,7 +58,9 @@ class ClusterConfig {
                 if (response.responseCode == ResponseCode.ACCEPTED) {
                     response.responseBody
                 } else if (response.responseCode == ResponseCode.CONFLICT) {
-                    throw WrongConfigVersionException("Mismatch between config version: ${response.responseBody}")
+                    throw WrongConfigVersionException(
+                        "Mismatch between config version: ${response.responseBody} and the supplied: $updateConfig"
+                    )
                 } else {
                     throw ConfigException("Error when updating config: ${response.responseBody}")
                 }

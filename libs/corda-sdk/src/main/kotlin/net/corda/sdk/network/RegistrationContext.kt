@@ -9,16 +9,16 @@ class RegistrationContext {
      * Create an object containing the necessary registration context for an MGM
      * @param mtls if true will use Mutual TLS otherwise will use OneWay
      * @param p2pGatewayUrls collection of URLs to be used for P2p communication
-     * @param sessionKeyId key ID for the generated session
-     * @param ecdhKeyId key ID for the generated ecdh key
+     * @param sessionKey key ID for the generated session
+     * @param ecdhKey key ID for the generated ecdh key
      * @param tlsTrustRoot value of certificate from Certificate Authority
      * @return registration context information as a Map
      */
     fun createMgmRegistrationContext(
         mtls: Boolean,
         p2pGatewayUrls: Collection<String>,
-        sessionKeyId: KeyPairIdentifier,
-        ecdhKeyId: KeyPairIdentifier,
+        sessionKey: KeyPairIdentifier,
+        ecdhKey: KeyPairIdentifier,
         tlsTrustRoot: String
     ): Map<String, String> {
         val tlsType = if (mtls) {
@@ -35,8 +35,8 @@ class RegistrationContext {
         }
 
         return mapOf(
-            MemberInfoExtension.PARTY_SESSION_KEYS_ID.format(0) to sessionKeyId.id,
-            "corda.ecdh.key.id" to ecdhKeyId.id,
+            MemberInfoExtension.PARTY_SESSION_KEYS_ID.format(0) to sessionKey.id,
+            "corda.ecdh.key.id" to ecdhKey.id,
             "corda.group.protocol.registration"
                 to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
             "corda.group.protocol.synchronisation"
@@ -111,7 +111,7 @@ class RegistrationContext {
         sessionKey: KeyPairIdentifier,
         notaryKey: KeyPairIdentifier,
     ): Map<String, String> {
-        require((roles.contains(MemberRole.NOTARY))) { "Must specify the role as notary" }
+        require(roles.contains(MemberRole.NOTARY)) { "Must specify the role as notary" }
 
         val endpoints = p2pGatewayUrls.flatMapIndexed { index, url ->
             listOf(
