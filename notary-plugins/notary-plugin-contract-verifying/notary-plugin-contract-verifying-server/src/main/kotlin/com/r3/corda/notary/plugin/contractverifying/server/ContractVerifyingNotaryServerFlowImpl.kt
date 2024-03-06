@@ -81,7 +81,12 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
 
             validateTransactionNotaryAgainstCurrentNotary(initialTransactionDetails)
 
-            verifySignatures(initialTransaction.notaryKey, filteredTransactionsAndSignatures, initialTransaction)
+            verifySignatures(
+                initialTransaction.notaryName,
+                initialTransaction.notaryKey, 
+                filteredTransactionsAndSignatures, 
+                initialTransaction
+            )
 
             verifyTransaction(initialTransaction, filteredTransactionsAndSignatures)
 
@@ -163,6 +168,7 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
      */
     @Suspendable
     fun verifySignatures(
+        notaryName: MemberX500Name,
         notaryKey: PublicKey,
         filteredTransactionsAndSignatures: List<UtxoFilteredTransactionAndSignatures>,
         initialTransaction: UtxoSignedTransaction
@@ -173,6 +179,15 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
 
         filteredTransactionsAndSignatures.forEach {
             it.filteredTransaction.verify()
+
+            require(it.filteredTransaction.notaryName == notaryName) {
+                "Notary name on dependency (${it.filteredTransaction.id}) didn't match the one on the initial transaction."
+            }
+
+            require(it.filteredTransaction.notaryKey == notaryKey) {
+                "Notary key on dependency (${it.filteredTransaction.id}) didn't match the one on the initial transaction."
+            }
+
             try {
                 notarySignatureVerificationService.verifyNotarySignatures(
                     it.filteredTransaction,
