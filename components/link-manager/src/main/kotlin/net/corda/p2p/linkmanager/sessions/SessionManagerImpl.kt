@@ -62,7 +62,6 @@ import org.slf4j.LoggerFactory
 import java.util.Base64
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.p2p.crypto.protocol.api.InvalidSelectedModeError
@@ -85,12 +84,9 @@ internal class SessionManagerImpl(
 
     private companion object {
         private const val SESSION_MANAGER_CLIENT_ID = "session-manager"
+        private val logger = LoggerFactory.getLogger(this::class.java)
     }
 
-    private val pendingInboundSessions = ConcurrentHashMap<String, AuthenticationProtocolResponder>()
-    private val activeInboundSessions = ConcurrentHashMap<String, Pair<SessionManager.Counterparties, Session>>()
-
-    private val logger = LoggerFactory.getLogger(this::class.java)
 
     // This default needs to be removed and the lifecycle dependency graph adjusted to ensure the inbound subscription starts only after
     // the configuration has been received and the session manager has started (see CORE-6730).
@@ -147,8 +143,6 @@ internal class SessionManagerImpl(
                 config.set(newConfiguration)
                 if (oldConfiguration != null) {
                     logger.info("The Session Manager got new config. All sessions will be cleaned up.")
-                    activeInboundSessions.clear()
-                    pendingInboundSessions.clear()
                     // This is suboptimal we could instead restart session negotiation
                     pendingOutboundSessionMessageQueues.destroyAllQueues()
                 }
