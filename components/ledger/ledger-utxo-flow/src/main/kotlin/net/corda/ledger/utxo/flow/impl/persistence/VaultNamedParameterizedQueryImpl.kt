@@ -40,7 +40,7 @@ class VaultNamedParameterizedQueryImpl<T>(
     }
 
     override fun setOffset(offset: Int): VaultNamedParameterizedQuery<T> {
-        require(offset >= 0 { "Offset cannot be negative"})
+        require(offset >= 0) { "Offset cannot be negative" }
         this.offset = offset
         return this
     }
@@ -66,12 +66,12 @@ class VaultNamedParameterizedQueryImpl<T>(
                 "Timestamp limit must not be in the future."
             }
         } ?: setCreatedTimestampLimit(clock.instant())
-
-        val resultSet = resultSetFactory.create(
+        val resultSet = resultSetFactory.createStable(
             parameters,
             limit,
+            offset,
             resultClass
-        ) @Suspendable { serializedParameters, resumePoint, offset ->
+        ) @Suspendable { serializedParameters, resumePoint, offsetHere ->
             recordSuspendable(::ledgerPersistenceFlowTimer) @Suspendable {
                 wrapWithPersistenceException {
                     externalEventExecutor.execute(
@@ -81,7 +81,7 @@ class VaultNamedParameterizedQueryImpl<T>(
                             serializedParameters.toByteArrays(),
                             limit,
                             resumePoint?.array(),
-                            offset
+                            offsetHere
                         )
                     )
                 }

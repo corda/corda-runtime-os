@@ -59,7 +59,9 @@ class VaultNamedParameterizedQueryImplTest {
 
     @BeforeEach
     fun beforeEach() {
-        whenever(resultSetFactory.create(mapCaptor.capture(), any(), any(), resultSetExecutorCaptor.capture())).thenReturn(resultSet)
+        whenever(
+            resultSetFactory.createStable(mapCaptor.capture(), any(), any(), any(), resultSetExecutorCaptor.capture())
+        ).thenReturn(resultSet)
         whenever(resultSet.next()).thenReturn(results)
         whenever(clock.instant()).thenReturn(later)
         whenever(sandbox.virtualNodeContext).thenReturn(virtualNodeContext)
@@ -70,16 +72,16 @@ class VaultNamedParameterizedQueryImplTest {
     @Test
     fun `setLimit updates the limit`() {
         query.execute()
-        verify(resultSetFactory).create(any(), eq(1), any<Class<Any>>(), any())
+        verify(resultSetFactory).createStable(any(), eq(1), any(), any<Class<Any>>(), any())
 
         query.setLimit(10)
         query.execute()
-        verify(resultSetFactory).create(any(), eq(10), any<Class<Any>>(), any())
+        verify(resultSetFactory).createStable(any(), eq(10), any(), any<Class<Any>>(), any())
     }
 
     @Test
-    fun `setOffset is not supported`() {
-        assertThatThrownBy { query.setOffset(10) }.isInstanceOf(UnsupportedOperationException::class.java)
+    fun `setOffset is supported`() {
+        query.setOffset(10)
     }
 
     @Test
@@ -165,7 +167,7 @@ class VaultNamedParameterizedQueryImplTest {
     @Test
     fun `execute creates a result set, gets the next page and returns the result set`() {
         assertThat(query.execute()).isEqualTo(resultSet)
-        verify(resultSetFactory).create(any(), any(), any<Class<Any>>(), any())
+        verify(resultSetFactory).createStable(any(), any(), any(), any<Class<Any>>(), any())
         verify(resultSet).next()
     }
 

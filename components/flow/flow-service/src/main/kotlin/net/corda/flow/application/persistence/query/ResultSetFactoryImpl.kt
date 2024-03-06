@@ -33,18 +33,20 @@ class ResultSetFactoryImpl @Activate constructor(
         return OffsetResultSetImpl(serializationService, getSerializedParameters(parameters), limit, offset, resultClass, resultSetExecutor)
     }
 
-    override fun <R> create(
+    override fun <R> createStable(
         parameters: Map<String, Any?>,
         limit: Int,
+        offset: Int,
         resultClass: Class<R>,
         resultSetExecutor: StableResultSetExecutor<R>
     ): PagedQuery.ResultSet<R> {
         return StableResultSetImpl(
-            serializationService,
-            getSerializedParameters(parameters).toMutableMap(),
-            limit,
-            resultClass,
-            resultSetExecutor)
+            serializationService = serializationService,
+            serializedParameters = getSerializedParameters(parameters).toMutableMap(),
+            limit = limit,
+            offset = offset,
+            resultClass = resultClass,
+            resultSetExecutor = resultSetExecutor)
     }
 
     private fun getSerializedParameters(parameters: Map<String, Any?>): Map<String, ByteBuffer?> {

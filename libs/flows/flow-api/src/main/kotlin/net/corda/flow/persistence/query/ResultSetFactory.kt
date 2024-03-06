@@ -35,15 +35,17 @@ interface ResultSetFactory {
      *
      * @param parameters The parameters of the query.
      * @param limit The limit of the query.
+     * @param offset The offset of the query
      * @param resultClass The return type of the query.
      * @param resultSetExecutor The operation that is executed to retrieve query results.
      *
      * @return A [ResultSet] that retrieves data based on the implementation of [offsetResultSetExecutor].
      */
-    fun <R> create(
+    fun <R> createStable(
         parameters: Map<String, Any?>,
         limit: Int,
+        offset: Int,
         resultClass: Class<R>,
-        resultSetExecutor: StableResultSetExecutor<R>
+        resultSetExecutor: StableResultSetExecutor<R>,
     ): ResultSet<R>
 }

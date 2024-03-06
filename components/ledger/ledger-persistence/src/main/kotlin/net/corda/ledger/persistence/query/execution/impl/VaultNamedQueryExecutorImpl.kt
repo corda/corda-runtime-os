@@ -218,22 +218,26 @@ class VaultNamedQueryExecutorImpl(
         while (filteredRawData.size < request.limit && currentRetry < RESULT_SET_FILL_RETRY_LIMIT) {
             ++currentRetry
 
-            log.trace { "Executing try: $currentRetry, fetched ${filteredRawData.size} number of results so far." }
+            log.trace {
+                "Executing try: $currentRetry, fetched ${filteredRawData.size} " +
+                    "number of results so far. currentoffset=$currentOffset"
+            }
 
             // Fetch the state and refs for the given transaction IDs
             val rawResults = try {
-                if (useOffset) {
+                if (vaultNamedQuery.orderBy != null) {
                     fetchStateAndRefsOrderBy(
                         request,
                         vaultNamedQuery.query.query,
-                        vaultNamedQuery.orderBy!!.query,
+                        vaultNamedQuery.orderBy.query,
                         currentOffset
                     )
                 } else {
                     fetchStateAndRefsTimeOrder(
                         request,
                         vaultNamedQuery.query.query,
-                        currentResumePoint
+                        currentResumePoint,
+                        initialOffset = if (currentResumePoint == null) request.offset else null
                     )
                 }
             } catch (e: Exception) {
@@ -358,15 +362,31 @@ class VaultNamedQueryExecutorImpl(
      * component groups.
      *
      * Each invocation of this function represents a single distinct query to the database.
+     *
+
+     *
+     * The request has an offset in [request.offset]. This works together with paging, by using
+     * the offset only on the first retrieval.
      */
     private fun fetchStateAndRefsTimeOrder(
         request: FindWithNamedQuery,
         whereJson: String?,
-        resumePoint: ResumePoint?
+        resumePoint: ResumePoint?,
+        initialOffset: Int?
     ): RawQueryResults {
         @Suppress("UNCHECKED_CAST")
         val resultList = entityManagerFactory.transaction { em ->
 
+            /* We support loading database records across multiple pages.
+             * The database request size can be controlled with the [request.limit] field. If the limit is
+             * specified we will repeatedly go back to the database and get more. That is done by assuming
+             * that records appear in the visible_states.created column with higher timestamps that what has
+             * gone before, which is accurate within the limits of clock skew.
+             *
+             * So, if we have [resumePoint] non-null at this point then we should find all rows with higher
+             * timestamps than the timestamp in the resume. We also secondarily sort on transaction ID then leaf index
+             * as a tie breaker. Otherwise, there's no extra clause needed.
+             */
             val resumePointExpr = resumePoint?.let {
                 " AND ((visible_states.created > :created) OR " +
                     "(visible_states.created = :created AND tc_output.transaction_id > :txId) OR " +
@@ -398,17 +418,25 @@ class VaultNamedQueryExecutorImpl(
             )
 
             if (resumePoint != null) {
-                log.trace { "Query is resuming from $resumePoint" }
+                log.info("Query is resuming from $resumePoint")
                 query.setParameter("created", resumePoint.created)
                 query.setParameter("txId", resumePoint.txId)
                 query.setParameter("leafIdx", resumePoint.leafIdx)
+            } else {
+                log.info("initialOffset $initialOffset when resume point is null")
+                if (initialOffset != null) query.firstResult = initialOffset
             }
 
             request.parameters.forEach { rec ->
                 query.setParameter(rec.key, rec.value?.let { serializationService.deserialize(it.array()) })
             }
 
-            query.firstResult = request.offset
+            // If we are asked to retrieve from an offset, we must only use the offset first time round.
+            // After that, we rely on the resumePoint mechanism.
+            if (resumePoint == null && initialOffset != null) {
+                query.firstResult = initialOffset
+            }
+
             // Getting one more than requested allows us to identify if there are more results to
             // return in a subsequent page
             // CORE-15061 By default the limit will be `Int.MAX_VALUE` and adding +1 to that value

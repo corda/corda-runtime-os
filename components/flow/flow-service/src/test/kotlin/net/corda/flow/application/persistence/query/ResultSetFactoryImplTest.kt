@@ -29,7 +29,10 @@ class ResultSetFactoryImplTest {
     fun `serializes the parameters and creates a stable result set`() {
         whenever(serializationService.serialize(any<Any>())).thenReturn(SerializedBytesImpl(byteArrayOf(1, 2, 3, 4)))
         val parameters = mapOf("A" to 1, "B" to 2, "C" to 3)
-        resultSetFactory.create(parameters, 5,  Any::class.java) { _, _, _ -> StableResultSetExecutor.Results(emptyList(), null, null) }
+        resultSetFactory.createStable(parameters, 5,0,  Any::class.java) {
+
+             _, _, _ -> StableResultSetExecutor.Results(emptyList(),
+            null, null) }
         verify(serializationService).serialize(1)
         verify(serializationService).serialize(2)
         verify(serializationService).serialize(3)

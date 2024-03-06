@@ -13,6 +13,7 @@ data class StableResultSetImpl<R> internal constructor(
     private val serializationService: SerializationService,
     private var serializedParameters: MutableMap<String, ByteBuffer?>,
     private var limit: Int,
+    private var offset: Int = 0,
     private val resultClass: Class<R>,
     private val resultSetExecutor: StableResultSetExecutor<R>
 ) : PagedQuery.ResultSet<R> {
@@ -20,7 +21,6 @@ data class StableResultSetImpl<R> internal constructor(
     private var results: List<R> = emptyList()
     private var resumePoint: ByteBuffer? = null
     private var firstExecution = true
-    private var offset: Int = 0
 
     override fun getResults(): List<R> {
         return results
