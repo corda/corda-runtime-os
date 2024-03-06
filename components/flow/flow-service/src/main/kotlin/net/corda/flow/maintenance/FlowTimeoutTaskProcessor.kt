@@ -111,7 +111,7 @@ class FlowTimeoutTaskProcessor(
             it.key == ScheduledTask.SCHEDULED_TASK_NAME_SESSION_TIMEOUT
         }?.value?.let { trigger ->
             logger.trace("Processing trigger scheduled at {}", trigger.timestamp)
-            val flowsToTimeOut = idleTimeOutExpired() + sessionExpiredOrFailureSignaledByMessagingLayer()
+            val flowsToTimeOut = listOf<Record<String, *>>() //idleTimeOutExpired() + sessionExpiredOrFailureSignaledByMessagingLayer()
 
             if (flowsToTimeOut.isEmpty()) {
                 logger.trace("No flows to time out")
