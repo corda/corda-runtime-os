@@ -1,6 +1,7 @@
 package net.corda.uniqueness.datamodel.common
 
 import net.corda.crypto.core.parseSecureHash
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.data.uniqueness.UniquenessCheckResultInputStateConflictAvro
 import net.corda.data.uniqueness.UniquenessCheckResultInputStateUnknownAvro
@@ -26,6 +27,7 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateU
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateConflict
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateUnknown
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowOutOfBounds
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorUnhandledException
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
@@ -146,6 +148,15 @@ fun UniquenessCheckResult.toAvro(): SpecificRecord {
                         uniquenessError.timeWindowLowerBound,
                         uniquenessError.timeWindowUpperBound
                     )
+
+                is UniquenessCheckErrorUnhandledException -> {
+                    UniquenessCheckResultUnhandledExceptionAvro(
+                        ExceptionEnvelope(
+                            uniquenessError.unhandledExceptionType,
+                            uniquenessError.unhandledExceptionMessage
+                        )
+                    )
+                }
 
                 else -> {
                     throw IllegalArgumentException(

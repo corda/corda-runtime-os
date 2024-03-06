@@ -6,6 +6,7 @@ import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
 import com.r3.corda.notary.plugin.common.toNotarizationResponse
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPayload
 import net.corda.v5.application.flows.CordaInject
+import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.membership.MemberLookup
@@ -42,6 +43,9 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     private lateinit var clientService: LedgerUniquenessCheckerClientService
 
     @CordaInject
+    private lateinit var flowEngine: FlowEngine
+
+    @CordaInject
     private lateinit var transactionSignatureService: TransactionSignatureService
 
     @CordaInject
@@ -60,6 +64,15 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
         this.transactionSignatureService = transactionSignatureService
         this.memberLookup = memberLookup
     }
+
+    // custom signed tx type / filtered tx type for non validating notary
+    // check that it has no inputs, references, outputs
+    // switch based on that (skips the signing parts)
+    // in the uniqueness checker, also check for no inputs, reference, outputs
+    // for those transactions just do a lookup, no notarisation
+    // then return to the flow with the existing code path
+    // use the flow context, we can set it in the recovery flow and read it in the server flow
+    // no other changes needed
 
     /**
      * The main logic is implemented in this function.
@@ -160,7 +173,11 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     @Suppress("TooGenericExceptionCaught")
     private fun validateRequest(requestPayload: NonValidatingNotarizationPayload): NotaryTransactionDetails {
         val transactionParts = try {
-            extractParts(requestPayload)
+            if (flowEngine.flowContextProperties["corda.initiator.notary.check"] == "true") {
+                extractPartsForNotarizationCheck(requestPayload)
+            } else {
+                extractParts(requestPayload)
+            }
         } catch (e: Exception) {
             logger.warn("Could not validate request. Reason: ${e.message}")
             throw IllegalStateException("Could not validate request.", e)
@@ -169,6 +186,38 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
         // TODO CORE-8976 Add check for notary identity
 
         return transactionParts
+    }
+
+    private fun extractPartsForNotarizationCheck(requestPayload: NonValidatingNotarizationPayload): NotaryTransactionDetails {
+        val filteredTx = requestPayload.transaction as UtxoFilteredTransaction
+
+        // The notary component is not needed by us but we validate that it is present just in case
+        requireNotNull(filteredTx.notaryName) {
+            "Notary name component could not be found on the transaction"
+        }
+
+        requireNotNull(filteredTx.notaryKey) {
+            "Notary key component could not be found on the transaction"
+        }
+
+        requireNotNull(filteredTx.metadata) {
+            "Metadata component could not be found on the transaction"
+        }
+
+        requireNotNull(filteredTx.timeWindow) {
+            "Time window component could not be found on the transaction"
+        }
+
+        return NotaryTransactionDetails(
+            filteredTx.id,
+            filteredTx.metadata,
+            numOutputs = 0,
+            filteredTx.timeWindow!!,
+            inputs = emptyList(),
+            references = emptyList(),
+            filteredTx.notaryName!!,
+            filteredTx.notaryKey!!
+        )
     }
 
     /**
