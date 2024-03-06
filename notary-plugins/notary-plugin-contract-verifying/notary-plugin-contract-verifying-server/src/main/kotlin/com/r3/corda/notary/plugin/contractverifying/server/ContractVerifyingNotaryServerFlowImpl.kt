@@ -8,6 +8,7 @@ import com.r3.corda.notary.plugin.common.NotaryTransactionDetails
 import com.r3.corda.notary.plugin.common.toNotarizationResponse
 import com.r3.corda.notary.plugin.contractverifying.api.ContractVerifyingNotarizationPayload
 import net.corda.v5.application.flows.CordaInject
+import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.membership.MemberLookup
@@ -40,6 +41,9 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
     private lateinit var clientService: LedgerUniquenessCheckerClientService
 
     @CordaInject
+    private lateinit var flowEngine: FlowEngine
+
+    @CordaInject
     private lateinit var transactionSignatureService: TransactionSignatureService
 
     @CordaInject
@@ -69,6 +73,12 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
         this.notarySignatureVerificationService = notarySignatureVerificationService
     }
 
+    // custom signed tx type / filtered tx type for non validating notary
+    // check that it has no inputs, references, outputs
+    // switch based on that (skips the signing parts)
+    // in the uniqueness checker, also check for no inputs, reference, outputs
+    // for those transactions just do a lookup, no notarisation
+    // then return to the flow with the existing code path
     @Suspendable
     override fun call(session: FlowSession) {
         try {
@@ -132,16 +142,29 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
      */
     @Suspendable
     private fun getInitialTransactionDetail(initialTransaction: UtxoSignedTransaction): NotaryTransactionDetails {
-        return NotaryTransactionDetails(
-            initialTransaction.id,
-            initialTransaction.metadata,
-            initialTransaction.outputStateAndRefs.count(),
-            initialTransaction.timeWindow,
-            initialTransaction.inputStateRefs,
-            initialTransaction.referenceStateRefs,
-            initialTransaction.notaryName,
-            initialTransaction.notaryKey
-        )
+        return if (flowEngine.flowContextProperties["corda.initiator.notary.check"] == "true") {
+            NotaryTransactionDetails(
+                initialTransaction.id,
+                initialTransaction.metadata,
+                numOutputs = 0,
+                initialTransaction.timeWindow,
+                inputs = emptyList(),
+                references = emptyList(),
+                initialTransaction.notaryName,
+                initialTransaction.notaryKey
+            )
+        } else {
+            NotaryTransactionDetails(
+                initialTransaction.id,
+                initialTransaction.metadata,
+                initialTransaction.outputStateAndRefs.count(),
+                initialTransaction.timeWindow,
+                initialTransaction.inputStateRefs,
+                initialTransaction.referenceStateRefs,
+                initialTransaction.notaryName,
+                initialTransaction.notaryKey
+            )
+        }
     }
 
     @Suspendable

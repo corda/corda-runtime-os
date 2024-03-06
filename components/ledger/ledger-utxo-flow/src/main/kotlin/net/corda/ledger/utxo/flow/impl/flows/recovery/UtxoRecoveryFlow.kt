@@ -1,11 +1,13 @@
 package net.corda.ledger.utxo.flow.impl.flows.recovery
 
+import net.corda.flow.state.asFlowContext
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.notary.PluggableNotarySelector
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoNotarizationCheckSignedTransaction
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.utilities.debug
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -18,6 +20,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
+import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionUnknown
 import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.Logger
@@ -49,7 +52,7 @@ class UtxoRecoveryFlow(private val instant: Instant) : SubFlow<Int> {
     @Suspendable
     override fun call(): Int {
         log.info("Starting recovery flow of missing notarized transactions. Recovering transactions that occurred before $instant")
-
+        flowEngine.flowContextProperties.asFlowContext.platformProperties["corda.notary.check"] = "true"
         var numberOfRecoveredFlows = 0
 
         val ids = persistenceService.findTransactionsWithStatusCreatedBeforeTime(TransactionStatus.UNVERIFIED, instant)
@@ -82,6 +85,8 @@ class UtxoRecoveryFlow(private val instant: Instant) : SubFlow<Int> {
                 // Empty as we continue recovering this transaction.
             }
 
+//            notarize(UtxoNotarizationCheckSignedTransaction(transaction))
+
             notarize(transaction)?.let { notarizedTransaction ->
                 persistNotarizedTransaction(notarizedTransaction)
                 numberOfRecoveredFlows++
@@ -109,6 +114,10 @@ class UtxoRecoveryFlow(private val instant: Instant) : SubFlow<Int> {
         val notarySignatures = try {
             flowEngine.subFlow(notarizationFlow)
         } catch (e: CordaRuntimeException) {
+            if (e is NotaryExceptionUnknown && e.message?.contains("UniquenessCheckErrorNotPreviouslyNotarizedException") == true) {
+                log.info("Transaction ${transaction.id} has not been previously notarized by notary $notary, skipping from recovery flow")
+                return null
+            }
             if (e is NotaryExceptionFatal) {
                 persistInvalidTransaction(transaction)
                 log.warn("Notarization of transaction ${transaction.id} failed permanently with ${e.message}.")

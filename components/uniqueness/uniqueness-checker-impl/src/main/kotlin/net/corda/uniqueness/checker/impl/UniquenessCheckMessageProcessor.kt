@@ -21,7 +21,9 @@ class UniquenessCheckMessageProcessor(
 
     override fun process(request: UniquenessCheckRequestAvro): FlowEvent {
         return uniquenessChecker.processRequests(listOf(request)).map { (request, response) ->
-            if (response.result is UniquenessCheckResultUnhandledExceptionAvro) {
+            val result = response.result
+            // TODO Remove this error type check when we have a proper api code path for notarization checking
+            if (result is UniquenessCheckResultUnhandledExceptionAvro && result.exception.errorType != "UniquenessCheckErrorNotPreviouslyNotarizedException") {
                 externalEventResponseFactory.platformError(
                     request.flowExternalEventContext,
                     (response.result as UniquenessCheckResultUnhandledExceptionAvro).exception

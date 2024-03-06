@@ -14,6 +14,7 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateUnknown
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateConflictImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorTimeWindowOutOfBoundsImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorUnhandledExceptionImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
@@ -128,8 +129,33 @@ class BatchedUniquenessCheckerImpl(
 
         if ( numMalformed > 0 ) { log.debug { "$numMalformed malformed requests were rejected" } }
 
+        val (checks, notarizations) = requestsToProcess.partition { (request, _) ->
+            request.numOutputStates == 0 && request.inputStates.isEmpty() && request.referenceStates.isEmpty()
+        }
+
         // TODO - Re-instate batch processing logic based on number of states if needed - need to
         // establish what batching there is in the message bus layer first
+        processBatches(notarizations, results, ::processUniquenessCheckBatch)
+        processBatches(checks, results, ::processExistingUniquenessCheckBatch)
+
+        CordaMetrics.Metric.UniquenessCheckerBatchExecutionTime
+            .builder()
+            .build()
+            .record(Duration.ofNanos(System.nanoTime() - batchStartTime))
+
+        CordaMetrics.Metric.UniquenessCheckerBatchSize
+            .builder()
+            .build()
+            .record(requests.size.toDouble())
+
+        return results
+    }
+
+    private inline fun processBatches(
+        requestsToProcess: List<Pair<UniquenessCheckRequestInternal, UniquenessCheckRequestAvro>>,
+        results: HashMap<UniquenessCheckRequestAvro, UniquenessCheckResponseAvro>,
+        processingCallback: (holdingIdentity: HoldingIdentity, batch: List<UniquenessCheckRequestInternal>) -> List<Pair<UniquenessCheckRequestInternal, InternalUniquenessCheckResultWithContext>>
+    ) {
         requestsToProcess
             // Partition the data based on holding identity, as each should be processed separately
             // so the requests cannot interact with each other and the backing store also requires a
@@ -146,7 +172,7 @@ class BatchedUniquenessCheckerImpl(
                 val cordaHoldingIdentity = holdingIdentity.toCorda()
 
                 try {
-                    processBatch(
+                    processingCallback(
                         cordaHoldingIdentity,
                         partitionedRequests.map { it.first }
                     ).forEachIndexed { idx, (internalRequest, internalResult) ->
@@ -155,12 +181,14 @@ class BatchedUniquenessCheckerImpl(
                         CordaMetrics.Metric.UniquenessCheckerRequestCount
                             .builder()
                             .withTag(CordaMetrics.Tag.SourceVirtualNode, cordaHoldingIdentity.shortHash.toString())
-                            .withTag(CordaMetrics.Tag.ResultType,
+                            .withTag(
+                                CordaMetrics.Tag.ResultType,
                                 if (UniquenessCheckResultFailure::class.java.isAssignableFrom(internalResult.result.javaClass)) {
                                     (internalResult.result as UniquenessCheckResultFailure).error.javaClass.simpleName
                                 } else {
                                     internalResult.result.javaClass.simpleName
-                                })
+                                }
+                            )
                             .withTag(CordaMetrics.Tag.IsDuplicate, internalResult.isDuplicate.toString())
                             .build()
                             .increment()
@@ -207,22 +235,10 @@ class BatchedUniquenessCheckerImpl(
                     .build()
                     .record(partitionedRequests.size.toDouble())
             }
-
-        CordaMetrics.Metric.UniquenessCheckerBatchExecutionTime
-            .builder()
-            .build()
-            .record(Duration.ofNanos(System.nanoTime() - batchStartTime))
-
-        CordaMetrics.Metric.UniquenessCheckerBatchSize
-            .builder()
-            .build()
-            .record(requests.size.toDouble())
-
-        return results
     }
 
     @Suppress("ComplexMethod", "LongMethod")
-    private fun processBatch(
+    private fun processUniquenessCheckBatch(
         holdingIdentity: HoldingIdentity,
         batch: List<UniquenessCheckRequestInternal>
     ): List<Pair<UniquenessCheckRequestInternal, InternalUniquenessCheckResultWithContext>> {
@@ -230,7 +246,7 @@ class BatchedUniquenessCheckerImpl(
         val resultsToRespondWith =
             mutableListOf<Pair<UniquenessCheckRequestInternal, InternalUniquenessCheckResultWithContext>>()
 
-        log.debug { "Processing batch of ${batch.size} requests for $holdingIdentity" }
+        log.debug { "Processing uniqueness batch of ${batch.size} requests for $holdingIdentity" }
 
         // DB operations are retried, removing conflicts from the batch on each attempt.
         backingStore.transactionSession(holdingIdentity) { session, transactionOps ->
@@ -361,6 +377,75 @@ class BatchedUniquenessCheckerImpl(
             log.debug { "Finished processing batch for $holdingIdentity. " +
                     "$numSuccessful successful, " +
                     "${resultsToRespondWith.size - numSuccessful} rejected" }
+        }
+
+        return resultsToRespondWith
+    }
+
+    @Suppress("ComplexMethod", "LongMethod")
+    private fun processExistingUniquenessCheckBatch(
+        holdingIdentity: HoldingIdentity,
+        batch: List<UniquenessCheckRequestInternal>
+    ): List<Pair<UniquenessCheckRequestInternal, InternalUniquenessCheckResultWithContext>> {
+
+        val resultsToRespondWith =
+            mutableListOf<Pair<UniquenessCheckRequestInternal, InternalUniquenessCheckResultWithContext>>()
+
+        log.debug { "Processing existing uniqueness check batch of ${batch.size} requests for $holdingIdentity" }
+
+        // DB operations are retried, removing conflicts from the batch on each attempt.
+        backingStore.transactionSession(holdingIdentity) { session, _ ->
+            // We can clear these between retries, data will be retrieved from the backing store
+            // anyway.
+            transactionDetailsCache.clear()
+
+            resultsToRespondWith.clear()
+
+            // 1. Load our caches with the data persisted in the backing store
+            transactionDetailsCache.putAll(
+                session.getTransactionDetails(batch.map { it.txId })
+            )
+
+            batch.forEach { request ->
+                // Already processed -> Return same result as in DB (idempotency) but no need to
+                // commit to backing store so is not added to resultsToCommit
+                if (transactionDetailsCache[request.txId] != null) {
+                    resultsToRespondWith.add(
+                        Pair(
+                            request,
+                            InternalUniquenessCheckResultWithContext(
+                                transactionDetailsCache[request.txId]!!.result, isDuplicate = true)
+                        )
+                    )
+                } else {
+                    // TODO Return a clearly defined error type
+                    // This has not been done yet as it would affect that API.
+                    resultsToRespondWith.add(
+                        Pair(
+                            request,
+                            InternalUniquenessCheckResultWithContext(
+                                UniquenessCheckResultFailureImpl(
+                                    clock.instant(),
+                                    UniquenessCheckErrorUnhandledExceptionImpl(
+                                        "UniquenessCheckErrorNotPreviouslyNotarizedException",
+                                        "This transaction has not been notarized before"
+                                    )
+                                ),
+                                isDuplicate = false
+                            )
+                        )
+                    )
+                }
+            }
+        }
+
+        if (log.isDebugEnabled) {
+            val numSuccessful = resultsToRespondWith.filter {
+                it.second.result is UniquenessCheckResultSuccess }.size
+
+            log.debug { "Finished processing batch for $holdingIdentity. " +
+                "$numSuccessful existing notarizations, " +
+                "${resultsToRespondWith.size - numSuccessful} non-existing notarizations" }
         }
 
         return resultsToRespondWith
