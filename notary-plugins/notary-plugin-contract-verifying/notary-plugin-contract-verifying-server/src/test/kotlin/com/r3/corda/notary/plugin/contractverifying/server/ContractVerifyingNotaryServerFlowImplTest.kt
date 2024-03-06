@@ -108,7 +108,6 @@ class ContractVerifyingNotaryServerFlowImplTest {
     // Notary vnodes
     private val notaryVNodeAliceKey = generatePublicKey()
     private val notaryVNodeBobKey = generatePublicKey()
-    private val invalidVnodeKey = generatePublicKey()
 
     // Signatory vnodes
     private val signatoryVnodeCharlieKey = generatePublicKey()
@@ -201,6 +200,8 @@ class ContractVerifyingNotaryServerFlowImplTest {
         whenever(filteredTransaction.notaryName).thenReturn(notaryServiceName)
         whenever(filteredTransaction.timeWindow).thenReturn(mockTimeWindow)
         whenever(filteredTransaction.verify()).thenAnswer { }
+        whenever(filteredTransaction.notaryName).thenReturn(notaryServiceName)
+        whenever(filteredTransaction.notaryKey).thenReturn(notaryServiceCompositeKey)
 
         whenever(
             mockTransactionSignatureService.getIdOfPublicKey(
@@ -258,7 +259,6 @@ class ContractVerifyingNotaryServerFlowImplTest {
         whenever(mockTransactionSignatureService.signBatch(any(), any())).thenReturn(
             listOf(listOf(notarySignatureAlice))
         )
-        whenever(filteredTransaction.notaryKey).thenReturn(invalidVnodeKey)
         val filteredTransactionSignatures = UtxoFilteredTransactionAndSignaturesImpl(
             filteredTransaction,
             listOf(notarySignatureAlice)
@@ -632,6 +632,80 @@ class ContractVerifyingNotaryServerFlowImplTest {
         callServer(mockSuccessfulUniquenessClientService(notarizationType))
         val response = responseFromServer.first()
         assertThat(response.error).isNull()
+    }
+
+    @Test
+    fun `Contract verifying notary plugin server should respond with error if notary name not present on filtered tx`() {
+        whenever(filteredTransaction.notaryName).thenReturn(null)
+        whenever(mockTransactionSignatureService.signBatch(any(), any())).thenReturn(
+            listOf(listOf(signatorySignatureCharlie))
+        )
+
+        whenever(mockLedgerService.verify(any())).thenAnswer {  }
+
+        whenever(signedTransaction.verifySignatorySignatures()).thenAnswer {  }
+
+        callServer(mockSuccessfulUniquenessClientService())
+        val response = responseFromServer.first()
+        assertThat(response.error).hasStackTraceContaining(
+            "Notary name on dependency (${filteredTransaction.id}) didn't match the one on the initial transaction."
+        )
+    }
+
+    @Test
+    fun `Contract verifying notary plugin server should respond with error if notary key not present on filtered tx`() {
+        whenever(filteredTransaction.notaryKey).thenReturn(null)
+        whenever(mockTransactionSignatureService.signBatch(any(), any())).thenReturn(
+            listOf(listOf(signatorySignatureCharlie))
+        )
+
+        whenever(mockLedgerService.verify(any())).thenAnswer {  }
+
+        whenever(signedTransaction.verifySignatorySignatures()).thenAnswer {  }
+
+        callServer(mockSuccessfulUniquenessClientService())
+        val response = responseFromServer.first()
+        assertThat(response.error).hasStackTraceContaining(
+            "Notary key on dependency (${filteredTransaction.id}) didn't match the one on the initial transaction."
+        )
+    }
+
+    @Test
+    fun `Contract verifying notary plugin server should respond with error if notary name is different on filtered tx`() {
+        whenever(filteredTransaction.notaryName).thenReturn(
+            MemberX500Name.parse("O=NotMyNotaryService, L=London, C=GB")
+        )
+        whenever(mockTransactionSignatureService.signBatch(any(), any())).thenReturn(
+            listOf(listOf(signatorySignatureCharlie))
+        )
+
+        whenever(mockLedgerService.verify(any())).thenAnswer {  }
+
+        whenever(signedTransaction.verifySignatorySignatures()).thenAnswer {  }
+
+        callServer(mockSuccessfulUniquenessClientService())
+        val response = responseFromServer.first()
+        assertThat(response.error).hasStackTraceContaining(
+            "Notary name on dependency (${filteredTransaction.id}) didn't match the one on the initial transaction."
+        )
+    }
+
+    @Test
+    fun `Contract verifying notary plugin server should respond with error if notary key is different on filtered tx`() {
+        whenever(filteredTransaction.notaryKey).thenReturn(notaryVNodeAliceKey)
+        whenever(mockTransactionSignatureService.signBatch(any(), any())).thenReturn(
+            listOf(listOf(signatorySignatureCharlie))
+        )
+
+        whenever(mockLedgerService.verify(any())).thenAnswer {  }
+
+        whenever(signedTransaction.verifySignatorySignatures()).thenAnswer {  }
+
+        callServer(mockSuccessfulUniquenessClientService())
+        val response = responseFromServer.first()
+        assertThat(response.error).hasStackTraceContaining(
+            "Notary key on dependency (${filteredTransaction.id}) didn't match the one on the initial transaction."
+        )
     }
 
     @Suppress("LongParameterList")
