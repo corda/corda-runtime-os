@@ -103,7 +103,7 @@ class NonValidatingNotaryServerFlowImplTest {
             assertThat(responseFromServer.first().signatures).isEmpty()
             assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
             assertThat((responseError as NotaryExceptionGeneral).errorText)
-                .contains("Error while processing request from client")
+                .contains("Error during notarization")
         }
     }
 
@@ -148,7 +148,7 @@ class NonValidatingNotaryServerFlowImplTest {
             assertThat(responseError).isNotNull
             assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
             assertThat((responseError as NotaryExceptionGeneral).errorText)
-                .contains("Error while processing request from client")
+                .contains("Error during notarization")
         }
     }
 
@@ -181,7 +181,7 @@ class NonValidatingNotaryServerFlowImplTest {
             assertThat(responseError).isNotNull
             assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
             assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
-                "Error while processing request from client"
+                "Error during notarization"
             )
         }
     }
@@ -197,7 +197,7 @@ class NonValidatingNotaryServerFlowImplTest {
             assertThat(responseError).isNotNull
             assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
             assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
-                "Error while processing request from client"
+                "Error during notarization"
             )
         }
     }
@@ -213,7 +213,7 @@ class NonValidatingNotaryServerFlowImplTest {
             assertThat(responseError).isNotNull
             assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
             assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
-                "Error while processing request from client"
+                "Error during notarization"
             )
         }
     }
@@ -233,7 +233,7 @@ class NonValidatingNotaryServerFlowImplTest {
             assertThat(responseError).isNotNull
             assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
             assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
-                "Error while processing request from client"
+                "Error during notarization"
             )
         }
     }
@@ -250,7 +250,7 @@ class NonValidatingNotaryServerFlowImplTest {
             assertThat(responseError).isNotNull
             assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
             assertThat((responseError as NotaryExceptionGeneral).errorText)
-                .contains("Error while processing request from client")
+                .contains("Error during notarization")
         }
     }
 
@@ -286,7 +286,7 @@ class NonValidatingNotaryServerFlowImplTest {
             assertThat(responseError).isNotNull
             assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
             assertThat((responseError as NotaryExceptionGeneral).errorText)
-                .contains("Error while processing request from client")
+                .contains("Error during notarization")
         }
     }
 

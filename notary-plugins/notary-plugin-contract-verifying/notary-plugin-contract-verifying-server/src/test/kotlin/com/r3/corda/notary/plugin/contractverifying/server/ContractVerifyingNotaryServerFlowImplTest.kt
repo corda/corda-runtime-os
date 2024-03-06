@@ -241,8 +241,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
         assertThat(responseError).isNotNull
         assertThat(responseFromServer.first().signatures).isEmpty()
         assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-        assertThat((responseError as NotaryExceptionGeneral).errorText)
-            .contains("The publicKeys do not have any private counterparts available.")
+        assertThat((responseError as NotaryExceptionGeneral).errorText).isEqualTo("Error during notarization")
     }
 
     @Test
@@ -302,8 +301,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
         val responseError = responseFromServer.first().error
         assertThat(responseError).isNotNull
         assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-        assertThat((responseError as NotaryExceptionGeneral).errorText)
-            .contains("Error during notarization. Cause: Uniqueness checker cannot be reached")
+        assertThat((responseError as NotaryExceptionGeneral).errorText).isEqualTo("Error during notarization")
     }
 
     @Test
@@ -400,8 +398,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
         val responseError = responseFromServer.first().error
         assertThat(responseError).isNotNull
         assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-        assertThat((responseError as NotaryExceptionGeneral).errorText)
-            .contains("Error during notarization. Cause: DUMMY ERROR")
+        assertThat((responseError as NotaryExceptionGeneral).errorText).isEqualTo("Error during notarization")
     }
 
     @Test
@@ -439,8 +436,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
         val responseError = responseFromServer.first().error
         assertThat(responseError).isNotNull
         assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-        assertThat((responseError as NotaryExceptionGeneral).errorText)
-            .contains("does not match the notary service represented by this notary virtual node")
+        assertThat((responseError as NotaryExceptionGeneral).errorText).isEqualTo("Error during notarization")
     }
 
     @Test

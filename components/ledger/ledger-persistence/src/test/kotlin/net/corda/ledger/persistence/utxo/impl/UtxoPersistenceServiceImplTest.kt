@@ -321,12 +321,13 @@ class UtxoPersistenceServiceImplTest {
             actual = persisted.value.json
         )
     }
+
     private fun createMockTransaction(producedStates: Map<Int, StateAndRef<ContractState>>): UtxoTransactionReader {
         return mock {
             on { getConsumedStateRefs() } doReturn emptyList()
             on { rawGroupLists } doReturn listOf(listOf("{}".toByteArray()))
             on { visibleStatesIndexes } doReturn listOf(0)
-            on { status } doReturn TransactionStatus.UNVERIFIED
+            on { status } doReturn TransactionStatus.VERIFIED
             on { signatures } doReturn emptyList()
             on { id } doReturn randomSecureHash()
             on { privacySalt } doReturn mockPrivacySalt

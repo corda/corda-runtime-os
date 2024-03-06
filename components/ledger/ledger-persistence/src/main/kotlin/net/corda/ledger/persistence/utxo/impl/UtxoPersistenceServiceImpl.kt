@@ -356,15 +356,15 @@ class UtxoPersistenceServiceImpl(
 
             repository.persistTransactionSources(em, transactionIdString, consumedTransactionSources + referenceTransactionSources)
 
-            repository.persistVisibleTransactionOutputs(
-                em,
-                transactionIdString,
-                nowUtc,
-                visibleTransactionOutputs
-            )
-
             // Mark inputs as consumed
             if (transaction.status == TransactionStatus.VERIFIED) {
+                repository.persistVisibleTransactionOutputs(
+                    em,
+                    transactionIdString,
+                    nowUtc,
+                    visibleTransactionOutputs
+                )
+
                 val inputStateRefs = transaction.getConsumedStateRefs()
                 if (inputStateRefs.isNotEmpty()) {
                     repository.markTransactionVisibleStatesConsumed(

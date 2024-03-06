@@ -66,6 +66,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.timeout
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
@@ -440,7 +441,104 @@ class UtxoFinalityFlowV1Test {
     }
 
     @Test
-    fun `receiving valid signatures over a transaction then non-permanent failing notarization throws, but does not invalidate tx`() {
+    fun `receiving NotaryExceptionUnknown when notarizing retries notarization until it succeeds`() {
+        whenever(initialTx.getMissingSignatories()).thenReturn(
+            setOf(
+                publicKeyAlice1,
+                publicKeyAlice2,
+                publicKeyBob
+            )
+        )
+
+        whenever(
+            flowMessaging.receiveAllMap(
+                mapOf(
+                    sessionAlice to Payload::class.java,
+                    sessionBob to Payload::class.java
+                )
+            )
+        ).thenReturn(
+            mapOf(
+                sessionAlice to Payload.Success(
+                    listOf(
+                        signatureAlice1,
+                        signatureAlice2
+                    )
+                ),
+                sessionBob to Payload.Success(
+                    listOf(
+                        signatureBob
+                    )
+                )
+            )
+        )
+
+        val txAfterAlice1Signature = mock<UtxoSignedTransactionInternal>()
+        whenever(initialTx.addSignature(signatureAlice1)).thenReturn(txAfterAlice1Signature)
+        val txAfterAlice2Signature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterAlice1Signature.addSignature(signatureAlice2)).thenReturn(txAfterAlice2Signature)
+        val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterBobSignature.id).thenReturn(TX_ID)
+        whenever(txAfterBobSignature.notaryName).thenReturn(notaryX500Name)
+        whenever(txAfterAlice2Signature.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
+        whenever(txAfterBobSignature.addSignature(signatureNotary)).thenReturn(notarizedTx)
+
+        whenever(txAfterBobSignature.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
+        whenever(notarizedTx.outputStateAndRefs).thenReturn(listOf(stateAndRef))
+
+        @CordaSerializable
+        class TestNotaryExceptionNonFatal(
+            errorText: String,
+            txId: SecureHash? = null
+        ) : NotaryExceptionUnknown(errorText, txId)
+
+        val e = TestNotaryExceptionNonFatal("notarization error")
+
+        whenever(flowEngine.subFlow(pluggableNotaryClientFlow))
+            .thenThrow(e, e, e, e)
+            .thenReturn(listOf(signatureNotary))
+
+        whenever(visibilityChecker.containsMySigningKeys(listOf(publicKeyAlice1))).thenReturn(true)
+        whenever(visibilityChecker.containsMySigningKeys(listOf(publicKeyBob))).thenReturn(true)
+
+        callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob))
+
+        verify(initialTx).verifySignatorySignature(eq(signatureAlice1))
+        verify(txAfterAlice1Signature).verifySignatorySignature(eq(signatureAlice2))
+        verify(txAfterAlice2Signature).verifySignatorySignature(eq(signatureBob))
+
+        verify(initialTx).addSignature(signatureAlice1)
+        verify(txAfterAlice1Signature).addSignature(signatureAlice2)
+        verify(txAfterAlice2Signature).addSignature(signatureBob)
+        verify(txAfterBobSignature).addSignature(signatureNotary)
+
+        verify(persistenceService).persist(initialTx, TransactionStatus.UNVERIFIED)
+        verify(persistenceService).persistTransactionSignatures(
+            TX_ID,
+            1,
+            listOf(signatureAlice2, signatureBob)
+        )
+        verify(persistenceService).persist(any(), eq(TransactionStatus.VERIFIED), any())
+        verify(persistenceService, never()).persist(any(), eq(TransactionStatus.INVALID), any())
+
+        verify(flowMessaging).receiveAllMap(
+            mapOf(
+                sessionAlice to Payload::class.java,
+                sessionBob to Payload::class.java
+            )
+        )
+        verify(flowMessaging).sendAllMap(
+            mapOf(
+                sessionAlice to listOf(signatureBob),
+                sessionBob to listOf(signatureAlice1, signatureAlice2)
+            )
+        )
+        verify(flowEngine, times(5)).subFlow(pluggableNotaryClientFlow)
+        verify(flowMessaging).sendAll(eq(Payload.Success(listOf(signatureNotary))), any())
+    }
+
+    @Test
+    fun `receiving CordaRuntimeException when notarizing fails the flow but does not mark the transaction as invalid`() {
         whenever(initialTx.getMissingSignatories()).thenReturn(
             setOf(
                 publicKeyAlice1,
@@ -483,18 +581,11 @@ class UtxoFinalityFlowV1Test {
 
         whenever(txAfterBobSignature.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
 
-        @CordaSerializable
-        class TestNotaryExceptionNonFatal(
-            errorText: String,
-            txId: SecureHash? = null
-        ) : NotaryExceptionUnknown(errorText, txId)
+        val e = CordaRuntimeException("notarization error")
 
-        whenever(flowEngine.subFlow(pluggableNotaryClientFlow))
-            .thenThrow(TestNotaryExceptionNonFatal("notarization error"))
+        whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenThrow(e)
 
-        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }
-            .isInstanceOf(CordaRuntimeException::class.java)
-            .hasMessage("Unable to notarize transaction <Unknown>: notarization error")
+        assertThatThrownBy { callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob)) }.isEqualTo(e)
 
         verify(initialTx).verifySignatorySignature(eq(signatureAlice1))
         verify(txAfterAlice1Signature).verifySignatorySignature(eq(signatureAlice2))
@@ -529,7 +620,7 @@ class UtxoFinalityFlowV1Test {
         verify(flowMessaging, never()).sendAll(eq(Payload.Success(listOf(signatureNotary))), any())
         verify(flowMessaging).sendAll(
             Payload.Failure<List<DigitalSignatureAndMetadata>>(
-                "Notarization failed with Unable to notarize transaction <Unknown>: notarization error.",
+                "Notarization failed with ${e.message}.",
                 FinalityNotarizationFailureType.UNKNOWN.value
             ),
             sessions
