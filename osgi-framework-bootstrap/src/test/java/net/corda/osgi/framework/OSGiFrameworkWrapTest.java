@@ -1,6 +1,7 @@
 package net.corda.osgi.framework;
 
 import static java.util.stream.Collectors.toUnmodifiableList;
+import static net.corda.osgi.framework.OSGiFrameworkUtils.getFrameworkFrom;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -14,6 +15,8 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.launch.Framework;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -75,32 +78,40 @@ final class OSGiFrameworkWrapTest {
             throw new IOException("Resource " + resource + " not found");
         }
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
-            return reader.lines().map(OSGiFrameworkWrap::removeTrailingComment)
-                .map(String::trim)
-                .filter(line -> !line.isEmpty())
-                .collect(toUnmodifiableList());
+            return reader.lines().map(OSGiFrameworkUtils::removeTrailingComment)
+                    .map(String::trim)
+                    .filter(line -> !line.isEmpty())
+                    .collect(toUnmodifiableList());
         }
     }
 
     private Path frameworkStorageDir;
+
+    final Logger logger = LoggerFactory.getLogger(OSGiFrameworkMain.class);
 
     @BeforeEach
     void setup(@TempDir Path frameworkStorageDir) {
         this.frameworkStorageDir = frameworkStorageDir;
     }
 
+    private Framework getFramework() throws ClassNotFoundException, IOException {
+        final Framework framework = getFrameworkFrom(
+                frameworkStorageDir,
+                this.getClass().getClassLoader(),
+                logger
+        );
+        return framework;
+    }
+
     @Test
     void activate() throws Exception {
-        final Framework framework = OSGiFrameworkWrap.getFrameworkFrom(
-            frameworkStorageDir,
-            OSGiFrameworkWrap.getFrameworkPropertyFrom(OSGiFrameworkMain.SYSTEM_PACKAGES_EXTRA)
-        );
+        final Framework framework = getFramework();
         try (OSGiFrameworkWrap frameworkWrap = new OSGiFrameworkWrap(framework)) {
             frameworkWrap.start();
             frameworkWrap.install(OSGiFrameworkMain.APPLICATION_BUNDLES);
             frameworkWrap.activate();
             for (Bundle bundle : framework.getBundleContext().getBundles()) {
-                if (!OSGiFrameworkWrap.isFragment(bundle)) {
+                if (!OSGiFrameworkUtils.isFragment(bundle)) {
                     assertEquals(Bundle.ACTIVE, bundle.getState());
                 }
             }
@@ -108,17 +119,8 @@ final class OSGiFrameworkWrapTest {
     }
 
     @Test
-    void getFrameworkFrom() throws Exception {
-        final Framework framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkStorageDir, "");
-        assertNotNull(framework);
-    }
-
-    @Test
     void install() throws Exception {
-        final Framework framework = OSGiFrameworkWrap.getFrameworkFrom(
-            frameworkStorageDir,
-            OSGiFrameworkWrap.getFrameworkPropertyFrom(OSGiFrameworkMain.SYSTEM_PACKAGES_EXTRA)
-        );
+        final Framework framework = getFramework();
         try (OSGiFrameworkWrap frameworkWrap = new OSGiFrameworkWrap(framework)) {
             frameworkWrap.start();
             frameworkWrap.install(OSGiFrameworkMain.APPLICATION_BUNDLES);
@@ -133,7 +135,7 @@ final class OSGiFrameworkWrapTest {
     @Test
     void installWithIllegalStateException() {
         assertThrows(IllegalStateException.class, () -> {
-            final Framework framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkStorageDir, "");
+            final Framework framework = getFramework();
             try (OSGiFrameworkWrap frameworkWrap = new OSGiFrameworkWrap(framework)) {
                 frameworkWrap.install(OSGiFrameworkMain.APPLICATION_BUNDLES);
             }
@@ -143,7 +145,7 @@ final class OSGiFrameworkWrapTest {
     @Test
     void installWithIOException() {
         assertThrows(IOException.class, () -> {
-            final Framework framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkStorageDir, "");
+            final Framework framework = getFramework();
             try (OSGiFrameworkWrap frameworkWrap = new OSGiFrameworkWrap(framework)) {
                 frameworkWrap.start();
                 frameworkWrap.install(NO_APPLICATION_BUNDLES);
@@ -154,7 +156,7 @@ final class OSGiFrameworkWrapTest {
     @Test
     void installBundleJarWithIOException() {
         assertThrows(IOException.class, () -> {
-            final Framework framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkStorageDir, "");
+            final Framework framework = getFramework();
             try (OSGiFrameworkWrap frameworkWrap = new OSGiFrameworkWrap(framework)) {
                 frameworkWrap.start();
                 frameworkWrap.install(SICK_APPLICATION_BUNDLES);
@@ -165,7 +167,7 @@ final class OSGiFrameworkWrapTest {
     @Test
     void installBundleListWithIOException() {
         assertThrows(IOException.class, () -> {
-            final Framework framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkStorageDir, "");
+            final Framework framework = getFramework();
             try (OSGiFrameworkWrap frameworkWrap = new OSGiFrameworkWrap(framework)) {
                 frameworkWrap.start();
                 frameworkWrap.install(NO_APPLICATION_BUNDLES);
@@ -176,7 +178,7 @@ final class OSGiFrameworkWrapTest {
     @Test
     void start() throws Exception {
         final AtomicInteger startupStateAtomic = new AtomicInteger(0);
-        final Framework framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkStorageDir, "");
+        final Framework framework = getFramework();
         framework.init(frameworkEvent -> {
             assertThat(startupStateAtomic.get()).isLessThan(frameworkEvent.getBundle().getState());
             assertTrue(startupStateAtomic.compareAndSet(startupStateAtomic.get(), frameworkEvent.getBundle().getState()));
@@ -192,7 +194,7 @@ final class OSGiFrameworkWrapTest {
 
     @Test
     void stop() throws Exception {
-        final Framework framework = OSGiFrameworkWrap.getFrameworkFrom(frameworkStorageDir, "");
+        final Framework framework = getFramework();
         try (OSGiFrameworkWrap frameworkWrap = new OSGiFrameworkWrap(framework)) {
             frameworkWrap.start();
             assertEquals(Bundle.ACTIVE, framework.getState());
@@ -201,7 +203,7 @@ final class OSGiFrameworkWrapTest {
                 assertEquals(framework, bundleEvent.getBundle());
             });
             frameworkWrap.stop();
-            assertEquals(FrameworkEvent.STOPPED, frameworkWrap.waitForStop(10000L).getType());
+            assertEquals(FrameworkEvent.STOPPED, frameworkWrap.waitForStop().getType());
         }
         assertEquals(Bundle.RESOLVED, framework.getState());
     }
