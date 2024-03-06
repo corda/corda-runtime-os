@@ -132,7 +132,7 @@ class HsmRestResourceImpl @Activate constructor(
             ) { "Could not find holding identity '$tenantId' associated with member." }
         } catch (e: BadRequestException) {
             // re-throw using a more suitable message
-            throw BadRequestException("Invalid tenant id. Accepted values are holding identity short hashes, 'p2p', or 'rest'")
+            throw BadRequestException("Invalid tenant id: $tenantId. Accepted values are holding identity short hash, 'p2p', or 'rest'")
         }
     }
 }
