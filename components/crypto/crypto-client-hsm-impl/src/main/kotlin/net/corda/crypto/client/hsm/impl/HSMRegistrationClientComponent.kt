@@ -125,7 +125,7 @@ class HSMRegistrationClientComponent @Activate constructor(
                 coordinator.updateStatus(LifecycleStatus.DOWN)
                 configReadServiceIsUp = false
             }
-        } else { // ex downstream stuff (RPCSender)
+        } else {
             if (event.status != LifecycleStatus.UP) {
                 coordinator.updateStatus(LifecycleStatus.DOWN)
             } else if (configReadServiceIsUp && _impl != null) {
