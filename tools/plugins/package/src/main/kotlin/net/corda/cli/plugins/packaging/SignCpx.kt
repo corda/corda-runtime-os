@@ -37,11 +37,7 @@ class SignCpx : Runnable {
             SigningHelpers.sign(
                 cpxFilePath,
                 signedCpxPath,
-                signingOptions.keyStoreFileName,
-                signingOptions.keyStorePass,
-                signingOptions.keyAlias,
-                signingOptions.sigFile,
-                signingOptions.tsaUrl
+                signingOptions.asSigningParameters
             )
         } else {
             val removedSignaturesCpx = Files.createTempFile("removedSignaturesCpx", null)
@@ -50,11 +46,7 @@ class SignCpx : Runnable {
                 SigningHelpers.sign(
                     removedSignaturesCpx,
                     signedCpxPath,
-                    signingOptions.keyStoreFileName,
-                    signingOptions.keyStorePass,
-                    signingOptions.keyAlias,
-                    signingOptions.sigFile,
-                    signingOptions.tsaUrl
+                    signingOptions.asSigningParameters
                 )
             } finally {
                 Files.deleteIfExists(removedSignaturesCpx)

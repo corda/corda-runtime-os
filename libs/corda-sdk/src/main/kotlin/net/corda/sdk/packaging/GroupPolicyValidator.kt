@@ -1,4 +1,4 @@
-package net.corda.cli.plugins.packaging
+package net.corda.sdk.packaging
 
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.schema.validation.impl.MembershipSchemaValidatorImpl
@@ -6,7 +6,7 @@ import net.corda.schema.membership.MembershipSchema
 import net.corda.schema.membership.provider.MembershipSchemaProviderFactory
 import net.corda.v5.base.versioning.Version
 
-internal object GroupPolicyValidator {
+object GroupPolicyValidator {
     /**
      * Validates group policy against schema.
      */

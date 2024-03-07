@@ -1,5 +1,6 @@
 package net.corda.cli.plugins.packaging.signing
 
+import net.corda.sdk.packaging.signing.SigningParameters
 import picocli.CommandLine
 
 /**
@@ -21,23 +22,7 @@ class SigningOptions {
     @CommandLine.Option(names = ["--sig-file"], description = ["Base file name for signature related files"])
     private var _sigFile: String? = null
 
-    // The following has the same behavior as jarsigner in terms of signature files naming.
-    val sigFile: String
-        get() =
-            _sigFile ?: keyAlias.run {
-                var str = this
-                if (str.length > 8) {
-                    str = str.substring(0, 8).uppercase()
-                }
-                val strBuilder = StringBuilder()
-                for (c in str) {
-                    @Suppress("ComplexCondition")
-                    if (c in 'A'..'Z' || c in 'a'..'z' || c == '-' || c == '_')
-                        strBuilder.append(c)
-                    else
-                        strBuilder.append('_')
-                }
-                str = strBuilder.toString()
-                str
-            }
+    val asSigningParameters: SigningParameters by lazy {
+        SigningParameters(keyStoreFileName, keyStorePass, keyAlias, tsaUrl, _sigFile)
+    }
 }
