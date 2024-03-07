@@ -169,11 +169,12 @@ internal class SessionCache(
         }
     }
 
-    private fun forgetState(state: State) {
+    fun forgetState(state: State) {
         var stateToDelete = state
         val key = state.key
         var retryCount = 0
         var failedDeletes = mapOf<String, State>()
+        logger.info("Deleting state with key ${state.key}")
         do {
             try {
                 failedDeletes = stateManager.delete(listOf(stateToDelete))
