@@ -232,7 +232,7 @@ fun ClusterInfo.whenNoKeyExists(
  *   @param expectedHttpStatusCode Status code that should be displayed when the API is hit,
  *   helps to validate both positive or negative scenarios.
  */
-fun ClusterInfo.rotateCryptoUnmanagedWrappingKeys(
+fun ClusterInfo.rotateCryptoWrappingKeys(
     tenantId: String,
     expectedHttpStatusCode: Int
 ) = cluster {
