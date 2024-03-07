@@ -18,6 +18,7 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-endpoints')
     implementation project(':libs:membership:membership-common')
+    implementation project(':libs:packaging:packaging-verify')
     implementation project(':libs:rest:json-serialization')
     implementation project(':libs:rest:rest-client')
     implementation project(':libs:virtual-node:cpi-upload-endpoints')

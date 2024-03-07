@@ -12,8 +12,8 @@ import java.util.jar.JarOutputStream
 import java.util.jar.Manifest
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileDoesNotExist
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileExists
-import net.corda.cli.plugins.packaging.signing.SigningHelpers
 import net.corda.cli.plugins.packaging.signing.SigningOptions
+import net.corda.sdk.packaging.signing.SigningHelpers
 import picocli.CommandLine
 
 @Command(

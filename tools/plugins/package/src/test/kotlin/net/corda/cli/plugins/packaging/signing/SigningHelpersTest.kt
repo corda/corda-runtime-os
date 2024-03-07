@@ -5,6 +5,7 @@ import java.nio.file.Path
 import java.util.jar.Attributes
 import net.corda.cli.plugins.packaging.CreateCpbTest
 import net.corda.cli.plugins.packaging.TestUtils
+import net.corda.sdk.packaging.signing.SigningHelpers
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
