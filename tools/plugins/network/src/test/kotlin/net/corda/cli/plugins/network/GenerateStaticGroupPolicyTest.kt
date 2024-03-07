@@ -15,7 +15,7 @@ import picocli.CommandLine
 import java.nio.file.Files
 import java.nio.file.Path
 
-class GenerateGroupPolicyTest {
+class GenerateStaticGroupPolicyTest {
 
     @TempDir
     lateinit var tempDir: Path
