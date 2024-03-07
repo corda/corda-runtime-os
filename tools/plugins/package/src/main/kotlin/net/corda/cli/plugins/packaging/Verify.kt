@@ -6,7 +6,7 @@ import net.corda.libs.packaging.verify.VerifierBuilder
 import picocli.CommandLine
 import java.io.FileInputStream
 import java.io.InputStream
-import net.corda.cli.plugins.packaging.signing.CertificateLoader.readCertificates
+import net.corda.sdk.packaging.signing.CertificateLoader.readCertificates
 
 @CommandLine.Command(
     name = "verify",
