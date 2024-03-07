@@ -10,7 +10,7 @@ object GroupPolicyValidator {
     /**
      * Validates group policy against schema.
      */
-    fun validateGroupPolicy(groupPolicyString: String)  {
+    fun validateGroupPolicy(groupPolicyString: String) {
         val fileFormatVersion = GroupPolicyParser.getFileFormatVersion(groupPolicyString)
 
         val membershipSchemaValidator = MembershipSchemaValidatorImpl(MembershipSchemaProviderFactory.getSchemaProvider())

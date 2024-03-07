@@ -15,8 +15,6 @@ import java.util.jar.JarEntry
 import java.util.jar.JarOutputStream
 import java.util.jar.Manifest
 
-
-
 /**
  * Creates a CPI v2 from a CPB and GroupPolicy.json file.
  */
