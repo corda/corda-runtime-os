@@ -76,34 +76,7 @@ metrics:
   # -- enable scraping of worker metrics through Prometheus annotations
   scrape: true
   # -- A list of regular expressions for the names of metrics that Corda should keep; if empty, all metrics are kept
-  keepNames:
-    - "corda_rpc_http_response_time_seconds_(count|sum|max)"
-    - "corda_token_selection_execution_time_seconds_(count|sum|max)"
-    - "corda_token_selection_db_execution_time_seconds_(count|sum|max)"
-    - "corda_flow_execution_time_seconds_(count|sum|max)"
-    - "corda_http_server_request_time_seconds_(count|sum|max)"
-    - "corda_p2p_gateway_inbound_request_time_seconds_(count|sum|max)"
-    - "corda_p2p_gateway_outbound_request_time_seconds_(count|sum|max)"
-    - "corda_p2p_gateway_outbound_tls_connections_total"
-    - "corda_p2p_message_outbound_total"
-    - "corda_p2p_message_outbound_replayed_total"
-    - "corda_p2p_message_outbound_latency_seconds_(count|sum|max)"
-    - "corda_p2p_message_inbound_total"
-    - "corda_p2p_session_timeout_total"
-    - "corda_p2p_session_.*"
-    - "corda_p2p_session_deleted_total"
-    - "corda_p2p_session_started_total"
-    - "corda_p2p_session_established_total"
-    - "corda_p2p_session_failed_total"
-    - "corda_p2p_session_creation_time_seconds_(count|sum|max)"
-    - "corda_p2p_session_replayed_total"
-    - "corda_membership_actions_handler_time_seconds_(count|sum|max)"
-    - "corda_consumer_poll_time_seconds_(count|sum|max)"
-    - "corda_messaging_commit_time_seconds_(count|sum|max)"
-    - "corda_messaging_processor_time_seconds_(count|sum|max)"
-    - "corda_taskmanager_.*"
-    - "jvm_.*"
-    - "process_cpu_usage"
+  keepNames: []
   # -- A list of regular expressions for labels that Corda should drop across all metrics; if empty, all labels are kept
   dropLabels: []
   # -- Pod monitor configuration for scraping metrics. Please note that the corresponding CRD must exist in the environment
