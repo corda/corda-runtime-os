@@ -84,7 +84,7 @@ internal class StaleSessionProcessor(
             try {
                 val noise = Duration.of(
                     noiseFactory.nextLong(20 * 60),
-                    TimeUnit.SECONDS.toChronoUnit(),
+                    TimeUnit.MILLISECONDS.toChronoUnit(),
                 )
                 val now = clock.instant()
                 logger.info("noise is: $noise")

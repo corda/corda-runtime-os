@@ -81,7 +81,7 @@ class SchedulerProcessorImpl @Activate constructor(
         ),
         Schedule(
             ScheduledTask.SCHEDULED_TASK_NAME_STALE_P2P_SESSION_CLEANUP,
-            /*604800*/ 60, ScheduledTask.SCHEDULED_TASK_TOPIC_STALE_P2P_SESSION_PROCESSOR
+            /*604800*/ 300, ScheduledTask.SCHEDULED_TASK_TOPIC_STALE_P2P_SESSION_PROCESSOR
         ),
     )
     private var schedulers: Schedulers? = null
