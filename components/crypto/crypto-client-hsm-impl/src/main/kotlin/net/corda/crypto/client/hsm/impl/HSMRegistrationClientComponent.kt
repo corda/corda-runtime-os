@@ -81,7 +81,7 @@ class HSMRegistrationClientComponent @Activate constructor(
     private var configReadServiceIsUp = false
     private var configHandle: AutoCloseable? = null
 
-    private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+    private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.trace { "LifecycleEvent received $myName: $event" }
         when (event) {
             is StartEvent -> {
