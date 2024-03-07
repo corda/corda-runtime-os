@@ -113,6 +113,8 @@ class LiquibaseSchemaMigratorImpl(
                 database
             )
 
+            lb.databaseChangeLog.validate(database, Contexts(), LabelExpression())
+
             return StatusCommandStep().listUnrunChangeSets(Contexts(), LabelExpression(),
                 lb.databaseChangeLog, database).map { it.filePath }
         }
