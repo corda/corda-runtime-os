@@ -83,7 +83,7 @@ internal class StatefulSessionManagerImpl(
 ) : SessionManager {
     companion object {
         const val LINK_MANAGER_SUBSYSTEM = "link-manager"
-        private val SESSION_VALIDITY_PERIOD: Duration = Duration.ofMinutes(1)
+        private val SESSION_VALIDITY_PERIOD: Duration = Duration.ofMinutes(3)
         private val logger: Logger = LoggerFactory.getLogger(StatefulSessionManagerImpl::class.java)
     }
 

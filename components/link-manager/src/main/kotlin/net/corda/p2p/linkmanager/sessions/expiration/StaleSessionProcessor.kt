@@ -87,8 +87,9 @@ internal class StaleSessionProcessor(
                     TimeUnit.SECONDS.toChronoUnit(),
                 )
                 val now = clock.instant()
+                logger.info("time was: ${(now - noise)}")
                 expiredStates = stateManager.findByMetadataMatchingAny(
-                    listOf(MetadataFilter("expiry", Operation.LesserThan, now - noise))
+                    listOf(MetadataFilter("expiry", Operation.LesserThan, (now - noise).toString()))
                 ).values.toList()
             } catch (e: Exception) {
                 logger.error("Unexpected error while trying to execute the scheduled delete task " +
