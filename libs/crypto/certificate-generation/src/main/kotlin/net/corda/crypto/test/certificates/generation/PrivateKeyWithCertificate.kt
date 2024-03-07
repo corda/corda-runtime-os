@@ -9,7 +9,7 @@ import java.security.cert.Certificate
  */
 data class PrivateKeyWithCertificate(
     val privateKey: PrivateKey,
-    val certificate: Certificate,
+    val certificates: Collection<Certificate>,
 ) {
 
     /**
@@ -18,15 +18,8 @@ data class PrivateKeyWithCertificate(
     fun toKeyStore(): KeyStore {
         val keyStore = KeyStore.getInstance("PKCS12").also { keyStore ->
             keyStore.load(null)
-            keyStore.setKeyEntry("entry", privateKey, CertificateAuthority.PASSWORD.toCharArray(), arrayOf(certificate))
+            keyStore.setKeyEntry("entry", privateKey, CertificateAuthority.PASSWORD.toCharArray(), certificates.toTypedArray())
         }
         return keyStore
-    }
-
-    /**
-     * Convert the certificate to pem String.
-     */
-    fun certificatePem(): String {
-        return certificate.toPem()
     }
 }
