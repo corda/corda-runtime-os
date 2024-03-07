@@ -679,4 +679,33 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
         assertThat(key.signingKeyId).isEqualTo(signingKeyMaterialInfo.signingKeyId)
         assertThat(key.keyMaterial).isEqualTo(signingKeyMaterialInfo.keyMaterial)
     }
+
+    @ParameterizedTest
+    @MethodSource("emfs")
+    fun `tenant cannot have keys with the same alias`(emf: EntityManagerFactory) {
+        val info = createSigningKeyInfo()
+        saveWrappingKey(emf, info.wrappingKeyAlias)
+        val ctx = createSigningWrappedKeySaveContext(info)
+        val repo = SigningRepositoryImpl(
+            emf,
+            info.tenantId,
+            cipherSchemeMetadata,
+            digestService,
+            createLayeredPropertyMapFactory())
+
+        repo.savePrivateKey(ctx)
+
+        val info2 = createSigningKeyInfo(info.tenantId).copy(alias = info.alias)
+        saveWrappingKey(emf, info2.wrappingKeyAlias)
+        val ctx2 = createSigningWrappedKeySaveContext(info2)
+
+        var errorMessage: String? = null
+        try {
+            repo.savePrivateKey(ctx2)
+        } catch (e: Exception) {
+            errorMessage = e.cause?.message
+        }
+
+        assertThat(errorMessage).isEqualTo("org.hibernate.exception.ConstraintViolationException: could not execute statement")
+    }
 }
