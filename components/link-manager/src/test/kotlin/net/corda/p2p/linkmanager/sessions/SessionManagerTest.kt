@@ -255,6 +255,7 @@ class SessionManagerTest {
             mock(),
             linkManagerHostingMap,
             protocolFactory,
+            mock(),
         ).apply {
             setRunning()
             configHandler.applyNewConfiguration(
