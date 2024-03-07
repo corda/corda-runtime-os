@@ -149,7 +149,6 @@ class LiquibaseSchemaMigratorImpl(
             )
 
             val scopeObjects = mapOf(
-                Scope.Attr.database.name to lb.database,
                 Scope.Attr.resourceAccessor.name to lb.resourceAccessor
             )
             Scope.child(scopeObjects) {
