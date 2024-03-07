@@ -20,7 +20,6 @@ import liquibase.database.Database
 import liquibase.database.DatabaseFactory
 import liquibase.database.OfflineConnection
 import liquibase.database.jvm.JdbcConnection
-import liquibase.exception.LiquibaseException
 import liquibase.io.WriterOutputStream
 import liquibase.resource.ResourceAccessor
 import net.corda.db.admin.DbChange
@@ -149,33 +148,25 @@ class LiquibaseSchemaMigratorImpl(
                         "DB Schema for ${database.connection.catalog}"
             )
 
-            try {
-                val scopeObjects = mapOf(
-                    Scope.Attr.database.name to lb.database,
-                    Scope.Attr.resourceAccessor.name to lb.resourceAccessor
-                )
-                Scope.child(scopeObjects) {
-                    if (sql != null) {
-                        commandScopeFactory(UpdateSqlCommandStep.COMMAND_NAME).configure(lb, tag).also {
-                            it.setOutput(
-                                WriterOutputStream(
-                                    sql,
-                                    GlobalConfiguration.OUTPUT_FILE_ENCODING.currentValue
-                                )
+            val scopeObjects = mapOf(
+                Scope.Attr.database.name to lb.database,
+                Scope.Attr.resourceAccessor.name to lb.resourceAccessor
+            )
+            Scope.child(scopeObjects) {
+                if (sql != null) {
+                    commandScopeFactory(UpdateSqlCommandStep.COMMAND_NAME).configure(lb, tag).also {
+                        it.setOutput(
+                            WriterOutputStream(
+                                sql,
+                                GlobalConfiguration.OUTPUT_FILE_ENCODING.currentValue
                             )
-                            it.execute()
-                        }
-                    } else {
-                        commandScopeFactory(UpdateCommandStep.COMMAND_NAME).configure(lb, tag).also {
-                            it.execute()
-                        }
+                        )
+                        it.execute()
                     }
-                }
-            } catch (e: Exception) {
-                if (e is LiquibaseException) {
-                    throw e
                 } else {
-                    throw LiquibaseException(e)
+                    commandScopeFactory(UpdateCommandStep.COMMAND_NAME).configure(lb, tag).also {
+                        it.execute()
+                    }
                 }
             }
             log.info("${database.connection.catalog} DB schema update complete")
@@ -199,29 +190,7 @@ class LiquibaseSchemaMigratorImpl(
             )
 
             log.info("Retrieving ${database.databaseProductName} DB Schema")
-            try {
-                val scopeObjects = mapOf(
-                    Scope.Attr.database.name to lb.database,
-                    Scope.Attr.resourceAccessor.name to lb.resourceAccessor
-                )
-                Scope.child(scopeObjects) {
-                    commandScopeFactory(UpdateSqlCommandStep.COMMAND_NAME).configure(lb, null).also {
-                        it.setOutput(
-                            WriterOutputStream(
-                                sql,
-                                GlobalConfiguration.OUTPUT_FILE_ENCODING.currentValue
-                            )
-                        )
-                        it.execute()
-                    }
-                }
-            } catch (e: Exception) {
-                if (e is LiquibaseException) {
-                    throw e
-                } else {
-                    throw LiquibaseException(e)
-                }
-            }
+            lb.update(Contexts(), LabelExpression(), sql)
 
             File(offlineChangeLogFileName).delete()
         }
@@ -257,7 +226,7 @@ class LiquibaseSchemaMigratorImpl(
 }
 
 private fun CommandScope.configure(lb: Liquibase, tag: String?): CommandScope {
-    this.addArgumentValue(DbUrlConnectionCommandStep.DATABASE_ARG, lb.database)
+    return this.addArgumentValue(DbUrlConnectionCommandStep.DATABASE_ARG, lb.database)
         .addArgumentValue(UpdateCommandStep.CHANGELOG_ARG, lb.databaseChangeLog)
         .addArgumentValue(UpdateCommandStep.CHANGELOG_FILE_ARG, lb.changeLogFile)
         .addArgumentValue(UpdateCommandStep.CONTEXTS_ARG, Contexts().toString())
@@ -273,5 +242,4 @@ private fun CommandScope.configure(lb: Liquibase, tag: String?): CommandScope {
         )
         .addArgumentValue(ShowSummaryArgument.SHOW_SUMMARY, UpdateSummaryEnum.SUMMARY)
         .addArgumentValue(TagCommandStep.TAG_ARG, tag)
-    return this
 }
