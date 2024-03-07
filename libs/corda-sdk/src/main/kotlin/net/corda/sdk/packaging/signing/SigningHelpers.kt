@@ -1,5 +1,7 @@
 package net.corda.sdk.packaging.signing
 
+import jdk.security.jarsigner.JarSigner
+import net.corda.libs.packaging.verify.SigningHelpers.isSigningRelated
 import java.io.File
 import java.net.URI
 import java.nio.file.Files
@@ -12,8 +14,6 @@ import java.util.jar.JarInputStream
 import java.util.jar.JarOutputStream
 import java.util.jar.Manifest
 import java.util.zip.ZipFile
-import jdk.security.jarsigner.JarSigner
-import net.corda.libs.packaging.verify.SigningHelpers.isSigningRelated
 
 object SigningHelpers {
     /**
@@ -30,7 +30,8 @@ object SigningHelpers {
         tsaUrl: String?
     ) {
         ZipFile(unsignedInputCpx.toFile()).use { unsignedCpi ->
-            Files.newOutputStream(signedOutputCpx,
+            Files.newOutputStream(
+                signedOutputCpx,
                 StandardOpenOption.WRITE,
                 StandardOpenOption.CREATE_NEW
             ).use { signedCpi ->
