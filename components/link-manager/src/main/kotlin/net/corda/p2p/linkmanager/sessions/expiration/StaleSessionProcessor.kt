@@ -92,6 +92,9 @@ internal class StaleSessionProcessor(
                 expiredStates = stateManager.findByMetadataMatchingAny(
                     listOf(MetadataFilter("expiry", Operation.LesserThan, (now - noise).toString()))
                 ).values.toList()
+                expiredStates.forEach {
+                    logger.info("Metadata was: ${it.metadata.entries}")
+                }
             } catch (e: Exception) {
                 logger.error("Unexpected error while trying to execute the scheduled delete task " +
                         "for expired sessions from the state manager.", e)
