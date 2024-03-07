@@ -16,6 +16,7 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.notary.plugin.api.NotarizationType
@@ -185,9 +186,21 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
                 "Notary name on dependency (${it.filteredTransaction.id}) didn't match the one on the initial transaction."
             }
 
-            require(it.filteredTransaction.notaryKey == notaryKey) {
-                "Notary key on dependency (${it.filteredTransaction.id}) didn't match the one on the initial transaction."
+            // Note: This null check is needed because `isFulfilledBy` doesn't work with null parameter
+            requireNotNull(it.filteredTransaction.notaryKey) {
+                "Notary key on dependency (${it.filteredTransaction.id}) was not present."
             }
+
+            if (notaryKey is CompositeKey) {
+                require(notaryKey.isFulfilledBy(it.filteredTransaction.notaryKey)) {
+                    "Notary key on dependency (${it.filteredTransaction.id}) was not part of the notary's composite key."
+                }
+            } else {
+                require(notaryKey == it.filteredTransaction.notaryKey) {
+                    "Notary key on dependency (${it.filteredTransaction.id}) didn't match the one on the initial transaction."
+                }
+            }
+
 
             try {
                 notarySignatureVerificationService.verifyNotarySignatures(
