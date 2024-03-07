@@ -87,6 +87,7 @@ internal class StaleSessionProcessor(
                     TimeUnit.SECONDS.toChronoUnit(),
                 )
                 val now = clock.instant()
+                logger.info("noise is: $noise")
                 logger.info("time was: ${(now - noise)}")
                 expiredStates = stateManager.findByMetadataMatchingAny(
                     listOf(MetadataFilter("expiry", Operation.LesserThan, (now - noise).toString()))
