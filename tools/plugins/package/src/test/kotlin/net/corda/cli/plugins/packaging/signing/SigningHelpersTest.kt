@@ -5,7 +5,7 @@ import java.nio.file.Path
 import java.util.jar.Attributes
 import net.corda.cli.plugins.packaging.CreateCpbTest
 import net.corda.cli.plugins.packaging.TestUtils
-// TODO: move tests into SDK!!!
+// TODO: move tests into SDK!!! Signing is covered in CreateCpiV2 test
 import net.corda.sdk.packaging.signing.SigningHelpers
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
