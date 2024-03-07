@@ -126,8 +126,8 @@ internal open class LocalCertificatesAuthority(
         }
     }
 
-    override val caCertificate by lazy {
-        privateKeyAndCertificate.certificates.first()
+    override val caCertificate: Certificate by lazy {
+        parentCa?.caCertificate ?: privateKeyAndCertificate.certificates.first()
     }
 
     override fun generateKeyAndCertificates(hosts: Collection<String>): PrivateKeyWithCertificate {
@@ -206,7 +206,7 @@ internal open class LocalCertificatesAuthority(
         return if (parentCa == null) {
             return emptyList()
         } else {
-            listOf(caCertificate) + parentCa.getIntermediateChain()
+            privateKeyAndCertificate.certificates.take(1) + parentCa.getIntermediateChain()
         }
     }
 
