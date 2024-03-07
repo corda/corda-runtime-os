@@ -2,7 +2,6 @@ package net.corda.p2p.linkmanager.common
 
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.DataMessagePayload
-import net.corda.data.p2p.HeartbeatMessage
 import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutHeader
 import net.corda.data.p2p.LinkOutMessage
@@ -159,35 +158,6 @@ internal class MessageConverter(
                 groupPolicyProvider,
                 membershipGroupReaderProvider,
                 message.message.header.statusFilter,
-                serial
-            )
-        }
-
-        @Suppress("LongParameterList")
-        fun linkOutMessageFromHeartbeat(
-            source: HoldingIdentity,
-            destination: HoldingIdentity,
-            message: HeartbeatMessage,
-            session: Session,
-            groupPolicyProvider: GroupPolicyProvider,
-            membershipGroupReaderProvider: MembershipGroupReaderProvider,
-            filter: MembershipStatusFilter,
-            serial: Long,
-        ): LinkOutMessage? {
-            val serializedMessage = try {
-                DataMessagePayload(message).toByteBuffer()
-            } catch (exception: IOException) {
-                logger.error("Could not serialize message type ${message::class.java.simpleName}. The message was discarded.")
-                return null
-            }
-            return createLinkOutMessageFromPayload(
-                serializedMessage,
-                source,
-                destination,
-                session,
-                groupPolicyProvider,
-                membershipGroupReaderProvider,
-                filter,
                 serial
             )
         }

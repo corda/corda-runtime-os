@@ -17,7 +17,6 @@ import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutHeader
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.NetworkType
-import net.corda.data.p2p.SessionPartitions
 import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.data.p2p.crypto.CommonHeader
 import net.corda.data.p2p.crypto.MessageType
@@ -60,7 +59,6 @@ import net.corda.schema.Schemas.P2P.GATEWAY_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS
 import net.corda.schema.Schemas.P2P.GATEWAY_TLS_TRUSTSTORES
 import net.corda.schema.Schemas.P2P.LINK_IN_TOPIC
 import net.corda.schema.Schemas.P2P.LINK_OUT_TOPIC
-import net.corda.schema.Schemas.P2P.SESSION_OUT_PARTITIONS
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
@@ -271,7 +269,6 @@ internal class GatewayIntegrationTest : TestBase() {
             val sslContext = SSLContext.getInstance("TLSv1.3")
             sslContext.init(null, arrayOf(myTm), null)
 
-            alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             Gateway(
                 createConfigurationServiceFor(
                     GatewayConfiguration(
@@ -315,7 +312,6 @@ internal class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(30)
         fun `http client to gateway`() {
-            alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val port = getOpenPort()
             val serverAddress = URI.create("https://www.alice.net:$port")
             val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
@@ -377,7 +373,6 @@ internal class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(30)
         fun `http client to gateway with a few servers`() {
-            alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val serverCount = 5
             val ports = (1..serverCount).map {
                 getOpenPort()
@@ -453,7 +448,6 @@ internal class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(30)
         fun `http client to gateway with a few paths`() {
-            alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val pathsCount = 7
             val paths = (1..pathsCount).map {
                 "path/$it"
@@ -529,7 +523,6 @@ internal class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(30)
         fun `http client to gateway after changing URL`() {
-            alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val serverConfigurationOne = GatewayServerConfiguration(
                 "www.alice.net",
                 getOpenPort(),
@@ -638,7 +631,6 @@ internal class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(30)
         fun `requests with extremely large payloads are rejected`() {
-            alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val port = getOpenPort()
             val serverAddress = URI.create("https://www.alice.net:$port")
             val bigMessage = ByteArray(10_000_000)
@@ -687,7 +679,6 @@ internal class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(30)
         fun `http client to gateway with ip address`() {
-            alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             val port = getOpenPort()
             val ipAddress = "127.0.0.1"
             val serverAddress = URI.create("https://$ipAddress:$port")
@@ -761,7 +752,6 @@ internal class GatewayIntegrationTest : TestBase() {
         @Timeout(100)
         fun `gateway reconfiguration`() {
             val configurationCount = 3
-            alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             alice.publish(
                 Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID",
                     GatewayTruststore(aliceHoldingIdentity, listOf(truststoreCertificatePem)))
@@ -883,7 +873,6 @@ internal class GatewayIntegrationTest : TestBase() {
             val clientNumber = 4
             val threadPool = NioEventLoopGroup(clientNumber)
             val serverAddress = URI.create("https://www.alice.net:${getOpenPort()}")
-            alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
             alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore, aliceHoldingIdentity)
             Gateway(
                 createConfigurationServiceFor(
@@ -1055,10 +1044,6 @@ internal class GatewayIntegrationTest : TestBase() {
             val aliceGatewayAddress = URI.create("https://www.chip.net:${getOpenPort()}")
             val bobGatewayAddress = URI.create("https://www.dale.net:${getOpenPort()}")
             val messageCount = 100
-            alice.publish(
-                Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
-            bob.publish(
-                Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
             alice.publish(
                 Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID",
                     GatewayTruststore(HoldingIdentity(aliceX500name, GROUP_ID), listOf(truststoreCertificatePem))))
@@ -1382,9 +1367,6 @@ internal class GatewayIntegrationTest : TestBase() {
                     MAX_REQUEST_SIZE
                 ),
             )
-            server.publish(
-                Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))
-            )
             Gateway(
                 configPublisher.readerService,
                 server.subscriptionFactory,
@@ -1556,9 +1538,6 @@ internal class GatewayIntegrationTest : TestBase() {
                 ),
             )
             val server = Node("server")
-            server.publish(
-                Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))
-            )
 
 
             Gateway(
@@ -1662,10 +1641,6 @@ internal class GatewayIntegrationTest : TestBase() {
             val aliceGatewayAddress = URI.create("https://127.0.0.1:${getOpenPort()}")
             val bobGatewayAddress = URI.create("https://www.chip.net:${getOpenPort()}")
             val messageCount = 100
-            alice.publish(
-                Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
-            bob.publish(
-                Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))).forEach { it.get() }
             alice.publish(
                 Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID",
                     GatewayTruststore(HoldingIdentity(aliceX500name, GROUP_ID), listOf(truststoreCertificatePem))))
