@@ -223,7 +223,7 @@ class CryptoOpsClientComponent @Activate constructor(
     // VisibleForTesting
     val lifecycleCoordinator = coordinatorFactory.createCoordinator(
         lifecycleCoordinatorName,
-        ::handleEvent
+        ::eventHandler
     )
     private val myName = lifecycleCoordinatorName
 
