@@ -68,21 +68,6 @@ class OSGiFrameworkUtils {
     }
 
     /**
-     * Return {@code true} if the {@code state} LSB is {@link Bundle#ACTIVE}
-     * <p>
-     * Bundle states are expressed as a bit-mask though a bundle can only be in one state at any time,
-     * the state in the lifecycle is represented in the LSB of the value returned by {@link Bundle#getState}.
-     * See OSGi Core Release 7 <a href="https://docs.osgi.org/specification/osgi.core/7.0.0/framework.lifecycle.html">4.4.2 Bundle State</a>
-     *
-     * @param state of the bundle.
-     * @return {@code true} if the {@code state} LSB is {@link Bundle#ACTIVE}.
-     */
-    static Boolean isActive(int state) {
-        // The bundle lifecycle state is represented by LSB.
-        return (state & 0xff) == Bundle.ACTIVE;
-    }
-
-    /**
      * Return {@code true} if the {@code state} LSB is between {@link Bundle#UNINSTALLED} and {@link Bundle#STOPPING} excluded
      * because the bundle is startable if {@link Bundle#getState} is inside this range.
      * <p>

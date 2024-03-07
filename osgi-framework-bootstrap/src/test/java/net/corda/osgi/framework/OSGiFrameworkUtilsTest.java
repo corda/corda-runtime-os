@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 
 import static net.corda.osgi.framework.OSGiFrameworkUtils.getFrameworkFrom;
-import static net.corda.osgi.framework.OSGiFrameworkUtils.isActive;
 import static net.corda.osgi.framework.OSGiFrameworkUtils.isStartable;
 import static net.corda.osgi.framework.OSGiFrameworkUtils.isStoppable;
 import static net.corda.osgi.framework.OSGiFrameworkUtils.removeTrailingComment;
@@ -48,17 +47,6 @@ public class OSGiFrameworkUtilsTest {
         assertFalse(isStoppable(Bundle.UNINSTALLED));
         assertFalse(isStoppable(Bundle.INSTALLED));
         assertFalse(isStoppable(Bundle.RESOLVED));
-    }
-
-    @Test
-    void isActiveOnlyWhenActive() {
-        assertTrue(isActive(Bundle.ACTIVE));
-
-        assertFalse(isActive(Bundle.STARTING));
-        assertFalse(isActive(Bundle.STOPPING));
-        assertFalse(isActive(Bundle.UNINSTALLED));
-        assertFalse(isActive(Bundle.INSTALLED));
-        assertFalse(isActive(Bundle.RESOLVED));
     }
 
     @Test

@@ -23,18 +23,16 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Stream;
 
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toUnmodifiableList;
-import static net.corda.osgi.framework.OSGiFrameworkUtils.isActive;
 import static net.corda.osgi.framework.OSGiFrameworkUtils.isFragment;
 import static net.corda.osgi.framework.OSGiFrameworkUtils.isStartable;
 import static net.corda.osgi.framework.OSGiFrameworkUtils.isStoppable;
@@ -99,21 +97,30 @@ class OSGiFrameworkWrap implements AutoCloseable {
      */
     private static final String JAR_EXTENSION = ".jar";
 
+    /**
+     * Header name for bundle activation policy.
+     */
+    private static final String BUNDLE_ACTIVATION_POLICY_HEADER = "Bundle-ActivationPolicy";
+
+    /**
+     * Value of lazy activation policy header.
+     */
+    private static final String BUNDLE_ACTIVATION_POLICY_LAZY = "lazy";
+
     private final Framework framework;
 
     /**
-     * Map of the descriptors of bundles installed.
+     * List of bundles installed.
      */
-    private final ConcurrentMap<Long, OSGiBundleDescriptor> bundleDescriptorMap;
+    private final ArrayList<Bundle> bundles = new ArrayList<>();
 
-    private Logger logger = LoggerFactory.getLogger(OSGiFrameworkMain.class);
+    private final Logger logger = LoggerFactory.getLogger(OSGiFrameworkMain.class);
 
     /**
      * @param framework to bootstrap.
      */
     OSGiFrameworkWrap(Framework framework) {
         this.framework = framework;
-        bundleDescriptorMap = new ConcurrentHashMap<>();
     }
 
     /**
@@ -132,7 +139,7 @@ class OSGiFrameworkWrap implements AutoCloseable {
         // Resolve every installed bundle together, as a unit.
         framework.adapt(FrameworkWiring.class).resolveBundles(null);
 
-        final List<Bundle> bundles = bundleDescriptorMap.values().stream().map(OSGiBundleDescriptor::getBundle)
+        final List<Bundle> bundles = this.bundles.stream()
                 .sorted(comparing(Bundle::getSymbolicName))
                 .collect(toUnmodifiableList());
         for (Bundle bundle : bundles) {
@@ -221,7 +228,7 @@ class OSGiFrameworkWrap implements AutoCloseable {
                 bundle.uninstall();
             } else {
                 if (!isFragment(bundle)) {
-                    bundleDescriptorMap.put(bundle.getBundleId(), new OSGiBundleDescriptor(bundle));
+                    bundles.add(bundle);
                 }
                 logger.debug("OSGi bundle {} installed.", resource);
             }
@@ -273,7 +280,7 @@ class OSGiFrameworkWrap implements AutoCloseable {
                 bundle.uninstall();
             } else {
                 if (!isFragment(bundle)) {
-                    bundleDescriptorMap.put(bundle.getBundleId(), new OSGiBundleDescriptor(bundle));
+                    bundles.add(bundle);
                 }
                 logger.info("OSGi bundle {} installed - {} {}", fileUri, bundle.getSymbolicName(), bundle.getVersion());
             }
@@ -342,12 +349,6 @@ class OSGiFrameworkWrap implements AutoCloseable {
             framework.init();
             framework.getBundleContext().addBundleListener(bundleEvent -> {
                 final Bundle bundle = bundleEvent.getBundle();
-                if (isActive(bundle.getState())) {
-                    final OSGiBundleDescriptor descriptor = bundleDescriptorMap.get(bundle.getBundleId());
-                    if (descriptor != null) {
-                        descriptor.getActive().countDown();
-                    }
-                }
                 logger.info("OSGi bundle {} ID = {} {} {} {}.",
                         bundle.getLocation(),
                         bundle.getBundleId(),
@@ -397,18 +398,30 @@ class OSGiFrameworkWrap implements AutoCloseable {
     synchronized OSGiFrameworkWrap startApplication(
             String[] args
     ) throws ClassNotFoundException {
-        for (OSGiBundleDescriptor bundleDescriptor : bundleDescriptorMap.values()) {
-            final Bundle bundle = bundleDescriptor.getBundle();
+        for (Bundle bundle : bundles) {
             if (bundle.getState() != Bundle.ACTIVE) {
-                logger.warn("OSGi bundle {} ID = {} {} {} is in state {} and not active",
-                        bundle.getLocation(),
-                        bundle.getBundleId(),
-                        bundle.getSymbolicName(),
-                        bundle.getVersion(),
-                        bundleStateMap.get(bundle.getState())
-                );
+                if (bundle.getHeaders().get(BUNDLE_ACTIVATION_POLICY_HEADER).equals(BUNDLE_ACTIVATION_POLICY_LAZY)) {
+                    if (bundle.getState() != Bundle.STARTING) {
+                        logger.warn("OSGi bundle {} ID = {} {} {} is in state {} but should be starting (it is marked as lazy activation) or active",
+                                bundle.getLocation(),
+                                bundle.getBundleId(),
+                                bundle.getSymbolicName(),
+                                bundle.getVersion(),
+                                bundleStateMap.get(bundle.getState())
+                        );
+                    }
+                } else {
+                    logger.warn("OSGi bundle {} ID = {} {} {} is in state {} but should be active",
+                            bundle.getLocation(),
+                            bundle.getBundleId(),
+                            bundle.getSymbolicName(),
+                            bundle.getVersion(),
+                            bundleStateMap.get(bundle.getState())
+                    );
+                }
             }
         }
+
         final BundleContext frameworkContext = framework.getBundleContext();
         final ServiceReference<Application> applicationServiceReference = frameworkContext.getServiceReference(Application.class);
 
