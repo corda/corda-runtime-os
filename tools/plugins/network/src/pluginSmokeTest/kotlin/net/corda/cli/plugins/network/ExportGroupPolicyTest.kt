@@ -53,6 +53,7 @@ class ExportGroupPolicyTest {
 
     @Test
     fun `exporting group policy correctly saves file to default location`() {
+        groupPolicyFile.delete()
         CommandLine(ExportGroupPolicy()).execute(
             "-h=$holdingIdentity",
             targetUrl,
@@ -68,6 +69,12 @@ class ExportGroupPolicyTest {
     @Test
     fun `exporting group policy correctly saves file to provided location`() {
         val groupPolicyLocation = "${System.getProperty("user.home")}/.corda/gp/test.json"
+        val groupPolicyFile = File(
+                File(File(File(System.getProperty("user.home")), ".corda"), "gp"),
+        "test.json",
+        )
+        groupPolicyFile.delete()
+
         CommandLine(ExportGroupPolicy()).execute(
             "-h=$holdingIdentity",
             "--save=$groupPolicyLocation",
@@ -75,11 +82,6 @@ class ExportGroupPolicyTest {
             user,
             password,
             INSECURE,
-        )
-
-        val groupPolicyFile = File(
-            File(File(File(System.getProperty("user.home")), ".corda"), "gp"),
-            "test.json",
         )
         assertThat(groupPolicyFile.exists()).isTrue
         assertThat(ObjectMapper().readTree(groupPolicyFile.inputStream()).get("groupId")).isNotNull

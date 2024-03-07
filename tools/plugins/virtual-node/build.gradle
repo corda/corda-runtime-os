@@ -22,6 +22,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-db-schema'
 
+    implementation project(':libs:corda-sdk')
     implementation project(":tools:plugins:plugins-rest")
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
     compileOnly libs.pf4j

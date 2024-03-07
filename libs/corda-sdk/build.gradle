@@ -1,0 +1,30 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+description 'Corda SDK'
+
+
+ext {
+    cordaEnableFormatting = true
+    releasable = false
+}
+
+dependencies {
+    implementation project(':components:membership:membership-rest')
+    implementation libs.jackson.module.kotlin
+    implementation libs.kotlin.stdlib
+    implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:configuration:configuration-endpoints')
+    implementation project(':libs:membership:membership-common')
+    implementation project(':libs:rest:json-serialization')
+    implementation project(':libs:rest:rest-client')
+    implementation project(':libs:virtual-node:cpi-upload-endpoints')
+    implementation project(':libs:virtual-node:virtual-node-endpoints')
+    implementation project(':libs:virtual-node:virtual-node-endpoints-maintenance')
+
+    testImplementation libs.bundles.test
+    testImplementation project(':testing:test-utilities')
+}
+
