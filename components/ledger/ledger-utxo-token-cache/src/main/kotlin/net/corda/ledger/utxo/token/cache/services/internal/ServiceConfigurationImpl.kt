@@ -19,7 +19,7 @@ class ServiceConfigurationImpl : ServiceConfiguration {
         get() = getIntValue(UTXO_TOKEN_CACHED_TOKEN_PAGE_SIZE)
 
     override val claimTimeoutSeconds: Int
-        get() = getIntValue(UTXO_TOKEN_CLAIM_TIMEOUT_SECONDS)
+        get() = 600000//getIntValue(UTXO_TOKEN_CLAIM_TIMEOUT_SECONDS)
 
     private fun getIntValue(name: String): Int {
         return checkNotNull(config?.getInt(name)) { "The token service has not been configured, missing $name." }
