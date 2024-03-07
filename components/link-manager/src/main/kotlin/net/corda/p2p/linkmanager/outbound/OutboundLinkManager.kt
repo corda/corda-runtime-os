@@ -37,7 +37,6 @@ internal class OutboundLinkManager(
         linkManagerHostingMap,
         groupPolicyProvider,
         membershipGroupReaderProvider,
-        commonComponents.inboundAssignmentListener,
         commonComponents.messagesPendingSession,
         clock,
         commonComponents.messageConverter,
@@ -70,7 +69,6 @@ internal class OutboundLinkManager(
         dependentChildren = listOf(
             deliveryTracker.dominoTile.coordinatorName,
             commonComponents.dominoTile.coordinatorName,
-            commonComponents.inboundAssignmentListener.dominoTile.coordinatorName,
         ),
         managedChildren = setOf(deliveryTracker.dominoTile.toNamedLifecycle())
     )
