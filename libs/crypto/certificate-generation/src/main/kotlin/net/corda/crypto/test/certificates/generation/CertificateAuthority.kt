@@ -7,7 +7,7 @@ import java.security.cert.Certificate
 /**
  * A certificate authority that can be used for testing.
  *
- * @see [CertificateAuthorityFactory], [LocalCertificatesAuthority], [FileSystemCertificatesAuthority] and [CloseableCertificateAuthority]
+ * @see [CertificateAuthorityFactory], [LocalCertificatesAuthority], and [FileSystemCertificatesAuthority]
  */
 interface CertificateAuthority {
     companion object {
