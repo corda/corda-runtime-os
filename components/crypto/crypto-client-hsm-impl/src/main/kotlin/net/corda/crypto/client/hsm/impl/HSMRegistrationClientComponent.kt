@@ -61,7 +61,7 @@ class HSMRegistrationClientComponent @Activate constructor(
     // VisibleForTesting
     val lifecycleCoordinator = coordinatorFactory.createCoordinator(
         lifecycleCoordinatorName,
-        ::handleEvent
+        ::eventHandler
     )
     private val myName = lifecycleCoordinatorName
 
