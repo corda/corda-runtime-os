@@ -6,7 +6,7 @@ import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.libs.packaging.verify.PackageType
 import net.corda.libs.packaging.verify.VerifierBuilder
 import net.corda.libs.packaging.verify.internal.VerifierFactory
-import net.corda.sdk.packaging.signing.CertificateLoader.readCertificates
+import net.corda.cli.plugins.packaging.signing.CertificateLoader.readCertificates
 import net.corda.sdk.packaging.signing.SigningHelpers
 import picocli.CommandLine
 import picocli.CommandLine.Command
@@ -138,7 +138,6 @@ class CreateCpiV2 : Callable<Int> {
      * @throws IllegalArgumentException if it fails to verify Cpb V2
      */
     private fun verifyIsValidCpbV2(cpbPath: Path) {
-        requireFileExists(signingOptions.keyStoreFileName)
         VerifierBuilder()
             .type(PackageType.CPB)
             .format(VerifierFactory.FORMAT_2)
