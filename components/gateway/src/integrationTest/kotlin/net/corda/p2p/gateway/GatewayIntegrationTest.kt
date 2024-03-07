@@ -1339,7 +1339,7 @@ internal class GatewayIntegrationTest : TestBase() {
             )
         }
 
-        fun PrivateKeyWithCertificate.toKeyStoreAndPassword(): KeyStoreWithPassword {
+        private fun PrivateKeyWithCertificate.toKeyStoreAndPassword(): KeyStoreWithPassword {
             return KeyStoreWithPassword(
                 this.toKeyStore(),
                 CertificateAuthority.PASSWORD
@@ -1596,9 +1596,6 @@ internal class GatewayIntegrationTest : TestBase() {
                     aliceSslConfig,
                     MAX_REQUEST_SIZE
                 ),
-            )
-            server.publish(
-                Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1)))
             )
             server.publish(
                 Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID",
