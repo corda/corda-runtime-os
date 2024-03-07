@@ -37,7 +37,7 @@ snappyJavaVersion="1.1.10.5"
 typeSafeConfigVersion = "1.4.3"
 okHttpVersion = { strictly = "4.9.2" }
 okioVersion = { strictly = "3.4.0" }
-pf4jVersion = "3.10.0"
+pf4jVersion = "3.11.0"
 unirestVersion = "3.14.5"
 zipkinCoreVersion = "2.27.1"
 zipkinReporterVersion = "3.3.0"
