@@ -129,7 +129,7 @@ internal class SessionCache(
         }
         val duration = Duration.between(now, expiry) - noise
         return if (duration.isNegative) {
-            //forgetState(stateToForget)
+            forgetState(stateToForget)
             null
         } else {
             tasks.compute(state.key) { _, currentValue ->
@@ -142,7 +142,7 @@ internal class SessionCache(
                         version = stateToForget.version,
                         future = scheduler.schedule(
                             {
-                                //forgetState(stateToForget)
+                                forgetState(stateToForget)
                             },
                             duration.toMillis(),
                             TimeUnit.MILLISECONDS,
@@ -174,7 +174,6 @@ internal class SessionCache(
         val key = state.key
         var retryCount = 0
         var failedDeletes = mapOf<String, State>()
-        logger.info("Deleting state with key ${state.key}")
         do {
             try {
                 failedDeletes = stateManager.delete(listOf(stateToDelete))
@@ -202,7 +201,7 @@ internal class SessionCache(
                 logger.warn("Failed to delete session state for '$key', state does not exist")
                 return
             }
-            //forgetState(state)
+            forgetState(state)
         } catch (e: Exception) {
             logger.error("Unexpected error while trying to fetch session state for '$key'.", e)
         }
