@@ -1,7 +1,6 @@
 package net.corda.membership.certificate.client.impl
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoTenants.P2P
 import net.corda.crypto.core.ShortHash
@@ -257,7 +256,7 @@ internal class HostedIdentityEntryFactory(
         val (certificate, publicKey) = certificates.map {
             factory.generateCertificate(it.byteInputStream())
         }.fold(null) { previousCertificateToPublicKey: Pair<X509Certificate, PublicKey>?, certificate ->
-            val previousCertificate =  previousCertificateToPublicKey?.first
+            val previousCertificate = previousCertificateToPublicKey?.first
             if (certificate !is X509Certificate) {
                 throw CordaRuntimeException("This certificate must be an X509 certificate")
             }
@@ -282,11 +281,10 @@ internal class HostedIdentityEntryFactory(
                     )
                 }
             }
-            val key = previousCertificateToPublicKey?.second?:certificate.publicKey
+            val key = previousCertificateToPublicKey?.second ?: certificate.publicKey
             certificate to key
         } ?: throw CordaRuntimeException("No certificate")
 
-        //val publicKey = certificate.publicKey
         cryptoOpsClient.filterMyKeys(keyTenantId, listOf(publicKey))
             .firstOrNull()
             ?: throw CordaRuntimeException("This certificate public key is unknown to $keyTenantId")
