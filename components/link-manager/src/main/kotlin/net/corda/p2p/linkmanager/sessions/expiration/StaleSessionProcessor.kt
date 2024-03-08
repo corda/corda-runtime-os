@@ -86,9 +86,7 @@ internal class StaleSessionProcessor(
                     noiseFactory.nextLong(20 * 60),
                     TimeUnit.MILLISECONDS.toChronoUnit(),
                 )
-                val now = clock.instant()
-                val expiryThreshold = (now - noise).toEpochMilli()
-                logger.info("threshold was: $expiryThreshold")
+                val expiryThreshold = (clock.instant() - noise).toEpochMilli()
                 expiredStates = stateManager.findByMetadataMatchingAny(
                     listOf(MetadataFilter("expiry", Operation.LesserThan, expiryThreshold))
                 ).values.toList()
