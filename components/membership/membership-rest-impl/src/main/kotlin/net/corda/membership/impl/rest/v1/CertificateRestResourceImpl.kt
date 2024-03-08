@@ -236,6 +236,28 @@ class CertificateRestResourceImpl @Activate constructor(
                 "No certificates in PEM"
             )
         }
+        if (x509Certificates.size != x509Certificates.toSet().size) {
+            throw InvalidInputDataException(
+                details = mapOf(
+                    "certificate" to
+                        "Certificate chain can not hold a loop."
+                )
+            )
+        }
+        x509Certificates.fold(null) { previousCertificate: X509Certificate?, certificate ->
+            if (previousCertificate != null) {
+                if (previousCertificate.issuerX500Principal != certificate.subjectX500Principal) {
+                    throw InvalidInputDataException(
+                        details = mapOf(
+                            "certificate" to
+                                "This previous certificate  in the chain was issued by ${previousCertificate.issuerX500Principal} and " +
+                                "not by ${certificate.subjectX500Principal}"
+                        )
+                    )
+                }
+            }
+            certificate
+        }
         if (usageType == CertificateUsage.P2P_SESSION) {
             if (holdingIdentityShortHash == null) {
                 throw InvalidInputDataException(
@@ -254,9 +276,9 @@ class CertificateRestResourceImpl @Activate constructor(
                         )
                     )
 
-            val firstCertificate = x509Certificates.first()
+            val lastCertificate = x509Certificates.last()
             val subject = try {
-                MemberX500Name.build(firstCertificate.subjectX500Principal)
+                MemberX500Name.build(lastCertificate.subjectX500Principal)
             } catch (e: IllegalArgumentException) {
                 throw InvalidInputDataException(
                     details = mapOf(

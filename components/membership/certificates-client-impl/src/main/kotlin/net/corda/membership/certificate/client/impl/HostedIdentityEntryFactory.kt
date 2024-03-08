@@ -30,6 +30,7 @@ import java.io.StringWriter
 import java.security.InvalidKeyException
 import java.security.SignatureException
 import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
 
 @Suppress("LongParameterList")
 internal class HostedIdentityEntryFactory(
@@ -250,11 +251,36 @@ internal class HostedIdentityEntryFactory(
         certificates: List<String>,
         certificateType: CertificateType
     ) {
-        val firstCertificate = certificates.firstOrNull()
-            ?: throw CordaRuntimeException("No certificate")
-
-        val certificate = CertificateFactory.getInstance("X.509")
-            .generateCertificate(firstCertificate.byteInputStream())
+        val factory = CertificateFactory.getInstance("X.509")
+        val certificate = certificates.map {
+            factory.generateCertificate(it.byteInputStream())
+        }.fold(null) { previousCertificate: X509Certificate?, certificate ->
+            if (certificate !is X509Certificate) {
+                throw CordaRuntimeException("This certificate must be an X509 certificate")
+            }
+            if (previousCertificate != null) {
+                if (previousCertificate.issuerX500Principal != certificate.subjectX500Principal) {
+                    throw CordaRuntimeException(
+                        "This previous certificate  in the chain was issued by ${previousCertificate.issuerX500Principal} and " +
+                            "not by ${certificate.subjectX500Principal}"
+                    )
+                }
+                try {
+                    previousCertificate.verify(certificate.publicKey)
+                } catch (e: InvalidKeyException) {
+                    throw CordaRuntimeException(
+                        "The certificate that was issued by ${previousCertificate.issuerX500Principal} was not verified by its CA",
+                        e,
+                    )
+                } catch (e: SignatureException) {
+                    throw CordaRuntimeException(
+                        "The certificate that was issued by ${previousCertificate.issuerX500Principal} was not verified by its CA",
+                        e,
+                    )
+                }
+            }
+            certificate
+        } ?: throw CordaRuntimeException("No certificate")
 
         val publicKey = certificate.publicKey
         cryptoOpsClient.filterMyKeys(keyTenantId, listOf(publicKey))
@@ -272,7 +298,11 @@ internal class HostedIdentityEntryFactory(
             .map { rootCertificateStr ->
                 CertificateFactory.getInstance("X.509")
                     .generateCertificate(rootCertificateStr.byteInputStream())
-            }.filter { rootCertificate ->
+            }.filterIsInstance<X509Certificate>()
+            .filter { rootCertificate ->
+                rootCertificate.subjectX500Principal == certificate.issuerX500Principal
+            }
+            .filter { rootCertificate ->
                 try {
                     certificate.verify(rootCertificate.publicKey)
                     true
