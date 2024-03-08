@@ -574,6 +574,7 @@ class UtxoRepositoryImpl(
         status: TransactionStatus,
         instant: Instant
     ): List<String> {
+        @Suppress("UNCHECKED_CAST")
         return entityManager.createNativeQuery(queryProvider.findTransactionsWithStatusBeforeTime)
             .setParameter("status", status.value)
             .setParameter("created", instant)
