@@ -1,18 +1,18 @@
 package net.corda.cli.plugins.network
 
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
-import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.membership.rest.v1.MGMRestResource
 import net.corda.sdk.network.ExportGroupPolicyFromMgm
 import net.corda.sdk.network.RegistrationContext
+import net.corda.sdk.packaging.CpiAttributes
 import net.corda.sdk.packaging.CpiUploader
+import net.corda.sdk.packaging.CreateCpiV2
 import net.corda.sdk.rest.RestClientUtils
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.UUID
 import kotlin.time.Duration.Companion.seconds
@@ -25,6 +25,10 @@ import kotlin.time.Duration.Companion.seconds
     mixinStandardHelpOptions = true,
 )
 class OnboardMgm : Runnable, BaseOnboard() {
+    private companion object {
+        const val CPI_VERSION = "1.0"
+    }
+
     @Option(
         names = ["--cpi-hash", "-h"],
         description = [
@@ -48,17 +52,14 @@ class OnboardMgm : Runnable, BaseOnboard() {
 
     private val cpiName: String = "MGM-${UUID.randomUUID()}"
 
-    private val groupPolicy by lazy {
+    private val mgmGroupPolicy by lazy {
         mapOf(
             "fileFormatVersion" to 1,
             "groupId" to "CREATE_ID",
             "registrationProtocol" to "net.corda.membership.impl.registration.dynamic.mgm.MGMRegistrationService",
             "synchronisationProtocol" to "net.corda.membership.impl.synchronisation.MgmSynchronisationServiceImpl",
         ).let { groupPolicyMap ->
-            ByteArrayOutputStream().use { outputStream ->
-                json.writeValue(outputStream, groupPolicyMap)
-                outputStream.toByteArray()
-            }
+            json.writeValueAsString(groupPolicyMap)
         }
     }
 
@@ -104,26 +105,22 @@ class OnboardMgm : Runnable, BaseOnboard() {
     }
 
     private val cpi by lazy {
-        val mgmGroupPolicyFile = File.createTempFile("mgm.groupPolicy.", ".json").also {
-            it.deleteOnExit()
-            it.writeBytes(groupPolicy)
-        }
         val cpiFile = File.createTempFile("mgm.", ".cpi").also {
             it.deleteOnExit()
             it.delete()
         }
         cpiFile.parentFile.mkdirs()
-        val creator = CreateCpiV2()
-        creator.groupPolicyFileName = mgmGroupPolicyFile.absolutePath
-        creator.cpiName = cpiName
-        creator.cpiVersion = "1.0"
-        creator.cpiUpgrade = false
-        creator.outputFileName = cpiFile.absolutePath
-        creator.signingOptions = createDefaultSingingOptions()
-        val exitCode = creator.call()
-        if (exitCode != 0) {
-            throw CordaRuntimeException("Create CPI returned non-zero exit code")
-        }
+
+        runCatching {
+            CreateCpiV2.createCpi(
+                null,
+                cpiFile.toPath(),
+                mgmGroupPolicy,
+                CpiAttributes(cpiName, CPI_VERSION, false),
+                createDefaultSingingOptions().asSigningOptionsSdk
+            )
+        }.onFailure { e -> throw CordaRuntimeException("Create CPI failed: ${e.message}", e) }
+
         uploadSigningCertificates()
         cpiFile
     }
