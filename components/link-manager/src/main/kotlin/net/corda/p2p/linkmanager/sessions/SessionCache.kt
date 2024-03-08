@@ -187,6 +187,7 @@ internal class SessionCache(
         do {
             try {
                 failedDeletes = stateManager.delete(listOf(stateToDelete))
+                logger.info("removed state with key: ${stateToDelete.key}")
             } catch (e: Exception) {
                 logger.error("Unexpected error while trying to delete a session from the state manager.", e)
             }

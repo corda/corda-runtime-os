@@ -87,8 +87,10 @@ internal class StaleSessionProcessor(
                     TimeUnit.MILLISECONDS.toChronoUnit(),
                 )
                 val now = clock.instant()
+                val expiryThreshold = (now - noise).toEpochMilli()
+                logger.info("threshold was: $expiryThreshold")
                 expiredStates = stateManager.findByMetadataMatchingAny(
-                    listOf(MetadataFilter("expiry", Operation.LesserThan, (now - noise).toString()))
+                    listOf(MetadataFilter("expiry", Operation.LesserThan, expiryThreshold))
                 ).values.toList()
             } catch (e: Exception) {
                 logger.error("Unexpected error while trying to execute the scheduled delete task " +
