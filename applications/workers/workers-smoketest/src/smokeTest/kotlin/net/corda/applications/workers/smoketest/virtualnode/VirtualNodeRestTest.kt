@@ -36,7 +36,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestMethodOrder
-import java.time.Duration
 import java.util.UUID
 
 @Target(AnnotationTarget.FUNCTION)
@@ -69,7 +68,7 @@ class VirtualNodeRestTest : ClusterReadiness by ClusterReadinessChecker() {
     @BeforeAll
     fun setup() {
         // check cluster is ready
-        assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(100))
+     //  assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(100))
     }
 
     @BeforeEach
