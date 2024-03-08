@@ -83,23 +83,12 @@ class CreateCpiV2 : Callable<Int> {
         GroupPolicyValidator.validateGroupPolicy(groupPolicyString)
 
         val cpbPath = cpbFileName?.let { requireFileExists(it) }
-
-        // Check input Cpb file is indeed a Cpb
-        cpbPath?.let {
-            try {
-                CreateCpiV2.verifyIsValidCpbV2(it, signingOptions.asSigningOptionsSdk)
-            } catch (e: Exception) {
-                System.err.println("Error verifying CPB: ${e.message}")
-                return ExitCode.SOFTWARE
-            }
-        }
-
         val outputName = determineOutputFileName(cpbPath)
 
         // Check output Cpi file does not exist
         val outputFilePath = requireFileDoesNotExist(outputName)
 
-        CreateCpiV2.buildAndSignCpi(
+        CreateCpiV2.createCpi(
             cpbPath,
             outputFilePath,
             groupPolicyString,

@@ -10,7 +10,6 @@ import java.io.FileInputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
-import java.security.cert.X509Certificate
 import java.util.jar.Attributes
 import java.util.jar.JarEntry
 import java.util.jar.JarOutputStream
@@ -34,17 +33,29 @@ object CreateCpiV2 {
     val cpiUpgradeAttributeName = Attributes.Name("Corda-CPI-Upgrade")
 
     /**
-     * @throws IllegalArgumentException if it fails to verify Cpb V2
+     * If CPB file is provided, validate that it is a valid CpbV2.
+     * TODO fill in the rest
      */
-    fun verifyIsValidCpbV2(cpbPath: Path, signingOptions: SigningOptions) {
-        val trustedCerts = with(signingOptions) { CertificateLoader.readCertificates(keyStoreFileName, keyStorePass) }
-        verifyIsValidCpbV2(cpbPath, trustedCerts)
+    fun createCpi(
+        cpbPath: Path?,
+        outputFilePath: Path,
+        groupPolicy: String,
+        cpiAttributes: CpiAttributes,
+        signingOptions: SigningOptions
+    ) {
+        cpbPath?.let {
+            runCatching { verifyIsValidCpbV2(it, signingOptions) }.onFailure { e ->
+                throw IllegalArgumentException("Error verifying CPB: ${e.message}", e)
+            }
+        }
+        buildAndSignCpi(cpbPath, outputFilePath, groupPolicy, cpiAttributes, signingOptions)
     }
 
     /**
      * @throws IllegalArgumentException if it fails to verify Cpb V2
      */
-    fun verifyIsValidCpbV2(cpbPath: Path, trustedCerts: Collection<X509Certificate>) {
+    private fun verifyIsValidCpbV2(cpbPath: Path, signingOptions: SigningOptions) {
+        val trustedCerts = with(signingOptions) { CertificateLoader.readCertificates(keyStoreFileName, keyStorePass) }
         VerifierBuilder()
             .type(PackageType.CPB)
             .format(VerifierFactory.FORMAT_2)
@@ -60,7 +71,7 @@ object CreateCpiV2 {
      *
      * Creates a temporary file, copies CPB into temporary file, adds group policy then signs
      */
-    fun buildAndSignCpi(
+    private fun buildAndSignCpi(
         cpbPath: Path?,
         outputFilePath: Path,
         groupPolicy: String,
