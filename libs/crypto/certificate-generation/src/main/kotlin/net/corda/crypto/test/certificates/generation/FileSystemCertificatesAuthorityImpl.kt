@@ -6,19 +6,16 @@ import java.security.KeyStore
 import java.security.PrivateKey
 import java.time.Duration
 
-@Suppress("LongParameterList")
 internal class FileSystemCertificatesAuthorityImpl(
     keysFactoryDefinitions: KeysFactoryDefinitions,
     validDuration: Duration,
-    defaultPrivateKeyAndCertificate: PrivateKeyWithCertificate?,
     private val home: File,
-    firstSerialNumber: Long,
+    savedData: SavedData?,
     issuer: String?,
 ) : LocalCertificatesAuthority(
     keysFactoryDefinitions,
     validDuration,
-    defaultPrivateKeyAndCertificate,
-    firstSerialNumber,
+    savedData,
     issuer,
 ),
     FileSystemCertificatesAuthority {
@@ -28,7 +25,7 @@ internal class FileSystemCertificatesAuthorityImpl(
             validDuration: Duration,
             home: File,
         ): FileSystemCertificatesAuthority {
-            val (firstSerialNumber, defaultPrivateKeyAndCertificate, issuer) = if (home.exists()) {
+            val (savedData, issuer) = if (home.exists()) {
                 val serialNumber = File(home, "serialNumber.txt").readText().toLong()
                 val keyStoreFile = File(home, "keystore.jks")
                 val issuer = File(home, "issuer.txt").let {
@@ -44,24 +41,22 @@ internal class FileSystemCertificatesAuthorityImpl(
                     }
                 }
                 val alias = keyStore.aliases().nextElement()
-                Triple(
-                    serialNumber,
+                SavedData(
                     PrivateKeyWithCertificate(
                         keyStore.getKey(alias, PASSWORD.toCharArray())
                                 as PrivateKey,
-                        keyStore.getCertificate(alias)
+                        keyStore.getCertificateChain(alias).toList()
                     ),
-                    issuer,
-                )
+                    serialNumber,
+                ) to issuer
             } else {
-                Triple(1L, null, null)
+                null to null
             }
             return FileSystemCertificatesAuthorityImpl(
                 keysFactoryDefinitions,
                 validDuration,
-                defaultPrivateKeyAndCertificate,
                 home,
-                firstSerialNumber,
+                savedData,
                 issuer,
             )
         }

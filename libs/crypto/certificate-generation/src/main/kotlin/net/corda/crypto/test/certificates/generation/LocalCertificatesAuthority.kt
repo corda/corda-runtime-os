@@ -12,12 +12,8 @@ import org.bouncycastle.asn1.x509.GeneralNames
 import org.bouncycastle.asn1.x509.KeyUsage
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
-import org.bouncycastle.crypto.util.PrivateKeyFactory
 import org.bouncycastle.jce.provider.BouncyCastleProvider
-import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder
-import org.bouncycastle.operator.DefaultSignatureAlgorithmIdentifierFinder
-import org.bouncycastle.operator.bc.BcECContentSignerBuilder
-import org.bouncycastle.operator.bc.BcRSAContentSignerBuilder
+import org.bouncycastle.operator.ContentSigner
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
 import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
@@ -27,6 +23,7 @@ import java.security.KeyFactory
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.KeyStore
+import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
@@ -39,12 +36,12 @@ import java.util.concurrent.atomic.AtomicLong
 internal open class LocalCertificatesAuthority(
     private val keysFactoryDefinitions: KeysFactoryDefinitions,
     private val validDuration: Duration,
-    private val defaultPrivateKeyAndCertificate: PrivateKeyWithCertificate?,
-    firstSerialNumber: Long = 1,
+    savedData: SavedData?,
     issuerName: String?,
+    private val parentCa: LocalCertificatesAuthority? = null
 ) : CertificateAuthority {
 
-    protected val serialNumber = AtomicLong(firstSerialNumber)
+    protected val serialNumber = AtomicLong(savedData?.firstSerialNumber ?: 1)
     private val now = System.currentTimeMillis()
     internal val issuer = X500Name(issuerName ?: "C=UK, CN=r3.com, OU=${UUID.randomUUID()}")
 
@@ -60,12 +57,17 @@ internal open class LocalCertificatesAuthority(
         return keysFactory.generateKeyPair()
     }
     private val privateKeyAndCertificate by lazy {
-        defaultPrivateKeyAndCertificate ?: generatePrivateKeyAndCertificate()
+        savedData?.privateKeyAndCertificate ?: generatePrivateKeyAndCertificate()
     }
 
     private fun generatePrivateKeyAndCertificate(): PrivateKeyWithCertificate {
         val caKeyPair = generateKeyPair()
-        val certBuilder = certificateBuilder(issuer.toString(), caKeyPair.public)
+        val (myParentCa, signerPrivateKey) = if (parentCa == null) {
+            this to caKeyPair.private
+        } else {
+            parentCa to parentCa.privateKeyAndCertificate.privateKey
+        }
+        val certBuilder = myParentCa.certificateBuilder(issuer.toString(), caKeyPair.public)
 
         val basicConstraints = BasicConstraints(true)
 
@@ -84,16 +86,22 @@ internal open class LocalCertificatesAuthority(
             )
         )
 
-        val signatureAlgorithm = when (keysFactoryDefinitions.algorithm) {
-            Algorithm.RSA -> SignatureSpecs.RSA_SHA256
-            Algorithm.EC -> SignatureSpecs.ECDSA_SHA256
-        }.signatureName
-        val signer = JcaContentSignerBuilder(signatureAlgorithm).build(caKeyPair.private)
+        val signer = signerPrivateKey.signer()
 
         val certificate = JcaX509CertificateConverter().getCertificate(
             certBuilder.build(signer)
         )
-        return PrivateKeyWithCertificate(caKeyPair.private, certificate)
+        return PrivateKeyWithCertificate(caKeyPair.private, listOf(certificate))
+    }
+
+    private fun PrivateKey.signer(): ContentSigner {
+        val signatureAlgorithm =
+            when (this.algorithm) {
+                "RSA" -> SignatureSpecs.RSA_SHA256.signatureName
+                "EC" -> SignatureSpecs.ECDSA_SHA256.signatureName
+                else -> throw InvalidParameterException("Unsupported Algorithm")
+            }
+        return JcaContentSignerBuilder(signatureAlgorithm).build(this)
     }
 
     private fun nextSerialNumber() =
@@ -113,37 +121,22 @@ internal open class LocalCertificatesAuthority(
             it.setKeyEntry(
                 alias,
                 privateKeyAndCertificate.privateKey, PASSWORD.toCharArray(),
-                arrayOf(privateKeyAndCertificate.certificate),
+                privateKeyAndCertificate.certificates.toTypedArray(),
             )
         }
     }
 
-    override val caCertificate by lazy {
-        privateKeyAndCertificate.certificate
+    override val caCertificate: Certificate by lazy {
+        parentCa?.caCertificate ?: privateKeyAndCertificate.certificates.first()
     }
 
-    override fun generateKeyAndCertificate(hosts: Collection<String>): PrivateKeyWithCertificate {
+    override fun generateKeyAndCertificates(hosts: Collection<String>): PrivateKeyWithCertificate {
         val keys = generateKeyPair()
-        val certificate = generateCertificate(hosts, keys.public)
-        return PrivateKeyWithCertificate(keys.private, certificate)
+        val certificates = generateCertificates(hosts, keys.public)
+        return PrivateKeyWithCertificate(keys.private, certificates)
     }
 
-    override fun generateCertificate(hosts: Collection<String>, publicKey: PublicKey): Certificate {
-        val signatureAlgorithm =
-            when (privateKeyAndCertificate.privateKey.algorithm) {
-                "RSA" -> SignatureSpecs.RSA_SHA256.signatureName
-                "EC" -> SignatureSpecs.ECDSA_SHA256.signatureName
-                else -> throw InvalidParameterException("Unsupported Algorithm")
-            }
-        val sigAlgId = DefaultSignatureAlgorithmIdentifierFinder().find(signatureAlgorithm)
-        val digAlgId = DefaultDigestAlgorithmIdentifierFinder().find(sigAlgId)
-        val parameter = PrivateKeyFactory.createKey(privateKeyAndCertificate.privateKey.encoded)
-        val sigGen = when (privateKeyAndCertificate.privateKey.algorithm) {
-            "RSA" -> BcRSAContentSignerBuilder(sigAlgId, digAlgId)
-            "EC" -> BcECContentSignerBuilder(sigAlgId, digAlgId)
-            else -> throw InvalidParameterException("Unsupported Algorithm")
-        }.build(parameter)
-
+    override fun generateCertificates(hosts: Collection<String>, publicKey: PublicKey): Collection<Certificate> {
         val certificateBuilder = certificateBuilder(
             "C=UK, CN=${hosts.first()}",
             publicKey
@@ -154,29 +147,21 @@ internal open class LocalCertificatesAuthority(
             certificateBuilder.addExtension(Extension.subjectAlternativeName, true, subjectAltName)
         }
 
-        return JcaX509CertificateConverter().getCertificate(
-            certificateBuilder.build(sigGen)
-        )
+        return listOf(
+            JcaX509CertificateConverter().getCertificate(
+                certificateBuilder.build(privateKeyAndCertificate.privateKey.signer())
+            )
+        ) + getIntermediateChain()
     }
 
     @Suppress("ThrowsCount", "ComplexMethod")
-    fun signCsr(csr: PKCS10CertificationRequest): Certificate {
+    override fun signCsr(csr: PKCS10CertificationRequest): Collection<Certificate> {
         val verifier = JcaContentVerifierProviderBuilder()
             .setProvider(BouncyCastleProvider())
             .build(csr.subjectPublicKeyInfo)
         if (!csr.isSignatureValid(verifier)) {
             throw CertificateAuthorityException("Invalid signature")
         }
-
-        val signatureAlgorithm =
-            when (privateKeyAndCertificate.privateKey.algorithm) {
-                "RSA" -> SignatureSpecs.RSA_SHA256.signatureName
-                "EC" -> SignatureSpecs.ECDSA_SHA256.signatureName
-                else -> throw InvalidParameterException("Unsupported Algorithm")
-            }
-        val sigAlgId = DefaultSignatureAlgorithmIdentifierFinder().find(signatureAlgorithm)
-        val digAlgId = DefaultDigestAlgorithmIdentifierFinder().find(sigAlgId)
-        val parameter = PrivateKeyFactory.createKey(privateKeyAndCertificate.privateKey.encoded)
 
         val startDate = Date(now)
         val certSerialNumber = nextSerialNumber()
@@ -209,14 +194,29 @@ internal open class LocalCertificatesAuthority(
                 }
             }
 
-        val sigGen = when (privateKeyAndCertificate.privateKey.algorithm) {
-            "RSA" -> BcRSAContentSignerBuilder(sigAlgId, digAlgId)
-            "EC" -> BcECContentSignerBuilder(sigAlgId, digAlgId)
-            else -> throw InvalidParameterException("Unsupported Algorithm")
-        }.build(parameter)
-
-        val holder = certificateGenerator.build(sigGen)
+        val holder = certificateGenerator.build(privateKeyAndCertificate.privateKey.signer())
         val structure = holder.toASN1Structure()
-        return CertificateFactory.getInstance("X.509").generateCertificate(structure.encoded.inputStream())
+        return listOf(
+            CertificateFactory.getInstance("X.509").generateCertificate(structure.encoded.inputStream())
+        ) + getIntermediateChain()
+
+    }
+
+    private fun getIntermediateChain() : Collection<Certificate> {
+        return if (parentCa == null) {
+            return emptyList()
+        } else {
+            privateKeyAndCertificate.certificates.take(1) + parentCa.getIntermediateChain()
+        }
+    }
+
+    override fun createIntermediateCertificateAuthority() : CertificateAuthority {
+        return LocalCertificatesAuthority(
+            keysFactoryDefinitions = keysFactoryDefinitions,
+            validDuration = validDuration,
+            savedData = null,
+            issuerName = null,
+            parentCa = this,
+        )
     }
 }
