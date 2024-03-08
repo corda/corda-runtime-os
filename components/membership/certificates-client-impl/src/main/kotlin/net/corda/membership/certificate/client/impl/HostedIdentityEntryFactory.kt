@@ -1,6 +1,7 @@
 package net.corda.membership.certificate.client.impl
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoTenants.P2P
 import net.corda.crypto.core.ShortHash
@@ -252,6 +253,7 @@ internal class HostedIdentityEntryFactory(
         certificateType: CertificateType
     ) {
         val factory = CertificateFactory.getInstance("X.509")
+        logger.info("QQQ validateCertificates certificates -> ${certificates.size}")
         val certificate = certificates.map {
             factory.generateCertificate(it.byteInputStream())
         }.fold(null) { previousCertificate: X509Certificate?, certificate ->
@@ -279,6 +281,11 @@ internal class HostedIdentityEntryFactory(
                     )
                 }
             }
+            logger.info("QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ")
+            logger.info("QQQ \t subject -> ${certificate.subjectX500Principal}")
+            logger.info("QQQ \t issuer -> ${certificate.issuerX500Principal}")
+            logger.info("QQQ \t public key -> ${certificate.publicKey.publicKeyId()}")
+            logger.info("QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ")
             certificate
         } ?: throw CordaRuntimeException("No certificate")
 

@@ -276,6 +276,9 @@ class CertificateRestResourceImpl @Activate constructor(
                         )
                     )
 
+            logger.info("QQQ in importCertificateChain, x509Certificates.size: ${x509Certificates.size}")
+            logger.info("QQQ  subjects: ${x509Certificates.map { it.subjectX500Principal }}")
+            logger.info("QQQ  issuers: ${x509Certificates.map { it.issuerX500Principal }}")
             val lastCertificate = x509Certificates.last()
             val subject = try {
                 MemberX500Name.build(lastCertificate.subjectX500Principal)
