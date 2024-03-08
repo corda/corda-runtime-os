@@ -12,11 +12,13 @@ import java.util.Collections
  * Common MDC properties used across corda.
  */
 const val MDC_CLIENT_ID = "corda.client.id"
-const val MDC_FLOW_ID = "flow.id"
-const val MDC_VNODE_ID = "vnode.id"
-const val MDC_SESSION_EVENT_ID = "session.event.id"
+const val MDC_FLOW_ID = "corda.flow.id"
+const val MDC_VNODE_ID = "corda.vnode.id"
+const val MDC_SESSION_EVENT_ID = "corda.session.event.id"
 const val MDC_EXTERNAL_EVENT_ID = "corda.external.event.id"
-
+const val MDC_USER = "corda.http.user"
+const val MDC_METHOD = "corda.http.method"
+const val MDC_PATH = "corda.http.path"
 const val MDC_LOGGED_PREFIX = "corda.logged"
 
 inline fun <T> logElapsedTime(label: String, logger: Logger, body: () -> T): T {
