@@ -5,3 +5,7 @@ updates:
     schedule:
       interval: "daily"
     rebase-strategy: "disabled"
+    ignore:
+      - dependency-name: "*"
+        # 5.2 release branch in maintenance mode. Only take patch updates
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
