@@ -10,6 +10,8 @@ import java.util.Collections
 
 /**
  * Common MDC properties used across corda.
+ * The name of the MDC properties should be prefixed with `corda.` so we can tell from the logs which MDC values
+ * were set explicitly by corda from those that were set by a third-party library.
  */
 const val MDC_CLIENT_ID = "corda.client.id"
 const val MDC_FLOW_ID = "corda.flow.id"
@@ -119,5 +121,17 @@ fun clearMDC(mdcData: Map<String, String>) {
  * Clear the Log4j logging MDC of all data stored there.
  */
 fun clearMDC() {
-    MDC.clear()
+    // Clear only the MDC properties that are set explicitly by Corda
+    // Some libraries like Brave also manage the MDC properties and those
+    // properties shouldn't be cleared out.
+    MDC.getMDCAdapter().apply {
+        remove(MDC_CLIENT_ID)
+        remove(MDC_FLOW_ID)
+        remove(MDC_VNODE_ID)
+        remove(MDC_SESSION_EVENT_ID)
+        remove(MDC_EXTERNAL_EVENT_ID)
+        remove(MDC_USER)
+        remove(MDC_METHOD)
+        remove(MDC_PATH)
+    }
 }
