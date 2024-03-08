@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.external.messaging.services.ExternalMessagingRoutingService
 import net.corda.flow.maintenance.FlowMaintenance
+import net.corda.flow.maintenance.RecoverNotarizedTransactionsScheduledTaskProcessor
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -40,7 +41,9 @@ class FlowService @Activate constructor(
     @Reference(service = ExternalMessagingRoutingService::class)
     private val externalMessagingRoutingService: ExternalMessagingRoutingService,
     @Reference(service = FlowMaintenance::class)
-    private val flowMaintenance: FlowMaintenance
+    private val flowMaintenance: FlowMaintenance,
+    @Reference(service = RecoverNotarizedTransactionsScheduledTaskProcessor::class)
+    private val recoverNotarizedTransactionsScheduledTaskProcessor: RecoverNotarizedTransactionsScheduledTaskProcessor
 ) : Lifecycle {
 
     companion object {
@@ -71,10 +74,12 @@ class FlowService @Activate constructor(
                             LifecycleCoordinatorName.forComponent<FlowExecutor>(),
                             LifecycleCoordinatorName.forComponent<FlowMaintenance>(),
                             LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+                            LifecycleCoordinatorName.forComponent<RecoverNotarizedTransactionsScheduledTaskProcessor>()
                         )
                     )
                 flowMaintenance.start()
                 flowExecutor.start()
+                recoverNotarizedTransactionsScheduledTaskProcessor.start()
             }
 
             is RegistrationStatusChangeEvent -> {
@@ -100,6 +105,8 @@ class FlowService @Activate constructor(
                 flowMaintenance.onConfigChange(config)
                 flowExecutor.onConfigChange(config)
                 externalMessagingRoutingService.onConfigChange(config)
+                recoverNotarizedTransactionsScheduledTaskProcessor.onConfigChange(config)
+
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
 
