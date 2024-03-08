@@ -7,6 +7,7 @@ import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.constants.MessagingMetadataKeys.PROCESSING_FAILURE
+import net.corda.messaging.api.exception.CordaMessageAPIConsumerResetException
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorConsumer
@@ -34,6 +35,7 @@ import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
@@ -42,6 +44,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
 import java.util.concurrent.TimeoutException
@@ -254,6 +257,111 @@ class ConsumerProcessorTest {
         consumerProcessor.processTopic(getConsumerFactory(), getConsumerConfig())
 
         verify(taskManager, never()).executeShortRunningTask<Unit>(any())
+    }
+
+    @Test
+    fun `ConsumerResetException from event processor resets consumer, does not write states`() {
+
+        whenever(stateManager.get(any())).thenReturn(mapOf("key" to State("key", byteArrayOf())))
+        whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(
+            getGroups(1, 1),
+            listOf()
+        )
+        whenever(taskManager.executeShortRunningTask<Unit>(any())).thenAnswer {
+            val future = CompletableFuture<Map<String, EventProcessingOutput>>()
+            future.completeExceptionally(CordaMessageAPIConsumerResetException("Consumer to be reset"))
+            future
+        }
+
+        consumerProcessor.processTopic(getConsumerFactory(), getConsumerConfig())
+
+        verify(consumer, times(1)).poll(any())
+        verify(consumerFactory, times(1)).create<String, String>(any())
+        verify(consumer, times(1)).subscribe()
+        verify(groupAllocator, times(1)).allocateGroups<String, String, String>(any(), any())
+        verify(taskManager, times(1)).executeShortRunningTask<Unit>(any())
+
+        verify(stateManager, times(1)).get(any())
+        verify(stateManager, times(0)).create(any())
+        verify(stateManager, times(0)).update(any())
+        verify(stateManager, times(0)).delete(any())
+
+        verify(messageRouter, times(0)).getDestination(any())
+        verify(client, times(0)).send(any())
+
+        verify(consumer, times(1)).resetEventOffsetPosition()
+        verify(consumer, times(1)).close() // we only allow this test to run the loop once
+    }
+
+    @Test
+    fun `ConsumerResetException from event processor resets consumer, retries event and succeeds on second attempt`() {
+        val key = UUID.randomUUID().toString()
+        whenever(stateManager.get(any())).thenReturn(
+            mapOf(key to State(key, byteArrayOf())),
+            mapOf(key to State(key, byteArrayOf())),
+            mapOf(), // third time is getting states that failed to create
+        )
+        whenever(groupAllocator.allocateGroups<String, String, String>(any(), any()))
+            .thenReturn(
+                getGroups(1, 1),
+                getGroups(1, 1),
+                emptyList(), // group allocation at the end, there are no failed records
+            )
+        whenever(taskManager.executeShortRunningTask<Unit>(any()))
+            // first loop, exception
+            .thenAnswer {
+                val future = CompletableFuture<Map<String, EventProcessingOutput>>()
+                future.completeExceptionally(CordaMessageAPIConsumerResetException("Consumer to be reset"))
+                future
+            }
+            // second loop, succeeds (simulates fixed transient error)
+            .thenAnswer {
+                val output = mapOf(
+                    key to EventProcessingOutput(
+                        listOf(),
+                        StateChangeAndOperation.Noop
+                    )
+                )
+                val future = CompletableFuture<Map<String, EventProcessingOutput>>()
+                future.complete(output)
+                future
+            }
+        consumer.apply {
+            whenever(poll(any()))
+                // first poll does not stop mediator subscription
+                .thenAnswer {
+                    listOf(getConsumerRecord())
+                }
+                // second poll stops mediator subscription
+                .thenAnswer {
+                    // second time around, calls poll
+                    mediatorSubscriptionState.stop()
+                    listOf(getConsumerRecord())
+                }
+        }
+
+        consumerFactory.apply {
+            whenever(create<String, String>(any())).thenReturn(consumer)
+        }
+
+        consumerProcessor.processTopic(consumerFactory, getConsumerConfig())
+
+        verify(consumer, times(2)).poll(any())
+        verify(consumerFactory, times(1)).create<String, String>(any())
+        verify(consumer, times(1)).subscribe()
+        verify(groupAllocator, times(3)).allocateGroups<String, String, String>(any(), any())
+        verify(taskManager, times(2)).executeShortRunningTask<Unit>(any())
+
+        verify(stateManager, times(3)).get(any()) // get is called after create to find keys that failed to be created
+        verify(stateManager, times(1)).create(any())
+        verify(stateManager, times(1)).update(any())
+        verify(stateManager, times(1)).delete(argThat { isEmpty() } )
+
+        verify(messageRouter, times(0)).getDestination(any())
+        verify(client, times(0)).send(any())
+
+        verify(consumer, times(1)).resetEventOffsetPosition() // consumer is reset one time
+        verify(consumer, times(1)).close() // closed at end, after mediator subscription closes
     }
 
     private fun getGroups(groupCount: Int, recordCountPerGroup: Int): List<Map<String, EventProcessingInput<String, String>>> {
