@@ -3,6 +3,7 @@ package net.corda.cli.plugins.packaging
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileDoesNotExist
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileExists
 import net.corda.cli.plugins.packaging.signing.SigningOptions
+import net.corda.sdk.packaging.CpiAttributes
 import net.corda.sdk.packaging.CreateCpiV2
 import net.corda.sdk.packaging.GroupPolicyValidator
 import picocli.CommandLine
@@ -102,9 +103,7 @@ class CreateCpiV2 : Callable<Int> {
             cpbPath,
             outputFilePath,
             groupPolicyString,
-            cpiName,
-            cpiVersion,
-            cpiUpgrade,
+            CpiAttributes(cpiName, cpiVersion, cpiUpgrade),
             signingOptions.asSigningParameters
         )
         return ExitCode.OK
