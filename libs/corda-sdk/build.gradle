@@ -28,5 +28,6 @@ dependencies {
 
     testImplementation libs.bundles.test
     testImplementation project(':testing:test-utilities')
+    testImplementation project(path: ':testing:packaging-test-utilities')
 }
 

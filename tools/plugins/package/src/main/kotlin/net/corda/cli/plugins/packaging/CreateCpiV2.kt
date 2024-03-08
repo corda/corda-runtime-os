@@ -80,6 +80,7 @@ class CreateCpiV2 : Callable<Int> {
         else
             File(requireFileExists(groupPolicyFileName).toString()).readText(Charsets.UTF_8)
 
+        // TODO move validate to sdk createCpi!!
         GroupPolicyValidator.validateGroupPolicy(groupPolicyString)
 
         val cpbPath = cpbFileName?.let { requireFileExists(it) }

@@ -27,10 +27,10 @@ object CreateCpiV2 {
     const val MANIFEST_VERSION = "1.0"
     const val CPI_FORMAT_ATTRIBUTE = "2.0"
 
-    val cpiFormatAttributeName = Attributes.Name("Corda-CPI-Format")
-    val cpiNameAttributeName = Attributes.Name("Corda-CPI-Name")
-    val cpiVersionAttributeName = Attributes.Name("Corda-CPI-Version")
-    val cpiUpgradeAttributeName = Attributes.Name("Corda-CPI-Upgrade")
+    val CPI_FORMAT_ATTRIBUTE_NAME = Attributes.Name("Corda-CPI-Format")
+    val CPI_NAME_ATTRIBUTE_NAME = Attributes.Name("Corda-CPI-Name")
+    val CPI_VERSION_ATTRIBUTE_NAME = Attributes.Name("Corda-CPI-Version")
+    val CPI_UPGRADE_ATTRIBUTE_NAME = Attributes.Name("Corda-CPI-Upgrade")
 
     /**
      * If CPB file is provided, validate that it is a valid CpbV2.
@@ -96,10 +96,10 @@ object CreateCpiV2 {
         val manifest = Manifest()
         val manifestMainAttributes = manifest.mainAttributes
         manifestMainAttributes[Attributes.Name.MANIFEST_VERSION] = MANIFEST_VERSION
-        manifestMainAttributes[cpiFormatAttributeName] = CPI_FORMAT_ATTRIBUTE
-        manifestMainAttributes[cpiNameAttributeName] = cpiAttributes.cpiName
-        manifestMainAttributes[cpiVersionAttributeName] = cpiAttributes.cpiVersion
-        manifestMainAttributes[cpiUpgradeAttributeName] = cpiAttributes.cpiUpgrade.toString()
+        manifestMainAttributes[CPI_FORMAT_ATTRIBUTE_NAME] = CPI_FORMAT_ATTRIBUTE
+        manifestMainAttributes[CPI_NAME_ATTRIBUTE_NAME] = cpiAttributes.cpiName
+        manifestMainAttributes[CPI_VERSION_ATTRIBUTE_NAME] = cpiAttributes.cpiVersion
+        manifestMainAttributes[CPI_UPGRADE_ATTRIBUTE_NAME] = cpiAttributes.cpiUpgrade.toString()
 
         JarOutputStream(Files.newOutputStream(unsignedCpi, StandardOpenOption.WRITE), manifest).use { cpiJar ->
             cpbPath?.let {

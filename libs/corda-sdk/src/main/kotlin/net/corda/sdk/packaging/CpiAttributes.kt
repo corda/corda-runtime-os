@@ -9,5 +9,5 @@ package net.corda.sdk.packaging
 data class CpiAttributes(
     val cpiName: String,
     val cpiVersion: String,
-    val cpiUpgrade: Boolean,
+    val cpiUpgrade: Boolean = false,
 )
