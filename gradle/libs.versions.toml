@@ -19,6 +19,7 @@ nimbusVersion = "11.10.1"
 kafkaClientVersion = "3.6.1_1"
 kubernetesClientVersion = "6.10.0"
 log4jVersion = "2.23.0"
+liquibaseVersion = "4.24.0"
 mssqlDriverVersion = "11.2.3.jre17"
 postgresDriverVersion = "42.7.2"
 # SLF4J cannot be ugraded to 2.x due to CorDapps requiring the 1.7 <= x < 2.0
@@ -127,6 +128,7 @@ zipkin-sender-urlconnection = { group = "io.zipkin.reporter2", name = "zipkin-se
 zipkin-reporter-brave = { group = "io.zipkin.reporter2", name = "zipkin-reporter-brave", version.ref = "zipkinReporterVersion" }
 
 gradle-enterprise = { group = "com.gradle", name = "gradle-enterprise-gradle-plugin", version.ref = "gradleEnterpriseVersion" }
+liquibase = { group = "org.liquibase", name = "liquibase-core", version.ref = "liquibaseVersion"}
 
 [bundles]
 bouncycastle = ["bouncycastle-prov", "bouncycastle-pkix"]
