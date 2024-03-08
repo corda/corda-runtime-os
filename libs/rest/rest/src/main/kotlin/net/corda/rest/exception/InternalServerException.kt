@@ -10,9 +10,11 @@ import net.corda.rest.ResponseCode
  */
 class InternalServerException(
     message: String = "Internal server error.",
-    details: Map<String, String> = emptyMap()
+    details: Map<String, String> = emptyMap(),
+    exceptionDetails: ExceptionDetails? = null
 ) : HttpApiException(
     ResponseCode.INTERNAL_SERVER_ERROR,
     message,
-    details
+    details,
+    exceptionDetails
 )

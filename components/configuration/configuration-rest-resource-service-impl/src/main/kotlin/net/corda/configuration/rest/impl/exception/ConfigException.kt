@@ -2,6 +2,7 @@ package net.corda.configuration.rest.impl.exception
 
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.rest.ResponseCode
+import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.HttpApiException
 
 /**
@@ -31,9 +32,10 @@ class ConfigVersionConflictException(
     config: String
 ) : HttpApiException(
     responseCode = ResponseCode.CONFLICT,
-    message = "$errorType: $errorMessage",
+    message = "Wrong Config Version",
     details = mapOf(
         "schemaVersion" to "${schemaVersion.majorVersion}.${schemaVersion.minorVersion}",
         "config" to config
-    )
+    ),
+    exceptionDetails = ExceptionDetails(errorType, errorMessage)
 )

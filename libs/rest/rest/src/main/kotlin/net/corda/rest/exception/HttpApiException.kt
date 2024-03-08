@@ -15,5 +15,11 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 abstract class HttpApiException(
     val responseCode: ResponseCode,
     override val message: String,
-    val details: Map<String, String> = emptyMap()
+    val details: Map<String, String> = emptyMap(),
+    val exceptionDetails: ExceptionDetails? = null
 ) : CordaRuntimeException(message)
+
+data class ExceptionDetails(
+    val cause: String,
+    val reason: String
+)
