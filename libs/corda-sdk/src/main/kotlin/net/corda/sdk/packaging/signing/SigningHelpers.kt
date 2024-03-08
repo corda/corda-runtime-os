@@ -22,7 +22,7 @@ object SigningHelpers {
     fun sign(
         unsignedInputCpx: Path,
         signedOutputCpx: Path,
-        signingParameters: SigningParameters,
+        signingOptions: SigningOptions,
     ) {
         ZipFile(unsignedInputCpx.toFile()).use { unsignedCpi ->
             Files.newOutputStream(
@@ -32,19 +32,19 @@ object SigningHelpers {
             ).use { signedCpi ->
 
                 val privateKeyEntry = getPrivateKeyEntry(
-                    signingParameters.keyStoreFileName,
-                    signingParameters.keyStorePass,
-                    signingParameters.keyAlias
+                    signingOptions.keyStoreFileName,
+                    signingOptions.keyStorePass,
+                    signingOptions.keyAlias
                 )
                 val privateKey = privateKeyEntry.privateKey
                 val certPath = buildCertPath(privateKeyEntry.certificateChain.asList())
 
                 // Create JarSigner
                 val builder = JarSigner.Builder(privateKey, certPath)
-                    .signerName(signingParameters.signatureFile)
+                    .signerName(signingOptions.signatureFile)
 
                 // Use timestamp server if provided
-                signingParameters.tsaUrl?.let { builder.tsa(URI(it)) }
+                signingOptions.tsaUrl?.let { builder.tsa(URI(it)) }
 
                 // Sign CPI
                 builder

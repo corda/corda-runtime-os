@@ -1,6 +1,6 @@
 package net.corda.cli.plugins.packaging.signing
 
-import net.corda.sdk.packaging.signing.SigningParameters
+import net.corda.sdk.packaging.signing.SigningOptions as SigningOptionsSdk
 import picocli.CommandLine
 
 /**
@@ -22,7 +22,7 @@ class SigningOptions {
     @CommandLine.Option(names = ["--sig-file"], description = ["Base file name for signature related files"])
     private var _sigFile: String? = null
 
-    val asSigningParameters: SigningParameters by lazy {
-        SigningParameters(keyStoreFileName, keyStorePass, keyAlias, tsaUrl, _sigFile)
+    internal val asSigningOptionsSdk: SigningOptionsSdk by lazy {
+        SigningOptionsSdk(keyStoreFileName, keyStorePass, keyAlias, tsaUrl, _sigFile)
     }
 }

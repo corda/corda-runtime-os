@@ -5,7 +5,7 @@ import net.corda.libs.packaging.verify.VerifierBuilder
 import net.corda.libs.packaging.verify.internal.VerifierFactory
 import net.corda.sdk.packaging.signing.CertificateLoader
 import net.corda.sdk.packaging.signing.SigningHelpers
-import net.corda.sdk.packaging.signing.SigningParameters
+import net.corda.sdk.packaging.signing.SigningOptions
 import java.io.FileInputStream
 import java.nio.file.Files
 import java.nio.file.Path
@@ -35,7 +35,7 @@ object CreateCpiV2 {
     /**
      * @throws IllegalArgumentException if it fails to verify Cpb V2
      */
-    fun verifyIsValidCpbV2(cpbPath: Path, signingParameters: SigningParameters) {
+    fun verifyIsValidCpbV2(cpbPath: Path, signingOptions: SigningOptions) {
         VerifierBuilder()
             .type(PackageType.CPB)
             .format(VerifierFactory.FORMAT_2)
@@ -43,8 +43,8 @@ object CreateCpiV2 {
             .inputStream(FileInputStream(cpbPath.toString()))
             .trustedCerts(
                 CertificateLoader.readCertificates(
-                    signingParameters.keyStoreFileName,
-                    signingParameters.keyStorePass
+                    signingOptions.keyStoreFileName,
+                    signingOptions.keyStorePass
                 )
             )
             .build()
@@ -61,7 +61,7 @@ object CreateCpiV2 {
         outputFilePath: Path,
         groupPolicy: String,
         cpiAttributes: CpiAttributes,
-        signingParameters: SigningParameters
+        signingOptions: SigningOptions
     ) {
         val unsignedCpi = Files.createTempFile("buildCPI", null)
         try {
@@ -77,7 +77,7 @@ object CreateCpiV2 {
             SigningHelpers.sign(
                 unsignedCpi,
                 outputFilePath,
-                signingParameters,
+                signingOptions,
             )
         } finally {
             // Delete temp file

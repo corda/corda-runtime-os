@@ -87,7 +87,7 @@ class CreateCpiV2 : Callable<Int> {
         // Check input Cpb file is indeed a Cpb
         cpbPath?.let {
             try {
-                CreateCpiV2.verifyIsValidCpbV2(it, signingOptions.asSigningParameters)
+                CreateCpiV2.verifyIsValidCpbV2(it, signingOptions.asSigningOptionsSdk)
             } catch (e: Exception) {
                 System.err.println("Error verifying CPB: ${e.message}")
                 return ExitCode.SOFTWARE
@@ -104,7 +104,7 @@ class CreateCpiV2 : Callable<Int> {
             outputFilePath,
             groupPolicyString,
             CpiAttributes(cpiName, cpiVersion, cpiUpgrade),
-            signingOptions.asSigningParameters
+            signingOptions.asSigningOptionsSdk
         )
         return ExitCode.OK
     }

@@ -1,7 +1,7 @@
 package net.corda.sdk.packaging.signing
 
 /**
- * CPx file signing parameters
+ * CPx file signing options
  * @property keyStoreFileName: String - Keystore holding signing keys
  * @property keyStorePass: String - Keystore password
  * @property keyAlias: String - Key alias
@@ -9,7 +9,7 @@ package net.corda.sdk.packaging.signing
  * @property signatureFile: String - Base file name for signature related files;
  * If not provided, generate from [keyAlias], following jarsigner requirements
  */
-data class SigningParameters(
+data class SigningOptions(
     val keyStoreFileName: String,
     val keyStorePass: String,
     val keyAlias: String,

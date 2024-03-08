@@ -64,7 +64,7 @@ class CreateCpb : Runnable {
             SigningHelpers.sign(
                 unsignedCpb,
                 cpbPath,
-                signingOptions.asSigningParameters,
+                signingOptions.asSigningOptionsSdk,
             )
         } finally {
             Files.deleteIfExists(unsignedCpb)
