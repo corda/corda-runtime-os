@@ -46,7 +46,8 @@ public class FlowSessionImplJavaTest {
             mock(CurrentSandboxGroupContext.class),
             Map.of(),
             mock(FlowMetrics.class),
-            Map.of()
+            Map.of(),
+            mock()
     );
     private final FlowFiber flowFiber = new FakeFiber(flowFiberExecutionContext);
     private final FlowFiberService flowFiberService = mock(FlowFiberService.class);
