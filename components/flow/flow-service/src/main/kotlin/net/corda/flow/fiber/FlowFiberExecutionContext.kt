@@ -22,7 +22,7 @@ class FlowFiberExecutionContext(
     val mdcLoggingData: Map<String, String>,
     val flowMetrics: FlowMetrics,
     val configs: Map<String, SmartConfig>,
-    val traceContext: TraceContext? = null
+    val traceContext: TraceContext
 ) : NonSerializable {
     val memberX500Name: MemberX500Name get() = holdingIdentity.x500Name
     val flowStackService: FlowStack get() = flowCheckpoint.flowStack
