@@ -28,8 +28,8 @@ import net.corda.messaging.emulation.topic.service.TopicService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
+import net.corda.messaging.emulation.subscription.eventsource.EventSourceSubscription
 import net.corda.messaging.emulation.http.HttpService
 import net.corda.messaging.emulation.subscription.http.HttpRpcSubscription
 import java.util.concurrent.atomic.AtomicInteger
@@ -119,6 +119,22 @@ internal class InMemSubscriptionFactory @Activate constructor(
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V> {
         return EventLogSubscription(
+            subscriptionConfig,
+            processor,
+            partitionAssignmentListener,
+            topicService,
+            lifecycleCoordinatorFactory,
+            instanceIndex.incrementAndGet()
+        )
+    }
+
+    override fun <K : Any, V : Any> createEventSourceSubscription(
+        subscriptionConfig: SubscriptionConfig,
+        processor: EventSourceProcessor<K, V>,
+        messagingConfig: SmartConfig,
+        partitionAssignmentListener: PartitionAssignmentListener?
+    ): Subscription<K, V> {
+        return EventSourceSubscription(
             subscriptionConfig,
             processor,
             partitionAssignmentListener,

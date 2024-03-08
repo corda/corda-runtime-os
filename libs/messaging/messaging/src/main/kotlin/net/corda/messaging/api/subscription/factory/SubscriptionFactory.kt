@@ -4,6 +4,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
+import net.corda.messaging.api.processor.EventSourceProcessor
 import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.RPCResponderProcessor
@@ -126,6 +127,21 @@ interface SubscriptionFactory {
     fun <K : Any, V : Any> createEventLogSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: EventLogProcessor<K, V>,
+        messagingConfig: SmartConfig,
+        partitionAssignmentListener: PartitionAssignmentListener?
+    ): Subscription<K, V>
+
+    /**
+     * Creates an event source subscription.
+     * @param processor the processor that will be wired up with the created subscription.
+     * @param subscriptionConfig Define the mandatory params for creating a subscription.
+     * @param messagingConfig Map of properties to override the default settings for the connection to the source of
+     * events
+     * @param partitionAssignmentListener a listener that reacts to partition assignment and revocations.
+     */
+    fun <K : Any, V : Any> createEventSourceSubscription(
+        subscriptionConfig: SubscriptionConfig,
+        processor: EventSourceProcessor<K, V>,
         messagingConfig: SmartConfig,
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V>
