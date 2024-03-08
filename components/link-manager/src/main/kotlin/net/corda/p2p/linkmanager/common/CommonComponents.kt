@@ -29,7 +29,6 @@ import net.corda.p2p.linkmanager.sessions.StateConvertor
 import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl
 import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 import net.corda.p2p.linkmanager.sessions.expiration.StaleSessionProcessor
-import net.corda.schema.Schemas
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
