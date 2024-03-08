@@ -10,6 +10,7 @@ import java.io.FileInputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
+import java.security.cert.X509Certificate
 import java.util.jar.Attributes
 import java.util.jar.JarEntry
 import java.util.jar.JarOutputStream
@@ -36,17 +37,20 @@ object CreateCpiV2 {
      * @throws IllegalArgumentException if it fails to verify Cpb V2
      */
     fun verifyIsValidCpbV2(cpbPath: Path, signingOptions: SigningOptions) {
+        val trustedCerts = with(signingOptions) { CertificateLoader.readCertificates(keyStoreFileName, keyStorePass) }
+        verifyIsValidCpbV2(cpbPath, trustedCerts)
+    }
+
+    /**
+     * @throws IllegalArgumentException if it fails to verify Cpb V2
+     */
+    fun verifyIsValidCpbV2(cpbPath: Path, trustedCerts: Collection<X509Certificate>) {
         VerifierBuilder()
             .type(PackageType.CPB)
             .format(VerifierFactory.FORMAT_2)
             .name(cpbPath.toString())
             .inputStream(FileInputStream(cpbPath.toString()))
-            .trustedCerts(
-                CertificateLoader.readCertificates(
-                    signingOptions.keyStoreFileName,
-                    signingOptions.keyStorePass
-                )
-            )
+            .trustedCerts(trustedCerts)
             .build()
             .verify()
     }
@@ -65,22 +69,9 @@ object CreateCpiV2 {
     ) {
         val unsignedCpi = Files.createTempFile("buildCPI", null)
         try {
-            // Build unsigned CPI jar
-            buildUnsignedCpi(
-                cpbPath,
-                unsignedCpi,
-                groupPolicy,
-                cpiAttributes
-            )
-
-            // Sign CPI jar
-            SigningHelpers.sign(
-                unsignedCpi,
-                outputFilePath,
-                signingOptions,
-            )
+            buildUnsignedCpi(cpbPath, unsignedCpi, groupPolicy, cpiAttributes)
+            SigningHelpers.sign(unsignedCpi, outputFilePath, signingOptions)
         } finally {
-            // Delete temp file
             Files.deleteIfExists(unsignedCpi)
         }
     }
@@ -90,12 +81,7 @@ object CreateCpiV2 {
      *
      * Copies CPB into new jar file and then adds group policy
      */
-    private fun buildUnsignedCpi(
-        cpbPath: Path?,
-        unsignedCpi: Path,
-        groupPolicy: String,
-        cpiAttributes: CpiAttributes,
-    ) {
+    private fun buildUnsignedCpi(cpbPath: Path?, unsignedCpi: Path, groupPolicy: String, cpiAttributes: CpiAttributes) {
         val manifest = Manifest()
         val manifestMainAttributes = manifest.mainAttributes
         manifestMainAttributes[Attributes.Name.MANIFEST_VERSION] = MANIFEST_VERSION
