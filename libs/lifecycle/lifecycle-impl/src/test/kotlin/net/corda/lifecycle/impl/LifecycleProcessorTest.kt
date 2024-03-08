@@ -403,6 +403,39 @@ class LifecycleProcessorTest {
     }
 
     @Test
+    fun `stop event after error leaves coordinator status as down`() {
+        val state = LifecycleStateManager(5)
+        state.isRunning = true
+        var processedStopEvents = 0
+        var processedOtherEvents = 0
+        val registry = mock<LifecycleRegistryCoordinatorAccess>()
+        val processor = LifecycleProcessor(NAME, state, registry, mock()) { event, _ ->
+            when (event) {
+                is StopEvent -> {
+                    processedStopEvents++
+                }
+                else -> {
+                    processedOtherEvents++
+                }
+            }
+        }
+        val registration1 = mock<Registration>()
+        val registration2 = mock<Registration>()
+        val coordinator = setupCoordinatorMock()
+        state.status = LifecycleStatus.UP
+        listOf(registration1, registration2).forEach { state.registrations.add(it) }
+        coordinator.updateStatus(LifecycleStatus.ERROR)
+        state.postEvent(StopEvent())
+        process(processor, coordinator = coordinator)
+        assertEquals(LifecycleStatus.ERROR, state.status)
+        verify(registration1).updateCoordinatorStatus(coordinator, LifecycleStatus.DOWN)
+        verify(registration2).updateCoordinatorStatus(coordinator, LifecycleStatus.DOWN)
+        verify(registry).updateStatus(NAME, LifecycleStatus.DOWN, STOPPED_REASON)
+        assertEquals(1, processedStopEvents)
+        assertEquals(0, processedOtherEvents)
+    }
+
+    @Test
     fun `start event causes a request to notify about all current tracked registrations`() {
         val state = LifecycleStateManager(5)
         var processedStartEvents = 0

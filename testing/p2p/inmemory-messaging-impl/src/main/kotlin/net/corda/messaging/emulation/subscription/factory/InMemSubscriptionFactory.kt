@@ -2,12 +2,7 @@ package net.corda.messaging.emulation.subscription.factory
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.messaging.api.processor.CompactedProcessor
-import net.corda.messaging.api.processor.DurableProcessor
-import net.corda.messaging.api.processor.EventLogProcessor
-import net.corda.messaging.api.processor.PubSubProcessor
-import net.corda.messaging.api.processor.RPCResponderProcessor
-import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.processor.*
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
@@ -28,8 +23,8 @@ import net.corda.messaging.emulation.topic.service.TopicService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
+import net.corda.messaging.emulation.subscription.eventsource.EventSourceSubscription
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -115,6 +110,22 @@ class InMemSubscriptionFactory @Activate constructor(
         partitionAssignmentListener: PartitionAssignmentListener?
     ): Subscription<K, V> {
         return EventLogSubscription(
+            subscriptionConfig,
+            processor,
+            partitionAssignmentListener,
+            topicService,
+            lifecycleCoordinatorFactory,
+            instanceIndex.incrementAndGet()
+        )
+    }
+
+    override fun <K : Any, V : Any> createEventSourceSubscription(
+        subscriptionConfig: SubscriptionConfig,
+        processor: EventSourceProcessor<K, V>,
+        messagingConfig: SmartConfig,
+        partitionAssignmentListener: PartitionAssignmentListener?
+    ): Subscription<K, V> {
+        return EventSourceSubscription(
             subscriptionConfig,
             processor,
             partitionAssignmentListener,

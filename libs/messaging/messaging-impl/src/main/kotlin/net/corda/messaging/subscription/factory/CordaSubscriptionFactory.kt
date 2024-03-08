@@ -10,6 +10,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
+import net.corda.messaging.api.processor.EventSourceProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -30,6 +31,7 @@ import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.subscription.CompactedSubscriptionImpl
 import net.corda.messaging.subscription.DurableSubscriptionImpl
 import net.corda.messaging.subscription.EventLogSubscriptionImpl
+import net.corda.messaging.subscription.EventSourceSubscriptionImpl
 import net.corda.messaging.subscription.PubSubSubscriptionImpl
 import net.corda.messaging.subscription.RPCSubscriptionImpl
 import net.corda.messaging.subscription.StateAndEventSubscriptionImpl
@@ -160,6 +162,23 @@ class CordaSubscriptionFactory @Activate constructor(
             config,
             cordaConsumerBuilder,
             cordaProducerBuilder,
+            processor,
+            partitionAssignmentListener,
+            lifecycleCoordinatorFactory
+        )
+    }
+
+    override fun <K : Any, V : Any> createEventSourceSubscription(
+        subscriptionConfig: SubscriptionConfig,
+        processor: EventSourceProcessor<K, V>,
+        messagingConfig: SmartConfig,
+        partitionAssignmentListener: PartitionAssignmentListener?
+    ): Subscription<K, V> {
+
+        val config = getConfig(SubscriptionType.EVENT_LOG, subscriptionConfig, messagingConfig)
+        return EventSourceSubscriptionImpl(
+            config,
+            cordaConsumerBuilder,
             processor,
             partitionAssignmentListener,
             lifecycleCoordinatorFactory
