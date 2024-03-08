@@ -5,6 +5,7 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.external.messaging.services.ExternalMessagingRoutingService
 import net.corda.flow.MINIMUM_SMART_CONFIG
 import net.corda.flow.maintenance.FlowMaintenance
+import net.corda.flow.maintenance.RecoverNotarizedTransactionsScheduledTaskProcessor
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -42,6 +43,7 @@ class FlowServiceTest {
     private val flowExecutor = mock<FlowExecutor>()
     private val flowMaintenance = mock<FlowMaintenance>()
     private val externalMessagingRoutingService = mock<ExternalMessagingRoutingService>()
+    private val recoverNotarizedTransactionsScheduledTaskProcessor = mock<RecoverNotarizedTransactionsScheduledTaskProcessor>()
 
     private val exampleConfig = mapOf(
         ConfigKeys.BOOT_CONFIG to MINIMUM_SMART_CONFIG,
@@ -161,13 +163,15 @@ class FlowServiceTest {
             addDependency<MembershipGroupReaderProvider>()
             addDependency<FlowExecutor>()
             addDependency<FlowMaintenance>()
+            addDependency<RecoverNotarizedTransactionsScheduledTaskProcessor>()
 
             FlowService(
                 coordinatorFactory,
                 configReadService,
                 flowExecutor,
                 externalMessagingRoutingService,
-                flowMaintenance
+                flowMaintenance,
+                recoverNotarizedTransactionsScheduledTaskProcessor
             )
         }
     }
