@@ -1,7 +1,13 @@
 package net.corda.sdk.packaging.signing
 
 /**
- * Signing Options
+ * CPx file signing parameters
+ * @property keyStoreFileName: String - Keystore holding signing keys
+ * @property keyStorePass: String - Keystore password
+ * @property keyAlias: String - Key alias
+ * @property tsaUrl: String? - Time Stamping Authority (TSA) URL; default: `null`
+ * @property signatureFile: String - Base file name for signature related files;
+ * If not provided, generate from [keyAlias], following jarsigner requirements
  */
 data class SigningParameters(
     val keyStoreFileName: String,
