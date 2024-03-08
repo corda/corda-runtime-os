@@ -60,9 +60,7 @@ object CreateCpiV2 {
         cpbPath: Path?,
         outputFilePath: Path,
         groupPolicy: String,
-        cpiName: String,
-        cpiVersion: String,
-        cpiUpgrade: Boolean,
+        cpiAttributes: CpiAttributes,
         signingParameters: SigningParameters
     ) {
         val unsignedCpi = Files.createTempFile("buildCPI", null)
@@ -72,9 +70,7 @@ object CreateCpiV2 {
                 cpbPath,
                 unsignedCpi,
                 groupPolicy,
-                cpiName,
-                cpiVersion,
-                cpiUpgrade,
+                cpiAttributes
             )
 
             // Sign CPI jar
@@ -98,17 +94,15 @@ object CreateCpiV2 {
         cpbPath: Path?,
         unsignedCpi: Path,
         groupPolicy: String,
-        cpiName: String,
-        cpiVersion: String,
-        cpiUpgrade: Boolean,
+        cpiAttributes: CpiAttributes,
     ) {
         val manifest = Manifest()
         val manifestMainAttributes = manifest.mainAttributes
         manifestMainAttributes[Attributes.Name.MANIFEST_VERSION] = MANIFEST_VERSION
         manifestMainAttributes[cpiFormatAttributeName] = CPI_FORMAT_ATTRIBUTE
-        manifestMainAttributes[cpiNameAttributeName] = cpiName
-        manifestMainAttributes[cpiVersionAttributeName] = cpiVersion
-        manifestMainAttributes[cpiUpgradeAttributeName] = cpiUpgrade.toString()
+        manifestMainAttributes[cpiNameAttributeName] = cpiAttributes.cpiName
+        manifestMainAttributes[cpiVersionAttributeName] = cpiAttributes.cpiVersion
+        manifestMainAttributes[cpiUpgradeAttributeName] = cpiAttributes.cpiUpgrade.toString()
 
         JarOutputStream(Files.newOutputStream(unsignedCpi, StandardOpenOption.WRITE), manifest).use { cpiJar ->
             cpbPath?.let {

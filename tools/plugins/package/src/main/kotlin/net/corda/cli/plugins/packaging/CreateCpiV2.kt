@@ -5,7 +5,6 @@ import net.corda.cli.plugins.packaging.FileHelpers.requireFileExists
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.sdk.packaging.CreateCpiV2
 import net.corda.sdk.packaging.GroupPolicyValidator
-import net.corda.sdk.packaging.signing.SigningParameters
 import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.ExitCode
