@@ -20,9 +20,11 @@ data class SigningParameters(
                 }
                 val strBuilder = StringBuilder()
                 for (c in str) {
-                    when (c) {
-                        in 'A'..'Z', in 'a'..'z', '-', '=' -> strBuilder.append(c)
-                        else ->  strBuilder.append('_')
+                    @Suppress("ComplexCondition")
+                    if (c in 'A'..'Z' || c in 'a'..'z' || c == '-' || c == '_') {
+                        strBuilder.append(c)
+                    } else {
+                        strBuilder.append('_')
                     }
                 }
                 str = strBuilder.toString()
