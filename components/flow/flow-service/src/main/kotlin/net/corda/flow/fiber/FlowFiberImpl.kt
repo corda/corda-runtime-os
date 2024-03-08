@@ -67,6 +67,12 @@ class FlowFiberImpl(
 
     @Suspendable
     override fun run() {
+        // This point is the entry point of a Quasar fiber. In order to keep the traceId present in the MDC
+        // the method markInScope must be called. The call must be the first thing to be done to ensure
+        // any generated logs contain the trace id which helps people find the relevant logs when troubleshooting an issue.
+        // Keep in mind the traceId is managed by a third-party library
+        flowFiberExecutionContext?.traceContext?.markInScope()
+
         try {
             setCurrentSandboxGroupContext()
             // Ensure run() does not exit via any means without completing the future, in order not to indefinitely block
