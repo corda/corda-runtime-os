@@ -32,6 +32,7 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.bouncycastle.asn1.DEROctetString
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.Extension
@@ -815,12 +816,41 @@ class CertificateRestResourceImplTest {
         }
 
         @Test
-        fun `valid multiple certificate will send all to the client`() {
-            val certificateText = ClassLoader.getSystemResource("r3.chain.com.pem").readText()
+        fun `certificate chain pass validation`() {
+            val certificateText = ClassLoader.getSystemResource("chain.pem").readText()
+            val certificate = mock<HttpFileUpload> {
+                on { content } doReturn certificateText.byteInputStream()
+            }
+
+            certificatesOps.importCertificateChain("rest-tls", null, "alias", listOf(certificate))
+
+            verify(certificatesClient).importCertificates(
+                CertificateUsage.REST_TLS,
+                null,
+                "alias",
+                certificateText
+            )
+        }
+
+        @Test
+        fun `certificate chain in the wrong order will fail`() {
+            val certificateText = ClassLoader.getSystemResource("chain.pem").readText()
             val certificate1Text = certificateText.substringBefore("\n-----BEGIN CERTIFICATE-----")
             val certificate2Text = certificateText.substring(certificate1Text.length + 1, certificateText.length)
-            println("QQQ $certificate1Text")
-            println("QQQ $certificate2Text")
+            val certificate = mock<HttpFileUpload> {
+                on { content } doReturn "$certificate2Text$certificate1Text".byteInputStream()
+            }
+
+            assertThatThrownBy {
+                certificatesOps.importCertificateChain("rest-tls", null, "alias", listOf(certificate))
+            }.isInstanceOf(InvalidInputDataException::class.java)
+        }
+
+        @Test
+        fun `valid multiple certificate will send all to the client`() {
+            val certificateText = ClassLoader.getSystemResource("chain.pem").readText()
+            val certificate1Text = certificateText.substringBefore("\n-----BEGIN CERTIFICATE-----")
+            val certificate2Text = certificateText.substring(certificate1Text.length + 1, certificateText.length)
             val certificate1 = mock<HttpFileUpload> {
                 on { content } doReturn certificate1Text.byteInputStream()
             }
@@ -836,6 +866,18 @@ class CertificateRestResourceImplTest {
                 "alias",
                 certificateText
             )
+        }
+
+        @Test
+        fun `multiple certificates in the chain will result in an error`() {
+            val certificateText = ClassLoader.getSystemResource("r3.pem").readText()
+            val certificate = mock<HttpFileUpload> {
+                on { content } doReturn "$certificateText$certificateText".byteInputStream()
+            }
+
+            assertThatThrownBy {
+                certificatesOps.importCertificateChain("rest-tls", null, "alias", listOf(certificate))
+            }.isInstanceOf(InvalidInputDataException::class.java)
         }
 
         @Test

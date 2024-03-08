@@ -261,7 +261,7 @@ internal class HostedIdentityEntryFactory(
             if (previousCertificate != null) {
                 if (previousCertificate.issuerX500Principal != certificate.subjectX500Principal) {
                     throw CordaRuntimeException(
-                        "This previous certificate  in the chain was issued by ${previousCertificate.issuerX500Principal} and " +
+                        "The previous certificate in the chain was issued by ${previousCertificate.issuerX500Principal} and " +
                             "not by ${certificate.subjectX500Principal}"
                     )
                 }
