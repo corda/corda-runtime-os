@@ -88,7 +88,7 @@ class HostedIdentityEntryFactoryTest {
     private val wrongSignCertificatePublicKey = wrongSignCertificatePem.let {
         CertificateFactory.getInstance("X.509").generateCertificate(it.byteInputStream()).publicKey
     }
-    private val chainCertificatePublicKey = chainCertificatesPems.last().let {
+    private val chainCertificatePublicKey = chainCertificatesPems.first().let {
         CertificateFactory.getInstance("X.509").generateCertificate(it.byteInputStream()).publicKey
     }
     private val filter = argumentCaptor<Map<String, String>>()
@@ -713,7 +713,7 @@ class HostedIdentityEntryFactoryTest {
     }
 
     @Test
-    fun `invalid certificate chain due to missing last certificate`() {
+    fun `invalid certificate chain due to missing first certificate`() {
         val factory = HostedIdentityEntryFactory(
             virtualNodeInfoReadService,
             cryptoOpsClient,
@@ -721,7 +721,7 @@ class HostedIdentityEntryFactoryTest {
             groupPolicyProvider,
             mtlsMgmClientCertificateKeeper,
         ) { _, _, _ ->
-            chainCertificatesPems.take(3).joinToString(separator = System.lineSeparator())
+            chainCertificatesPems.drop(1).joinToString(separator = System.lineSeparator())
         }
         assertThatThrownBy {
             factory.createIdentityRecord(
@@ -735,5 +735,30 @@ class HostedIdentityEntryFactoryTest {
                 alternativeSessionKeyAndCertificates = emptyList(),
             )
         }.hasMessageContaining("This certificate public key is unknown to")
+    }
+
+    @Test
+    fun `invalid certificate chain due to certificate not sign by ca`() {
+        val factory = HostedIdentityEntryFactory(
+            virtualNodeInfoReadService,
+            cryptoOpsClient,
+            keyEncodingService,
+            groupPolicyProvider,
+            mtlsMgmClientCertificateKeeper,
+        ) { _, _, _ ->
+            chainCertificatesPems.take(2).joinToString(separator = System.lineSeparator())
+        }
+        assertThatThrownBy {
+            factory.createIdentityRecord(
+                holdingIdentityShortHash = VALID_NODE,
+                tlsCertificateChainAlias = VALID_CHAIN_CERTIFICATE_ALIAS,
+                preferredSessionKeyAndCertificate = CertificatesClient.SessionKeyAndCertificate(
+                    sessionKeyId = SESSION_KEY_ID,
+                    sessionCertificateChainAlias = null,
+                ),
+                useClusterLevelTlsCertificateAndKey = false,
+                alternativeSessionKeyAndCertificates = emptyList(),
+            )
+        }.hasMessageContaining("The TLS certificate was not signed by the correct certificate authority")
     }
 }

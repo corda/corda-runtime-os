@@ -199,9 +199,7 @@ class KeyRestResourceImpl @Activate constructor(
                         alias = alias,
                         scheme = scheme,
                     )
-                }.publicKeyId().also {
-                    logger.info("QQQ generateKeyPair for tenantId: $tenantId - $it")
-                }
+                }.publicKeyId()
             )
         } catch (e: KeyAlreadyExistsException) {
             throw ResourceAlreadyExistsException(e.message!!)

@@ -29,6 +29,7 @@ import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.slf4j.LoggerFactory
 import java.io.StringWriter
 import java.security.InvalidKeyException
+import java.security.PublicKey
 import java.security.SignatureException
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
@@ -253,10 +254,10 @@ internal class HostedIdentityEntryFactory(
         certificateType: CertificateType
     ) {
         val factory = CertificateFactory.getInstance("X.509")
-        logger.info("QQQ validateCertificates certificates -> ${certificates.size}")
-        val certificate = certificates.map {
+        val (certificate, publicKey) = certificates.map {
             factory.generateCertificate(it.byteInputStream())
-        }.fold(null) { previousCertificate: X509Certificate?, certificate ->
+        }.fold(null) { previousCertificateToPublicKey: Pair<X509Certificate, PublicKey>?, certificate ->
+            val previousCertificate =  previousCertificateToPublicKey?.first
             if (certificate !is X509Certificate) {
                 throw CordaRuntimeException("This certificate must be an X509 certificate")
             }
@@ -281,15 +282,11 @@ internal class HostedIdentityEntryFactory(
                     )
                 }
             }
-            logger.info("QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ")
-            logger.info("QQQ \t subject -> ${certificate.subjectX500Principal}")
-            logger.info("QQQ \t issuer -> ${certificate.issuerX500Principal}")
-            logger.info("QQQ \t public key -> ${certificate.publicKey.publicKeyId()}")
-            logger.info("QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ")
-            certificate
+            val key = previousCertificateToPublicKey?.second?:certificate.publicKey
+            certificate to key
         } ?: throw CordaRuntimeException("No certificate")
 
-        val publicKey = certificate.publicKey
+        //val publicKey = certificate.publicKey
         cryptoOpsClient.filterMyKeys(keyTenantId, listOf(publicKey))
             .firstOrNull()
             ?: throw CordaRuntimeException("This certificate public key is unknown to $keyTenantId")
