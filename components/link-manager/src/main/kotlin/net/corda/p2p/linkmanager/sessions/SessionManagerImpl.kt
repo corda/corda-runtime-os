@@ -80,6 +80,7 @@ internal class SessionManagerImpl(
     messagingConfiguration: SmartConfig,
     private val linkManagerHostingMap: LinkManagerHostingMap,
     private val protocolFactory: ProtocolFactory = CryptoProtocolFactory(),
+    private val sessionCache: SessionCache,
 ) : LifecycleWithDominoTile {
 
     private companion object {
@@ -122,10 +123,15 @@ internal class SessionManagerImpl(
         configurationChangeHandler = SessionManagerConfigChangeHandler()
     )
 
+    internal data class CacheSizes(
+        val inbound: Long = 10_000,
+        val outbound: Long = 10_000,
+    )
     @VisibleForTesting
     internal data class SessionManagerConfig(
         val maxMessageSize: Int,
         val revocationConfigMode: RevocationCheckMode,
+        val cacheSizes: CacheSizes = CacheSizes(),
     )
 
     internal inner class SessionManagerConfigChangeHandler : ConfigurationChangeHandler<SessionManagerConfig>(
@@ -141,6 +147,7 @@ internal class SessionManagerImpl(
             val configUpdateResult = CompletableFuture<Unit>()
             dominoTile.withLifecycleWriteLock {
                 config.set(newConfiguration)
+                sessionCache.updateCacheSizes(newConfiguration.cacheSizes)
                 if (oldConfiguration != null) {
                     logger.info("The Session Manager got new config. All sessions will be cleaned up.")
                     // This is suboptimal we could instead restart session negotiation
@@ -153,9 +160,14 @@ internal class SessionManagerImpl(
     }
 
     private fun fromConfig(config: Config): SessionManagerConfig {
+        val cacheSizes = CacheSizes(
+            inbound = config.getLong(LinkManagerConfiguration.INBOUND_SESSIONS_CACHE_SIZE),
+            outbound = config.getLong(LinkManagerConfiguration.OUTBOUND_SESSIONS_CACHE_SIZE),
+        )
         return SessionManagerConfig(
             config.getInt(LinkManagerConfiguration.MAX_MESSAGE_SIZE_KEY),
             config.getEnum(RevocationCheckMode::class.java, LinkManagerConfiguration.REVOCATION_CHECK_KEY),
+            cacheSizes = cacheSizes,
         )
     }
 

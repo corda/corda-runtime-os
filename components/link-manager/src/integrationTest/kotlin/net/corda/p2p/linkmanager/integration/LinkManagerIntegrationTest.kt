@@ -13,8 +13,10 @@ import net.corda.data.p2p.crypto.protocol.RevocationCheckMode
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.INBOUND_SESSIONS_CACHE_SIZE
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.OUTBOUND_SESSIONS_CACHE_SIZE
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -116,6 +118,8 @@ class LinkManagerIntegrationTest {
             .withValue(LinkManagerConfiguration.MESSAGE_REPLAY_PERIOD_KEY, ConfigValueFactory.fromAnyRef(replayPeriod))
         return ConfigFactory.empty()
             .withValue(MAX_MESSAGE_SIZE_KEY, ConfigValueFactory.fromAnyRef(1000000))
+            .withValue(INBOUND_SESSIONS_CACHE_SIZE, ConfigValueFactory.fromAnyRef(100))
+            .withValue(OUTBOUND_SESSIONS_CACHE_SIZE, ConfigValueFactory.fromAnyRef(100))
             .withValue(MAX_REPLAYING_MESSAGES_PER_PEER, ConfigValueFactory.fromAnyRef(100))
             .withValue(SESSION_TIMEOUT_KEY, ConfigValueFactory.fromAnyRef(10000))
             .withValue(

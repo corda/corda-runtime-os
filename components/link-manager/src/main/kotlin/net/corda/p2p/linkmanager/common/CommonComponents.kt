@@ -105,6 +105,7 @@ internal class CommonComponents(
             lifecycleCoordinatorFactory,
             messagingConfiguration,
             linkManagerHostingMap,
+            sessionCache = sessionCache,
         ),
         StateConvertor(
             schemaRegistry,
