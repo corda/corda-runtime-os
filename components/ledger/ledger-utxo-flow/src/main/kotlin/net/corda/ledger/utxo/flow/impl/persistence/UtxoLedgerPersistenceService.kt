@@ -7,7 +7,6 @@ import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
@@ -132,7 +131,8 @@ interface UtxoLedgerPersistenceService {
      * @param transaction UTXO signed transaction to persist.
      * @param transactionStatus Transaction's status
      *
-     * @return list of [CordaPackageSummary] for missing CPKs (that were not linked)
+     * @return list of [String] that represents transaction's status that tells us whether it existed or not.
+     * if it exists already it'll be the status in db, if not empty string to represent non-existent
      *
      * @throws CordaPersistenceException if an error happens during persist operation.
      */
