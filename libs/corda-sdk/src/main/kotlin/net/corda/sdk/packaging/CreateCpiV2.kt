@@ -48,6 +48,7 @@ object CreateCpiV2 {
                 throw IllegalArgumentException("Error verifying CPB: ${e.message}", e)
             }
         }
+        GroupPolicyValidator.validateGroupPolicy(groupPolicy)
         buildAndSignCpi(cpbPath, outputFilePath, groupPolicy, cpiAttributes, signingOptions)
     }
 

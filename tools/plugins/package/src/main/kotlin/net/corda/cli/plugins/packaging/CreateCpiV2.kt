@@ -5,7 +5,6 @@ import net.corda.cli.plugins.packaging.FileHelpers.requireFileExists
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.sdk.packaging.CpiAttributes
 import net.corda.sdk.packaging.CreateCpiV2
-import net.corda.sdk.packaging.GroupPolicyValidator
 import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.ExitCode
@@ -79,9 +78,6 @@ class CreateCpiV2 : Callable<Int> {
             System.`in`.readAllBytes().toString(Charsets.UTF_8)
         else
             File(requireFileExists(groupPolicyFileName).toString()).readText(Charsets.UTF_8)
-
-        // TODO move validate to sdk createCpi!!
-        GroupPolicyValidator.validateGroupPolicy(groupPolicyString)
 
         val cpbPath = cpbFileName?.let { requireFileExists(it) }
         val outputName = determineOutputFileName(cpbPath)
