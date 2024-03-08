@@ -12,6 +12,9 @@ import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.crypto.CommonHeader
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.data.p2p.crypto.InitiatorHelloMessage
+import net.corda.data.p2p.event.SessionCreated
+import net.corda.data.p2p.event.SessionDirection
+import net.corda.data.p2p.event.SessionEvent
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
@@ -29,6 +32,7 @@ import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl.Companion.L
 import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 import net.corda.p2p.linkmanager.state.SessionState
 import net.corda.schema.Schemas
+import net.corda.schema.Schemas.P2P.SESSION_EVENTS
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.utilities.time.Clock
@@ -313,7 +317,7 @@ class StatefulSessionManagerImplTest {
     @Nested
     inner class ProcessInboundSessionMessagesTest {
         @Test
-        fun `processInitiatorHello return the correct data`() {
+        fun `processInitiatorHandshake return the correct data`() {
             val sessionIdentity = "id"
             val state = mockState(sessionIdentity)
             whenever(stateManager.get(any())).doReturn(
@@ -372,7 +376,13 @@ class StatefulSessionManagerImplTest {
             assertSoftly {
                 assertThat(results)
                     .anySatisfy {
-                        assertThat(it.second).isEqualTo(responseMessage)
+                        assertThat(it.second.message).isEqualTo(responseMessage)
+                        assertThat(it.second.sessionCreationRecords).hasSize(1).allSatisfy { record ->
+                            assertThat(record.topic).isEqualTo(SESSION_EVENTS)
+                            assertThat(record.value).isEqualTo(
+                                SessionEvent(SessionCreated(SessionDirection.OUTBOUND, sessionIdentity))
+                            )
+                        }
                     }.hasSize(1)
                 assertThat(statesUpdates.firstValue.firstOrNull()?.value).isEqualTo(rawData)
                 assertThat(statesUpdates.firstValue.firstOrNull()?.key).isEqualTo(sessionIdentity)

@@ -6,6 +6,7 @@ import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.messaging.api.records.Record
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.virtualnode.HoldingIdentity
 
@@ -19,7 +20,7 @@ internal interface SessionManager : LifecycleWithDominoTile {
     fun <T> processSessionMessages(
         wrappedMessages: Collection<T>,
         getMessage: (T) -> LinkInMessage,
-    ): Collection<Pair<T, LinkOutMessage?>>
+    ): Collection<Pair<T, ProcessSessionMessagesResult>>
 
     fun inboundSessionEstablished(sessionId: String)
     fun messageAcknowledged(sessionId: String)
@@ -68,4 +69,9 @@ internal interface SessionManager : LifecycleWithDominoTile {
         data class Outbound(val counterparties: Counterparties, val session: Session) : SessionDirection()
         object NoSession : SessionDirection()
     }
+
+    data class ProcessSessionMessagesResult(
+        val message: LinkOutMessage?,
+        val sessionCreationRecords: List<Record<String, *>>
+    )
 }

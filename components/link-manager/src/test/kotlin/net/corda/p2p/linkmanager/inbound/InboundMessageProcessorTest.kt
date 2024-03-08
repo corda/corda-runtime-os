@@ -22,9 +22,13 @@ import net.corda.data.p2p.crypto.InitiatorHelloMessage
 import net.corda.data.p2p.crypto.MessageType
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage
 import net.corda.data.p2p.crypto.ResponderHelloMessage
+import net.corda.data.p2p.event.SessionCreated
+import net.corda.data.p2p.event.SessionDirection
+import net.corda.data.p2p.event.SessionEvent
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.messaging.api.records.EventLogRecord
+import net.corda.messaging.api.records.Record
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationResult
@@ -57,6 +61,7 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import net.corda.p2p.linkmanager.TraceableItem
 import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl.Companion.LINK_MANAGER_SUBSYSTEM
+import net.corda.schema.Schemas.P2P.SESSION_EVENTS
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 
@@ -768,7 +773,7 @@ class InboundMessageProcessorTest {
             val response = LinkOutMessage(header, hello)
             val captor = argumentCaptor<List<TraceableItem<LinkInMessage, LinkInMessage>>>()
             whenever(sessionManager.processSessionMessages(captor.capture(), any())).doAnswer {
-                captor.firstValue.map { it to response }
+                captor.firstValue.map { it to SessionManager.ProcessSessionMessagesResult(response, emptyList()) }
             }
 
             processor.onNext(
@@ -790,7 +795,7 @@ class InboundMessageProcessorTest {
             val response = LinkOutMessage(header, hello)
             val captor = argumentCaptor<List<TraceableItem<LinkInMessage, LinkInMessage>>>()
             whenever(sessionManager.processSessionMessages(captor.capture(), any())).doAnswer {
-                captor.firstValue.map { it to response }
+                captor.firstValue.map { it to SessionManager.ProcessSessionMessagesResult(response, emptyList()) }
             }
 
             processor.onNext(
@@ -813,7 +818,7 @@ class InboundMessageProcessorTest {
             val response = LinkOutMessage(header, hello)
             val captor = argumentCaptor<List<TraceableItem<LinkInMessage, LinkInMessage>>>()
             whenever(sessionManager.processSessionMessages(captor.capture(), any())).doAnswer {
-                captor.firstValue.map { it to response }
+                captor.firstValue.map { it to SessionManager.ProcessSessionMessagesResult(response, emptyList()) }
             }
 
             processor.onNext(
@@ -836,7 +841,7 @@ class InboundMessageProcessorTest {
             val response = LinkOutMessage(header, hello)
             val captor = argumentCaptor<List<TraceableItem<LinkInMessage, LinkInMessage>>>()
             whenever(sessionManager.processSessionMessages(captor.capture(), any())).doAnswer {
-                captor.firstValue.map { it to response }
+                captor.firstValue.map { it to SessionManager.ProcessSessionMessagesResult(response, emptyList()) }
             }
 
             processor.onNext(
@@ -849,12 +854,17 @@ class InboundMessageProcessorTest {
         }
 
         @Test
-        fun `null response from sessionManager will produce no records`() {
+        fun `null response from sessionManager will produce session creation records`() {
             val initiatorHelloMessage = mock<InitiatorHelloMessage>()
             val message = LinkInMessage(initiatorHelloMessage)
+            val sessionCreated = SessionEvent(SessionCreated(SessionDirection.OUTBOUND, "test"))
+            val sessionCreationRecord = mock<Record<String, *>> {
+                on { topic } doReturn SESSION_EVENTS
+                on { value } doReturn sessionCreated
+            }
             val captor = argumentCaptor<List<TraceableItem<LinkInMessage, LinkInMessage>>>()
             whenever(sessionManager.processSessionMessages(captor.capture(), any())).doAnswer {
-                captor.firstValue.map { it to null }
+                captor.firstValue.map { it to SessionManager.ProcessSessionMessagesResult(null, listOf(sessionCreationRecord)) }
             }
 
             val records = processor.onNext(
@@ -863,15 +873,23 @@ class InboundMessageProcessorTest {
                 )
             )
 
-            assertThat(records).isEmpty()
+            assertThat(records).hasSize(1).allSatisfy {
+                assertThat(it.topic).isEqualTo(SESSION_EVENTS)
+                assertThat(it.value).isSameAs(sessionCreated)
+            }
         }
 
         @Test
-        fun `non null responses from sessionManager will produce link out message`() {
+        fun `non null responses from sessionManager will produce link out message and session creation records`() {
             val handshake = ResponderHandshakeMessage()
             val message = LinkInMessage(handshake)
             val header = LinkOutHeader(myIdentity.toAvro(), remoteIdentity.toAvro(), NetworkType.CORDA_5, "https://example.com")
-            val response = LinkOutMessage(header, handshake)
+            val sessionCreated = SessionEvent(SessionCreated(SessionDirection.OUTBOUND, "test"))
+            val sessionCreationRecord = mock<Record<String, *>> {
+                on { topic } doReturn SESSION_EVENTS
+                on { value } doReturn sessionCreated
+            }
+            val response = SessionManager.ProcessSessionMessagesResult(LinkOutMessage(header, handshake), listOf(sessionCreationRecord))
             val captor = argumentCaptor<List<TraceableItem<LinkInMessage, LinkInMessage>>>()
             whenever(sessionManager.processSessionMessages(captor.capture(), any())).doAnswer {
                 captor.firstValue.map { it to response }
@@ -883,10 +901,10 @@ class InboundMessageProcessorTest {
                 )
             )
 
-            assertThat(records).hasSize(1).allSatisfy {
-                assertThat(it.topic).isEqualTo(LINK_OUT_TOPIC)
-                assertThat(it.value).isSameAs(response)
-            }
+            val result = records.associate { it.topic to it.value }
+            assertThat(result).hasSize(2)
+            assertThat(result.keys).containsExactlyInAnyOrder(LINK_OUT_TOPIC, SESSION_EVENTS)
+            assertThat(result.values).containsExactlyInAnyOrder(response.message, sessionCreated)
         }
 
         @Test
@@ -899,7 +917,14 @@ class InboundMessageProcessorTest {
             }
             val message = LinkInMessage(hello)
             val header = LinkOutHeader(myIdentity.toAvro(), remoteIdentity.toAvro(), NetworkType.CORDA_5, "https://example.com")
-            val response = LinkOutMessage(header, responderHello)
+            val sessionCreated = SessionEvent(SessionCreated(SessionDirection.OUTBOUND, "test"))
+            val sessionCreationRecord = mock<Record<String, *>> {
+                on { topic } doReturn SESSION_EVENTS
+                on { value } doReturn sessionCreated
+            }
+            val response = SessionManager.ProcessSessionMessagesResult(
+                LinkOutMessage(header, responderHello), listOf(sessionCreationRecord)
+            )
             val captor = argumentCaptor<List<TraceableItem<LinkInMessage, LinkInMessage>>>()
             whenever(sessionManager.processSessionMessages(captor.capture(), any())).doAnswer {
                 captor.firstValue.map { it to response }
@@ -911,10 +936,10 @@ class InboundMessageProcessorTest {
                 )
             )
 
-            assertThat(records).hasSize(1).anySatisfy {
-                assertThat(it.topic).isEqualTo(LINK_OUT_TOPIC)
-                assertThat(it.value).isSameAs(response)
-            }
+            val result = records.associate { it.topic to it.value }
+            assertThat(result).hasSize(2)
+            assertThat(result.keys).containsExactlyInAnyOrder(LINK_OUT_TOPIC, SESSION_EVENTS)
+            assertThat(result.values).containsExactlyInAnyOrder(response.message, sessionCreated)
         }
     }
 

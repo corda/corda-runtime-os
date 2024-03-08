@@ -323,7 +323,7 @@ internal class StatefulSessionManagerImpl(
     override fun <T> processSessionMessages(
         wrappedMessages: Collection<T>,
         getMessage: (T) -> LinkInMessage,
-    ): Collection<Pair<T, LinkOutMessage?>> {
+    ): Collection<Pair<T, SessionManager.ProcessSessionMessagesResult>> {
         val messages = wrappedMessages.map { it to getMessage(it) }
         val results = processInboundSessionMessages(messages) + processOutboundSessionMessages(messages)
 
@@ -336,8 +336,9 @@ internal class StatefulSessionManagerImpl(
             } else {
                 result
             }
-        }.onEach { result ->
-            when (result.result?.message?.payload) {
+        }.map { result ->
+            val linkOutMessage = result.result?.message
+            val sessionCreationRecords = when (linkOutMessage?.payload) {
                 is AvroResponderHelloMessage, is AvroResponderHandshakeMessage -> {
                     result.result.sessionToCache?.let { sessionToCache ->
                         val session = SessionManager.SessionDirection.Inbound(
@@ -345,8 +346,8 @@ internal class StatefulSessionManagerImpl(
                             sessionToCache,
                         )
                         sessionCache.putInboundSession(session)
-                        sessionEventPublisher.sessionCreated(sessionToCache.sessionId, SessionDirection.INBOUND)
-                    }
+                        sessionEventPublisher.recordsForSessionCreated(sessionToCache.sessionId, SessionDirection.INBOUND)
+                    } ?: emptyList()
                 }
                 is AvroInitiatorHelloMessage, is AvroInitiatorHandshakeMessage, null -> {
                     result.result?.sessionToCache?.let { sessionToCache ->
@@ -356,12 +357,12 @@ internal class StatefulSessionManagerImpl(
                             sessionToCache,
                         )
                         sessionCache.putOutboundSession(key, outboundSession)
-                        sessionEventPublisher.sessionCreated(key, SessionDirection.OUTBOUND)
-                    }
+                        sessionEventPublisher.recordsForSessionCreated(key, SessionDirection.OUTBOUND)
+                    } ?: emptyList()
                 }
+                else -> emptyList()
             }
-        }.map { result ->
-            result.traceable to result.result?.message
+            result.traceable to SessionManager.ProcessSessionMessagesResult(result.result?.message, sessionCreationRecords)
         }
     }
 

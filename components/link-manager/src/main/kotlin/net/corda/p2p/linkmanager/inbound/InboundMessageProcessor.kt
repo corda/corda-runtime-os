@@ -128,27 +128,32 @@ internal class InboundMessageProcessor(
             message.item
         }
         return responses.map { (traceableMessage, response) ->
-            if (response != null) {
-                when (response.payload) {
-                    is ResponderHelloMessage -> {
-                        recordOutboundSessionMessagesMetric(response.header.sourceIdentity)
-                        TraceableItem(
-                            listOf(
-                                Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response),
-                            ),
-                            traceableMessage.originalRecord
-                        )
-                    }
-                    else -> {
-                        recordOutboundSessionMessagesMetric(response.header.sourceIdentity)
-                        TraceableItem(
-                            listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response)),
-                            traceableMessage.originalRecord
-                        )
-                    }
+            when (response.message?.payload) {
+                is ResponderHelloMessage -> {
+                    recordOutboundSessionMessagesMetric(response.message.header.sourceIdentity)
+                    TraceableItem(
+                        listOf(
+                            Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response.message),
+                        ) + response.sessionCreationRecords, traceableMessage.originalRecord
+                    )
                 }
-            } else {
-                TraceableItem(emptyList(), traceableMessage.originalRecord)
+
+                null -> {
+                    TraceableItem(
+                        response.sessionCreationRecords, traceableMessage.originalRecord
+                    )
+                }
+
+                else -> {
+                    recordOutboundSessionMessagesMetric(response.message.header.sourceIdentity)
+                    TraceableItem(
+                        listOf(
+                            Record(
+                                Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response.message
+                            )
+                        ) + response.sessionCreationRecords, traceableMessage.originalRecord
+                    )
+                }
             }
         }
     }

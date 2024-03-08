@@ -26,8 +26,8 @@ class StatefulSessionEventPublisher(
     private val config = PublisherConfig(CLIENT_ID)
     private val publisher = PublisherWithDominoLogic(publisherFactory, coordinatorFactory, config, messagingConfiguration)
 
-    fun sessionCreated(key: String, direction: SessionDirection) {
-        publisher.publish(listOf(Record(Schemas.P2P.SESSION_EVENTS, key, SessionEvent(SessionCreated(direction, key)))))
+    fun recordsForSessionCreated(key: String, direction: SessionDirection): List<Record<String, *>> {
+        return listOf(Record(Schemas.P2P.SESSION_EVENTS, key, SessionEvent(SessionCreated(direction, key))))
     }
 
     fun sessionDeleted(key: String) {
