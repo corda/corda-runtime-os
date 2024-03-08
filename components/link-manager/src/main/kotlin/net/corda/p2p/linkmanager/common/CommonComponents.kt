@@ -20,7 +20,6 @@ import net.corda.p2p.linkmanager.forwarding.gateway.TlsCertificatesPublisher
 import net.corda.p2p.linkmanager.forwarding.gateway.TrustStoresPublisher
 import net.corda.p2p.linkmanager.forwarding.gateway.mtls.ClientCertificatePublisher
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
-import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
 import net.corda.p2p.linkmanager.sessions.DeadSessionMonitor
 import net.corda.p2p.linkmanager.sessions.DeadSessionMonitorConfigurationHandler
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueuesImpl
@@ -32,7 +31,6 @@ import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 import net.corda.p2p.linkmanager.sessions.expiration.StaleSessionProcessor
 import net.corda.schema.Schemas
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.utilities.flags.Features
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import java.util.concurrent.Executors
@@ -56,16 +54,10 @@ internal class CommonComponents(
     internal val stateManager: StateManager,
     schemaRegistry: AvroSchemaRegistry,
     sessionEncryptionOpsClient: SessionEncryptionOpsClient,
-    features: Features = Features(),
 ) : LifecycleWithDominoTile {
     private companion object {
         const val LISTENER_NAME = "link.manager.group.policy.listener"
     }
-
-    internal val inboundAssignmentListener = InboundAssignmentListener(
-        lifecycleCoordinatorFactory,
-        Schemas.P2P.LINK_IN_TOPIC,
-    )
 
     internal val messageConverter = MessageConverter(
         groupPolicyProvider,
@@ -109,38 +101,11 @@ internal class CommonComponents(
     private val deadSessionMonitorConfigHandler =
         DeadSessionMonitorConfigurationHandler(deadSessionMonitor, configurationReaderService)
 
-    internal val sessionManager = if (features.useStatefulSessionManager) {
-        StatefulSessionManagerImpl(
-            subscriptionFactory,
-            messagingConfiguration,
-            lifecycleCoordinatorFactory,
-            stateManager,
-            SessionManagerImpl(
-                groupPolicyProvider,
-                membershipGroupReaderProvider,
-                cryptoOpsClient,
-                messagesPendingSession,
-                publisherFactory,
-                configurationReaderService,
-                lifecycleCoordinatorFactory,
-                messagingConfiguration,
-                inboundAssignmentListener,
-                linkManagerHostingMap,
-                clock = clock,
-                trackSessionHealthAndReplaySessionMessages = false,
-            ),
-            StateConvertor(
-                schemaRegistry,
-                sessionEncryptionOpsClient,
-            ),
-            clock,
-            membershipGroupReaderProvider,
-            deadSessionMonitor,
-            schemaRegistry,
-            sessionCache,
-            sessionEventPublisher,
-        )
-    } else {
+    internal val sessionManager = StatefulSessionManagerImpl(
+        subscriptionFactory,
+        messagingConfiguration,
+        lifecycleCoordinatorFactory,
+        stateManager,
         SessionManagerImpl(
             groupPolicyProvider,
             membershipGroupReaderProvider,
@@ -150,11 +115,20 @@ internal class CommonComponents(
             configurationReaderService,
             lifecycleCoordinatorFactory,
             messagingConfiguration,
-            inboundAssignmentListener,
             linkManagerHostingMap,
-            clock = clock,
-        )
-    }
+            sessionCache = sessionCache,
+        ),
+        StateConvertor(
+            schemaRegistry,
+            sessionEncryptionOpsClient,
+        ),
+        clock,
+        membershipGroupReaderProvider,
+        deadSessionMonitor,
+        schemaRegistry,
+        sessionCache,
+        sessionEventPublisher,
+    )
 
     private val trustStoresPublisher = TrustStoresPublisher(
         subscriptionFactory,
@@ -221,5 +195,6 @@ internal class CommonComponents(
             staleSessionProcessor.dominoTile.toNamedLifecycle(),
         ) + externalManagedDependencies,
         configurationChangeHandler = deadSessionMonitorConfigHandler,
+        onClose = { sessionCache.close() }
     )
 }

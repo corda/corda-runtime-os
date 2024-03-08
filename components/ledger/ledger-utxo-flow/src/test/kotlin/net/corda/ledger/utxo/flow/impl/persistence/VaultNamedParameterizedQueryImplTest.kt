@@ -8,7 +8,6 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.VaultNamedQue
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.VirtualNodeContext
-import net.corda.utilities.days
 import net.corda.utilities.time.Clock
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.application.persistence.PagedQuery.ResultSet
@@ -90,13 +89,6 @@ class VaultNamedParameterizedQueryImplTest {
     @Test
     fun `setLimit cannot be zero`() {
         assertThatThrownBy { query.setLimit(0) }.isInstanceOf(IllegalArgumentException::class.java)
-    }
-
-    @Test
-    fun `cannot set timestamp limit to a future date`() {
-        assertThatThrownBy { query.setCreatedTimestampLimit(Instant.now().plusMillis(1.days.toMillis())) }
-            .isInstanceOf(IllegalArgumentException::class.java)
-            .hasStackTraceContaining("Timestamp limit must not be in the future.")
     }
 
     @Test

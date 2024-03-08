@@ -37,10 +37,10 @@ constructor(
         val utxoTokenMap = listOfPairsStateAndUtxoToken.associate { it.first.ref to it.second }
 
         // persist the transaction
-        persistenceService.persistTransaction(transaction, utxoTokenMap)
+        val persistedAt = persistenceService.persistTransaction(transaction, utxoTokenMap)
 
         // return output records
-        return listOf(utxoOutputRecordFactory.getPersistTransactionSuccessRecord(externalEventContext))
+        return listOf(utxoOutputRecordFactory.getPersistTransactionSuccessRecord(persistedAt, externalEventContext))
     }
 
     private fun getTokens(
@@ -60,6 +60,7 @@ constructor(
             val observer = tokenObservers.getObserverFor(stateAndRef.state.contractStateType)
             if (observer != null) {
                 return@flatMap onCommit(observer, stateAndRef) { obs, context ->
+                    @Suppress("removal")
                     obs.onCommit(
                         context.stateAndRef.state.contractState,
                         context.digestService
