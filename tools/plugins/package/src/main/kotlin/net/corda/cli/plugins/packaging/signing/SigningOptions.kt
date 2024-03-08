@@ -20,9 +20,8 @@ class SigningOptions {
     var tsaUrl: String? = null
 
     @CommandLine.Option(names = ["--sig-file"], description = ["Base file name for signature related files"])
-    private var _sigFile: String? = null
+    private var sigFile: String? = null
 
-    internal val asSigningOptionsSdk: SigningOptionsSdk by lazy {
-        SigningOptionsSdk(keyStoreFileName, keyStorePass, keyAlias, tsaUrl, _sigFile)
-    }
+    internal val asSigningOptionsSdk: SigningOptionsSdk
+        get() = SigningOptionsSdk(keyStoreFileName, keyStorePass, keyAlias, tsaUrl, sigFile)
 }
