@@ -199,6 +199,7 @@ internal class VirtualNodeRestResourceImpl(
                             PublisherConfig(VIRTUAL_NODE_ASYNC_OPERATION_CLIENT_ID)
                         )
                     }
+                    coordinator.updateStatus(LifecycleStatus.UP, "ConfigChangedEvent")
                 }
             }
         }
