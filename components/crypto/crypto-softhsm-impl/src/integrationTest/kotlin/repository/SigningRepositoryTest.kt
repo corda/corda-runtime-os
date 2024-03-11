@@ -39,7 +39,6 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.mock
 import java.security.KeyPairGenerator
 import java.security.spec.AlgorithmParameterSpec
-import java.sql.SQLIntegrityConstraintViolationException
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -700,6 +699,6 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
         saveWrappingKey(emf, info2.wrappingKeyAlias)
         val ctx2 = createSigningWrappedKeySaveContext(info2)
 
-        assertThrows<SQLIntegrityConstraintViolationException> { repo.savePrivateKey(ctx2) }
+        assertThrows<PersistenceException> { repo.savePrivateKey(ctx2) }
     }
 }
