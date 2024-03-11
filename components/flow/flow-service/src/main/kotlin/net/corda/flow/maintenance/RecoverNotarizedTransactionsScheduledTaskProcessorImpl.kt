@@ -36,6 +36,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 @Component(service = [RecoverNotarizedTransactionsScheduledTaskProcessor::class])
 class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate constructor(
@@ -152,15 +153,16 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
         private fun hasUtxoWithNotaryCpk(virtualNode: VirtualNodeInfo): Boolean {
             return cpiInfoReadService.get(virtualNode.cpiIdentifier)?.let { cpiMetadata ->
                 val hasContracts = cpiMetadata.cpksMetadata.any { it.isContractCpk() }
-                val hasNotaryClientFlow = cpiMetadata.cpksMetadata.any { it.cordappManifest.notaryPluginFlows.isNotEmpty() }
-                hasContracts && hasNotaryClientFlow
+//                val hasNotaryClientFlow = cpiMetadata.cpksMetadata.any { it.cordappManifest.notaryPluginFlows.isNotEmpty() }
+                hasContracts // && hasNotaryClientFlow
             } ?: false
         }
 
         private fun createRecoveryFlowStartEvent(virtualNode: VirtualNodeInfo): Triple<ShortHash, FlowMapperEvent, FlowStatus> {
             val virtualNodeAvro = virtualNode.toAvro()
+            val instant = Instant.now().minus(5, ChronoUnit.MINUTES)
             val clientRequestId =
-                "recover-notarized-transactions-${virtualNode.holdingIdentity.shortHash}-${Instant.now().toEpochMilli()}"
+                "recover-notarized-transactions-${virtualNode.holdingIdentity.shortHash}-${instant.toEpochMilli()}"
 
             // TODO Platform properties to be populated correctly.
             // This is a placeholder which indicates access to everything, see CORE-6076
@@ -173,7 +175,7 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
                 clientRequestId,
                 virtualNodeAvro,
                 flowClassName = "com.r3.corda.notary.plugin.common.recovery.NotarizedTransactionRecoveryFlow",
-                flowStartArgs = objectMapper.writeValueAsString(mapOf("instant" to Instant.now())),
+                flowStartArgs = objectMapper.writeValueAsString(mapOf("instant" to instant)),
                 flowContextPlatformProperties
             )
 
