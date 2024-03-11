@@ -115,6 +115,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val messages = consumer.poll(pollTimeout)
         val startTimestamp = System.nanoTime()
         val polledRecords = messages.map { it.toRecord() }.groupBy { it.key }
+        var consumerNeedsToBeReset = false
         if (messages.isNotEmpty()) {
             val statesToDelete = mutableListOf<State>()
             val states = stateManager.get(polledRecords.keys.map { it.toString() })
@@ -149,6 +150,10 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                             }
                             EventProcessingOutput(listOf(), stateChange)
                         }
+                    } catch (e: CordaMessageAPIConsumerResetException) {
+                        log.warn("Event processing threw consumer reset exception for keys: ${group.keys}")
+                        consumerNeedsToBeReset = true
+                        mapOf()
                     }
                 }.fold(mapOf<K, EventProcessingOutput>()) { acc, cur ->
                     acc + cur
@@ -157,8 +162,11 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 }
 
                 if (outputs.any { it.value.stateChangeAndOperation.outputState?.metadata?.get(PROCESSING_FAILURE) == true }) {
-                    throw CordaMessageAPIConsumerResetException("Processing failure from external event processing")
+                    log.warn("Processing failure recorded in metadata which requires consumer reset and batch retry")
+                    consumerNeedsToBeReset = true
                 }
+
+                if (consumerNeedsToBeReset) break
 
                 // Persist state changes, send async outputs and setup to reprocess states that fail to persist
                 val (failedStates, deleteStates) = processOutputs(outputs)
@@ -168,15 +176,21 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 }
                 groups = groupAllocator.allocateGroups(generateInputs(failedStates.values, failedRecords), config)
             }
-            metrics.commitTimer.recordCallable {
-                consumer.syncCommitOffsets()
+            if (!consumerNeedsToBeReset) {
+                metrics.commitTimer.recordCallable {
+                    consumer.syncCommitOffsets()
+                }
+                //Delete occurs after committing offsets bus to satisfy replay requirements in the Flow Engine. Ignore Failures, these are
+                // logged in SM and recorded by a metric
+                stateManager.delete(statesToDelete)
             }
-            //Delete occurs after committing offsets bus to satisfy replay requirements in the Flow Engine. Ignore Failures, these are
-            // logged in SM and recorded by a metric
-            stateManager.delete(statesToDelete)
         }
-        // this won't be recorded if we throw the consumer reset exception
         metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
+        if (consumerNeedsToBeReset) {
+            throw CordaMessageAPIConsumerResetException(
+                "Event processing incurred error(s) that require resetting consumer and retrying batch."
+            )
+        }
     }
 
     /**
