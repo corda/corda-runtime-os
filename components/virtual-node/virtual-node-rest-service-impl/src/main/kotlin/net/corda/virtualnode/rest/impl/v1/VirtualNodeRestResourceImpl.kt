@@ -160,7 +160,8 @@ internal class VirtualNodeRestResourceImpl(
                 coordinator.updateStatus(LifecycleStatus.UP, "StartEvent")
             }
 
-            is StopEvent -> coordinator.updateStatus(LifecycleStatus.DOWN,
+            is StopEvent -> coordinator.updateStatus(
+                LifecycleStatus.DOWN,
                 "StopEvent - error = ${event.errored}"
             )
             is RegistrationStatusChangeEvent -> {
