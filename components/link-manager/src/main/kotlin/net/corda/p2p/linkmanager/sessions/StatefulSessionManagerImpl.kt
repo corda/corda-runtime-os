@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager.sessions
 
-import io.micrometer.core.instrument.Gauge
 import net.corda.crypto.client.SessionEncryptionOpsClient
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.bytes
@@ -21,11 +20,10 @@ import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.metrics.CordaMetrics
-import net.corda.metrics.CordaMetrics.Metric.EstimatedSessionCacheSize
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
@@ -38,6 +36,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSession
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.SessionAlreadyPending
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.SessionEstablished
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.alreadySessionWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.couldNotFindSessionInformation
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.noSessionWarning
 import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventProcessor
 import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
@@ -54,6 +53,7 @@ import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.time.Clock
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
@@ -64,7 +64,6 @@ import java.security.MessageDigest
 import java.time.Duration
 import java.util.Base64
 import java.util.UUID
-import java.util.concurrent.atomic.AtomicReference
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage as AvroInitiatorHandshakeMessage
 import net.corda.data.p2p.crypto.InitiatorHelloMessage as AvroInitiatorHelloMessage
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage as AvroResponderHandshakeMessage
@@ -90,10 +89,6 @@ internal class StatefulSessionManagerImpl(
         private val SESSION_VALIDITY_PERIOD: Duration = Duration.ofDays(7)
         private val logger: Logger = LoggerFactory.getLogger(StatefulSessionManagerImpl::class.java)
     }
-
-    // These metrics must be removed on shutdown as the MeterRegistry holds references to their lambdas.
-    private val outboundCacheSize = AtomicReference<Gauge>()
-    private val inboundCacheSize = AtomicReference<Gauge>()
 
     override fun <T> processOutboundMessages(
         wrappedMessages: Collection<T>,
@@ -500,9 +495,37 @@ internal class StatefulSessionManagerImpl(
         val action: StateManagerAction?,
         val sessionState: SessionManager.SessionState,
     )
+    private fun AuthenticatedMessage.getSessionCounterpartiesFromMessage(): SessionManager.SessionCounterparties? {
+        val peer = this.header.destination
+        val us = this.header.source
+        val status = this.header.statusFilter
+        val ourInfo = membershipGroupReaderProvider.lookup(
+            us.toCorda(), us.toCorda(), MembershipStatusFilter.ACTIVE_OR_SUSPENDED
+        )
+        // could happen when member has pending registration or something went wrong
+        if (ourInfo == null) {
+            logger.warn("Could not get member information about us from message sent from $us" +
+                    " to $peer with ID `${this.header.messageId}`.")
+        }
+        val counterpartyInfo = membershipGroupReaderProvider.lookup(us.toCorda(), peer.toCorda(), status)
+        if (counterpartyInfo == null) {
+            logger.couldNotFindSessionInformation(us.toCorda().shortHash, peer.toCorda().shortHash, this.header.messageId)
+            return null
+        }
+        return SessionManager.SessionCounterparties(
+            us.toCorda(),
+            peer.toCorda(),
+            status,
+            counterpartyInfo.serial,
+            isCommunicationBetweenMgmAndMember(ourInfo, counterpartyInfo)
+        )
+    }
+    private fun isCommunicationBetweenMgmAndMember(ourInfo: MemberInfo?, counterpartyInfo: MemberInfo): Boolean {
+        return counterpartyInfo.isMgm || ourInfo?.isMgm == true
+    }
 
     private fun <T> OutboundMessageContext<T>.sessionCounterparties() =
-        sessionManagerImpl.getSessionCounterpartiesFromMessage(message.message)
+        message.message.getSessionCounterpartiesFromMessage()
 
     private fun calculateOutboundSessionKey(
         source: HoldingIdentity,
@@ -566,9 +589,10 @@ internal class StatefulSessionManagerImpl(
         val allCached = sessionCache.getAllPresentOutboundSessions(messagesAndKeys.keys.filterNotNull())
         return allCached.mapValues { entry ->
             val contexts = messagesAndKeys[entry.key]
-            val counterparties = contexts?.firstOrNull()?.let {
-                sessionManagerImpl.getSessionCounterpartiesFromMessage(it.message.message)
-            } ?: return@mapValues emptyList()
+            val counterparties = contexts?.firstOrNull()
+                ?.message
+                ?.message
+                ?.getSessionCounterpartiesFromMessage() ?: return@mapValues emptyList()
 
             contexts.map { context ->
                 context.trace to SessionEstablished(entry.value.session, counterparties)
@@ -1188,28 +1212,10 @@ internal class StatefulSessionManagerImpl(
         sessionCache,
     )
 
-    private fun onTileOpen() {
-        outboundCacheSize.set(
-            EstimatedSessionCacheSize { sessionCache.getEstimatedOutboundCacheSize() }.builder()
-                .withTag(CordaMetrics.Tag.SessionDirection, SessionDirection.OUTBOUND.toString()).build()
-        )
-        inboundCacheSize.set(
-            EstimatedSessionCacheSize { sessionCache.getEstimatedInboundCacheSize() }.builder()
-                .withTag(CordaMetrics.Tag.SessionDirection, SessionDirection.INBOUND.toString()).build()
-        )
-    }
-
-    private fun onTileClose() {
-        CordaMetrics.registry.remove(inboundCacheSize.get())
-        CordaMetrics.registry.remove(outboundCacheSize.get())
-    }
-
     override val dominoTile =
         ComplexDominoTile(
             this::class.java.simpleName,
             coordinatorFactory,
-            onStart = ::onTileOpen,
-            onClose = ::onTileClose,
             dependentChildren =
             setOf(
                 stateManager.name,

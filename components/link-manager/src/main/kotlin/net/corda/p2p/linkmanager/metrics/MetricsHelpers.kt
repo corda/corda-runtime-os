@@ -13,7 +13,6 @@ import java.time.Instant
 
 const val P2P_SUBSYSTEM = "p2p"
 const val SESSION_MESSAGE_TYPE = "SessionMessage"
-const val HEARTBEAT_MESSAGE = "HeartbeatMessage"
 
 fun recordOutboundMessagesMetric(message: AuthenticatedMessage) {
     message.header.let {
@@ -32,11 +31,6 @@ fun recordOutboundMessagesMetric(message: OutboundUnauthenticatedMessage) {
 fun recordOutboundSessionMessagesMetric(sourceVnode: HoldingIdentity) {
     recordOutboundMessagesMetric(sourceVnode.groupId,
         P2P_SUBSYSTEM, SESSION_MESSAGE_TYPE)
-}
-
-fun recordOutboundHeartbeatMessagesMetric(sourceVnode: HoldingIdentity) {
-    recordOutboundMessagesMetric(sourceVnode.groupId,
-        P2P_SUBSYSTEM, HEARTBEAT_MESSAGE)
 }
 
 fun recordOutboundSessionMessagesMetric(sourceVnode: net.corda.data.identity.HoldingIdentity) {
@@ -66,10 +60,6 @@ fun recordInboundSessionMessagesMetric(datapoints: Int = 1) {
     repeat(datapoints) {
         recordInboundMessagesMetric(null, P2P_SUBSYSTEM, SESSION_MESSAGE_TYPE)
     }
-}
-
-fun recordInboundHeartbeatMessagesMetric(destinationVnode: HoldingIdentity) {
-    recordInboundMessagesMetric(destinationVnode.groupId, P2P_SUBSYSTEM, HEARTBEAT_MESSAGE)
 }
 
 private fun recordInboundMessagesMetric(group: String?, subsystem: String, messageType: String) {
