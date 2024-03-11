@@ -14,13 +14,14 @@ class ConfigException(
     schemaVersion: ConfigurationSchemaVersion,
     config: String
 ) : HttpApiException(
-        responseCode = ResponseCode.INTERNAL_SERVER_ERROR,
-        message = "$errorType: $errorMessage",
-        details = mapOf(
-            "schemaVersion" to "${schemaVersion.majorVersion}.${schemaVersion.minorVersion}",
-            "config" to config
-        )
-    )
+    responseCode = ResponseCode.INTERNAL_SERVER_ERROR,
+    message = "Config Version Error",
+    details = mapOf(
+        "schemaVersion" to "${schemaVersion.majorVersion}.${schemaVersion.minorVersion}",
+        "config" to config
+    ),
+    exceptionDetails = ExceptionDetails(errorType, errorMessage)
+)
 
 /**
  * Incorrect version for config update.
