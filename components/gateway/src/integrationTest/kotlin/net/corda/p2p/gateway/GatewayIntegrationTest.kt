@@ -7,7 +7,7 @@ import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.test.certificates.generation.CertificateAuthority
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
-import net.corda.crypto.test.certificates.generation.PrivateKeyWithCertificate
+import net.corda.crypto.test.certificates.generation.PrivateKeyWithCertificateChain
 import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.data.identity.HoldingIdentity
@@ -1354,7 +1354,7 @@ internal class GatewayIntegrationTest : TestBase() {
             )
         }
 
-        private fun PrivateKeyWithCertificate.toKeyStoreAndPassword(): KeyStoreWithPassword {
+        private fun PrivateKeyWithCertificateChain.toKeyStoreAndPassword(): KeyStoreWithPassword {
             return KeyStoreWithPassword(
                 this.toKeyStore(),
                 CertificateAuthority.PASSWORD

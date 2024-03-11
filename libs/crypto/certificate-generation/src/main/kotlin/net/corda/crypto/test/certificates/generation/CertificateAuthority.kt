@@ -22,7 +22,7 @@ interface CertificateAuthority {
     val caCertificate: Certificate
 
     /**
-     * Generate a keypair and a certificate with a single host name.
+     * Generate a keypair and a certificate chain where the leaf certificate has a single host name.
      *
      * @param host - the name of the host.
      * @return A private key and certificates.
@@ -30,15 +30,15 @@ interface CertificateAuthority {
     fun generateKeyAndCertificates(host: String) = generateKeyAndCertificates(listOf(host))
 
     /**
-     * Generate a keypair and a certificate with a list of hosts names.
+     * Generate a keypair and a certificate chain where the leaf certificate has a list of hosts names.
      *
      * @param hosts - the list of hosts.
      * @return A private key and certificates.
      */
-    fun generateKeyAndCertificates(hosts: Collection<String>): PrivateKeyWithCertificate
+    fun generateKeyAndCertificates(hosts: Collection<String>): PrivateKeyWithCertificateChain
 
     /**
-     * Generate a certificate from a [publicKey] with a list of hosts names.
+     * Generate a certificate chain from a [publicKey] with a list of hosts names.
      *
      * @param publicKey -
      * @param hosts - the list of hosts.
@@ -47,7 +47,7 @@ interface CertificateAuthority {
     fun generateCertificates(hosts: Collection<String>, publicKey: PublicKey): Collection<Certificate>
 
     /**
-     * Sign a certificate from a certificate signing request.
+     * Sign a certificate chain from a certificate signing request.
      *
      * @param csr - The request.
      * @return The sign certificate in a chain.

@@ -250,7 +250,7 @@ class CertificateRestResourceImpl @Activate constructor(
                     throw InvalidInputDataException(
                         details = mapOf(
                             "certificate" to
-                                "This previous certificate  in the chain was issued by ${previousCertificate.issuerX500Principal} and " +
+                                "This previous certificate in the chain was issued by ${previousCertificate.issuerX500Principal} and " +
                                 "not by ${certificate.subjectX500Principal}"
                         )
                     )

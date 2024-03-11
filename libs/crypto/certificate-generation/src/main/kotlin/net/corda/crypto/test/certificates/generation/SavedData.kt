@@ -1,6 +1,6 @@
 package net.corda.crypto.test.certificates.generation
 
 internal data class SavedData(
-    val privateKeyAndCertificate: PrivateKeyWithCertificate,
+    val privateKeyAndCertificate: PrivateKeyWithCertificateChain,
     val firstSerialNumber: Long,
 )

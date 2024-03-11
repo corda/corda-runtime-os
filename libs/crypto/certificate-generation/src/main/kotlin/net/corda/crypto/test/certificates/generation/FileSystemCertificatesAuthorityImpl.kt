@@ -42,7 +42,7 @@ internal class FileSystemCertificatesAuthorityImpl(
                 }
                 val alias = keyStore.aliases().nextElement()
                 SavedData(
-                    PrivateKeyWithCertificate(
+                    PrivateKeyWithCertificateChain(
                         keyStore.getKey(alias, PASSWORD.toCharArray())
                                 as PrivateKey,
                         keyStore.getCertificateChain(alias).toList()
