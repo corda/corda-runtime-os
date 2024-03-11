@@ -35,7 +35,6 @@ import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestTyp
 import net.corda.libs.virtualnode.endpoints.v1.types.UpdateVirtualNodeDbRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
-import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -74,7 +73,6 @@ import net.corda.virtualnode.rest.converters.MessageConverter
 import net.corda.virtualnode.rest.converters.impl.MessageConverterImpl
 import net.corda.virtualnode.rest.factories.RequestFactory
 import net.corda.virtualnode.rest.factories.impl.RequestFactoryImpl
-import net.corda.virtualnode.rest.impl.status.CacheLoadCompleteEvent
 import net.corda.virtualnode.rest.impl.validation.VirtualNodeValidationService
 import net.corda.virtualnode.rest.impl.validation.impl.VirtualNodeValidationServiceImpl
 import org.osgi.service.component.annotations.Activate
@@ -200,12 +198,6 @@ internal class VirtualNodeRestResourceImpl(
                             PublisherConfig(VIRTUAL_NODE_ASYNC_OPERATION_CLIENT_ID)
                         )
                     }
-                }
-            }
-
-            is CustomEvent -> {
-                if ((event.payload as? CacheLoadCompleteEvent) != null) {
-                    coordinator.updateStatus(LifecycleStatus.UP)
                 }
             }
         }
