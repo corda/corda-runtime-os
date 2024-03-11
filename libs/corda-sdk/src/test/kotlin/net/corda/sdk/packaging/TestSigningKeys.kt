@@ -17,9 +17,21 @@ object TestSigningKeys {
             ?: throw IllegalStateException("$filePath not found!")
     }
 
-    val SIGNING_KEY_1_ALIAS = "signing key 1"
-    val SIGNING_KEY_2_ALIAS = "signing key 2"
+    const val SIGNING_KEY_1_ALIAS = "signing key 1"
+    const val SIGNING_KEY_2_ALIAS = "signing key 2"
 
     val SIGNING_KEY_1 = privateKeyEntry(SIGNING_KEY_1_ALIAS, resourceInputStream("/signingkeys.pfx"))
     val SIGNING_KEY_2 = privateKeyEntry(SIGNING_KEY_2_ALIAS, resourceInputStream("/signingkeys.pfx"))
+
+    const val CPK_SIGNER_NAME = "CPK-SIG"
+    const val CPB_SIGNER_NAME = "CPB-SIG"
+    const val CPI_SIGNER_NAME = "CPI-SIG"
+    val CPK_SIGNER = net.corda.libs.packaging.testutils.TestUtils.Signer(
+        CPK_SIGNER_NAME,
+        SIGNING_KEY_2
+    )
+    val CPB_SIGNER = net.corda.libs.packaging.testutils.TestUtils.Signer(
+        CPB_SIGNER_NAME,
+        SIGNING_KEY_1
+    )
 }

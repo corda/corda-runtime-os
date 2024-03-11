@@ -10,14 +10,14 @@ package net.corda.sdk.packaging.signing
  * If not provided, generate from [keyAlias], following jarsigner requirements
  */
 data class SigningOptions(
-    val keyStoreFileName: String,
+    val keyStoreFileName: String, // TODO use Path
     val keyStorePass: String,
     val keyAlias: String,
     val tsaUrl: String? = null,
     private val _signatureFile: String? = null,
 ) {
     // The following has the same behavior as jarsigner in terms of signature files naming.
-    val signatureFile: String
+    val signatureFile: String // TODO move logic to SigningHelpers
         get() =
             _signatureFile ?: keyAlias.run {
                 var str = this

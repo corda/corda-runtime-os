@@ -1,9 +1,5 @@
 package net.corda.sdk.packaging
 
-import net.corda.libs.packaging.testutils.TestUtils
-import net.corda.sdk.packaging.signing.SigningOptions
-import java.io.ByteArrayOutputStream
-import java.io.PrintStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
@@ -14,46 +10,21 @@ import java.util.zip.ZipInputStream
 import kotlin.math.min
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
-import java.io.FileNotFoundException
-import java.io.InputStream
-import java.security.KeyStore
 
 internal object TestUtils {
-    fun captureStdErr(target: () -> Unit): String {
-        val original = System.err
-        var outText = ""
-        try {
-            val byteArrayOutputStream = ByteArrayOutputStream()
-            System.setErr(PrintStream(byteArrayOutputStream))
-
-            target()
-
-            outText = byteArrayOutputStream.toString().replace(System.lineSeparator(), "\n")
-
-        } finally {
-            System.setErr(original)
-            System.err.write(outText.toByteArray())
-        }
-        return outText
-    }
-
     fun getManifestMainAttributesAndEntries(cpxFile: Path) =
         JarInputStream(Files.newInputStream(cpxFile, StandardOpenOption.READ)).use {
             val manifest = it.manifest
             manifest.mainAttributes to manifest.entries
         }
 
-    fun getSignatureJarEntries(cpbFile: Path): Set<JarEntry> {
-        fun isSignatureFile(entryName: String): Boolean =
-            entryName.endsWith(".SF")
-
+    private fun getJarEntriesByEntryNamePredicate(cpbFile: Path, predicate: (String) -> Boolean): Set<JarEntry> {
         val hashedJarEntries = mutableSetOf<JarEntry>()
         JarInputStream(Files.newInputStream(cpbFile, StandardOpenOption.READ)).use {
             var jarEntry = it.nextJarEntry
             while (jarEntry != null) {
                 val jarEntryName = jarEntry.name
-                if (jarEntryName.uppercase() != "META-INF/MANIFEST.MF" &&
-                    isSignatureFile(jarEntryName)) {
+                if (predicate(jarEntryName)) {
                     hashedJarEntries.add(jarEntry)
                 }
                 jarEntry = it.nextJarEntry
@@ -62,26 +33,28 @@ internal object TestUtils {
         return hashedJarEntries
     }
 
-    fun getSignatureBlockJarEntries(cpbFile: Path): Set<JarEntry> {
-        fun isSignatureBlockFile(entryName: String): Boolean =
-            entryName.endsWith(".RSA") ||
-                    entryName.endsWith(".DSA") ||
-                    entryName.endsWith(".EC")
+    private fun isSignatureFile(entryName: String): Boolean =
+        entryName.endsWith(".SF")
 
-        val signingJarEntries = mutableSetOf<JarEntry>()
-        JarInputStream(Files.newInputStream(cpbFile, StandardOpenOption.READ)).use {
-            var jarEntry = it.nextJarEntry
-            while (jarEntry != null) {
-                val jarEntryName = jarEntry.name
-                if (jarEntryName.uppercase() != "META-INF/MANIFEST.MF" &&
-                    isSignatureBlockFile(jarEntryName)) {
-                    signingJarEntries.add(jarEntry)
-                }
-                jarEntry = it.nextJarEntry
-            }
+    private fun isSignatureBlockFile(entryName: String): Boolean =
+        entryName.endsWith(".RSA") ||
+                entryName.endsWith(".DSA") ||
+                entryName.endsWith(".EC")
+
+    fun getNonSignatureJarEntries(cpbFile: Path): Set<JarEntry> =
+        getJarEntriesByEntryNamePredicate(cpbFile) { entryName ->
+            !isSignatureBlockFile(entryName) && !isSignatureFile(entryName)
         }
-        return signingJarEntries
-    }
+
+    fun getSignatureJarEntries(cpbFile: Path): Set<JarEntry> =
+        getJarEntriesByEntryNamePredicate(cpbFile) { entryName ->
+            entryName.uppercase() != "META-INF/MANIFEST.MF" && isSignatureFile(entryName)
+        }
+
+    fun getSignatureBlockJarEntries(cpbFile: Path): Set<JarEntry> =
+        getJarEntriesByEntryNamePredicate(cpbFile) { entryName ->
+            entryName.uppercase() != "META-INF/MANIFEST.MF" && isSignatureBlockFile(entryName)
+        }
 
     // After Cpx entries are found in Cpxs, checks if their contents are equal.
     fun jarEntriesContentIsEqualInCpxs(

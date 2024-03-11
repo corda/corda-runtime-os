@@ -6,31 +6,29 @@ import java.nio.file.StandardOpenOption
 import java.util.jar.Attributes
 import net.corda.libs.packaging.testutils.cpb.TestCpbV2Builder
 import net.corda.libs.packaging.testutils.cpk.TestCpkV2Builder
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.sdk.packaging.CreateCpiV2.CPI_FORMAT_ATTRIBUTE
 import net.corda.sdk.packaging.CreateCpiV2.CPI_FORMAT_ATTRIBUTE_NAME
 import net.corda.sdk.packaging.CreateCpiV2.CPI_NAME_ATTRIBUTE_NAME
 import net.corda.sdk.packaging.CreateCpiV2.CPI_UPGRADE_ATTRIBUTE_NAME
 import net.corda.sdk.packaging.CreateCpiV2.CPI_VERSION_ATTRIBUTE_NAME
-import net.corda.sdk.packaging.TestSigningKeys.SIGNING_KEY_1
+import net.corda.sdk.packaging.TestSigningKeys.CPB_SIGNER
+import net.corda.sdk.packaging.TestSigningKeys.CPI_SIGNER_NAME
+import net.corda.sdk.packaging.TestSigningKeys.CPK_SIGNER
 import net.corda.sdk.packaging.TestSigningKeys.SIGNING_KEY_1_ALIAS
-import net.corda.sdk.packaging.TestSigningKeys.SIGNING_KEY_2
 import net.corda.sdk.packaging.TestUtils.assertContainsAllManifestAttributes
 import net.corda.sdk.packaging.TestUtils.jarEntriesExistInCpx
 import net.corda.sdk.packaging.signing.SigningOptions
 import net.corda.utilities.exists
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
-import java.io.ByteArrayInputStream
-import java.io.File
 import kotlin.io.path.readText
+import kotlin.test.assertNotNull
 
 class CreateCpiV2Test {
 
@@ -46,18 +44,6 @@ class CreateCpiV2Test {
         lateinit var cpbPath: Path
 
         const val CPI_FILE_NAME = "output.cpi"
-
-        const val CPK_SIGNER_NAME = "CPK-SIG"
-        const val CPB_SIGNER_NAME = "CPB-SIG"
-        const val CPI_SIGNER_NAME = "CPI-SIG"
-        private val CPK_SIGNER = net.corda.libs.packaging.testutils.TestUtils.Signer(
-            CPK_SIGNER_NAME,
-            SIGNING_KEY_2
-        )
-        private val CPB_SIGNER = net.corda.libs.packaging.testutils.TestUtils.Signer(
-            CPB_SIGNER_NAME,
-            SIGNING_KEY_1
-        )
 
         private val testGroupPolicy = Path.of(this::class.java.getResource("/TestGroupPolicy.json")?.toURI()
             ?: error("TestGroupPolicy.json not found"))
@@ -193,8 +179,7 @@ class CreateCpiV2Test {
 
         val cpiOutputFile = Path.of(tempDir.toString(), CPI_FILE_NAME)
 
-        // TODO specify exception
-        assertThrows<Exception> {
+        val error = assertThrows<IllegalArgumentException> {
             CreateCpiV2.createCpi(
                 cpkPath,
                 cpiOutputFile,
@@ -203,18 +188,16 @@ class CreateCpiV2Test {
                 signingOptions
             )
         }
-
         assertFalse(cpiOutputFile.exists())
-//        assertThat(outText).contains("Error verifying CPB: Manifest has invalid attribute \"Corda-CPB-Format\" value \"null\"")
-        // TODO verify error
+        assertNotNull(error.message)
+        assertTrue(error.message!!.contains("Error verifying CPB"))
     }
 
     @Test
     fun `cpi create tool aborts if its group policy is invalid`() {
         val outputFile = Path.of(tempDir.toString(), CPI_FILE_NAME)
 
-        // TODO specify exception
-        assertThrows<Exception> {
+        assertThrows<MembershipSchemaValidationException> {
             CreateCpiV2.createCpi(
                 cpbPath,
                 outputFile,
@@ -223,14 +206,6 @@ class CreateCpiV2Test {
                 signingOptions
             )
         }
-
         assertFalse(outputFile.exists())
-        // TODO: verify error
-//        assertTrue(errText.contains("MembershipSchemaValidationException: Exception when validating membership schema"))
-//        assertTrue(
-//            errText.contains(
-//                "Failed to validate against schema \"corda.group.policy\" due to the following error(s): " +
-//                        "[\$.groupId: does not match the regex pattern")
-//        )
     }
 }
