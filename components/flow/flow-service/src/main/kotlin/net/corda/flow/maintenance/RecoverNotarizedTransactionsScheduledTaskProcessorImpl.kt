@@ -130,7 +130,7 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
         }
 
         override fun onNext(events: List<Record<String, ScheduledTaskTrigger>>): List<Record<*, *>> {
-            logger.debug { "Processing ${events.size} flows for notarized transaction recovery" }
+            logger.info("Processing ${events.size} flows for notarized transaction recovery")
 
             val records = mutableListOf<Record<*, *>>()
 
@@ -147,12 +147,15 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
                     records += Record(Schemas.Flow.FLOW_STATUS_TOPIC, status.key, status)
                 }
 
+            logger.info("Created recovery start events = $records")
+
             return records
         }
 
         private fun hasUtxoWithNotaryCpk(virtualNode: VirtualNodeInfo): Boolean {
             return cpiInfoReadService.get(virtualNode.cpiIdentifier)?.let { cpiMetadata ->
                 val hasContracts = cpiMetadata.cpksMetadata.any { it.isContractCpk() }
+                logger.info("Filtering - ${virtualNode.holdingIdentity.shortHash} - hasContracts = $hasContracts")
 //                val hasNotaryClientFlow = cpiMetadata.cpksMetadata.any { it.cordappManifest.notaryPluginFlows.isNotEmpty() }
                 hasContracts // && hasNotaryClientFlow
             } ?: false
