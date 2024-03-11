@@ -155,9 +155,10 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
         private fun hasUtxoWithNotaryCpk(virtualNode: VirtualNodeInfo): Boolean {
             return cpiInfoReadService.get(virtualNode.cpiIdentifier)?.let { cpiMetadata ->
                 val hasContracts = cpiMetadata.cpksMetadata.any { it.isContractCpk() }
-                logger.info("Filtering - ${virtualNode.holdingIdentity.shortHash} - hasContracts = $hasContracts")
+                val isNotary = cpiMetadata.cpiId.name.contains("notary")
+                logger.info("Filtering - ${virtualNode.holdingIdentity.shortHash} - hasContracts = $hasContracts | isNotary = $isNotary")
 //                val hasNotaryClientFlow = cpiMetadata.cpksMetadata.any { it.cordappManifest.notaryPluginFlows.isNotEmpty() }
-                hasContracts // && hasNotaryClientFlow
+                hasContracts && !isNotary // && hasNotaryClientFlow
             } ?: false
         }
 
