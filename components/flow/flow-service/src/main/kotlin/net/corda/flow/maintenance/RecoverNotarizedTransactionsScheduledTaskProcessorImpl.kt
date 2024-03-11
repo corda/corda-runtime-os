@@ -130,7 +130,7 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
         }
 
         override fun onNext(events: List<Record<String, ScheduledTaskTrigger>>): List<Record<*, *>> {
-            logger.info("Processing ${events.size} flows for notarized transaction recovery")
+            logger.info("Processing ${events.size} scheduled event for notarized transaction recovery")
 
             val records = mutableListOf<Record<*, *>>()
 

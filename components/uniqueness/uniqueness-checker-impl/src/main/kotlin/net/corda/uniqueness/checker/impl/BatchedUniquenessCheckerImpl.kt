@@ -154,7 +154,8 @@ class BatchedUniquenessCheckerImpl(
     private inline fun processBatches(
         requestsToProcess: List<Pair<UniquenessCheckRequestInternal, UniquenessCheckRequestAvro>>,
         results: HashMap<UniquenessCheckRequestAvro, UniquenessCheckResponseAvro>,
-        processingCallback: (holdingIdentity: HoldingIdentity, batch: List<UniquenessCheckRequestInternal>) -> List<Pair<UniquenessCheckRequestInternal, InternalUniquenessCheckResultWithContext>>
+        processingCallback: (holdingIdentity: HoldingIdentity, batch: List<UniquenessCheckRequestInternal>)
+            -> List<Pair<UniquenessCheckRequestInternal, InternalUniquenessCheckResultWithContext>>
     ) {
         requestsToProcess
             // Partition the data based on holding identity, as each should be processed separately
