@@ -8,12 +8,8 @@ import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.AuthenticatedMessageAck
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.DataMessagePayload
-import net.corda.data.p2p.HeartbeatMessage
-import net.corda.data.p2p.HeartbeatMessageAck
 import net.corda.data.p2p.LinkInMessage
-import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.MessageAck
-import net.corda.data.p2p.SessionPartitions
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.InboundUnauthenticatedMessage
@@ -32,7 +28,6 @@ import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.linkmanager.ItemWithSource
-import net.corda.p2p.linkmanager.metrics.recordInboundHeartbeatMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordInboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordInboundSessionMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
@@ -51,7 +46,6 @@ internal class InboundMessageProcessor(
     private val sessionManager: SessionManager,
     private val groupPolicyProvider: GroupPolicyProvider,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    private val inboundAssignmentListener: InboundAssignmentListener,
     private val clock: Clock,
     private val networkMessagingValidator: NetworkMessagingValidator =
         NetworkMessagingValidator(membershipGroupReaderProvider),
@@ -150,45 +144,27 @@ internal class InboundMessageProcessor(
         }
         return responses.map { (traceableMessage, response) ->
             if (response != null) {
-                when (val payload = response.payload) {
+                when (response.payload) {
                     is ResponderHelloMessage -> {
-                        val partitionsAssigned = inboundAssignmentListener.getCurrentlyAssignedPartitions()
-                        if (partitionsAssigned.isNotEmpty()) {
-                            recordOutboundSessionMessagesMetric(response.header.sourceIdentity)
-                            ItemWithSource(
-                                InboundResponse(
-                                    listOf(
-                                        Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response),
-                                        Record(
-                                            Schemas.P2P.SESSION_OUT_PARTITIONS,
-                                            payload.header.sessionId,
-                                            SessionPartitions(partitionsAssigned.toList())
-                                        )
-                                    ),
-                                ),
-                                traceableMessage.source
-                            )
-                        } else {
-                            logger.warn(
-                                "No partitions from topic ${Schemas.P2P.LINK_IN_TOPIC} are currently assigned to " +
-                                        "the inbound message processor." +
-                                        " Not going to reply to session initiation for session ${payload.header.sessionId}."
-                            )
-                            ItemWithSource(
-                                InboundResponse(
-                                    emptyList(),
-                                ),
-                                traceableMessage.source
-                            )
-                        }
+                        recordOutboundSessionMessagesMetric(response.header.sourceIdentity)
+                        ItemWithSource(
+                            item = InboundResponse(
+                                listOf(
+                                    Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response),
+                                )
+                            ),
+                            source = traceableMessage.source
+                        )
                     }
                     else -> {
                         recordOutboundSessionMessagesMetric(response.header.sourceIdentity)
                         ItemWithSource(
-                            InboundResponse(
-                                listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response)),
+                            item = InboundResponse(
+                                listOf(
+                                    Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response),
+                                )
                             ),
-                            traceableMessage.source,
+                            source = traceableMessage.source,
                         )
                     }
                 }
@@ -276,11 +252,6 @@ internal class InboundMessageProcessor(
                         val record = makeMarkerForAckMessage(ack)
                         record
                     }
-                    is HeartbeatMessageAck -> {
-                        logger.debug { "Processing heartbeat ack from session $sessionIdAndMessage." }
-                        sessionManager.messageAcknowledged(sessionIdAndMessage.sessionId)
-                        null
-                    }
                     else -> {
                         logger.warn("Received an inbound message with unexpected type for SessionId = $sessionIdAndMessage.")
                         null
@@ -337,13 +308,6 @@ internal class InboundMessageProcessor(
     ): InboundResponse? {
         return MessageConverter.extractPayload(session, sessionId, message, DataMessagePayload::fromByteBuffer)?.let {
             when (val innerMessage = it.message) {
-                is HeartbeatMessage -> {
-                    logger.debug { "Processing heartbeat message from session $sessionId" }
-                    recordInboundHeartbeatMessagesMetric(counterparties.counterpartyId)
-                    makeAckMessageForHeartbeatMessage(counterparties, session)?.let { ack ->
-                        InboundResponse(listOf(ack))
-                    }
-                }
                 is AuthenticatedMessageAndKey -> {
                     val authenticatedMessage = innerMessage.message
                     recordInboundMessagesMetric(authenticatedMessage)
@@ -364,27 +328,6 @@ internal class InboundMessageProcessor(
                 }
             }
         }
-    }
-
-    private fun makeAckMessageForHeartbeatMessage(
-        counterparties: SessionManager.Counterparties,
-        session: Session
-    ): Record<String, LinkOutMessage>? {
-        val ackDest = counterparties.counterpartyId
-        val ackSource = counterparties.ourId
-        val ack = MessageConverter.linkOutMessageFromAck(
-            MessageAck(HeartbeatMessageAck()),
-            ackSource,
-            ackDest,
-            session,
-            groupPolicyProvider,
-            membershipGroupReaderProvider,
-        ) ?: return null
-        return Record(
-            Schemas.P2P.LINK_OUT_TOPIC,
-            LinkManager.generateKey(),
-            ack
-        )
     }
 
     private fun makeAckMessageForFlowMessage(

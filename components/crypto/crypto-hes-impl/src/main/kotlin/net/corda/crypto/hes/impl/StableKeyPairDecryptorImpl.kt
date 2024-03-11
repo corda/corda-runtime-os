@@ -1,16 +1,22 @@
 package net.corda.crypto.hes.impl
 
+import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.component.impl.AbstractComponent
-import net.corda.crypto.component.impl.DependenciesTracker
+import net.corda.crypto.core.AbstractComponentNotReadyException
 import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.crypto.hes.core.impl.decryptWithStableKeyPair
+import net.corda.lifecycle.DependentComponents
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.utilities.trace
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.security.PublicKey
 
 @Component(service = [StableKeyPairDecryptor::class])
@@ -21,17 +27,30 @@ class StableKeyPairDecryptorImpl @Activate constructor(
     private val schemeMetadata: CipherSchemeMetadata,
     @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient
-) : AbstractComponent<StableKeyPairDecryptorImpl.Impl>(
-    coordinatorFactory = coordinatorFactory,
-    myName = LifecycleCoordinatorName.forComponent<StableKeyPairDecryptor>(),
-    upstream = DependenciesTracker.Default(
-        setOf(
-            LifecycleCoordinatorName.forComponent<CryptoOpsClient>()
-        )
-    )
-), StableKeyPairDecryptor {
+) : StableKeyPairDecryptor {
 
-    override fun createActiveImpl(): Impl = Impl(schemeMetadata, cryptoOpsClient)
+    companion object {
+        private val logger = LoggerFactory.getLogger(StableKeyPairDecryptor::class.java)
+    }
+
+    // VisibleForTesting
+    val lifecycleCoordinator =  coordinatorFactory.createCoordinator(
+        LifecycleCoordinatorName.forComponent<StableKeyPairDecryptor>(),
+        DependentComponents.of(
+            ::cryptoOpsClient
+        ),
+        ::eventHandler
+    )
+
+    private var _impl: Impl? = null
+    val impl: Impl
+        get() {
+            val tmp = _impl
+            if (tmp == null || lifecycleCoordinator.status != LifecycleStatus.UP) {
+                throw AbstractComponentNotReadyException("Component ${StableKeyPairDecryptor::class.simpleName} is not ready.")
+            }
+            return tmp
+        }
 
     override fun decrypt(
         tenantId: String,
@@ -46,7 +65,7 @@ class StableKeyPairDecryptorImpl @Activate constructor(
     class Impl(
         private val schemeMetadata: CipherSchemeMetadata,
         private val cryptoOpsClient: CryptoOpsClient
-    ) : AbstractImpl {
+    ) {
         @Suppress("LongParameterList")
         fun decrypt(
             tenantId: String,
@@ -63,5 +82,39 @@ class StableKeyPairDecryptorImpl @Activate constructor(
             cipherText = cipherText,
             aad = aad
         ) { cryptoOpsClient.deriveSharedSecret(tenantId, it, otherPublicKey) }
+    }
+
+    private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        when (event) {
+            is RegistrationStatusChangeEvent -> {
+                if (event.status == LifecycleStatus.UP) {
+                    if (_impl == null) {
+                        doActivate(coordinator)
+                    }
+                    coordinator.updateStatus(LifecycleStatus.UP)
+                } else {
+                    coordinator.updateStatus(LifecycleStatus.DOWN)
+                }
+            }
+        }
+    }
+
+    private fun doActivate(coordinator: LifecycleCoordinator) {
+        logger.trace { "Creating active implementation" }
+        _impl = Impl(schemeMetadata, cryptoOpsClient)
+        coordinator.updateStatus(LifecycleStatus.UP)
+    }
+
+    override val isRunning: Boolean
+        get() = lifecycleCoordinator.isRunning
+
+    override fun start() {
+        logger.trace { "Starting..." }
+        lifecycleCoordinator.start()
+    }
+
+    override fun stop() {
+        logger.trace  { "Stopping..." }
+        lifecycleCoordinator.stop()
     }
 }

@@ -214,14 +214,13 @@ interface UtxoRepository {
     data class TransactionSignature(val index: Int, val signatureBytes: ByteArray, val publicKeyHash: SecureHash)
 
     data class TransactionMerkleProof(
+        val merkleProofId: String,
         val transactionId: String,
         val groupIndex: Int,
         val treeSize: Int,
         val leafIndexes: List<Int>,
         val leafHashes: List<String>
-    ) {
-        val merkleProofId: String = "$transactionId;$groupIndex;${leafIndexes.joinToString(separator = ",")}"
-    }
+    )
 
     data class TransactionMerkleProofLeaf(val merkleProofId: String, val leafIndex: Int)
 }

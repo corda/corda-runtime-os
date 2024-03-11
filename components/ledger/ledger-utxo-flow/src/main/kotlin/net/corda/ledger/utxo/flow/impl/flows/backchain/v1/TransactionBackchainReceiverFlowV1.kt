@@ -108,7 +108,7 @@ class TransactionBackchainReceiverFlowV1(
                 }
 
                 retrieveGroupParameters(retrievedTransaction)
-                val (status, _) = utxoLedgerPersistenceService.persistIfDoesNotExist(retrievedTransaction, UNVERIFIED)
+                val status = utxoLedgerPersistenceService.persistIfDoesNotExist(retrievedTransaction, UNVERIFIED)
 
                 transactionsToRetrieve.remove(retrievedTransactionId)
 

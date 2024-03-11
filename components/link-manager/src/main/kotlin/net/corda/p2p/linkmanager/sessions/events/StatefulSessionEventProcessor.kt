@@ -37,7 +37,6 @@ internal class StatefulSessionEventProcessor(
     messagingConfiguration: SmartConfig,
     private val stateManager: StateManager,
     private val stateConvertor: StateConvertor,
-
     val sessionCache: SessionCache,
     private val sessionManagerImpl: SessionManagerImpl,
 ): LifecycleWithDominoTile {

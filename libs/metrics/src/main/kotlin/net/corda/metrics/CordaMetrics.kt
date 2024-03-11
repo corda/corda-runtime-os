@@ -204,16 +204,6 @@ object CordaMetrics {
         object InboundMessageCount : Metric<Counter>("p2p.message.inbound", Metrics::counter)
 
         /**
-         * Number of outbound peer-to-peer sessions that timed out (indicating communication issues with peers).
-         */
-        object OutboundSessionTimeoutCount : Metric<Counter>("p2p.session.outbound.timeout", Metrics::counter)
-
-        /**
-         * Number of inbound peer-to-peer sessions that timed out (indicating communication issues with peers).
-         */
-        object InboundSessionTimeoutCount : Metric<Counter>("p2p.session.inbound.timeout", Metrics::counter)
-
-        /**
          * Number of outbound peer-to-peer sessions.
          */
         class OutboundSessionCount(computation: Supplier<Number>): ComputedValue<Nothing>("p2p.session.outbound", computation)
@@ -976,7 +966,6 @@ object CordaMetrics {
                 .meterFilter(MeterFilter.denyUnless {
                     val name = registry.config().namingConvention().name(it.name, it.type, it.baseUnit)
                     when (it.type) {
-                        Meter.Type.COUNTER -> (name + "_total").matches(keepNames)
                         Meter.Type.TIMER ->
                             (name + "_count").matches(keepNames)
                                 || (name + "_sum").matches(keepNames)

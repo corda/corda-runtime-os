@@ -38,7 +38,9 @@ class CpiUploadManagerImpl(
                 futures.forEach { f -> f.get() }
             }
         }
-        return chunkWriter.write(cpiContent)
+        val resp = chunkWriter.write(cpiContent)
+        statusProcessor.publishStatus(publisher, resp.requestId, 0, "Upload started")
+        return resp
     }
 
     override fun status(requestId: RequestId): UploadStatus? = statusProcessor.status(requestId)

@@ -46,7 +46,6 @@ internal class InboundLinkManager(
         commonComponents.sessionManager,
         groupPolicyProvider,
         membershipGroupReaderProvider,
-        commonComponents.inboundAssignmentListener,
         clock
     )
     private val inboundMessageSubscription = {
@@ -54,7 +53,7 @@ internal class InboundLinkManager(
             subscriptionConfig,
             processor,
             messagingConfiguration,
-            partitionAssignmentListener = commonComponents.inboundAssignmentListener
+            partitionAssignmentListener = null,
         )
     }
     private val subscriptionConfig = SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schemas.P2P.LINK_IN_TOPIC)
@@ -102,7 +101,6 @@ internal class InboundLinkManager(
             httpSubscriptionDominoTile.coordinatorName,
         ),
         managedChildren = setOf(
-            commonComponents.inboundAssignmentListener.dominoTile.toNamedLifecycle(),
             publisher.dominoTile.toNamedLifecycle(),
             busSubscriptionDominoTile.toNamedLifecycle(),
             httpSubscriptionDominoTile.toNamedLifecycle(),
