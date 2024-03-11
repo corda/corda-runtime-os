@@ -11,7 +11,6 @@ import net.corda.data.virtualnode.VirtualNodeCreateStatusResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
-import net.corda.data.virtualnode.VirtualNodeOperationStatus
 import net.corda.data.virtualnode.VirtualNodeOperationStatusRequest
 import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
 import net.corda.data.virtualnode.VirtualNodeOperationalState
@@ -47,7 +46,6 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.rest.PluggableRestResource
-import net.corda.rest.asynchronous.v1.AsyncOperationState
 import net.corda.rest.asynchronous.v1.AsyncOperationStatus
 import net.corda.rest.asynchronous.v1.AsyncResponse
 import net.corda.rest.exception.BadRequestException
@@ -605,17 +603,4 @@ internal class VirtualNodeRestResourceImpl(
     override val isRunning get() = lifecycleCoordinator.isRunning
     override fun start() = lifecycleCoordinator.start()
     override fun stop() = lifecycleCoordinator.stop()
-
-    private fun createVirtualNodeOperationStatus(requestId: String): VirtualNodeOperationStatus {
-        val now = Instant.now()
-        return VirtualNodeOperationStatus.newBuilder()
-            .setRequestId(requestId)
-            .setRequestData("{}")
-            .setRequestTimestamp(now)
-            .setLatestUpdateTimestamp(now)
-            .setHeartbeatTimestamp(null)
-            .setState(AsyncOperationState.ACCEPTED.name)
-            .setErrors(null)
-            .build()
-    }
 }
