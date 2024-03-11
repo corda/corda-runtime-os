@@ -90,24 +90,26 @@ class PersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun persist(entity: Any) {
-        wrapWithPersistenceException {
-            externalEventExecutor.execute(
-                PersistExternalEventFactory::class.java,
-                PersistParameters(listOf(serialize(entity)))
-            )
-        }
+        merge(entity)
+//        wrapWithPersistenceException {
+//            externalEventExecutor.execute(
+//                PersistExternalEventFactory::class.java,
+//                PersistParameters(listOf(serialize(entity)))
+//            )
+//        }
     }
 
     @Suspendable
     override fun persist(entities: List<*>) {
-        if (entities.isNotEmpty()) {
-            wrapWithPersistenceException {
-                externalEventExecutor.execute(
-                    PersistExternalEventFactory::class.java,
-                    PersistParameters(entities.filterNotNull().map(::serialize))
-                )
-            }
-        }
+        merge(entities)
+//        if (entities.isNotEmpty()) {
+//            wrapWithPersistenceException {
+//                externalEventExecutor.execute(
+//                    PersistExternalEventFactory::class.java,
+//                    PersistParameters(entities.filterNotNull().map(::serialize))
+//                )
+//            }
+//        }
     }
 
     @Suspendable
