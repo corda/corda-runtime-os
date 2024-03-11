@@ -157,10 +157,12 @@ internal class VirtualNodeRestResourceImpl(
         when (event) {
             is StartEvent -> {
                 dependentComponents.registerAndStartAll(coordinator)
-                coordinator.updateStatus(LifecycleStatus.UP)
+                coordinator.updateStatus(LifecycleStatus.UP, "StartEvent")
             }
 
-            is StopEvent -> coordinator.updateStatus(LifecycleStatus.DOWN)
+            is StopEvent -> coordinator.updateStatus(LifecycleStatus.DOWN,
+                "StopEvent - error = ${event.errored}"
+            )
             is RegistrationStatusChangeEvent -> {
                 when (event.status) {
                     LifecycleStatus.ERROR -> {
@@ -180,7 +182,7 @@ internal class VirtualNodeRestResourceImpl(
 
                     else -> logger.debug { "Unexpected status: ${event.status}" }
                 }
-                coordinator.updateStatus(event.status)
+                coordinator.updateStatus(event.status, "RegistrationStatusChangeEvent")
             }
 
             is ConfigChangedEvent -> {
@@ -190,7 +192,7 @@ internal class VirtualNodeRestResourceImpl(
                     val duration =
                         Duration.ofMillis(restConfig.getInt(ConfigKeys.REST_ENDPOINT_TIMEOUT_MILLIS).toLong())
                     // Make sender unavailable while we're updating
-                    coordinator.updateStatus(LifecycleStatus.DOWN)
+                    coordinator.updateStatus(LifecycleStatus.DOWN, "ConfigChangedEvent")
                     coordinator.createManagedResource(SENDER) {
                         virtualNodeSenderFactory.createSender(
                             duration,
