@@ -39,6 +39,7 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.mock
 import java.security.KeyPairGenerator
 import java.security.spec.AlgorithmParameterSpec
+import java.sql.SQLIntegrityConstraintViolationException
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -699,13 +700,6 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
         saveWrappingKey(emf, info2.wrappingKeyAlias)
         val ctx2 = createSigningWrappedKeySaveContext(info2)
 
-        var errorMessage: String? = null
-        try {
-            repo.savePrivateKey(ctx2)
-        } catch (e: Exception) {
-            errorMessage = e.cause?.message
-        }
-
-        assertThat(errorMessage).isEqualTo("org.hibernate.exception.ConstraintViolationException: could not execute statement")
+        assertThrows<SQLIntegrityConstraintViolationException> { repo.savePrivateKey(ctx2) }
     }
 }
