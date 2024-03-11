@@ -29,7 +29,7 @@ class UtxoFindTransactionsWithStatusBeforeTimeRequestHandler(
             externalEventResponseFactory.success(
                 externalEventContext,
                 EntityResponse(
-                    unverifiedTransactionIds.map {ByteBuffer.wrap(serializationService.serialize(it).bytes) },
+                    unverifiedTransactionIds.map { ByteBuffer.wrap(serializationService.serialize(it).bytes) },
                     KeyValuePairList(emptyList()),
                     null
                 )

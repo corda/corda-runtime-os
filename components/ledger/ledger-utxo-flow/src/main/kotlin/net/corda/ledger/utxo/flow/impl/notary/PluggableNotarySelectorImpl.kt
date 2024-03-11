@@ -51,7 +51,7 @@ class PluggableNotarySelectorImpl @Activate constructor(
         if (!PluggableNotaryClientFlow::class.java.isAssignableFrom(flowClass)) {
             throw CordaRuntimeException(
                 "Notary client flow class $flowName is invalid because " +
-                        "it does not inherit from ${PluggableNotaryClientFlow::class.simpleName}."
+                    "it does not inherit from ${PluggableNotaryClientFlow::class.simpleName}."
             )
         }
 

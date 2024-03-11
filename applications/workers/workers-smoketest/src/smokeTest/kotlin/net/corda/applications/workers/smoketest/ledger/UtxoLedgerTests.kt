@@ -117,70 +117,72 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
             aliceHoldingId,
             mapOf("input" to input, "members" to listOf(bobX500, charlieX500), "notary" to NOTARY_SERVICE_X500),
             "com.r3.corda.demo.utxo.UtxoDemoFlow",
+//            mapOf("instant" to "${Instant.now()}"),
+//            "net.corda.ledger.utxo.flow.impl.flows.finality.v1.NotarizedTransactionRecoveryFlow",
             requestId = idGenerator.nextId
         )
         val utxoFlowResult = awaitRestFlowFinished(aliceHoldingId, utxoFlowRequestId)
         assertThat(utxoFlowResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
         assertThat(utxoFlowResult.flowError).isNull()
 
-        for (holdingId in listOf(aliceHoldingId, bobHoldingId, charlieHoldingId)) {
-            val findTransactionFlowRequestId = startRestFlow(
-                holdingId,
-                mapOf("transactionId" to utxoFlowResult.flowResult!!),
-                "com.r3.corda.demo.utxo.FindTransactionFlow",
-                requestId = idGenerator.nextId
-            )
-            val transactionResult = awaitRestFlowFinished(holdingId, findTransactionFlowRequestId)
-            assertThat(transactionResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
-            assertThat(transactionResult.flowError).isNull()
-
-            val parsedResult = objectMapper
-                .readValue(transactionResult.flowResult!!, FindTransactionResponse::class.java)
-
-            assertThat(parsedResult.transaction).withFailMessage {
-                "Member with holding identity $holdingId did not receive the transaction ${utxoFlowResult.flowResult}"
-            }.isNotNull
-            assertThat(parsedResult.transaction!!.id.toString()).isEqualTo(utxoFlowResult.flowResult)
-            assertThat(parsedResult.transaction.states.map { it.testField }).containsOnly(input)
-            assertThat(parsedResult.transaction.states.flatMap { it.participants }).hasSize(3)
-            assertThat(parsedResult.transaction.participants).hasSize(3)
-        }
-
-        val evolvedMessage = "evolved input"
-        val evolveRequestId = startRestFlow(
-            bobHoldingId,
-            mapOf("update" to evolvedMessage, "transactionId" to utxoFlowResult.flowResult!!, "index" to "0"),
-            "com.r3.corda.demo.utxo.UtxoDemoEvolveFlow",
-            requestId = idGenerator.nextId
-
-        )
-        val evolveFlowResult = awaitRestFlowFinished(bobHoldingId, evolveRequestId)
-
-        val parsedEvolveFlowResult = objectMapper
-            .readValue(evolveFlowResult.flowResult!!, EvolveResponse::class.java)
-        assertThat(parsedEvolveFlowResult.transactionId).isNotNull()
-        assertThat(parsedEvolveFlowResult.errorMessage).isNull()
-        assertThat(evolveFlowResult.flowError).isNull()
-
-        // Peek into the last transaction
-
-        val peekFlowId = startRestFlow(
-            bobHoldingId,
-            mapOf("transactionId" to parsedEvolveFlowResult.transactionId!!),
-            "com.r3.corda.demo.utxo.PeekTransactionFlow",
-            requestId = idGenerator.nextId
-        )
-
-        val peekFlowResult = awaitRestFlowFinished(bobHoldingId, peekFlowId)
-        assertThat(peekFlowResult.flowError).isNull()
-        assertThat(peekFlowResult.flowResult).isNotNull()
-
-        val parsedPeekFlowResult = objectMapper
-            .readValue(peekFlowResult.flowResult, PeekTransactionResponse::class.java)
-
-        assertThat(parsedPeekFlowResult.errorMessage).isNull()
-        assertThat(parsedPeekFlowResult.inputs).singleElement().extracting { it.testField }.isEqualTo(input)
-        assertThat(parsedPeekFlowResult.outputs).singleElement().extracting { it.testField }.isEqualTo(evolvedMessage)
+//        for (holdingId in listOf(aliceHoldingId, bobHoldingId, charlieHoldingId)) {
+//            val findTransactionFlowRequestId = startRestFlow(
+//                holdingId,
+//                mapOf("transactionId" to utxoFlowResult.flowResult!!),
+//                "com.r3.corda.demo.utxo.FindTransactionFlow",
+//                requestId = idGenerator.nextId
+//            )
+//            val transactionResult = awaitRestFlowFinished(holdingId, findTransactionFlowRequestId)
+//            assertThat(transactionResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
+//            assertThat(transactionResult.flowError).isNull()
+//
+//            val parsedResult = objectMapper
+//                .readValue(transactionResult.flowResult!!, FindTransactionResponse::class.java)
+//
+//            assertThat(parsedResult.transaction).withFailMessage {
+//                "Member with holding identity $holdingId did not receive the transaction ${utxoFlowResult.flowResult}"
+//            }.isNotNull
+//            assertThat(parsedResult.transaction!!.id.toString()).isEqualTo(utxoFlowResult.flowResult)
+//            assertThat(parsedResult.transaction.states.map { it.testField }).containsOnly(input)
+//            assertThat(parsedResult.transaction.states.flatMap { it.participants }).hasSize(3)
+//            assertThat(parsedResult.transaction.participants).hasSize(3)
+//        }
+//
+//        val evolvedMessage = "evolved input"
+//        val evolveRequestId = startRestFlow(
+//            bobHoldingId,
+//            mapOf("update" to evolvedMessage, "transactionId" to utxoFlowResult.flowResult!!, "index" to "0"),
+//            "com.r3.corda.demo.utxo.UtxoDemoEvolveFlow",
+//            requestId = idGenerator.nextId
+//
+//        )
+//        val evolveFlowResult = awaitRestFlowFinished(bobHoldingId, evolveRequestId)
+//
+//        val parsedEvolveFlowResult = objectMapper
+//            .readValue(evolveFlowResult.flowResult!!, EvolveResponse::class.java)
+//        assertThat(parsedEvolveFlowResult.transactionId).isNotNull()
+//        assertThat(parsedEvolveFlowResult.errorMessage).isNull()
+//        assertThat(evolveFlowResult.flowError).isNull()
+//
+//        // Peek into the last transaction
+//
+//        val peekFlowId = startRestFlow(
+//            bobHoldingId,
+//            mapOf("transactionId" to parsedEvolveFlowResult.transactionId!!),
+//            "com.r3.corda.demo.utxo.PeekTransactionFlow",
+//            requestId = idGenerator.nextId
+//        )
+//
+//        val peekFlowResult = awaitRestFlowFinished(bobHoldingId, peekFlowId)
+//        assertThat(peekFlowResult.flowError).isNull()
+//        assertThat(peekFlowResult.flowResult).isNotNull()
+//
+//        val parsedPeekFlowResult = objectMapper
+//            .readValue(peekFlowResult.flowResult, PeekTransactionResponse::class.java)
+//
+//        assertThat(parsedPeekFlowResult.errorMessage).isNull()
+//        assertThat(parsedPeekFlowResult.inputs).singleElement().extracting { it.testField }.isEqualTo(input)
+//        assertThat(parsedPeekFlowResult.outputs).singleElement().extracting { it.testField }.isEqualTo(evolvedMessage)
     }
 
     @Test

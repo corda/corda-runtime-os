@@ -90,7 +90,6 @@ class UtxoRecoveryFlow(private val instant: Instant) : SubFlow<Int> {
                 persistNotarizedTransaction(notarizedTransaction)
                 numberOfRecoveredFlows++
             }
-
         }
         log.info("Completed recovery flow of $numberOfRecoveredFlows missing notarized transactions that occurred before $instant")
         return numberOfRecoveredFlows
@@ -129,7 +128,7 @@ class UtxoRecoveryFlow(private val instant: Instant) : SubFlow<Int> {
         if (log.isTraceEnabled) {
             log.trace(
                 "Received ${notarySignatures.size} signature(s) from notary $notary after requesting notarization of transaction " +
-                        transaction.id
+                    transaction.id
             )
         }
 
@@ -192,7 +191,7 @@ class UtxoRecoveryFlow(private val instant: Instant) : SubFlow<Int> {
             }
         } catch (e: Exception) {
             val message = "Failed to verify transaction's signature($signature) by notary ${transaction.notaryName} for " +
-                    "transaction ${transaction.id}. Message: ${e.message}"
+                "transaction ${transaction.id}. Message: ${e.message}"
             log.warn(message)
             persistInvalidTransaction(transaction)
             throw e
