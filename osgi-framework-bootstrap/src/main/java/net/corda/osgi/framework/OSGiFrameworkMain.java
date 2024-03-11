@@ -14,7 +14,7 @@ import java.util.List;
 
 import static java.util.stream.Collectors.toUnmodifiableList;
 import static net.corda.osgi.framework.OSGiFrameworkUtils.getFrameworkFrom;
-import static net.corda.osgi.framework.OSGiFrameworkUtils.isStoppable;
+import static net.corda.osgi.framework.OSGiFrameworkUtils.isBundleStoppable;
 
 /**
  * This class provided the main entry point for the applications built with the {@code corda.common-app} plugin.
@@ -139,7 +139,7 @@ final class OSGiFrameworkMain {
             );
             try {
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                    if (isStoppable(osgiFrameworkWrap.getState())) {
+                    if (isBundleStoppable(osgiFrameworkWrap.getState())) {
                         osgiFrameworkWrap.stop();
                     }
                 }, "shutdown"));
@@ -158,7 +158,7 @@ final class OSGiFrameworkMain {
             } finally {
                 // If osgiFrameworkWrap stopped because SIGINT/CTRL+C,
                 // this avoids to call stop twice and log warning.
-                if (isStoppable(osgiFrameworkWrap.getState())) {
+                if (isBundleStoppable(osgiFrameworkWrap.getState())) {
                     osgiFrameworkWrap.stop();
                 }
             }

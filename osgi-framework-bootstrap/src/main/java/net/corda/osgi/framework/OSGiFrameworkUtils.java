@@ -39,20 +39,20 @@ class OSGiFrameworkUtils {
     private static final String FRAMEWORK_PROPERTIES_RESOURCE = "framework.properties";
 
     /**
-     * Return `true` if the {@code state} LSB is between {@link Bundle#STARTING} and {@link Bundle#ACTIVE} excluded
+     * Return `true` if the {@code bundleState} LSB is between {@link Bundle#STARTING} and {@link Bundle#ACTIVE} excluded
      * because the bundle is stoppable if {@link Bundle#getState} is in this range.
      * <p>
-     * Bundle states are expressed as a bit-mask though a bundle can only be in one state at any time,
-     * the state in the lifecycle is represented in the LSB of the value returned by {@link Bundle#getState}.
+     * Bundle states are expressed as a bit-mask though a bundle can only be in one bundleState at any time,
+     * the bundleState in the lifecycle is represented in the LSB of the value returned by {@link Bundle#getState}.
      * See OSGi Core Release 7 <a href="https://docs.osgi.org/specification/osgi.core/7.0.0/framework.lifecycle.html">4.4.2 Bundle State</a>
      *
-     * @param state of the bundle.
-     * @return {@code true} if the {@code state} LSB is between {@link Bundle#STARTING} and {@link Bundle#ACTIVE} excluded.
+     * @param bundleState of the bundle.
+     * @return {@code true} if the {@code bundleState} LSB is between {@link Bundle#STARTING} and {@link Bundle#ACTIVE} excluded.
      */
-    static boolean isStoppable(int state) {
-        // The bundle lifecycle state is represented by LSB.
-        final int status = state & 0xff;
-        return status > Bundle.STARTING && state <= Bundle.ACTIVE;
+    static boolean isBundleStoppable(int bundleState) {
+        // The bundle lifecycle bundleState is represented by LSB.
+        final int status = bundleState & 0xff;
+        return status > Bundle.STARTING && bundleState <= Bundle.ACTIVE;
     }
 
     /**
@@ -63,24 +63,24 @@ class OSGiFrameworkUtils {
      * @param bundle to check if it is fragment.
      * @return Return {@code true} if the {@code bundle} is an OSGi fragment.
      */
-    static boolean isFragment(Bundle bundle) {
+    static boolean isFragmentBundle(Bundle bundle) {
         return (bundle.adapt(BundleRevision.class).getTypes() & TYPE_FRAGMENT) != 0;
     }
 
     /**
-     * Return {@code true} if the {@code state} LSB is between {@link Bundle#UNINSTALLED} and {@link Bundle#STOPPING} excluded
+     * Return {@code true} if the {@code bundleState} LSB is between {@link Bundle#UNINSTALLED} and {@link Bundle#STOPPING} excluded
      * because the bundle is startable if {@link Bundle#getState} is inside this range.
      * <p>
-     * Bundle states are expressed as a bit-mask though a bundle can only be in one state at any time,
-     * the state in the lifecycle is represented in the LSB of the value returned by {@link Bundle#getState}.
+     * Bundle states are expressed as a bit-mask though a bundle can only be in one bundleState at any time,
+     * the bundleState in the lifecycle is represented in the LSB of the value returned by {@link Bundle#getState}.
      * See OSGi Core Release 7 <a href="https://docs.osgi.org/specification/osgi.core/7.0.0/framework.lifecycle.html">4.4.2 Bundle State</a>
      *
-     * @param state of the bundle.
-     * @return {@code true} if the {@code state} LSB is between {@link Bundle#UNINSTALLED} and {@link Bundle#STOPPING} excluded.
+     * @param bundleState of the bundle.
+     * @return {@code true} if the {@code bundleState} LSB is between {@link Bundle#UNINSTALLED} and {@link Bundle#STOPPING} excluded.
      */
-    static boolean isStartable(int state) {
-        // The bundle lifecycle state is represented by LSB.
-        final int status = state & 0xff;
+    static boolean isBundleStartable(int bundleState) {
+        // The bundle lifecycle bundleState is represented by LSB.
+        final int status = bundleState & 0xff;
         return status > Bundle.UNINSTALLED && status < Bundle.STOPPING;
     }
 

@@ -111,7 +111,7 @@ final class OSGiFrameworkWrapTest {
             frameworkWrap.install(OSGiFrameworkMain.APPLICATION_BUNDLES);
             frameworkWrap.activate();
             for (Bundle bundle : framework.getBundleContext().getBundles()) {
-                if (!OSGiFrameworkUtils.isFragment(bundle)) {
+                if (!OSGiFrameworkUtils.isFragmentBundle(bundle)) {
                     assertEquals(Bundle.ACTIVE, bundle.getState());
                 }
             }

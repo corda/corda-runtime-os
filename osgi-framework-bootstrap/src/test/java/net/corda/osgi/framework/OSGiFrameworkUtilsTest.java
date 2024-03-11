@@ -11,8 +11,8 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 
 import static net.corda.osgi.framework.OSGiFrameworkUtils.getFrameworkFrom;
-import static net.corda.osgi.framework.OSGiFrameworkUtils.isStartable;
-import static net.corda.osgi.framework.OSGiFrameworkUtils.isStoppable;
+import static net.corda.osgi.framework.OSGiFrameworkUtils.isBundleStartable;
+import static net.corda.osgi.framework.OSGiFrameworkUtils.isBundleStoppable;
 import static net.corda.osgi.framework.OSGiFrameworkUtils.removeTrailingComment;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -40,24 +40,24 @@ public class OSGiFrameworkUtilsTest {
 
     @Test
     void isStoppableOnlyWhenStoppable() {
-        assertTrue(isStoppable(Bundle.STOPPING));
-        assertTrue(isStoppable(Bundle.ACTIVE));
+        assertTrue(isBundleStoppable(Bundle.STOPPING));
+        assertTrue(isBundleStoppable(Bundle.ACTIVE));
 
-        assertFalse(isStoppable(Bundle.STARTING));
-        assertFalse(isStoppable(Bundle.UNINSTALLED));
-        assertFalse(isStoppable(Bundle.INSTALLED));
-        assertFalse(isStoppable(Bundle.RESOLVED));
+        assertFalse(isBundleStoppable(Bundle.STARTING));
+        assertFalse(isBundleStoppable(Bundle.UNINSTALLED));
+        assertFalse(isBundleStoppable(Bundle.INSTALLED));
+        assertFalse(isBundleStoppable(Bundle.RESOLVED));
     }
 
     @Test
     void isStartableOnlyWhenStartable() {
-        assertTrue(isStartable(Bundle.INSTALLED));
-        assertTrue(isStartable(Bundle.RESOLVED));
-        assertTrue(isStartable(Bundle.STARTING));
+        assertTrue(isBundleStartable(Bundle.INSTALLED));
+        assertTrue(isBundleStartable(Bundle.RESOLVED));
+        assertTrue(isBundleStartable(Bundle.STARTING));
 
-        assertFalse(isStartable(Bundle.ACTIVE));
-        assertFalse(isStartable(Bundle.STOPPING));
-        assertFalse(isStartable(Bundle.UNINSTALLED));
+        assertFalse(isBundleStartable(Bundle.ACTIVE));
+        assertFalse(isBundleStartable(Bundle.STOPPING));
+        assertFalse(isBundleStartable(Bundle.UNINSTALLED));
     }
 
 }

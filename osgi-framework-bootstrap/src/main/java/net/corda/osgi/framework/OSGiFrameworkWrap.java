@@ -24,6 +24,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,9 +34,9 @@ import static java.util.Collections.unmodifiableMap;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toUnmodifiableList;
-import static net.corda.osgi.framework.OSGiFrameworkUtils.isFragment;
-import static net.corda.osgi.framework.OSGiFrameworkUtils.isStartable;
-import static net.corda.osgi.framework.OSGiFrameworkUtils.isStoppable;
+import static net.corda.osgi.framework.OSGiFrameworkUtils.isFragmentBundle;
+import static net.corda.osgi.framework.OSGiFrameworkUtils.isBundleStartable;
+import static net.corda.osgi.framework.OSGiFrameworkUtils.isBundleStoppable;
 
 /**
  * {@link OSGiFrameworkWrap} provides an API to bootstrap an OSGI framework and OSGi bundles in the classpath.
@@ -112,9 +113,9 @@ class OSGiFrameworkWrap implements AutoCloseable {
     /**
      * List of bundles installed.
      */
-    private final ArrayList<Bundle> bundles = new ArrayList<>();
+    private final List<Bundle> bundles = Collections.synchronizedList(new ArrayList<>());
 
-    private final Logger logger = LoggerFactory.getLogger(OSGiFrameworkMain.class);
+    private static final Logger logger = LoggerFactory.getLogger(OSGiFrameworkMain.class);
 
     /**
      * @param framework to bootstrap.
@@ -139,11 +140,11 @@ class OSGiFrameworkWrap implements AutoCloseable {
         // Resolve every installed bundle together, as a unit.
         framework.adapt(FrameworkWiring.class).resolveBundles(null);
 
-        final List<Bundle> bundles = this.bundles.stream()
+        final List<Bundle> sortedBundles = this.bundles.stream()
                 .sorted(comparing(Bundle::getSymbolicName))
                 .collect(toUnmodifiableList());
-        for (Bundle bundle : bundles) {
-            if (isFragment(bundle)) {
+        for (Bundle bundle : sortedBundles) {
+            if (isFragmentBundle(bundle)) {
                 logger.info("OSGi bundle {} ID = {} {} {} {} fragment.",
                         bundle.getLocation(),
                         bundle.getBundleId(),
@@ -227,7 +228,7 @@ class OSGiFrameworkWrap implements AutoCloseable {
                 logger.error("Bundle {} has no symbolic name so is not a valid OSGi bundle; skipping", resourceUrl);
                 bundle.uninstall();
             } else {
-                if (!isFragment(bundle)) {
+                if (!isFragmentBundle(bundle)) {
                     bundles.add(bundle);
                 }
                 logger.debug("OSGi bundle {} installed.", resource);
@@ -279,7 +280,7 @@ class OSGiFrameworkWrap implements AutoCloseable {
                 logger.error("Bundle {} has no symbolic name so is not a valid OSGi bundle; uninstalling", fileUri);
                 bundle.uninstall();
             } else {
-                if (!isFragment(bundle)) {
+                if (!isFragmentBundle(bundle)) {
                     bundles.add(bundle);
                 }
                 logger.info("OSGi bundle {} installed - {} {}", fileUri, bundle.getSymbolicName(), bundle.getVersion());
@@ -345,7 +346,7 @@ class OSGiFrameworkWrap implements AutoCloseable {
      * @see Framework#start
      */
     synchronized OSGiFrameworkWrap start() throws BundleException {
-        if (isStartable(framework.getState())) {
+        if (isBundleStartable(framework.getState())) {
             framework.init();
             framework.getBundleContext().addBundleListener(bundleEvent -> {
                 final Bundle bundle = bundleEvent.getBundle();
@@ -366,7 +367,7 @@ class OSGiFrameworkWrap implements AutoCloseable {
                     bundle -> new Thread(OSGiFrameworkWrap.this::stop, "framework-stop").start(),
                     null
             );
-            logger.warn("OSGi framework {} {} started.", framework.getClass().getName(), framework.getVersion());
+            logger.info("OSGi framework {} {} started.", framework.getClass().getName(), framework.getVersion());
         } else {
             logger.warn("OSGi framework {} start attempted: state is {}",
                     framework.getClass().getName(),
@@ -475,7 +476,7 @@ class OSGiFrameworkWrap implements AutoCloseable {
      * @see Framework#stop
      */
     synchronized boolean stop() {
-        if (isStoppable(framework.getState())) {
+        if (isBundleStoppable(framework.getState())) {
             logger.debug("OSGi framework stop...");
             final BundleContext frameworkContext = framework.getBundleContext();
             final ServiceReference<Application> applicationServiceReference = frameworkContext.getServiceReference(Application.class);
