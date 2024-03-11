@@ -1345,7 +1345,7 @@ internal class GatewayIntegrationTest : TestBase() {
         fun `key store can change dynamically`() {
             val aliceAddress = URI.create("https://www.alice.net:${getOpenPort()}")
             val bobAddress = URI.create("https://www.bob.net:${getOpenPort()}")
-            val server = Node("server")
+            val server = Node("server").also { it.listenToLinkManagerRpc() }
             val configPublisher = ConfigPublisher()
             keep(configPublisher)
             configPublisher.publishConfig(
@@ -1531,7 +1531,7 @@ internal class GatewayIntegrationTest : TestBase() {
                     MAX_REQUEST_SIZE
                 ),
             )
-            val server = Node("server")
+            val server = Node("server").also { it.listenToLinkManagerRpc() }
 
             Gateway(
                 configPublisher.readerService,
