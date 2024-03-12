@@ -16,7 +16,6 @@ group 'net.corda.cli.deployment'
 
 dependencies {
 
-    implementation project(":libs:virtual-node:virtual-node-endpoints-maintenance")
     implementation project(":libs:virtual-node:cpi-upload-endpoints")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -29,19 +28,6 @@ dependencies {
 
     kapt libs.pf4j
     kapt "info.picocli:picocli:$picocliVersion"
-
-    implementation "org.liquibase:liquibase-core:$liquibaseVersion"
-    constraints {
-        implementation(libs.slf4j.v2.api)
-        implementation(libs.snakeyaml)  {
-            because "required until liquibase-core updates it's internal version of snakeYaml, currently using 1.33 which has CVE-2022-1471"
-        }
-    }
-
-    // DO NOT DISTRIBUTE DRIVERS HERE WE ARE NOT LICENSED TO DISTRIBUTE
-    // JDBC drivers are picked up in Corda 5 from a configured location, the CLI tool does not yet have this ability so
-    // the Postgres drivers are packaged within the tool itself.
-    runtimeOnly libs.postgresql.jdbc
 
     testImplementation libs.bundles.test
     testImplementation libs.pf4j

@@ -1,14 +1,15 @@
 package net.corda.cli.plugins.cpiupload.commands
 
-import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
-import net.corda.rest.HttpFileUpload
+import net.corda.sdk.packaging.CpiUploader
+import net.corda.sdk.rest.RestClientUtils.createRestClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
+import kotlin.time.Duration.Companion.seconds
 
 @Command(
     name = "upload",
@@ -21,6 +22,7 @@ class CPIUpload : RestCommand(), Runnable {
 
     private companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java)
+        val sysOut: Logger = LoggerFactory.getLogger("SystemOut")
     }
 
     @Option(
@@ -38,54 +40,62 @@ class CPIUpload : RestCommand(), Runnable {
     var wait: Boolean = false
 
     override fun run() {
-        var cpiUploadResult: String
-        val cpiUpload =
-            createRestClient(CpiUploadRestResource::class)
-
-        cpiUpload.use {
-            val connection = cpiUpload.start()
-            with(connection.proxy) {
-                val cpi = File(cpiFilePath)
-                if (cpi.extension != "cpi") {
-                    println("File type must be .cpi")
-                    return
-                }
-                try {
-                    println("Uploading CPI to host: $targetUrl")
-                    cpiUploadResult = this.cpi(HttpFileUpload(cpi.inputStream(), cpi.name)).id
-                } catch (e: Exception) {
-                    println(e.message)
-                    logger.error(e.stackTrace.contentDeepToString())
-                    return
-                }
-            }
+        val cpiUploadResult : String
+        val cpi = File(cpiFilePath)
+        if (cpi.extension != "cpi") {
+            sysOut.info("File type must be .cpi")
+            return
+        }
+        val restClient = createRestClient(
+            CpiUploadRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        try {
+            sysOut.info("Uploading CPI to host: $targetUrl")
+            cpiUploadResult = CpiUploader().uploadCPI(
+                restClient = restClient,
+                cpi = cpi.inputStream(),
+                cpiName = cpi.name,
+                wait = waitDurationSeconds.seconds
+            ).id
+        } catch (e: Exception) {
+            sysOut.info(e.message)
+            logger.error("Unexpected error during CPI upload", e)
+            return
         }
         if (wait) {
             pollForOKStatus(cpiUploadResult)
         } else {
-            println(cpiUploadResult)
+            sysOut.info(cpiUploadResult)
         }
     }
 
     @Suppress("NestedBlockDepth")
     private fun pollForOKStatus(cpiUploadResult: String) {
-        val cpiUploadClient = createRestClient(CpiUploadRestResource::class)
-
-        cpiUploadClient.use {
-            val connection = cpiUploadClient.start()
-            with(connection.proxy) {
-                println("Polling for result.")
-                try {
-                    while (this.status(cpiUploadResult).status != "OK") {
-                        Thread.sleep(5000L)
-                    }
-                } catch (e: Exception) {
-                    println(e.message)
-                    logger.error(e.stackTrace.contentDeepToString())
-                    return
-                }
-            }
-            println("CPI Successfully Uploaded and applied. ")
+        val restClient = createRestClient(
+            CpiUploadRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        sysOut.info("Polling for result.")
+        try {
+            CpiUploader().cpiChecksum(
+                restClient = restClient,
+                uploadRequestId = cpiUploadResult,
+                wait = waitDurationSeconds.seconds
+            )
+        }catch (e: Exception) {
+            sysOut.info(e.message)
+            logger.error("Unexpected error during fetching CPI checksum", e)
+            return
         }
+        sysOut.info("CPI Successfully Uploaded and applied. ")
     }
 }
