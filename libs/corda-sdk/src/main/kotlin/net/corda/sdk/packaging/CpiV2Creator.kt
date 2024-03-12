@@ -18,7 +18,7 @@ import java.util.jar.Manifest
 /**
  * Creates a CPI v2 from a CPB and GroupPolicy.json file.
  */
-object CreateCpiV2 {
+object CpiV2Creator {
     /**
      * Filename of group policy within jar file
      */

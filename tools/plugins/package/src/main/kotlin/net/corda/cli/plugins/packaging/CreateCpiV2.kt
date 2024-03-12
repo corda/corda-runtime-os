@@ -4,7 +4,7 @@ import net.corda.cli.plugins.packaging.FileHelpers.requireFileDoesNotExist
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileExists
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.sdk.packaging.CpiAttributes
-import net.corda.sdk.packaging.CreateCpiV2
+import net.corda.sdk.packaging.CpiV2Creator
 import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.ExitCode
@@ -85,7 +85,7 @@ class CreateCpiV2 : Callable<Int> {
         // Check output Cpi file does not exist
         val outputFilePath = requireFileDoesNotExist(outputName)
 
-        CreateCpiV2.createCpi(
+        CpiV2Creator.createCpi(
             cpbPath,
             outputFilePath,
             groupPolicyString,

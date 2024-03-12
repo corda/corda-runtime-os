@@ -7,11 +7,11 @@ import java.util.jar.Attributes
 import net.corda.libs.packaging.testutils.cpb.TestCpbV2Builder
 import net.corda.libs.packaging.testutils.cpk.TestCpkV2Builder
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
-import net.corda.sdk.packaging.CreateCpiV2.CPI_FORMAT_ATTRIBUTE
-import net.corda.sdk.packaging.CreateCpiV2.CPI_FORMAT_ATTRIBUTE_NAME
-import net.corda.sdk.packaging.CreateCpiV2.CPI_NAME_ATTRIBUTE_NAME
-import net.corda.sdk.packaging.CreateCpiV2.CPI_UPGRADE_ATTRIBUTE_NAME
-import net.corda.sdk.packaging.CreateCpiV2.CPI_VERSION_ATTRIBUTE_NAME
+import net.corda.sdk.packaging.CpiV2Creator.CPI_FORMAT_ATTRIBUTE
+import net.corda.sdk.packaging.CpiV2Creator.CPI_FORMAT_ATTRIBUTE_NAME
+import net.corda.sdk.packaging.CpiV2Creator.CPI_NAME_ATTRIBUTE_NAME
+import net.corda.sdk.packaging.CpiV2Creator.CPI_UPGRADE_ATTRIBUTE_NAME
+import net.corda.sdk.packaging.CpiV2Creator.CPI_VERSION_ATTRIBUTE_NAME
 import net.corda.sdk.packaging.TestSigningKeys.CPB_SIGNER
 import net.corda.sdk.packaging.TestSigningKeys.CPI_SIGNER_NAME
 import net.corda.sdk.packaging.TestSigningKeys.CPK_SIGNER
@@ -30,7 +30,7 @@ import org.junit.jupiter.api.io.TempDir
 import kotlin.io.path.readText
 import kotlin.test.assertNotNull
 
-class CreateCpiV2Test {
+class CpiV2CreatorTest {
 
     @TempDir
     lateinit var tempDir: Path
@@ -83,7 +83,7 @@ class CreateCpiV2Test {
     @Test
     fun `cpi v2 contains cpb, manifest, signature files and GroupPolicy file`() {
         val outputFile = Path.of(tempDir.toString(), CPI_FILE_NAME)
-        CreateCpiV2.createCpi(
+        CpiV2Creator.createCpi(
             cpbPath,
             outputFile,
             testGroupPolicy.readText(),
@@ -108,7 +108,7 @@ class CreateCpiV2Test {
     @Test
     fun `cpi v2 contains manifest attributes`() {
         val cpiOutputFile = Path.of(tempDir.toString(), CPI_FILE_NAME)
-        CreateCpiV2.createCpi(
+        CpiV2Creator.createCpi(
             cpbPath,
             cpiOutputFile,
             testGroupPolicy.readText(),
@@ -132,7 +132,7 @@ class CreateCpiV2Test {
     fun `cpi v2 can create CPI with only Group Policy and no CPB`() {
         val cpiOutputFile = Path.of(tempDir.toString(), CPI_FILE_NAME)
         assertDoesNotThrow {
-            CreateCpiV2.createCpi(
+            CpiV2Creator.createCpi(
                 cpbPath,
                 cpiOutputFile,
                 testGroupPolicy.readText(),
@@ -181,7 +181,7 @@ class CreateCpiV2Test {
         val cpiOutputFile = Path.of(tempDir.toString(), CPI_FILE_NAME)
 
         val error = assertThrows<IllegalArgumentException> {
-            CreateCpiV2.createCpi(
+            CpiV2Creator.createCpi(
                 cpkPath,
                 cpiOutputFile,
                 testGroupPolicy.readText(),
@@ -199,7 +199,7 @@ class CreateCpiV2Test {
         val outputFile = Path.of(tempDir.toString(), CPI_FILE_NAME)
 
         assertThrows<MembershipSchemaValidationException> {
-            CreateCpiV2.createCpi(
+            CpiV2Creator.createCpi(
                 cpbPath,
                 outputFile,
                 invalidTestGroupPolicy.readText(),

@@ -7,7 +7,7 @@ import net.corda.sdk.network.MemberRole
 import net.corda.sdk.network.RegistrationContext
 import net.corda.sdk.packaging.CpiAttributes
 import net.corda.sdk.packaging.CpiUploader
-import net.corda.sdk.packaging.CreateCpiV2
+import net.corda.sdk.packaging.CpiV2Creator
 import net.corda.sdk.rest.RestClientUtils
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import picocli.CommandLine.Command
@@ -141,7 +141,7 @@ class OnboardMember : Runnable, BaseOnboard() {
         )
         cpiFile.parentFile.mkdirs()
 
-        CreateCpiV2.createCpi(
+        CpiV2Creator.createCpi(
             cpbFile.toPath(),
             cpiFile.toPath(),
             readGroupPolicy(),

@@ -23,7 +23,7 @@ import picocli.CommandLine
 import java.io.ByteArrayInputStream
 import java.io.File
 
-class CreateCpiV2Test {
+class CpiV2CreatorTest {
 
     @TempDir
     lateinit var tempDir: Path
