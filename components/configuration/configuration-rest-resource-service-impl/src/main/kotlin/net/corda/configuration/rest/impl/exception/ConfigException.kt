@@ -15,7 +15,7 @@ class ConfigException(
     config: String
 ) : HttpApiException(
     responseCode = ResponseCode.INTERNAL_SERVER_ERROR,
-    message = "Config Version Error",
+    title = "Config Version Error",
     details = mapOf(
         "schemaVersion" to "${schemaVersion.majorVersion}.${schemaVersion.minorVersion}",
         "config" to config
@@ -33,7 +33,7 @@ class ConfigVersionConflictException(
     config: String
 ) : HttpApiException(
     responseCode = ResponseCode.CONFLICT,
-    message = "Wrong Config Version",
+    title = "Wrong Config Version",
     details = mapOf(
         "schemaVersion" to "${schemaVersion.majorVersion}.${schemaVersion.minorVersion}",
         "config" to config

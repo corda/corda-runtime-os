@@ -9,15 +9,16 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
  * Inherit from this class and override the status code to create a HTTP response with a certain status code ([ResponseCode.statusCode]).
  *
  * @param responseCode HTTP error response code
- * @param message the response message
+ * @param title the response title
  * @param details additional problem details
+ * @param exceptionDetails contains cause and reason
  */
 abstract class HttpApiException(
     val responseCode: ResponseCode,
-    override val message: String,
+    val title: String,
     val details: Map<String, String> = emptyMap(),
     val exceptionDetails: ExceptionDetails? = null
-) : CordaRuntimeException(message)
+) : CordaRuntimeException(title)
 
 data class ExceptionDetails(
     val cause: String,

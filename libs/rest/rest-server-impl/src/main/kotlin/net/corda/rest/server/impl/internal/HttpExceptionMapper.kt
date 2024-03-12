@@ -57,6 +57,6 @@ internal object HttpExceptionMapper {
                 )
             }
         }
-        return HttpResponseException(responseCode.statusCode, message, fullDetails)
+        return HttpResponseException(responseCode.statusCode, title, fullDetails)
     }
 }
