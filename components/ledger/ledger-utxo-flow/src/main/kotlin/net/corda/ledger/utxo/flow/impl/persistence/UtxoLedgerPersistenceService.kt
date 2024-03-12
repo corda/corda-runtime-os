@@ -7,12 +7,12 @@ import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndSignatures
 import java.security.PublicKey
+import java.time.Instant
 
 /**
  * [UtxoLedgerPersistenceService] allows to insert and find UTXO signed transactions in the persistent store provided
@@ -111,7 +111,7 @@ interface UtxoLedgerPersistenceService {
      * @param transactionStatus Transaction's status
      * @param visibleStatesIndexes Indexes of visible states.
      *
-     * @return list of [CordaPackageSummary] for missing CPKs (that were not linked)
+     * @return [Instant] timestamp of when the transaction is stored in DB.
      *
      * @throws CordaPersistenceException if an error happens during persist operation.
      */
@@ -120,7 +120,7 @@ interface UtxoLedgerPersistenceService {
         transaction: UtxoSignedTransaction,
         transactionStatus: TransactionStatus,
         visibleStatesIndexes: List<Int> = emptyList()
-    ): List<CordaPackageSummary>
+    ): Instant
 
     @Suspendable
     fun updateStatus(id: SecureHash, transactionStatus: TransactionStatus)
@@ -131,7 +131,8 @@ interface UtxoLedgerPersistenceService {
      * @param transaction UTXO signed transaction to persist.
      * @param transactionStatus Transaction's status
      *
-     * @return list of [CordaPackageSummary] for missing CPKs (that were not linked)
+     * @return list of [String] that represents transaction's status that tells us whether it existed or not.
+     * if it exists already it'll be the status in db, if not empty string to represent non-existent
      *
      * @throws CordaPersistenceException if an error happens during persist operation.
      */
@@ -139,7 +140,7 @@ interface UtxoLedgerPersistenceService {
     fun persistIfDoesNotExist(
         transaction: UtxoSignedTransaction,
         transactionStatus: TransactionStatus
-    ): Pair<TransactionExistenceStatus, List<CordaPackageSummary>>
+    ): TransactionExistenceStatus
 
     @Suspendable
     fun persistTransactionSignatures(id: SecureHash, startingIndex: Int, signatures: List<DigitalSignatureAndMetadata>)

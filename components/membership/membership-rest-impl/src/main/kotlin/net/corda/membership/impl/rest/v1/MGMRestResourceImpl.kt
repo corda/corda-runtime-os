@@ -19,6 +19,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.client.CouldNotFindEntityException
 import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
+import net.corda.membership.client.ServiceNotReadyException
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
 import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.lib.approval.ApprovalRuleParams
@@ -800,6 +801,7 @@ class MGMRestResourceImpl internal constructor(
         /**
          * Invoke a function with handling for common exceptions across all endpoints.
          */
+        @Suppress("ThrowsCount")
         private fun <T> handleCommonErrors(
             holdingIdentityShortHash: String,
             func: (ShortHash) -> T
@@ -812,6 +814,8 @@ class MGMRestResourceImpl internal constructor(
                 notAnMgmError(holdingIdentityShortHash)
             } catch (e: CordaRPCAPIPartitionException) {
                 throw ServiceUnavailableException("Could not perform operation for $holdingIdentityShortHash: Repartition Event!")
+            } catch (e: ServiceNotReadyException) {
+                throw ServiceUnavailableException("Could not perform operation for $holdingIdentityShortHash. Service not ready.")
             }
         }
     }

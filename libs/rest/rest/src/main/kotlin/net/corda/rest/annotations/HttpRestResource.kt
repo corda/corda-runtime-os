@@ -1,7 +1,7 @@
 package net.corda.rest.annotations
 
 import net.corda.rest.annotations.RestApiVersion.C5_0 as MIN_SUPPORTED
-import net.corda.rest.annotations.RestApiVersion.C5_2 as CURRENT
+import net.corda.rest.annotations.RestApiVersion.C5_3 as CURRENT
 
 /**
  * Marks an interface extending `RestResource` to be exposed as an HTTP resource.

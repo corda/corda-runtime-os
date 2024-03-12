@@ -65,13 +65,14 @@ class WrappingRepositoryImpl(
     override fun findKeysNotWrappedByParentKey(parentKeyAlias: String): List<WrappingKeyInfo> =
         entityManagerFactory.createEntityManager().use {
             it.createQuery(
-                "FROM ${WrappingKeyEntity::class.simpleName} AS k WHERE k.parentKeyReference != :parentKeyAlias",
+                "FROM ${WrappingKeyEntity::class.simpleName} " +
+                "WHERE (alias, generation) IN (" +
+                    "SELECT alias, MAX(generation) FROM ${WrappingKeyEntity::class.simpleName} " +
+                    "GROUP BY alias" +
+                ") AND parentKeyReference != :parentKeyAlias",
                 WrappingKeyEntity::class.java
             ).setParameter("parentKeyAlias", parentKeyAlias).resultList
                 .map { dao -> dao.toDto() }
-                .groupBy { it.alias } // bucket into aliases
-                .map { it.value.sortedBy { it.generation }.lastOrNull() } // grab only the highest generation per alias
-                .filterNotNull()
         }
 
     override fun getKeyById(id: UUID): WrappingKeyInfo? = entityManagerFactory.createEntityManager().use {
