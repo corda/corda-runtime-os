@@ -121,7 +121,7 @@ fun clearMDC(mdcData: Map<String, String>) {
  * Clear the Log4j logging MDC of all data stored there.
  */
 fun clearMDC() {
-    // Clear only the MDC properties that are set explicitly by Corda
+    // Clear only the MDC properties that are explicitly set by Corda
     // Some libraries like Brave also manage the MDC properties and those
     // properties shouldn't be cleared out.
     MDC.getMDCAdapter().apply {
