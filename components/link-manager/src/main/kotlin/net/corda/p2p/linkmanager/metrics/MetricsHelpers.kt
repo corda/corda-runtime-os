@@ -1,11 +1,15 @@
 package net.corda.p2p.linkmanager.metrics
 
+import io.micrometer.core.instrument.Counter
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.InboundUnauthenticatedMessage
 import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
+import net.corda.data.p2p.event.SessionDirection
 import net.corda.metrics.CordaMetrics
 import net.corda.metrics.CordaMetrics.NOT_APPLICABLE_TAG_VALUE
 import net.corda.virtualnode.HoldingIdentity
+import java.time.Duration
+import java.time.Instant
 
 const val P2P_SUBSYSTEM = "p2p"
 const val SESSION_MESSAGE_TYPE = "SessionMessage"
@@ -69,4 +73,23 @@ private fun recordInboundMessagesMetric(group: String?, subsystem: String, messa
         builder.withTag(it.first, value)
     }
     builder.build().increment()
+}
+
+fun recordSessionTimeoutMetric(source: HoldingIdentity, direction: SessionDirection) {
+    CordaMetrics.Metric.SessionTimeoutCount.builder()
+        .withTag(CordaMetrics.Tag.SessionDirection, direction.toString())
+        .withTag(CordaMetrics.Tag.MembershipGroup, source.groupId)
+        .build().increment()
+}
+
+fun recordSessionCreationTime(startTime: Instant) {
+    CordaMetrics.Metric.SessionCreationTime.builder()
+        .build()
+        .record(Duration.between(startTime, Instant.now()))
+}
+
+fun recordP2PMetric(metric: CordaMetrics.Metric<Counter>, direction: SessionDirection, incrementBy: Double = 1.0) {
+    metric.builder()
+        .withTag(CordaMetrics.Tag.SessionDirection, direction.toString())
+        .build().increment(incrementBy)
 }

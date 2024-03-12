@@ -39,6 +39,7 @@ import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import net.corda.metrics.CordaMetrics
 import net.corda.p2p.linkmanager.TraceableItem
 import net.corda.p2p.linkmanager.metrics.recordOutboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
@@ -388,6 +389,7 @@ internal class OutboundMessageProcessor(
                     TraceableItem(message.item.markerRecords, message.originalRecord)
                 }
                 is SessionManager.SessionState.CannotEstablishSession -> {
+                    CordaMetrics.Metric.SessionFailedCount.builder().build().increment()
                     TraceableItem(message.item.markerRecords, message.originalRecord)
                 }
             }
