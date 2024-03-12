@@ -42,7 +42,7 @@ class CPIUpload : RestCommand(), Runnable {
     override fun run() {
         lateinit var cpiUploadResult: String
         val cpi = File(cpiFilePath)
-        if (cpi.extension.toLower() != "cpi") {
+        if (cpi.extension.lowercase() != "cpi") {
             sysOut.info("File type must be .cpi")
             System.exit(1)
         }
