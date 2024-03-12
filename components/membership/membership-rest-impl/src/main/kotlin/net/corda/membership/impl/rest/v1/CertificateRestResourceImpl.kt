@@ -159,7 +159,7 @@ class CertificateRestResourceImpl @Activate constructor(
             } else {
                 val message = "$name is not a valid domain name or IP address"
                 throw InvalidInputDataException(
-                    message = message,
+                    title = message,
                     details = mapOf("subjectAlternativeNames" to message),
                 )
             }

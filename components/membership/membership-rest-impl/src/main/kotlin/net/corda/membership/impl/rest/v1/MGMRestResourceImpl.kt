@@ -57,7 +57,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.UUID
+import java.util.*
 import java.util.regex.PatternSyntaxException
 import javax.persistence.PessimisticLockException
 import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
@@ -735,7 +735,7 @@ class MGMRestResourceImpl internal constructor(
         private fun notAnMgmError(holdingIdentityShortHash: String): Nothing =
             throw InvalidInputDataException(
                 details = mapOf("holdingIdentityShortHash" to holdingIdentityShortHash),
-                message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
+                title = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
             )
 
         private fun parsePreAuthTokenId(preAuthTokenId: String): UUID {
@@ -744,7 +744,7 @@ class MGMRestResourceImpl internal constructor(
             } catch (e: IllegalArgumentException) {
                 throw InvalidInputDataException(
                     details = mapOf("preAuthTokenId" to preAuthTokenId),
-                    message = "tokenId is not a valid pre auth token."
+                    title = "tokenId is not a valid pre auth token."
                 )
             }
         }
@@ -755,7 +755,7 @@ class MGMRestResourceImpl internal constructor(
             } catch (e: IllegalArgumentException) {
                 throw InvalidInputDataException(
                     details = mapOf(keyName to x500Name),
-                    message = "$keyName is not a valid X500 name: ${e.message}",
+                    title = "$keyName is not a valid X500 name: ${e.message}",
                 )
             }
         }
@@ -793,7 +793,7 @@ class MGMRestResourceImpl internal constructor(
         private fun verifyMutualTlsIsRunning() {
             if (TlsType.getClusterType(configurationGetService::getSmartConfig) != TlsType.MUTUAL) {
                 throw BadRequestException(
-                    message = "This cluster is configure to use one way TLS. Mutual TLS APIs can not be called.",
+                    title = "This cluster is configure to use one way TLS. Mutual TLS APIs can not be called.",
                 )
             }
         }

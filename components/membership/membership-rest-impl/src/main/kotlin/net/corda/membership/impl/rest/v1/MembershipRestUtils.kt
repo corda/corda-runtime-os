@@ -1,7 +1,7 @@
 package net.corda.membership.impl.rest.v1
 
 import net.corda.rest.exception.InvalidInputDataException
-import java.util.UUID
+import java.util.*
 
 internal fun parseRegistrationRequestId(requestId: String): UUID {
     return try {
@@ -9,7 +9,7 @@ internal fun parseRegistrationRequestId(requestId: String): UUID {
     } catch (e: IllegalArgumentException) {
         throw InvalidInputDataException(
             details = mapOf("registrationRequestId" to requestId),
-            message = "'$requestId' is not a valid registration request ID."
+            title = "'$requestId' is not a valid registration request ID."
         )
     }
 }
