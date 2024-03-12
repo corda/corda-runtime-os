@@ -47,7 +47,12 @@ internal object Unlimited : SampleRate
 internal data class PerSecond(val samplesPerSecond: Int) : SampleRate
 
 @Suppress("TooManyFunctions")
-internal class BraveTracingService(serviceName: String, zipkinHost: String?, samplesPerSecond: SampleRate, extraTraceTags: Map<String,String>) :
+internal class BraveTracingService(
+    serviceName: String,
+    zipkinHost: String?,
+    samplesPerSecond: SampleRate,
+    extraTraceTags: Map<String, String>
+) :
     TracingService {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
