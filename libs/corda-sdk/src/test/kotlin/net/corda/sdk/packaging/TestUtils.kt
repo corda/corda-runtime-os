@@ -1,5 +1,7 @@
 package net.corda.sdk.packaging
 
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
@@ -8,8 +10,6 @@ import java.util.jar.JarEntry
 import java.util.jar.JarInputStream
 import java.util.zip.ZipInputStream
 import kotlin.math.min
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
 
 internal object TestUtils {
     fun getManifestMainAttributesAndEntries(cpxFile: Path) =
@@ -38,8 +38,8 @@ internal object TestUtils {
 
     private fun isSignatureBlockFile(entryName: String): Boolean =
         entryName.endsWith(".RSA") ||
-                entryName.endsWith(".DSA") ||
-                entryName.endsWith(".EC")
+            entryName.endsWith(".DSA") ||
+            entryName.endsWith(".EC")
 
     fun getNonSignatureJarEntries(cpbFile: Path): Set<JarEntry> =
         getJarEntriesByEntryNamePredicate(cpbFile) { entryName ->

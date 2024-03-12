@@ -1,8 +1,5 @@
 package net.corda.sdk.packaging.signing
 
-import java.nio.file.Files
-import java.nio.file.Path
-import java.util.jar.Attributes
 import net.corda.libs.packaging.testutils.cpb.TestCpbV2Builder
 import net.corda.sdk.packaging.TestSigningKeys.CPB_SIGNER
 import net.corda.sdk.packaging.TestSigningKeys.SIGNING_KEY_1_ALIAS
@@ -16,6 +13,9 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import java.nio.file.Files
+import java.nio.file.Path
+import java.util.jar.Attributes
 
 class CpxSignerTest {
     @TempDir
@@ -39,13 +39,15 @@ class CpxSignerTest {
         lateinit var createdSignedCpb: Path
         lateinit var createdUnsignedCpb: Path
 
-        private val testKeyStore = Path.of(this::class.java.getResource("/signingkeys.pfx")?.toURI()
-            ?: error("signingkeys.pfx not found"))
+        private val testKeyStore = Path.of(
+            this::class.java.getResource("/signingkeys.pfx")?.toURI()
+                ?: error("signingkeys.pfx not found")
+        )
 
         private fun createTempFile(prefix: String): Path =
             Files.createTempFile(prefix, null).also { it.toFile().deleteOnExit() }
 
-        private fun getManifestEntries(cpx: Path): Map<String,Attributes> {
+        private fun getManifestEntries(cpx: Path): Map<String, Attributes> {
             val (_, manifestEntries) = TestUtils.getManifestMainAttributesAndEntries(cpx)
             return manifestEntries
         }
@@ -56,12 +58,12 @@ class CpxSignerTest {
             createdSignedCpb = TestCpbV2Builder()
                 .signers(CPB_SIGNER)
                 .build().toByteArray().let {
-                createTempFile("signedCpb").write(it)
-            }.also { assertTrue(getManifestEntries(it).isNotEmpty(), "Signed CPB should have non-empty manifest entries map") }
+                    createTempFile("signedCpb").write(it)
+                }.also { assertTrue(getManifestEntries(it).isNotEmpty(), "Signed CPB should have non-empty manifest entries map") }
             createdUnsignedCpb = TestCpbV2Builder()
                 .build().toByteArray().let {
-                createTempFile("unsignedCpb").write(it)
-            }.also { assertTrue(getManifestEntries(it).isEmpty(), "Unsigned CPB should have empty manifest entries map") }
+                    createTempFile("unsignedCpb").write(it)
+                }.also { assertTrue(getManifestEntries(it).isEmpty(), "Unsigned CPB should have empty manifest entries map") }
         }
     }
 
@@ -71,7 +73,7 @@ class CpxSignerTest {
         CpxSigner.sign(
             createdUnsignedCpb,
             signedCpb,
-                SigningOptions(
+            SigningOptions(
                 testKeyStore,
                 KEYSTORE_PASSWORD,
                 SIGNING_KEY_1_ALIAS,
@@ -114,8 +116,10 @@ class CpxSignerTest {
         assertEquals(createdManifestMainAttributes, signedManifestMainAttributes)
 
         val signedCpbSignatureRelatedFiles =
-            (TestUtils.getSignatureBlockJarEntries(signedCpb).map { it.name } +
-                    TestUtils.getSignatureJarEntries(signedCpb).map { it.name }).toSet()
+            (
+                TestUtils.getSignatureBlockJarEntries(signedCpb).map { it.name } +
+                    TestUtils.getSignatureJarEntries(signedCpb).map { it.name }
+                ).toSet()
 
         assertEquals(setOf("META-INF/$CPx_SIGNER_NAME.EC", "META-INF/$CPx_SIGNER_NAME.SF"), signedCpbSignatureRelatedFiles)
 
@@ -154,16 +158,18 @@ class CpxSignerTest {
 
         val createdCpbSignatureRelatedFiles =
             TestUtils.getSignatureBlockJarEntries(createdSignedCpb).map { it.name } +
-                    TestUtils.getSignatureJarEntries(createdSignedCpb).map { it.name }
+                TestUtils.getSignatureJarEntries(createdSignedCpb).map { it.name }
         val signedCpbSignatureRelatedFiles =
             TestUtils.getSignatureBlockJarEntries(signedCpb).map { it.name } +
-                    TestUtils.getSignatureJarEntries(signedCpb).map { it.name }
+                TestUtils.getSignatureJarEntries(signedCpb).map { it.name }
         // assert all signature related files in created Cpb exist and are equal in signed Cpb
         assertTrue(
             createdCpbSignatureRelatedFiles.all { createdSignatureRelatedFile ->
-                ((createdSignatureRelatedFile == SIG_FILE_NAME) ||
-                        (createdSignatureRelatedFile == SIG_BLOCK_FILE_NAME)) &&
-                        signedCpbSignatureRelatedFiles.contains(createdSignatureRelatedFile)
+                (
+                    (createdSignatureRelatedFile == SIG_FILE_NAME) ||
+                        (createdSignatureRelatedFile == SIG_BLOCK_FILE_NAME)
+                    ) &&
+                    signedCpbSignatureRelatedFiles.contains(createdSignatureRelatedFile)
             }
         )
         assertTrue(

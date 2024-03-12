@@ -107,7 +107,7 @@ object CpxSigner {
             .generateCertPath(certificateChain)
 
     // The following has the same behavior as jarsigner in terms of signature files naming.
-    private fun getSignerNameFromString (keyAlias: String): String =
+    private fun getSignerNameFromString(keyAlias: String): String =
         keyAlias.run {
             var str = this
             if (str.length > 8) {

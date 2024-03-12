@@ -1,9 +1,5 @@
 package net.corda.sdk.packaging
 
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.StandardOpenOption
-import java.util.jar.Attributes
 import net.corda.libs.packaging.testutils.cpb.TestCpbV2Builder
 import net.corda.libs.packaging.testutils.cpk.TestCpkV2Builder
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
@@ -27,6 +23,10 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
+import java.util.jar.Attributes
 import kotlin.io.path.readText
 import kotlin.test.assertNotNull
 
@@ -46,12 +46,18 @@ class CpiV2CreatorTest {
         const val CPI_FILE_NAME = "output.cpi"
         const val KEYSTORE_PASSWORD = "keystore password"
 
-        private val testGroupPolicy = Path.of(this::class.java.getResource("/TestGroupPolicy.json")?.toURI()
-            ?: error("TestGroupPolicy.json not found"))
-        private val invalidTestGroupPolicy = Path.of(this::class.java.getResource("/InvalidTestGroupPolicy.json")?.toURI()
-            ?: error("InvalidTestGroupPolicy.json not found"))
-        private val testKeyStore = Path.of(this::class.java.getResource("/signingkeys.pfx")?.toURI()
-            ?: error("signingkeys.pfx not found"))
+        private val testGroupPolicy = Path.of(
+            this::class.java.getResource("/TestGroupPolicy.json")?.toURI()
+                ?: error("TestGroupPolicy.json not found")
+        )
+        private val invalidTestGroupPolicy = Path.of(
+            this::class.java.getResource("/InvalidTestGroupPolicy.json")?.toURI()
+                ?: error("InvalidTestGroupPolicy.json not found")
+        )
+        private val testKeyStore = Path.of(
+            this::class.java.getResource("/signingkeys.pfx")?.toURI()
+                ?: error("signingkeys.pfx not found")
+        )
 
         private val signingOptions = SigningOptions(
             testKeyStore,
