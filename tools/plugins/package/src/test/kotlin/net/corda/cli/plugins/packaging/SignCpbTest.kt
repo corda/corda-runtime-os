@@ -12,7 +12,10 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import picocli.CommandLine
 
-// TODO migrate to SDK - to cover CpxSigner.sign
+/**
+ * Some of the functionality is also covered in [net.corda.sdk.packaging.signing.CpxSignerTest];
+ * While coverage overlaps, we need the present set of tests to cover the specific CLI plugin functionality.
+ */
 class SignCpbTest {
 
     @TempDir

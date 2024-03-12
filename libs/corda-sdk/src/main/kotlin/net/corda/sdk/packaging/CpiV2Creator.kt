@@ -33,8 +33,17 @@ object CpiV2Creator {
     val CPI_UPGRADE_ATTRIBUTE_NAME = Attributes.Name("Corda-CPI-Upgrade")
 
     /**
-     * If CPB file is provided, validate that it is a valid CpbV2.
-     * TODO fill in the rest
+     * Create a CPI v2 from an optional CPB v2 file and a Group Policy,
+     * and sign the resulting CPI Jar with a provided key.
+     *
+     * Group Policy is validated; if CPB file is provided, it is validated.
+     *
+     * @param cpbPath a [Path] of an existing CPB file.
+     * If `null`, then CPI is packaged with Group Policy only.
+     * @param outputFilePath a [Path] of an output CPI file; must not exist.
+     * @param groupPolicy Group Policy as a [String]
+     * @param cpiAttributes [CpiAttributes] listing name, version, and upgrade flag
+     * @param signingOptions [SigningOptions] with mandatory key store file path, password, key alias
      */
     fun createCpi(
         cpbPath: Path?,
