@@ -39,7 +39,7 @@ object CpiV2Creator {
      * Group Policy is validated; if CPB file is provided, it is validated.
      *
      * @param cpbPath a [Path] of an existing CPB file.
-     * If `null`, then CPI is packaged with Group Policy only.
+     * If `null`, then CPI is packaged with Group Policy only as `META-INF/GroupPolicy.json`.
      * @param outputFilePath a [Path] of an output CPI file; must not exist.
      * @param groupPolicy Group Policy as a [String]
      * @param cpiAttributes [CpiAttributes] listing name, version, and upgrade flag
