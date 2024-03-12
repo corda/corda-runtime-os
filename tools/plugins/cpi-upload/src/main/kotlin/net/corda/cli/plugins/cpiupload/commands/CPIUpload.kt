@@ -40,7 +40,7 @@ class CPIUpload : RestCommand(), Runnable {
     var wait: Boolean = false
 
     override fun run() {
-        lateinit var cpiUploadResult : String
+        lateinit var cpiUploadResult: String
         val cpi = File(cpiFilePath)
         if (cpi.extension != "cpi") {
             sysOut.info("File type must be .cpi")
