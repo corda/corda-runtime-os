@@ -1,15 +1,17 @@
 package net.corda.cli.plugins.vnode.commands
 
-import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
-import net.corda.rest.HttpFileUpload
+import net.corda.sdk.network.VirtualNode
+import net.corda.sdk.packaging.CpiUploader
+import net.corda.sdk.rest.RestClientUtils.createRestClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
+import kotlin.time.Duration.Companion.seconds
 
 @Command(
     name = "reset",
@@ -52,73 +54,76 @@ class ResetCommand : RestCommand(), Runnable {
             println("You cannot use the resync option without waiting")
             return
         }
-        var virtualNodeMaintenanceResult: String
-        val virtualNodeMaintenance =
-            createRestClient(VirtualNodeMaintenanceRestResource::class)
 
-        virtualNodeMaintenance.use {
-            val connection = virtualNodeMaintenance.start()
-            with(connection.proxy) {
-                val cpi = File(cpiFilePath)
-                if (cpi.extension != "cpi") {
-                    println("File type must be .cpi")
-                    return
-                }
-                try {
-                    println("Uploading CPI to host: $targetUrl")
-                    virtualNodeMaintenanceResult = this.forceCpiUpload(HttpFileUpload(cpi.inputStream(), cpi.name)).id
-                } catch (e: Exception) {
-                    println(e.message)
-                    logger.error(e.stackTrace.toString())
-                    return
-                }
-            }
+        val cpi = File(cpiFilePath)
+        if (cpi.extension != "cpi") {
+            println("File type must be .cpi")
+            return
         }
+
+        val restClient = createRestClient(
+            VirtualNodeMaintenanceRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        println("Uploading CPI to host: $targetUrl")
+        val responseId = CpiUploader().forceCpiUpload(
+            restClient = restClient,
+            cpiFile = cpi.inputStream(),
+            cpiName = cpi.name,
+            wait = waitDurationSeconds.seconds
+        ).id
         if (wait) {
-            pollForOKStatus(virtualNodeMaintenanceResult)
+            pollForOKStatus(responseId)
             if (resync.isNotEmpty()) {
                 resyncVaults(resync)
             }
         } else {
-            println(virtualNodeMaintenanceResult)
+            println(responseId)
         }
     }
 
     @Suppress("NestedBlockDepth")
     private fun pollForOKStatus(virtualNodeMaintenanceResult: String) {
-        val cpiUploadClient = createRestClient(CpiUploadRestResource::class)
-
-        cpiUploadClient.use {
-            val connection = cpiUploadClient.start()
-            with(connection.proxy) {
-                println("Polling for result.")
-                try {
-                    while (this.status(virtualNodeMaintenanceResult).status != "OK") {
-                        Thread.sleep(5000L)
-                    }
-                } catch (e: Exception) {
-                    println(e.message)
-                    logger.error(e.stackTrace.toString())
-                    return
-                }
-            }
-            println("CPI Successfully Uploaded and applied. ")
-        }
+        val restClient = createRestClient(
+            CpiUploadRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        println("Polling for result.")
+        CpiUploader().cpiChecksum(
+            restClient = restClient,
+            uploadRequestId = virtualNodeMaintenanceResult,
+            wait = waitDurationSeconds.seconds
+        )
+        println("CPI Successfully Uploaded and applied. ")
     }
 
     private fun resyncVaults(virtualNodeShortIds: List<String>) {
-        createRestClient(VirtualNodeMaintenanceRestResource::class).use { client ->
-            val virtualNodeMaintenance = client.start().proxy
-            try {
-                virtualNodeShortIds.forEach { virtualNodeShortId ->
-                    virtualNodeMaintenance.resyncVirtualNodeDb(virtualNodeShortId)
-                    println("Virtual node $virtualNodeShortId successfully resynced")
-                }
-            } catch (e: Exception) {
-                println(e.message)
-                logger.error("Unexpected error when resyncing vaults", e)
-                return
+        val restClient = createRestClient(
+            VirtualNodeMaintenanceRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        val virtualNodeHelper = VirtualNode()
+        try {
+            virtualNodeShortIds.forEach { virtualNodeShortId ->
+                virtualNodeHelper.resyncVault(restClient = restClient, holdingId = virtualNodeShortId, wait = waitDurationSeconds.seconds)
+                println("Virtual node $virtualNodeShortId successfully resynced")
             }
+        } catch (e: Exception) {
+            println(e.message)
+            logger.error("Unexpected error when resyncing vaults", e)
+            return
         }
     }
 }

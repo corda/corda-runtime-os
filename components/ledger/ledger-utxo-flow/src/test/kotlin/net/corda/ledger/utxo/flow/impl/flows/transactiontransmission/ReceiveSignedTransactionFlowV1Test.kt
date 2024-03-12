@@ -24,6 +24,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Instant
 
 class ReceiveSignedTransactionFlowV1Test : UtxoLedgerTest() {
     private val mockFlowEngine = mock<FlowEngine>()
@@ -53,7 +54,7 @@ class ReceiveSignedTransactionFlowV1Test : UtxoLedgerTest() {
     @Test
     fun `flow should respond with success payload if sub-flow executes properly`() {
         whenever(transactionVerificationService.verify(any())).doAnswer { }
-        whenever(persistenceService.persist(any(), any(), any())).doReturn(emptyList())
+        whenever(persistenceService.persist(any(), any(), any())).doReturn(Instant.now())
         whenever(sessionAlice.receive(UtxoTransactionPayload::class.java)).thenReturn(
             UtxoTransactionPayload(
                 signedTransaction,

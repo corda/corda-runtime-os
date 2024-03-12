@@ -3,6 +3,7 @@ package net.corda.testing.sandboxes.impl
 import net.corda.crypto.core.ShortHash
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.reconciliation.VersionedRecord
 import net.corda.testing.sandboxes.CpiLoader
@@ -19,6 +20,7 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.UUID
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Stream
 
@@ -74,6 +76,10 @@ class VirtualNodeLoaderImpl @Activate constructor(
 
     override fun forgetCPI(id: CpiIdentifier) {
         resourcesLookup.remove(id)?.also(cpiResources::remove)
+    }
+
+    override fun getCpiMetadata(id: CpiIdentifier): CompletableFuture<CpiMetadata?> {
+        return cpiLoader.getCpiMetadata(id)
     }
 
     override fun getAll(): List<VirtualNodeInfo> {
