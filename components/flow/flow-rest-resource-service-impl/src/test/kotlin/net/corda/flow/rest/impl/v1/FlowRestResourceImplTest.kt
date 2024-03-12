@@ -327,6 +327,7 @@ class FlowRestResourceImplTest {
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(cpiInfoReadService, times(1)).get(any())
         verify(flowStatusLookupService, times(1)).getStatus(any(), any())
+        verify(flowStatusLookupService, times(1)).storeStatus(any())
         verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), platformPropertiesCaptor.capture())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(publisher, times(1)).batchPublish(any())
@@ -360,6 +361,7 @@ class FlowRestResourceImplTest {
         verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
         verify(cpiInfoReadService, never()).get(any())
         verify(flowStatusLookupService, never()).getStatus(any(), any())
+        verify(flowStatusLookupService, never()).storeStatus(any())
         verify(messageFactory, never()).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, never()).createStartFlowStatus(any(), any(), any())
         verify(publisher, never()).publish(any())
@@ -377,6 +379,7 @@ class FlowRestResourceImplTest {
         }
 
         verify(flowStatusLookupService, never()).getStatus(any(), any())
+        verify(flowStatusLookupService, never()).storeStatus(any())
         verify(messageFactory, never()).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, never()).createStartFlowStatus(any(), any(), any())
         verify(publisher, never()).publish(any())
@@ -395,6 +398,7 @@ class FlowRestResourceImplTest {
         }
 
         verify(flowStatusLookupService, never()).getStatus(any(), any())
+        verify(flowStatusLookupService, never()).storeStatus(any())
         verify(messageFactory, never()).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, never()).createStartFlowStatus(any(), any(), any())
         verify(publisher, never()).publish(any())
@@ -413,6 +417,7 @@ class FlowRestResourceImplTest {
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusLookupService, times(1)).getStatus(any(), any())
+        verify(flowStatusLookupService, never()).storeStatus(any())
         verify(cpiInfoReadService, times(0)).get(any())
         verify(messageFactory, times(0)).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, times(0)).createStartFlowStatus(any(), any(), any())
@@ -433,6 +438,7 @@ class FlowRestResourceImplTest {
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusLookupService, times(1)).getStatus(any(), any())
+        verify(flowStatusLookupService, never()).storeStatus(any())
         verify(cpiInfoReadService, atLeastOnce()).get(any())
         verify(messageFactory, never()).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, never()).createStartFlowStatus(any(), any(), any())
@@ -452,6 +458,7 @@ class FlowRestResourceImplTest {
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusLookupService, times(1)).getStatus(any(), any())
+        verify(flowStatusLookupService, times(1)).storeStatus(any())
         verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(publisher, times(1)).batchPublish(any())
@@ -472,6 +479,7 @@ class FlowRestResourceImplTest {
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusLookupService, times(1)).getStatus(any(), any())
+        verify(flowStatusLookupService, times(1)).storeStatus(any())
         verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(publisher, times(1)).batchPublish(any())
@@ -490,6 +498,7 @@ class FlowRestResourceImplTest {
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusLookupService, times(1)).getStatus(any(), any())
+        verify(flowStatusLookupService, times(1)).storeStatus(any())
         verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(publisher, times(1)).batchPublish(any())
@@ -505,6 +514,7 @@ class FlowRestResourceImplTest {
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusLookupService, times(1)).getStatus(any(), any())
+        verify(flowStatusLookupService, times(1)).storeStatus(any())
         verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(publisher, times(1)).batchPublish(any())
@@ -525,6 +535,7 @@ class FlowRestResourceImplTest {
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusLookupService, times(1)).getStatus(any(), any())
+        verify(flowStatusLookupService, times(1)).storeStatus(any())
         verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(publisher, times(1)).batchPublish(any())
@@ -540,6 +551,7 @@ class FlowRestResourceImplTest {
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusLookupService, times(1)).getStatus(any(), any())
+        verify(flowStatusLookupService, times(1)).storeStatus(any())
         verify(messageFactory, times(1)).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(publisher, times(1)).batchPublish(any())

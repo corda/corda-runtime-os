@@ -87,7 +87,8 @@ class ClientRequestBodyImplTest {
             mock(),
             emptyMap(),
             mock(),
-            emptyMap()
+            emptyMap(),
+            mock()
         )
         whenever(fiber.getExecutionContext()).thenReturn(executionContext)
         whenever(fiberService.getExecutingFiber()).thenReturn(fiber)

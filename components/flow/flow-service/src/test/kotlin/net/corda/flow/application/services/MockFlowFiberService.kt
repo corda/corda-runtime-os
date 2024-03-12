@@ -59,7 +59,8 @@ class MockFlowFiberService : FlowFiberService {
             currentSandboxGroupContext,
             emptyMap(),
             mock(),
-            emptyMap()
+            emptyMap(),
+            mock()
         )
 
         whenever(flowFiber.getExecutionContext()).thenReturn(flowFiberExecutionContext)

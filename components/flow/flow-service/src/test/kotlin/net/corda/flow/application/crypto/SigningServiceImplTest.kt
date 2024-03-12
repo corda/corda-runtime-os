@@ -150,4 +150,20 @@ class SigningServiceImplTest {
         assertEquals(mapOf(key1 to key1, key2 to key2, key3 to null), signingService.findMySigningKeys(setOf(key1, key2, key3)))
         verify(mySigningKeysCache).putAll(mapOf(key2 to key2, key3 to null))
     }
+
+    @Test
+    fun `encoding and decoding public keys is done via correct service methods`() {
+        val pubKey = mock<PublicKey>()
+        val keyAsString = "0x0000001"
+        val keyAsBytes = byteArrayOf(100)
+        whenever(keyEncodingService.decodePublicKey(keyAsString)).thenReturn(pubKey)
+        whenever(keyEncodingService.decodePublicKey(keyAsBytes)).thenReturn(pubKey)
+        whenever(keyEncodingService.encodeAsString(pubKey)).thenReturn(keyAsString)
+        whenever(keyEncodingService.encodeAsByteArray(pubKey)).thenReturn(keyAsBytes)
+
+        assertEquals(pubKey, signingService.decodePublicKey(keyAsString))
+        assertEquals(pubKey, signingService.decodePublicKey(keyAsBytes))
+        assertEquals(keyAsString, signingService.encodeAsString(pubKey))
+        assert(keyAsBytes.contentEquals(signingService.encodeAsByteArray(pubKey)))
+    }
 }

@@ -9,7 +9,6 @@ import net.corda.virtualnode.HoldingIdentity
 
 const val P2P_SUBSYSTEM = "p2p"
 const val SESSION_MESSAGE_TYPE = "SessionMessage"
-const val HEARTBEAT_MESSAGE = "HeartbeatMessage"
 
 fun recordOutboundMessagesMetric(message: AuthenticatedMessage) {
     message.header.let {
@@ -28,11 +27,6 @@ fun recordOutboundMessagesMetric(message: OutboundUnauthenticatedMessage) {
 fun recordOutboundSessionMessagesMetric(sourceVnode: HoldingIdentity) {
     recordOutboundMessagesMetric(sourceVnode.groupId,
         P2P_SUBSYSTEM, SESSION_MESSAGE_TYPE)
-}
-
-fun recordOutboundHeartbeatMessagesMetric(sourceVnode: HoldingIdentity) {
-    recordOutboundMessagesMetric(sourceVnode.groupId,
-        P2P_SUBSYSTEM, HEARTBEAT_MESSAGE)
 }
 
 fun recordOutboundSessionMessagesMetric(sourceVnode: net.corda.data.identity.HoldingIdentity) {
@@ -64,10 +58,6 @@ fun recordInboundSessionMessagesMetric(datapoints: Int = 1) {
     }
 }
 
-fun recordInboundHeartbeatMessagesMetric(destinationVnode: HoldingIdentity) {
-    recordInboundMessagesMetric(destinationVnode.groupId, P2P_SUBSYSTEM, HEARTBEAT_MESSAGE)
-}
-
 private fun recordInboundMessagesMetric(group: String?, subsystem: String, messageType: String) {
     val builder = CordaMetrics.Metric.InboundMessageCount.builder()
     listOf(
@@ -79,16 +69,4 @@ private fun recordInboundMessagesMetric(group: String?, subsystem: String, messa
         builder.withTag(it.first, value)
     }
     builder.build().increment()
-}
-
-fun recordOutboundSessionTimeoutMetric(source: HoldingIdentity) {
-    CordaMetrics.Metric.OutboundSessionTimeoutCount.builder()
-        .withTag(CordaMetrics.Tag.MembershipGroup, source.groupId)
-        .build().increment()
-}
-
-fun recordInboundSessionTimeoutMetric(source: HoldingIdentity) {
-    CordaMetrics.Metric.InboundSessionTimeoutCount.builder()
-        .withTag(CordaMetrics.Tag.MembershipGroup, source.groupId)
-        .build().increment()
 }

@@ -1,12 +1,11 @@
-@file:Suppress("DEPRECATION")
-
 package net.corda.cli.plugins.network
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.network.utils.HoldingIdentityUtils
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
+import net.corda.sdk.packaging.CpiUploader
+import net.corda.sdk.rest.RestClientUtils
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -15,6 +14,7 @@ import org.junit.jupiter.api.Test
 import picocli.CommandLine
 import java.io.File
 import java.util.UUID
+import kotlin.time.Duration.Companion.seconds
 
 class OnboardMgmTest {
     companion object {
@@ -157,12 +157,18 @@ class OnboardMgmTest {
     }
 
     private fun OnboardMgm.getExistingCpiHash(): String {
-        return createRestClient(CpiUploadRestResource::class).use { client ->
-            val response = client.start().proxy.getAllCpis()
-            response.cpis
-                .first { it.groupPolicy?.contains("CREATE_ID") == true }
-                .cpiFileChecksum
-        }
+        val restClient = RestClientUtils.createRestClient(
+            CpiUploadRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        val cpisFromCluster = CpiUploader().getAllCpis(restClient = restClient, wait = waitDurationSeconds.seconds).cpis
+        return cpisFromCluster
+            .first { it.groupPolicy?.contains("CREATE_ID") == true }
+            .cpiFileChecksum
     }
 
     private fun OutputStub.lookup(mgmName: String) {

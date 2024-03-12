@@ -105,7 +105,6 @@ class TriggerPublisherImpl constructor(
 
     private fun onConfigChangedEvent(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
         val config = event.config[ConfigKeys.MESSAGING_CONFIG] ?: return
-        coordinator.updateStatus(LifecycleStatus.DOWN)
         lock.withLock {
             publisher?.close()
             publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), config)
