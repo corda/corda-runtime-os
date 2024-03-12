@@ -1,6 +1,7 @@
 package net.corda.flow.maintenance
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.ShortHash
@@ -127,6 +128,7 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
 
         private val objectMapper = ObjectMapper().apply {
             registerModule(JavaTimeModule())
+            configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
         }
 
         override fun onNext(events: List<Record<String, ScheduledTaskTrigger>>): List<Record<*, *>> {
