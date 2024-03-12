@@ -8,9 +8,9 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 @Suppress("unused")
 @ServiceProvider(TracingServiceFactory::class)
 class BraveTracingServiceFactory : TracingServiceFactory {
-    override fun create(serviceName: String, zipkinHost: String?, samplesPerSecond: String?): TracingService {
+    override fun create(serviceName: String, zipkinHost: String?, samplesPerSecond: String?, extraTraceTags: Map<String, String>): TracingService {
         val sampleRate = readSampleRateString(samplesPerSecond)
-        return BraveTracingService(serviceName, zipkinHost, sampleRate)
+        return BraveTracingService(serviceName, zipkinHost, sampleRate, extraTraceTags)
     }
 
     private fun parseUnsignedIntWithErrorHandling(string: String) = try {

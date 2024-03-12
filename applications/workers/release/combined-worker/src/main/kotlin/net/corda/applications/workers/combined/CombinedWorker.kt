@@ -186,7 +186,14 @@ class CombinedWorker @Activate constructor(
             params.defaultParams.metricsDropLabels?.toRegex()
         )
         Health.configure(webServer, lifecycleRegistry)
-        configureTracing("Combined Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
+
+        logger.info("Trace tags captured from the CLI: ${params.defaultParams.extraTraceTags}")
+        configureTracing(
+            "Combined Worker",
+            params.defaultParams.zipkinTraceUrl,
+            params.defaultParams.traceSamplesPerSecond,
+            params.defaultParams.extraTraceTags
+        )
 
         JavaSerialisationFilter.install()
 
@@ -313,4 +320,6 @@ private class CombinedWorkerParams {
     @Option(names = ["--mediator-replicas-flow-session-out"], description = ["Sets the number of mediators that " +
             "consume flow.mapper.session.out messages"])
     var mediatorReplicasFlowMapperSessionOut: Int? = null
+
+
 }
