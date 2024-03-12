@@ -28,7 +28,7 @@ class HttpExceptionMapperTest {
 
     @Test
     fun `map to response BadRequestException with title, details and exceptionDetails`() {
-        val e = BadRequestException("Invalid id.", mapOf("abc" to "def"), ExceptionDetails("BadRequestException","Exception reason"))
+        val e = BadRequestException("Invalid id.", mapOf("abc" to "def"), ExceptionDetails("BadRequestException", "Exception reason"))
 
         val response = HttpExceptionMapper.mapToResponse(e)
 
@@ -74,7 +74,10 @@ class HttpExceptionMapperTest {
 
     @Test
     fun `map to response NotAuthenticatedException with title and exceptionDetails`() {
-        val e = NotAuthenticatedException("auth failed", exceptionDetails = ExceptionDetails("NotAuthenticatedException", "Exception reason"))
+        val e = NotAuthenticatedException(
+            "auth failed",
+            exceptionDetails = ExceptionDetails("NotAuthenticatedException", "Exception reason")
+        )
 
         val response = HttpExceptionMapper.mapToResponse(e)
 
@@ -98,7 +101,11 @@ class HttpExceptionMapperTest {
 
     @Test
     fun `test InternalServerException response`() {
-        val e = InternalServerException("message", mapOf("detail" to "someinfo"), ExceptionDetails("InternalServerException", "Exception reason"))
+        val e = InternalServerException(
+            "message",
+            mapOf("detail" to "someinfo"),
+            ExceptionDetails("InternalServerException", "Exception reason")
+        )
 
         val response = HttpExceptionMapper.mapToResponse(e)
 
@@ -112,7 +119,11 @@ class HttpExceptionMapperTest {
 
     @Test
     fun `test InvalidInputDataException response`() {
-        val e = InvalidInputDataException("title", mapOf("detail" to "someinfo"), ExceptionDetails("InvalidInputDataException", "Exception reason"))
+        val e = InvalidInputDataException(
+            "title",
+            mapOf("detail" to "someinfo"),
+            ExceptionDetails("InvalidInputDataException", "Exception reason")
+        )
 
         val response = HttpExceptionMapper.mapToResponse(e)
 
