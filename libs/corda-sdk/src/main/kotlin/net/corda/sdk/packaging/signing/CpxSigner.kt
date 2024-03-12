@@ -14,7 +14,7 @@ import java.util.jar.JarOutputStream
 import java.util.jar.Manifest
 import java.util.zip.ZipFile
 
-object SigningHelpers {
+object CpxSigner {
     /**
      * Signs CPx jar file.
      *

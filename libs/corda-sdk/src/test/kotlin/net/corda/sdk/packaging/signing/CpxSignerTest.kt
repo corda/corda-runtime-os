@@ -16,9 +16,8 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
-import kotlin.io.path.absolutePathString
 
-class SigningHelpersTest {
+class CpxSignerTest {
     @TempDir
     lateinit var tempDir: Path
 
@@ -69,7 +68,7 @@ class SigningHelpersTest {
     @Test
     fun `sign adds manifest hashes related to signing`() {
         val signedCpb = Path.of("$tempDir/$SIGNED_CPB_NAME")
-        SigningHelpers.sign(
+        CpxSigner.sign(
             createdUnsignedCpb,
             signedCpb,
                 SigningOptions(
@@ -97,7 +96,7 @@ class SigningHelpersTest {
     @Test
     fun `sign unsigned cpb adds signatures and preserves content`() {
         val signedCpb = Path.of("$tempDir/$SIGNED_CPB_NAME")
-        SigningHelpers.sign(
+        CpxSigner.sign(
             createdUnsignedCpb,
             signedCpb,
             SigningOptions(
@@ -141,7 +140,7 @@ class SigningHelpersTest {
     @Test
     fun `sign an already signed cpb keeps previous signatures and adds new with pass in signature file name`() {
         val signedCpb = Path.of("$tempDir/$SIGNED_CPB_NAME")
-        SigningHelpers.sign(
+        CpxSigner.sign(
             createdSignedCpb,
             signedCpb,
             SigningOptions(
@@ -217,7 +216,7 @@ class SigningHelpersTest {
             KEYSTORE_PASSWORD,
             SIGNING_KEY_2_ALIAS,
         )
-        SigningHelpers.sign(createdUnsignedCpb, signedCpb, signingOptions)
+        CpxSigner.sign(createdUnsignedCpb, signedCpb, signingOptions)
 
         // Since sig file option is missing it will
         // use 8 first chars of key alias (i.e. "signing "), make it uppercase and replace not valid chars with '_'.
@@ -238,7 +237,7 @@ class SigningHelpersTest {
             TestUtils.getManifestMainAttributesAndEntries(createdSignedCpb)
 
         val removedSignaturesCpb = createTempFile("removedSignaturesCpb")
-        SigningHelpers.removeSignatures(createdSignedCpb, removedSignaturesCpb)
+        CpxSigner.removeSignatures(createdSignedCpb, removedSignaturesCpb)
 
         val (removedSignaturesManifestMainAttributes, removedSignaturesManifestEntries) =
             TestUtils.getManifestMainAttributesAndEntries(removedSignaturesCpb)
@@ -256,7 +255,7 @@ class SigningHelpersTest {
     @Test
     fun `removeSignatures removes signing related files`() {
         val removedSignaturesCpb = createTempFile("removedSignaturesCpb")
-        SigningHelpers.removeSignatures(createdSignedCpb, removedSignaturesCpb)
+        CpxSigner.removeSignatures(createdSignedCpb, removedSignaturesCpb)
 
         val clearedCpbSigningFiles = TestUtils.getSignatureBlockJarEntries(removedSignaturesCpb)
         assertTrue(clearedCpbSigningFiles.isEmpty())

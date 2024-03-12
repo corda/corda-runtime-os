@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import picocli.CommandLine
 
-// TODO migrate to SDK - to cover SigningHelpers.sign
+// TODO migrate to SDK - to cover CpxSigner.sign
 class SignCpbTest {
 
     @TempDir

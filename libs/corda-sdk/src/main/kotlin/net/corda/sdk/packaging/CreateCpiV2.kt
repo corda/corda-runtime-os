@@ -4,7 +4,7 @@ import net.corda.libs.packaging.verify.PackageType
 import net.corda.libs.packaging.verify.VerifierBuilder
 import net.corda.libs.packaging.verify.internal.VerifierFactory
 import net.corda.sdk.packaging.signing.CertificateLoader
-import net.corda.sdk.packaging.signing.SigningHelpers
+import net.corda.sdk.packaging.signing.CpxSigner
 import net.corda.sdk.packaging.signing.SigningOptions
 import java.io.FileInputStream
 import java.nio.file.Files
@@ -82,7 +82,7 @@ object CreateCpiV2 {
         val unsignedCpi = Files.createTempFile("buildCPI", null)
         try {
             buildUnsignedCpi(cpbPath, unsignedCpi, groupPolicy, cpiAttributes)
-            SigningHelpers.sign(unsignedCpi, outputFilePath, signingOptions)
+            CpxSigner.sign(unsignedCpi, outputFilePath, signingOptions)
         } finally {
             Files.deleteIfExists(unsignedCpi)
         }
