@@ -39,13 +39,13 @@ class Verify : Runnable {
     @Suppress("TooGenericExceptionCaught")
     override fun run() =
         try {
-            requireFileExists(keyStoreFileName)
+            val keyStorePath = requireFileExists(keyStoreFileName)
             VerifierBuilder()
                 .type(type)
                 .format(format)
                 .name(fileName)
                 .inputStream(getInputStream(fileName))
-                .trustedCerts(readCertificates(File(keyStoreFileName), keyStorePass))
+                .trustedCerts(readCertificates(keyStorePath, keyStorePass))
                 .build()
                 .verify()
             println("Successfully verified corda package")

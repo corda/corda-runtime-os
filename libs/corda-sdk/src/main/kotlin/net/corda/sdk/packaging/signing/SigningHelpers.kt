@@ -2,7 +2,6 @@ package net.corda.sdk.packaging.signing
 
 import jdk.security.jarsigner.JarSigner
 import net.corda.libs.packaging.verify.SigningHelpers.isSigningRelated
-import java.io.File
 import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Path
@@ -17,7 +16,9 @@ import java.util.zip.ZipFile
 
 object SigningHelpers {
     /**
-     * Signs Cpx jar files.
+     * Signs CPx jar file.
+     *
+     * If [SigningOptions.signatureFileName] is `null`,
      */
     fun sign(
         unsignedInputCpx: Path,
@@ -40,7 +41,7 @@ object SigningHelpers {
                 val certPath = buildCertPath(privateKeyEntry.certificateChain.asList())
 
                 // Create JarSigner
-                val signerName = signingOptions.signatureFile ?: getSignerNameFromString(signingOptions.keyAlias)
+                val signerName = signingOptions.signatureFileName ?: getSignerNameFromString(signingOptions.keyAlias)
                 val builder = JarSigner.Builder(privateKey, certPath)
                     .signerName(signerName)
 
@@ -55,6 +56,9 @@ object SigningHelpers {
         }
     }
 
+    /**
+     * Removes signatures from CPx file.
+     */
     @Suppress("NestedBlockDepth")
     fun removeSignatures(signedCpx: Path, removedSignaturesCpx: Path) {
         JarInputStream(Files.newInputStream(signedCpx, StandardOpenOption.READ)).use { inputJar ->
@@ -78,9 +82,9 @@ object SigningHelpers {
     /**
      * Reads PrivateKeyEntry from key store
      */
-    private fun getPrivateKeyEntry(keyStoreFile: File, keyStorePass: String, keyAlias: String): KeyStore.PrivateKeyEntry {
+    private fun getPrivateKeyEntry(keyStoreFile: Path, keyStorePass: String, keyAlias: String): KeyStore.PrivateKeyEntry {
         val passwordCharArray = keyStorePass.toCharArray()
-        val keyStore = KeyStore.getInstance(keyStoreFile, passwordCharArray)
+        val keyStore = KeyStore.getInstance(keyStoreFile.toFile(), passwordCharArray)
 
         when (val keyEntry = keyStore.getEntry(keyAlias, KeyStore.PasswordProtection(passwordCharArray))) {
             is KeyStore.PrivateKeyEntry -> return keyEntry
