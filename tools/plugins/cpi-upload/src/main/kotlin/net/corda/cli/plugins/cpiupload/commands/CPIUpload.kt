@@ -96,6 +96,6 @@ class CPIUpload : RestCommand(), Runnable {
             logger.error("Unexpected error during fetching CPI checksum", e)
             return System.exit(3)
         }
-        sysOut.info("CPI Successfully Uploaded and applied. ")
+        sysOut.info("CPI Successfully Uploaded and applied.")
     }
 }
