@@ -19,10 +19,11 @@ class FindTransactionsWithStatusBeforeTimeExternalEventFactory :
     override fun createRequest(parameters: FindTransactionsWithStatusBeforeTimeParameters): Any {
         return FindTransactionsWithStatusBeforeTime.newBuilder()
             .setTransactionStatus(parameters.status.value)
-            .setInstant(parameters.instant)
+            .setFrom(parameters.from)
+            .setUntil(parameters.until)
             .build()
     }
 }
 
 @CordaSerializable
-data class FindTransactionsWithStatusBeforeTimeParameters(val status: TransactionStatus, val instant: Instant)
+data class FindTransactionsWithStatusBeforeTimeParameters(val status: TransactionStatus, val from: Instant, val until: Instant)

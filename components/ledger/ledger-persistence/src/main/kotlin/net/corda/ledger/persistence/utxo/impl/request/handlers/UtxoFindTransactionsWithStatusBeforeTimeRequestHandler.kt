@@ -23,7 +23,8 @@ class UtxoFindTransactionsWithStatusBeforeTimeRequestHandler(
     override fun execute(): List<Record<*, *>> {
         val unverifiedTransactionIds = persistenceService.findTransactionsWithStatusBeforeTime(
             findTransactionsWithStatusBeforeTime.transactionStatus.toTransactionStatus(),
-            findTransactionsWithStatusBeforeTime.instant
+            findTransactionsWithStatusBeforeTime.from,
+            findTransactionsWithStatusBeforeTime.until
         )
         return listOf(
             externalEventResponseFactory.success(

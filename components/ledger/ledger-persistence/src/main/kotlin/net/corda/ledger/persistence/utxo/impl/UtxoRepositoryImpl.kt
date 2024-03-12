@@ -572,12 +572,14 @@ class UtxoRepositoryImpl(
     override fun findTransactionsWithStatusBeforeTime(
         entityManager: EntityManager,
         status: TransactionStatus,
-        instant: Instant
+        from: Instant,
+        until: Instant
     ): List<String> {
         @Suppress("UNCHECKED_CAST")
         return entityManager.createNativeQuery(queryProvider.findTransactionsWithStatusBeforeTime)
             .setParameter("status", status.value)
-            .setParameter("created", instant)
+            .setParameter("from", from)
+            .setParameter("until", until)
             .resultList as List<String>
     }
 

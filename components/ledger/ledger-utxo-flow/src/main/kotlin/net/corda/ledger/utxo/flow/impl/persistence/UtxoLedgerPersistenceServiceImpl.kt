@@ -320,14 +320,14 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun findTransactionsWithStatusCreatedBeforeTime(status: TransactionStatus, instant: Instant): List<SecureHash> {
+    override fun findTransactionsWithStatusCreatedBeforeTime(status: TransactionStatus, from: Instant, until: Instant): List<SecureHash> {
         return recordSuspendable(
             { ledgerPersistenceFlowTimer(LedgerPersistenceMetricOperationName.FindTransactionsWithStatusBeforeTime) }
         ) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     FindTransactionsWithStatusBeforeTimeExternalEventFactory::class.java,
-                    FindTransactionsWithStatusBeforeTimeParameters(status, instant)
+                    FindTransactionsWithStatusBeforeTimeParameters(status, from, until)
                 )
             }
         }.map { serializationService.deserialize(it.array()) }

@@ -198,6 +198,6 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
         get() = """
             SELECT id
             FROM {h-schema}utxo_transaction
-            WHERE status = :status AND created < :created
+            WHERE status = :status AND created >= :from AND created < :until
         """.trimIndent()
 }

@@ -320,7 +320,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun recoverMissedNotarisedTransactions(instant: Instant) {
-        flowEngine.subFlow(UtxoRecoveryFlow(instant))
+    override fun recoverMissedNotarisedTransactions(from: Instant, until: Instant) {
+        flowEngine.subFlow(UtxoRecoveryFlow(from, until))
     }
 }

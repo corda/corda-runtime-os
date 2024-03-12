@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory
 import java.security.PrivilegedExceptionAction
 import java.time.Instant
 
-class UtxoRecoveryFlow(private val instant: Instant) : SubFlow<Int> {
+class UtxoRecoveryFlow(private val from: Instant, private val until: Instant) : SubFlow<Int> {
 
     private companion object {
         val log: Logger = LoggerFactory.getLogger(UtxoRecoveryFlow::class.java)
@@ -50,11 +50,11 @@ class UtxoRecoveryFlow(private val instant: Instant) : SubFlow<Int> {
 
     @Suspendable
     override fun call(): Int {
-        log.info("Starting recovery flow of missing notarized transactions. Recovering transactions that occurred before $instant")
+        log.info("Starting recovery flow of missing notarized transactions. Recovering transactions that occurred between $from to $until")
         flowEngine.flowContextProperties.asFlowContext.platformProperties["corda.notary.check"] = "true"
         var numberOfRecoveredFlows = 0
 
-        val ids = persistenceService.findTransactionsWithStatusCreatedBeforeTime(TransactionStatus.UNVERIFIED, instant)
+        val ids = persistenceService.findTransactionsWithStatusCreatedBeforeTime(TransactionStatus.UNVERIFIED, from, until)
         for (id in ids) {
             // find the transaction
             // check that only the notary signature is missing
@@ -91,7 +91,7 @@ class UtxoRecoveryFlow(private val instant: Instant) : SubFlow<Int> {
                 numberOfRecoveredFlows++
             }
         }
-        log.info("Completed recovery flow of $numberOfRecoveredFlows missing notarized transactions that occurred before $instant")
+        log.info("Completed recovery flow of $numberOfRecoveredFlows missing notarized transactions that occurred between $from to $until")
         return numberOfRecoveredFlows
     }
 
