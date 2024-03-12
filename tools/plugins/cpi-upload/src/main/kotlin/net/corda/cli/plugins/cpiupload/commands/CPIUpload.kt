@@ -35,7 +35,7 @@ class CPIUpload : RestCommand(), Runnable {
     @Option(
         names = ["-w", "--wait"],
         required = false,
-        description = ["polls for result"]
+        description = ["wait for confirmation that CPI been accepted by the cluster"]
     )
     var wait: Boolean = false
 
