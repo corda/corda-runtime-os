@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.sessions
 
+import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
@@ -14,7 +15,9 @@ import org.mockito.kotlin.whenever
 
 class StateManagerWrapperTest {
     private val keys = setOf("key1", "key2")
-    private val state = mock<State>()
+    private val state = mock<State> {
+        on { metadata } doReturn Metadata(emptyMap())
+    }
     private val filter = mock<MetadataFilter>()
     private val filters = listOf(filter)
     private val keysToStates = mapOf("key1" to state)
@@ -75,7 +78,7 @@ class StateManagerWrapperTest {
 
     @Test
     fun `upsert with update will set the beforeUpdate to true`() {
-        val update = UpdateAction(state)
+        val update = UpdateAction(state, false)
         wrapper.upsert(listOf(update))
 
         verify(sessionCache).validateStateAndScheduleExpiry(state, true)
@@ -91,7 +94,7 @@ class StateManagerWrapperTest {
 
     @Test
     fun `upsert with update will not update expired sessions`() {
-        val update = UpdateAction(state)
+        val update = UpdateAction(state, false)
         wrapper.upsert(listOf(update))
 
         verify(stateManager, never()).update(any())
@@ -100,7 +103,7 @@ class StateManagerWrapperTest {
     @Test
     fun `upsert with update will update valid sessions`() {
         whenever(sessionCache.validateStateAndScheduleExpiry(state, true)).doReturn(state)
-        val update = UpdateAction(state)
+        val update = UpdateAction(state, false)
         wrapper.upsert(listOf(update))
 
         verify(stateManager).update(listOf(state))
@@ -128,7 +131,7 @@ class StateManagerWrapperTest {
         whenever(sessionCache.validateStateAndScheduleExpiry(any(), any())).doReturn(state)
         whenever(stateManager.create(any())).doReturn(setOf("key3", "key4"))
         whenever(stateManager.update(any())).doReturn(mapOf("key1" to state, "key2" to state))
-        val update = UpdateAction(state)
+        val update = UpdateAction(state, false)
         val create = CreateAction(state)
 
         val failed = wrapper.upsert(listOf(update, create))

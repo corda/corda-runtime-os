@@ -1,6 +1,5 @@
 package net.corda.cli.plugins.network
 
-import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.cli.plugins.network.output.ConsoleOutput
 import net.corda.cli.plugins.network.output.Output
@@ -9,7 +8,10 @@ import net.corda.cli.plugins.network.utils.PrintUtils.printJsonOutput
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.response.RestMemberInfo
+import net.corda.sdk.network.MemberLookup
+import net.corda.sdk.rest.RestClientUtils.createRestClient
 import picocli.CommandLine
+import kotlin.time.Duration.Companion.seconds
 
 @CommandLine.Command(
     name = "members",
@@ -96,22 +98,27 @@ class MemberLookup(private val output: Output = ConsoleOutput()) : RestCommand()
     var status: List<String>? = null
 
     private fun performMembersLookup(): List<RestMemberInfo> {
+        val restClient = createRestClient(
+            MemberLookupRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
         val holdingIdentity = getHoldingIdentity(holdingIdentityShortHash, name, group)
-        val result: List<RestMemberInfo> = createRestClient(MemberLookupRestResource::class).use { client ->
-            val memberLookupProxy = client.start().proxy
-            memberLookupProxy.lookupV51(
-                holdingIdentity,
-                commonName,
-                organization,
-                organizationUnit,
-                locality,
-                state,
-                country,
-                status.orEmpty(),
-            ).members
-        }
-
-        return result
+        return MemberLookup().lookupMember(
+            restClient,
+            holdingIdentity,
+            commonName,
+            organization,
+            organizationUnit,
+            locality,
+            state,
+            country,
+            status.orEmpty(),
+            waitDurationSeconds.seconds
+        ).members
     }
 
     override fun run() {

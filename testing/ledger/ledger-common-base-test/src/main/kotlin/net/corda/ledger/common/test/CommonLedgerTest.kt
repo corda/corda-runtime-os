@@ -9,6 +9,7 @@ import net.corda.crypto.cipher.suite.merkle.MerkleProofProvider
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.flow.application.crypto.SignatureSpecServiceImpl
 import net.corda.flow.application.services.impl.FlowEngineImpl
+import net.corda.flow.service.FlowCheckpointServiceImpl
 import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
@@ -46,7 +47,9 @@ abstract class CommonLedgerTest {
         merkleTreeProvider, digestService, jsonMarshallingService, jsonValidator
     )
 
-    val flowFiberService = TestFlowFiberServiceWithSerialization(currentSandboxGroupContext)
+    private val flowFiberService = TestFlowFiberServiceWithSerialization(currentSandboxGroupContext)
+
+    val flowCheckpointService = FlowCheckpointServiceImpl(flowFiberService)
 
     val mockPrivacySaltProviderService = mock<PrivacySaltProviderService>().apply {
         whenever(generatePrivacySalt()).thenAnswer {

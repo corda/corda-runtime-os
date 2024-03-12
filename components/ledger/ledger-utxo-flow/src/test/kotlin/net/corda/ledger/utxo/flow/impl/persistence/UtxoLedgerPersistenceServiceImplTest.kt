@@ -6,7 +6,6 @@ import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.core.parseSecureHash
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.internal.serialization.SerializedBytesImpl
-import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
@@ -44,7 +43,6 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.CompositeKey
-import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -129,8 +127,8 @@ class UtxoLedgerPersistenceServiceImplTest {
 
     @Test
     fun `persist executes successfully`() {
-        val expectedObj = mock<CordaPackageSummaryImpl>()
-        whenever(serializationService.deserialize<CordaPackageSummaryImpl>(any<ByteArray>(), any())).thenReturn(expectedObj)
+        val expectedObj = mock<Instant>()
+        whenever(serializationService.deserialize<Instant>(any<ByteArray>(), any())).thenReturn(expectedObj)
         val transaction = mock<UtxoSignedTransactionInternal>()
         whenever(transaction.wireTransaction).thenReturn(mock())
         whenever(transaction.signatures).thenReturn(mock())
@@ -140,52 +138,52 @@ class UtxoLedgerPersistenceServiceImplTest {
                 transaction,
                 VERIFIED
             )
-        ).isEqualTo(listOf(expectedObj))
+        ).isEqualTo(expectedObj)
 
         verify(serializationService).serialize(any<Any>())
-        verify(serializationService).deserialize<CordaPackageSummaryImpl>(any<ByteArray>(), any())
+        verify(serializationService).deserialize<Instant>(any<ByteArray>(), any())
         assertThat(argumentCaptor.firstValue).isEqualTo(PersistTransactionExternalEventFactory::class.java)
     }
 
     @Test
     fun `persistIfDoesNotExist returns a status of DOES_NOT_EXIST when null is returned from the external event factory`() {
-        persistIfDoesNotExist(returnedStatus = null) { transaction, packageSummary ->
+        persistIfDoesNotExist(returnedStatus = "") { transaction ->
             assertThat(
                 utxoLedgerPersistenceService.persistIfDoesNotExist(
                     transaction,
                     VERIFIED
                 )
-            ).isEqualTo(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(packageSummary))
+            ).isEqualTo(TransactionExistenceStatus.DOES_NOT_EXIST)
         }
     }
 
     @Test
     fun `persistIfDoesNotExist returns a status of UNVERIFIED when UNVERIFIED is returned from the external event factory`() {
-        persistIfDoesNotExist(UNVERIFIED.value) { transaction, packageSummary ->
+        persistIfDoesNotExist(UNVERIFIED.value) { transaction ->
             assertThat(
                 utxoLedgerPersistenceService.persistIfDoesNotExist(
                     transaction,
                     VERIFIED
                 )
-            ).isEqualTo(TransactionExistenceStatus.UNVERIFIED to listOf(packageSummary))
+            ).isEqualTo(TransactionExistenceStatus.UNVERIFIED)
         }
     }
 
     @Test
     fun `persistIfDoesNotExist returns a status of VERIFIED when VERIFIED is returned from the external event factory`() {
-        persistIfDoesNotExist(VERIFIED.value) { transaction, packageSummary ->
+        persistIfDoesNotExist(VERIFIED.value) { transaction ->
             assertThat(
                 utxoLedgerPersistenceService.persistIfDoesNotExist(
                     transaction,
                     VERIFIED
                 )
-            ).isEqualTo(TransactionExistenceStatus.VERIFIED to listOf(packageSummary))
+            ).isEqualTo(TransactionExistenceStatus.VERIFIED)
         }
     }
 
     @Test
     fun `persistIfDoesNotExist throws an exception when an invalid status is returned from the external event factory`() {
-        persistIfDoesNotExist("Invalid") { transaction, _ ->
+        persistIfDoesNotExist("Invalid") { transaction ->
             assertThatThrownBy {
                 utxoLedgerPersistenceService.persistIfDoesNotExist(
                     transaction,
@@ -364,23 +362,22 @@ class UtxoLedgerPersistenceServiceImplTest {
 
     private fun persistIfDoesNotExist(
         returnedStatus: String?,
-        test: (transaction: UtxoSignedTransaction, packageSummary: CordaPackageSummary) -> Unit
+        test: (transaction: UtxoSignedTransaction) -> Unit
     ) {
-        val packageSummary = mock<CordaPackageSummaryImpl>()
         whenever(
-            serializationService.deserialize<Pair<String?, List<CordaPackageSummary>>>(
+            serializationService.deserialize<String>(
                 any<ByteArray>(),
                 any()
             )
-        ).thenReturn(returnedStatus to listOf(packageSummary))
+        ).thenReturn(returnedStatus)
         val transaction = mock<UtxoSignedTransactionInternal>()
         whenever(transaction.wireTransaction).thenReturn(mock())
         whenever(transaction.signatures).thenReturn(mock())
 
-        test(transaction, packageSummary)
+        test(transaction)
 
         verify(serializationService).serialize(any<Any>())
-        verify(serializationService).deserialize<Pair<String?, List<CordaPackageSummary>>>(any<ByteArray>(), any())
+        verify(serializationService).deserialize<String>(any<ByteArray>(), any())
         assertThat(argumentCaptor.firstValue).isEqualTo(PersistTransactionIfDoesNotExistExternalEventFactory::class.java)
     }
 }

@@ -253,6 +253,7 @@ class SessionCacheTest {
             val nextState = mock<State> {
                 on { version } doReturn 3
                 on { key } doReturn "stateKey"
+                on { metadata } doReturn Metadata(emptyMap())
             }
             whenever(validState.copy(version = 3)).doReturn(nextState)
             sessionExpiryScheduler.validateStateAndScheduleExpiry(

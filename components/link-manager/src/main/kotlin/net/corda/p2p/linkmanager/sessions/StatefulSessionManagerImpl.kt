@@ -20,6 +20,7 @@ import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -28,12 +29,14 @@ import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.Session
+import net.corda.p2p.linkmanager.common.MessageConverter.Companion.createLinkOutMessage
 import net.corda.p2p.linkmanager.membership.lookup
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.CannotEstablishSession
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionsNeeded
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.SessionAlreadyPending
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.SessionEstablished
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.alreadySessionWarning
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.couldNotFindSessionInformation
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.noSessionWarning
 import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventProcessor
 import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
@@ -50,6 +53,7 @@ import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.time.Clock
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
@@ -64,7 +68,6 @@ import net.corda.data.p2p.crypto.InitiatorHandshakeMessage as AvroInitiatorHands
 import net.corda.data.p2p.crypto.InitiatorHelloMessage as AvroInitiatorHelloMessage
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage as AvroResponderHandshakeMessage
 import net.corda.data.p2p.crypto.ResponderHelloMessage as AvroResponderHelloMessage
-import net.corda.p2p.linkmanager.common.MessageConverter.Companion.createLinkOutMessage
 
 @Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 internal class StatefulSessionManagerImpl(
@@ -202,7 +205,7 @@ internal class StatefulSessionManagerImpl(
                 OutboundSessionStatus.SentInitiatorHello, OutboundSessionStatus.SentInitiatorHandshake -> {
                     state.state.replaySessionMessage(state.first.message.message.header.statusFilter)?.let { (needed, newState) ->
                         state.toResultsFirstAndOther(
-                            action = UpdateAction(newState),
+                            action = UpdateAction(newState, true),
                             firstState = needed,
                             otherStates = SessionAlreadyPending(counterparties),
                         )
@@ -492,9 +495,37 @@ internal class StatefulSessionManagerImpl(
         val action: StateManagerAction?,
         val sessionState: SessionManager.SessionState,
     )
+    private fun AuthenticatedMessage.getSessionCounterpartiesFromMessage(): SessionManager.SessionCounterparties? {
+        val peer = this.header.destination
+        val us = this.header.source
+        val status = this.header.statusFilter
+        val ourInfo = membershipGroupReaderProvider.lookup(
+            us.toCorda(), us.toCorda(), MembershipStatusFilter.ACTIVE_OR_SUSPENDED
+        )
+        // could happen when member has pending registration or something went wrong
+        if (ourInfo == null) {
+            logger.warn("Could not get member information about us from message sent from $us" +
+                    " to $peer with ID `${this.header.messageId}`.")
+        }
+        val counterpartyInfo = membershipGroupReaderProvider.lookup(us.toCorda(), peer.toCorda(), status)
+        if (counterpartyInfo == null) {
+            logger.couldNotFindSessionInformation(us.toCorda().shortHash, peer.toCorda().shortHash, this.header.messageId)
+            return null
+        }
+        return SessionManager.SessionCounterparties(
+            us.toCorda(),
+            peer.toCorda(),
+            status,
+            counterpartyInfo.serial,
+            isCommunicationBetweenMgmAndMember(ourInfo, counterpartyInfo)
+        )
+    }
+    private fun isCommunicationBetweenMgmAndMember(ourInfo: MemberInfo?, counterpartyInfo: MemberInfo): Boolean {
+        return counterpartyInfo.isMgm || ourInfo?.isMgm == true
+    }
 
     private fun <T> OutboundMessageContext<T>.sessionCounterparties() =
-        sessionManagerImpl.getSessionCounterpartiesFromMessage(message.message)
+        message.message.getSessionCounterpartiesFromMessage()
 
     private fun calculateOutboundSessionKey(
         source: HoldingIdentity,
@@ -558,9 +589,10 @@ internal class StatefulSessionManagerImpl(
         val allCached = sessionCache.getAllPresentOutboundSessions(messagesAndKeys.keys.filterNotNull())
         return allCached.mapValues { entry ->
             val contexts = messagesAndKeys[entry.key]
-            val counterparties = contexts?.firstOrNull()?.let {
-                sessionManagerImpl.getSessionCounterpartiesFromMessage(it.message.message)
-            } ?: return@mapValues emptyList()
+            val counterparties = contexts?.firstOrNull()
+                ?.message
+                ?.message
+                ?.getSessionCounterpartiesFromMessage() ?: return@mapValues emptyList()
 
             contexts.map { context ->
                 context.trace to SessionEstablished(entry.value.session, counterparties)
@@ -618,6 +650,7 @@ internal class StatefulSessionManagerImpl(
                 serial = counterParties.serial,
                 membershipStatus = counterParties.status,
                 communicationWithMgm = counterParties.communicationWithMgm,
+                initiationTimestamp = timestamp,
             )
         val newState =
             State(
@@ -729,9 +762,7 @@ internal class StatefulSessionManagerImpl(
                         processInitiatorHello(state, lastMessage)
                     }
                     is InboundSessionMessage.InitiatorHandshakeMessage -> {
-                        processInitiatorHandshake(state, lastMessage)?.let { (message, stateUpdate, session) ->
-                            Result(message, UpdateAction(stateUpdate), session)
-                        }
+                        processInitiatorHandshake(state, lastMessage)
                     }
                 }
             otherContexts.map {
@@ -766,14 +797,10 @@ internal class StatefulSessionManagerImpl(
             val result =
                 when (val lastMessage = lastContext.outboundSessionMessage) {
                     is OutboundSessionMessage.ResponderHelloMessage -> {
-                        processResponderHello(state, lastMessage)?.let { (message, stateUpdate) ->
-                            Result(message, UpdateAction(stateUpdate), null)
-                        }
+                        processResponderHello(state, lastMessage)
                     }
                     is OutboundSessionMessage.ResponderHandshakeMessage -> {
-                        processResponderHandshake(state, lastMessage)?.let { (message, stateUpdate, session) ->
-                            Result(message, UpdateAction(stateUpdate), session)
-                        }
+                        processResponderHandshake(state, lastMessage)
                     }
                 }
             otherContexts.map {
@@ -840,7 +867,7 @@ internal class StatefulSessionManagerImpl(
                             version = state.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
-                    Result(responderHelloToResend, UpdateAction(newState), null)
+                    Result(responderHelloToResend, UpdateAction(newState, true), null)
                 } else {
                     null
                 }
@@ -854,7 +881,7 @@ internal class StatefulSessionManagerImpl(
     private fun processResponderHello(
         state: State?,
         message: OutboundSessionMessage.ResponderHelloMessage,
-    ): Pair<LinkOutMessage?, State>? {
+    ): Result? {
         val metadata = state?.metadata?.toOutbound()
         return when (metadata?.status) {
             OutboundSessionStatus.SentInitiatorHello -> {
@@ -891,7 +918,7 @@ internal class StatefulSessionManagerImpl(
                             version = state.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
-                    responseMessage to newState
+                    Result(responseMessage, UpdateAction(newState, false), null)
                 }
             }
 
@@ -914,7 +941,7 @@ internal class StatefulSessionManagerImpl(
                             version = state.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
-                    initiatorHandshakeToResend to newState
+                    Result(initiatorHandshakeToResend, UpdateAction(newState, true), null)
                 } else {
                     null
                 }
@@ -935,16 +962,10 @@ internal class StatefulSessionManagerImpl(
         }
     }
 
-    private data class ProcessHandshakeResult(
-        val responseMessage: LinkOutMessage?,
-        val stateToUpdate: State,
-        val session: Session?,
-    )
-
     private fun processInitiatorHandshake(
         state: State?,
         message: InboundSessionMessage.InitiatorHandshakeMessage,
-    ): ProcessHandshakeResult? {
+    ): Result? {
         val metadata = state?.metadata?.toInbound()
         return when (metadata?.status) {
             null -> {
@@ -983,7 +1004,7 @@ internal class StatefulSessionManagerImpl(
                             version = state.version,
                             metadata = newMetadata.toMetadata(),
                         )
-                    ProcessHandshakeResult(responseMessage, newState, session)
+                    Result(responseMessage, UpdateAction(newState, false), session)
                 }
             }
             InboundSessionStatus.SentResponderHandshake -> {
@@ -1006,7 +1027,7 @@ internal class StatefulSessionManagerImpl(
                             version = state.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
-                    ProcessHandshakeResult(responderHandshakeToResend, newState, null)
+                    Result(responderHandshakeToResend, UpdateAction(newState, true), null)
                 } else {
                     null
                 }
@@ -1017,7 +1038,7 @@ internal class StatefulSessionManagerImpl(
     private fun processResponderHandshake(
         state: State?,
         message: OutboundSessionMessage.ResponderHandshakeMessage,
-    ): ProcessHandshakeResult? {
+    ): Result? {
         val metadata = state?.metadata?.toOutbound()
         return when (metadata?.status) {
             OutboundSessionStatus.SentInitiatorHandshake -> {
@@ -1051,7 +1072,7 @@ internal class StatefulSessionManagerImpl(
                             version = state.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
-                    ProcessHandshakeResult(null, newState, session)
+                    Result(null, UpdateAction(newState, false), session)
                 }
             }
 
