@@ -1,8 +1,6 @@
 package net.corda.flow.maintenance
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.ShortHash
 import net.corda.data.flow.FlowKey
@@ -127,8 +125,8 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
         override val valueClass = ScheduledTaskTrigger::class.java
 
         private val objectMapper = ObjectMapper().apply {
-            registerModule(JavaTimeModule())
-            configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+//            registerModule(JavaTimeModule())
+//            configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
         }
 
         override fun onNext(events: List<Record<String, ScheduledTaskTrigger>>): List<Record<*, *>> {
@@ -181,7 +179,7 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
                 clientRequestId,
                 virtualNodeAvro,
                 flowClassName = "com.r3.corda.notary.plugin.common.recovery.NotarizedTransactionRecoveryFlow",
-                flowStartArgs = objectMapper.writeValueAsString(mapOf("instant" to instant)),
+                flowStartArgs = objectMapper.writeValueAsString(mapOf("instant" to instant.toEpochMilli())),
                 flowContextPlatformProperties
             )
 
