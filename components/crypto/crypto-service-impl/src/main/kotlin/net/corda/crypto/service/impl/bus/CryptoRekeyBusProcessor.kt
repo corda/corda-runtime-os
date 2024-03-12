@@ -48,6 +48,8 @@ class CryptoRekeyBusProcessor(
 ) : DurableProcessor<String, KeyRotationRequest> {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        const val RETRIES_TO_CREATE_SM_RECORDS = 10
+        const val RETRIES_TO_DELETE_SM_RECORDS = 10
     }
 
     override val keyClass: Class<String> = String::class.java
@@ -330,9 +332,9 @@ class CryptoRekeyBusProcessor(
      */
     private fun deleteStateManagerRecords(filters: Collection<MetadataFilter>, reason: String): Boolean {
         var recordsDeleted = false
-        var retries = 10
+        var retries = RETRIES_TO_DELETE_SM_RECORDS
         while (!recordsDeleted) {
-            if (retries == 0) return false
+            if (retries < 1) return false
             val toDelete = stateManager.findByMetadataMatchingAll(
                 filters +
                         MetadataFilter(
@@ -363,14 +365,14 @@ class CryptoRekeyBusProcessor(
         var failedToCreate: Set<String>?
         var toCreate = records
         var recordsCreated = false
-        var retries = 10
+        var retries = RETRIES_TO_CREATE_SM_RECORDS
         while (!recordsCreated) {
-            if (retries == 0) return false
+            if (retries < 1) return false
             failedToCreate = stateManager.create(toCreate)
 
             if (failedToCreate.isNotEmpty()){
                 logger.info("Failed to create following states $failedToCreate in the state manager, retrying.")
-                toCreate = records.filter { it.key in failedToCreate } // try to create only those records what were not yet created
+                toCreate = records.filter { it.key in failedToCreate } // retry to create only those records what were not yet created
                 retries--
             } else {
                 recordsCreated = true
