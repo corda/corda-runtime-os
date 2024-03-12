@@ -93,6 +93,8 @@ class RestServerRequestsTest : RestServerTestBase() {
             password
         )
         assertEquals(HttpStatus.SC_NOT_FOUND, invalidPathResponse.responseStatus)
+        assertThat((invalidPathResponse.body!!.asMapFromJson()["details"] as Map<*, *>)["url"].toString())
+            .contains("/api/${apiVersion.versionPath}/invalidPath")
     }
 
     @Test

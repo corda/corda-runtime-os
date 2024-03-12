@@ -54,8 +54,8 @@
         <Logger name="org.hibernate" level="warn"/>
         <Logger name="org.pf4j" level="warn"/>
 
-        <!-- default to warn only for OSGi logging -->
-        <Logger name="net.corda.osgi.framework.OSGiFrameworkWrap" level="warn"/>
+        <!-- default to info for OSGi logging -->
+        <Logger name="net.corda.osgi.framework.OSGiFrameworkWrap" level="info"/>
 
         <root level="${env:CONSOLE_LOG_LEVEL:-info}">
             <AppenderRef ref="${env:CONSOLE_LOG_FORMAT:-json}" level="${env:CONSOLE_LOG_LEVEL:-info}"/>

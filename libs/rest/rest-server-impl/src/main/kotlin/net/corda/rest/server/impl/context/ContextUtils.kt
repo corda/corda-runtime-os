@@ -5,7 +5,6 @@ import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
 import io.javalin.http.UnauthorizedResponse
 import net.corda.metrics.CordaMetrics
-import net.corda.rest.authorization.AuthorizationUtils
 import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.exception.HttpApiException
 import net.corda.rest.exception.InvalidInputDataException
@@ -21,6 +20,9 @@ import net.corda.rest.server.impl.internal.ParameterRetrieverFactory
 import net.corda.rest.server.impl.internal.ParametersRetrieverContext
 import net.corda.rest.server.impl.security.RestAuthenticationProvider
 import net.corda.rest.server.impl.security.provider.credentials.CredentialResolver
+import net.corda.utilities.MDC_METHOD
+import net.corda.utilities.MDC_PATH
+import net.corda.utilities.MDC_USER
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import net.corda.utilities.withMDC
@@ -41,9 +43,9 @@ internal object ContextUtils {
     private fun <T> withMDC(user: String, method: String, path: String, block: () -> T): T {
         return withMDC(
             listOf(
-                AuthorizationUtils.USER_MDC to user,
-                AuthorizationUtils.METHOD_MDC to method,
-                AuthorizationUtils.PATH_MDC to path
+                MDC_USER to user,
+                MDC_METHOD to method,
+                MDC_PATH to path
             ).toMap(),
             block
         )

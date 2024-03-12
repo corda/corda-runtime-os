@@ -2,7 +2,6 @@ package net.corda.ledger.utxo.flow.impl.flows.backchain.v1
 
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.flow.application.services.FlowConfigService
-import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus.INVALID
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
@@ -55,8 +54,6 @@ class TransactionBackchainReceiverFlowV1Test {
 
         val TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_1 = StateRef(TX_ID_3, 0)
         val TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_2 = StateRef(TX_ID_3, 1)
-
-        val PACKAGE_SUMMARY = CordaPackageSummaryImpl("name", "version", "hash", "checksum")
 
         const val BACKCHAIN_BATCH_CONFIG_PATH = "backchain.batchSize"
         const val BACKCHAIN_BATCH_DEFAULT_SIZE = 1
@@ -114,7 +111,7 @@ class TransactionBackchainReceiverFlowV1Test {
         whenever(groupParameters.hash).thenReturn(groupParametersHash1)
 
         whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
-            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
+            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST)
 
         whenever(retrievedTransaction2.id).thenReturn(TX_ID_2)
 
@@ -195,7 +192,7 @@ class TransactionBackchainReceiverFlowV1Test {
         whenever(retrievedTransaction2.metadata).thenReturn(tx1Metadata)
 
         whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
-            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
+            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST)
 
         whenever(utxoLedgerGroupParametersPersistenceService.find(groupParametersHash1))
             .thenReturn(mock())
@@ -282,7 +279,7 @@ class TransactionBackchainReceiverFlowV1Test {
             .thenReturn(null)
 
         whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
-            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
+            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST)
 
         // Both the original transaction and its dependency should be retrieved
         assertThat(callTransactionBackchainReceiverFlow(setOf(TX_ID_2)).complete())
@@ -399,7 +396,7 @@ class TransactionBackchainReceiverFlowV1Test {
         )
 
         whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
-            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
+            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST)
 
         // Since both the base, dependency and dependency of dependency transaction were present in the database,
         // but TX_ID_4's group params not know it should have been retrieved and all should be in the topological sort
@@ -450,7 +447,7 @@ class TransactionBackchainReceiverFlowV1Test {
         whenever(retrievedTransaction2.metadata).thenReturn(tx1Metadata)
 
         whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
-            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
+            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST)
 
         whenever(utxoLedgerGroupParametersPersistenceService.find(groupParametersHash1))
             .thenReturn(mock())
@@ -660,7 +657,7 @@ class TransactionBackchainReceiverFlowV1Test {
         )
 
         whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
-            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
+            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST)
 
         whenever(utxoLedgerGroupParametersPersistenceService.find(groupParametersHash1))
             .thenReturn(mock())
@@ -755,7 +752,7 @@ class TransactionBackchainReceiverFlowV1Test {
             .thenReturn(tx1Metadata)
 
         whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
-            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
+            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST)
 
         whenever(utxoLedgerGroupParametersPersistenceService.find(groupParametersHash1))
             .thenReturn(mock())
@@ -815,7 +812,7 @@ class TransactionBackchainReceiverFlowV1Test {
         )
 
         whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
-            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
+            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST)
 
         whenever(utxoLedgerGroupParametersPersistenceService.find(groupParametersHash1))
             .thenReturn(mock())
@@ -945,7 +942,7 @@ class TransactionBackchainReceiverFlowV1Test {
         whenever(groupParameters.hash).thenReturn(groupParametersHash1)
 
         whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
-            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
+            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST)
 
         whenever(retrievedTransaction1.id).thenReturn(TX_ID_1)
         whenever(retrievedTransaction1.inputStateRefs).thenReturn(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1))
@@ -1008,7 +1005,7 @@ class TransactionBackchainReceiverFlowV1Test {
         whenever(groupParameters.hash).thenReturn(groupParametersHash1)
 
         whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
-            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
+            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST)
 
         whenever(retrievedTransaction1.id).thenReturn(TX_ID_1)
         whenever(retrievedTransaction1.inputStateRefs).thenReturn(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1))
@@ -1059,10 +1056,10 @@ class TransactionBackchainReceiverFlowV1Test {
         whenever(groupParameters.hash).thenReturn(groupParametersHash1)
 
         whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
-            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
+            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST)
 
         whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(retrievedTransaction1, UNVERIFIED))
-            .thenReturn(TransactionExistenceStatus.VERIFIED to listOf(PACKAGE_SUMMARY))
+            .thenReturn(TransactionExistenceStatus.VERIFIED)
         whenever(retrievedTransaction1.metadata).thenReturn(tx1Metadata)
         whenever(tx1Metadata.getMembershipGroupParametersHash()).thenReturn(groupParametersHash1.toString())
 
@@ -1104,7 +1101,7 @@ class TransactionBackchainReceiverFlowV1Test {
         whenever(groupParameters.hash).thenReturn(groupParametersHash1)
 
         whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
-            .thenReturn(TransactionExistenceStatus.VERIFIED to listOf(PACKAGE_SUMMARY))
+            .thenReturn(TransactionExistenceStatus.VERIFIED)
         whenever(retrievedTransaction1.metadata).thenReturn(tx1Metadata)
         whenever(tx1Metadata.getMembershipGroupParametersHash()).thenReturn(groupParametersHash1.toString())
 
@@ -1149,7 +1146,7 @@ class TransactionBackchainReceiverFlowV1Test {
         whenever(groupParameters.hash).thenReturn(groupParametersHash1)
 
         whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(retrievedTransaction1, UNVERIFIED))
-            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
+            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST)
 
         whenever(retrievedTransaction1.id).thenReturn(TX_ID_1)
         whenever(retrievedTransaction1.inputStateRefs).thenReturn(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1))
@@ -1182,7 +1179,7 @@ class TransactionBackchainReceiverFlowV1Test {
         whenever(groupParameters.hash).thenReturn(SecureHashImpl("SHA", byteArrayOf(103, 104, 105, 106)))
 
         whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(retrievedTransaction1, UNVERIFIED))
-            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
+            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST)
 
         whenever(retrievedTransaction1.id).thenReturn(TX_ID_1)
         whenever(retrievedTransaction1.inputStateRefs).thenReturn(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1))
@@ -1216,7 +1213,7 @@ class TransactionBackchainReceiverFlowV1Test {
         )
 
         whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(retrievedTransaction1, UNVERIFIED))
-            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
+            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST)
 
         whenever(retrievedTransaction1.id).thenReturn(TX_ID_1)
         whenever(retrievedTransaction1.inputStateRefs).thenReturn(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1))
@@ -1347,7 +1344,7 @@ class TransactionBackchainReceiverFlowV1Test {
         )
 
         whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
-            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
+            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST)
 
         assertThat(callTransactionBackchainReceiverFlow(setOf(transactionId3, transactionId4)).complete()).isEqualTo(
             listOf(
