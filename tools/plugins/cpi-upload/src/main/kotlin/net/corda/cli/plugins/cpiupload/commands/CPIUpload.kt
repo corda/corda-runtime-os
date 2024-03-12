@@ -40,7 +40,7 @@ class CPIUpload : RestCommand(), Runnable {
     var wait: Boolean = false
 
     override fun run() {
-        val cpiUploadResult : String
+        val cpiUploadResult: String
         val cpi = File(cpiFilePath)
         if (cpi.extension != "cpi") {
             sysOut.info("File type must be .cpi")
@@ -91,7 +91,7 @@ class CPIUpload : RestCommand(), Runnable {
                 uploadRequestId = cpiUploadResult,
                 wait = waitDurationSeconds.seconds
             )
-        }catch (e: Exception) {
+        } catch (e: Exception) {
             sysOut.info(e.message)
             logger.error("Unexpected error during fetching CPI checksum", e)
             return
