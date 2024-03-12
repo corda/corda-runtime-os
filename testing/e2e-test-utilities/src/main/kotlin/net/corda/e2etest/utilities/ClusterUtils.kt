@@ -277,8 +277,8 @@ fun ClusterInfo.getProtocolVersionForKeyRotation(
  * This method fetches the local time of the corda cluster
  */
 fun ClusterInfo.getTime(
-) = SimpleDateFormat("EEE,dd MMM yyyy HH:mm:ss zzz").parse(
-    cluster {
+) = SimpleDateFormat("EEE,dd MMM yyyy HH:mm:ss zzz") // RFC 822
+    .parse(cluster {
         assertWithRetry {
             command { get("/api/$REST_API_VERSION_PATH/hello/getprotocolversion") }
             condition { it.code == ResponseCode.OK.statusCode }
