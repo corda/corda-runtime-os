@@ -5,11 +5,17 @@ import net.corda.rest.ResponseCode
 /**
  * The server validation of request data failed, the server could not complete the request because validation on the user's input failed.
  *
- * @param message the response message
+ * @param title the response title
  * @param details additional problem details
+ * @param exceptionDetails contains cause and reason
  */
-class InvalidInputDataException(message: String = "Invalid input data.", details: Map<String, String> = emptyMap()) : HttpApiException(
+class InvalidInputDataException(
+    title: String = "Invalid input data.",
+    details: Map<String, String> = emptyMap(),
+    exceptionDetails: ExceptionDetails? = null
+) : HttpApiException(
     ResponseCode.BAD_REQUEST,
-    message,
-    details
+    title,
+    details,
+    exceptionDetails
 )
