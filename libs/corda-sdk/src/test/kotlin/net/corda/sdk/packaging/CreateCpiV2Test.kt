@@ -44,6 +44,7 @@ class CreateCpiV2Test {
         lateinit var cpbPath: Path
 
         const val CPI_FILE_NAME = "output.cpi"
+        const val KEYSTORE_PASSWORD = "keystore password"
 
         private val testGroupPolicy = Path.of(this::class.java.getResource("/TestGroupPolicy.json")?.toURI()
             ?: error("TestGroupPolicy.json not found"))
@@ -54,7 +55,7 @@ class CreateCpiV2Test {
 
         private val signingOptions = SigningOptions(
             testKeyStore.toString(),
-            "keystore password",
+            KEYSTORE_PASSWORD,
             SIGNING_KEY_1_ALIAS,
             null,
             CPI_SIGNER_NAME

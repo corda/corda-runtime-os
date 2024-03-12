@@ -40,8 +40,9 @@ object SigningHelpers {
                 val certPath = buildCertPath(privateKeyEntry.certificateChain.asList())
 
                 // Create JarSigner
+                val signerName = signingOptions.signatureFile ?: getSignerNameFromString(signingOptions.keyAlias)
                 val builder = JarSigner.Builder(privateKey, certPath)
-                    .signerName(signingOptions.signatureFile)
+                    .signerName(signerName)
 
                 // Use timestamp server if provided
                 signingOptions.tsaUrl?.let { builder.tsa(URI(it)) }
@@ -99,4 +100,24 @@ object SigningHelpers {
         CertificateFactory
             .getInstance(STANDARD_CERT_FACTORY_TYPE)
             .generateCertPath(certificateChain)
+
+    // The following has the same behavior as jarsigner in terms of signature files naming.
+    private fun getSignerNameFromString (keyAlias: String): String =
+        keyAlias.run {
+            var str = this
+            if (str.length > 8) {
+                str = str.substring(0, 8).uppercase()
+            }
+            val strBuilder = StringBuilder()
+            for (c in str) {
+                @Suppress("ComplexCondition")
+                if (c in 'A'..'Z' || c in 'a'..'z' || c == '-' || c == '_') {
+                    strBuilder.append(c)
+                } else {
+                    strBuilder.append('_')
+                }
+            }
+            str = strBuilder.toString()
+            str
+        }
 }
