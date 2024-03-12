@@ -73,7 +73,7 @@ class SigningHelpersTest {
             createdUnsignedCpb,
             signedCpb,
                 SigningOptions(
-                testKeyStore.absolutePathString(),
+                testKeyStore.toFile(),
                 KEYSTORE_PASSWORD,
                 SIGNING_KEY_1_ALIAS,
             )
@@ -101,7 +101,7 @@ class SigningHelpersTest {
             createdUnsignedCpb,
             signedCpb,
             SigningOptions(
-                testKeyStore.absolutePathString(),
+                testKeyStore.toFile(),
                 KEYSTORE_PASSWORD,
                 SIGNING_KEY_1_ALIAS,
                 null,
@@ -145,7 +145,7 @@ class SigningHelpersTest {
             createdSignedCpb,
             signedCpb,
             SigningOptions(
-                testKeyStore.absolutePathString(),
+                testKeyStore.toFile(),
                 KEYSTORE_PASSWORD,
                 SIGNING_KEY_2_ALIAS,
                 null,
@@ -213,7 +213,7 @@ class SigningHelpersTest {
     fun `signing without specifying sig file option uses key alias`() {
         val signedCpb = Path.of("$tempDir/$SIGNED_CPB_NAME")
         val signingOptions = SigningOptions(
-            testKeyStore.absolutePathString(),
+            testKeyStore.toFile(),
             KEYSTORE_PASSWORD,
             SIGNING_KEY_2_ALIAS,
             null,

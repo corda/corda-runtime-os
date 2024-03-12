@@ -54,7 +54,7 @@ class CreateCpiV2Test {
             ?: error("signingkeys.pfx not found"))
 
         private val signingOptions = SigningOptions(
-            testKeyStore.toString(),
+            testKeyStore.toFile(),
             KEYSTORE_PASSWORD,
             SIGNING_KEY_1_ALIAS,
             null,

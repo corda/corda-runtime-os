@@ -2,6 +2,7 @@ package net.corda.cli.plugins.packaging.signing
 
 import net.corda.sdk.packaging.signing.SigningOptions as SigningOptionsSdk
 import picocli.CommandLine
+import java.io.File
 
 /**
  * Signing Options to be used by any command that does signing.
@@ -23,5 +24,5 @@ class SigningOptions {
     var sigFile: String? = null
 
     val asSigningOptionsSdk: SigningOptionsSdk
-        get() = SigningOptionsSdk(keyStoreFileName, keyStorePass, keyAlias, tsaUrl, sigFile)
+        get() = SigningOptionsSdk(File(keyStoreFileName), keyStorePass, keyAlias, tsaUrl, sigFile)
 }

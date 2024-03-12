@@ -56,7 +56,7 @@ object CreateCpiV2 {
      * @throws IllegalArgumentException if it fails to verify Cpb V2
      */
     private fun verifyIsValidCpbV2(cpbPath: Path, signingOptions: SigningOptions) {
-        val trustedCerts = with(signingOptions) { CertificateLoader.readCertificates(keyStoreFileName, keyStorePass) }
+        val trustedCerts = with(signingOptions) { CertificateLoader.readCertificates(keyStoreFile, keyStorePass) }
         VerifierBuilder()
             .type(PackageType.CPB)
             .format(VerifierFactory.FORMAT_2)

@@ -32,7 +32,7 @@ object SigningHelpers {
             ).use { signedCpi ->
 
                 val privateKeyEntry = getPrivateKeyEntry(
-                    signingOptions.keyStoreFileName,
+                    signingOptions.keyStoreFile,
                     signingOptions.keyStorePass,
                     signingOptions.keyAlias
                 )
@@ -78,9 +78,9 @@ object SigningHelpers {
     /**
      * Reads PrivateKeyEntry from key store
      */
-    private fun getPrivateKeyEntry(keyStoreFileName: String, keyStorePass: String, keyAlias: String): KeyStore.PrivateKeyEntry {
+    private fun getPrivateKeyEntry(keyStoreFile: File, keyStorePass: String, keyAlias: String): KeyStore.PrivateKeyEntry {
         val passwordCharArray = keyStorePass.toCharArray()
-        val keyStore = KeyStore.getInstance(File(keyStoreFileName), passwordCharArray)
+        val keyStore = KeyStore.getInstance(keyStoreFile, passwordCharArray)
 
         when (val keyEntry = keyStore.getEntry(keyAlias, KeyStore.PasswordProtection(passwordCharArray))) {
             is KeyStore.PrivateKeyEntry -> return keyEntry
