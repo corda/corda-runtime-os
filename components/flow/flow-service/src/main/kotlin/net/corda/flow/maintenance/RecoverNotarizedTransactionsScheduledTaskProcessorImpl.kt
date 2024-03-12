@@ -166,6 +166,7 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
             val virtualNodeAvro = virtualNode.toAvro()
             val until = Instant.now().minus(5, ChronoUnit.MINUTES)
             val from = until.minus(1, ChronoUnit.HOURS)
+            val duration = 120 // Matches the 2 minute period that the task is scheduled at
             val clientRequestId =
                 "recover-notarized-transactions-${virtualNode.holdingIdentity.shortHash}-${until.toEpochMilli()}"
 
@@ -183,7 +184,8 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
                 flowStartArgs = objectMapper.writeValueAsString(
                     mapOf(
                         "from" to from.toEpochMilli(),
-                        "until" to until.toEpochMilli()
+                        "until" to until.toEpochMilli(),
+                        "duration" to duration
                     )
                 ),
                 flowContextPlatformProperties

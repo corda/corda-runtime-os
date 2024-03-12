@@ -9,6 +9,7 @@ import net.corda.ledger.utxo.flow.impl.notary.PluggableNotarySelector
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.utilities.debug
+import net.corda.utilities.minutes
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
@@ -25,11 +26,13 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.security.PrivilegedExceptionAction
+import java.time.Duration
 import java.time.Instant
 
-class UtxoRecoveryFlow(private val from: Instant, private val until: Instant) : SubFlow<Int> {
+class UtxoRecoveryFlow(private val from: Instant, private val until: Instant, private val duration: Duration) : SubFlow<Int> {
 
     private companion object {
+        val MAX_DURATION_WITHOUT_SUSPENDING = 2.minutes
         val log: Logger = LoggerFactory.getLogger(UtxoRecoveryFlow::class.java)
     }
 
@@ -51,15 +54,28 @@ class UtxoRecoveryFlow(private val from: Instant, private val until: Instant) : 
     @Suspendable
     override fun call(): Int {
         log.info("Starting recovery flow of missing notarized transactions. Recovering transactions that occurred between $from to $until")
+
         flowEngine.flowContextProperties.asFlowContext.platformProperties["corda.notary.check"] = "true"
+
+        val endTime = Instant.now().plus(duration)
+        var lastNotarization = Instant.now()
         var numberOfRecoveredFlows = 0
+        var exceededDuration = false
+        var exceededLastNotarizationTime = false
 
         val ids = persistenceService.findTransactionsWithStatusCreatedBeforeTime(TransactionStatus.UNVERIFIED, from, until)
         for (id in ids) {
-            // find the transaction
-            // check that only the notary signature is missing
-            // if the notary signature exists then move on
-            // else do recovery on it
+
+            val now = Instant.now()
+            if (now.isAfter(endTime)) {
+                exceededDuration = true
+                break
+            }
+            if (now.isAfter(lastNotarization.plus(MAX_DURATION_WITHOUT_SUSPENDING))) {
+                exceededLastNotarizationTime = true
+                break
+            }
+
             val transaction = persistenceService.findSignedTransaction(id, TransactionStatus.UNVERIFIED)
 
             if (transaction == null) {
@@ -84,14 +100,28 @@ class UtxoRecoveryFlow(private val from: Instant, private val until: Instant) : 
                 // Empty as we continue recovering this transaction.
             }
 
-//            notarize(UtxoNotarizationCheckSignedTransaction(transaction))
-
             notarize(transaction)?.let { notarizedTransaction ->
                 persistNotarizedTransaction(notarizedTransaction)
                 numberOfRecoveredFlows++
+                lastNotarization = Instant.now()
             }
         }
-        log.info("Completed recovery flow of $numberOfRecoveredFlows missing notarized transactions that occurred between $from to $until")
+        if (exceededDuration) {
+            log.info(
+                "Completed recovery flow of $numberOfRecoveredFlows missing notarized transactions that occurred between $from to " +
+                    "$until but exceeded recovery duration of $duration. There may be more transactions to recover."
+            )
+        } else if(exceededLastNotarizationTime) {
+            log.info(
+                "Completed recovery flow of $numberOfRecoveredFlows missing notarized transactions that occurred between $from to " +
+                    "$until but exceeded the duration of $MAX_DURATION_WITHOUT_SUSPENDING without notarizing a transaction. There may " +
+                    "be more transactions to recover."
+            )
+        } else {
+            log.info(
+                "Completed recovery flow of $numberOfRecoveredFlows missing notarized transactions that occurred between $from to $until"
+            )
+        }
         return numberOfRecoveredFlows
     }
 

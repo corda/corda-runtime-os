@@ -52,6 +52,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
+import java.time.Duration
 import java.time.Instant
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -320,7 +321,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun recoverMissedNotarisedTransactions(from: Instant, until: Instant) {
-        flowEngine.subFlow(UtxoRecoveryFlow(from, until))
+    override fun recoverMissedNotarisedTransactions(from: Instant, until: Instant, duration: Duration) {
+        flowEngine.subFlow(UtxoRecoveryFlow(from, until, duration))
     }
 }
