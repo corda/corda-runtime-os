@@ -18,7 +18,8 @@ object SigningHelpers {
     /**
      * Signs CPx jar file.
      *
-     * If [SigningOptions.signatureFileName] is `null`,
+     * If [SigningOptions.signatureFileName] is not provided,
+     * generate from [SigningOptions.keyAlias], following jarsigner requirements.
      */
     fun sign(
         unsignedInputCpx: Path,
