@@ -65,7 +65,7 @@ class CPIUpload : RestCommand(), Runnable {
         } catch (e: Exception) {
             sysOut.info(e.message)
             logger.error("Unexpected error during CPI upload", e)
-            return
+            System.exit(2)
         }
         if (wait) {
             pollForOKStatus(cpiUploadResult)
