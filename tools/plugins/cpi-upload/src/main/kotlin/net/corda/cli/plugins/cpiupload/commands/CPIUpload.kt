@@ -55,7 +55,7 @@ class CPIUpload : RestCommand(), Runnable {
                     cpiUploadResult = this.cpi(HttpFileUpload(cpi.inputStream(), cpi.name)).id
                 } catch (e: Exception) {
                     println(e.message)
-                    logger.error(e.stackTrace.toString())
+                    logger.error(e.stackTrace.contentDeepToString())
                     return
                 }
             }
@@ -81,7 +81,7 @@ class CPIUpload : RestCommand(), Runnable {
                     }
                 } catch (e: Exception) {
                     println(e.message)
-                    logger.error(e.stackTrace.toString())
+                    logger.error(e.stackTrace.contentDeepToString())
                     return
                 }
             }
