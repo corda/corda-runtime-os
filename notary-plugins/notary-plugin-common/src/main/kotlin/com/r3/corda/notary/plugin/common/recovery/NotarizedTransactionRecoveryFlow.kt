@@ -19,9 +19,9 @@ class NotarizedTransactionRecoveryFlow : ClientStartableFlow {
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
         val parameters = requestBody.getRequestBodyAs(jsonMarshallingService, Parameters::class.java)
-        utxoLedgerService.recoverMissedNotarisedTransactions(Instant.ofEpochMilli(parameters.instant))
+        utxoLedgerService.recoverMissedNotarisedTransactions(Instant.ofEpochMilli(parameters.from), Instant.ofEpochMilli(parameters.until))
         return ""
     }
 
-    data class Parameters(val instant: Long)
+    data class Parameters(val from: Long, val until: Long)
 }

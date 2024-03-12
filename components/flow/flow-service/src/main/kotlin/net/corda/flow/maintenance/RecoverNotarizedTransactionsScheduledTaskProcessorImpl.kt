@@ -164,9 +164,10 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
 
         private fun createRecoveryFlowStartEvent(virtualNode: VirtualNodeInfo): Triple<ShortHash, FlowMapperEvent, FlowStatus> {
             val virtualNodeAvro = virtualNode.toAvro()
-            val instant = Instant.now().minus(5, ChronoUnit.MINUTES)
+            val until = Instant.now().minus(5, ChronoUnit.MINUTES)
+            val from = until.minus(1, ChronoUnit.HOURS)
             val clientRequestId =
-                "recover-notarized-transactions-${virtualNode.holdingIdentity.shortHash}-${instant.toEpochMilli()}"
+                "recover-notarized-transactions-${virtualNode.holdingIdentity.shortHash}-${until.toEpochMilli()}"
 
             // TODO Platform properties to be populated correctly.
             // This is a placeholder which indicates access to everything, see CORE-6076
@@ -179,7 +180,12 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
                 clientRequestId,
                 virtualNodeAvro,
                 flowClassName = "com.r3.corda.notary.plugin.common.recovery.NotarizedTransactionRecoveryFlow",
-                flowStartArgs = objectMapper.writeValueAsString(mapOf("instant" to instant.toEpochMilli())),
+                flowStartArgs = objectMapper.writeValueAsString(
+                    mapOf(
+                        "from" to from.toEpochMilli(),
+                        "until" to until.toEpochMilli()
+                    )
+                ),
                 flowContextPlatformProperties
             )
 
