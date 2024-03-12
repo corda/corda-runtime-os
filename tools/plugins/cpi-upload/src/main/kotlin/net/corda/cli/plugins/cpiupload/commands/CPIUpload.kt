@@ -44,7 +44,7 @@ class CPIUpload : RestCommand(), Runnable {
         val cpi = File(cpiFilePath)
         if (cpi.extension != "cpi") {
             sysOut.info("File type must be .cpi")
-            return
+            System.exit(1)
         }
         val restClient = createRestClient(
             CpiUploadRestResource::class,
