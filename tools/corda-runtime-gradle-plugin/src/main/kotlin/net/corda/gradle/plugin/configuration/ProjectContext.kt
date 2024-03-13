@@ -1,5 +1,6 @@
 package net.corda.gradle.plugin.configuration
 
+import net.corda.gradle.plugin.cordalifecycle.EnvironmentSetupHelper
 import org.gradle.api.Project
 import org.gradle.api.logging.Logger
 
@@ -51,6 +52,7 @@ class ProjectContext(val project: Project, pluginConfig: PluginConfiguration) {
     val notaryCpiUploadStatusFilePath: String = "$workspaceDir/notaryCpiUploadStatus.json"
 
     val networkConfig: NetworkConfig = NetworkConfig("${project.rootDir}/${networkConfigFile}")
+    val isNotaryNonValidating: Boolean = EnvironmentSetupHelper().isNotaryNonValidating(networkConfig)
     val groupPolicyFilePath: String = "${project.rootDir}/$workspaceDir/GroupPolicy.json"
     val gradleDefaultCertAlias: String = "gradle-plugin-default-key"
     val gradleDefaultCertFilePath: String = "${project.rootDir}/config/gradle-plugin-default-key.pem"
