@@ -11,6 +11,7 @@ import net.corda.data.p2p.app.InboundUnauthenticatedMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
+import net.corda.data.p2p.linkmanager.LinkManagerResponse
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerSentMarker
 import net.corda.membership.grouppolicy.GroupPolicyProvider
@@ -176,6 +177,37 @@ internal class MessageConverter(
                 )
         }
 
+        private fun createLinkOutMessagePayload(
+            serializedPayload: ByteBuffer,
+            session: Session,
+        ): Any? {
+            return when (session) {
+                is AuthenticatedSession -> {
+                    val result = session.createMac(serializedPayload.array())
+                    AuthenticatedDataMessage(result.header, serializedPayload, ByteBuffer.wrap(result.mac))
+                }
+
+                is AuthenticatedEncryptionSession -> {
+                    val result = session.encryptData(serializedPayload.array())
+                    AuthenticatedEncryptedDataMessage(
+                        result.header,
+                        ByteBuffer.wrap(result.encryptedPayload),
+                        ByteBuffer.wrap(result.authTag)
+                    )
+                }
+
+                else -> {
+                    logger.warn(
+                        "Invalid Session type ${session::class.java.simpleName}.Session must be either " +
+                                "${AuthenticatedSession::class.java.simpleName} or" +
+                                " ${AuthenticatedEncryptionSession::class.java.simpleName}." +
+                                " The message was discarded."
+                    )
+                    null
+                }
+            }
+        }
+
         @Suppress("LongParameterList")
         private fun createLinkOutMessageFromPayload(
             serializedPayload: ByteBuffer,
@@ -187,28 +219,7 @@ internal class MessageConverter(
             filter: MembershipStatusFilter,
             serial: Long? = null,
         ): LinkOutMessage? {
-            val result = when (session) {
-                is AuthenticatedSession -> {
-                    val result = session.createMac(serializedPayload.array())
-                    AuthenticatedDataMessage(result.header, serializedPayload, ByteBuffer.wrap(result.mac))
-                }
-                is AuthenticatedEncryptionSession -> {
-                    val result = session.encryptData(serializedPayload.array())
-                    AuthenticatedEncryptedDataMessage(
-                        result.header,
-                        ByteBuffer.wrap(result.encryptedPayload),
-                        ByteBuffer.wrap(result.authTag)
-                    )
-                }
-                else -> {
-                    logger.warn(
-                        "Invalid Session type ${session::class.java.simpleName}.Session must be either " +
-                            "${AuthenticatedSession::class.java.simpleName} or ${AuthenticatedEncryptionSession::class.java.simpleName}." +
-                            " The message was discarded."
-                    )
-                    return null
-                }
-            }
+            val result = createLinkOutMessagePayload(serializedPayload, session) ?: return null
 
             val destMemberInfo = membershipGroupReaderProvider.lookup(source, destination, filter)
             if (destMemberInfo == null) {
@@ -283,6 +294,19 @@ internal class MessageConverter(
             }
             return deserializeHandleAvroErrors(deserialize, message.payload, message.header.sessionId)
         }
+
+        fun createLinkManagerResponse(
+            message: MessageAck,
+            session: Session,
+        ): LinkManagerResponse {
+            val serializedMessage = try {
+                message.toByteBuffer()
+            } catch (exception: IOException) {
+                logger.error("Could not serialize message type ${message::class.java.simpleName}. The message was discarded.")
+                return LinkManagerResponse(null)
+            }
+            return LinkManagerResponse(createLinkOutMessagePayload(serializedMessage, session))
+        }
     }
     fun recordsForSessionEstablished(
         sessionManager: SessionManager,
@@ -308,5 +332,4 @@ internal class MessageConverter(
             )
         } ?: emptyList()
     }
-
 }

@@ -30,19 +30,23 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
+import net.corda.messaging.emulation.http.HttpService
+import net.corda.messaging.emulation.subscription.http.HttpRpcSubscription
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * In memory implementation of the Subscription Factory.
  */
 @Component(service = [SubscriptionFactory::class])
-class InMemSubscriptionFactory @Activate constructor(
+internal class InMemSubscriptionFactory @Activate constructor(
     @Reference(service = TopicService::class)
     private val topicService: TopicService,
     @Reference(service = RPCTopicService::class)
     private val rpcTopicService: RPCTopicService,
     @Reference(service = LifecycleCoordinatorFactory::class)
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = HttpService::class)
+    private val httpService: HttpService,
 ) : SubscriptionFactory {
     private companion object {
         val instanceIndex = AtomicInteger()
@@ -141,5 +145,11 @@ class InMemSubscriptionFactory @Activate constructor(
     override fun <REQUEST : Any, RESPONSE : Any> createHttpRPCSubscription(
         rpcConfig: SyncRPCConfig,
         processor: SyncRPCProcessor<REQUEST, RESPONSE>
-    ): RPCSubscription<REQUEST, RESPONSE> = throw NotImplementedError()
+    ): RPCSubscription<REQUEST, RESPONSE> = HttpRpcSubscription(
+        httpService,
+        rpcConfig,
+        processor,
+        lifecycleCoordinatorFactory,
+        instanceIndex.incrementAndGet(),
+    )
 }
