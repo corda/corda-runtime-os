@@ -151,9 +151,12 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     private fun recordPolledRecords(records: ConsumerRecords<Any, Any>)
     {
+        val topics = records.map { it.topic() }.toSet()
+
         CordaMetrics.Metric.Messaging.ConsumerBatchSize.builder()
             .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-            .withTag(CordaMetrics.Tag.Topic, config.topicPrefix)
+            .withTag(CordaMetrics.Tag.Topic, topics.first())
+            .withTag(CordaMetrics.Tag.OperationName, "NumTopics: ${topics.size}")
             .build()
             .record(records.toList().size.toDouble())
     }
