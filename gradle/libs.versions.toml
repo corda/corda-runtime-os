@@ -2,7 +2,7 @@
 kotlinVersion = "1.8.21"
 
 apacheCommonsCodecVersion="1.16.1"
-apacheCommonsCompressVersion = "1.26.0"
+apacheCommonsCompressVersion = "1.26.1"
 bouncycastleVersion = "1.77"
 braveVersion = "6.0.2"
 caffeineVersion = "3.1.8"
@@ -14,11 +14,12 @@ jcipAnnotationsVersion = "1.0_2"
 # This version of Jetty must be the same major version as used by Javalin, please see above.
 # Once Javalin version is upgraded to the latest, this override may be removed.
 jettyVersion = "9.4.54.v20240208"
-micrometerVersion = "1.12.3"
+micrometerVersion = "1.12.4"
 nimbusVersion = "11.10.1"
 kafkaClientVersion = "3.6.1_1"
 kubernetesClientVersion = "6.10.0"
 log4jVersion = "2.23.0"
+liquibaseVersion = "4.24.0"
 mssqlDriverVersion = "11.2.3.jre17"
 postgresDriverVersion = "42.7.2"
 # SLF4J cannot be ugraded to 2.x due to CorDapps requiring the 1.7 <= x < 2.0
@@ -127,6 +128,7 @@ zipkin-sender-urlconnection = { group = "io.zipkin.reporter2", name = "zipkin-se
 zipkin-reporter-brave = { group = "io.zipkin.reporter2", name = "zipkin-reporter-brave", version.ref = "zipkinReporterVersion" }
 
 gradle-enterprise = { group = "com.gradle", name = "gradle-enterprise-gradle-plugin", version.ref = "gradleEnterpriseVersion" }
+liquibase = { group = "org.liquibase", name = "liquibase-core", version.ref = "liquibaseVersion"}
 
 [bundles]
 bouncycastle = ["bouncycastle-prov", "bouncycastle-pkix"]

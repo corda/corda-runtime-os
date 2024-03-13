@@ -2,16 +2,19 @@ package net.corda.cli.plugins.network
 
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.cli.plugins.network.utils.inferCpiName
-import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.sdk.network.MemberRole
 import net.corda.sdk.network.RegistrationContext
+import net.corda.sdk.packaging.CpiAttributes
 import net.corda.sdk.packaging.CpiUploader
+import net.corda.sdk.packaging.CpiV2Creator
 import net.corda.sdk.rest.RestClientUtils
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.Path
 import kotlin.time.Duration.Companion.seconds
 
 @Command(
@@ -122,9 +125,8 @@ class OnboardMember : Runnable, BaseOnboard() {
             return it.cpiFileChecksum
         }
         if (!cpiFile.exists()) {
-            val exitCode = createCpi(cpbFile, cpiFile)
-            if (exitCode != 0) {
-                throw CordaRuntimeException("Create CPI returned non-zero exit code")
+            runCatching { createCpi(cpbFile, cpiFile) }.onFailure { e ->
+                throw CordaRuntimeException("Create CPI failed: ${e.message}", e)
             }
             println("CPI file saved as ${cpiFile.absolutePath}")
         }
@@ -132,21 +134,26 @@ class OnboardMember : Runnable, BaseOnboard() {
         return uploadCpi(cpiFile, cpiFile.name)
     }
 
-    private fun createCpi(cpbFile: File, cpiFile: File): Int {
+    private fun createCpi(cpbFile: File, cpiFile: File) {
         println(
             "Using the cpb file is not recommended." +
                 " It is advised to create CPI using the package create-cpi command.",
         )
         cpiFile.parentFile.mkdirs()
-        val creator = CreateCpiV2()
-        creator.cpbFileName = cpbFile.absolutePath
-        creator.groupPolicyFileName = groupPolicyFile.absolutePath
-        creator.cpiName = cpiFile.nameWithoutExtension
-        creator.cpiVersion = CPI_VERSION
-        creator.cpiUpgrade = false
-        creator.outputFileName = cpiFile.absolutePath
-        creator.signingOptions = createDefaultSingingOptions()
-        return creator.call()
+
+        CpiV2Creator.createCpi(
+            cpbFile.toPath(),
+            cpiFile.toPath(),
+            readGroupPolicy(),
+            CpiAttributes(cpiFile.nameWithoutExtension, CPI_VERSION, false),
+            createDefaultSingingOptions().asSigningOptionsSdk
+        )
+    }
+
+    private fun readGroupPolicy(): String {
+        val path = Path.of(groupPolicyFile.absolutePath)
+        require(Files.isReadable(path)) { "\"${groupPolicyFile.absolutePath}\" does not exist or is not readable" }
+        return path.toFile().readText(Charsets.UTF_8)
     }
 
     private val ledgerKeyId by lazy {

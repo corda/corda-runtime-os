@@ -64,10 +64,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
-import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
-import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
-import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
-import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
+import net.corda.messaging.emulation.EmulatorFactory
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.messaging.RevocationConfig
@@ -509,16 +506,20 @@ class P2PLayerEndToEndTest {
             tlsType = TlsType.ONE_WAY,
         )
         private val localInfos = ourIdentities.map { IdentityLocalInfo(it, keyTemplate, trustStoreURL) }
-        private val topicService = TopicServiceImpl()
         private val lifecycleCoordinatorFactory =
             LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
-        private val subscriptionFactory = InMemSubscriptionFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
-        private val publisherFactory = CordaPublisherFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
+        private val emulator = EmulatorFactory.create(lifecycleCoordinatorFactory)
         private val configMerger = ConfigMergerImpl(DbBusConfigMergerImpl())
         private val avroSchemaRegistry = AvroSchemaRegistryImpl()
         private val configReadService = ConfigurationReadServiceImpl(
-            lifecycleCoordinatorFactory, subscriptionFactory, configMerger, avroSchemaRegistry, publisherFactory)
-        private val configPublisher = publisherFactory.createPublisher(PublisherConfig("config-writer", false), bootstrapConfig)
+            lifecycleCoordinatorFactory,
+            emulator.subscriptionFactory,
+            configMerger,
+            avroSchemaRegistry,
+            emulator.publisherFactory
+        )
+        private val configPublisher =
+            emulator.publisherFactory.createPublisher(PublisherConfig("config-writer", false), bootstrapConfig)
         private val gatewayConfig = createGatewayConfig(p2pPort, p2pAddress, sslConfig)
         private val linkManagerConfig by lazy {
             ConfigFactory.empty()
@@ -761,8 +762,8 @@ class P2PLayerEndToEndTest {
 
         private val linkManager =
             LinkManager(
-                subscriptionFactory,
-                publisherFactory,
+                emulator.subscriptionFactory,
+                emulator.publisherFactory,
                 lifecycleCoordinatorFactory,
                 configReadService,
                 bootstrapConfig,
@@ -792,8 +793,8 @@ class P2PLayerEndToEndTest {
         private val gateway =
             Gateway(
                 configReadService,
-                subscriptionFactory,
-                publisherFactory,
+                emulator.subscriptionFactory,
+                emulator.publisherFactory,
                 lifecycleCoordinatorFactory,
                 cryptoOpsClient,
                 AvroSchemaRegistryImpl(),
@@ -831,7 +832,8 @@ class P2PLayerEndToEndTest {
                 otherHostMembersByKey[keyHash] = memberInfo
             }
 
-            val publisherForHost = publisherFactory.createPublisher(PublisherConfig("test-runner-publisher", false), bootstrapConfig)
+            val publisherForHost =
+                emulator.publisherFactory.createPublisher(PublisherConfig("test-runner-publisher", false), bootstrapConfig)
 
             val hostingMapRecords = localInfos.map { info ->
                 Record(
@@ -877,11 +879,11 @@ class P2PLayerEndToEndTest {
         override fun close() {
             linkManager.close()
             gateway.close()
-            topicService.close()
+            emulator.close()
         }
 
         fun addReadWriter(): Subscription<String, AppMessage> {
-            return subscriptionFactory.createDurableSubscription(
+            return emulator.subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig("app-layer", P2P_IN_TOPIC), ResponderProcessor(),
                 bootstrapConfig,
                 null
@@ -891,7 +893,7 @@ class P2PLayerEndToEndTest {
         fun listenForReceivedMessages(
             receivedMessages: MutableCollection<String>
         ): Subscription<String, AppMessage> {
-            return subscriptionFactory.createDurableSubscription(
+            return emulator.subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig("app-layer", P2P_IN_TOPIC), InitiatorProcessor(receivedMessages),
                 bootstrapConfig,
                 null
@@ -899,7 +901,7 @@ class P2PLayerEndToEndTest {
         }
 
         fun listenForMarkers(markers: MutableCollection<Record<String, AppMessageMarker>>): Subscription<String, AppMessageMarker> {
-            return subscriptionFactory.createDurableSubscription(
+            return emulator.subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig("app-layer", P2P_OUT_MARKERS), MarkerStorageProcessor(markers),
                 bootstrapConfig,
                 null
@@ -907,7 +909,8 @@ class P2PLayerEndToEndTest {
         }
 
         fun sendMessages(messagesToSend: Int, ourIdentity: Identity, peer: Identity, ttl: Instant? = null) {
-            val hostAApplicationWriter = publisherFactory.createPublisher(PublisherConfig("app-layer", false), bootstrapConfig)
+            val hostAApplicationWriter = emulator.publisherFactory
+                .createPublisher(PublisherConfig("app-layer", false), bootstrapConfig)
             val initialMessages = (1..messagesToSend).map { index ->
                 val incrementalId = index.toString()
                 val messageHeader = AuthenticatedMessageHeader(

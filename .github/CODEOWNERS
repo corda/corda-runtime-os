@@ -95,7 +95,6 @@ CODEOWNERS         @corda/blt @corda/corda5-team-leads
 # Modules to be audited by Ledger SMEs
 /components/ledger/                                             @corda/ledger
 /libs/ledger/                                                   @corda/ledger
-	@@ -105,7 +10,5 @@ CODEOWNERS         @corda/blt @corda/corda5-team-leads
 /processors/uniqueness-processor/                               @corda/notaries
 /testing/uniqueness/                                            @corda/notaries
 

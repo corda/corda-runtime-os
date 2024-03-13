@@ -204,14 +204,44 @@ object CordaMetrics {
         object InboundMessageCount : Metric<Counter>("p2p.message.inbound", Metrics::counter)
 
         /**
-         * Number of outbound peer-to-peer sessions.
+         * Number of peer-to-peer sessions that timed out (indicating communication issues with peers).
          */
-        class OutboundSessionCount(computation: Supplier<Number>): ComputedValue<Nothing>("p2p.session.outbound", computation)
+        object SessionTimeoutCount : Metric<Counter>("p2p.session.timeout", Metrics::counter)
 
         /**
-         * Number of inbound peer-to-peer sessions.
+         * Estimated size of the peer-to-peer session cache.
          */
-        class InboundSessionCount(computation: Supplier<Number>): ComputedValue<Nothing>("p2p.session.inbound", computation)
+        class EstimatedSessionCacheSize(computation: Supplier<Number>): ComputedValue<Nothing>("p2p.session.cached", computation)
+
+        /**
+         * Number of peer-to-peer sessions deleted.
+         */
+        object SessionDeletedCount: Metric<Counter>("p2p.session.deleted", Metrics::counter)
+
+        /**
+         * Number of peer-to-peer sessions started.
+         */
+        object SessionStartedCount: Metric<Counter>("p2p.session.started", Metrics::counter)
+
+        /**
+         * Number of peer-to-peer sessions established.
+         */
+        object SessionEstablishedCount: Metric<Counter>("p2p.session.established", Metrics::counter)
+
+        /**
+         * Number of peer-to-peer sessions failed.
+         */
+        object SessionFailedCount: Metric<Counter>("p2p.session.failed", Metrics::counter)
+
+        /**
+         * Time it took for a peer-to-peer session to be established.
+         */
+        object SessionCreationTime: Metric<Timer>("p2p.session.creation.time", CordaMetrics::timer)
+
+        /**
+         * Number of peer-to-peer sessions messages replayed.
+         */
+        object SessionMessageReplayCount: Metric<Counter>("p2p.session.replayed", Metrics::counter)
 
         /**
          * Time it took for an inbound request to the p2p gateway to be processed.
@@ -832,6 +862,11 @@ object CordaMetrics {
          * The subsystem that sends or receives a peer-to-peer message from the network layer.
          */
         MessagingSubsystem("subsystem"),
+
+        /**
+         * The direction of a peer-to-peer session.
+         */
+        SessionDirection("p2p.session.direction"),
 
         /**
          * Type of result returned. Currently used by uniqueness client and checker to indicate

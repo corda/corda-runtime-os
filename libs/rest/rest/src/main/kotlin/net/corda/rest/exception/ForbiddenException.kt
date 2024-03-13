@@ -7,8 +7,13 @@ import net.corda.rest.ResponseCode
  *
  * If the authorization logic wants to hide the fact authorization failed, a [ResourceNotFoundException] can be thrown instead.
  */
-class ForbiddenException(message: String = "User not authorized.", details: Map<String, String> = emptyMap()) : HttpApiException(
+class ForbiddenException(
+    title: String = "User not authorized.",
+    details: Map<String, String> = emptyMap(),
+    exceptionDetails: ExceptionDetails? = null
+) : HttpApiException(
     ResponseCode.FORBIDDEN,
-    message,
-    details
+    title,
+    details,
+    exceptionDetails
 )
