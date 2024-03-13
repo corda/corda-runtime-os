@@ -54,7 +54,6 @@ class VirtualNodeSenderImpl(
      */
     @Suppress("SpreadOperator")
     override fun sendAsync(key: String, request: VirtualNodeAsynchronousRequest) {
-
         val publish = asyncOperationPublisher.publish(
             listOf(addTraceContextToRecord(Record(VIRTUAL_NODE_ASYNC_REQUEST_TOPIC, key, request)))
         )
