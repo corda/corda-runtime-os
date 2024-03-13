@@ -1,14 +1,18 @@
 package net.corda.gradle.plugin.cordapp
 
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
-import java.io.File
+import net.corda.sdk.packaging.CpiAttributes
+import net.corda.sdk.packaging.CpiV2Creator
+import net.corda.sdk.packaging.signing.SigningOptions
+import java.nio.file.Files
+import java.nio.file.Path
+import kotlin.io.path.exists
+import kotlin.io.path.readText
 
 class BuildCpiHelper {
 
     @Suppress("LongParameterList")
     fun createCPI(
-        javaBinDir: String,
-        cordaCliBinDir: String,
         groupPolicyFilePath: String,
         keystoreFilePath: String,
         keystoreAlias: String,
@@ -19,45 +23,33 @@ class BuildCpiHelper {
         cpiVersion: String,
     ) {
         // Get Cpb
-        val cpbFile = File(cpbFilePath)
-        if (!cpbFile.exists()) {
-            throw CordaRuntimeGradlePluginException("CPB file not found at: $cpbFilePath.")
+        val cpbFile = Path.of(cpbFilePath).also {
+            if (!it.exists()) throw CordaRuntimeGradlePluginException("CPB file not found at: $it.")
         }
-        // Clear previous cpi if it exists
-        val cpiFile = File(cpiFilePath)
-        if (cpiFile.exists()) {
-            cpiFile.delete()
-        }
-        // Build and execute command to build cpi
-        val cmdList = listOf(
-            "$javaBinDir/java",
-            "-Dpf4j.pluginsDir=$cordaCliBinDir/plugins/",
-            "-jar",
-            "$cordaCliBinDir/corda-cli.jar",
-            "package",
-            "create-cpi",
-            "--cpb",
-            cpbFile.absolutePath,
-            "--group-policy",
-            groupPolicyFilePath,
-            "--cpi-name",
-            cpiName,
-            "--cpi-version",
-            cpiVersion,
-            "--file",
-            cpiFilePath,
-            "--keystore",
-            keystoreFilePath,
-            "--storepass",
-            keystorePassword,
-            "--key",
-            keystoreAlias
-        )
 
-        val pb = ProcessBuilder(cmdList)
-        pb.redirectErrorStream(true)
-        val proc = pb.start()
-        proc.inputStream.transferTo(System.out)
-        proc.waitFor()
+        // Get GroupPolicy.json
+        val groupPolicy = Path.of(groupPolicyFilePath).also {
+            if (!it.exists()) throw CordaRuntimeGradlePluginException("Group Policy file not found at: $it.")
+        }.readText(Charsets.UTF_8)
+
+        // Get Keystore file
+        val keyStoreFile = Path.of(keystoreFilePath).also {
+            if (!it.exists()) throw CordaRuntimeGradlePluginException("Keystore file not found at: $it.")
+        }
+
+        // Clear previous cpi if it exists
+        val cpiFile = Path.of(cpiFilePath).also { Files.deleteIfExists(it) }
+
+        CpiV2Creator.createCpi(
+            cpbFile,
+            cpiFile,
+            groupPolicy,
+            CpiAttributes(cpiName, cpiVersion),
+            SigningOptions(
+                keyStoreFile,
+                keystorePassword,
+                keystoreAlias
+            )
+        )
     }
 }

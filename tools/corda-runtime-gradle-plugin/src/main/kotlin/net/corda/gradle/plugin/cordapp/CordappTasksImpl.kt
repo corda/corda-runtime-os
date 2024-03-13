@@ -110,8 +110,6 @@ class CordappTasksImpl(var pc: ProjectContext) {
     fun buildCPIs() {
         pc.logger.quiet("Creating ${pc.corDappCpiName} CPI.")
         BuildCpiHelper().createCPI(
-            pc.javaBinDir,
-            pc.cordaCliBinDir,
             pc.groupPolicyFilePath,
             pc.keystoreFilePath,
             pc.keystoreAlias,
@@ -123,8 +121,6 @@ class CordappTasksImpl(var pc: ProjectContext) {
         )
         pc.logger.quiet("Creating ${pc.notaryCpiName} CPI.")
         BuildCpiHelper().createCPI(
-            pc.javaBinDir,
-            pc.cordaCliBinDir,
             pc.groupPolicyFilePath,
             pc.keystoreFilePath,
             pc.keystoreAlias,

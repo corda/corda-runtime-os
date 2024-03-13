@@ -6,8 +6,6 @@ import org.junit.jupiter.api.Test
 
 class CordappTasksTest : FunctionalBaseTest() {
 
-    private val groupPolicyFile by lazy { projectDir.resolve("workspace").resolve("GroupPolicy.json") }
-
     @Test
     fun shouldContainSupportingTasks() {
         assertTrue(executeWithRunner("tasks", "--group", CORDAPP_BUILD_GROUP).tasks.isNotEmpty())
@@ -15,8 +13,10 @@ class CordappTasksTest : FunctionalBaseTest() {
 
     @Test
     fun groupPolicyIsGenerated() {
+        val groupPolicyFile = projectDir.resolve("workspace").resolve("GroupPolicy.json")
         require(!groupPolicyFile.exists()) { "Group policy file $groupPolicyFile should not exist" }
 
+        appendCordaRuntimeGradlePluginExtension()
         executeWithRunner(CREATE_GROUP_POLICY_TASK_NAME)
         assertTrue(groupPolicyFile.isFile)
     }

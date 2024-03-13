@@ -25,6 +25,8 @@ dependencies {
     implementation project(':libs:rest:json-serialization')
     testImplementation libs.bundles.test
     testImplementation libs.javalin
+    testImplementation project(':testing:test-utilities')
+    testImplementation project(':testing:packaging-test-utilities')
     testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinCoroutinesVersion"
 }
 
