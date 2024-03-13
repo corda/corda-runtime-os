@@ -24,6 +24,7 @@ import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.clients.consumer.ConsumerRecord
+import org.apache.kafka.clients.consumer.ConsumerRecords
 import org.apache.kafka.clients.consumer.InvalidOffsetException
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.KafkaException
@@ -112,9 +113,11 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
             clearBuffersForUnassignedPartitions()
 
+            recordPolledRecords(polledRecords)
+
             val recordsToReturn = mutableListOf<CordaConsumerRecord<K, V>>()
             polledRecords.groupBy { it.partition() }.forEach { (partition, records) ->
-                recordPolledRecordsPerPartition(partition, records)
+//                recordPolledRecordsPerPartition(partition, records)
                 val bufferedRecords = bufferedRecords[partition] ?: emptyList()
                 if (bufferedRecords.isNotEmpty()) {
                     log.trace {
@@ -138,12 +141,21 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             }!!
     }
 
-    private fun recordPolledRecordsPerPartition(partition: Int, records: List<ConsumerRecord<*, *>>) {
+//    private fun recordPolledRecordsPerPartition(partition: Int, records: List<ConsumerRecord<*, *>>) {
+//        CordaMetrics.Metric.Messaging.ConsumerBatchSize.builder()
+//            .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+//            .withTag(CordaMetrics.Tag.Partition, "$partition")
+//            .build()
+//            .record(records.size.toDouble())
+//    }
+
+    private fun recordPolledRecords(records: ConsumerRecords<Any, Any>)
+    {
         CordaMetrics.Metric.Messaging.ConsumerBatchSize.builder()
             .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-            .withTag(CordaMetrics.Tag.Partition, "$partition")
+            .withTag(CordaMetrics.Tag.Topic, config.topicPrefix)
             .build()
-            .record(records.size.toDouble())
+            .record(records.toList().size.toDouble())
     }
 
     /**
