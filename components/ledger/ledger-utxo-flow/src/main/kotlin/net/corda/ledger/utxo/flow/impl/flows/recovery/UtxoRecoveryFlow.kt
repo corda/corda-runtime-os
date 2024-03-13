@@ -103,6 +103,8 @@ class UtxoRecoveryFlow(private val from: Instant, private val until: Instant, pr
             }
             if (transactionsToRecover.size >= QUERY_LIMIT) {
                 transactionsToRecover = findTransactionsToRecover()
+            } else {
+                transactionsToRecover = emptyList()
             }
         }
         if (exceededDuration) {
