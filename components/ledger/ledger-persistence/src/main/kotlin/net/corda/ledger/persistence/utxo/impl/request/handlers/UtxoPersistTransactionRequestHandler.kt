@@ -7,6 +7,7 @@ import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoTokenObserverMap
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.persistence.utxo.impl.TokenStateObserverContextImpl
+import net.corda.ledger.utxo.data.transaction.UtxoLedgerLastPersistedTimestamp
 import net.corda.messaging.api.records.Record
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.ledger.utxo.ContractState
@@ -15,12 +16,14 @@ import net.corda.v5.ledger.utxo.observer.TokenStateObserverContext
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 class UtxoPersistTransactionRequestHandler
 @Suppress("LongParameterList")
 constructor(
     private val transaction: UtxoTransactionReader,
     private val tokenObservers: UtxoTokenObserverMap,
+    private val lastPersistedTimestamp: Instant?,
     private val externalEventContext: ExternalEventContext,
     private val persistenceService: UtxoPersistenceService,
     private val utxoOutputRecordFactory: UtxoOutputRecordFactory,
@@ -37,7 +40,11 @@ constructor(
         val utxoTokenMap = listOfPairsStateAndUtxoToken.associate { it.first.ref to it.second }
 
         // persist the transaction
-        val persistedAt = persistenceService.persistTransaction(transaction, utxoTokenMap)
+        val persistedAt = persistenceService.persistTransaction(
+            transaction,
+            lastPersistedTimestamp,
+            utxoTokenMap
+        )
 
         // return output records
         return listOf(utxoOutputRecordFactory.getPersistTransactionSuccessRecord(persistedAt, externalEventContext))

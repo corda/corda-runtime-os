@@ -58,7 +58,7 @@ class ConsensualLedgerPersistenceServiceImpl @Activate constructor(
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 PersistTransactionExternalEventFactory::class.java,
-                PersistTransactionParameters(serialize(transaction.toContainer()), transactionStatus.value)
+                PersistTransactionParameters(serialize(transaction.toContainer()), transactionStatus.value, null)
             )
         }.map { serializationService.deserialize(it.array()) }
     }

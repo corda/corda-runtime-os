@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.flow.impl.persistence
 
 import io.micrometer.core.instrument.Timer
 import net.corda.crypto.core.fullIdHash
+import net.corda.flow.application.services.FlowCheckpointService
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.fiber.metrics.recordSuspendable
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
@@ -10,6 +11,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTr
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionAndSignaturesImpl
+import net.corda.ledger.utxo.data.transaction.UtxoLedgerLastPersistedTimestamp
 import net.corda.ledger.utxo.flow.impl.cache.StateAndRefCache
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindFilteredTransactionsAndSignatures
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindSignedLedgerTransactionWithStatus
@@ -88,7 +90,9 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     @Reference(service = NotarySignatureVerificationService::class)
     private val notarySignatureVerificationService: NotarySignatureVerificationService,
     @Reference(service = StateAndRefCache::class)
-    private val stateAndRefCache: StateAndRefCache
+    private val stateAndRefCache: StateAndRefCache,
+    @Reference(service = FlowCheckpointService::class)
+    private val flowCheckpointService: FlowCheckpointService
 ) : UtxoLedgerPersistenceService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -233,13 +237,27 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         transactionStatus: TransactionStatus,
         visibleStatesIndexes: List<Int>
     ): Instant {
+        val lastPersistedTimestamp = flowCheckpointService.getCheckpoint().readCustomState(
+            UtxoLedgerLastPersistedTimestamp::class.java
+        )
         return recordSuspendable({ ledgerPersistenceFlowTimer(PersistTransaction) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     PersistTransactionExternalEventFactory::class.java,
-                    PersistTransactionParameters(serialize(transaction.toContainer()), transactionStatus, visibleStatesIndexes)
+                    PersistTransactionParameters(
+                        serialize(transaction.toContainer()),
+                        transactionStatus,
+                        visibleStatesIndexes,
+                        lastPersistedTimestamp?.lastPersistedTimestamp
+                    )
                 )
-            }.first().let { serializationService.deserialize(it.array()) }
+            }.first().let {
+                val newLastPersistedTimestamp = serializationService.deserialize<Instant>(it.array())
+                flowCheckpointService.getCheckpoint().writeCustomState(
+                    UtxoLedgerLastPersistedTimestamp(newLastPersistedTimestamp)
+                )
+                newLastPersistedTimestamp
+            }
         }
     }
 

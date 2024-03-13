@@ -7,6 +7,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import java.nio.ByteBuffer
 import java.time.Clock
+import java.time.Instant
 
 @Component(service = [ExternalEventFactory::class])
 class PersistTransactionExternalEventFactory :
@@ -16,9 +17,18 @@ class PersistTransactionExternalEventFactory :
     constructor(clock: Clock) : super(clock)
 
     override fun createRequest(parameters: PersistTransactionParameters): Any {
-        return PersistTransaction(ByteBuffer.wrap(parameters.transaction), parameters.transactionStatus, emptyList())
+        return PersistTransaction(
+            ByteBuffer.wrap(parameters.transaction),
+            parameters.transactionStatus,
+            emptyList(),
+            null
+        )
     }
 }
 
 @CordaSerializable
-data class PersistTransactionParameters(val transaction: ByteArray, val transactionStatus: String)
+data class PersistTransactionParameters(
+    val transaction: ByteArray,
+    val transactionStatus: String,
+    val lastPersistedTimestamp: Instant?
+)

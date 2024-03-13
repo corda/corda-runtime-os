@@ -8,6 +8,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import java.nio.ByteBuffer
 import java.time.Clock
+import java.time.Instant
 
 @Component(service = [ExternalEventFactory::class])
 class PersistTransactionExternalEventFactory : AbstractUtxoLedgerExternalEventFactory<PersistTransactionParameters> {
@@ -20,7 +21,8 @@ class PersistTransactionExternalEventFactory : AbstractUtxoLedgerExternalEventFa
         return PersistTransaction(
             transaction,
             parameters.transactionStatus.value,
-            parameters.visibleStatesIndexes
+            parameters.visibleStatesIndexes,
+            parameters.lastPersistedTimestamp
         )
     }
 }
@@ -29,5 +31,6 @@ class PersistTransactionExternalEventFactory : AbstractUtxoLedgerExternalEventFa
 data class PersistTransactionParameters(
     val transaction: ByteArray,
     val transactionStatus: TransactionStatus,
-    val visibleStatesIndexes: List<Int>
+    val visibleStatesIndexes: List<Int>,
+    val lastPersistedTimestamp: Instant?
 )

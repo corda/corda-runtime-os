@@ -129,10 +129,12 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                 UtxoPersistTransactionRequestHandler(
                     UtxoTransactionReaderImpl(sandbox, externalEventContext, req),
                     UtxoTokenObserverMapImpl(sandbox),
+                    req.lastPersistedTimestamp,
                     externalEventContext,
                     persistenceService,
                     outputRecordFactory,
-                    sandbox.getSandboxSingletonService()
+                    sandbox.getSandboxSingletonService(),
+
                 )
             }
             is PersistTransactionIfDoesNotExist -> {

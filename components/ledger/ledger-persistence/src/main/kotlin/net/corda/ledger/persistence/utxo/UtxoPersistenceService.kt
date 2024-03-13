@@ -58,7 +58,8 @@ interface UtxoPersistenceService {
 
     fun persistTransaction(
         transaction: UtxoTransactionReader,
-        utxoTokenMap: Map<StateRef, UtxoToken> = emptyMap()
+        lastPersistedTimestamp: Instant?,
+        utxoTokenMap: Map<StateRef, UtxoToken> = emptyMap(),
     ): Instant
 
     fun persistTransactionIfDoesNotExist(transaction: UtxoTransactionReader): String

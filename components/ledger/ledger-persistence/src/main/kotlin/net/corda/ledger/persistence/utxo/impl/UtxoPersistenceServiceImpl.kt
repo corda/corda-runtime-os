@@ -253,8 +253,12 @@ class UtxoPersistenceServiceImpl(
 
     private fun hash(data: ByteArray) = sandboxDigestService.hash(data, DigestAlgorithmName.SHA2_256).toString()
 
-    override fun persistTransaction(transaction: UtxoTransactionReader, utxoTokenMap: Map<StateRef, UtxoToken>): Instant {
-        return persistTransaction(transaction, utxoTokenMap) { block ->
+    override fun persistTransaction(
+        transaction: UtxoTransactionReader,
+        lastPersistedTimestamp: Instant?,
+        utxoTokenMap: Map<StateRef, UtxoToken>
+    ): Instant {
+        return persistTransaction(transaction, lastPersistedTimestamp, utxoTokenMap) { block ->
             entityManagerFactory.transaction { em -> block(em) }
         }
     }
@@ -263,7 +267,9 @@ class UtxoPersistenceServiceImpl(
         entityManagerFactory.transaction { em ->
             val transactionIdString = transaction.id.toString()
             val (status, isFiltered) = repository.findTransactionStatus(em, transactionIdString) ?: run {
-                persistTransaction(transaction, emptyMap()) { block -> block(em) }
+                persistTransaction(transaction, lastPersistedTimestamp = null, utxoTokenMap = emptyMap()) {
+                        block -> block(em)
+                }
                 return ""
             }
             // VERIFIED can exist with is_filtered = true when there is only a filtered transaction
@@ -279,10 +285,15 @@ class UtxoPersistenceServiceImpl(
 
     private inline fun persistTransaction(
         transaction: UtxoTransactionReader,
+        lastPersistedTimestamp: Instant?,
         utxoTokenMap: Map<StateRef, UtxoToken>,
         optionalTransactionBlock: ((EntityManager) -> Unit) -> Unit
     ): Instant {
         val nowUtc = utcClock.instant()
+        val timestampToPersist = lastPersistedTimestamp?.let {
+            maxOf(it, nowUtc)
+        } ?: nowUtc // If we have no last persisted timestamp we use UTC now
+
         val transactionIdString = transaction.id.toString()
 
         val metadataBytes = transaction.rawGroupLists[0][0]
@@ -325,7 +336,7 @@ class UtxoPersistenceServiceImpl(
                     transactionIdString,
                     transaction.privacySalt.bytes,
                     transaction.account,
-                    nowUtc,
+                    timestampToPersist,
                     transaction.status,
                     metadataHash,
                 )
@@ -335,7 +346,7 @@ class UtxoPersistenceServiceImpl(
                     transactionIdString,
                     transaction.privacySalt.bytes,
                     transaction.account,
-                    nowUtc,
+                    timestampToPersist,
                     metadataHash
                 )
             }
@@ -360,7 +371,7 @@ class UtxoPersistenceServiceImpl(
             repository.persistVisibleTransactionOutputs(
                 em,
                 transactionIdString,
-                nowUtc,
+                timestampToPersist,
                 visibleTransactionOutputs
             )
 
@@ -371,7 +382,7 @@ class UtxoPersistenceServiceImpl(
                     repository.markTransactionVisibleStatesConsumed(
                         em,
                         inputStateRefs,
-                        nowUtc
+                        timestampToPersist
                     )
                 }
             }
@@ -381,11 +392,11 @@ class UtxoPersistenceServiceImpl(
                 em,
                 transactionIdString,
                 transactionSignatures,
-                nowUtc
+                timestampToPersist
             )
         }
 
-        return nowUtc
+        return timestampToPersist
     }
 
     override fun persistTransactionSignatures(id: String, signatures: List<ByteArray>, startingIndex: Int) {
