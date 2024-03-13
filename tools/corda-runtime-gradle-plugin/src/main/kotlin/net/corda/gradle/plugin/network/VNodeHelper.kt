@@ -136,6 +136,8 @@ class VNodeHelper {
             }
             """.trimIndent()
         } else {
+            val flowProtocolValue = vNode.flowProtocolName ?: "com.r3.corda.notary.plugin.nonvalidating"
+            val backchainValue = vNode.backchainRequired ?: "true"
             """
             { 
                 "memberRegistrationRequest" : {
@@ -144,7 +146,8 @@ class VNodeHelper {
                         "corda.roles.0" : "notary",
                         "corda.notary.service.name" : "${vNode.serviceX500Name}",
                         "corda.notary.service.flow.protocol.version.0" : "1",
-                        "corda.notary.service.flow.protocol.name" : "com.r3.corda.notary.plugin.nonvalidating"
+                        "corda.notary.service.flow.protocol.name" : "$flowProtocolValue",
+                        "corda.notary.service.backchain.required" : "$backchainValue"
                     } 
                 }
             }
@@ -158,7 +161,7 @@ class VNodeHelper {
 
         if (response.status != HttpURLConnection.HTTP_OK) {
             throw CordaRuntimeGradlePluginException(
-                "Failed to request registration of virtual node $shortHash, response status: ${response.status}"
+                "Failed to request registration of virtual node $shortHash, response status: ${response.status}, reason: ${response.body}"
             )
         }
 

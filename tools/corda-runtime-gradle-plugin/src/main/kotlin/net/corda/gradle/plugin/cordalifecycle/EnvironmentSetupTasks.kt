@@ -75,7 +75,7 @@ open class DownloadNotaryCpb @Inject constructor(objects: ObjectFactory) : Defau
         if (pc.isNotaryNonValidating) {
             EnvironmentSetupHelper().downloadNotaryCpb(
                 pc.notaryVersion,
-                pc.notaryCpbFilePath,
+                pc.nonValidatingNotaryCpbFilePath,
                 pc.artifactoryUsername,
                 pc.artifactoryPassword
             )

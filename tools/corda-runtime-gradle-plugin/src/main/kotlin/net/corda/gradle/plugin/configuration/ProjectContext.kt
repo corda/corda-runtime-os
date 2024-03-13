@@ -31,6 +31,7 @@ class ProjectContext(val project: Project, pluginConfig: PluginConfiguration) {
     val vnodeRegistrationTimeout: Long = pluginConfig.vnodeRegistrationTimeout.get().toLong()
     val cordaProcessorTimeout: Long = pluginConfig.cordaProcessorTimeout.get().toLong()
     val workflowsModuleName: String = pluginConfig.workflowsModuleName.get()
+    val notaryModuleName: String = pluginConfig.notaryModuleName.get()
     val networkConfigFile: String = pluginConfig.networkConfigFile.get()
     val r3RootCertFile: String = "${project.rootDir}/${pluginConfig.r3RootCertFile.get()}"
 
@@ -44,7 +45,9 @@ class ProjectContext(val project: Project, pluginConfig: PluginConfiguration) {
     val cordaClusterHost: String = cordaClusterURL.split("://").last().split(":").first()
     val cordaClusterPort: Int = cordaClusterURL.split("://").last().split(":").last().toInt()
 
-    val notaryCpbFilePath: String = "$notaryServiceDir/notary-plugin-non-validating-server-$notaryVersion-package.cpb"
+    val nonValidatingNotaryCpbFilePath: String = "$notaryServiceDir/notary-plugin-non-validating-server-$notaryVersion-package.cpb"
+    val contractVerifyingNotaryCpbFilePath: String = "${project.rootDir}/${notaryModuleName}/build/libs/" +
+            "${notaryModuleName}-${project.version}-package.cpb"
     val notaryCpiFilePath: String = "$workflowBuildDir/$notaryCpiName-${project.version}.cpi"
     val corDappCpbFilePath: String = "$workflowBuildDir/libs/${workflowsModuleName}-${project.version}-package.cpb"
     val corDappCpiFilePath: String = "$workflowBuildDir/$corDappCpiName-${project.version}.cpi"
