@@ -320,6 +320,4 @@ private class CombinedWorkerParams {
     @Option(names = ["--mediator-replicas-flow-session-out"], description = ["Sets the number of mediators that " +
             "consume flow.mapper.session.out messages"])
     var mediatorReplicasFlowMapperSessionOut: Int? = null
-
-
 }
