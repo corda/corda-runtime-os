@@ -28,6 +28,8 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransacti
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionsWithStatusBeforeTimeExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionsWithStatusBeforeTimeParameters
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.IncrementRecoveryAttemptCountExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.IncrementRecoveryAttemptCountParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistFilteredTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistFilteredTransactionsExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
@@ -320,17 +322,36 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun findTransactionsWithStatusCreatedBeforeTime(status: TransactionStatus, from: Instant, until: Instant): List<SecureHash> {
+    override fun findTransactionsWithStatusCreatedBeforeTime(
+        status: TransactionStatus,
+        from: Instant,
+        until: Instant,
+        limit: Int
+    ): List<SecureHash> {
         return recordSuspendable(
             { ledgerPersistenceFlowTimer(LedgerPersistenceMetricOperationName.FindTransactionsWithStatusBeforeTime) }
         ) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     FindTransactionsWithStatusBeforeTimeExternalEventFactory::class.java,
-                    FindTransactionsWithStatusBeforeTimeParameters(status, from, until)
+                    FindTransactionsWithStatusBeforeTimeParameters(status, from, until, limit)
                 )
             }
         }.map { serializationService.deserialize(it.array()) }
+    }
+
+    @Suspendable
+    override fun incrementRecoveryAttemptCount(id: SecureHash) {
+        return recordSuspendable(
+            { ledgerPersistenceFlowTimer(LedgerPersistenceMetricOperationName.IncrementRecoveryAttemptCount) }
+        ) @Suspendable {
+            wrapWithPersistenceException {
+                externalEventExecutor.execute(
+                    IncrementRecoveryAttemptCountExternalEventFactory::class.java,
+                    IncrementRecoveryAttemptCountParameters(id)
+                )
+            }
+        }
     }
 
     private fun SignedTransactionContainer.toSignedTransaction(): UtxoSignedTransaction {

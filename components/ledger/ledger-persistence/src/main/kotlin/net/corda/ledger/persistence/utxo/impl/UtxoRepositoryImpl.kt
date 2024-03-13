@@ -592,14 +592,25 @@ class UtxoRepositoryImpl(
         entityManager: EntityManager,
         status: TransactionStatus,
         from: Instant,
-        until: Instant
+        until: Instant,
+        limit: Int,
     ): List<String> {
         @Suppress("UNCHECKED_CAST")
         return entityManager.createNativeQuery(queryProvider.findTransactionsWithStatusBeforeTime)
             .setParameter("status", status.value)
             .setParameter("from", from)
             .setParameter("until", until)
+            .setMaxResults(limit)
             .resultList as List<String>
+    }
+
+    override fun incrementRecoveryAttemptCount(
+        entityManager: EntityManager,
+        id: String
+    ) {
+        entityManager.createNativeQuery(queryProvider.incrementRecoveryAttemptCount)
+            .setParameter("transactionId", id)
+            .executeUpdate()
     }
 
     private fun <T> EntityManager.connection(block: (connection: Connection) -> T) {

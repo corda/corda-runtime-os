@@ -210,7 +210,8 @@ interface UtxoRepository {
         entityManager: EntityManager,
         status: TransactionStatus,
         from: Instant,
-        until: Instant
+        until: Instant,
+        limit: Int,
     ): List<String>
 
     data class TransactionComponent(val transactionId: String, val groupIndex: Int, val leafIndex: Int, val leafData: ByteArray)
@@ -235,4 +236,6 @@ interface UtxoRepository {
     )
 
     data class TransactionMerkleProofLeaf(val merkleProofId: String, val leafIndex: Int)
+
+    fun incrementRecoveryAttemptCount(entityManager: EntityManager, id: String)
 }

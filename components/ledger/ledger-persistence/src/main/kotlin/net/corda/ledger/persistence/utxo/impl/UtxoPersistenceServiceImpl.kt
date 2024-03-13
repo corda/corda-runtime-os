@@ -766,10 +766,21 @@ class UtxoPersistenceServiceImpl(
             }.filterNotNull().toMap()
     }
 
-    override fun findTransactionsWithStatusBeforeTime(status: TransactionStatus, from: Instant, until: Instant): List<SecureHash> {
+    override fun findTransactionsWithStatusBeforeTime(
+        status: TransactionStatus,
+        from: Instant,
+        until: Instant,
+        limit: Int,
+    ): List<SecureHash> {
         return entityManagerFactory.transaction { em ->
-            repository.findTransactionsWithStatusBeforeTime(em, status, from, until)
+            repository.findTransactionsWithStatusBeforeTime(em, status, from, until, limit)
                 .map { id -> digestService.parseSecureHash(id) }
+        }
+    }
+
+    override fun incrementRecoveryAttemptCount(id: String) {
+        entityManagerFactory.transaction { em ->
+            repository.incrementRecoveryAttemptCount(em, id)
         }
     }
 

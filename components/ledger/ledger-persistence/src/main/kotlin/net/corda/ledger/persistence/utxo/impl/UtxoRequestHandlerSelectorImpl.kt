@@ -7,6 +7,7 @@ import net.corda.data.ledger.persistence.FindTransaction
 import net.corda.data.ledger.persistence.FindTransactionIdsAndStatuses
 import net.corda.data.ledger.persistence.FindTransactionsWithStatusBeforeTime
 import net.corda.data.ledger.persistence.FindUnconsumedStatesByType
+import net.corda.data.ledger.persistence.IncrementRecoveryAttemptCount
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.data.ledger.persistence.PersistFilteredTransactionsAndSignatures
@@ -31,6 +32,7 @@ import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransacti
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionsWithStatusBeforeTimeRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindUnconsumedStatesByTypeRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoIncrementRecoveryAttemptCountRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistFilteredTransactionRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistSignedGroupParametersIfDoNotExistRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistTransactionIfDoesNotExistRequestHandler
@@ -211,6 +213,14 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     persistenceService,
                     externalEventResponseFactory,
                     serializationService
+                )
+            }
+            is IncrementRecoveryAttemptCount -> {
+                UtxoIncrementRecoveryAttemptCountRequestHandler(
+                    req,
+                    externalEventContext,
+                    persistenceService,
+                    externalEventResponseFactory
                 )
             }
             else -> {
