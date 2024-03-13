@@ -44,8 +44,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.SignedGroupParameters
+import net.corda.membership.p2p.helpers.MembershipP2pRecordsFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
-import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
@@ -217,7 +217,7 @@ class MemberSynchronisationServiceImplTest {
     }
     private val synchronisationRequest = mock<Record<String, AppMessage>>()
     private val synchRequest = argumentCaptor<MembershipSyncRequest>()
-    private val p2pRecordsFactory = mock<P2pRecordsFactory> {
+    private val membershipP2PRecordsFactory = mock<MembershipP2pRecordsFactory> {
         on {
             createAuthenticatedMessageRecord(
                 eq(member.toAvro()),
@@ -298,7 +298,7 @@ class MemberSynchronisationServiceImplTest {
             groupReaderProvider,
             verifier,
             locallyHostedMembersReader,
-            p2pRecordsFactory,
+            membershipP2PRecordsFactory,
             merkleTreeGenerator,
             clock,
             persistenceClient,

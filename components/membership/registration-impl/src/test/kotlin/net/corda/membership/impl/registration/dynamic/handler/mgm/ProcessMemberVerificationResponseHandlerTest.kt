@@ -29,7 +29,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PEND
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.VersionedMessageBuilder
 import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
-import net.corda.membership.p2p.helpers.P2pRecordsFactory
+import net.corda.membership.p2p.helpers.MembershipP2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -154,7 +154,7 @@ class ProcessMemberVerificationResponseHandlerTest {
     }
     private val record = mock<Record<String, AppMessage>>()
     private val capturedStatus = argumentCaptor<SpecificRecordBase>()
-    private val p2pRecordsFactory = mock<P2pRecordsFactory> {
+    private val membershipP2PRecordsFactory = mock<MembershipP2pRecordsFactory> {
         on {
             createAuthenticatedMessageRecord(
                 eq(mgm),
@@ -187,7 +187,7 @@ class ProcessMemberVerificationResponseHandlerTest {
         config,
         membershipQueryClient,
         membershipGroupReaderProvider,
-        p2pRecordsFactory,
+        membershipP2PRecordsFactory,
     )
 
     @Test
@@ -507,7 +507,7 @@ class ProcessMemberVerificationResponseHandlerTest {
             }
 
             val results = invokeTestFunction()
-            verify(p2pRecordsFactory, never()).createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any())
+            verify(membershipP2PRecordsFactory, never()).createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any())
             assertThat(results.outputStates)
                 .hasSize(2)
             results.outputStates.forEach { assertThat(it.value).isNotInstanceOf(AppMessage::class.java) }
@@ -604,7 +604,7 @@ class ProcessMemberVerificationResponseHandlerTest {
     }
 
     private fun verifySetOwnRegistrationStatus(status: RegistrationStatus) {
-        verify(p2pRecordsFactory).createAuthenticatedMessageRecord(
+        verify(membershipP2PRecordsFactory).createAuthenticatedMessageRecord(
             eq(mgm),
             eq(member),
             argThat<SetOwnRegistrationStatus> {

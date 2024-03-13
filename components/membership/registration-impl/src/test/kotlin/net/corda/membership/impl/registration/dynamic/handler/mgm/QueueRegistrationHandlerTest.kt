@@ -21,7 +21,7 @@ import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.registration.RegistrationRequest
-import net.corda.membership.p2p.helpers.P2pRecordsFactory
+import net.corda.membership.p2p.helpers.MembershipP2pRecordsFactory
 import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
@@ -120,7 +120,7 @@ class QueueRegistrationHandlerTest {
     }
 
     private val authenticatedMessageRecord = mock<Record<String, AppMessage>>()
-    private val p2pRecordsFactory = mock<P2pRecordsFactory> {
+    private val membershipP2PRecordsFactory = mock<MembershipP2pRecordsFactory> {
         on {
             createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any())
         } doReturn authenticatedMessageRecord
@@ -143,7 +143,7 @@ class QueueRegistrationHandlerTest {
         cordaAvroSerializationFactory,
         signatureVerificationService,
         keyEncodingService,
-        p2pRecordsFactory,
+        membershipP2PRecordsFactory,
         verifier,
     )
 
@@ -169,7 +169,7 @@ class QueueRegistrationHandlerTest {
         whenever(mockPersistenceOperation.execute()).thenReturn(MembershipPersistenceResult.success())
         val outputStates = handler.invoke(null, Record(TOPIC, KEY, inputCommand)).outputStates
         assertThat(outputStates).contains(authenticatedMessageRecord)
-        verify(p2pRecordsFactory).createAuthenticatedMessageRecord(
+        verify(membershipP2PRecordsFactory).createAuthenticatedMessageRecord(
             eq(mgm),
             eq(member),
             eq(

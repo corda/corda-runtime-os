@@ -35,9 +35,9 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.softwareVersion
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
+import net.corda.membership.p2p.helpers.MembershipP2pRecordsFactory
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
-import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.Signer
 import net.corda.membership.p2p.helpers.SignerFactory
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -239,7 +239,7 @@ class MgmSynchronisationServiceImplTest {
     private val allMembershipPackageRecord = mock<Record<String, AppMessage>>()
     private val bobMembershipPackageRecord = mock<Record<String, AppMessage>>()
     private val simonMembershipPackageRecord = mock<Record<String, AppMessage>>()
-    private val p2pRecordsFactory = mock<P2pRecordsFactory> {
+    private val membershipP2PRecordsFactory = mock<MembershipP2pRecordsFactory> {
         on {
             createAuthenticatedMessageRecord(
                 any(),
@@ -279,7 +279,7 @@ class MgmSynchronisationServiceImplTest {
         on { merkleTreeGenerator } doReturn merkleTreeGenerator
         on { membershipPackageFactory } doReturn membershipPackageFactory
         on { signerFactory } doReturn signerFactory
-        on { p2pRecordsFactory } doReturn p2pRecordsFactory
+        on { membershipP2PRecordsFactory } doReturn membershipP2PRecordsFactory
     }
 
     private val synchronisationService = MgmSynchronisationServiceImpl(

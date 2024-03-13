@@ -4,17 +4,14 @@ import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.identity.HoldingIdentity
-import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
-import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.MEMBERSHIP_P2P_SUBSYSTEM
-import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
-import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
+import net.corda.membership.p2p.helpers.MembershipP2pRecordsFactory.Companion.MEMBERSHIP_P2P_SUBSYSTEM
+import net.corda.membership.p2p.helpers.MembershipP2pRecordsFactory.Companion.getTtlMinutes
+import net.corda.p2p.messaging.P2pRecordsFactory
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
-import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -22,19 +19,20 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.time.Instant
 
-class P2pRecordsFactoryTest {
+class MembershipP2PRecordsFactoryTest {
     private val serializer = mock<CordaAvroSerializer<KeyValuePairList>>()
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
     }
-    private val clock = TestClock(Instant.ofEpochMilli(2000))
+    private val p2pRecordsFactory = mock<P2pRecordsFactory>()
 
-    private val factory = P2pRecordsFactory(
+    private val factory = MembershipP2pRecordsFactory(
         cordaAvroSerializationFactory,
-        clock
+        p2pRecordsFactory,
     )
 
     private val holdingIdentity1 = HoldingIdentity(
@@ -57,53 +55,53 @@ class P2pRecordsFactoryTest {
         assertThrows<CordaRuntimeException> {
             factory.createAuthenticatedMessageRecord(holdingIdentity1, holdingIdentity2, data)
         }
+        verify(p2pRecordsFactory, never())
+            .createAuthenticatedMessageRecord(any(), any(), any(), any(), any(), any(), any(), any())
     }
 
     @Test
     fun `createRecords create the correct record with default filter`() {
         val data = mock<KeyValuePairList>()
         whenever(serializer.serialize(eq(data))).doReturn(dataBytes)
+        val minutesToWait = 3L
 
-        val record = factory.createAuthenticatedMessageRecord(holdingIdentity1, holdingIdentity2, data, 3)
-
-        assertSoftly {
-            it.assertThat(record.topic).isEqualTo(P2P_OUT_TOPIC)
-            it.assertThat(record.key).isEqualTo(
-                "Membership: {\"x500Name\": \"name1\", \"groupId\": \"group\"} -> {\"x500Name\": \"name2\", \"groupId\": \"group\"}"
-            )
-            it.assertThat(record.value?.message).isInstanceOf(AuthenticatedMessage::class.java)
-            val value = record.value?.message as? AuthenticatedMessage
-            it.assertThat(value?.payload?.array()).isEqualTo(dataBytes)
-            val header = value?.header
-            it.assertThat(header?.destination).isEqualTo(holdingIdentity2)
-            it.assertThat(header?.source).isEqualTo(holdingIdentity1)
-            it.assertThat(header?.ttl).isEqualTo(
-                Instant.ofEpochMilli(2000 + 3 * 60 * 1000)
-            )
-            it.assertThat(header?.subsystem).isEqualTo(
-                MEMBERSHIP_P2P_SUBSYSTEM
-            )
-            it.assertThat(header?.statusFilter).isEqualTo(MembershipStatusFilter.ACTIVE)
-        }
+        factory.createAuthenticatedMessageRecord(holdingIdentity1, holdingIdentity2, data, minutesToWait)
+        verify(p2pRecordsFactory).createAuthenticatedMessageRecord(
+            eq(holdingIdentity1),
+            eq(holdingIdentity2),
+            eq(dataBytes),
+            eq(MEMBERSHIP_P2P_SUBSYSTEM),
+            eq("Membership: {\"x500Name\": \"name1\", \"groupId\": \"group\"} -> {\"x500Name\": \"name2\", \"groupId\": \"group\"}"),
+            eq(minutesToWait),
+            any(),
+            eq(MembershipStatusFilter.ACTIVE),
+        )
     }
 
     @Test
     fun `createRecords create the correct record with pending filter`() {
         val data = mock<KeyValuePairList>()
         whenever(serializer.serialize(eq(data))).doReturn(dataBytes)
+        val minutesToWait = 3L
 
-        val record = factory.createAuthenticatedMessageRecord(
+        factory.createAuthenticatedMessageRecord(
             source = holdingIdentity1,
             destination = holdingIdentity2,
             content = data,
-            minutesToWait = 3,
+            minutesToWait = minutesToWait,
             filter = MembershipStatusFilter.PENDING
         )
 
-        assertSoftly {
-            val value = record.value?.message as? AuthenticatedMessage
-            it.assertThat(value?.header?.statusFilter).isEqualTo(MembershipStatusFilter.PENDING)
-        }
+        verify(p2pRecordsFactory).createAuthenticatedMessageRecord(
+            eq(holdingIdentity1),
+            eq(holdingIdentity2),
+            eq(dataBytes),
+            eq(MEMBERSHIP_P2P_SUBSYSTEM),
+            eq("Membership: {\"x500Name\": \"name1\", \"groupId\": \"group\"} -> {\"x500Name\": \"name2\", \"groupId\": \"group\"}"),
+            eq(minutesToWait),
+            any(),
+            eq(MembershipStatusFilter.PENDING),
+        )
     }
 
     @Test
@@ -111,11 +109,17 @@ class P2pRecordsFactoryTest {
         val data = mock<KeyValuePairList>()
         whenever(serializer.serialize(eq(data))).doReturn(dataBytes)
 
-        val record = factory.createAuthenticatedMessageRecord(holdingIdentity1, holdingIdentity2, data)
-
-        val value = record.value?.message as? AuthenticatedMessage
-        val header = value?.header
-        assertThat(header?.ttl).isNull()
+        factory.createAuthenticatedMessageRecord(holdingIdentity1, holdingIdentity2, data)
+        verify(p2pRecordsFactory).createAuthenticatedMessageRecord(
+            eq(holdingIdentity1),
+            eq(holdingIdentity2),
+            eq(dataBytes),
+            eq(MEMBERSHIP_P2P_SUBSYSTEM),
+            eq("Membership: {\"x500Name\": \"name1\", \"groupId\": \"group\"} -> {\"x500Name\": \"name2\", \"groupId\": \"group\"}"),
+            eq(null),
+            any(),
+            eq(MembershipStatusFilter.ACTIVE),
+        )
     }
 
     @Test
@@ -124,16 +128,22 @@ class P2pRecordsFactoryTest {
         val data = mock<KeyValuePairList>()
         whenever(serializer.serialize(eq(data))).doReturn(dataBytes)
 
-        val record = factory.createAuthenticatedMessageRecord(
+        factory.createAuthenticatedMessageRecord(
             holdingIdentity1,
             holdingIdentity2,
             data,
             id = id
         )
-
-        val value = record.value?.message as? AuthenticatedMessage
-        val header = value?.header
-        assertThat(header?.messageId).isEqualTo(id)
+        verify(p2pRecordsFactory).createAuthenticatedMessageRecord(
+            eq(holdingIdentity1),
+            eq(holdingIdentity2),
+            eq(dataBytes),
+            eq(MEMBERSHIP_P2P_SUBSYSTEM),
+            eq("Membership: {\"x500Name\": \"name1\", \"groupId\": \"group\"} -> {\"x500Name\": \"name2\", \"groupId\": \"group\"}"),
+            eq(null),
+            eq(id),
+            eq(MembershipStatusFilter.ACTIVE),
+        )
     }
 
     @Nested

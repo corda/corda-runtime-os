@@ -17,11 +17,12 @@ import net.corda.membership.impl.registration.dynamic.handler.MissingRegistratio
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.lib.registration.DECLINED_REASON_FOR_USER_INTERNAL_ERROR
-import net.corda.membership.p2p.helpers.P2pRecordsFactory
-import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
+import net.corda.membership.p2p.helpers.MembershipP2pRecordsFactory
+import net.corda.membership.p2p.helpers.MembershipP2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.membership.p2p.helpers.TtlIdsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.messaging.P2pRecordsFactory
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.VERIFY_MEMBER_REQUEST
 import net.corda.utilities.time.Clock
@@ -36,9 +37,9 @@ internal class VerifyMemberHandler(
     private val membershipPersistenceClient: MembershipPersistenceClient,
     private val memberTypeChecker: MemberTypeChecker,
     private val membershipConfig: SmartConfig,
-    private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
+    private val membershipP2PRecordsFactory: MembershipP2pRecordsFactory = MembershipP2pRecordsFactory(
         cordaAvroSerializationFactory,
-        clock,
+        P2pRecordsFactory(clock),
     ),
     private val ttlIdsFactory: TtlIdsFactory = TtlIdsFactory(),
 ) : RegistrationHandler<VerifyMember> {
@@ -78,7 +79,7 @@ internal class VerifyMemberHandler(
                 RegistrationStatus.PENDING_MEMBER_VERIFICATION
             ).createAsyncCommands()
             setRegistrationRequestStatusCommand +
-                p2pRecordsFactory.createAuthenticatedMessageRecord(
+                membershipP2PRecordsFactory.createAuthenticatedMessageRecord(
                     mgm,
                     member,
                     VerificationRequest(

@@ -34,8 +34,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.p2p.helpers.MembershipP2pRecordsFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
-import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.read.MembershipGroupReader
@@ -46,6 +46,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.messaging.P2pRecordsFactory
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
@@ -114,9 +115,9 @@ class MemberSynchronisationServiceImpl internal constructor(
                 virtualNodeInfoReadService,
                 membershipGroupReaderProvider,
             ),
-            P2pRecordsFactory(
+            MembershipP2pRecordsFactory(
                 cordaAvroSerializationFactory,
-                UTCClock(),
+                P2pRecordsFactory(UTCClock()),
             ),
             MerkleTreeGenerator(
                 merkleTreeProvider,
@@ -138,7 +139,7 @@ class MemberSynchronisationServiceImpl internal constructor(
         val membershipGroupReaderProvider: MembershipGroupReaderProvider,
         val verifier: Verifier,
         val membersReader: LocallyHostedMembersReader,
-        val p2pRecordsFactory: P2pRecordsFactory,
+        val membershipP2PRecordsFactory: MembershipP2pRecordsFactory,
         val merkleTreeGenerator: MerkleTreeGenerator,
         val clock: Clock,
         val membershipPersistenceClient: MembershipPersistenceClient,
@@ -402,7 +403,7 @@ class MemberSynchronisationServiceImpl internal constructor(
         val memberHash = services.merkleTreeGenerator.generateTreeUsingMembers(listOf(member))
             .root
             .toAvro()
-        return services.p2pRecordsFactory.createAuthenticatedMessageRecord(
+        return services.membershipP2PRecordsFactory.createAuthenticatedMessageRecord(
             source = memberIdentity.toAvro(),
             destination = mgm.toAvro(),
             content = MembershipSyncRequest(

@@ -3,24 +3,19 @@ package net.corda.membership.p2p.helpers
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.app.AppMessage
-import net.corda.data.p2p.app.AuthenticatedMessage
-import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
+import net.corda.p2p.messaging.P2pRecordsFactory
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.utilities.serialization.wrapWithNullErrorHandling
-import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
-import java.time.temporal.ChronoUnit
 import java.util.UUID
 
-class P2pRecordsFactory(
+class MembershipP2pRecordsFactory(
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    private val clock: Clock,
+    private val p2pRecordsFactory: P2pRecordsFactory,
 ) {
     companion object {
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
@@ -67,25 +62,15 @@ class P2pRecordsFactory(
                 logger.warn("Serialization failed")
             }.serialize(content)
         }
-        val header = AuthenticatedMessageHeader.newBuilder()
-            .setDestination(destination)
-            .setSource(source)
-            .setTtl(minutesToWait?.let { clock.instant().plus(it, ChronoUnit.MINUTES) })
-            .setMessageId(id)
-            .setTraceId(null)
-            .setSubsystem(MEMBERSHIP_P2P_SUBSYSTEM)
-            .setStatusFilter(filter)
-            .build()
-        val message = AuthenticatedMessage.newBuilder()
-            .setHeader(header)
-            .setPayload(ByteBuffer.wrap(data))
-            .build()
-        val appMessage = AppMessage(message)
-
-        return Record(
-            P2P_OUT_TOPIC,
+        return p2pRecordsFactory.createAuthenticatedMessageRecord(
+            source,
+            destination,
+            data,
+            MEMBERSHIP_P2P_SUBSYSTEM,
             "Membership: $source -> $destination",
-            appMessage,
+            minutesToWait,
+            id,
+            filter,
         )
     }
 }

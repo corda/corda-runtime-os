@@ -12,7 +12,7 @@ import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.impl.registration.VerificationResponseKeys
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
-import net.corda.membership.p2p.helpers.P2pRecordsFactory
+import net.corda.membership.p2p.helpers.MembershipP2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.messaging.api.records.Record
@@ -69,7 +69,7 @@ class ProcessMemberVerificationRequestHandlerTest {
     }
     private val memberTypeChecker = mock<MemberTypeChecker>()
     private val p2pMessage = mock<Record<String, AppMessage>>()
-    private val p2pRecordsFactory = mock<P2pRecordsFactory> {
+    private val membershipP2PRecordsFactory = mock<MembershipP2pRecordsFactory> {
         on {
             createAuthenticatedMessageRecord(
                 eq(member),
@@ -87,7 +87,7 @@ class ProcessMemberVerificationRequestHandlerTest {
         cordaAvroSerializationFactory,
         membershipPersistenceClient,
         memberTypeChecker,
-        p2pRecordsFactory,
+        membershipP2PRecordsFactory,
     )
 
     @Test
