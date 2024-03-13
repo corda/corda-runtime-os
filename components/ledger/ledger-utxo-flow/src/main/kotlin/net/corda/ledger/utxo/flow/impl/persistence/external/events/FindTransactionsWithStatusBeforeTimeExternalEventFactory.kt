@@ -21,9 +21,15 @@ class FindTransactionsWithStatusBeforeTimeExternalEventFactory :
             .setTransactionStatus(parameters.status.value)
             .setFrom(parameters.from)
             .setUntil(parameters.until)
+            .setLimit(parameters.limit)
             .build()
     }
 }
 
 @CordaSerializable
-data class FindTransactionsWithStatusBeforeTimeParameters(val status: TransactionStatus, val from: Instant, val until: Instant)
+data class FindTransactionsWithStatusBeforeTimeParameters(
+    val status: TransactionStatus,
+    val from: Instant,
+    val until: Instant,
+    val limit: Int,
+)

@@ -17,6 +17,7 @@ import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
@@ -32,6 +33,7 @@ import java.time.Instant
 class UtxoRecoveryFlow(private val from: Instant, private val until: Instant, private val duration: Duration) : SubFlow<Int> {
 
     private companion object {
+        const val QUERY_LIMIT = 100
         val MAX_DURATION_WITHOUT_SUSPENDING = 2.minutes
         val log: Logger = LoggerFactory.getLogger(UtxoRecoveryFlow::class.java)
     }
@@ -57,72 +59,114 @@ class UtxoRecoveryFlow(private val from: Instant, private val until: Instant, pr
 
         flowEngine.flowContextProperties.asFlowContext.platformProperties["corda.notary.check"] = "true"
 
-        val endTime = Instant.now().plus(duration)
-        var lastNotarization = Instant.now()
+        val startTime = System.currentTimeMillis()
+        val endTime = Instant.ofEpochMilli(startTime).plus(duration)
+        var lastRecovery = Instant.now()
         var numberOfRecoveredFlows = 0
         var exceededDuration = false
         var exceededLastNotarizationTime = false
 
-        val ids = persistenceService.findTransactionsWithStatusCreatedBeforeTime(TransactionStatus.UNVERIFIED, from, until)
-        for (id in ids) {
+        var transactionsToRecover = findTransactionsToRecover()
+        var firstUnrecoverableTransaction: SecureHash? = null
 
-            val now = Instant.now()
-            if (now.isAfter(endTime)) {
-                exceededDuration = true
-                break
+        pagingLoop@ while (transactionsToRecover.isNotEmpty()) {
+            for (id in transactionsToRecover) {
+                val now = Instant.now()
+                if (now.isAfter(endTime)) {
+                    exceededDuration = true
+                    break@pagingLoop
+                }
+                if (now.isAfter(lastRecovery.plus(MAX_DURATION_WITHOUT_SUSPENDING))) {
+                    exceededLastNotarizationTime = true
+                    break@pagingLoop
+                }
+                // As we update the [recovery_attempt_count] each time we attempt to recover a transaction, if the very first unrecoverable
+                // transaction is seen again in [transactionsToRecover] then it means that we have looped all the way round and reached
+                // an already visited transaction but with an incremented [recovery_attempt_count] compared to the previous visit.
+                if (id == firstUnrecoverableTransaction) {
+                    break@pagingLoop
+                }
+
+                val (isRecovered, isSkipped) = potentiallyRecoverTransaction(id)
+                if (isRecovered) {
+                    numberOfRecoveredFlows++
+                    lastRecovery = Instant.now()
+                } else if (!isSkipped) {
+                    if (firstUnrecoverableTransaction == null) {
+                        firstUnrecoverableTransaction = id
+                    }
+                    // We do not need to worry about concurrent calls for the same transaction from a separate recovery flow run, because
+                    // the transaction has technically had an attempted recovery in both flows.
+                    persistenceService.incrementRecoveryAttemptCount(id)
+                }
             }
-            if (now.isAfter(lastNotarization.plus(MAX_DURATION_WITHOUT_SUSPENDING))) {
-                exceededLastNotarizationTime = true
-                break
-            }
-
-            val transaction = persistenceService.findSignedTransaction(id, TransactionStatus.UNVERIFIED)
-
-            if (transaction == null) {
-                log.warn("Transaction $id is no longer unverified, skipping from recovery flow")
-                continue
-            }
-            transaction as UtxoSignedTransactionInternal
-
-            try {
-                transaction.verifySignatorySignatures()
-            } catch (e: TransactionMissingSignaturesException) {
-                log.info("Transaction $id is missing non-notary signatures, skipping from recovery flow")
-                continue
-            }
-
-            try {
-                // We wouldn't have stored a transaction with an invalid signature and kept it as unverified.
-                // So we can use this API and disregard the invalid signatures possibility.
-                transaction.verifyAttachedNotarySignature()
-                continue
-            } catch (_: TransactionSignatureException) {
-                // Empty as we continue recovering this transaction.
-            }
-
-            notarize(transaction)?.let { notarizedTransaction ->
-                persistNotarizedTransaction(notarizedTransaction)
-                numberOfRecoveredFlows++
-                lastNotarization = Instant.now()
+            if (transactionsToRecover.size >= QUERY_LIMIT) {
+                transactionsToRecover = findTransactionsToRecover()
             }
         }
         if (exceededDuration) {
             log.info(
                 "Completed recovery flow of $numberOfRecoveredFlows missing notarized transactions that occurred between $from to " +
-                    "$until but exceeded recovery duration of $duration. There may be more transactions to recover."
+                    "$until but exceeded recovery duration of $duration. There may be more transactions to recover. Time taken " +
+                    "${Duration.ofMillis(System.currentTimeMillis() - startTime)}."
             )
-        } else if(exceededLastNotarizationTime) {
+        } else if (exceededLastNotarizationTime) {
             log.info(
                 "Completed recovery flow of $numberOfRecoveredFlows missing notarized transactions that occurred between $from to " +
                     "$until but exceeded the duration of $MAX_DURATION_WITHOUT_SUSPENDING without notarizing a transaction. There may " +
-                    "be more transactions to recover."
+                    "be more transactions to recover. Time taken ${Duration.ofMillis(System.currentTimeMillis() - startTime)}."
             )
         } else {
             log.info(
-                "Completed recovery flow of $numberOfRecoveredFlows missing notarized transactions that occurred between $from to $until"
+                "Completed recovery flow of $numberOfRecoveredFlows missing notarized transactions that occurred between $from to " +
+                    "$until. Time taken ${Duration.ofMillis(System.currentTimeMillis() - startTime)}."
             )
         }
         return numberOfRecoveredFlows
+    }
+
+    @Suspendable
+    fun findTransactionsToRecover(): List<SecureHash> {
+        return persistenceService.findTransactionsWithStatusCreatedBeforeTime(
+            TransactionStatus.UNVERIFIED,
+            from,
+            until,
+            QUERY_LIMIT
+        )
+    }
+
+    @Suspendable
+    private fun potentiallyRecoverTransaction(id: SecureHash): RecoveredTransactionResult {
+        val transaction = persistenceService.findSignedTransaction(id, TransactionStatus.UNVERIFIED)
+
+        if (transaction == null) {
+            log.warn("Transaction $id is no longer unverified, skipping from recovery flow")
+            return RecoveredTransactionResult(isRecovered = false, isSkipped = true)
+        }
+        transaction as UtxoSignedTransactionInternal
+
+        try {
+            transaction.verifySignatorySignatures()
+        } catch (e: TransactionMissingSignaturesException) {
+            log.info("Transaction $id is missing non-notary signatures, skipping from recovery flow")
+            return RecoveredTransactionResult(isRecovered = false, isSkipped = true)
+        }
+
+        try {
+            // We wouldn't have stored a transaction with an invalid signature and kept it as unverified.
+            // So we can use this API and disregard the invalid signatures possibility.
+            transaction.verifyAttachedNotarySignature()
+            return RecoveredTransactionResult(isRecovered = false, isSkipped = true)
+        } catch (_: TransactionSignatureException) {
+            // Empty as we continue recovering this transaction.
+        }
+
+        val isRecovered =  notarize(transaction)?.let { notarizedTransaction ->
+            persistNotarizedTransaction(notarizedTransaction)
+            true
+        } ?: false
+
+        return RecoveredTransactionResult(isRecovered, isSkipped = false)
     }
 
     // Not sure whether to return nulls or throw exceptions
@@ -145,8 +189,7 @@ class UtxoRecoveryFlow(private val from: Instant, private val until: Instant, pr
             if (e is NotaryExceptionUnknown && e.message?.contains("UniquenessCheckErrorNotPreviouslyNotarizedException") == true) {
                 log.info("Transaction ${transaction.id} has not been previously notarized by notary $notary, skipping from recovery flow")
                 return null
-            }
-            if (e is NotaryExceptionFatal) {
+            } else if (e is NotaryExceptionFatal) {
                 persistInvalidTransaction(transaction)
                 log.warn("Notarization of transaction ${transaction.id} failed permanently with ${e.message}.")
             } else {
@@ -241,4 +284,6 @@ class UtxoRecoveryFlow(private val from: Instant, private val until: Instant, pr
         persistenceService.persist(transaction, TransactionStatus.INVALID)
         log.info("Recorded transaction as invalid: ${transaction.id}")
     }
+
+    private data class RecoveredTransactionResult(val isRecovered: Boolean, val isSkipped: Boolean)
 }

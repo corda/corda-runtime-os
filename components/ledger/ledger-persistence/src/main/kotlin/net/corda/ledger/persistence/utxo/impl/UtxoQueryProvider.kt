@@ -123,4 +123,6 @@ interface UtxoQueryProvider {
     val findMerkleProofs: String
 
     val findTransactionsWithStatusBeforeTime: String
+
+    val incrementRecoveryAttemptCount: String
 }

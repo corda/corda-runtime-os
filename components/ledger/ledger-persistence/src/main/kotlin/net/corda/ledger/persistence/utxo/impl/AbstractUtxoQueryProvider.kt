@@ -198,6 +198,16 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
         get() = """
             SELECT id
             FROM {h-schema}utxo_transaction
-            WHERE status = :status AND created >= :from AND created < :until
+            WHERE status = :status 
+                AND created >= :from 
+                AND created < :until
+            ORDER BY recovery_attempt_count ASC, created DESC
+        """.trimIndent()
+
+    override val incrementRecoveryAttemptCount: String
+        get() = """
+            UPDATE {h-schema}utxo_transaction
+            SET recovery_attempt_count = recovery_attempt_count + 1
+            WHERE id = :transactionId
         """.trimIndent()
 }

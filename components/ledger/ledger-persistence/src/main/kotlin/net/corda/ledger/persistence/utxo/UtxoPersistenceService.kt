@@ -95,5 +95,12 @@ interface UtxoPersistenceService {
         stateRefs: List<StateRef>
     ): Map<SecureHash, Pair<FilteredTransaction?, List<DigitalSignatureAndMetadata>>>
 
-    fun findTransactionsWithStatusBeforeTime(status: TransactionStatus, from: Instant, until: Instant): List<SecureHash>
+    fun findTransactionsWithStatusBeforeTime(
+        status: TransactionStatus,
+        from: Instant,
+        until: Instant,
+        limit: Int,
+    ): List<SecureHash>
+
+    fun incrementRecoveryAttemptCount(id: String)
 }

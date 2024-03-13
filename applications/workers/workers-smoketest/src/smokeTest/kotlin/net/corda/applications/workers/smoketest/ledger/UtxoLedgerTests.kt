@@ -112,18 +112,20 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
     @Test
     fun `Utxo Ledger - create a transaction containing states and finalize it then evolve it`(testInfo: TestInfo) {
         val idGenerator = TestRequestIdGenerator(testInfo)
-        val input = "test input"
-        val utxoFlowRequestId = startRestFlow(
-            aliceHoldingId,
-            mapOf("input" to input, "members" to listOf(bobX500, charlieX500), "notary" to NOTARY_SERVICE_X500),
-            "com.r3.corda.demo.utxo.UtxoDemoFlow",
+        repeat(20) {
+            val input = "test input"
+            val utxoFlowRequestId = startRestFlow(
+                aliceHoldingId,
+                mapOf("input" to input, "members" to listOf(bobX500, charlieX500), "notary" to NOTARY_SERVICE_X500),
+                "com.r3.corda.demo.utxo.UtxoDemoFlow",
 //            mapOf("instant" to "${Instant.now()}"),
 //            "net.corda.ledger.utxo.flow.impl.flows.finality.v1.NotarizedTransactionRecoveryFlow",
-            requestId = idGenerator.nextId
-        )
-        val utxoFlowResult = awaitRestFlowFinished(aliceHoldingId, utxoFlowRequestId)
-        assertThat(utxoFlowResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
-        assertThat(utxoFlowResult.flowError).isNull()
+                requestId = idGenerator.nextId
+            )
+            val utxoFlowResult = awaitRestFlowFinished(aliceHoldingId, utxoFlowRequestId)
+            assertThat(utxoFlowResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
+            assertThat(utxoFlowResult.flowError).isNull()
+        }
 
 //        for (holdingId in listOf(aliceHoldingId, bobHoldingId, charlieHoldingId)) {
 //            val findTransactionFlowRequestId = startRestFlow(
