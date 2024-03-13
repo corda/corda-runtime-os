@@ -11,7 +11,7 @@ import kotlin.io.path.readText
 
 class BuildCpiHelper {
 
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "ThrowsCount")
     fun createCPI(
         groupPolicyFilePath: String,
         keystoreFilePath: String,

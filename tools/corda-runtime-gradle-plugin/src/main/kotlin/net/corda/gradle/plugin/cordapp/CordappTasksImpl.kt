@@ -32,7 +32,7 @@ class CordappTasksImpl(var pc: ProjectContext) {
         validateGroupPolicy()
     }
 
-    // TODO: test with local combined worker
+    // TODO test with local combined worker
     private fun validateGroupPolicy() {
         val groupPolicyFile = File(pc.groupPolicyFilePath)
         val groupPolicy = try {
