@@ -21,7 +21,6 @@ class ProjectContext(val project: Project, pluginConfig: PluginConfiguration) {
     val composeNetworkName: String = pluginConfig.composeNetworkName.get()
     val notaryVersion: String = pluginConfig.notaryVersion.get()
     val cordaBinDir: String = pluginConfig.cordaBinDir.get()
-    val cordaCliBinDir: String = pluginConfig.cordaCliBinDir.get()
     val artifactoryUsername: String = pluginConfig.artifactoryUsername.get()
     val artifactoryPassword: String = pluginConfig.artifactoryPassword.get()
     val notaryCpiName: String = pluginConfig.notaryCpiName.get()
@@ -36,7 +35,6 @@ class ProjectContext(val project: Project, pluginConfig: PluginConfiguration) {
     // Set Non user configurable context properties
     val javaBinDir: String = "${System.getProperty("java.home")}/bin"
     val cordaPidCache: String = "${project.rootDir}/$workspaceDir/CordaPIDCache.dat"
-    val jdbcDir: String = "$cordaBinDir/jdbcDrivers"
     val notaryServiceDir: String = "$cordaBinDir/notaryServer"
     val workflowBuildDir: String = "${project.rootDir}/${workflowsModuleName}/build"
 
