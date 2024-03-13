@@ -193,7 +193,7 @@ internal class SessionCache(
         }
     }
 
-    private fun forgetState(state: State) {
+    fun forgetState(state: State) {
         var stateToDelete = state
         val key = state.key
         var retryCount = 0
