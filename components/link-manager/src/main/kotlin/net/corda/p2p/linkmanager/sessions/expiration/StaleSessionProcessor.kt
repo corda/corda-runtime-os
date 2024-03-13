@@ -21,9 +21,6 @@ import net.corda.schema.Schemas.ScheduledTask.SCHEDULED_TASK_NAME_STALE_P2P_SESS
 import net.corda.schema.Schemas.ScheduledTask.SCHEDULED_TASK_TOPIC_STALE_P2P_SESSION_PROCESSOR
 import net.corda.utilities.time.Clock
 import org.slf4j.LoggerFactory
-import java.time.Duration
-import java.util.concurrent.TimeUnit
-import java.util.Random
 
 /**
  * Automatically scheduled by Corda for cleaning up staled/orphaned sessions.
@@ -41,7 +38,6 @@ internal class StaleSessionProcessor(
     private val clock: Clock,
     private val stateManager: StateManager,
     private val sessionCache: SessionCache,
-    private val noiseFactory: Random = Random(),
 ) : DurableProcessor<String, ScheduledTaskTrigger>, LifecycleWithDominoTile {
     private companion object {
         const val STALE_SESSION_PROCESSOR_GROUP = "stale_session_processor_group"
@@ -82,11 +78,7 @@ internal class StaleSessionProcessor(
             logger.info("Scheduled task is triggered to clean up stale sessions.")
             var expiredStates = listOf<State>()
             try {
-                val noise = Duration.of(
-                    noiseFactory.nextLong(20 * 60),
-                    TimeUnit.MILLISECONDS.toChronoUnit(),
-                )
-                val expiryThreshold = (clock.instant() - noise).toEpochMilli()
+                val expiryThreshold = clock.instant().toEpochMilli()
                 expiredStates = stateManager.findByMetadataMatchingAny(
                     listOf(MetadataFilter("expiry", Operation.LesserThan, expiryThreshold))
                 ).values.toList()

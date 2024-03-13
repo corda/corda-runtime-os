@@ -2,6 +2,8 @@ package net.corda.p2p.linkmanager.sessions.expiration
 
 import net.corda.data.scheduler.ScheduledTaskTrigger
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.MetadataFilter
+import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -59,8 +61,11 @@ class StaleSessionProcessorTest {
         "key1" to firstState,
         "key2" to secondState,
     )
+    private val expectedMetadataFilter = listOf(
+        MetadataFilter("expiry", Operation.LesserThan, clock.instant().toEpochMilli())
+    )
     private val stateManager = mock<StateManager> {
-        on { findByMetadataMatchingAny(any()) } doReturn expiredStates
+        on { findByMetadataMatchingAny(eq(expectedMetadataFilter)) } doReturn expiredStates
     }
     private val sessionCache = mock<SessionCache>()
     private val staleSessionProcessor = StaleSessionProcessor(
@@ -93,14 +98,14 @@ class StaleSessionProcessorTest {
     @Test
     fun `nothing happens if there were no session clean up events`() {
         val result = staleSessionProcessor.onNext(emptyList())
-        verify(stateManager, never()).findByMetadataMatchingAny(any())
+        verify(stateManager, never()).findByMetadataMatchingAny(eq(expectedMetadataFilter))
         verify(sessionCache, never()).forgetState(any())
         assertThat(result).isEmpty()
     }
 
     @Test
     fun `delete is not called if there were no expired states`() {
-        whenever(stateManager.findByMetadataMatchingAny(any())).thenReturn(emptyMap())
+        whenever(stateManager.findByMetadataMatchingAny(eq(expectedMetadataFilter))).thenReturn(emptyMap())
         val result = staleSessionProcessor.onNext(
             listOf(
                 Record(
@@ -116,7 +121,8 @@ class StaleSessionProcessorTest {
 
     @Test
     fun `delete is not called if the query to get the expired states fails`() {
-        whenever(stateManager.findByMetadataMatchingAny(any())).thenThrow(CordaRuntimeException("exception test"))
+        whenever(stateManager.findByMetadataMatchingAny(eq(expectedMetadataFilter)))
+            .thenThrow(CordaRuntimeException("exception test"))
         val result = staleSessionProcessor.onNext(
             listOf(
                 Record(
