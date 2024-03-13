@@ -1156,8 +1156,8 @@ workers:
               name: ""
               # -- the verification worker SASL password secret key for client connection to Kafka
               key: ""
-  extraArgs:
-    - "--trace-tags=namespace=$K8S_NAMESPACE:pod=$K8S_POD_NAME:node_name=$K8S_NODE_NAME"
+    extraArgs:
+      - "--trace-tags=namespace=$K8S_NAMESPACE:pod=$K8S_POD_NAME:node_name=$K8S_NODE_NAME"
 
   # membership worker configuration
   membership:
