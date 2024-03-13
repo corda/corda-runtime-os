@@ -53,6 +53,7 @@ class UtxoRecoveryFlow(private val from: Instant, private val until: Instant, pr
     @CordaInject
     lateinit var visibilityChecker: VisibilityChecker
 
+    @Suppress("NestedBlockDepth")
     @Suspendable
     override fun call(): Int {
         log.info("Starting recovery flow of missing notarized transactions. Recovering transactions that occurred between $from to $until")
@@ -161,7 +162,7 @@ class UtxoRecoveryFlow(private val from: Instant, private val until: Instant, pr
             // Empty as we continue recovering this transaction.
         }
 
-        val isRecovered =  notarize(transaction)?.let { notarizedTransaction ->
+        val isRecovered = notarize(transaction)?.let { notarizedTransaction ->
             persistNotarizedTransaction(notarizedTransaction)
             true
         } ?: false

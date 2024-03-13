@@ -15,6 +15,7 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 import java.time.Instant
 
+@Suppress("TooManyFunctions")
 interface UtxoPersistenceService {
 
     /**
