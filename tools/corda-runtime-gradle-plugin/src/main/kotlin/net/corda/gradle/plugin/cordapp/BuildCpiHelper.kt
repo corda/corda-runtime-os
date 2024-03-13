@@ -40,16 +40,21 @@ class BuildCpiHelper {
         // Clear previous cpi if it exists
         val cpiFile = Path.of(cpiFilePath).also { Files.deleteIfExists(it) }
 
-        CpiV2Creator.createCpi(
-            cpbFile,
-            cpiFile,
-            groupPolicy,
-            CpiAttributes(cpiName, cpiVersion),
-            SigningOptions(
-                keyStoreFile,
-                keystorePassword,
-                keystoreAlias
+        try {
+            CpiV2Creator.createCpi(
+                cpbFile,
+                cpiFile,
+                groupPolicy,
+                CpiAttributes(cpiName, cpiVersion),
+                SigningOptions(
+                    keyStoreFile,
+                    keystorePassword,
+                    keystoreAlias
+                )
             )
-        )
+        } catch (e: Exception) {
+            throw CordaRuntimeGradlePluginException("Unable to create CPI: ${e.message}", e)
+        }
+
     }
 }

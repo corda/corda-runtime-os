@@ -32,6 +32,7 @@ class CordappTasksImpl(var pc: ProjectContext) {
         validateGroupPolicy()
     }
 
+    // TODO: test with local combined worker
     private fun validateGroupPolicy() {
         val groupPolicyFile = File(pc.groupPolicyFilePath)
         val groupPolicy = try {
@@ -40,7 +41,7 @@ class CordappTasksImpl(var pc: ProjectContext) {
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             mapper.readValue(fis, GroupPolicyDTO::class.java)
         } catch (e: Exception) {
-            throw CordaRuntimeGradlePluginException("Failed to read GroupPolicy from group policy file with exception: $e.")
+            throw CordaRuntimeGradlePluginException("Failed to read GroupPolicy from group policy file with exception: $e.", e)
         }
         validateGroupPolicyHasAllMembers(groupPolicy)
     }
