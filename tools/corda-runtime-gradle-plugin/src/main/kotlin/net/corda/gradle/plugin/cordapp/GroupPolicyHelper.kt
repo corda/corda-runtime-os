@@ -1,41 +1,57 @@
 package net.corda.gradle.plugin.cordapp
 
+import com.fasterxml.jackson.core.util.DefaultIndenter
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.databind.module.SimpleModule
+import com.fasterxml.jackson.datatype.jsr310.deser.InstantDeserializer
+import com.fasterxml.jackson.datatype.jsr310.ser.InstantSerializer
+import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
+import net.corda.rest.json.serialization.jacksonObjectMapper
+import net.corda.sdk.network.GenerateStaticGroupPolicy
 import java.io.File
+import java.time.Instant
 
 class GroupPolicyHelper {
+    companion object {
+        private val objectMapper = jacksonObjectMapper().apply {
+            val module = SimpleModule().apply {
+                addSerializer(Instant::class.java, InstantSerializer.INSTANCE)
+                addDeserializer(Instant::class.java, InstantDeserializer.INSTANT)
+            }
+
+            registerModule(module)
+            configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+        }
+
+        private val prettyPrintWriter = DefaultPrettyPrinter().apply {
+            indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE)
+        }
+
+        private val groupPolicyGenerator = GenerateStaticGroupPolicy()
+
+        private const val ENDPOINT_URL = "http://localhost:1080"
+        private const val ENDPOINT_PROTOCOL = 1
+    }
 
     fun createStaticGroupPolicy(
         targetPolicyFile: File,
         x500Names: List<String?>,
-        javaBinDir: String,
-        pluginsDir: String,
-        cordaCliBinDir: String
     ) {
-        val cmdList = mutableListOf(
-            "$javaBinDir/java",
-            "-Dpf4j.pluginsDir=$pluginsDir",
-            "-jar",
-            "$cordaCliBinDir/corda-cli.jar",
-            "mgm",
-            "groupPolicy",
-            "--endpoint-protocol=1",
-            "--endpoint=http://localhost:1080"
-        )
-
-        for (id in x500Names) {
-            cmdList.add("--name")
-            cmdList.add(id!!)
-        }
-
-        val pb = ProcessBuilder(cmdList)
-        pb.redirectErrorStream(true)
-        val proc = pb.start()
-
-        proc.inputStream.use { input ->
-            targetPolicyFile.outputStream().use {
-                    output ->
-                input.copyTo(output)
+        try {
+            groupPolicyGenerator.createMembersListFromListOfX500Strings(
+                x500Names.filterNotNull(),
+                ENDPOINT_URL,
+                ENDPOINT_PROTOCOL,
+            ).let { members ->
+                groupPolicyGenerator.generateStaticGroupPolicy(members)
+            }.let {
+                objectMapper
+                    .writer(prettyPrintWriter)
+                    .writeValue(targetPolicyFile, it)
             }
+        } catch (e: Exception) {
+            throw CordaRuntimeGradlePluginException("Unable to create group policy: ${e.message}", e)
         }
     }
 }
