@@ -2,6 +2,7 @@ package net.corda.cli.plugins.cpiupload.commands
 
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
+import net.corda.rest.client.RestClient
 import net.corda.sdk.packaging.CpiUploader
 import net.corda.sdk.rest.RestClientUtils.createRestClient
 import org.slf4j.Logger
@@ -39,6 +40,8 @@ class CPIUpload : RestCommand(), Runnable {
     )
     var wait: Boolean = false
 
+    private lateinit var restClient: RestClient<CpiUploadRestResource>
+
     override fun run() {
         lateinit var cpiUploadResult: String
         val cpi = File(cpiFilePath)
@@ -46,7 +49,7 @@ class CPIUpload : RestCommand(), Runnable {
             sysOut.info("File type must be .cpi")
             System.exit(1)
         }
-        val restClient = createRestClient(
+        restClient = createRestClient(
             CpiUploadRestResource::class,
             insecure = insecure,
             minimumServerProtocolVersion = minimumServerProtocolVersion,
@@ -70,23 +73,16 @@ class CPIUpload : RestCommand(), Runnable {
         if (wait) {
             pollForOKStatus(cpiUploadResult)
         } else {
-            sysOut.info(cpiUploadResult)
+            sysOut.info("The ID returned from the CPI upload request is $cpiUploadResult")
         }
     }
 
     @Suppress("NestedBlockDepth")
     private fun pollForOKStatus(cpiUploadResult: String) {
-        val restClient = createRestClient(
-            CpiUploadRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
-            username = username,
-            password = password,
-            targetUrl = targetUrl
-        )
+        val checksum: String
         sysOut.info("Polling for result.")
         try {
-            CpiUploader().cpiChecksum(
+            checksum = CpiUploader().cpiChecksum(
                 restClient = restClient,
                 uploadRequestId = cpiUploadResult,
                 wait = waitDurationSeconds.seconds
@@ -96,6 +92,6 @@ class CPIUpload : RestCommand(), Runnable {
             logger.error("Unexpected error during fetching CPI checksum", e)
             return System.exit(3)
         }
-        sysOut.info("CPI Successfully Uploaded and applied.")
+        sysOut.info("CPI with checksum $checksum successfully uploaded.")
     }
 }
