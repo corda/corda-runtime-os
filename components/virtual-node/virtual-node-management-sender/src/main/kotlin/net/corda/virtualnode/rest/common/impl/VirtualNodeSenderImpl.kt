@@ -7,6 +7,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_ASYNC_REQUEST_TOPIC
+import net.corda.tracing.addTraceContextToRecord
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.rest.common.VirtualNodeSender
@@ -53,8 +54,9 @@ class VirtualNodeSenderImpl(
      */
     @Suppress("SpreadOperator")
     override fun sendAsync(key: String, request: VirtualNodeAsynchronousRequest) {
+
         val publish = asyncOperationPublisher.publish(
-            listOf(Record(VIRTUAL_NODE_ASYNC_REQUEST_TOPIC, key, request))
+            listOf(addTraceContextToRecord(Record(VIRTUAL_NODE_ASYNC_REQUEST_TOPIC, key, request)))
         )
         try {
             CompletableFuture.allOf(*publish.toTypedArray()).get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
