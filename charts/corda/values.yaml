@@ -748,7 +748,7 @@ workers:
           # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
           validationTimeoutSeconds: 5
     extraArgs:
-      - "--trace-tags=namespace=$K8S_NAMESPACE:pod=$K8S_POD_NAME:node_name=$K8S_NODE_NAME"
+      - "--trace-tags=namespace=$(K8S_NAMESPACE):pod=$(K8S_POD_NAME):node_name=$(K8S_NODE_NAME)"
 
   # DB worker configuration
   db:
@@ -859,7 +859,7 @@ workers:
               # -- the DB worker SASL password secret key for client connection to Kafka
               key: ""
     extraArgs:
-      - "--trace-tags=namespace=$K8S_NAMESPACE:pod=$K8S_POD_NAME:node_name=$K8S_NODE_NAME"
+      - "--trace-tags=namespace=$(K8S_NAMESPACE):pod=$(K8S_POD_NAME):node_name=$(K8S_NODE_NAME)"
 
   # flow worker configuration
   flow:
@@ -973,7 +973,7 @@ workers:
               # -- the flow worker SASL password secret key for client connection to Kafka
               key: ""
     extraArgs:
-      - "--trace-tags=namespace=$K8S_NAMESPACE:pod=$K8S_POD_NAME:node_name=$K8S_NODE_NAME"
+      - "--trace-tags=namespace=$(K8S_NAMESPACE):pod=$(K8S_POD_NAME):node_name=$(K8S_NODE_NAME)"
 
   # flow mapper worker configuration
   flowMapper:
@@ -1087,7 +1087,7 @@ workers:
               # -- the flow mapper worker SASL password secret key for client connection to Kafka
               key: ""
     extraArgs:
-      - "--trace-tags=namespace=$K8S_NAMESPACE:pod=$K8S_POD_NAME:node_name=$K8S_NODE_NAME"
+      - "--trace-tags=namespace=$(K8S_NAMESPACE):pod=$(K8S_POD_NAME):node_name=$(K8S_NODE_NAME)"
 
   # verification worker configuration
   verification:
@@ -1157,7 +1157,7 @@ workers:
               # -- the verification worker SASL password secret key for client connection to Kafka
               key: ""
     extraArgs:
-      - "--trace-tags=namespace=$K8S_NAMESPACE:pod=$K8S_POD_NAME:node_name=$K8S_NODE_NAME"
+      - "--trace-tags=namespace=$(K8S_NAMESPACE):pod=$(K8S_POD_NAME):node_name=$(K8S_NODE_NAME)"
 
   # membership worker configuration
   membership:
@@ -1225,7 +1225,7 @@ workers:
               # -- the membership worker SASL password secret key for client connection to Kafka
               key: ""
     extraArgs:
-      - "--trace-tags=namespace=$K8S_NAMESPACE:pod=$K8S_POD_NAME:node_name=$K8S_NODE_NAME"
+      - "--trace-tags=namespace=$(K8S_NAMESPACE):pod=$(K8S_POD_NAME):node_name=$(K8S_NODE_NAME)"
 
   # REST worker configuration
   rest:
@@ -1418,7 +1418,7 @@ workers:
         # -- the CA certificates chain secret key
         secretKey: "ca.crt"
     extraArgs:
-      - "--trace-tags=namespace=$K8S_NAMESPACE:pod=$K8S_POD_NAME:node_name=$K8S_NODE_NAME"
+      - "--trace-tags=namespace=$(K8S_NAMESPACE):pod=$(K8S_POD_NAME):node_name=$(K8S_NODE_NAME)"
 
   # P2P link manager worker configuration
   p2pLinkManager:
@@ -1528,7 +1528,7 @@ workers:
               # -- the P2P link manager worker SASL password secret key for client connection to Kafka
               key: ""
     extraArgs:
-      - "--trace-tags=namespace=$K8S_NAMESPACE:pod=$K8S_POD_NAME:node_name=$K8S_NODE_NAME"
+      - "--trace-tags=namespace=$(K8S_NAMESPACE):pod=$(K8S_POD_NAME):node_name=$(K8S_NODE_NAME)"
 
   # P2P gateway worker configuration
   p2pGateway:
@@ -1608,7 +1608,7 @@ workers:
               # -- the P2P gateway worker SASL password secret key for client connection to Kafka
               key: ""
     extraArgs:
-      - "--trace-tags=namespace=$K8S_NAMESPACE:pod=$K8S_POD_NAME:node_name=$K8S_NODE_NAME"
+      - "--trace-tags=namespace=$(K8S_NAMESPACE):pod=$(K8S_POD_NAME):node_name=$(K8S_NODE_NAME)"
 
   # persistence worker configuration
   persistence:
@@ -1718,7 +1718,7 @@ workers:
               # -- the persistence worker SASL password secret key for client connection to Kafka
               key: ""
     extraArgs:
-      - "--trace-tags=namespace=$K8S_NAMESPACE:pod=$K8S_POD_NAME:node_name=$K8S_NODE_NAME"
+      - "--trace-tags=namespace=$(K8S_NAMESPACE):pod=$(K8S_POD_NAME):node_name=$(K8S_NODE_NAME)"
 
   # token selection worker configuration
   tokenSelection:
@@ -1884,7 +1884,7 @@ workers:
       # -- token selection replica count
       replicaCount: 2
     extraArgs:
-      - "--trace-tags=namespace=$K8S_NAMESPACE:pod=$K8S_POD_NAME:node_name=$K8S_NODE_NAME"
+      - "--trace-tags=namespace=$(K8S_NAMESPACE):pod=$(K8S_POD_NAME):node_name=$(K8S_NODE_NAME)"
 
   # uniqueness worker configuration
   uniqueness:
@@ -1994,4 +1994,4 @@ workers:
               # -- the uniqueness worker SASL password secret key for client connection to Kafka
               key: ""
     extraArgs:
-      - "--trace-tags=namespace=$K8S_NAMESPACE:pod=$K8S_POD_NAME:node_name=$K8S_NODE_NAME"
+      - "--trace-tags=namespace=$(K8S_NAMESPACE):pod=$(K8S_POD_NAME):node_name=$(K8S_NODE_NAME)"
