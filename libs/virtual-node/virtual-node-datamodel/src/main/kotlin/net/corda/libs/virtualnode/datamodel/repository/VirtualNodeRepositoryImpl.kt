@@ -92,7 +92,7 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
         entityManager.merge(
             with(operation) {
                 VirtualNodeOperationEntity(
-                    id = requestId,
+                    id = UUID.randomUUID().toString(),
                     requestId = requestId,
                     data = requestData,
                     state = enumValueOf(state),
