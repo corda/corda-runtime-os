@@ -332,6 +332,9 @@ spec:
           {{- if $.Values.tracing.samplesPerSecond }}
           - "--trace-samples-per-second={{ $.Values.tracing.samplesPerSecond }}"
           {{- end }}
+          {{- if $.Values.tracing.tags }}
+          - "--trace-tags={{ $.Values.tracing.tags }}"
+          {{- end }}
           {{- with $.Values.metrics.keepNames }}
           - "--metrics-keep-names={{ join "|" . }}"
           {{- end }}
