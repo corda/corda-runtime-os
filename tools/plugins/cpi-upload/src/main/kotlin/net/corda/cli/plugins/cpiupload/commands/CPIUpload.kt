@@ -40,16 +40,13 @@ class CPIUpload : RestCommand(), Runnable {
     )
     var wait: Boolean = false
 
-    private lateinit var restClient: RestClient<CpiUploadRestResource>
-
     override fun run() {
-        lateinit var cpiUploadResult: String
         val cpi = File(cpiFilePath)
         if (cpi.extension.lowercase() != "cpi") {
             sysOut.info("File type must be .cpi")
             System.exit(1)
         }
-        restClient = createRestClient(
+        val restClient = createRestClient(
             CpiUploadRestResource::class,
             insecure = insecure,
             minimumServerProtocolVersion = minimumServerProtocolVersion,
@@ -57,9 +54,9 @@ class CPIUpload : RestCommand(), Runnable {
             password = password,
             targetUrl = targetUrl
         )
-        try {
+        val cpiUploadResult = try {
             sysOut.info("Uploading CPI to host: $targetUrl")
-            cpiUploadResult = CpiUploader().uploadCPI(
+            CpiUploader().uploadCPI(
                 restClient = restClient,
                 cpi = cpi.inputStream(),
                 cpiName = cpi.name,
@@ -71,14 +68,14 @@ class CPIUpload : RestCommand(), Runnable {
             System.exit(2)
         }
         if (wait) {
-            pollForOKStatus(cpiUploadResult)
+            pollForOKStatus(cpiUploadResult.toString(), restClient)
         } else {
             sysOut.info("The ID returned from the CPI upload request is $cpiUploadResult")
         }
     }
 
     @Suppress("NestedBlockDepth")
-    private fun pollForOKStatus(cpiUploadResult: String) {
+    private fun pollForOKStatus(cpiUploadResult: String, restClient: RestClient<CpiUploadRestResource>) {
         val checksum: String
         sysOut.info("Polling for result.")
         try {
