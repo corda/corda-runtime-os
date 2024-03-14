@@ -3,6 +3,7 @@ package net.corda.p2p.linkmanager.outbound
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.membership.grouppolicy.GroupPolicyProvider
@@ -13,7 +14,9 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.common.CommonComponents
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.delivery.DeliveryTracker
+import net.corda.p2p.linkmanager.tracker.StatelessDeliveryTracker
 import net.corda.schema.Schemas
+import net.corda.utilities.flags.Features
 import net.corda.utilities.time.Clock
 
 @Suppress("LongParameterList")
@@ -28,6 +31,7 @@ internal class OutboundLinkManager(
     publisherFactory: PublisherFactory,
     messagingConfiguration: SmartConfig,
     clock: Clock,
+    features: Features = Features()
 ) : LifecycleWithDominoTile {
     companion object {
         private const val OUTBOUND_MESSAGE_PROCESSOR_GROUP = "outbound_message_processor_group"
@@ -62,14 +66,28 @@ internal class OutboundLinkManager(
         )
     }
 
-    override val dominoTile = SubscriptionDominoTile(
-        lifecycleCoordinatorFactory,
-        outboundMessageSubscription,
-        subscriptionConfig,
-        dependentChildren = listOf(
-            deliveryTracker.dominoTile.coordinatorName,
-            commonComponents.dominoTile.coordinatorName,
-        ),
-        managedChildren = setOf(deliveryTracker.dominoTile.toNamedLifecycle())
-    )
+    override val dominoTile = if (features.enableP2PStatelessDeliveryTracker) {
+        val statelessDeliveryTracker = StatelessDeliveryTracker(
+            commonComponents = commonComponents,
+            messagingConfiguration = messagingConfiguration,
+            outboundMessageProcessor = outboundMessageProcessor,
+        )
+        ComplexDominoTile(
+            OUTBOUND_MESSAGE_PROCESSOR_GROUP,
+            coordinatorFactory = lifecycleCoordinatorFactory,
+            dependentChildren = listOf(statelessDeliveryTracker.dominoTile.coordinatorName),
+            managedChildren = listOf(statelessDeliveryTracker.dominoTile.toNamedLifecycle()),
+        )
+    } else {
+        SubscriptionDominoTile(
+            lifecycleCoordinatorFactory,
+            outboundMessageSubscription,
+            subscriptionConfig,
+            dependentChildren = listOf(
+                deliveryTracker.dominoTile.coordinatorName,
+                commonComponents.dominoTile.coordinatorName,
+            ),
+            managedChildren = setOf(deliveryTracker.dominoTile.toNamedLifecycle())
+        )
+    }
 }
