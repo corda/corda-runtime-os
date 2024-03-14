@@ -417,7 +417,7 @@ class BatchedUniquenessCheckerImpl(
                         isDuplicate = true
                     )
                 } else {
-                    val timeWindowEvaluationTime = clock.instant().plus(10, ChronoUnit.MINUTES)
+                    val timeWindowEvaluationTime = clock.instant()
                     // Time window check
                     if (!isTimeWindowValid(timeWindowEvaluationTime, request.timeWindowLowerBound, request.timeWindowUpperBound)) {
                         InternalUniquenessCheckResultWithContext(
