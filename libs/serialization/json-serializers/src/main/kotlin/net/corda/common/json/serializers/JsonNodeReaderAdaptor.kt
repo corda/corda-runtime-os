@@ -99,7 +99,7 @@ internal class JsonNodeReaderAdaptor(
 
     override fun asText(): String = jsonNode.asText()
 
-    override fun asText(defaultValue: String): String = jsonNode.asText(defaultValue)
+    override fun asText(defaultValue: String): String = jsonNode.asText() ?: defaultValue
 
     override fun binaryValue(): ByteArray? = try {
         jsonNode.binaryValue()
