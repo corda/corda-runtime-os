@@ -1,5 +1,6 @@
 package net.corda.entityprocessor.impl.internal
 
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.core.parseSecureHash
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
@@ -12,6 +13,7 @@ import net.corda.data.persistence.FindEntities
 import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.data.persistence.MergeEntities
 import net.corda.data.persistence.PersistEntities
+import net.corda.flow.utils.RequestID
 import net.corda.flow.utils.toMap
 import net.corda.libs.virtualnode.datamodel.repository.RequestsIdsRepository
 import net.corda.messaging.api.records.Record
@@ -29,6 +31,7 @@ import net.corda.utilities.translateFlowContextToMDC
 import net.corda.utilities.withMDC
 import net.corda.v5.application.flows.FlowContextPropertyKeys
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.util.EncodingUtils.toBase64
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import java.time.Duration
@@ -103,11 +106,24 @@ class ProcessorService {
 
         return when (val entityRequest = request.request) {
             is PersistEntities -> {
-                val requestId = request.flowExternalEventContext.requestId
+                val originalRequestId = request.flowExternalEventContext.requestId
+                val entities = entityRequest.entities
+                    .map { serializationService.deserialize(it.array(), Any::class.java) }
+
+                val requestId = entities
+                    .mapNotNull { entityManagerFactory.persistenceUnitUtil.getIdentifier(it) }
+                    .takeIf { it.isNotEmpty() }?.let { entityPks ->
+                        RequestID.replaceHash(
+                            originalRequestId,
+                            entityPks,
+                            serializationService
+                        ) { toBase64(it.sha256Bytes()) }
+                    } ?: originalRequestId
+
                 val entityResponse = withDeduplicationCheck(requestId, entityManager, onDuplication = {
                     EntityResponse(emptyList(), KeyValuePairList(emptyList()), null)
                 }, requestsIdsRepository) {
-                    persistenceServiceInternal.persist(serializationService, it, entityRequest)
+                    persistenceServiceInternal.persist(it, entities)
                 }
 
                 responseFactory.successResponse(
@@ -180,13 +196,12 @@ class ProcessorService {
                 requestsIdsRepository.persist(requestId, it)
                 it.flush()
             } catch (e: PersistenceException) {
-                // A persistence exception thrown in the de-duplication check means we have already performed the operation and
-                // can therefore treat the request as successful
+                // A persistence exception thrown in the de-duplication check means we have already
+                // performed the operation and can therefore treat the request as successful
                 it.transaction.setRollbackOnly()
                 return@transaction onDuplication()
             }
             block(entityManager)
         }
     }
-
 }

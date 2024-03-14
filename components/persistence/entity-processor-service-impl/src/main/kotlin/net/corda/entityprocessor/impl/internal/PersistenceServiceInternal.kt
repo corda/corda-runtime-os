@@ -9,7 +9,6 @@ import net.corda.data.persistence.FindAll
 import net.corda.data.persistence.FindEntities
 import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.data.persistence.MergeEntities
-import net.corda.data.persistence.PersistEntities
 import net.corda.persistence.common.exceptions.InvalidPaginationException
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
@@ -59,11 +58,10 @@ class PersistenceServiceInternal(
 
 
     fun persist(
-        serializationService: SerializationService,
         entityManager: EntityManager,
-        payload: PersistEntities
+        payload: List<Any>
     ): EntityResponse {
-        payload.entities.map { entityManager.persist(serializationService.deserialize(it.array(), Any::class.java)) }
+        payload.forEach { entityManager.persist(it) }
         return EntityResponse(emptyList(), KeyValuePairList(emptyList()), null)
     }
 
