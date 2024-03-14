@@ -67,8 +67,8 @@ class DefaultWorkerParams(healthPortOverride: Int = WORKER_SERVER_PORT) {
             "defaults to 1 sample per second. Set to \"unlimited\" to record all samples"])
     var traceSamplesPerSecond: String? = null
 
-    @Option(names = ["--trace-tags"], split = ":", description = ["Trace tags that are applying to the log messages " +
-            "which can be latter used to filter logs."])
+    @Option(names = ["--trace-tags"], split = ":", description = ["Tags that are applied to trace spans " +
+            "which can later be used to filter traces."])
     var extraTraceTags = emptyMap<String, String>()
 
     @Option(names = ["--metrics-keep-names"], description = ["A regular expression for the names of metrics that " +
