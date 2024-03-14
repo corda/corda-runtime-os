@@ -65,6 +65,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import java.security.PrivilegedExceptionAction
 import java.security.PublicKey
 import java.time.Instant
 
@@ -237,9 +238,12 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         transactionStatus: TransactionStatus,
         visibleStatesIndexes: List<Int>
     ): Instant {
-        val lastPersistedTimestamp = flowCheckpointService.getCheckpoint().readCustomState(
-            UtxoLedgerLastPersistedTimestamp::class.java
-        )
+        val lastPersistedTimestamp = @Suppress("deprecation", "removal")
+        java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
+            flowCheckpointService.getCheckpoint().readCustomState(
+                UtxoLedgerLastPersistedTimestamp::class.java
+            )
+        })
         return recordSuspendable({ ledgerPersistenceFlowTimer(PersistTransaction) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
@@ -252,7 +256,14 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                     )
                 )
             }.first().let {
-                val newLastPersistedTimestamp = serializationService.deserialize<Instant>(it.array())
+                val newLastPersistedTimestamp = @Suppress("deprecation", "removal")
+                java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
+                    val newLastPersistedTimestamp = serializationService.deserialize<Instant>(it.array())
+                    flowCheckpointService.getCheckpoint().writeCustomState(
+                        UtxoLedgerLastPersistedTimestamp(newLastPersistedTimestamp)
+                    )
+                    newLastPersistedTimestamp
+                })
                 flowCheckpointService.getCheckpoint().writeCustomState(
                     UtxoLedgerLastPersistedTimestamp(newLastPersistedTimestamp)
                 )

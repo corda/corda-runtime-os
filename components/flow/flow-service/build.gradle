@@ -64,6 +64,7 @@ dependencies {
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation "com.esotericsoftware:kryo:$kryoVersion"
     implementation libs.jackson.module.kotlin
+    implementation libs.jackson.datatype.jsr310
 
     testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testImplementation libs.jackson.module.kotlin
