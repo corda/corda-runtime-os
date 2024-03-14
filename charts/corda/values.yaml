@@ -859,7 +859,7 @@ workers:
               # -- the DB worker SASL password secret key for client connection to Kafka
               key: ""
     extraArgs:
-      - "--trace-tags=namespace=$(K8S_NAMESPACE):pod=$(K8S_POD_NAME):node_name=$(K8S_NODE_NAME)"
+      - "--trace-tags=namespace=$(K8S_NAMESPACE):pod=$(K8S_POD_NAME):node_name=$(K8S_NODE_NAME):container:$(K8_CONTAINER_NAME)"
 
   # flow worker configuration
   flow:

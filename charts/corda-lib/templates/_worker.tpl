@@ -188,6 +188,9 @@ spec:
             memory: {{ default $.Values.resources.limits.memory .resources.limits.memory }}
           {{- end }}
         env:
+          - name: K8_CONTAINER_NAME
+            value:
+                {{ $workerName | quote }}
           - name: K8S_NODE_NAME
             valueFrom:
               fieldRef:
