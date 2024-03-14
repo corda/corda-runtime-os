@@ -14,6 +14,8 @@ import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.utilities.debug
 import net.corda.utilities.minutes
+import net.corda.utilities.time.Clock
+import net.corda.utilities.time.UTCClock
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
@@ -34,7 +36,12 @@ import java.security.PrivilegedExceptionAction
 import java.time.Duration
 import java.time.Instant
 
-class UtxoRecoveryFlow(private val from: Instant, private val until: Instant, private val duration: Duration) : SubFlow<Int> {
+class UtxoRecoveryFlow(
+    private val from: Instant,
+    private val until: Instant,
+    private val duration: Duration,
+    private val clock: Clock = UTCClock()
+) : SubFlow<Int> {
 
     private companion object {
         const val QUERY_LIMIT = 100
@@ -66,7 +73,7 @@ class UtxoRecoveryFlow(private val from: Instant, private val until: Instant, pr
 
         val startTime = System.currentTimeMillis()
         val endTime = Instant.ofEpochMilli(startTime).plus(duration)
-        var lastCallToNotaryTime = Instant.now()
+        var lastCallToNotaryTime = clock.instant()
         var numberOfNotarizedTransactions = 0
         var numberOfNotNotarizedTransactions = 0
         var numberOfInvalidTransactions = 0
@@ -79,7 +86,7 @@ class UtxoRecoveryFlow(private val from: Instant, private val until: Instant, pr
 
         pagingLoop@ while (transactionsToRecover.isNotEmpty()) {
             for (id in transactionsToRecover) {
-                val now = Instant.now()
+                val now = clock.instant()
                 if (now.isAfter(endTime)) {
                     exceededDuration = true
                     break@pagingLoop
@@ -98,7 +105,7 @@ class UtxoRecoveryFlow(private val from: Instant, private val until: Instant, pr
                 val result = potentiallyRecoverTransaction(id)
 
                 if (result != Skipped) {
-                    lastCallToNotaryTime = Instant.now()
+                    lastCallToNotaryTime = clock.instant()
                 }
 
                 when (result) {
