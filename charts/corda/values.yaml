@@ -1150,6 +1150,7 @@ workers:
               name: ""
               # -- the verification worker SASL password secret key for client connection to Kafka
               key: ""
+
   # membership worker configuration
   membership:
     # membership worker image configuration
@@ -1592,6 +1593,7 @@ workers:
               name: ""
               # -- the P2P gateway worker SASL password secret key for client connection to Kafka
               key: ""
+
   # persistence worker configuration
   persistence:
     # persistence worker image configuration
