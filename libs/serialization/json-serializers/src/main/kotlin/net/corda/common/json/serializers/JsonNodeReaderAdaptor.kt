@@ -99,7 +99,9 @@ internal class JsonNodeReaderAdaptor(
 
     override fun asText(): String = jsonNode.asText()
 
-    override fun asText(defaultValue: String): String = jsonNode.asText() ?: defaultValue
+    @Deprecated("Will be removed from Jackson 3.0")
+    override fun asText(defaultValue: String): String =
+        if(jsonNode.isNull) defaultValue else jsonNode.asText()
 
     override fun binaryValue(): ByteArray? = try {
         jsonNode.binaryValue()
