@@ -10,8 +10,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.readText
 
 class BuildCpiHelper {
-
-    @Suppress("LongParameterList", "ThrowsCount")
+    @Suppress("LongParameterList")
     fun createCPI(
         groupPolicyFilePath: String,
         keystoreFilePath: String,
@@ -22,25 +21,13 @@ class BuildCpiHelper {
         cpiName: String,
         cpiVersion: String,
     ) {
-        // Get Cpb
-        val cpbFile = Path.of(cpbFilePath).also {
-            if (!it.exists()) throw CordaRuntimeGradlePluginException("CPB file not found at: $it.")
-        }
-
-        // Get GroupPolicy.json
-        val groupPolicy = Path.of(groupPolicyFilePath).also {
-            if (!it.exists()) throw CordaRuntimeGradlePluginException("Group Policy file not found at: $it.")
-        }.readText(Charsets.UTF_8)
-
-        // Get Keystore file
-        val keyStoreFile = Path.of(keystoreFilePath).also {
-            if (!it.exists()) throw CordaRuntimeGradlePluginException("Keystore file not found at: $it.")
-        }
-
-        // Clear previous cpi if it exists
-        val cpiFile = Path.of(cpiFilePath).also { Files.deleteIfExists(it) }
-
         try {
+            val (cpbFile, groupPolicyFile, keyStoreFile) = requireFilesExist(cpbFilePath, groupPolicyFilePath, keystoreFilePath)
+            val groupPolicy = groupPolicyFile.readText(Charsets.UTF_8)
+
+            // Clear previous cpi if it exists
+            val cpiFile = Path.of(cpiFilePath).also { Files.deleteIfExists(it) }
+
             CpiV2Creator.createCpi(
                 cpbFile,
                 cpiFile,
@@ -55,6 +42,12 @@ class BuildCpiHelper {
         } catch (e: Exception) {
             throw CordaRuntimeGradlePluginException("Unable to create CPI: ${e.message}", e)
         }
-
     }
+
+    private fun requireFilesExist(vararg filePath: String): List<Path> =
+        filePath.map { path ->
+            Path.of(path).also {
+                if (!it.exists()) throw CordaRuntimeGradlePluginException("File not found: $it")
+            }
+        }
 }
