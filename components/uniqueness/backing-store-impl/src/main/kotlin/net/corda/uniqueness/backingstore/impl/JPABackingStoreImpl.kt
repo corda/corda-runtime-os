@@ -151,7 +151,7 @@ open class JPABackingStoreImpl @Activate constructor(
                                 //  won't be necessary
                                 if (entityManager.transaction.isActive) {
                                     entityManager.transaction.rollback()
-                                    log.debug { "Rolled back transaction" }
+                                    log.warn("Rolled back transaction")
                                 }
 
                                 CordaMetrics.Metric.UniquenessBackingStoreTransactionErrorCount
@@ -186,7 +186,7 @@ open class JPABackingStoreImpl @Activate constructor(
                                 // triggered.
                                 if (entityManager.transaction.isActive) {
                                     entityManager.transaction.rollback()
-                                    log.debug { "Rolled back transaction" }
+                                    log.warn("Rolled back transaction")
                                 }
 
                                 CordaMetrics.Metric.UniquenessBackingStoreTransactionErrorCount

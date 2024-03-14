@@ -75,7 +75,7 @@ interface UtxoRepository {
         timestamp: Instant,
         status: TransactionStatus,
         metadataHash: String
-    )
+    ): Boolean
 
     /** Persists unverified transaction (operation is idempotent) */
     @Suppress("LongParameterList")
@@ -98,6 +98,9 @@ interface UtxoRepository {
         timestamp: Instant,
         metadataHash: String,
     )
+
+    /** Updates an existing verified transaction */
+    fun updateTransactionToVerified(entityManager: EntityManager, id: String, timestamp: Instant)
 
     /** Persists transaction metadata (operation is idempotent) */
     fun persistTransactionMetadata(
@@ -223,4 +226,6 @@ interface UtxoRepository {
     )
 
     data class TransactionMerkleProofLeaf(val merkleProofId: String, val leafIndex: Int)
+
+    fun findConsumedTransactionSourcesForTransaction(entityManager: EntityManager, transactionId: String, indexes: List<Int>): List<Int>
 }

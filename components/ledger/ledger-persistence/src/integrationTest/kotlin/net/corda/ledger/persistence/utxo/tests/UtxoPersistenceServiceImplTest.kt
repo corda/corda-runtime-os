@@ -1122,6 +1122,96 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
+    fun `persist verified signed transaction when a filtered transaction exists for the same id and a subsequent transaction has already been persisted`() {
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(outputStates = defaultVisibleTransactionOutputs, signatures = signatures)
+        val filteredTransaction = createFilteredTransaction(signedTransaction)
+        val transactionReader = TestUtxoTransactionReader(
+            signedTransaction,
+            "account",
+            VERIFIED,
+            listOf(0, 1)
+        )
+        val subsequentSignedTransaction = createSignedTransaction(
+            inputStateRefs = listOf(StateRef(signedTransaction.id, 0)),
+            signatures = signatures
+        )
+        val subsequentTransactionReader = TestUtxoTransactionReader(
+            subsequentSignedTransaction,
+            "account",
+            VERIFIED,
+            listOf(0, 1)
+        )
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
+
+        val (createdTimestamp, updatedTimestamp) = entityManagerFactory.transaction { em ->
+            val transaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
+            assertThat(transaction).isNotNull
+            assertThat(transaction.field<Boolean>("isFiltered")).isTrue()
+            assertThat(transaction.field<String>("status")).isEqualTo("V")
+            transaction.field<Instant>("created") to transaction.field<Instant>("updated")
+        }
+
+        persistenceService.persistTransaction(subsequentTransactionReader, emptyMap())
+
+        entityManagerFactory.transaction { em ->
+            val dbTransactionOutputs = em.createNamedQuery(
+                "UtxoVisibleTransactionOutputEntity.findByTransactionId",
+                entityFactory.utxoVisibleTransactionOutput
+            )
+                .setParameter("transactionId", signedTransaction.id.toString())
+                .resultList
+
+            assertThat(dbTransactionOutputs).isEmpty()
+
+//            val sorted = dbTransactionOutputs
+//                .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
+//
+//            sorted[0].let { row ->
+//                assertThat(row.field<Int>("groupIndex")).isEqualTo(8)
+//                assertThat(row.field<Int>("leafIndex")).isEqualTo(0)
+//                assertThat(row.field<Instant>("consumed")).isNull()
+            }
+//                .zip(defaultVisibleTransactionOutputs)
+//                .forEachIndexed { leafIndex, (dbInput, transactionOutput) ->
+//                    assertThat(dbInput.field<Int>("groupIndex")).isEqualTo(UtxoComponentGroup.OUTPUTS.ordinal)
+//                    assertThat(dbInput.field<Int>("leafIndex")).isEqualTo(leafIndex)
+//                    assertThat(dbInput.field<String>("type")).isEqualTo(transactionOutput::class.java.canonicalName)
+//                    assertThat(dbInput.field<String>("tokenType")).isEqualTo(tokenType)
+//                    assertThat(dbInput.field<String>("tokenIssuerHash")).isEqualTo(issuerHash.toString())
+//                    assertThat(dbInput.field<String>("tokenNotaryX500Name")).isEqualTo(notaryX500Name.toString())
+//                    assertThat(dbInput.field<String>("tokenSymbol")).isEqualTo(tokenSymbol)
+//                    assertThat(dbInput.field<String>("tokenTag")).isEqualTo(tokenTag)
+//                    assertThat(dbInput.field<String>("tokenOwnerHash")).isEqualTo(ownerHash.toString())
+//                    assertThat(dbInput.field<BigDecimal>("tokenAmount")).isEqualTo(tokenAmount)
+//                    assertThat(dbInput.field<String>("customRepresentation").replace("\\s".toRegex(), ""))
+//                        .isEqualTo("{\"net.corda.v5.ledger.utxo.ContractState\":{\"stateRef\":\"${signedTransaction.id}:$leafIndex\"}}")
+//                    assertThat(dbInput.field<Instant>("consumed")).isNull()
+//        }
+
+        persistenceService.persistTransaction(transactionReader, emptyMap())
+
+        entityManagerFactory.transaction { em ->
+            val dbTransactionOutputs = em.createNamedQuery(
+                "UtxoVisibleTransactionOutputEntity.findByTransactionId",
+                entityFactory.utxoVisibleTransactionOutput
+            )
+                .setParameter("transactionId", signedTransaction.id.toString())
+                .resultList
+            val sorted = dbTransactionOutputs
+                .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
+
+            sorted[0].let { row ->
+                assertThat(row.field<Int>("groupIndex")).isEqualTo(8)
+                assertThat(row.field<Int>("leafIndex")).isEqualTo(0)
+                assertThat(row.field<Instant>("consumed")).isNotNull()
+            }
+        }
+    }
+
+    @Test
     fun `persist unverified signed transaction when a filtered transaction exists for the same id sets the status to UNVERIFIED and leaves is_filtered as true`() {
         val signatures = createSignatures(Instant.now())
         val signedTransaction = createSignedTransaction(signatures = signatures)

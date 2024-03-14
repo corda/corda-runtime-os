@@ -193,4 +193,21 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             	)
             WHERE utmp.transaction_id IN (:transactionIds)"""
             .trimIndent()
+
+    override val findConsumedTransactionSourcesForTransaction: String
+        get() = """
+            SELECT utxo_transaction_sources.source_state_idx from {h-schema}utxo_transaction_sources 
+            WHERE source_state_transaction_id = :transactionId 
+            AND group_idx = 6
+            AND source_state_idx in :inputStateIndexes
+        """.trimIndent()
+
+    override val updateTransactionToVerified: String
+        get() = """
+            UPDATE {h-schema}utxo_transaction 
+            SET status = '$VERIFIED', updated = :updatedAt
+            WHERE id = :transactionId
+            AND status in ('$UNVERIFIED', '$DRAFT') 
+            OR (status = $VERIFIED AND is_filtered = TRUE)
+        """.trimIndent()
 }

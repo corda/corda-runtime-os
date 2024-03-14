@@ -319,7 +319,7 @@ class UtxoPersistenceServiceImpl(
 
             if (transaction.status != TransactionStatus.UNVERIFIED) {
                 // Insert the Transaction
-                repository.persistTransaction(
+                val inserted = repository.persistTransaction(
                     em,
                     transactionIdString,
                     transaction.privacySalt.bytes,
@@ -328,6 +328,28 @@ class UtxoPersistenceServiceImpl(
                     transaction.status,
                     metadataHash,
                 )
+
+
+                if (!inserted) {
+                    // update -> VERIFIED + false
+                    // check transaction sources to rectify data
+                    // use visible tx outputs or just all outputs
+                    // visible outputs should work and be smaller
+                    val indexes = repository.findConsumedTransactionSourcesForTransaction(
+                        em,
+                        transactionIdString,
+                        visibleTransactionOutputs.map { output -> output.stateIndex }
+                    )
+                    if (indexes.isNotEmpty()) {
+                        repository.markTransactionVisibleStatesConsumed(
+                            em,
+                            indexes.map { index -> StateRef(transaction.id, index) },
+                            nowUtc
+                        )
+                    }
+                    repository.updateTransactionToVerified(em, transactionIdString, nowUtc)
+                }
+
             } else {
                 repository.persistUnverifiedTransaction(
                     em,
