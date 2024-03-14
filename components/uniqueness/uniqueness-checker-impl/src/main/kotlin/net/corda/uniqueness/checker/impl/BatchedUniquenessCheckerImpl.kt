@@ -39,6 +39,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.LinkedList
 
 /**
@@ -410,33 +411,42 @@ class BatchedUniquenessCheckerImpl(
             batch.forEach { request ->
                 // Already processed -> Return same result as in DB (idempotency) but no need to
                 // commit to backing store so is not added to resultsToCommit
-                if (transactionDetailsCache[request.txId] != null) {
-                    resultsToRespondWith.add(
-                        Pair(
-                            request,
-                            InternalUniquenessCheckResultWithContext(
-                                transactionDetailsCache[request.txId]!!.result, isDuplicate = true)
-                        )
+                val response = if (transactionDetailsCache[request.txId] != null) {
+                    InternalUniquenessCheckResultWithContext(
+                        transactionDetailsCache[request.txId]!!.result,
+                        isDuplicate = true
                     )
                 } else {
-                    // TODO Return a clearly defined error type
-                    // This has not been done yet as it would affect that API.
-                    resultsToRespondWith.add(
-                        Pair(
-                            request,
-                            InternalUniquenessCheckResultWithContext(
-                                UniquenessCheckResultFailureImpl(
-                                    clock.instant(),
-                                    UniquenessCheckErrorUnhandledExceptionImpl(
-                                        "UniquenessCheckErrorNotPreviouslyNotarizedException",
-                                        "This transaction has not been notarized before"
-                                    )
-                                ),
-                                isDuplicate = false
-                            )
+                    val timeWindowEvaluationTime = clock.instant().plus(10, ChronoUnit.MINUTES)
+                    // Time window check
+                    if (!isTimeWindowValid(timeWindowEvaluationTime, request.timeWindowLowerBound, request.timeWindowUpperBound)) {
+                        InternalUniquenessCheckResultWithContext(
+                            UniquenessCheckResultFailureImpl(
+                                clock.instant(),
+                                UniquenessCheckErrorTimeWindowOutOfBoundsImpl(
+                                    timeWindowEvaluationTime,
+                                    request.timeWindowLowerBound,
+                                    request.timeWindowUpperBound
+                                )
+                            ),
+                            isDuplicate = false
                         )
-                    )
+                    } else {
+                        // TODO Return a clearly defined error type
+                        // This has not been done yet as it would affect that API.
+                        InternalUniquenessCheckResultWithContext(
+                            UniquenessCheckResultFailureImpl(
+                                clock.instant(),
+                                UniquenessCheckErrorUnhandledExceptionImpl(
+                                    "UniquenessCheckErrorNotPreviouslyNotarizedException",
+                                    "This transaction has not been notarized before"
+                                )
+                            ),
+                            isDuplicate = false
+                        )
+                    }
                 }
+                resultsToRespondWith.add(request to response)
             }
         }
 
