@@ -175,6 +175,7 @@ class UniquenessCheckerImplDBIntegrationTests {
 
         // Create users and schemas
         val defaultEMConfig = DbUtils.getEntityManagerConfiguration(
+            inMemoryDbName = "uniq_test_default",
             dbUser = "user_$defaultHoldingIdentityDbName",
             schemaName = defaultHoldingIdentityDbName,
             createSchema = true,
@@ -183,6 +184,7 @@ class UniquenessCheckerImplDBIntegrationTests {
         )
 
         val bobEMConfig = DbUtils.getEntityManagerConfiguration(
+            inMemoryDbName = "uniq_test_bob",
             dbUser = "user_$bobHoldingIdentityDbName",
             schemaName = bobHoldingIdentityDbName,
             createSchema = true,
@@ -191,6 +193,7 @@ class UniquenessCheckerImplDBIntegrationTests {
         )
 
         val charlieEMConfig = DbUtils.getEntityManagerConfiguration(
+            inMemoryDbName = "uniq_test_charlie",
             dbUser = "user_$charlieHoldingIdentityDbName",
             schemaName = charlieHoldingIdentityDbName,
             createSchema = true,
@@ -212,10 +215,10 @@ class UniquenessCheckerImplDBIntegrationTests {
             Pair(defaultEMConfig.dataSource, defaultHoldingIdentityDbName),
             Pair(bobEMConfig.dataSource, bobHoldingIdentityDbName),
             Pair(charlieEMConfig.dataSource, charlieHoldingIdentityDbName)
-        ).forEach { (ds, schemaName) ->
+        ).forEach { (ds, _) ->
             ds.connection.use {
-                it.prepareStatement("SET search_path TO $schemaName;").execute()
-                it.commit()
+//                it.prepareStatement("SET search_path TO $schemaName;").execute()
+//                it.commit()
                 lbm.updateDb(it, cl)
             }
         }
@@ -1280,6 +1283,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 newRequestBuilder()
                     .setTimeWindowLowerBound(currentTime().minusSeconds(10))
                     .setTimeWindowUpperBound(currentTime().plusSeconds(10))
+                    .setNumOutputStates(1)
                     .build()
             ).let { responses ->
                 assertAll(
@@ -1294,6 +1298,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             val request = newRequestBuilder()
                 .setTimeWindowLowerBound(currentTime().minusSeconds(10))
                 .setTimeWindowUpperBound(currentTime().plusSeconds(10))
+                .setNumOutputStates(1)
                 .build()
 
             var initialResponse: UniquenessCheckResponseAvro? = null
@@ -1326,6 +1331,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             processRequests(
                 newRequestBuilder()
                     .setTimeWindowLowerBound(lowerBound)
+                    .setNumOutputStates(1)
                     .build()
             ).let { responses ->
                 assertAll(
@@ -1346,6 +1352,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             val lowerBound = currentTime().plusSeconds(10)
             val request = newRequestBuilder()
                 .setTimeWindowLowerBound(lowerBound)
+                .setNumOutputStates(1)
                 .build()
             var initialResponse: UniquenessCheckResponseAvro? = null
 
@@ -1390,6 +1397,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             processRequests(
                 newRequestBuilder()
                     .setTimeWindowUpperBound(upperBound)
+                    .setNumOutputStates(1)
                     .build()
             ).let { responses ->
                 assertAll(
@@ -1856,5 +1864,216 @@ class UniquenessCheckerImplDBIntegrationTests {
                 )
             }
         }
+    }
+
+    /**
+     * tests for the mechanism the repair tool uses to check if a transaction has already been notarized.
+     */
+    @Nested
+    inner class NotarizationChecks {
+
+        @Test
+        fun `transaction that has been notarized successfully is returned as success`(){
+
+            val transactionId = SecureHashUtils.randomSecureHash()
+            // create notarized transaction
+            processRequests(
+                newRequestBuilder(transactionId)
+                    .setNumOutputStates(3)
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0]) }
+                )
+            }
+
+            // check that the transaction is known via the checker code
+            processRequests(
+                newRequestBuilder(transactionId)
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0]) }
+                )
+            }
+        }
+
+        @Test
+        fun `failed transaction get failure replayed on check`(){
+            val transactionId = SecureHashUtils.randomSecureHash()
+            val inputId = "${SecureHashUtils.randomSecureHash()}:1"
+
+            // create notarization failure
+            processRequests(
+                newRequestBuilder(transactionId)
+                    .setNumOutputStates(3)
+                    .setInputStates(listOf(inputId))
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    { assertUnknownInputStateResponse(responses[0], listOf(inputId)) }
+                )
+            }
+
+            // check that the failure gets replayed via the checker
+            processRequests(
+                newRequestBuilder(transactionId)
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    { assertUnknownInputStateResponse(responses[0], listOf(inputId)) }
+                )
+            }
+
+        }
+
+
+        @Test
+        fun `transaction that has not been notarized returns as failed but does not consume things`() {
+
+            val inputs = generateUnspentStates(2)
+
+            val transactionId = SecureHashUtils.randomSecureHash()
+
+            // check if transaction has yet been notarized
+            processRequests(
+                newRequestBuilder(transactionId)
+                    .setTimeWindowLowerBound(currentTime().minusSeconds(10))
+                    .setTimeWindowUpperBound(currentTime().plusSeconds(10))
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    { assertUnhandledExceptionResponse(
+                        responses[0], "UniquenessCheckErrorNotPreviouslyNotarizedException"
+                    )
+                })
+            }
+
+            // check that it still can be notarized
+            processRequests(
+                newRequestBuilder(transactionId)
+                    .setInputStates(inputs)
+                    .setNumOutputStates(1)
+                    .setTimeWindowLowerBound(currentTime().minusSeconds(10))
+                    .setTimeWindowUpperBound(currentTime().plusSeconds(10))
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0]) })
+            }
+        }
+
+        @Test
+        fun `transaction that is not notarized and out of time window fails with time window error`() {
+
+            val upperBound = currentTime().minusSeconds(100)
+
+            // check for unknown transaction after time window elapsed
+            processRequests(
+                newRequestBuilder()
+                    .setTimeWindowUpperBound(upperBound)
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    {
+                        assertTimeWindowOutOfBoundsResponse(
+                            responses[0], null, upperBound
+                        )
+                    })
+            }
+
+        }
+
+        @Test
+        fun `transaction that is not notarized and before time window fails in check but can still be notarized later`(){
+            // check for unkown transaction before time window
+            val lowerBound = currentTime().plusSeconds(100)
+            val transactionId = SecureHashUtils.randomSecureHash()
+            processRequests(
+                newRequestBuilder(transactionId)
+                    .setTimeWindowLowerBound(lowerBound)
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    {
+                        assertTimeWindowOutOfBoundsResponse(
+                            responses[0], lowerBound, defaultTimeWindowUpperBound
+                        )
+                    })
+            }
+
+            // move clock into time window
+            testClock.setTime(currentTime().plusSeconds(120))
+
+            // check for transaction now should return that the notary doesn't know about it
+            processRequests(
+                newRequestBuilder(transactionId)
+                    .setTimeWindowLowerBound(lowerBound)
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    { assertUnhandledExceptionResponse(
+                        responses[0], "UniquenessCheckErrorNotPreviouslyNotarizedException"
+                    )}
+                )
+            }
+        }
+
+        @Test
+        fun `transaction that had been notarized but is now out of time window succeeds`(){
+
+            val transactionId = SecureHashUtils.randomSecureHash()
+            // create notarized transaction
+
+            val lowerBound = currentTime().minusSeconds(10)
+            val upperBound = currentTime().plusSeconds(10)
+
+            processRequests(
+                newRequestBuilder(transactionId)
+                    .setTimeWindowLowerBound(lowerBound)
+                    .setTimeWindowUpperBound(upperBound)
+                    .setNumOutputStates(3)
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    { assertStandardSuccessResponse(responses[0]) }
+                )
+            }
+
+            testClock.setTime(currentTime().plusSeconds(60))
+
+            // check that time window is now invalid by trying to notarize new transaction,
+            // but checking existing transaction with same time window should succeed
+            processRequests(
+                newRequestBuilder()
+                    .setTimeWindowLowerBound(lowerBound)
+                    .setTimeWindowUpperBound(upperBound)
+                    .setNumOutputStates(3)
+                    .build(),
+                newRequestBuilder(transactionId)
+                    .setTimeWindowLowerBound(currentTime().minusSeconds(10))
+                    .setTimeWindowUpperBound(currentTime().plusSeconds(10))
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(2) },
+                    { assertTimeWindowOutOfBoundsResponse(responses[0],
+                        lowerBound, upperBound) },
+                    { assertStandardSuccessResponse(responses[1]) }
+                )
+            }
+        }
+
+
     }
 }
