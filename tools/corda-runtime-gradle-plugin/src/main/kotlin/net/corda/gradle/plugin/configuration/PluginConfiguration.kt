@@ -63,6 +63,9 @@ open class PluginConfiguration @Inject constructor(objects: ObjectFactory) {
     val workflowsModuleName: Property<String> = objects.property(String::class.java).convention("workflows")
 
     @get:Input
+    val notaryModuleName: Property<String> = objects.property(String::class.java).convention("notary")
+
+    @get:Input
     val networkConfigFile: Property<String> = objects.property(String::class.java).convention("config/static-network-config.json")
 
     @get:Input

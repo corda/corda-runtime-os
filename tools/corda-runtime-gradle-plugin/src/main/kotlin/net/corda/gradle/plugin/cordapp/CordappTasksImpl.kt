@@ -119,13 +119,19 @@ class CordappTasksImpl(var pc: ProjectContext) {
             pc.corDappCpiName,
             pc.project.version.toString()
         )
+
         pc.logger.quiet("Creating ${pc.notaryCpiName} CPI.")
+        val notaryCpb = if (pc.isNotaryNonValidating) {
+            pc.nonValidatingNotaryCpbFilePath
+        } else {
+            pc.contractVerifyingNotaryCpbFilePath
+        }
         BuildCpiHelper().createCPI(
             pc.groupPolicyFilePath,
             pc.keystoreFilePath,
             pc.keystoreAlias,
             pc.keystorePassword,
-            pc.notaryCpbFilePath,
+            notaryCpb,
             pc.notaryCpiFilePath,
             pc.notaryCpiName,
             pc.project.version.toString()

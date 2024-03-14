@@ -18,7 +18,8 @@ const val CREATE_GROUP_POLICY_TASK_NAME = "createGroupPolicy"
 const val CREATE_KEYSTORE_TASK_NAME = "createKeystore"
 const val BUILD_CPIS_TASK_NAME = "buildCpis"
 const val DEPLOY_CPIS_TASK_NAME = "deployCpis"
-const val WORKFLOW_BUILD_TASK_NAME = ":workflows:build"
+const val WORKFLOW_BUILD_COMMAND = ":workflows:build"
+const val NOTARY_CPB_COMMAND = ":notary:cpb"
 
 fun createCordappTasks(project: Project, pluginConfiguration: PluginConfiguration) {
     project.afterEvaluate {
@@ -38,9 +39,13 @@ fun createCordappTasks(project: Project, pluginConfiguration: PluginConfiguratio
             it.group = CORDAPP_BUILD_GROUP
             it.dependsOn(
                 CREATE_KEYSTORE_TASK_NAME,
-                GET_NOTARY_SERVER_CPB_TASK_NAME,
                 getWorkflowsModuleTaskName(pluginConfiguration)
             )
+            if (ProjectContext(project, pluginConfiguration).isNotaryNonValidating) {
+                it.dependsOn(GET_NOTARY_SERVER_CPB_TASK_NAME)
+            } else {
+                it.dependsOn(NOTARY_CPB_COMMAND.replace("notary", pluginConfiguration.notaryModuleName.get()))
+            }
             it.pluginConfig.set(pluginConfiguration)
         }
 
@@ -53,7 +58,7 @@ fun createCordappTasks(project: Project, pluginConfiguration: PluginConfiguratio
 }
 
 private fun getWorkflowsModuleTaskName(pluginConfiguration: PluginConfiguration): String {
-    var workflowsModuleTaskName = WORKFLOW_BUILD_TASK_NAME.replace("workflows", pluginConfiguration.workflowsModuleName.get())
+    var workflowsModuleTaskName = WORKFLOW_BUILD_COMMAND.replace("workflows", pluginConfiguration.workflowsModuleName.get())
     if (pluginConfiguration.skipTestsDuringBuildCpis.get().toBoolean()) {
         // If we want to skip the tests, we can use the assemble task rather than the build task
         workflowsModuleTaskName = workflowsModuleTaskName.replace(":build", ":assemble")
