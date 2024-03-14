@@ -34,6 +34,7 @@ open class PluginConfiguration @Inject constructor(objects: ObjectFactory) {
         .convention(System.getenv("CORDA_BIN") ?: "${System.getProperty("user.home")}/.corda/corda5")
 
     @get:Input
+    @Deprecated("Corda CLI is not required in Gradle plugin configuration")
     val cordaCliBinDir: Property<String> = objects.property(String::class.java)
         .convention(System.getenv("CORDA_CLI") ?: "${System.getProperty("user.home")}/.corda/cli")
 
