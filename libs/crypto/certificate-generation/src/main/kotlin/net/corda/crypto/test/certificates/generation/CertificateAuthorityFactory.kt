@@ -40,26 +40,4 @@ object CertificateAuthorityFactory {
             keysFactoryDefinitions, validDuration, home
         )
     }
-
-    /**
-     * Create a TinyCert (https://www.tinycert.org/) based authority.
-     *
-     * @param apiKey - The TinyCert API key.
-     * @param passPhrase - The TinyCert pass phrase.
-     * @param email - The TinyCert login email address.
-     * @param authorityName - The authority name (within TinyCert).
-     */
-    fun createTinyCertAuthority(
-        apiKey: String,
-        passPhrase: String,
-        email: String,
-        authorityName: String,
-    ): CloseableCertificateAuthority {
-        return TinyCertCertificatesAuthority(
-            apiKey,
-            passPhrase,
-            email,
-            authorityName,
-        )
-    }
 }

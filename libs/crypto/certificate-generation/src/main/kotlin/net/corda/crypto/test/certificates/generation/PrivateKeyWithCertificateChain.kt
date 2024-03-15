@@ -5,11 +5,11 @@ import java.security.PrivateKey
 import java.security.cert.Certificate
 
 /**
- * A data class that represent a private key and certificate for the corresponding public key.
+ * A data class that represent a private key and certificate chain for the corresponding public key.
  */
-data class PrivateKeyWithCertificate(
+data class PrivateKeyWithCertificateChain(
     val privateKey: PrivateKey,
-    val certificate: Certificate,
+    val certificates: Collection<Certificate>,
 ) {
 
     /**
@@ -18,15 +18,8 @@ data class PrivateKeyWithCertificate(
     fun toKeyStore(): KeyStore {
         val keyStore = KeyStore.getInstance("PKCS12").also { keyStore ->
             keyStore.load(null)
-            keyStore.setKeyEntry("entry", privateKey, CertificateAuthority.PASSWORD.toCharArray(), arrayOf(certificate))
+            keyStore.setKeyEntry("entry", privateKey, CertificateAuthority.PASSWORD.toCharArray(), certificates.toTypedArray())
         }
         return keyStore
-    }
-
-    /**
-     * Convert the certificate to pem String.
-     */
-    fun certificatePem(): String {
-        return certificate.toPem()
     }
 }
