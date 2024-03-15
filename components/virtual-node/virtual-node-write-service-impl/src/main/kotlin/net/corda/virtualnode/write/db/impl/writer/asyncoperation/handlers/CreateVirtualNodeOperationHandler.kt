@@ -43,7 +43,7 @@ internal class CreateVirtualNodeOperationHandler(
         requestId: String,
         request: VirtualNodeCreateRequest
     ) {
-        publishStartProcessingStatus(requestId, VirtualNodeOperationType.CREATE)
+        recordStartProcessingStatus(requestId, VirtualNodeOperationType.CREATE)
 
         try {
             val holdingId = request.holdingId.toCorda()

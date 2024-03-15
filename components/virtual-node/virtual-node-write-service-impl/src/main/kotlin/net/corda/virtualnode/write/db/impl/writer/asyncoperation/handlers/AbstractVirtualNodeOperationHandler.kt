@@ -14,7 +14,7 @@ internal abstract class AbstractVirtualNodeOperationHandler(
     private val entityManagerFactory: EntityManagerFactory,
     private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl()
 ) {
-    protected fun publishStartProcessingStatus(requestId: String, virtualNodeOperationType: VirtualNodeOperationType) {
+    protected fun recordStartProcessingStatus(requestId: String, virtualNodeOperationType: VirtualNodeOperationType) {
         publishStatusMessage(
             requestId,
             getAvroStatusObject(requestId, VirtualNodeOperationStateDto.IN_PROGRESS),

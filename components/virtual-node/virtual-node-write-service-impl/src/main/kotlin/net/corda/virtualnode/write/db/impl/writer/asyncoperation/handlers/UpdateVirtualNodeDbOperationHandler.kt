@@ -38,7 +38,7 @@ internal class UpdateVirtualNodeDbOperationHandler(
             operationStateString = IN_PROGRESS.name,
             operationType = VirtualNodeOperationType.CHANGE_DB.name
         )
-        publishStartProcessingStatus(requestId, VirtualNodeOperationType.CHANGE_DB)
+        recordStartProcessingStatus(requestId, VirtualNodeOperationType.CHANGE_DB)
 
         try {
             val holdingId = request.holdingId.toCorda()
