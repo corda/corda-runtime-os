@@ -172,9 +172,6 @@ class CryptoProcessorImpl @Activate constructor(
     internal val lifecycleCoordinator =
         coordinatorFactory.createCoordinator<CryptoProcessor>(dependentComponents, ::eventHandler)
 
-    @Volatile
-    private var dependenciesUp: Boolean = false
-
     private lateinit var cryptoService: CryptoService
     private lateinit var tenantInfoService: TenantInfoService
     private var stateManager: StateManager? = null
@@ -226,9 +223,7 @@ class CryptoProcessorImpl @Activate constructor(
                 logger.trace("Registering for configuration updates.")
                 configurationReadService.registerComponentForUpdates(coordinator, configKeys)
                 if (event.status == LifecycleStatus.UP) {
-                    dependenciesUp = true
                 } else {
-                    dependenciesUp = false
                     setStatus(event.status, coordinator)
                 }
             }
