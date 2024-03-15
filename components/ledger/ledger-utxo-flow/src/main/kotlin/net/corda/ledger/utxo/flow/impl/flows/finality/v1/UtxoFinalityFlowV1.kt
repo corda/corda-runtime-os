@@ -29,7 +29,6 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
-import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionUnknown
 import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -113,7 +112,6 @@ class UtxoFinalityFlowV1(
         } catch (e: NotaryExceptionFatal) {
             throw e
         } catch (t: Throwable) {
-            log.info("Finality flow encountered an issue during notarization and needs to retry 1")
             throw FlowRetryException("Finality flow encountered an issue during notarization and needs to retry")
         }
     }
@@ -185,7 +183,7 @@ class UtxoFinalityFlowV1(
                 is Payload.Success -> signaturesPayload.value
                 is Payload.Failure<*> -> {
                     val message = "Failed to receive signatures from ${session.counterparty} for transaction " +
-                        "$transactionId with message: ${signaturesPayload.message}"
+                            "$transactionId with message: ${signaturesPayload.message}"
                     log.warn(message)
                     persistInvalidTransaction(initialTransaction)
                     throw CordaRuntimeException(message)
@@ -198,7 +196,7 @@ class UtxoFinalityFlowV1(
                 transaction = verifyAndAddSignature(transaction, signature)
                 log.debug {
                     "Added signature $signature by (key id) ${signature.by} from ${session.counterparty} for transaction " +
-                        transactionId
+                            transactionId
                 }
             }
             session to signatures
@@ -226,7 +224,7 @@ class UtxoFinalityFlowV1(
         } catch (e: TransactionMissingSignaturesException) {
             val counterpartiesToSignatoriesMessages = signaturesReceivedFromSessions.map { (session, signatures) ->
                 "${session.counterparty} provided ${signatures.size} signature(s) to satisfy the signatories (key ids) " +
-                    signatures.map { it.by }
+                        signatures.map { it.by }
             }
             val counterpartiesToSignatoriesMessage = if (counterpartiesToSignatoriesMessages.isNotEmpty()) {
                 "\n${counterpartiesToSignatoriesMessages.joinToString(separator = "\n")}"
@@ -234,8 +232,8 @@ class UtxoFinalityFlowV1(
                 "[]"
             }
             val message = "Transaction $transactionId is missing signatures for signatories (key ids) " +
-                "${e.missingSignatories.map { it.fullId() }}. The following counterparties provided signatures while finalizing " +
-                "the transaction: $counterpartiesToSignatoriesMessage"
+                    "${e.missingSignatories.map { it.fullId() }}. The following counterparties provided signatures while finalizing " +
+                    "the transaction: $counterpartiesToSignatoriesMessage"
             log.warn(message)
             persistInvalidTransaction(transaction)
             throw TransactionMissingSignaturesException(transactionId, e.missingSignatories, message)
@@ -260,7 +258,7 @@ class UtxoFinalityFlowV1(
         val notSeenSignaturesBySessions = signaturesReceivedFromSessions.map { (session, signatures) ->
             session to transaction.signatures.filter {
                 it !in initialTransaction.signatures && // These have already been distributed with the first go
-                    it !in signatures // These came from that party
+                        it !in signatures // These came from that party
             }
         }.toMap()
         log.trace { "Sending updated signatures to counterparties for transaction $transactionId" }
@@ -275,54 +273,38 @@ class UtxoFinalityFlowV1(
     ): Pair<UtxoSignedTransactionInternal, List<DigitalSignatureAndMetadata>> {
         val notary = transaction.notaryName
 
-        val notarize = @Suspendable { attemptNumber: Int ->
-            val notarizationFlow = newPluggableNotaryClientFlowInstance(transaction)
+        val notarizationFlow = newPluggableNotaryClientFlowInstance(transaction)
 
-            // `log.trace {}` and `log.debug {}` are not used in this method due to a Quasar issue.
-            if (log.isTraceEnabled) {
-                log.trace(
-                    "Notarizing transaction $transactionId using pluggable notary client flow of ${notarizationFlow::class.java.name} " +
-                        "with notary $notary, attempt number $attemptNumber"
-                )
-            }
-            flowEngine.subFlow(notarizationFlow)
+        // `log.trace {}` and `log.debug {}` are not used in this method due to a Quasar issue.
+        if (log.isTraceEnabled) {
+            log.trace(
+                "Notarizing transaction $transactionId using pluggable notary client flow of ${notarizationFlow::class.java.name} with " +
+                        "notary $notary"
+            )
         }
 
-        var notarySignatures: List<DigitalSignatureAndMetadata>
-        var attemptNumber = 0
-
-        while (true) {
-            // TODO Add backoff for the notarization retries
-            try {
-                notarySignatures = notarize(++attemptNumber)
-                break
-            } catch (e: NotaryExceptionUnknown) {
-                log.warn(
-                    "Received unknown error from notarization for transaction: ${transaction.id} on attempt: $attemptNumber. " +
-                        "Error: ${e.message} Retrying notarisation."
-                )
-                continue
-            } catch (e: CordaRuntimeException) {
-                val (message, failureReason) = if (e is NotaryExceptionFatal) {
-                    persistInvalidTransaction(transaction)
-                    "Notarization failed permanently with ${e.message}." to FinalityNotarizationFailureType.FATAL
-                } else {
-                    // Shouldn't be possible but put here as a catch all
-                    "Notarization failed with ${e.message}." to FinalityNotarizationFailureType.UNKNOWN
-                }
-                flowMessaging.sendAll(
-                    Payload.Failure<List<DigitalSignatureAndMetadata>>(message, failureReason.value),
-                    sessions.toSet()
-                )
-                log.warn(message)
-                throw e
+        val notarySignatures = try {
+            flowEngine.subFlow(notarizationFlow)
+        } catch (e: CordaRuntimeException) {
+            val (message, failureReason) = if (e is NotaryExceptionFatal) {
+                persistInvalidTransaction(transaction)
+                "Notarization failed permanently with ${e.message}." to FinalityNotarizationFailureType.FATAL
+            } else {
+                "Notarization failed with ${e.message}." to FinalityNotarizationFailureType.UNKNOWN
             }
+
+            flowMessaging.sendAll(
+                Payload.Failure<List<DigitalSignatureAndMetadata>>(message, failureReason.value),
+                sessions.toSet()
+            )
+            log.warn(message)
+            throw e
         }
 
         if (log.isTraceEnabled) {
             log.trace(
                 "Received ${notarySignatures.size} signature(s) from notary $notary after requesting notarization of transaction " +
-                    transactionId
+                        transactionId
             )
         }
 
