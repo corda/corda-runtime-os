@@ -117,6 +117,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     }
                     break
                 } catch (e: Exception) {
+                    log.warn("Retrying processing: ${e.message}. ${statuses.size}")
                     consumer.resetEventOffsetPosition()
                 }
             }
@@ -204,7 +205,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     }
 
     private fun commit(statuses: MutableMap<String, KeyStatus>) {
-        if (statuses.any { it.value !is KeyStatus.Succeeded || it.value !is KeyStatus.Committed }) {
+        if (statuses.any { it.value is KeyStatus.Failed || it.value is KeyStatus.Transient }) {
             throw CordaMessageAPIIntermittentException("Retry of poll and process required.")
         }
         val outputsToProcess = statuses.mapNotNull {
