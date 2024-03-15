@@ -15,6 +15,7 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
+import net.corda.v5.ledger.notary.plugin.api.NotarizationType
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionGeneral
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -173,10 +174,10 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     @Suppress("TooGenericExceptionCaught")
     private fun validateRequest(requestPayload: NonValidatingNotarizationPayload): NotaryTransactionDetails {
         val transactionParts = try {
-            if (flowEngine.flowContextProperties["corda.initiator.notary.check"] == "true") {
-                extractPartsForNotarizationCheck(requestPayload)
-            } else {
-                extractParts(requestPayload)
+            when (requestPayload.notarizationType) {
+                NotarizationType.NOTARIZE -> extractParts(requestPayload)
+                NotarizationType.CHECK -> extractPartsForNotarizationCheck(requestPayload)
+                else -> throw IllegalArgumentException("Received invalid notarization type ${requestPayload.notarizationType}")
             }
         } catch (e: Exception) {
             logger.warn("Could not validate request. Reason: ${e.message}")

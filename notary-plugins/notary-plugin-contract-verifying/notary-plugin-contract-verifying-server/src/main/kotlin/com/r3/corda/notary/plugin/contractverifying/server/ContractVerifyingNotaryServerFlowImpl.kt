@@ -18,6 +18,7 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
+import net.corda.v5.ledger.notary.plugin.api.NotarizationType
 import net.corda.v5.ledger.notary.plugin.core.NotaryException
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionGeneral
 import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
@@ -82,12 +83,12 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
     @Suspendable
     override fun call(session: FlowSession) {
         try {
-            val (initialTransaction, filteredTransactionsAndSignatures) = session.receive(ContractVerifyingNotarizationPayload::class.java)
+            val (initialTransaction, filteredTransactionsAndSignatures, notarizationType) = session.receive(ContractVerifyingNotarizationPayload::class.java)
             if (logger.isTraceEnabled) {
                 logger.trace("Received notarization request for transaction {}", initialTransaction.id)
             }
 
-            val initialTransactionDetails = getInitialTransactionDetail(initialTransaction)
+            val initialTransactionDetails = getInitialTransactionDetail(initialTransaction, notarizationType)
 
             validateTransactionNotaryAgainstCurrentNotary(initialTransactionDetails)
 
@@ -148,20 +149,9 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
      * A helper function that constructs an instance of [NotaryTransactionDetails] from the given transaction.
      */
     @Suspendable
-    private fun getInitialTransactionDetail(initialTransaction: UtxoSignedTransaction): NotaryTransactionDetails {
-        return if (flowEngine.flowContextProperties["corda.initiator.notary.check"] == "true") {
-            NotaryTransactionDetails(
-                initialTransaction.id,
-                initialTransaction.metadata,
-                numOutputs = 0,
-                initialTransaction.timeWindow,
-                inputs = emptyList(),
-                references = emptyList(),
-                initialTransaction.notaryName,
-                initialTransaction.notaryKey
-            )
-        } else {
-            NotaryTransactionDetails(
+    private fun getInitialTransactionDetail(initialTransaction: UtxoSignedTransaction, notarizationType: NotarizationType): NotaryTransactionDetails {
+        return when (notarizationType) {
+            NotarizationType.NOTARIZE -> NotaryTransactionDetails(
                 initialTransaction.id,
                 initialTransaction.metadata,
                 initialTransaction.outputStateAndRefs.count(),
@@ -171,6 +161,17 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
                 initialTransaction.notaryName,
                 initialTransaction.notaryKey
             )
+            NotarizationType.CHECK -> NotaryTransactionDetails(
+                initialTransaction.id,
+                initialTransaction.metadata,
+                numOutputs = 0,
+                initialTransaction.timeWindow,
+                inputs = emptyList(),
+                references = emptyList(),
+                initialTransaction.notaryName,
+                initialTransaction.notaryKey
+            )
+            else -> throw IllegalArgumentException("Received invalid notarization type $notarizationType")
         }
     }
 

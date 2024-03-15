@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.flows.recovery
 
 import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
-import net.corda.ledger.utxo.flow.impl.notary.PluggableNotarySelector
+import net.corda.ledger.utxo.flow.impl.notary.PluggableNotaryService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
@@ -33,7 +33,7 @@ class UtxoLoggingRecoveryFlow(
     lateinit var virtualNodeSelectorService: NotaryVirtualNodeSelectorService
 
     @CordaInject
-    lateinit var pluggableNotarySelector: PluggableNotarySelector
+    lateinit var pluggableNotaryService: PluggableNotaryService
 
     @CordaInject
     lateinit var persistenceService: UtxoLedgerPersistenceService
@@ -63,7 +63,7 @@ class UtxoLoggingRecoveryFlow(
             clock,
             flowEngine,
             virtualNodeSelectorService,
-            pluggableNotarySelector,
+            pluggableNotaryService,
             persistenceService,
             visibilityChecker
         ).call()

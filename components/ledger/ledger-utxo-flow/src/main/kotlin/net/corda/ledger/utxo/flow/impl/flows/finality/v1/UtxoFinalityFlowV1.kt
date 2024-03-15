@@ -4,13 +4,13 @@ import net.corda.crypto.core.fullId
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
-import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityPayload
 import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.notary.PluggableNotaryDetails
+import net.corda.ledger.utxo.flow.impl.notary.PluggableNotaryService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
@@ -21,12 +21,10 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.NotaryLookup
-import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
+import net.corda.v5.ledger.notary.plugin.api.NotarizationType
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionUnknown
 import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
@@ -36,7 +34,6 @@ import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndS
 import net.corda.v5.membership.NotaryInfo
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.security.PrivilegedExceptionAction
 
 /**
  * V1 changed slightly between 5.0 and 5.1.
@@ -63,10 +60,10 @@ class UtxoFinalityFlowV1(
     lateinit var flowMessaging: FlowMessaging
 
     @CordaInject
-    lateinit var virtualNodeSelectorService: NotaryVirtualNodeSelectorService
+    lateinit var notaryLookup: NotaryLookup
 
     @CordaInject
-    lateinit var notaryLookup: NotaryLookup
+    lateinit var pluggableNotaryService: PluggableNotaryService
 
     @CordaInject
     lateinit var utxoLedgerService: UtxoLedgerService
@@ -268,7 +265,7 @@ class UtxoFinalityFlowV1(
         val notary = transaction.notaryName
 
         val notarize = @Suspendable { attemptNumber: Int ->
-            val notarizationFlow = newPluggableNotaryClientFlowInstance(transaction)
+            val notarizationFlow = pluggableNotaryService.create(transaction, pluggableNotaryDetails, NotarizationType.NOTARIZE)
             // `log.trace {}` and `log.debug {}` are not used in this method due to a Quasar issue.
             if (log.isTraceEnabled) {
                 log.trace(
@@ -354,26 +351,6 @@ class UtxoFinalityFlowV1(
         }
 
         return notarizedTransaction to notarySignatures
-    }
-
-    // Gets a new notary client plugin flow instance. This is done in a non-suspendable
-    // function to avoid trying (and failing) to serialize the objects used internally.
-    @VisibleForTesting
-    internal fun newPluggableNotaryClientFlowInstance(
-        transaction: UtxoSignedTransactionInternal
-    ): PluggableNotaryClientFlow {
-        @Suppress("deprecation", "removal")
-        return java.security.AccessController.doPrivileged(
-            PrivilegedExceptionAction {
-                pluggableNotaryDetails.flowClass.getConstructor(
-                    UtxoSignedTransaction::class.java,
-                    MemberX500Name::class.java
-                ).newInstance(
-                    transaction,
-                    virtualNodeSelectorService.selectVirtualNode(transaction.notaryName)
-                )
-            }
-        )
     }
 
     @Suspendable

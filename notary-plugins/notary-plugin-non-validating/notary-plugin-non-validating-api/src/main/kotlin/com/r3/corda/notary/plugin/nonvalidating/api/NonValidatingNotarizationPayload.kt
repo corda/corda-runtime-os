@@ -2,6 +2,7 @@ package com.r3.corda.notary.plugin.nonvalidating.api
 
 import com.r3.corda.notary.plugin.common.BaseNotarizationPayload
 import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.ledger.notary.plugin.api.NotarizationType
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import java.security.PublicKey
 
@@ -12,9 +13,11 @@ import java.security.PublicKey
 @CordaSerializable
 class NonValidatingNotarizationPayload(
     transaction: UtxoFilteredTransaction,
-    notaryKey: PublicKey
+    notaryKey: PublicKey,
+    notarizationType: NotarizationType
 ): BaseNotarizationPayload(
     transaction,
     notaryKey,
+    notarizationType,
     listOf(UtxoFilteredTransaction::class.java)
 )

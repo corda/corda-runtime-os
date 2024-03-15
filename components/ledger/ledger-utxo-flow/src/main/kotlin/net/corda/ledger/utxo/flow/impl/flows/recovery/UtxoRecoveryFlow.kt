@@ -9,7 +9,7 @@ import net.corda.ledger.utxo.flow.impl.flows.recovery.UtxoRecoveryFlow.Recovered
 import net.corda.ledger.utxo.flow.impl.flows.recovery.UtxoRecoveryFlow.RecoveredTransactionResult.NotNotarized
 import net.corda.ledger.utxo.flow.impl.flows.recovery.UtxoRecoveryFlow.RecoveredTransactionResult.Notarized
 import net.corda.ledger.utxo.flow.impl.flows.recovery.UtxoRecoveryFlow.RecoveredTransactionResult.Skipped
-import net.corda.ledger.utxo.flow.impl.notary.PluggableNotarySelector
+import net.corda.ledger.utxo.flow.impl.notary.PluggableNotaryService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.utilities.debug
@@ -19,10 +19,9 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
-import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
+import net.corda.v5.ledger.notary.plugin.api.NotarizationType
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionGeneral
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionUnknown
@@ -30,7 +29,6 @@ import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.security.PrivilegedExceptionAction
 import java.time.Instant
 
 class UtxoRecoveryFlow(
@@ -40,7 +38,7 @@ class UtxoRecoveryFlow(
     private val clock: Clock = UTCClock(),
     private var flowEngine: FlowEngine,
     private val virtualNodeSelectorService: NotaryVirtualNodeSelectorService,
-    private val pluggableNotarySelector: PluggableNotarySelector,
+    private val pluggableNotaryService: PluggableNotaryService,
     private val persistenceService: UtxoLedgerPersistenceService,
     private val visibilityChecker: VisibilityChecker
 ) {
@@ -171,7 +169,11 @@ class UtxoRecoveryFlow(
         transaction: UtxoSignedTransactionInternal
     ): RecoveredTransactionResult {
         val notary = transaction.notaryName
-        val notarizationFlow = newPluggableNotaryClientFlowInstance(transaction)
+        val notarizationFlow = pluggableNotaryService.create(
+            transaction,
+            pluggableNotaryService.get(transaction.notaryName),
+            NotarizationType.CHECK
+        )
 
         log.info(
             "Recovering transaction ${transaction.id}. Sending it for notarisation using using pluggable notary client flow of " +
@@ -236,26 +238,6 @@ class UtxoRecoveryFlow(
         persistNotarizedTransaction(transaction)
 
         return Notarized
-    }
-
-    // Gets a new notary client plugin flow instance. This is done in a non-suspendable
-    // function to avoid trying (and failing) to serialize the objects used internally.
-    private fun newPluggableNotaryClientFlowInstance(
-        transaction: UtxoSignedTransactionInternal
-    ): PluggableNotaryClientFlow {
-        val pluggableNotaryDetails = pluggableNotarySelector.get(transaction.notaryName)
-        @Suppress("deprecation", "removal")
-        return java.security.AccessController.doPrivileged(
-            PrivilegedExceptionAction {
-                pluggableNotaryDetails.flowClass.getConstructor(
-                    UtxoSignedTransaction::class.java,
-                    MemberX500Name::class.java
-                ).newInstance(
-                    transaction,
-                    virtualNodeSelectorService.selectVirtualNode(transaction.notaryName)
-                )
-            }
-        )
     }
 
     @Suspendable

@@ -11,7 +11,7 @@ import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.ReceiveSign
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.ReceiveWireTransactionFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.SendSignedTransactionFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.SendWireTransactionFlow
-import net.corda.ledger.utxo.flow.impl.notary.PluggableNotarySelector
+import net.corda.ledger.utxo.flow.impl.notary.PluggableNotaryService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
 import net.corda.ledger.utxo.flow.impl.persistence.VaultNamedParameterizedQueryImpl
@@ -63,7 +63,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Reference(service = UtxoLedgerStateQueryService::class) private val utxoLedgerStateQueryService: UtxoLedgerStateQueryService,
     @Reference(service = CurrentSandboxGroupContext::class) private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = NotaryLookup::class) private val notaryLookup: NotaryLookup,
-    @Reference(service = PluggableNotarySelector::class) private val pluggableNotarySelector: PluggableNotarySelector,
+    @Reference(service = PluggableNotaryService::class) private val pluggableNotaryService: PluggableNotaryService,
     @Reference(service = ExternalEventExecutor::class) private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = ResultSetFactory::class) private val resultSetFactory: ResultSetFactory,
     @Reference(service = UtxoLedgerTransactionVerificationService::class)
@@ -161,7 +161,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
                     UtxoFinalityFlow(
                         signedTransaction as UtxoSignedTransactionInternal,
                         sessions,
-                        pluggableNotarySelector.get(signedTransaction.notaryName)
+                        pluggableNotaryService.get(signedTransaction.notaryName)
                     )
                 }
             )

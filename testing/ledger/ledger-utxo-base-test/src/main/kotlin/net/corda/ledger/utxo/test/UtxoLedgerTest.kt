@@ -9,7 +9,7 @@ import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerServiceImpl
 import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
-import net.corda.ledger.utxo.flow.impl.notary.PluggableNotarySelector
+import net.corda.ledger.utxo.flow.impl.notary.PluggableNotaryService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
@@ -59,7 +59,7 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         whenever(it.lookup(anotherNotaryX500Name)).thenReturn(anotherNotaryExampleInfo)
     }
 
-    val mockPluggableNotarySelector = mock<PluggableNotarySelector>()
+    val mockPluggableNotaryService = mock<PluggableNotaryService>()
 
     private val utxoFilteredTransactionFactory = UtxoFilteredTransactionFactoryImpl(
         FilteredTransactionFactoryImpl(
@@ -99,7 +99,7 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         mockUtxoLedgerStateQueryService,
         mockCurrentSandboxGroupContext,
         mockNotaryLookup,
-        mockPluggableNotarySelector,
+        mockPluggableNotaryService,
         mockExternalEventExecutor,
         mockResultSetFactory,
         mockUtxoLedgerTransactionVerificationService
