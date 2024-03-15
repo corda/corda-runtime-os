@@ -5,7 +5,7 @@
     ( dict "additionalWorkerArgs" ( list "--trace-tag=namespace=$(K8S_NAMESPACE)" "--trace-tag=pod=$(K8S_POD_NAME)" "--trace-tag=node_name=$(K8S_NODE_NAME)" "--trace-tags=container=$(K8_CONTAINER_NAME)") )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.flow "flow"
-  ( dict "servicesAccessed" ( list "crypto" "verification" "uniqueness" "persistence" "tokenSelection" ) "additionalWorkerArgs" ( list "-rtls.crt.path=/tls/tls.crt" "-rtls.key.path=/tls/tls.key" "-rtls.ca.crt.path=/tls/ca.crt"  "--trace-tag=namespace=$(K8S_NAMESPACE)" "--trace-tag=pod=$(K8S_POD_NAME)" "--trace-tag=node_name=$(K8S_NODE_NAME)" "--trace-tags=container=$(K8_CONTAINER_NAME)") )
+  ( dict "servicesAccessed" ( list "crypto" "verification" "uniqueness" "persistence" "tokenSelection" ) "additionalWorkerArgs" ( list "--trace-tag=namespace=$(K8S_NAMESPACE)" "--trace-tag=pod=$(K8S_POD_NAME)" "--trace-tag=node_name=$(K8S_NODE_NAME)" "--trace-tags=container=$(K8_CONTAINER_NAME)") )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.flowMapper "flowMapper"
     ( dict "additionalWorkerArgs" ( list "--trace-tag=namespace=$(K8S_NAMESPACE)" "--trace-tag=pod=$(K8S_POD_NAME)" "--trace-tag=node_name=$(K8S_NODE_NAME)" "--trace-tags=container=$(K8_CONTAINER_NAME)") )
@@ -17,10 +17,10 @@
     ( dict "additionalWorkerArgs" ( list "--trace-tag=namespace=$(K8S_NAMESPACE)" "--trace-tag=pod=$(K8S_POD_NAME)" "--trace-tag=node_name=$(K8S_NODE_NAME)" "--trace-tags=container=$(K8_CONTAINER_NAME)") )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.p2pGateway "p2pGateway"
-  ( dict "httpPort" 8080 "servicesAccessed" ( list "p2pLinkManager" ) "additionalWorkerArgs" ( list "-rtls.crt.path=/tls/tls.crt" "-rtls.key.path=/tls/tls.key" "-rtls.ca.crt.path=/tls/ca.crt"  "--trace-tag=namespace=$(K8S_NAMESPACE)" "--trace-tag=pod=$(K8S_POD_NAME)" "--trace-tag=node_name=$(K8S_NODE_NAME)" "--trace-tags=container=$(K8_CONTAINER_NAME)") )
+  ( dict "httpPort" 8080 "servicesAccessed" ( list "p2pLinkManager" ) "additionalWorkerArgs" ( list "--trace-tag=namespace=$(K8S_NAMESPACE)" "--trace-tag=pod=$(K8S_POD_NAME)" "--trace-tag=node_name=$(K8S_NODE_NAME)" "--trace-tags=container=$(K8_CONTAINER_NAME)") )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.p2pLinkManager "p2pLinkManager"
-    ( dict "servicesAccessed" ( list "crypto" )  "additionalWorkerArgs" ( list "-rtls.crt.path=/tls/tls.crt" "-rtls.key.path=/tls/tls.key" "-rtls.ca.crt.path=/tls/ca.crt"  "--trace-tag=namespace=$(K8S_NAMESPACE)" "--trace-tag=pod=$(K8S_POD_NAME)" "--trace-tag=node_name=$(K8S_NODE_NAME)" "--trace-tags=container=$(K8_CONTAINER_NAME)") )
+    ( dict "servicesAccessed" ( list "crypto" )  "additionalWorkerArgs" ( list "--trace-tag=namespace=$(K8S_NAMESPACE)" "--trace-tag=pod=$(K8S_POD_NAME)" "--trace-tag=node_name=$(K8S_NODE_NAME)" "--trace-tags=container=$(K8_CONTAINER_NAME)") )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.persistence "persistence"
   ( dict "additionalWorkerArgs" ( list "--trace-tag=namespace=$(K8S_NAMESPACE)" "--trace-tag=pod=$(K8S_POD_NAME)" "--trace-tag=node_name=$(K8S_NODE_NAME)" "--trace-tags=container=$(K8_CONTAINER_NAME)") )
