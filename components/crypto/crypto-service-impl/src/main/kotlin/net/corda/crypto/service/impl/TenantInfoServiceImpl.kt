@@ -12,7 +12,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 class TenantInfoServiceImpl(
-    private val hsmRepositoryFactory: () -> HSMRepository,
+    private val hsmRepository: HSMRepository,
 ) : TenantInfoService {
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -20,7 +20,7 @@ class TenantInfoServiceImpl(
 
     override fun populate(tenantId: String, category: String, cryptoService: CryptoService): HSMAssociationInfo {
         logger.info("Assigning Soft HSM tenant={}, category={}", tenantId, category)
-        return hsmRepositoryFactory().use { hsmRepository ->
+        return hsmRepository.use { hsmRepository ->
             hsmRepository.createOrLookupCategoryAssociation(tenantId, category, MasterKeyPolicy.UNIQUE)
         }.also {
             ensureWrappingKey(it, cryptoService)
@@ -29,7 +29,7 @@ class TenantInfoServiceImpl(
 
     override fun lookup(tenantId: String, category: String): HSMAssociationInfo? {
         logger.debug { "Finding assigned HSM, tenant=$tenantId, category=$category"  }
-        return hsmRepositoryFactory().use {
+        return hsmRepository.use {
             it.findTenantAssociation(tenantId, category)
         }
     }

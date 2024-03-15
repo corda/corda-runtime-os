@@ -334,15 +334,15 @@ class CryptoProcessorImpl @Activate constructor(
         )
     }
 
-    private fun createTenantInfoService() = TenantInfoServiceImpl {
-        HSMRepositoryImpl(
-            getEntityManagerFactory(
-                CryptoTenants.CRYPTO,
-                dbConnectionManager,
-                virtualNodeInfoReadService,
-                jpaEntitiesRegistry
-            )
+    private fun createTenantInfoService(): TenantInfoServiceImpl {
+        val emf = getEntityManagerFactory(
+            CryptoTenants.CRYPTO,
+            dbConnectionManager,
+            virtualNodeInfoReadService,
+            jpaEntitiesRegistry
         )
+        val hsmRegistry = HSMRepositoryImpl(emf)
+        return TenantInfoServiceImpl(hsmRegistry)
     }
 
     private fun startProcessors(
