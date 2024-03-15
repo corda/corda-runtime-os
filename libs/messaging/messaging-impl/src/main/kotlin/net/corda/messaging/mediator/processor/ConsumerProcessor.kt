@@ -206,7 +206,12 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
 
     private fun commit(statuses: MutableMap<String, KeyStatus>) {
         if (statuses.any { it.value is KeyStatus.Failed || it.value is KeyStatus.Transient }) {
-            throw CordaMessageAPIIntermittentException("Retry of poll and process required.")
+            val errors = statuses.filter {
+                it.value is KeyStatus.Failed || it.value is KeyStatus.Transient
+            }
+            throw CordaMessageAPIIntermittentException(
+                "Retry of poll and process required. ${errors.size}/${statuses.size} states have failures"
+            )
         }
         val outputsToProcess = statuses.mapNotNull {
             val status = it.value
