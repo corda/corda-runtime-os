@@ -221,8 +221,8 @@ class CryptoProcessorImpl @Activate constructor(
 
             is RegistrationStatusChangeEvent -> {
                 logger.trace("Registering for configuration updates.")
-                configurationReadService.registerComponentForUpdates(coordinator, configKeys)
                 if (event.status == LifecycleStatus.UP) {
+                    configurationReadService.registerComponentForUpdates(coordinator, configKeys)
                 } else {
                     setStatus(event.status, coordinator)
                 }
