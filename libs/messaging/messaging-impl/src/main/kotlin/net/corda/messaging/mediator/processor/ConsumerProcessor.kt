@@ -21,7 +21,6 @@ import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletionException
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
 /**
@@ -73,7 +72,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     consumer = consumerFactory.create(consumerConfig)
                     consumer.subscribe()
                 }
-                pollAndProcessEvents(consumer)
+                pollLoop(consumer)
                 attempts = 0
             } catch (exception: Exception) {
                 val cause = if (exception is CompletionException) { exception.cause ?: exception} else exception
@@ -106,16 +105,20 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
 
     private fun pollLoop(consumer: MediatorConsumer<K, E>) {
         val statuses = mutableMapOf<String, KeyStatus>()
-        while (true) {
-            try {
-                val inputs = getInputs(consumer, statuses)
-                val outputs = processInputs(inputs)
-                categorizeOutputs(outputs, statuses)
-                commit(statuses)
-                consumer.syncCommitOffsets()
-                break
-            } catch (e: Exception) {
-                consumer.resetEventOffsetPosition()
+        metrics.processorTimer.recordCallable {
+            while (true) {
+                try {
+                    val inputs = getInputs(consumer, statuses)
+                    val outputs = processInputs(inputs)
+                    categorizeOutputs(outputs, statuses)
+                    commit(statuses)
+                    metrics.commitTimer.recordCallable {
+                        consumer.syncCommitOffsets()
+                    }
+                    break
+                } catch (e: Exception) {
+                    consumer.resetEventOffsetPosition()
+                }
             }
         }
     }
@@ -232,7 +235,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      * Retries processing record keys whose states failed to save.
      * @param consumer message bus consumer
      */
-    private fun pollAndProcessEvents(consumer: MediatorConsumer<K, E>) {
+/*    private fun pollAndProcessEvents(consumer: MediatorConsumer<K, E>) {
         val messages = consumer.poll(pollTimeout)
         val startTimestamp = System.nanoTime()
         val polledRecords = messages.map { it.toRecord() }.groupBy { it.key }
@@ -293,7 +296,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             stateManager.delete(statesToDelete)
         }
         metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
-    }
+    }*/
 
     /**
      * Generates inputs for a round of event processing.

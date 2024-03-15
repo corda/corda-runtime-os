@@ -73,27 +73,31 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         val inputState = input.state
         var processorState = inputProcessorState
         val asyncOutputs = mutableMapOf<Record<K, E>, MutableList<MediatorMessage<Any>>>()
-        val processed = try {
+        val stateChangeAndOperation = try {
             input.records.forEach { consumerInputEvent ->
                 val (updatedProcessorState, newAsyncOutputs) = processConsumerInput(consumerInputEvent, processorState, key)
                 processorState = updatedProcessorState
                 asyncOutputs.addOutputs(consumerInputEvent, newAsyncOutputs)
             }
-            stateManagerHelper.createOrUpdateState(key.toString(), inputState, processorState)
+            val state = stateManagerHelper.createOrUpdateState(key.toString(), inputState, processorState)
+            stateChangeAndOperation(inputState, state)
         } catch (e: EventProcessorSyncEventsIntermittentException) {
-            // If an intermittent error occurs here, the RPC client has failed to deliver a message to another part
+            asyncOutputs.clear()
+            StateChangeAndOperation.Transient
+        } catch (e: EventProcessorSyncEventsFatalException) {
+            // If a fatal error occurs here, the RPC client has failed to deliver a message to another part
             // of the system despite the retry loop implemented there. The exception may contain any state that has been output
             // from the processing of consumer input.
             metrics.eventProcessorFailureCounter.increment()
             asyncOutputs.clear()
-            stateManagerHelper.failStateProcessing(
+            val state = stateManagerHelper.failStateProcessing(
                 key.toString(),
                 getMostRecentState(key, e.partiallyProcessedState, processorState, inputState),
                 "unable to contact Corda services while processing events"
             )
+            stateChangeAndOperation(inputState, state)
         }
 
-        val stateChangeAndOperation = stateChangeAndOperation(inputState, processed)
         return EventProcessingOutput(asyncOutputs.values.flatten(), stateChangeAndOperation)
     }
 
@@ -140,6 +144,8 @@ class EventProcessor<K : Any, S : Any, E : Any>(
                 queue.addAll(processSyncEvents(key, syncEvents))
             } catch (e: CordaMessageAPIIntermittentException) {
                 throw EventProcessorSyncEventsIntermittentException(processorStateUpdated, e)
+            } catch (e: Exception) {
+                throw EventProcessorSyncEventsFatalException(processorStateUpdated, e)
             }
         }
         return Pair(processorStateUpdated, newAsyncOutputs)
