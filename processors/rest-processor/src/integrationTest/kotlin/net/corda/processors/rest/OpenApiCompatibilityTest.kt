@@ -14,7 +14,6 @@ import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
-import net.corda.membership.rest.v1.CertificateRestResource as CertificateRestResourceV1
 import net.corda.membership.rest.v1.CertificatesRestResource
 import net.corda.membership.rest.v1.HsmRestResource
 import net.corda.membership.rest.v1.KeyRestResource
@@ -45,6 +44,7 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import net.corda.membership.rest.v1.CertificateRestResource as CertificateRestResourceV1
 
 @ExtendWith(ServiceExtension::class)
 class OpenApiCompatibilityTest {

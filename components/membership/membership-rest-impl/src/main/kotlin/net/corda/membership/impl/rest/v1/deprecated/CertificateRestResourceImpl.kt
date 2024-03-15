@@ -38,7 +38,8 @@ class CertificateRestResourceImpl @Activate constructor(
     certificatesClient,
     virtualNodeInfoReadService,
     platformInfoProvider
-), CertificateRestResource {
+),
+    CertificateRestResource {
 
     override val targetInterface = CertificateRestResource::class.java
 }

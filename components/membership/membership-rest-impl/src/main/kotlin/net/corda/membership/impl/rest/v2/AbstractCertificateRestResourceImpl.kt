@@ -67,6 +67,7 @@ import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import javax.security.auth.x500.X500Principal
 
+@Suppress("LongParameterList", "ThrowsCount")
 abstract class AbstractCertificateRestResourceImpl<T : RestResource>(
     private val cryptoOpsClient: CryptoOpsClient,
     private val keyEncodingService: KeyEncodingService,
