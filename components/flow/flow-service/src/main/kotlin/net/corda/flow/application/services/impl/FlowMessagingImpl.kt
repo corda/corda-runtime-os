@@ -26,6 +26,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.UUID
 
@@ -41,6 +42,7 @@ class FlowMessagingImpl @Activate constructor(
 ) : FlowMessaging, UsedByFlow, SingletonSerializeAsToken {
 
     private val fiber: FlowFiber get() = flowFiberService.getExecutingFiber()
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     @Suspendable
     override fun initiateFlow(x500Name: MemberX500Name): FlowSession {
@@ -121,6 +123,8 @@ class FlowMessagingImpl @Activate constructor(
             it.key as FlowSessionInternal
         }
 
+        logger.info("calling receiveAllMap for sessions ${flowSessionInternals.map { it.key.getSessionId() }}")
+
         flowSessionInternals.forEach { session ->
             verifySessionStatusNotErrorOrClose(session.key.getSessionId(), flowFiberService)
         }
@@ -140,6 +144,8 @@ class FlowMessagingImpl @Activate constructor(
             fiber.suspend(FlowIORequest.Send(versionSendingFlowSessionPayloads))
         }
 
+        logger.info("calling suspend for for sessions ${sessionsToReceiveFrom.map { it.key.getSessionId() }}")
+
         val request = FlowIORequest.Receive(
             sessions = sessionsToReceiveFrom.map {
                 val flowSessionInternal = it.key
@@ -148,6 +154,9 @@ class FlowMessagingImpl @Activate constructor(
         )
 
         val received = fiber.suspend(request)
+        logger.info("Waking up from receive with keys/values : [${received.keys}}/[${received.values}] \n" +
+                "Waking up from receive expecting to find sessions : [${sessionsToReceiveFrom.keys}]")
+
         setSessionsAsConfirmed(flowSessionInternals.keys)
         return deserializeReceivedPayload(received, sessionsToReceiveFrom) + versionReceivingFlowSessionPayloads
     }
@@ -201,6 +210,7 @@ class FlowMessagingImpl @Activate constructor(
         flowContextPropertiesBuilder: FlowContextPropertiesBuilder? = null
     ): FlowSession {
         val sessionId = UUID.randomUUID().toString()
+        logger.info("Creating sessions with $x500Name with sessionid $sessionId")
         checkFlowCanBeInitiated()
         addSessionIdToFlowStackItem(sessionId)
         return flowSessionFactory.createInitiatingFlowSession(

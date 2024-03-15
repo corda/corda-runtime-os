@@ -71,6 +71,7 @@ class FlowFiberCacheImpl @Activate constructor(
     }
 
     override fun put(key: FlowKey, suspendCount: Int, fiber: FlowFiber) {
+        logger.info("Putting fiber into cache with key $key and suspend count $suspendCount")
         cache.put(key, FiberCacheValue(fiber, suspendCount))
     }
 
@@ -80,7 +81,7 @@ class FlowFiberCacheImpl @Activate constructor(
             logger.info("Fiber not found in cache: ${key.id}")
             null
         } else if (fiberCacheEntry.suspendCount == suspendCount && sandboxGroupId == fiberCacheEntry.fiber.getSandboxGroupId()) {
-            logger.debug { "Fiber found in cache: ${key.id}" }
+            logger.info("Fiber found in cache: key: ${key.id},  suspend count: $suspendCount ")
             fiberCacheEntry.fiber
         } else {
             if (fiberCacheEntry.suspendCount != suspendCount) {

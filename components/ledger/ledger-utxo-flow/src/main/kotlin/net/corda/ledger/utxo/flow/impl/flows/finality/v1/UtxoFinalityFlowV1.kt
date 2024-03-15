@@ -113,6 +113,7 @@ class UtxoFinalityFlowV1(
         } catch (e: NotaryExceptionFatal) {
             throw e
         } catch (t: Throwable) {
+            log.info("Finality flow encountered an issue during notarization and needs to retry 1")
             throw FlowRetryException("Finality flow encountered an issue during notarization and needs to retry")
         }
     }

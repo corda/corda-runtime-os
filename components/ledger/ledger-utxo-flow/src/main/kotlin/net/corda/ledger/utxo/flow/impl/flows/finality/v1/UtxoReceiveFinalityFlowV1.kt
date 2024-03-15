@@ -113,7 +113,7 @@ class UtxoReceiveFinalityFlowV1(
         } catch (e: NotarizationProcessError) {
             throw e
         } catch (t: Throwable) {
-            log.warn("Exception in ReceiveFinalityFlow in critical region, retrying flow")
+            log.warn("Exception in ReceiveFinalityFlow in critical region, retrying flow 2")
             throw FlowRetryException("Exception in ReceiveFinalityFlow in critical region, retrying flow")
         }
     }

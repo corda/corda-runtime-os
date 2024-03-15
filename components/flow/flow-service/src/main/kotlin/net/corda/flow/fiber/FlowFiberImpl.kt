@@ -6,11 +6,11 @@ import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.exceptions.FlowRetryException
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.clearMDC
+import net.corda.utilities.debug
 import net.corda.utilities.setMDC
+import net.corda.utilities.trace
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.utilities.debug
-import net.corda.utilities.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
@@ -117,7 +117,7 @@ class FlowFiberImpl(
             log.warn("Flow failed", e.cause)
             FlowIORequest.FlowFailed(e.cause!!) // cause is not nullable in a FlowContinuationErrorException
         } catch (e: FlowRetryException) {
-            log.warn("Flow to be retried from previous checkpoint")
+            log.warn("Flow to be retried from previous checkpoint, runFlow", e)
             FlowIORequest.FlowRetry
         } catch (t: Throwable) {
             // Every other Throwable, including base CordaRuntimeException out of flow user code gets a callstack

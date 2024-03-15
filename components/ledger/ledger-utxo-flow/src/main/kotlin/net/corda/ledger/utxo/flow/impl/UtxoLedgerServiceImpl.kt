@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl
 
+import net.corda.flow.application.sessions.FlowSessionInternal
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
@@ -54,6 +55,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import org.slf4j.LoggerFactory
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
 import java.time.Instant
@@ -77,6 +79,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     private companion object {
         const val FIND_UNCONSUMED_STATES_BY_EXACT_TYPE = "CORDA_FIND_UNCONSUMED_STATES_BY_EXACT_TYPE"
         val clock = UTCClock()
+        private val logger = LoggerFactory.getLogger(this::class.java)
     }
 
     @Suspendable
@@ -154,6 +157,8 @@ class UtxoLedgerServiceImpl @Activate constructor(
         signedTransaction: UtxoSignedTransaction,
         sessions: List<FlowSession>
     ): FinalizationResult {
+        val sessionsInternal = sessions.map { it as FlowSessionInternal }
+        logger.info("Finalizing sessions ${sessionsInternal.map { it.getSessionId() }}")
         /*
         Need [doPrivileged] due to [contextLogger] being used in the flow's constructor.
         Creating the executing the SubFlow must be independent otherwise the security manager causes issues with Quasar.

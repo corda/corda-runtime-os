@@ -23,6 +23,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
 import java.util.UUID
@@ -32,6 +34,10 @@ class FlowEngineImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService
 ) : FlowEngine, UsedByFlow, SingletonSerializeAsToken {
+
+    companion object {
+        private val log: Logger = LoggerFactory.getLogger(this::class.java)
+    }
 
     override fun getFlowId(): UUID
             = flowFiberService.getExecutingFiber().flowId
@@ -70,6 +76,7 @@ class FlowEngineImpl @Activate constructor(
 
             return result
         } catch (e: FlowRetryException) {
+            log.warn("Subflow exception Flow to be retried from previous checkpoint", e)
             // Rethrow to the top level, but don't do any cleanup actions. The checkpoint will be rewound to the previous
             // state. Sessions therefore should be intact when the replay happens.
             throw e

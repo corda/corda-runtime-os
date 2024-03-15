@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.handlers.waiting.sessions
 
-import java.nio.ByteBuffer
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
@@ -15,6 +14,8 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
 
 @Component(service = [FlowWaitingForHandler::class])
 class SessionDataWaitingForHandler @Activate constructor(
@@ -23,9 +24,11 @@ class SessionDataWaitingForHandler @Activate constructor(
 ) : FlowWaitingForHandler<SessionData> {
 
     override val type = SessionData::class.java
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     override fun runOrContinue(context: FlowEventContext<*>, waitingFor: SessionData): FlowContinuation {
         val checkpoint = context.checkpoint
+        logger.info("waiting for data for sessions ${waitingFor.sessionIds}")
 
         return try {
             val receivedSessionEvents = flowSessionManager.getReceivedEvents(checkpoint, waitingFor.sessionIds)
@@ -60,6 +63,8 @@ class SessionDataWaitingForHandler @Activate constructor(
         return try {
             val payloads = convertToIncomingPayloads(receivedSessionDataEvents)
             flowSessionManager.acknowledgeReceivedEvents(receivedSessionDataEvents)
+            logger.info("Resuming with received session state and data keys ${receivedSessionDataEvents.map { it.first.sessionId to it
+                .second.sessionId}} \n Resuming with received  keys ${payloads.map { it.key}} \n and payloads ${payloads.map { it.value}}")
             FlowContinuation.Run(payloads)
         } catch (e: IllegalStateException) {
             FlowContinuation.Error(e)
