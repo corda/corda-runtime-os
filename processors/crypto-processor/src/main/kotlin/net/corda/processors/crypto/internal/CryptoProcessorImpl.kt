@@ -107,7 +107,7 @@ import java.util.concurrent.TimeUnit
 @Component(service = [CryptoProcessor::class])
 class CryptoProcessorImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
-    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = JpaEntitiesRegistry::class)
