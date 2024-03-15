@@ -5,7 +5,7 @@ import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.ledger.utxo.UtxoLedgerService
+import net.corda.v5.ledger.utxo.recovery.UtxoLedgerRecoveryService
 import java.time.Duration
 import java.time.Instant
 
@@ -15,12 +15,12 @@ class NotarizedTransactionRecoveryFlow : ClientStartableFlow {
     private lateinit var jsonMarshallingService: JsonMarshallingService
 
     @CordaInject
-    private lateinit var utxoLedgerService: UtxoLedgerService
+    private lateinit var utxoLedgerRecoveryService: UtxoLedgerRecoveryService
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
         val parameters = requestBody.getRequestBodyAs(jsonMarshallingService, Parameters::class.java)
-        utxoLedgerService.recoverMissedNotarisedTransactions(
+        utxoLedgerRecoveryService.recoverMissedNotarisedTransactions(
             Instant.ofEpochMilli(parameters.from),
             Instant.ofEpochMilli(parameters.until),
             Duration.ofSeconds(parameters.duration)

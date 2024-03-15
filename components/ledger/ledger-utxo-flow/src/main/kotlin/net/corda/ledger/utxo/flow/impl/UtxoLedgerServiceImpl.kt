@@ -5,7 +5,6 @@ import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityFlow
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoReceiveFinalityFlow
-import net.corda.ledger.utxo.flow.impl.flows.recovery.UtxoRecoveryFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.ReceiveAndUpdateTransactionBuilderFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.SendTransactionBuilderDiffFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.ReceiveSignedTransactionFlow
@@ -52,7 +51,6 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
-import java.time.Duration
 import java.time.Instant
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -318,10 +316,5 @@ class UtxoLedgerServiceImpl @Activate constructor(
                 transactionBuilder
             )
         )
-    }
-
-    @Suspendable
-    override fun recoverMissedNotarisedTransactions(from: Instant, until: Instant, duration: Duration) {
-        flowEngine.subFlow(UtxoRecoveryFlow(from, until, duration))
     }
 }

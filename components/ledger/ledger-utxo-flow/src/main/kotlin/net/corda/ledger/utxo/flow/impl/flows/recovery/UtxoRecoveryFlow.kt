@@ -13,13 +13,10 @@ import net.corda.ledger.utxo.flow.impl.notary.PluggableNotarySelector
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.utilities.debug
-import net.corda.utilities.minutes
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
-import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
@@ -33,46 +30,30 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.security.PrivilegedExceptionAction
-import java.time.Duration
 import java.time.Instant
 
 class UtxoRecoveryFlow(
     private val from: Instant,
     private val until: Instant,
-    private val duration: Duration,
-    private val clock: Clock = UTCClock()
-) : SubFlow<Int> {
+    private val endTime: Instant,
+    private val clock: Clock = UTCClock(),
+    private var flowEngine: FlowEngine,
+    private val virtualNodeSelectorService: NotaryVirtualNodeSelectorService,
+    private val pluggableNotarySelector: PluggableNotarySelector,
+    private val persistenceService: UtxoLedgerPersistenceService,
+    private val visibilityChecker: VisibilityChecker
+) {
 
     private companion object {
         const val QUERY_LIMIT = 100
-        val MAX_DURATION_WITHOUT_SUSPENDING = 2.minutes
         val log: Logger = LoggerFactory.getLogger(UtxoRecoveryFlow::class.java)
     }
 
-    @CordaInject
-    lateinit var flowEngine: FlowEngine
-
-    @CordaInject
-    lateinit var virtualNodeSelectorService: NotaryVirtualNodeSelectorService
-
-    @CordaInject
-    lateinit var pluggableNotarySelector: PluggableNotarySelector
-
-    @CordaInject
-    lateinit var persistenceService: UtxoLedgerPersistenceService
-
-    @CordaInject
-    lateinit var visibilityChecker: VisibilityChecker
-
     @Suppress("NestedBlockDepth")
     @Suspendable
-    override fun call(): Int {
-        log.info("Starting ledger recovery of missing notarized transactions. Recovering transactions that occurred between $from to $until")
-
+    fun call(): Result {
         flowEngine.flowContextProperties.asFlowContext.platformProperties["corda.notary.check"] = "true"
 
-        val startTime = System.currentTimeMillis()
-        val endTime = Instant.ofEpochMilli(startTime).plus(duration)
         var lastCallToNotaryTime = clock.instant()
         var numberOfNotarizedTransactions = 0
         var numberOfNotNotarizedTransactions = 0
@@ -130,31 +111,14 @@ class UtxoRecoveryFlow(
                 emptyList()
             }
         }
-        if (exceededDuration) {
-            log.info(
-                "Ledger recovery result: $numberOfNotarizedTransactions/$numberOfNotNotarizedTransactions/" +
-                    "$numberOfInvalidTransactions/$numberOfSkippedTransactions (Notarized/Not-notarized/Invalidated/Skipped). " +
-                    "Parameters: $from - $until, $duration. Time taken: " +
-                    "${Duration.ofMillis(System.currentTimeMillis() - startTime)}. Exceeded the duration of $duration. " +
-                    "There may be more transactions to recover."
-            )
-        } else if (exceededLastNotarizationTime) {
-            log.info(
-                "Ledger recovery result: $numberOfNotarizedTransactions/$numberOfNotNotarizedTransactions/" +
-                    "$numberOfInvalidTransactions/$numberOfSkippedTransactions (Notarized/Not-notarized/Invalidated/Skipped). " +
-                    "Parameters: $from - $until, $duration. Time taken: " +
-                    "${Duration.ofMillis(System.currentTimeMillis() - startTime)}. Exceeded the duration of " +
-                    "$MAX_DURATION_WITHOUT_SUSPENDING without notarizing a transaction. There may be more transactions to recover."
-            )
-        } else {
-            log.info(
-                "Ledger recovery result: $numberOfNotarizedTransactions/$numberOfNotNotarizedTransactions/" +
-                    "$numberOfInvalidTransactions/$numberOfSkippedTransactions (Notarized/Not-notarized/Invalidated/Skipped). " +
-                    "Parameters: $from - $until, $duration. Time taken: " +
-                    "${Duration.ofMillis(System.currentTimeMillis() - startTime)}."
-            )
-        }
-        return numberOfNotarizedTransactions
+        return Result(
+            exceededDuration,
+            exceededLastNotarizationTime,
+            numberOfNotarizedTransactions,
+            numberOfNotNotarizedTransactions,
+            numberOfInvalidTransactions,
+            numberOfSkippedTransactions
+        )
     }
 
     @Suspendable
@@ -188,6 +152,10 @@ class UtxoRecoveryFlow(
             // We wouldn't have stored a transaction with an invalid signature and kept it as unverified.
             // So we can use this API and disregard the invalid signatures possibility.
             transaction.verifyAttachedNotarySignature()
+            log.warn(
+                "Transaction $id is signed by the notary but stored as unverified, skipping from ledger recovery as this is in " +
+                    "an invalid state"
+            )
             return Skipped
         } catch (_: TransactionSignatureException) {
             // Empty as we continue recovering this transaction.
@@ -196,7 +164,6 @@ class UtxoRecoveryFlow(
         return notarize(transaction)
     }
 
-    // Not sure whether to return nulls or throw exceptions
     @Suppress("ThrowsCount")
     @Suspendable
     private fun notarize(
@@ -318,4 +285,13 @@ class UtxoRecoveryFlow(
     private enum class RecoveredTransactionResult {
         Notarized, NotNotarized, Invalid, Skipped
     }
+
+    data class Result(
+        val exceededDuration: Boolean,
+        val exceededLastNotarizationTime: Boolean,
+        val numberOfNotarizedTransactions: Int,
+        val numberOfNotNotarizedTransactions: Int,
+        val numberOfInvalidTransactions: Int,
+        val numberOfSkippedTransactions: Int
+    )
 }
