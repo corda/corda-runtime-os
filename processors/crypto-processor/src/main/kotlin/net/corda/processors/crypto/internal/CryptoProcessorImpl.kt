@@ -225,7 +225,7 @@ class CryptoProcessorImpl @Activate constructor(
             }
 
             is ConfigChangedEvent -> {
-                val tenantInfoService = startTenantInfoService()
+                val tenantInfoService = createTenantInfoService()
                 val cryptoService = startCryptoService(event.config.getConfig(CRYPTO_CONFIG), tenantInfoService)
 
                 (CryptoConsts.Categories.all - ENCRYPTION_SECRET).forEach { category ->
@@ -334,7 +334,7 @@ class CryptoProcessorImpl @Activate constructor(
         )
     }
 
-    private fun startTenantInfoService() = TenantInfoServiceImpl {
+    private fun createTenantInfoService() = TenantInfoServiceImpl {
         HSMRepositoryImpl(
             getEntityManagerFactory(
                 CryptoTenants.CRYPTO,
