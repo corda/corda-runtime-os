@@ -13,6 +13,8 @@ class LinkManagerConfiguration {
         const val REVOCATION_CHECK_KEY = "revocationCheck.mode"
         const val INBOUND_SESSIONS_CACHE_SIZE = "sessionCache.inboundSessionsCacheSize"
         const val OUTBOUND_SESSIONS_CACHE_SIZE = "sessionCache.outboundSessionsCacheSize"
+        const val DELIVERY_TRACKER_CACHE_SIZE = "deliveryTracker.maxCacheSizeMegabytes"
+        const val DELIVERY_TRACKER_CACHE_OFFSET_AGE = "deliveryTracker.maxCacheOffsetAge"
     }
 
     enum class ReplayAlgorithm {
