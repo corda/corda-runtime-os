@@ -284,7 +284,15 @@ private fun Class<*>.isNull(): Boolean {
 
 private fun Resource.toTag(apiVersion: RestApiVersion): Tag {
     log.trace { "Map resource: ${this.name} to OpenApi Tag." }
-    val newName = if (retrieveApiVersionsSet(RestApiVersion.C5_0, RestApiVersion.C5_2).contains(apiVersion)) name else name.removeSuffix(" API")
+    val newName = if (retrieveApiVersionsSet(
+            RestApiVersion.C5_0,
+            RestApiVersion.C5_2
+        ).contains(apiVersion)
+    ) {
+        name
+    } else {
+        name.removeSuffix(" API")
+    }
 
     return Tag()
         .name(newName)
@@ -296,7 +304,15 @@ private fun Resource.getPathToPathItems(
     schemaModelProvider: SchemaModelProvider,
     apiVersion: RestApiVersion
 ): Map<String, PathItem> {
-    val newName = if (retrieveApiVersionsSet(RestApiVersion.C5_0, RestApiVersion.C5_2).contains(apiVersion)) name else name.removeSuffix(" API")
+    val newName = if (retrieveApiVersionsSet(
+            RestApiVersion.C5_0,
+            RestApiVersion.C5_2
+        ).contains(apiVersion)
+    ) {
+        name
+    } else {
+        name.removeSuffix(" API")
+    }
 
     log.trace { "Map resource: \"${this.name}\" to Map of Path to PathItem." }
     return endpoints.filter { apiVersion in it.apiVersions }
