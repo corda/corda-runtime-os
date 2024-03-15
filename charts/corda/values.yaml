@@ -119,8 +119,6 @@ tracing:
   endpoint: ""
   # --  Number of request traces to sample per second, defaults to 1 sample per second. Set to 'unlimited' to record all traces, but in this case amount of tracing data produced can be quite vast.
   samplesPerSecond: "1"
-  # -- Tags to be applied to all generated trace spans
-  tags: "namespace=$(K8S_NAMESPACE):pod=$(K8S_POD_NAME):node_name=$(K8S_NODE_NAME):container=$(K8_CONTAINER_NAME)"
 
 # -- Path on Kubernetes hosts to mount on Corda workers for collecting dumps
 dumpHostPath: ""
