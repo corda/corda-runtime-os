@@ -7,7 +7,7 @@ import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.test.certificates.generation.CertificateAuthority
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
-import net.corda.crypto.test.certificates.generation.PrivateKeyWithCertificate
+import net.corda.crypto.test.certificates.generation.PrivateKeyWithCertificateChain
 import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.data.identity.HoldingIdentity
@@ -1333,7 +1333,7 @@ internal class GatewayIntegrationTest : TestBase() {
             )
         }
 
-        fun PrivateKeyWithCertificate.toKeyStoreAndPassword(): KeyStoreWithPassword {
+        private fun PrivateKeyWithCertificateChain.toKeyStoreAndPassword(): KeyStoreWithPassword {
             return KeyStoreWithPassword(
                 this.toKeyStore(),
                 CertificateAuthority.PASSWORD
@@ -1393,7 +1393,7 @@ internal class GatewayIntegrationTest : TestBase() {
 
                 // Publish the first key pair
                 val keyStore =
-                    firstCertificatesAuthority.generateKeyAndCertificate(aliceAddress.host).toKeyStoreAndPassword()
+                    firstCertificatesAuthority.generateKeyAndCertificates(aliceAddress.host).toKeyStoreAndPassword()
                 server.publishKeyStoreCertificatesAndKeys(keyStore, aliceHoldingIdentity)
 
                 // Client should now pass
@@ -1450,7 +1450,7 @@ internal class GatewayIntegrationTest : TestBase() {
                         aliceSslConfig, MAX_REQUEST_SIZE)
                 )
                 val bobKeyStore =
-                    firstCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
+                    firstCertificatesAuthority.generateKeyAndCertificates(bobAddress.host).toKeyStoreAndPassword()
                 server.publishKeyStoreCertificatesAndKeys(bobKeyStore, aliceHoldingIdentity)
 
                 // Client should pass with new host
@@ -1468,7 +1468,7 @@ internal class GatewayIntegrationTest : TestBase() {
 
                 // replace the first pair
                 val newKeyStore =
-                    secondCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
+                    secondCertificatesAuthority.generateKeyAndCertificates(bobAddress.host).toKeyStoreAndPassword()
                 server.publishKeyStoreCertificatesAndKeys(newKeyStore, aliceHoldingIdentity)
 
                 eventually {
@@ -1494,7 +1494,7 @@ internal class GatewayIntegrationTest : TestBase() {
 
                 // publish new pair with new alias
                 val newerKeyStore =
-                    thirdCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
+                    thirdCertificatesAuthority.generateKeyAndCertificates(bobAddress.host).toKeyStoreAndPassword()
                 server.publishKeyStoreCertificatesAndKeys(newerKeyStore, aliceHoldingIdentity)
 
                 eventually {
@@ -1554,7 +1554,7 @@ internal class GatewayIntegrationTest : TestBase() {
                             ca.toGatewayTrustStore(name)),
                     )
                     val keyStore =
-                        ca.generateKeyAndCertificate(aliceAddress.host).toKeyStoreAndPassword()
+                        ca.generateKeyAndCertificates(aliceAddress.host).toKeyStoreAndPassword()
                     server.publishKeyStoreCertificatesAndKeys(keyStore, holdingId, name)
                 }
 
@@ -1565,6 +1565,60 @@ internal class GatewayIntegrationTest : TestBase() {
                 }
 
             }
+        }
+        @Test
+        @Timeout(120)
+        fun `test support for intermediate CAs`() {
+            val rootCa = CertificateAuthorityFactory
+                .createMemoryAuthority(RSA_TEMPLATE.toFactoryDefinitions())
+            val caOne = rootCa.createIntermediateCertificateAuthority()
+            val caTwo = caOne.createIntermediateCertificateAuthority()
+            val aliceAddress = URI.create("https://www.alice.net:${getOpenPort()}")
+            val server = Node("server")
+            val configPublisher = ConfigPublisher()
+            keep(configPublisher)
+            configPublisher.publishConfig(
+                GatewayConfiguration(
+                    listOf(
+                        GatewayServerConfiguration(
+                            aliceAddress.host,
+                            aliceAddress.port,
+                            "/",
+                        )
+                    ),
+                    aliceSslConfig,
+                    MAX_REQUEST_SIZE
+                ),
+            )
+            server.publish(
+                Record(GATEWAY_TLS_TRUSTSTORES, "$aliceX500name-$GROUP_ID",
+                    rootCa.toGatewayTrustStore(aliceX500name)),
+            )
+            val certificateChain =
+                caTwo.generateKeyAndCertificates(aliceAddress.host)
+            val keyStore = KeyStoreWithPassword(
+                certificateChain.toKeyStore(),
+                CertificateAuthority.PASSWORD
+            )
+            server.publishKeyStoreCertificatesAndKeys(keyStore, aliceHoldingIdentity)
+            Gateway(
+                configPublisher.readerService,
+                server.subscriptionFactory,
+                server.publisherFactory,
+                server.lifecycleCoordinatorFactory,
+                server.cryptoOpsClient,
+                avroSchemaRegistry,
+                platformInfoProvider,
+                bootConfig,
+                messagingConfig(),
+            ).usingLifecycle { gateway ->
+                gateway.startAndWaitForStarted()
+
+                eventually {
+                    testClientWith(aliceAddress, rootCa.caCertificate.toPem())
+                }
+            }
+
         }
 
     }
