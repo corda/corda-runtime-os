@@ -1,4 +1,4 @@
-package net.corda.membership.rest.v1
+package net.corda.membership.rest.v2
 
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.RestResource
@@ -16,15 +16,13 @@ import net.corda.rest.annotations.RestPathParameter
  * authority (CA).
  */
 @HttpRestResource(
-    name = "Certificate API",
+    name = "Certificate",
     description = "The Certificates API consists of endpoints used to work with certificates and related operations. " +
         "The API allows you to import a certificate chain, and generate a certificate signing request (CSR) to be" +
         " submitted to a certificate authority (CA).",
     path = "certificate",
-    minVersion = RestApiVersion.C5_1,
-    maxVersion = RestApiVersion.C5_2
+    minVersion = RestApiVersion.C5_3
 )
-@Deprecated("In favour of interface in `v2` package")
 interface CertificateRestResource : RestResource {
     companion object {
         const val SIGNATURE_SPEC = "signatureSpec"

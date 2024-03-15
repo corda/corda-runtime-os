@@ -1,4 +1,4 @@
-package net.corda.membership.impl.rest.v1
+package net.corda.membership.impl.rest.v2
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
@@ -16,16 +16,17 @@ import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
-import net.corda.membership.rest.v1.CertificateRestResource
-import net.corda.membership.rest.v1.CertificateRestResource.Companion.SIGNATURE_SPEC
+import net.corda.membership.rest.v2.CertificateRestResource.Companion.SIGNATURE_SPEC
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.PluggableRestResource
+import net.corda.rest.RestResource
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
@@ -56,9 +57,6 @@ import org.bouncycastle.jce.X509KeyUsage.digitalSignature
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.bouncycastle.operator.ContentSigner
 import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayOutputStream
 import java.io.StringWriter
@@ -69,22 +67,14 @@ import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import javax.security.auth.x500.X500Principal
 
-@Suppress("LongParameterList")
-@Component(service = [PluggableRestResource::class])
-class CertificateRestResourceImpl @Activate constructor(
-    @Reference(service = CryptoOpsClient::class)
+abstract class AbstractCertificateRestResourceImpl<T : RestResource>(
     private val cryptoOpsClient: CryptoOpsClient,
-    @Reference(service = KeyEncodingService::class)
     private val keyEncodingService: KeyEncodingService,
-    @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = CertificatesClient::class)
     private val certificatesClient: CertificatesClient,
-    @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-    @Reference(service = PlatformInfoProvider::class)
     private val platformInfoProvider: PlatformInfoProvider,
-) : CertificateRestResource, PluggableRestResource<CertificateRestResource>, Lifecycle {
+) : PluggableRestResource<T>, Lifecycle {
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -112,7 +102,7 @@ class CertificateRestResourceImpl @Activate constructor(
         }
     }
 
-    override fun generateCsr(
+    fun generateCsr(
         tenantId: String,
         keyId: String,
         x500Name: String,
@@ -188,7 +178,7 @@ class CertificateRestResourceImpl @Activate constructor(
         }
     }
 
-    override fun importCertificateChain(
+    fun importCertificateChain(
         usage: String,
         holdingIdentityId: String?,
         alias: String,
@@ -285,7 +275,7 @@ class CertificateRestResourceImpl @Activate constructor(
         }
     }
 
-    override fun getCertificateAliases(usage: String, holdingIdentityId: String?): List<String> {
+    fun getCertificateAliases(usage: String, holdingIdentityId: String?): List<String> {
         val holdingIdentityShortHash = if (holdingIdentityId != null) {
             ShortHash.ofOrThrow(holdingIdentityId)
         } else {
@@ -305,7 +295,7 @@ class CertificateRestResourceImpl @Activate constructor(
         }.toList()
     }
 
-    override fun getCertificateChain(usage: String, holdingIdentityId: String?, alias: String): String {
+    fun getCertificateChain(usage: String, holdingIdentityId: String?, alias: String): String {
         if (alias.isBlank()) {
             throw InvalidInputDataException(
                 details = mapOf("alias" to "Empty alias")
@@ -331,13 +321,8 @@ class CertificateRestResourceImpl @Activate constructor(
         } ?: throw ResourceNotFoundException(alias, "alias")
     }
 
-    override val targetInterface = CertificateRestResource::class.java
-
     override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
-    private val coordinatorName = LifecycleCoordinatorName.forComponent<CertificateRestResource>(
-        protocolVersion.toString()
-    )
     private fun updateStatus(status: LifecycleStatus, reason: String) {
         coordinator.updateStatus(status, reason)
     }
@@ -358,7 +343,16 @@ class CertificateRestResourceImpl @Activate constructor(
             LifecycleCoordinatorName.forComponent<CertificatesClient>(),
         )
     )
-    private val coordinator = lifecycleCoordinatorFactory.createCoordinator(coordinatorName, lifecycleHandler)
+
+    private val coordinatorName get() = LifecycleCoordinatorName(targetInterface.name, protocolVersion.toString())
+
+    @Volatile
+    private var _coordinator: LifecycleCoordinator? = null
+
+    private val coordinator: LifecycleCoordinator
+        get() = _coordinator ?: lifecycleCoordinatorFactory.createCoordinator(coordinatorName, lifecycleHandler).also {
+            _coordinator = it
+        }
 
     override val isRunning
         get() = coordinator.status == LifecycleStatus.UP

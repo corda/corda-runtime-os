@@ -14,7 +14,7 @@ import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
-import net.corda.membership.rest.v1.CertificateRestResource
+import net.corda.membership.rest.v1.CertificateRestResource as CertificateRestResourceV1
 import net.corda.membership.rest.v1.CertificatesRestResource
 import net.corda.membership.rest.v1.HsmRestResource
 import net.corda.membership.rest.v1.KeyRestResource
@@ -24,6 +24,7 @@ import net.corda.membership.rest.v1.MGMRestResource
 import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.MemberRegistrationRestResource
 import net.corda.membership.rest.v1.NetworkRestResource
+import net.corda.membership.rest.v2.CertificateRestResource
 import net.corda.processors.rest.diff.diff
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.RestResource
@@ -53,6 +54,7 @@ class OpenApiCompatibilityTest {
 
         private val importantRestResources = setOf(
             CertificatesRestResource::class.java, // P2P - Deprecated but supporting RestApiVersion.C5.0
+            CertificateRestResourceV1::class.java, // P2P
             CertificateRestResource::class.java, // P2P
             HsmRestResource::class.java, // P2P
             KeysRestResource::class.java, // P2P  - Deprecated but supporting RestApiVersion.C5.0
@@ -75,7 +77,7 @@ class OpenApiCompatibilityTest {
         )
 
         // `cardinality` is not equal to `importantRestResources.size` as there might be some test RestResource as well
-        @InjectService(service = PluggableRestResource::class, cardinality = 18, timeout = 10_000)
+        @InjectService(service = PluggableRestResource::class, cardinality = 22, timeout = 10_000)
         lateinit var dynamicRestResources: List<RestResource>
 
         @InjectService(service = RestServerFactory::class, timeout = 10_000)

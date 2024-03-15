@@ -15,7 +15,7 @@
     "name" : "CPI API",
     "description" : "The CPI API consists of a number of endpoints used to manage Corda Package Installer (CPI) files in the Corda cluster."
   }, {
-    "name" : "Certificate API",
+    "name" : "Certificate",
     "description" : "The Certificates API consists of endpoints used to work with certificates and related operations. The API allows you to import a certificate chain, and generate a certificate signing request (CSR) to be submitted to a certificate authority (CA)."
   }, {
     "name" : "Configuration API",
@@ -72,7 +72,7 @@
   "paths" : {
     "/certificate/cluster/{usage}" : {
       "get" : {
-        "tags" : [ "Certificate API" ],
+        "tags" : [ "Certificate" ],
         "description" : "This method gets the certificate chain aliases for a cluster.",
         "operationId" : "get_certificate_cluster__usage_",
         "parameters" : [ {
@@ -113,7 +113,7 @@
         }
       },
       "put" : {
-        "tags" : [ "Certificate API" ],
+        "tags" : [ "Certificate" ],
         "description" : "This method imports a certificate chain for a cluster.",
         "operationId" : "put_certificate_cluster__usage_",
         "parameters" : [ {
@@ -173,7 +173,7 @@
     },
     "/certificate/cluster/{usage}/{alias}" : {
       "get" : {
-        "tags" : [ "Certificate API" ],
+        "tags" : [ "Certificate" ],
         "description" : "This method gets the certificate chain in PEM format for a cluster.",
         "operationId" : "get_certificate_cluster__usage___alias_",
         "parameters" : [ {
@@ -223,7 +223,7 @@
     },
     "/certificate/getprotocolversion" : {
       "get" : {
-        "tags" : [ "Certificate API" ],
+        "tags" : [ "Certificate" ],
         "description" : "",
         "operationId" : "get_certificate_getprotocolversion",
         "parameters" : [ ],
@@ -252,7 +252,7 @@
     },
     "/certificate/vnode/{holdingidentityid}/{usage}" : {
       "get" : {
-        "tags" : [ "Certificate API" ],
+        "tags" : [ "Certificate" ],
         "description" : "This method gets the certificate chain aliases for a virtual node.",
         "operationId" : "get_certificate_vnode__holdingidentityid___usage_",
         "parameters" : [ {
@@ -304,7 +304,7 @@
         }
       },
       "put" : {
-        "tags" : [ "Certificate API" ],
+        "tags" : [ "Certificate" ],
         "description" : "This method imports a certificate chain for a virtual node.",
         "operationId" : "put_certificate_vnode__holdingidentityid___usage_",
         "parameters" : [ {
@@ -375,7 +375,7 @@
     },
     "/certificate/vnode/{holdingidentityid}/{usage}/{alias}" : {
       "get" : {
-        "tags" : [ "Certificate API" ],
+        "tags" : [ "Certificate" ],
         "description" : "This method gets the certificate chain in PEM format for a virtual node.",
         "operationId" : "get_certificate_vnode__holdingidentityid___usage___alias_",
         "parameters" : [ {
@@ -436,7 +436,7 @@
     },
     "/certificate/{tenantid}/{keyid}" : {
       "post" : {
-        "tags" : [ "Certificate API" ],
+        "tags" : [ "Certificate" ],
         "description" : "This method enables you to generate a certificate signing request (CSR) for a tenant.",
         "operationId" : "post_certificate__tenantid___keyid_",
         "parameters" : [ {
