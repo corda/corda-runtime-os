@@ -1,4 +1,4 @@
-package net.corda.membership.impl.rest.v1
+package net.corda.membership.impl.rest.v2
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecs
@@ -16,7 +16,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
-import net.corda.membership.rest.v1.CertificateRestResource.Companion.SIGNATURE_SPEC
+import net.corda.membership.rest.v2.CertificateRestResource.Companion.SIGNATURE_SPEC
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.exception.BadRequestException
@@ -116,6 +116,7 @@ class CertificateRestResourceImplTest {
 
         @Test
         fun `UP event will set the status to up`() {
+            certificatesOps.isRunning // coordinators are now lazily created
             handler.firstValue.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
 
             verify(coordinator).updateStatus(LifecycleStatus.UP, "Dependencies are UP")
@@ -123,6 +124,7 @@ class CertificateRestResourceImplTest {
 
         @Test
         fun `DOWN event will set the status to down`() {
+            certificatesOps.isRunning // coordinators are now lazily created
             handler.firstValue.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN), mock())
 
             verify(coordinator).updateStatus(LifecycleStatus.DOWN, "Dependencies are DOWN")

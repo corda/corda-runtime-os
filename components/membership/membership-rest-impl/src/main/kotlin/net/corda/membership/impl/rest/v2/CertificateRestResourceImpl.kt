@@ -12,9 +12,9 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-@Suppress("LongParameterList", "unused")
+@Suppress("LongParameterList")
 @Component(service = [PluggableRestResource::class])
-open class CertificateRestResourceImpl @Activate constructor(
+class CertificateRestResourceImpl @Activate constructor(
     @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient,
     @Reference(service = KeyEncodingService::class)
