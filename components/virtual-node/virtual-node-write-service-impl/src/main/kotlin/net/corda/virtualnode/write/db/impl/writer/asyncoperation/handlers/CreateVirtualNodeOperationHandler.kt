@@ -157,7 +157,7 @@ internal class CreateVirtualNodeOperationHandler(
             throw e
         }
 
-        publishProcessingCompletedStatus(requestId, VirtualNodeOperationType.CREATE)
+        recordProcessingCompletedStatus(requestId, VirtualNodeOperationType.CREATE)
     }
 
     private fun checkSchemasArePresentOnExternalDbs(

@@ -117,6 +117,6 @@ internal class UpdateVirtualNodeDbOperationHandler(
             operationStateString = COMPLETED.name,
             operationType = VirtualNodeOperationType.CHANGE_DB.name
         )
-        publishProcessingCompletedStatus(requestId, VirtualNodeOperationType.CHANGE_DB)
+        recordProcessingCompletedStatus(requestId, VirtualNodeOperationType.CHANGE_DB)
     }
 }

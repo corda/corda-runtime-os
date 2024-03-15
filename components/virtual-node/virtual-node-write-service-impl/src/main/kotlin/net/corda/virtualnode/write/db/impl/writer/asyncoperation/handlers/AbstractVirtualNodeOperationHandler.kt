@@ -22,7 +22,7 @@ internal abstract class AbstractVirtualNodeOperationHandler(
         )
     }
 
-    protected fun publishProcessingCompletedStatus(
+    protected fun recordProcessingCompletedStatus(
         requestId: String,
         virtualNodeOperationType: VirtualNodeOperationType
     ) {
