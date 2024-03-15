@@ -15,7 +15,7 @@ internal abstract class AbstractVirtualNodeOperationHandler(
     private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl()
 ) {
     protected fun recordStartProcessingStatus(requestId: String, virtualNodeOperationType: VirtualNodeOperationType) {
-        publishStatusMessage(
+        recordStatusMessage(
             requestId,
             getAvroStatusObject(requestId, VirtualNodeOperationStateDto.IN_PROGRESS),
             virtualNodeOperationType.name
@@ -26,7 +26,7 @@ internal abstract class AbstractVirtualNodeOperationHandler(
         requestId: String,
         virtualNodeOperationType: VirtualNodeOperationType
     ) {
-        publishStatusMessage(
+        recordStatusMessage(
             requestId,
             getAvroStatusObject(requestId, VirtualNodeOperationStateDto.COMPLETED),
             virtualNodeOperationType.name
@@ -40,10 +40,10 @@ internal abstract class AbstractVirtualNodeOperationHandler(
     ) {
         val message = getAvroStatusObject(requestId, VirtualNodeOperationStateDto.UNEXPECTED_FAILURE)
         message.errors = reason
-        publishStatusMessage(requestId, message, virtualNodeOperationType.name)
+        recordStatusMessage(requestId, message, virtualNodeOperationType.name)
     }
 
-    private fun publishStatusMessage(requestId: String, message: VirtualNodeOperationStatus, operationType: String) {
+    private fun recordStatusMessage(requestId: String, message: VirtualNodeOperationStatus, operationType: String) {
         recordVirtualNodeOperation(
             requestId = requestId,
             requestTimestamp = message.requestTimestamp,
