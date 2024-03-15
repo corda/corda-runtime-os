@@ -11,10 +11,11 @@ import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.uniqueness.datamodel.common.toAvro
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateConflictImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateUnknownImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorNotPreviouslySeenTransactionImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateConflictImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorTimeWindowBeforeLowerBoundImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorTimeWindowOutOfBoundsImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorUnhandledExceptionImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
@@ -25,6 +26,7 @@ import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.application.uniqueness.model.UniquenessCheckError
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowOutOfBounds
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
@@ -418,32 +420,25 @@ class BatchedUniquenessCheckerImpl(
                 } else {
                     val timeWindowEvaluationTime = clock.instant()
                     // Time window check
-                    if (!isTimeWindowValid(timeWindowEvaluationTime, request.timeWindowLowerBound, request.timeWindowUpperBound)) {
-                        InternalUniquenessCheckResultWithContext(
-                            UniquenessCheckResultFailureImpl(
-                                clock.instant(),
-                                UniquenessCheckErrorTimeWindowOutOfBoundsImpl(
-                                    timeWindowEvaluationTime,
-                                    request.timeWindowLowerBound,
-                                    request.timeWindowUpperBound
-                                )
-                            ),
-                            isDuplicate = false
+                    val error = if (!isTimeWindowLowerBoundValid(timeWindowEvaluationTime, request.timeWindowLowerBound)) {
+                        UniquenessCheckErrorTimeWindowBeforeLowerBoundImpl(
+                            timeWindowEvaluationTime,
+                            // The if statement returning true means that [request.timeWindowLowerBound] must be not null
+                            requireNotNull(request.timeWindowLowerBound)
+                        )
+                    } else if (!isTimeWindowValid(timeWindowEvaluationTime, request.timeWindowLowerBound, request.timeWindowUpperBound)) {
+                        UniquenessCheckErrorTimeWindowOutOfBoundsImpl(
+                            timeWindowEvaluationTime,
+                            request.timeWindowLowerBound,
+                            request.timeWindowUpperBound
                         )
                     } else {
-                        // TODO Return a clearly defined error type
-                        // This has not been done yet as it would affect that API.
-                        InternalUniquenessCheckResultWithContext(
-                            UniquenessCheckResultFailureImpl(
-                                clock.instant(),
-                                UniquenessCheckErrorUnhandledExceptionImpl(
-                                    "UniquenessCheckErrorNotPreviouslyNotarizedException",
-                                    "This transaction has not been notarized before"
-                                )
-                            ),
-                            isDuplicate = false
-                        )
+                        UniquenessCheckErrorNotPreviouslySeenTransactionImpl
                     }
+                    InternalUniquenessCheckResultWithContext(
+                        UniquenessCheckResultFailureImpl(clock.instant(), error),
+                        isDuplicate = false
+                    )
                 }
                 resultsToRespondWith.add(request to response)
             }
@@ -453,9 +448,16 @@ class BatchedUniquenessCheckerImpl(
             val numSuccessful = resultsToRespondWith.filter {
                 it.second.result is UniquenessCheckResultSuccess }.size
 
-            log.debug { "Finished processing batch for $holdingIdentity. " +
-                "$numSuccessful existing notarizations, " +
-                "${resultsToRespondWith.size - numSuccessful} non-existing notarizations" }
+            val numRejected = resultsToRespondWith.filter {
+                (it.second.result as? UniquenessCheckResultFailure)?.error is UniquenessCheckErrorTimeWindowOutOfBounds
+            }.size
+
+            val numNonExisting = resultsToRespondWith.size - (numSuccessful + numRejected)
+
+            log.debug(
+                "Finished processing batch for $holdingIdentity. " +
+                "$numSuccessful existing notarizations, $numNonExisting non-existing notarizations, $numRejected rejected"
+            )
         }
 
         return resultsToRespondWith
@@ -539,5 +541,12 @@ class BatchedUniquenessCheckerImpl(
             (timeWindowLowerBound == null || !timeWindowLowerBound.isAfter(currentTime)) &&
                 timeWindowUpperBound.isAfter(currentTime)
             )
+    }
+
+    private fun isTimeWindowLowerBoundValid(
+        currentTime: Instant,
+        timeWindowLowerBound: Instant?
+    ): Boolean {
+        return timeWindowLowerBound == null || !timeWindowLowerBound.isAfter(currentTime)
     }
 }

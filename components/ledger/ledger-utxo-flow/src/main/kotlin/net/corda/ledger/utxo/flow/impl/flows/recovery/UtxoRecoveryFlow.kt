@@ -24,6 +24,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
+import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionGeneral
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionUnknown
 import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -180,16 +181,24 @@ class UtxoRecoveryFlow(
         val notarySignatures = try {
             flowEngine.subFlow(notarizationFlow)
         } catch (e: CordaRuntimeException) {
-            if (e is NotaryExceptionUnknown && e.message?.contains("UniquenessCheckErrorNotPreviouslyNotarizedException") == true) {
-                log.info("Transaction ${transaction.id} has not been previously notarized by notary $notary, skipping from ledger recovery")
-                return NotNotarized
-            } else if (e is NotaryExceptionFatal) {
-                persistInvalidTransaction(transaction)
-                log.warn("Notarization of transaction ${transaction.id} failed permanently with ${e.message}.")
-                return Invalid
-            } else {
-                log.warn("Notarization of transaction ${transaction.id} failed with ${e.message}.")
-                return NotNotarized
+            when (e) {
+                is NotaryExceptionGeneral -> {
+                    log.warn("Notarization check of transaction ${transaction.id} failed with ${e.message}")
+                    return NotNotarized
+                }
+                is NotaryExceptionUnknown -> {
+                    log.info("Transaction ${transaction.id} has not been previously notarized by notary $notary, skipping from ledger recovery")
+                    return NotNotarized
+                }
+                is NotaryExceptionFatal -> {
+                    log.warn("Notarization check of transaction ${transaction.id} failed permanently with ${e.message}")
+                    persistInvalidTransaction(transaction)
+                    return Invalid
+                }
+                else -> {
+                    log.warn("Notarization check of transaction ${transaction.id} failed with ${e.message}")
+                    return NotNotarized
+                }
             }
         }
 

@@ -1,7 +1,6 @@
 package com.r3.corda.notary.plugin.contractverifying.server
 
 import com.r3.corda.notary.plugin.common.NotarizationResponse
-import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
 import com.r3.corda.notary.plugin.common.NotaryExceptionInvalidSignature
 import com.r3.corda.notary.plugin.common.NotaryExceptionTransactionVerificationFailure
 import com.r3.corda.notary.plugin.common.NotaryTransactionDetails
@@ -20,6 +19,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.notary.plugin.core.NotaryException
+import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionGeneral
 import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.UtxoLedgerService
@@ -127,7 +127,14 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
         } catch (e: Exception) {
             logger.warn("Error while processing request from client. Cause: $e ${e.stackTraceToString()}")
             val exception =
-                if (e is NotaryException) e else NotaryExceptionGeneral("Error during notarization. Cause: ${e.message}")
+                if (e is NotaryException) {
+                    e
+                } else {
+                    NotaryExceptionGeneral(
+                        "General error: Error during notarization. Cause: ${e.message}",
+                        null
+                    )
+                }
             session.send(
                 NotarizationResponse(
                     emptyList(),

@@ -57,13 +57,9 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
     private var subscriptionRegistrationHandle: RegistrationHandle? = null
 
     override fun onConfigChange(config: Map<String, SmartConfig>) {
-        // Top level component is using ConfigurationReadService#registerComponentForUpdates, so all the below keys
-        // should be present.
-        val requiredKeys = listOf(ConfigKeys.UTXO_LEDGER_CONFIG)
+        val requiredKeys = listOf(ConfigKeys.UTXO_LEDGER_CONFIG, ConfigKeys.MESSAGING_CONFIG)
         if (requiredKeys.all { config.containsKey(it) }) {
             val messagingConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-//            val ledgerConfig = config.getConfig(ConfigKeys.UTXO_LEDGER_CONFIG)
-
             // close the lifecycle registration first to prevent down being signaled
             subscriptionRegistrationHandle?.close()
 
@@ -77,9 +73,8 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
                         Schemas.ScheduledTask.SCHEDULE_TASK_TOPIC_MISSED_NOTARIZED_TRANSACTION_RECOVERY_PROCESSOR
                     ),
                     ActualProcessor(cpiInfoReadService, virtualNodeInfoReadService),
-//                    messagingConfig(virtualNodeInfoReadService),
                     messagingConfig,
-                    null
+                    partitionAssignmentListener = null
                 )
             }.start()
         }
@@ -124,10 +119,7 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
         override val keyClass = String::class.java
         override val valueClass = ScheduledTaskTrigger::class.java
 
-        private val objectMapper = ObjectMapper().apply {
-//            registerModule(JavaTimeModule())
-//            configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-        }
+        private val objectMapper = ObjectMapper()
 
         override fun onNext(events: List<Record<String, ScheduledTaskTrigger>>): List<Record<*, *>> {
             logger.info("Processing ${events.size} scheduled event for notarized transaction recovery")
@@ -136,7 +128,7 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
 
             virtualNodeInfoReadService
                 .getAll()
-                .filter(::hasUtxoWithNotaryCpk)
+                .filter(::hasUtxoAndNotANotary)
                 .map(::createRecoveryFlowStartEvent)
                 .forEach { (shortHash, start, status) ->
                     records += Record(
@@ -152,13 +144,11 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
             return records
         }
 
-        private fun hasUtxoWithNotaryCpk(virtualNode: VirtualNodeInfo): Boolean {
+        private fun hasUtxoAndNotANotary(virtualNode: VirtualNodeInfo): Boolean {
             return cpiInfoReadService.get(virtualNode.cpiIdentifier)?.let { cpiMetadata ->
                 val hasContracts = cpiMetadata.cpksMetadata.any { it.isContractCpk() }
                 val isNotary = cpiMetadata.cpiId.name.contains("notary")
-                logger.info("Filtering - ${virtualNode.holdingIdentity.shortHash} - hasContracts = $hasContracts | isNotary = $isNotary")
-//                val hasNotaryClientFlow = cpiMetadata.cpksMetadata.any { it.cordappManifest.notaryPluginFlows.isNotEmpty() }
-                hasContracts && !isNotary // && hasNotaryClientFlow
+                hasContracts && !isNotary
             } ?: false
         }
 
