@@ -20,4 +20,8 @@ sealed interface StateChangeAndOperation {
     object Noop : StateChangeAndOperation {
         override val outputState: State? = null
     }
+
+    object Transient : StateChangeAndOperation {
+        override val outputState: State? = null
+    }
 }

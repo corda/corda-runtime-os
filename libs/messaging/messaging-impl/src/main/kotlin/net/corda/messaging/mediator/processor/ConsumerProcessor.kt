@@ -54,6 +54,10 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
 
     private val stateManager = config.stateManager
 
+    companion object {
+        private const val MAX_FAILURE_ATTEMPTS = 5
+    }
+
     /**
      * Creates a message bus consumer and begins processing records from the subscribed topic.
      * @param consumerFactory used to create a message bus consumer
@@ -91,6 +95,134 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             }
         }
         consumer?.close()
+    }
+
+    private sealed interface KeyStatus {
+        data class Succeeded(val eventProcessingOutput: EventProcessingOutput) : KeyStatus
+        data class Failed(val failureCount: Int) : KeyStatus
+        object Transient : KeyStatus
+        object Committed : KeyStatus
+    }
+
+    private fun pollLoop(consumer: MediatorConsumer<K, E>) {
+        val statuses = mutableMapOf<String, KeyStatus>()
+        while (true) {
+            try {
+                val inputs = getInputs(consumer, statuses)
+                val outputs = processInputs(inputs)
+                categorizeOutputs(outputs, statuses)
+                commit(statuses)
+                consumer.syncCommitOffsets()
+                break
+            } catch (e: Exception) {
+                consumer.resetEventOffsetPosition()
+            }
+        }
+    }
+
+    private fun getInputs(
+        consumer: MediatorConsumer<K, E>,
+        statuses: Map<String, KeyStatus>
+    ): List<EventProcessingInput<K, E>> {
+        val messages = consumer.poll(pollTimeout)
+        val records = messages.filter {
+            val status = statuses[it.key.toString()]
+            status !is KeyStatus.Succeeded && status !is KeyStatus.Committed
+        }.map {
+            it.toRecord()
+        }.groupBy { it.key }
+        val states = stateManager.get(records.keys.map { it.toString() })
+        return generateInputs(states.values, records)
+    }
+
+    private fun processInputs(inputs: List<EventProcessingInput<K, E>>): Map<String, EventProcessingOutput> {
+        val groups = groupAllocator.allocateGroups(inputs, config)
+        return groups.filter {
+            it.isNotEmpty()
+        }.map { group ->
+            val future = taskManager.executeShortRunningTask {
+                eventProcessor.processEvents(group)
+            }
+            Pair(future, group)
+        }.map { (future, group) ->
+            try {
+                future.getOrThrow(config.processorTimeout)
+            } catch (e: TimeoutException) {
+                metrics.consumerProcessorFailureCounter.increment(group.keys.size.toDouble())
+                group.mapValues { (key, input) ->
+                    val oldState = input.state
+                    val state = stateManagerHelper.failStateProcessing(
+                        key.toString(),
+                        oldState,
+                        "timeout occurred while processing events"
+                    )
+                    val stateChange = if (oldState != null) {
+                        StateChangeAndOperation.Update(state)
+                    } else {
+                        StateChangeAndOperation.Create(state)
+                    }
+                    EventProcessingOutput(listOf(), stateChange)
+                }
+            }
+        }.fold(mapOf<K, EventProcessingOutput>()) { acc, cur ->
+            acc + cur
+        }.mapKeys {
+            it.toString()
+        }
+    }
+
+    private fun categorizeOutputs(
+        outputs: Map<String, EventProcessingOutput>,
+        statuses: MutableMap<String, KeyStatus>
+    ) {
+        outputs.forEach {
+            val status = when {
+                // Processing failed
+                it.value.stateChangeAndOperation.outputState?.metadata?.containsKey(PROCESSING_FAILURE) == true -> {
+                    val failureCount = (statuses[it.key] as? KeyStatus.Failed)?.failureCount ?: 0
+                    if (failureCount < MAX_FAILURE_ATTEMPTS) {
+                        KeyStatus.Failed(failureCount + 1)
+                    } else {
+                        // Marking as succeeded here triggers the commit logic to commit this failure back to the bus
+                        KeyStatus.Succeeded(it.value)
+                    }
+                }
+                // Transient error occurred
+                it.value.stateChangeAndOperation is StateChangeAndOperation.Transient -> {
+                    KeyStatus.Transient
+                }
+                // Everything succeeded
+                else -> {
+                    KeyStatus.Succeeded(it.value)
+                }
+            }
+            statuses[it.key] = status
+        }
+    }
+
+    private fun commit(statuses: MutableMap<String, KeyStatus>) {
+        if (statuses.any { it.value !is KeyStatus.Succeeded || it.value !is KeyStatus.Committed }) {
+            throw CordaMessageAPIIntermittentException("Retry of poll and process required.")
+        }
+        val outputsToProcess = statuses.mapNotNull {
+            val status = it.value
+            if (status is KeyStatus.Succeeded) {
+                it.key to status.eventProcessingOutput
+            } else {
+                null
+            }
+        }.toMap()
+        val (failed, toDelete) = processOutputs(outputsToProcess)
+        val deleteFails = stateManager.delete(toDelete)
+        val totalFails = failed + deleteFails
+        outputsToProcess.forEach {
+            if (it.key !in totalFails) {
+                statuses[it.key] = KeyStatus.Committed
+            }
+        }
+        if (totalFails.isNotEmpty()) {
+            throw CordaMessageAPIIntermittentException("Error occurred while writing states, retrying")
+        }
     }
 
     /**
@@ -200,7 +332,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 is StateChangeAndOperation.Create -> statesToCreate.add(it.stateChangeAndOperation.outputState)
                 is StateChangeAndOperation.Update -> statesToUpdate.add(it.stateChangeAndOperation.outputState)
                 is StateChangeAndOperation.Delete -> statesToDelete.add(it.stateChangeAndOperation.outputState)
-                is StateChangeAndOperation.Noop -> {} // Do nothing.
+                else -> {} // Do nothing
             }
         }
         val failedToCreateKeys = stateManager.create(statesToCreate)
