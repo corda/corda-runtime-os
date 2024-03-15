@@ -106,7 +106,7 @@ internal class UpdateVirtualNodeDbOperationHandler(
                 UNEXPECTED_FAILURE.name,
                 VirtualNodeOperationType.CHANGE_DB.name
             )
-            publishErrorStatus(requestId, reason, VirtualNodeOperationType.CHANGE_DB)
+            recordErrorStatus(requestId, reason, VirtualNodeOperationType.CHANGE_DB)
             throw e
         }
 

@@ -33,7 +33,7 @@ internal abstract class AbstractVirtualNodeOperationHandler(
         )
     }
 
-    protected fun publishErrorStatus(
+    protected fun recordErrorStatus(
         requestId: String,
         reason: String,
         virtualNodeOperationType: VirtualNodeOperationType

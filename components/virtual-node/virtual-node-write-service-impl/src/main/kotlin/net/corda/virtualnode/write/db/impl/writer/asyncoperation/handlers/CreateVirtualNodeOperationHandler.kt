@@ -153,7 +153,7 @@ internal class CreateVirtualNodeOperationHandler(
                 createVirtualNodeService.publishRecords(records)
             }
         } catch (e: Exception) {
-            publishErrorStatus(requestId, e.message ?: "Unexpected error", VirtualNodeOperationType.CREATE)
+            recordErrorStatus(requestId, e.message ?: "Unexpected error", VirtualNodeOperationType.CREATE)
             throw e
         }
 
