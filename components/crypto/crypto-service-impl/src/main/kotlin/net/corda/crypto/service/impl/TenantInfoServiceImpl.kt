@@ -20,8 +20,8 @@ class TenantInfoServiceImpl(
 
     override fun populate(tenantId: String, category: String, cryptoService: CryptoService): HSMAssociationInfo {
         logger.info("Assigning Soft HSM tenant={}, category={}", tenantId, category)
-        return hsmRepository.use { hsmRepository ->
-            hsmRepository.createOrLookupCategoryAssociation(tenantId, category, MasterKeyPolicy.UNIQUE)
+        return hsmRepository.use {
+            it.createOrLookupCategoryAssociation(tenantId, category, MasterKeyPolicy.UNIQUE)
         }.also {
             ensureWrappingKey(it, cryptoService)
         }
