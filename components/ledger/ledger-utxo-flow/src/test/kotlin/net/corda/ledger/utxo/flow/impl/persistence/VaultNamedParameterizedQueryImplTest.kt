@@ -41,15 +41,13 @@ class VaultNamedParameterizedQueryImplTest {
         val past: Instant = now.minusSeconds(1)
         val results = listOf("A", "B")
 
-
         @JvmStatic
-        private fun getTimeArguments() : Array<TimeArguments> = arrayOf(
+        private fun getTimeArguments(): Array<TimeArguments> = arrayOf(
             TimeArguments(null, now),
             TimeArguments(now, now),
             TimeArguments(past, now),
             TimeArguments(future, future)
         )
-
     }
 
     data class TimeArguments(val checkpointValue: Instant?, val expectedValue: Instant)
@@ -126,26 +124,30 @@ class VaultNamedParameterizedQueryImplTest {
 
         query.execute()
         verify(flowCheckpointService, never()).getCheckpoint()
-        assertThat(mapCaptor.firstValue).containsAllEntriesOf(mapOf(parameterNameOne to parameterOne, TIMESTAMP_LIMIT_PARAM_NAME to customTimestamp))
+        assertThat(
+            mapCaptor.firstValue
+        ).containsAllEntriesOf(mapOf(parameterNameOne to parameterOne, TIMESTAMP_LIMIT_PARAM_NAME to customTimestamp))
     }
 
     @ParameterizedTest
     @MethodSource("getTimeArguments")
-    fun `execute sets the timestamp limit to now or the future if in the context if not set when there are no other parameters`(args: TimeArguments) {
+    fun `execute sets the timestamp limit to now or the future if in the context if not set when there are no other parameters`(
+        args: TimeArguments
+    ) {
         whenever(flowCheckpoint.readCustomState(UtxoLedgerLastPersistedTimestamp::class.java))
-            .thenReturn(args.checkpointValue?.let{UtxoLedgerLastPersistedTimestamp(it)})
+            .thenReturn(args.checkpointValue?.let { UtxoLedgerLastPersistedTimestamp(it) })
         query.execute()
         verify(clock).instant()
         assertThat(mapCaptor.firstValue).containsExactlyEntriesOf(mapOf(TIMESTAMP_LIMIT_PARAM_NAME to args.expectedValue))
     }
 
-
-
     @ParameterizedTest
     @MethodSource("getTimeArguments")
-    fun `execute sets the timestamp limit to now  or the future if in the context if not set when there are other parameters`(args: TimeArguments) {
+    fun `execute sets the timestamp limit to now  or the future if in the context if not set when there are other parameters`(
+        args: TimeArguments
+    ) {
         whenever(flowCheckpoint.readCustomState(UtxoLedgerLastPersistedTimestamp::class.java))
-            .thenReturn(args.checkpointValue?.let{UtxoLedgerLastPersistedTimestamp(it)})
+            .thenReturn(args.checkpointValue?.let { UtxoLedgerLastPersistedTimestamp(it) })
         val parameterNameOne = "one"
         val parameterOne = "param one"
         query.setParameter(parameterNameOne, parameterOne)

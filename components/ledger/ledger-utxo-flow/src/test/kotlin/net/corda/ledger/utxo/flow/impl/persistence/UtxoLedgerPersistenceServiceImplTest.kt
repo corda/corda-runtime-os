@@ -79,7 +79,7 @@ class UtxoLedgerPersistenceServiceImplTest {
         private val future = now.plusSeconds(1)
 
         @JvmStatic
-        private fun provideTimeArguments(): Array<TimeArguments>{
+        private fun provideTimeArguments(): Array<TimeArguments> {
             return arrayOf(
                 TimeArguments(null, now),
                 TimeArguments(past, now),
@@ -103,8 +103,6 @@ class UtxoLedgerPersistenceServiceImplTest {
     private val stateAndRefCache = mock<StateAndRefCache>()
     private val flowCheckpointService = mock<FlowCheckpointService>()
     private val flowCheckpoint = mock<FlowCheckpoint>()
-
-
 
     private val notaryServiceKey = mock<CompositeKey>()
     private val publicKeyNotaryVNode1 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x01)) }
@@ -131,7 +129,6 @@ class UtxoLedgerPersistenceServiceImplTest {
             flowCheckpointService
         )
 
-
         whenever(serializationService.serialize(any<Any>())).thenReturn(serializedBytes)
         whenever(
             externalEventExecutor.execute(
@@ -153,7 +150,7 @@ class UtxoLedgerPersistenceServiceImplTest {
         whenever(notaryServiceKey.isFulfilledBy(publicKeyNotaryVNode2)).thenReturn(true)
     }
 
-    data class TimeArguments( val previousPersist: Instant?, val verifyPutWith: Instant?)
+    data class TimeArguments(val previousPersist: Instant?, val verifyPutWith: Instant?)
 
     @ParameterizedTest
     @MethodSource("provideTimeArguments")
@@ -165,7 +162,7 @@ class UtxoLedgerPersistenceServiceImplTest {
         whenever(transaction.signatures).thenReturn(mock())
 
         whenever(flowCheckpoint.readCustomState(UtxoLedgerLastPersistedTimestamp::class.java))
-            .then{ args.previousPersist?.let{UtxoLedgerLastPersistedTimestamp(it)}}
+            .then { args.previousPersist?.let { UtxoLedgerLastPersistedTimestamp(it) } }
 
         assertThat(
             utxoLedgerPersistenceService.persist(

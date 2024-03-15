@@ -88,10 +88,10 @@ class VaultNamedParameterizedQueryImpl<T>(
         return resultSet
     }
 
-    private fun getNowOrLatestAsOfLastPersistence(): Instant{
-        return clock.instant().let{ now ->
+    private fun getNowOrLatestAsOfLastPersistence(): Instant {
+        return clock.instant().let { now ->
             flowCheckpointService.getCheckpoint().readCustomState(UtxoLedgerLastPersistedTimestamp::class.java)
-                ?.lastPersistedTimestamp?.let{prev ->
+                ?.lastPersistedTimestamp?.let { prev ->
                     if (now < prev) prev else now
                 } ?: now
         }
