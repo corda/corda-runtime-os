@@ -6,12 +6,12 @@ import net.corda.db.connection.manager.VirtualNodeDbType.UNIQUENESS
 import net.corda.db.connection.manager.VirtualNodeDbType.VAULT
 import net.corda.libs.external.messaging.ExternalMessagingRouteConfigGenerator
 import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationDto
+import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.STATIC_NETWORK
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.PROTOCOL_PARAMETERS
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
-import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_OPERATION_STATUS_TOPIC
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.write.db.impl.tests.ALICE_HOLDING_ID1
 import net.corda.virtualnode.write.db.impl.tests.CPI_CHECKSUM1
@@ -29,6 +29,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -37,7 +38,8 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
-import java.util.concurrent.CompletableFuture
+import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
 
 class CreateVirtualNodeOperationHandlerTest {
     private val timestamp = Instant.now()
@@ -68,16 +70,22 @@ class CreateVirtualNodeOperationHandlerTest {
 
     private val recordFactory = mock<RecordFactory>()
     private val groupPolicyParser = mock<GroupPolicyParser>()
-    private val statusPublisher = mock<Publisher>()
 
+    private val entityManagerMock = mock<EntityManager>().apply {
+        whenever(transaction).thenReturn(mock())
+    }
+    private val virtualNodeRepository = mock<VirtualNodeRepository>()
     private val target = CreateVirtualNodeOperationHandler(
-        createVirtualNodeService,
-        virtualNodeDbFactory,
-        recordFactory,
-        groupPolicyParser,
-        statusPublisher,
-        externalMessagingRouteConfigGenerator,
-        mock()
+        createVirtualNodeService = createVirtualNodeService,
+        virtualNodeDbFactory = virtualNodeDbFactory,
+        recordFactory = recordFactory,
+        policyParser = groupPolicyParser,
+        externalMessagingRouteConfigGenerator = externalMessagingRouteConfigGenerator,
+        logger = mock(),
+        entityManagerFactory = mock<EntityManagerFactory>().apply {
+            whenever(createEntityManager()).thenReturn(entityManagerMock)
+        },
+        virtualNodeRepository
     )
 
     @Test
@@ -223,39 +231,59 @@ class CreateVirtualNodeOperationHandlerTest {
     @Test
     fun `Handler publishes status updates on success`() {
         val request = getValidRequest()
-        val records = argumentCaptor<List<Record<Any, Any>>>()
+        val records = argumentCaptor<VirtualNodeOperationDto>()
 
-        val f = CompletableFuture<Unit>().apply { this.complete(Unit) }
-        whenever(statusPublisher.publish(records.capture())).thenReturn(listOf(f))
+        // Configure mocks
+        val virtualNodeInfoRecord = Record(
+            "vnode",
+            requestId,
+            VirtualNodeOperationStatus().apply {
+                state = "IN_PROGRESS"
+            }
+        )
+        whenever(recordFactory.createVirtualNodeInfoRecord(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()))
+            .thenReturn(virtualNodeInfoRecord)
 
+        // Run target
         target.handle(timestamp, requestId, request)
 
-        records.firstValue.all { verifyRecord(it, requestId, "IN_PROGRESS") }
-        records.secondValue.all { verifyRecord(it, requestId, "COMPLETED") }
+        // Verify result
+        verify(virtualNodeRepository, times(2)).putVirtualNodeOperation(eq(entityManagerMock), records.capture())
+        verifyRecord(records.firstValue, requestId, "IN_PROGRESS")
+        verifyRecord(records.secondValue, requestId, "COMPLETED")
     }
 
     @Test
     fun `Handler publishes status updates on failure`() {
         val request = getValidRequest()
-        val records = argumentCaptor<List<Record<Any, Any>>>()
+        val records = argumentCaptor<VirtualNodeOperationDto>()
 
-        val f = CompletableFuture<Unit>().apply { this.complete(Unit) }
+        // Configure mocks
+        val virtualNodeInfoRecord = Record(
+            "vnode",
+            requestId,
+            VirtualNodeOperationStatus().apply {
+                state = "IN_PROGRESS"
+            }
+        )
+        whenever(recordFactory.createVirtualNodeInfoRecord(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()))
+            .thenReturn(virtualNodeInfoRecord)
         whenever(createVirtualNodeService.validateRequest(any())).thenReturn("error")
-        whenever(statusPublisher.publish(records.capture())).thenReturn(listOf(f))
 
-        assertThrows<IllegalArgumentException> { target.handle(timestamp, requestId, request) }
+        // Run target
+        assertThrows<IllegalArgumentException> {
+            target.handle(timestamp, requestId, request)
+        }
 
-        records.firstValue.all { verifyRecord(it, requestId, "IN_PROGRESS") }
-        records.secondValue.all { verifyRecord(it, requestId, "UNEXPECTED_FAILURE") }
+        // Verify result
+        verify(virtualNodeRepository, times(2)).putVirtualNodeOperation(eq(entityManagerMock), records.capture())
+        verifyRecord(records.firstValue, requestId, "IN_PROGRESS")
+        verifyRecord(records.secondValue, requestId, "UNEXPECTED_FAILURE")
     }
 
-    private fun verifyRecord(record: Record<*, *>, requestId: String, status: String): Boolean {
-        assertThat(record.topic).isEqualTo(VIRTUAL_NODE_OPERATION_STATUS_TOPIC)
-        assertThat(record.key).isEqualTo(requestId)
-        assertThat(record.value as VirtualNodeOperationStatus?).isNotNull
-        val statusMessage = record.value as VirtualNodeOperationStatus
-        assertThat(statusMessage.state).isEqualTo(status)
-        return true
+    private fun verifyRecord(record: VirtualNodeOperationDto, requestId: String, status: String) {
+        assertThat(record.requestId).isEqualTo(requestId)
+        assertThat(record.state).isEqualTo(status)
     }
 
     @Test

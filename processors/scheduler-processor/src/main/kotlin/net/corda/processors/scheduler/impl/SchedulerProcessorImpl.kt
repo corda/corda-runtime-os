@@ -49,8 +49,9 @@ class SchedulerProcessorImpl @Activate constructor(
         )
     }
 
-    companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    private companion object {
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        const val SEVEN_DAYS_IN_SECONDS = 604800L
     }
 
     private val dependentComponents = DependentComponents.of(
@@ -78,7 +79,11 @@ class SchedulerProcessorImpl @Activate constructor(
         Schedule(
             ScheduledTask.SCHEDULE_TASK_NAME_FLOW_STATUS_CLEANUP,
             60, ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_STATUS_PROCESSOR
-        )
+        ),
+        Schedule(
+            ScheduledTask.SCHEDULED_TASK_NAME_STALE_P2P_SESSION_CLEANUP,
+            SEVEN_DAYS_IN_SECONDS, ScheduledTask.SCHEDULED_TASK_TOPIC_STALE_P2P_SESSION_PROCESSOR
+        ),
     )
     private var schedulers: Schedulers? = null
 

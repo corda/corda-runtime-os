@@ -16,7 +16,7 @@ class CordaPublisherFactoryTest {
         on { withFallback(any()) } doReturn this.mock
         on { withValue(any(), any()) } doReturn this.mock
     }
-    private val factory = CordaPublisherFactory(mock(), mock(), mock())
+    private val factory = CordaPublisherFactory(mock(), mock(), mock(), mock())
 
     @Test
     fun `createPublisher returns CordaPublisher`() {

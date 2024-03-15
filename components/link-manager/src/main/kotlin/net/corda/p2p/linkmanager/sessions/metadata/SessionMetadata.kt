@@ -68,6 +68,7 @@ internal data class OutboundSessionMetadata(
     val serial: Long,
     val membershipStatus: MembershipStatusFilter,
     val communicationWithMgm: Boolean,
+    val initiationTimestamp: Instant,
 ) {
     companion object {
         private const val STATUS = "status"
@@ -75,6 +76,7 @@ internal data class OutboundSessionMetadata(
         private const val MEMBERSHIP_STATUS = "membershipStatus"
         private const val COMMUNICATION_WITH_MGM = "communicationWithMgm"
         private const val SESSION_ID = "sessionId"
+        private const val INITIATION_TIMESTAMP_MILLIS = "initiationTimestampMillis"
 
         fun Metadata.toOutbound(): OutboundSessionMetadata {
             return OutboundSessionMetadata(
@@ -84,6 +86,7 @@ internal data class OutboundSessionMetadata(
                 (this[SERIAL] as Number).toLong(),
                 this[MEMBERSHIP_STATUS].toString().membershipStatusFromString(),
                 this[COMMUNICATION_WITH_MGM].toString().toBoolean(),
+                Instant.ofEpochMilli((this[INITIATION_TIMESTAMP_MILLIS] as Number).toLong()),
             )
         }
 
@@ -94,6 +97,8 @@ internal data class OutboundSessionMetadata(
         private fun String.membershipStatusFromString(): MembershipStatusFilter {
             return MembershipStatusFilter.values().first { it.toString() == this }
         }
+
+        fun Metadata.isOutbound(): Boolean = this[SESSION_ID] != null
     }
 
     fun lastSendExpired(clock: Clock): Boolean {
@@ -113,6 +118,7 @@ internal data class OutboundSessionMetadata(
                     MEMBERSHIP_STATUS to this.membershipStatus.toString(),
                     COMMUNICATION_WITH_MGM to this.communicationWithMgm,
                     SESSION_ID to this.sessionId,
+                    INITIATION_TIMESTAMP_MILLIS to this.initiationTimestamp.toEpochMilli(),
                 ),
         )
     }

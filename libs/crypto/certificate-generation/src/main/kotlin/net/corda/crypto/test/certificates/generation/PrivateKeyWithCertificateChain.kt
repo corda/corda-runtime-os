@@ -5,9 +5,9 @@ import java.security.PrivateKey
 import java.security.cert.Certificate
 
 /**
- * A data class that represent a private key and certificate for the corresponding public key.
+ * A data class that represent a private key and certificate chain for the corresponding public key.
  */
-data class PrivateKeyWithCertificate(
+data class PrivateKeyWithCertificateChain(
     val privateKey: PrivateKey,
     val certificates: Collection<Certificate>,
 ) {

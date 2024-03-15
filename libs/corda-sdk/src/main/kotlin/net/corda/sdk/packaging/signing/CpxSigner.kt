@@ -1,6 +1,7 @@
-package net.corda.cli.plugins.packaging.signing
+package net.corda.sdk.packaging.signing
 
-import java.io.File
+import jdk.security.jarsigner.JarSigner
+import net.corda.libs.packaging.verify.SigningHelpers.isSigningRelated
 import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Path
@@ -12,43 +13,41 @@ import java.util.jar.JarInputStream
 import java.util.jar.JarOutputStream
 import java.util.jar.Manifest
 import java.util.zip.ZipFile
-import jdk.security.jarsigner.JarSigner
-import net.corda.libs.packaging.verify.SigningHelpers.isSigningRelated
 
-internal object SigningHelpers {
+object CpxSigner {
     /**
-     * Signs Cpx jar files.
+     * Signs CPx jar file.
+     *
+     * If [SigningOptions.signatureFileName] is not provided,
+     * generate from [SigningOptions.keyAlias], following jarsigner requirements.
      */
-    @Suppress("LongParameterList")
     fun sign(
         unsignedInputCpx: Path,
         signedOutputCpx: Path,
-        keyStoreFileName: String,
-        keyStorePass: String,
-        keyAlias: String,
-        signerName: String,
-        tsaUrl: String?
+        signingOptions: SigningOptions,
     ) {
         ZipFile(unsignedInputCpx.toFile()).use { unsignedCpi ->
-            Files.newOutputStream(signedOutputCpx,
+            Files.newOutputStream(
+                signedOutputCpx,
                 StandardOpenOption.WRITE,
                 StandardOpenOption.CREATE_NEW
             ).use { signedCpi ->
 
                 val privateKeyEntry = getPrivateKeyEntry(
-                    keyStoreFileName,
-                    keyStorePass,
-                    keyAlias
+                    signingOptions.keyStoreFile,
+                    signingOptions.keyStorePass,
+                    signingOptions.keyAlias
                 )
                 val privateKey = privateKeyEntry.privateKey
                 val certPath = buildCertPath(privateKeyEntry.certificateChain.asList())
 
                 // Create JarSigner
+                val signerName = signingOptions.signatureFileName ?: getSignerNameFromString(signingOptions.keyAlias)
                 val builder = JarSigner.Builder(privateKey, certPath)
                     .signerName(signerName)
 
                 // Use timestamp server if provided
-                tsaUrl?.let { builder.tsa(URI(it)) }
+                signingOptions.tsaUrl?.let { builder.tsa(URI(it)) }
 
                 // Sign CPI
                 builder
@@ -58,6 +57,9 @@ internal object SigningHelpers {
         }
     }
 
+    /**
+     * Removes signatures from CPx file.
+     */
     @Suppress("NestedBlockDepth")
     fun removeSignatures(signedCpx: Path, removedSignaturesCpx: Path) {
         JarInputStream(Files.newInputStream(signedCpx, StandardOpenOption.READ)).use { inputJar ->
@@ -81,9 +83,9 @@ internal object SigningHelpers {
     /**
      * Reads PrivateKeyEntry from key store
      */
-    private fun getPrivateKeyEntry(keyStoreFileName: String, keyStorePass: String, keyAlias: String): KeyStore.PrivateKeyEntry {
+    private fun getPrivateKeyEntry(keyStoreFile: Path, keyStorePass: String, keyAlias: String): KeyStore.PrivateKeyEntry {
         val passwordCharArray = keyStorePass.toCharArray()
-        val keyStore = KeyStore.getInstance(File(keyStoreFileName), passwordCharArray)
+        val keyStore = KeyStore.getInstance(keyStoreFile.toFile(), passwordCharArray)
 
         when (val keyEntry = keyStore.getEntry(keyAlias, KeyStore.PasswordProtection(passwordCharArray))) {
             is KeyStore.PrivateKeyEntry -> return keyEntry
@@ -103,4 +105,24 @@ internal object SigningHelpers {
         CertificateFactory
             .getInstance(STANDARD_CERT_FACTORY_TYPE)
             .generateCertPath(certificateChain)
+
+    // The following has the same behavior as jarsigner in terms of signature files naming.
+    private fun getSignerNameFromString(keyAlias: String): String =
+        keyAlias.run {
+            var str = this
+            if (str.length > 8) {
+                str = str.substring(0, 8).uppercase()
+            }
+            val strBuilder = StringBuilder()
+            for (c in str) {
+                @Suppress("ComplexCondition")
+                if (c in 'A'..'Z' || c in 'a'..'z' || c == '-' || c == '_') {
+                    strBuilder.append(c)
+                } else {
+                    strBuilder.append('_')
+                }
+            }
+            str = strBuilder.toString()
+            str
+        }
 }

@@ -1,6 +1,5 @@
 package net.corda.configuration.rest.impl
 
-import java.util.concurrent.CompletableFuture
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.rest.impl.exception.ConfigRestResourceException
 import net.corda.configuration.rest.impl.v1.ConfigRestResourceImpl
@@ -9,12 +8,6 @@ import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.data.config.ConfigurationSchemaVersion
-import net.corda.rest.JsonObject
-import net.corda.rest.ResponseCode
-import net.corda.rest.exception.HttpApiException
-import net.corda.rest.response.ResponseEntity
-import net.corda.rest.security.CURRENT_REST_CONTEXT
-import net.corda.rest.security.RestAuthContext
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
@@ -26,6 +19,12 @@ import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.rest.JsonObject
+import net.corda.rest.ResponseCode
+import net.corda.rest.exception.HttpApiException
+import net.corda.rest.response.ResponseEntity
+import net.corda.rest.security.CURRENT_REST_CONTEXT
+import net.corda.rest.security.RestAuthContext
 import net.corda.v5.base.versioning.Version
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -36,6 +35,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.concurrent.CompletableFuture
 
 data class TestJsonObject(override val escapedJson: String = "") : JsonObject
 
@@ -183,7 +183,7 @@ class ConfigRestResourceImplTests {
             configRPCOps.updateConfig(req)
         }
 
-        assertEquals("ErrorType: ErrorMessage.", e.message)
+        assertEquals("Config Version Error", e.message)
         assertEquals(ResponseCode.INTERNAL_SERVER_ERROR, e.responseCode)
     }
 

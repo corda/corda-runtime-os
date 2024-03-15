@@ -5,12 +5,18 @@ import net.corda.rest.ResponseCode
 /**
  * Indicates a requested resource already exists within the system
  *
- * @param message the exception message
+ * @param title the exception title
+ * @param exceptionDetails contains cause and reason
  */
-class ResourceAlreadyExistsException(message: String) : HttpApiException(ResponseCode.CONFLICT, message) {
+class ResourceAlreadyExistsException(title: String, exceptionDetails: ExceptionDetails? = null) :
+    HttpApiException(ResponseCode.CONFLICT, title, exceptionDetails = exceptionDetails) {
     /**
      * @param resource The resource which already exists
      * @param id The ID of the resource.
      */
-    constructor(resource: Any, id: String) : this("$resource '$id' already exists.")
+    constructor(
+        resource: Any,
+        id: String,
+        exceptionDetails: ExceptionDetails? = null
+    ) : this("$resource '$id' already exists.", exceptionDetails)
 }

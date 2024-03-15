@@ -28,6 +28,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.linkmanager.sessions.StateConvertor
 import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl
 import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
+import net.corda.p2p.linkmanager.sessions.expiration.StaleSessionProcessor
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -80,6 +81,15 @@ internal class CommonComponents(
         stateManager,
         clock,
         sessionEventPublisher,
+    )
+
+    private val staleSessionProcessor = StaleSessionProcessor(
+        lifecycleCoordinatorFactory,
+        subscriptionFactory,
+        messagingConfiguration,
+        clock,
+        stateManager,
+        sessionCache,
     )
 
     private val deadSessionMonitor = DeadSessionMonitor(
@@ -181,6 +191,7 @@ internal class CommonComponents(
             trustStoresPublisher.dominoTile.toNamedLifecycle(),
             tlsCertificatesPublisher.dominoTile.toNamedLifecycle(),
             mtlsClientCertificatePublisher.dominoTile.toNamedLifecycle(),
+            staleSessionProcessor.dominoTile.toNamedLifecycle(),
         ) + externalManagedDependencies,
         configurationChangeHandler = deadSessionMonitorConfigHandler,
         onClose = { sessionCache.close() }

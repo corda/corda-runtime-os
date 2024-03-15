@@ -60,14 +60,14 @@ internal open class LocalCertificatesAuthority(
         savedData?.privateKeyAndCertificate ?: generatePrivateKeyAndCertificate()
     }
 
-    private fun generatePrivateKeyAndCertificate(): PrivateKeyWithCertificate {
+    private fun generatePrivateKeyAndCertificate(): PrivateKeyWithCertificateChain {
         val caKeyPair = generateKeyPair()
-        val (myParentCa, signerPrivateKey) = if (parentCa == null) {
+        val (parentCaOrRoot, signerPrivateKey) = if (parentCa == null) {
             this to caKeyPair.private
         } else {
             parentCa to parentCa.privateKeyAndCertificate.privateKey
         }
-        val certBuilder = myParentCa.certificateBuilder(issuer.toString(), caKeyPair.public)
+        val certBuilder = parentCaOrRoot.certificateBuilder(issuer.toString(), caKeyPair.public)
 
         val basicConstraints = BasicConstraints(true)
 
@@ -91,7 +91,7 @@ internal open class LocalCertificatesAuthority(
         val certificate = JcaX509CertificateConverter().getCertificate(
             certBuilder.build(signer)
         )
-        return PrivateKeyWithCertificate(caKeyPair.private, listOf(certificate))
+        return PrivateKeyWithCertificateChain(caKeyPair.private, listOf(certificate))
     }
 
     private fun PrivateKey.signer(): ContentSigner {
@@ -130,10 +130,10 @@ internal open class LocalCertificatesAuthority(
         parentCa?.caCertificate ?: privateKeyAndCertificate.certificates.first()
     }
 
-    override fun generateKeyAndCertificates(hosts: Collection<String>): PrivateKeyWithCertificate {
+    override fun generateKeyAndCertificates(hosts: Collection<String>): PrivateKeyWithCertificateChain {
         val keys = generateKeyPair()
         val certificates = generateCertificates(hosts, keys.public)
-        return PrivateKeyWithCertificate(keys.private, certificates)
+        return PrivateKeyWithCertificateChain(keys.private, certificates)
     }
 
     override fun generateCertificates(hosts: Collection<String>, publicKey: PublicKey): Collection<Certificate> {

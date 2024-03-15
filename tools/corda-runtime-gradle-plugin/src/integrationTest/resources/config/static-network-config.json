@@ -18,6 +18,8 @@
   {
     "x500Name" : "CN=NotaryRep1, OU=Test Dept, O=R3, L=London, C=GB",
     "cpi" : "NotaryServer",
-    "serviceX500Name": "CN=NotaryService, OU=Test Dept, O=R3, L=London, C=GB"
+    "serviceX500Name": "CN=NotaryService, OU=Test Dept, O=R3, L=London, C=GB",
+    "flowProtocolName" : "com.r3.corda.notary.plugin.nonvalidating",
+    "backchainRequired" : "false"
   }
 ]
