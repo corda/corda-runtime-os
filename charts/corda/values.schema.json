@@ -596,27 +596,16 @@
                         "10",
                         "unlimited"
                     ]
-                },
-                "tags": {
-                    "type": "string",
-                    "default": "",
-                    "title": "Tags that are applied to all trace spans.",
-                    "examples": [
-                        "k1=v1",
-                        "k1=v1:k2=v2"
-                    ]
                 }
             },
             "examples": [
                 {
                     "endpoint": "http://tempo:9411",
-                    "samplesPerSecond": "10",
-                    "tags": "k1=v1"
+                    "samplesPerSecond": "10"
                 },
                 {
                     "endpoint": "http://tempo:9411",
-                    "samplesPerSecond": "unlimited",
-                    "tags": "k1=v1:k2=v2"
+                    "samplesPerSecond": "unlimited"
                 }
             ]
         },
