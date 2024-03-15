@@ -192,7 +192,6 @@ class CryptoProcessorImpl @Activate constructor(
         logger.trace("Crypto processor received event $event.")
         when (event) {
             is StartEvent -> {
-                logger.trace("Crypto processor starting")
                 // No need to register coordinator to follow dependent components.
                 // This already happens in `coordinatorFactory.createCoordinator` above.
             }
