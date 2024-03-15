@@ -103,7 +103,11 @@ class ProcessorService {
 
         return when (val entityRequest = request.request) {
             is PersistEntities -> {
-                val requestId = request.flowExternalEventContext.requestId
+                val existingRequestId = request.flowExternalEventContext.requestId
+                val entities = entityRequest.entities.map { entityManager.persist(serializationService.deserialize(it.array(), Any::class.java)) }
+                // Should warn or something if PK is null
+                val entityPKs = entities.map { entityManagerFactory.persistenceUnitUtil.getIdentifier(it) ?: it }
+                val requestId = RequestID.replaceHash(existingRequestId,entityPKs, serializationService)
                 val entityResponse = withDeduplicationCheck(requestId, entityManager, onDuplication = {
                     EntityResponse(emptyList(), KeyValuePairList(emptyList()), null)
                 }, requestsIdsRepository) {
