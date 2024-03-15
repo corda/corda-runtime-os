@@ -7,7 +7,6 @@ import com.r3.corda.notary.plugin.common.NotaryTransactionDetails
 import com.r3.corda.notary.plugin.common.toNotarizationResponse
 import com.r3.corda.notary.plugin.contractverifying.api.ContractVerifyingNotarizationPayload
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.membership.MemberLookup
@@ -40,9 +39,6 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
 
     @CordaInject
     private lateinit var clientService: LedgerUniquenessCheckerClientService
-
-    @CordaInject
-    private lateinit var flowEngine: FlowEngine
 
     @CordaInject
     private lateinit var transactionSignatureService: TransactionSignatureService
