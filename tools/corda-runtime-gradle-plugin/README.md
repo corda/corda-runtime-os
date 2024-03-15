@@ -68,16 +68,10 @@ services:
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
 
   kafka-create-topics:
-    image: openjdk:17-jdk
+    image: corda-os-docker.software.r3.com/corda-os-plugins:5.2.0.0
     depends_on:
       - kafka
-    volumes:
-      - ${CORDA_CLI:-~/.corda/cli}:/opt/corda-cli
-    working_dir: /opt/corda-cli
     command: [
-      "java",
-      "-jar",
-      "corda-cli.jar",
       "topic",
       "-b=kafka:29092",
       "create",
@@ -111,9 +105,7 @@ services:
 NOTE: The above docker compose yaml file:
  - Uses the Kafka-enabled Combined Worker image
  - Properties `bus.busType=KAFKA` and `bootstrap.servers=kafka:29092` are used to configure the Combined Worker to use Kafka
- - Runs Kafka in KRaft mode 
- - To ensure that the Combined Worker starts correctly, corda cli needs to be used to create necessary topics. Corda cli version should be aligned with the Combined Worker version
-
+ - Runs Kafka in KRaft mode
 
    b. For Database-only combined worker
 
