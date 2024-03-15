@@ -177,7 +177,6 @@ class CryptoProcessorImpl @Activate constructor(
 
     private lateinit var cryptoService: CryptoService
     private lateinit var tenantInfoService: TenantInfoService
-    private var bootConfigRecord: SmartConfig? = null
     private var stateManager: StateManager? = null
     override val isRunning: Boolean
         get() = lifecycleCoordinator.isRunning
@@ -186,7 +185,6 @@ class CryptoProcessorImpl @Activate constructor(
         logger.trace("Crypto processor starting.")
         lifecycleCoordinator.start()
         lifecycleCoordinator.postEvent(BootConfigEvent(bootConfig))
-        bootConfigRecord = bootConfig
     }
 
     override fun stop() {
@@ -215,6 +213,13 @@ class CryptoProcessorImpl @Activate constructor(
 
                 logger.trace("Bootstrapping {}", dbConnectionManager::class.simpleName)
                 dbConnectionManager.bootstrap(bootstrapConfig.getConfig(BOOT_DB))
+
+                if (bootstrapConfig.hasPath(StateManagerConfig.STATE_MANAGER)) {
+                    val stateManagerConfig = bootstrapConfig.getConfig(StateManagerConfig.STATE_MANAGER)
+                    stateManager =
+                        stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION)
+                            .also { it.start() }
+                }
             }
 
             is RegistrationStatusChangeEvent -> {
@@ -231,14 +236,6 @@ class CryptoProcessorImpl @Activate constructor(
             is ConfigChangedEvent -> {
                 tenantInfoService = startTenantInfoService()
                 cryptoService = startCryptoService(event.config.getConfig(CRYPTO_CONFIG), tenantInfoService)
-                val bootConfig = checkNotNull(bootConfigRecord) { "Boot config not available." }
-
-                if (bootConfig.hasPath(StateManagerConfig.STATE_MANAGER)) {
-                    val stateManagerConfig = bootConfig.getConfig(StateManagerConfig.STATE_MANAGER)
-                    stateManager =
-                        stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION)
-                            .also { it.start() }
-                }
 
                 (CryptoConsts.Categories.all - ENCRYPTION_SECRET).forEach { category ->
                     CryptoTenants.allClusterTenants.forEach { tenantId ->
