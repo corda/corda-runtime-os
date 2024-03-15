@@ -180,7 +180,6 @@ class CryptoProcessorImpl @Activate constructor(
 
     override fun start(bootConfig: SmartConfig) {
         logger.trace("Crypto processor starting.")
-        lifecycleCoordinator.start()
         lifecycleCoordinator.postEvent(BootConfigEvent(bootConfig))
     }
 
