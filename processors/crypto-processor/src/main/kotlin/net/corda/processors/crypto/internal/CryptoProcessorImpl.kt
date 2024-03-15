@@ -172,7 +172,6 @@ class CryptoProcessorImpl @Activate constructor(
     internal val lifecycleCoordinator =
         coordinatorFactory.createCoordinator<CryptoProcessor>(dependentComponents, ::eventHandler)
 
-    private lateinit var cryptoService: CryptoService
     private lateinit var tenantInfoService: TenantInfoService
     private var stateManager: StateManager? = null
     override val isRunning: Boolean
@@ -228,7 +227,7 @@ class CryptoProcessorImpl @Activate constructor(
 
             is ConfigChangedEvent -> {
                 tenantInfoService = startTenantInfoService()
-                cryptoService = startCryptoService(event.config.getConfig(CRYPTO_CONFIG), tenantInfoService)
+                val cryptoService = startCryptoService(event.config.getConfig(CRYPTO_CONFIG), tenantInfoService)
 
                 (CryptoConsts.Categories.all - ENCRYPTION_SECRET).forEach { category ->
                     CryptoTenants.allClusterTenants.forEach { tenantId ->
@@ -239,7 +238,7 @@ class CryptoProcessorImpl @Activate constructor(
 
                 tenantInfoService.populate(CryptoTenants.P2P, ENCRYPTION_SECRET, cryptoService)
                 logger.trace("Assigned SOFT HSM for ${CryptoTenants.P2P}:$ENCRYPTION_SECRET")
-                startProcessors(event, coordinator, stateManager, cordaAvroSerializationFactory)
+                startProcessors(event, coordinator, stateManager, cordaAvroSerializationFactory, cryptoService)
                 setStatus(LifecycleStatus.UP, coordinator)
             }
         }
@@ -344,7 +343,8 @@ class CryptoProcessorImpl @Activate constructor(
         event: ConfigChangedEvent,
         coordinator: LifecycleCoordinator,
         stateManager: StateManager?,
-        cordaAvroSerializationFactory: CordaAvroSerializationFactory
+        cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+        cryptoService: CryptoService
     ) {
         val retryingConfig = event.config.getConfig(CRYPTO_CONFIG).retrying()
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
@@ -376,9 +376,9 @@ class CryptoProcessorImpl @Activate constructor(
             )
         }
 
-        createFlowOpsSubscription(coordinator, retryingConfig)
-        createRpcOpsSubscription(coordinator, messagingConfig, retryingConfig)
-        createHsmRegSubscription(coordinator, messagingConfig, retryingConfig)
+        createFlowOpsSubscription(coordinator, retryingConfig, cryptoService)
+        createRpcOpsSubscription(coordinator, messagingConfig, retryingConfig, cryptoService)
+        createHsmRegSubscription(coordinator, messagingConfig, retryingConfig, cryptoService)
         if (stateManager != null) {
             createRekeySubscription(
                 coordinator,
@@ -387,18 +387,20 @@ class CryptoProcessorImpl @Activate constructor(
                 signingRepositoryFactory,
                 stateManager,
                 cordaAvroSerializationFactory,
-                defaultUnmanagedWrappingKeyName
+                defaultUnmanagedWrappingKeyName,
+                cryptoService
             )
             createRewrapSubscription(
                 coordinator,
                 messagingConfig,
                 stateManager,
                 cordaAvroSerializationFactory,
-                defaultUnmanagedWrappingKeyName
+                defaultUnmanagedWrappingKeyName,
+                cryptoService
             )
         }
-        createSessionEncryptionSubscription(coordinator, retryingConfig)
-        createSessionDecryptionSubscription(coordinator, retryingConfig)
+        createSessionEncryptionSubscription(coordinator, retryingConfig, cryptoService)
+        createSessionDecryptionSubscription(coordinator, retryingConfig, cryptoService)
     }
 
     private fun createRekeySubscription(
@@ -409,6 +411,7 @@ class CryptoProcessorImpl @Activate constructor(
         stateManager: StateManager,
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
         defaultUnmanagedWrappingKeyName: String,
+        cryptoService: CryptoService
     ) {
         val rekeyGroupName = "crypto.key.rotation.ops"
         val publisherConfig = PublisherConfig("RekeyBusProcessor", false)
@@ -455,6 +458,7 @@ class CryptoProcessorImpl @Activate constructor(
         stateManager: StateManager,
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
         defaultUnmanagedWrappingKeyName: String,
+        cryptoService: CryptoService
     ) {
         val rewrapProcessor = CryptoRewrapBusProcessor(
             cryptoService,
@@ -480,7 +484,8 @@ class CryptoProcessorImpl @Activate constructor(
 
     private fun createFlowOpsSubscription(
         coordinator: LifecycleCoordinator,
-        retryingConfig: RetryingConfig
+        retryingConfig: RetryingConfig,
+        cryptoService: CryptoService
     ) {
         val flowOpsProcessor = CryptoFlowOpsProcessor(
             cryptoService,
@@ -501,7 +506,8 @@ class CryptoProcessorImpl @Activate constructor(
 
     private fun createSessionEncryptionSubscription(
         coordinator: LifecycleCoordinator,
-        retryingConfig: RetryingConfig
+        retryingConfig: RetryingConfig,
+        cryptoService: CryptoService
     ) {
         val subscriptionName = "crypto.session.encryption"
 
@@ -517,7 +523,8 @@ class CryptoProcessorImpl @Activate constructor(
 
     private fun createSessionDecryptionSubscription(
         coordinator: LifecycleCoordinator,
-        retryingConfig: RetryingConfig
+        retryingConfig: RetryingConfig,
+        cryptoService: CryptoService
     ) {
         val subscriptionName = "crypto.session.decryption"
 
@@ -534,7 +541,8 @@ class CryptoProcessorImpl @Activate constructor(
     private fun createRpcOpsSubscription(
         coordinator: LifecycleCoordinator,
         messagingConfig: SmartConfig,
-        retryingConfig: RetryingConfig
+        retryingConfig: RetryingConfig,
+        cryptoService: CryptoService
     ) {
         val rpcGroupName = "crypto.ops.rpc"
         val rpcClientName = "crypto.ops.rpc"
@@ -560,7 +568,8 @@ class CryptoProcessorImpl @Activate constructor(
     private fun createHsmRegSubscription(
         coordinator: LifecycleCoordinator,
         messagingConfig: SmartConfig,
-        retryingConfig: RetryingConfig
+        retryingConfig: RetryingConfig,
+        cryptoService: CryptoService
     ) {
         val hsmRegGroupName = "crypto.hsm.rpc.registration"
         val hsmRegClientName = "crypto.hsm.rpc.registration"
