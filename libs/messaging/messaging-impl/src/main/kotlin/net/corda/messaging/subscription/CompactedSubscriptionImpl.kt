@@ -105,13 +105,7 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
                     }
 
                     is CordaMessageAPIAuthException -> {
-                        if (attempts < 3) {
-                            log.warn("$errorMsg. Attempts: $attempts. Retrying.", ex)
-                        } else {
-                            log.error("$errorMsg. Fatal error occurred. Closing subscription.", ex)
-                            threadLooper.updateLifecycleStatus(LifecycleStatus.ERROR, errorMsg)
-                            threadLooper.stopLoop()
-                        }
+                        onAuthException(attempts, threadLooper, ex)
                     }
 
                     else -> {
@@ -124,6 +118,16 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
         }
         latestValues?.apply { mapFactory.destroyMap(this) }
         latestValues = null
+    }
+
+    private fun onAuthException(attempts: Int, threadLooper: ThreadLooper, ex: Exception) {
+        if (attempts < 3) {
+            log.warn("$errorMsg. Attempts: $attempts. Retrying.", ex)
+        } else {
+            log.error("$errorMsg. Fatal error occurred. Closing subscription.", ex)
+            threadLooper.updateLifecycleStatus(LifecycleStatus.ERROR, errorMsg)
+            threadLooper.stopLoop()
+        }
     }
 
     private fun onError(bytes: ByteArray) {
