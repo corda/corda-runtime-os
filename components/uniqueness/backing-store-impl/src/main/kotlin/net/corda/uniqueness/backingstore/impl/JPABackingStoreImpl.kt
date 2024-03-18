@@ -18,7 +18,6 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
-import net.corda.utilities.debug
 import net.corda.v5.application.uniqueness.model.UniquenessCheckError
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
