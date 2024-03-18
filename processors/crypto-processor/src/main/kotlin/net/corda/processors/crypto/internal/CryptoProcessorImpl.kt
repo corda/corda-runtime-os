@@ -228,9 +228,10 @@ class CryptoProcessorImpl @Activate constructor(
                 val cryptoService = startCryptoService(cryptoConfig, tenantInfoService)
 
                 stateManager?.stop()
-                stateManager =
+                val stateManager =
                     stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION)
                         .also { it.start() }
+                this.stateManager = stateManager
 
                 (CryptoConsts.Categories.all - ENCRYPTION_SECRET).forEach { category ->
                     CryptoTenants.allClusterTenants.forEach { tenantId ->
@@ -355,7 +356,7 @@ class CryptoProcessorImpl @Activate constructor(
         cryptoConfig: SmartConfig,
         messagingConfig: SmartConfig,
         coordinator: LifecycleCoordinator,
-        stateManager: StateManager?,
+        stateManager: StateManager,
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
         cryptoService: CryptoService,
         tenantInfoService: TenantInfoService
@@ -391,26 +392,24 @@ class CryptoProcessorImpl @Activate constructor(
         createFlowOpsSubscription(coordinator, retryingConfig, cryptoService)
         createRpcOpsSubscription(coordinator, messagingConfig, retryingConfig, cryptoService)
         createHsmRegSubscription(coordinator, messagingConfig, retryingConfig, cryptoService, tenantInfoService)
-        if (stateManager != null) {
-            createRekeySubscription(
-                coordinator,
-                messagingConfig,
-                wrappingRepositoryFactory,
-                signingRepositoryFactory,
-                stateManager,
-                cordaAvroSerializationFactory,
-                defaultUnmanagedWrappingKeyName,
-                cryptoService
-            )
-            createRewrapSubscription(
-                coordinator,
-                messagingConfig,
-                stateManager,
-                cordaAvroSerializationFactory,
-                defaultUnmanagedWrappingKeyName,
-                cryptoService
-            )
-        }
+        createRekeySubscription(
+            coordinator,
+            messagingConfig,
+            wrappingRepositoryFactory,
+            signingRepositoryFactory,
+            stateManager,
+            cordaAvroSerializationFactory,
+            defaultUnmanagedWrappingKeyName,
+            cryptoService
+        )
+        createRewrapSubscription(
+            coordinator,
+            messagingConfig,
+            stateManager,
+            cordaAvroSerializationFactory,
+            defaultUnmanagedWrappingKeyName,
+            cryptoService
+        )
         createSessionEncryptionSubscription(coordinator, retryingConfig, cryptoService)
         createSessionDecryptionSubscription(coordinator, retryingConfig, cryptoService)
     }
