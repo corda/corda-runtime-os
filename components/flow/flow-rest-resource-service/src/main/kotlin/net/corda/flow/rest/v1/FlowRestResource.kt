@@ -17,7 +17,7 @@ import net.corda.rest.response.ResponseEntity
 
 /** Rest operations for flow management. */
 @HttpRestResource(
-    name = "Flow Management API",
+    name = "Flow Management",
     description = "The Flow Management API consists of a number of endpoints used to interact with flows.",
     path = "flow"
 )
