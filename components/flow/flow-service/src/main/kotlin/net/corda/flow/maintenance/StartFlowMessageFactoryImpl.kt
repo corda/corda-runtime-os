@@ -23,7 +23,7 @@ class StartFlowMessageFactoryImpl {
     ): FlowMapperEvent {
         val context = FlowStartContext(
             FlowKey(clientRequestId, virtualNode.holdingIdentity),
-            FlowInitiatorType.RPC,
+            FlowInitiatorType.SCHEDULED,
             clientRequestId,
             virtualNode.holdingIdentity,
             virtualNode.cpiIdentifier.name,
@@ -46,7 +46,7 @@ class StartFlowMessageFactoryImpl {
         val now = Instant.now()
         return FlowStatus().apply {
             this.key = FlowKey(clientRequestId, virtualNode.holdingIdentity)
-            this.initiatorType = FlowInitiatorType.RPC // needs to change to scheduled
+            this.initiatorType = FlowInitiatorType.SCHEDULED
             this.flowClassName = flowClassName
             this.flowStatus = FlowStates.START_REQUESTED
             this.createdTimestamp = now
