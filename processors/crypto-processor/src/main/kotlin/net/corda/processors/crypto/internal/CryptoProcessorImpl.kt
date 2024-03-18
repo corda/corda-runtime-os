@@ -222,9 +222,11 @@ class CryptoProcessorImpl @Activate constructor(
             is ConfigChangedEvent -> {
                 val tenantInfoService = createTenantInfoService()
                 val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
+                val stateManagerConfig = event.config.getConfig(STATE_MANAGER_CONFIG)
+                val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+
                 val cryptoService = startCryptoService(cryptoConfig, tenantInfoService)
 
-                val stateManagerConfig = event.config.getConfig(STATE_MANAGER_CONFIG)
                 stateManager?.stop()
                 stateManager =
                     stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION)
@@ -239,8 +241,10 @@ class CryptoProcessorImpl @Activate constructor(
 
                 tenantInfoService.populate(CryptoTenants.P2P, ENCRYPTION_SECRET, cryptoService)
                 logger.trace("Assigned SOFT HSM for ${CryptoTenants.P2P}:$ENCRYPTION_SECRET")
+
                 startProcessors(
-                    event,
+                    cryptoConfig,
+                    messagingConfig,
                     coordinator,
                     stateManager,
                     cordaAvroSerializationFactory,
@@ -348,17 +352,16 @@ class CryptoProcessorImpl @Activate constructor(
     }
 
     private fun startProcessors(
-        event: ConfigChangedEvent,
+        cryptoConfig: SmartConfig,
+        messagingConfig: SmartConfig,
         coordinator: LifecycleCoordinator,
         stateManager: StateManager?,
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
         cryptoService: CryptoService,
         tenantInfoService: TenantInfoService
     ) {
-        val retryingConfig = event.config.getConfig(CRYPTO_CONFIG).retrying()
-        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-        val defaultUnmanagedWrappingKeyName =
-            event.config.getConfig(CRYPTO_CONFIG).getConfig(HSM).getString(DEFAULT_WRAPPING_KEY)
+        val retryingConfig = cryptoConfig.retrying()
+        val defaultUnmanagedWrappingKeyName = cryptoConfig.getConfig(HSM).getString(DEFAULT_WRAPPING_KEY)
         val wrappingRepositoryFactory = { tenantId: String ->
             WrappingRepositoryImpl(
                 entityManagerFactory = getEntityManagerFactory(
