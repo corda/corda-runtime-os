@@ -9,6 +9,7 @@ import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
@@ -102,15 +103,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
                 logger.trace("Requesting uniqueness check for transaction {}", txDetails.id)
             }
 
-            val uniquenessResult = clientService.requestUniquenessCheck(
-                txDetails.id.toString(),
-                session.counterparty.toString(),
-                txDetails.inputs.map { it.toString() },
-                txDetails.references.map { it.toString() },
-                txDetails.numOutputs,
-                txDetails.timeWindow.from,
-                txDetails.timeWindow.until
-            )
+            val uniquenessResult = checkUniqueness(txDetails, session, requestPayload.notarizationType)
 
             if (logger.isDebugEnabled) {
                 logger.debug("Uniqueness check completed for transaction {}, result is: {}. Sending response to {}",
@@ -170,11 +163,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     @Suppress("TooGenericExceptionCaught")
     private fun validateRequest(requestPayload: NonValidatingNotarizationPayload): NotaryTransactionDetails {
         val transactionParts = try {
-            when (requestPayload.notarizationType) {
-                NotarizationType.NOTARIZE -> extractParts(requestPayload)
-                NotarizationType.CHECK -> extractPartsForNotarizationCheck(requestPayload)
-                else -> throw IllegalArgumentException("Received invalid notarization type ${requestPayload.notarizationType}")
-            }
+            extractParts(requestPayload)
         } catch (e: Exception) {
             logger.warn("Could not validate request. Reason: ${e.message}")
             throw IllegalStateException("Could not validate request.", e)
@@ -183,38 +172,6 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
         // TODO CORE-8976 Add check for notary identity
 
         return transactionParts
-    }
-
-    private fun extractPartsForNotarizationCheck(requestPayload: NonValidatingNotarizationPayload): NotaryTransactionDetails {
-        val filteredTx = requestPayload.transaction as UtxoFilteredTransaction
-
-        // The notary component is not needed by us but we validate that it is present just in case
-        requireNotNull(filteredTx.notaryName) {
-            "Notary name component could not be found on the transaction"
-        }
-
-        requireNotNull(filteredTx.notaryKey) {
-            "Notary key component could not be found on the transaction"
-        }
-
-        requireNotNull(filteredTx.metadata) {
-            "Metadata component could not be found on the transaction"
-        }
-
-        requireNotNull(filteredTx.timeWindow) {
-            "Time window component could not be found on the transaction"
-        }
-
-        return NotaryTransactionDetails(
-            filteredTx.id,
-            filteredTx.metadata,
-            numOutputs = 0,
-            filteredTx.timeWindow!!,
-            inputs = emptyList(),
-            references = emptyList(),
-            filteredTx.notaryName!!,
-            filteredTx.notaryKey!!
-        )
     }
 
     /**
@@ -283,6 +240,32 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
                 "Error while validating transaction ${(requestPayload.transaction as UtxoFilteredTransaction).id}",
                 e
             )
+        }
+    }
+
+    @Suspendable
+    private fun checkUniqueness(
+        txDetails: NotaryTransactionDetails,
+        session: FlowSession,
+        notarizationType: NotarizationType
+    ): UniquenessCheckResult {
+        return when (notarizationType) {
+            NotarizationType.NOTARIZE -> clientService.requestUniquenessCheck(
+                txDetails.id.toString(),
+                session.counterparty.toString(),
+                txDetails.inputs.map { it.toString() },
+                txDetails.references.map { it.toString() },
+                txDetails.numOutputs,
+                txDetails.timeWindow.from,
+                txDetails.timeWindow.until
+            )
+            NotarizationType.CHECK -> clientService.requestUniquenessCheck(
+                txDetails.id.toString(),
+                session.counterparty.toString(),
+                txDetails.timeWindow.from,
+                txDetails.timeWindow.until
+            )
+            else -> throw IllegalArgumentException("Received invalid notarization type $notarizationType")
         }
     }
 

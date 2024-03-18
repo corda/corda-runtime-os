@@ -5,6 +5,7 @@ import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.data.uniqueness.UniquenessCheckResultMalformedRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResultUnhandledExceptionAvro
+import net.corda.data.uniqueness.UniquenessCheckType
 import net.corda.metrics.CordaMetrics
 import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.checker.UniquenessChecker
@@ -131,14 +132,12 @@ class BatchedUniquenessCheckerImpl(
 
         if ( numMalformed > 0 ) { log.debug { "$numMalformed malformed requests were rejected" } }
 
-        val (checks, notarizations) = requestsToProcess.partition { (request, _) ->
-            request.numOutputStates == 0 && request.inputStates.isEmpty() && request.referenceStates.isEmpty()
-        }
+        val grouped = requestsToProcess.groupBy { (_, request) -> request.uniquenessCheckType }
 
         // TODO - Re-instate batch processing logic based on number of states if needed - need to
         // establish what batching there is in the message bus layer first
-        processBatches(notarizations, results, ::processUniquenessCheckBatch)
-        processBatches(checks, results, ::processExistingUniquenessCheckBatch)
+        grouped[UniquenessCheckType.NOTARIZE]?.let { notarizations -> processBatches(notarizations, results, ::processUniquenessCheckBatch) }
+        grouped[UniquenessCheckType.CHECK]?.let { checks -> processBatches(checks, results, ::processExistingUniquenessCheckBatch) }
 
         CordaMetrics.Metric.UniquenessCheckerBatchExecutionTime
             .builder()

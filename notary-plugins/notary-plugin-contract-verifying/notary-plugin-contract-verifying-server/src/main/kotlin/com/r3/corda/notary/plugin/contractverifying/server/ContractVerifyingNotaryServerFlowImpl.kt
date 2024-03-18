@@ -11,6 +11,7 @@ import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
@@ -84,7 +85,7 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
                 logger.trace("Received notarization request for transaction {}", initialTransaction.id)
             }
 
-            val initialTransactionDetails = getInitialTransactionDetail(initialTransaction, notarizationType)
+            val initialTransactionDetails = getInitialTransactionDetail(initialTransaction)
 
             validateTransactionNotaryAgainstCurrentNotary(initialTransactionDetails)
 
@@ -96,15 +97,7 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
                 logger.trace("Requesting uniqueness check for transaction {}", initialTransactionDetails.id)
             }
 
-            val uniquenessResult = clientService.requestUniquenessCheck(
-                initialTransaction.id.toString(),
-                session.counterparty.toString(),
-                initialTransaction.inputStateRefs.map { it.toString() },
-                initialTransaction.referenceStateRefs.map { it.toString() },
-                initialTransaction.outputStateAndRefs.count(),
-                initialTransaction.timeWindow.from,
-                initialTransaction.timeWindow.until
-            )
+            val uniquenessResult = checkUniqueness(initialTransactionDetails, session, notarizationType)
 
             if (logger.isDebugEnabled) {
                 logger.debug(
@@ -145,30 +138,19 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
      * A helper function that constructs an instance of [NotaryTransactionDetails] from the given transaction.
      */
     @Suspendable
-    private fun getInitialTransactionDetail(initialTransaction: UtxoSignedTransaction, notarizationType: NotarizationType): NotaryTransactionDetails {
-        return when (notarizationType) {
-            NotarizationType.NOTARIZE -> NotaryTransactionDetails(
-                initialTransaction.id,
-                initialTransaction.metadata,
-                initialTransaction.outputStateAndRefs.count(),
-                initialTransaction.timeWindow,
-                initialTransaction.inputStateRefs,
-                initialTransaction.referenceStateRefs,
-                initialTransaction.notaryName,
-                initialTransaction.notaryKey
-            )
-            NotarizationType.CHECK -> NotaryTransactionDetails(
-                initialTransaction.id,
-                initialTransaction.metadata,
-                numOutputs = 0,
-                initialTransaction.timeWindow,
-                inputs = emptyList(),
-                references = emptyList(),
-                initialTransaction.notaryName,
-                initialTransaction.notaryKey
-            )
-            else -> throw IllegalArgumentException("Received invalid notarization type $notarizationType")
-        }
+    private fun getInitialTransactionDetail(
+        initialTransaction: UtxoSignedTransaction,
+    ): NotaryTransactionDetails {
+        return NotaryTransactionDetails(
+            initialTransaction.id,
+            initialTransaction.metadata,
+            initialTransaction.outputStateAndRefs.count(),
+            initialTransaction.timeWindow,
+            initialTransaction.inputStateRefs,
+            initialTransaction.referenceStateRefs,
+            initialTransaction.notaryName,
+            initialTransaction.notaryKey
+        )
     }
 
     @Suspendable
@@ -242,6 +224,32 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
                 "Transaction failed to verify with error message: ${e.message}.",
                 initialTransaction.id
             )
+        }
+    }
+
+    @Suspendable
+    private fun checkUniqueness(
+        txDetails: NotaryTransactionDetails,
+        session: FlowSession,
+        notarizationType: NotarizationType
+    ): UniquenessCheckResult {
+        return when (notarizationType) {
+            NotarizationType.NOTARIZE -> clientService.requestUniquenessCheck(
+                txDetails.id.toString(),
+                session.counterparty.toString(),
+                txDetails.inputs.map { it.toString() },
+                txDetails.references.map { it.toString() },
+                txDetails.numOutputs,
+                txDetails.timeWindow.from,
+                txDetails.timeWindow.until
+            )
+            NotarizationType.CHECK -> clientService.requestUniquenessCheck(
+                txDetails.id.toString(),
+                session.counterparty.toString(),
+                txDetails.timeWindow.from,
+                txDetails.timeWindow.until
+            )
+            else -> throw IllegalArgumentException("Received invalid notarization type $notarizationType")
         }
     }
 }
