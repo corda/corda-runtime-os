@@ -65,6 +65,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import java.security.PrivilegedExceptionAction
 import java.security.PublicKey
 import java.time.Instant
 
@@ -248,11 +249,15 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     }
 
     private fun updateTimeInCheckpoint(persistTimeStamp: Instant) {
-        val previousTimeStamp =
-            flowCheckpointService.getCheckpoint().readCustomState(UtxoLedgerLastPersistedTimestamp::class.java)
-        if (previousTimeStamp == null || previousTimeStamp.lastPersistedTimestamp < persistTimeStamp) {
-            flowCheckpointService.getCheckpoint().writeCustomState(UtxoLedgerLastPersistedTimestamp(persistTimeStamp))
-        }
+        @Suppress("deprecation", "removal")
+        java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
+            val previousTimeStamp =
+                flowCheckpointService.getCheckpoint().readCustomState(UtxoLedgerLastPersistedTimestamp::class.java)
+            if (previousTimeStamp == null || previousTimeStamp.lastPersistedTimestamp < persistTimeStamp) {
+                flowCheckpointService.getCheckpoint()
+                    .writeCustomState(UtxoLedgerLastPersistedTimestamp(persistTimeStamp))
+            }
+        })
     }
 
     @Suspendable
