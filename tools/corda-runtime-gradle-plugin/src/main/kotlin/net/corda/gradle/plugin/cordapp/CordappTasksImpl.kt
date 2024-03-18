@@ -17,8 +17,6 @@ class CordappTasksImpl(var pc: ProjectContext) {
         val groupPolicyFile = File(pc.groupPolicyFilePath)
         val networkConfigFile = File("${pc.project.rootDir}${pc.networkConfig.configFilePath}")
 
-        val pluginsDir = "${pc.cordaCliBinDir}/plugins/"
-
         if (!groupPolicyFile.exists() || groupPolicyFile.lastModified() < networkConfigFile.lastModified()) {
 
             pc.logger.quiet("Creating the Group policy.")
@@ -27,9 +25,6 @@ class CordappTasksImpl(var pc: ProjectContext) {
             GroupPolicyHelper().createStaticGroupPolicy(
                 groupPolicyFile,
                 configX500Ids,
-                pc.javaBinDir,
-                pluginsDir,
-                pc.cordaCliBinDir
             )
         } else {
             pc.logger.quiet("Group policy up to date.")
@@ -45,12 +40,7 @@ class CordappTasksImpl(var pc: ProjectContext) {
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             mapper.readValue(fis, GroupPolicyDTO::class.java)
         } catch (e: Exception) {
-            val firstLine = groupPolicyFile.useLines { it.firstOrNull() }
-            if ((firstLine != null) && firstLine.contains("Unable to access jarfile \\S*corda-cli.jar".toRegex())) {
-                throw CordaRuntimeGradlePluginException("Unable to find the Corda CLI, has it been installed?")
-            }
-
-            throw CordaRuntimeGradlePluginException("Failed to read GroupPolicy from group policy file with exception: $e.")
+            throw CordaRuntimeGradlePluginException("Failed to read GroupPolicy from group policy file with exception: $e.", e)
         }
         validateGroupPolicyHasAllMembers(groupPolicy)
     }
@@ -120,8 +110,6 @@ class CordappTasksImpl(var pc: ProjectContext) {
     fun buildCPIs() {
         pc.logger.quiet("Creating ${pc.corDappCpiName} CPI.")
         BuildCpiHelper().createCPI(
-            pc.javaBinDir,
-            pc.cordaCliBinDir,
             pc.groupPolicyFilePath,
             pc.keystoreFilePath,
             pc.keystoreAlias,
@@ -131,15 +119,19 @@ class CordappTasksImpl(var pc: ProjectContext) {
             pc.corDappCpiName,
             pc.project.version.toString()
         )
+
         pc.logger.quiet("Creating ${pc.notaryCpiName} CPI.")
+        val notaryCpb = if (pc.isNotaryNonValidating) {
+            pc.nonValidatingNotaryCpbFilePath
+        } else {
+            pc.contractVerifyingNotaryCpbFilePath
+        }
         BuildCpiHelper().createCPI(
-            pc.javaBinDir,
-            pc.cordaCliBinDir,
             pc.groupPolicyFilePath,
             pc.keystoreFilePath,
             pc.keystoreAlias,
             pc.keystorePassword,
-            pc.notaryCpbFilePath,
+            notaryCpb,
             pc.notaryCpiFilePath,
             pc.notaryCpiName,
             pc.project.version.toString()

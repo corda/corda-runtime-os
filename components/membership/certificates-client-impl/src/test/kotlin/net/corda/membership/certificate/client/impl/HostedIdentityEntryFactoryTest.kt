@@ -21,6 +21,7 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -45,6 +46,7 @@ class HostedIdentityEntryFactoryTest {
         const val PUBLIC_KEY_PEM = "publicKeyPem"
         const val PUBLIC_CLUSTER_KEY_PEM = "publicClusterKeyPem"
         const val VALID_CERTIFICATE_ALIAS = "alias"
+        const val VALID_CHAIN_CERTIFICATE_ALIAS = "chain-alias"
         const val WRONG_SIGN_CERTIFICATE_ALIAS = "wrong"
         val SESSION_KEY_ID = ShortHash.of("AB0123456789")
     }
@@ -72,10 +74,21 @@ class HostedIdentityEntryFactoryTest {
             .replace("\n", System.lineSeparator())
 
     private val rootPem = HostedIdentityEntryFactoryTest::class.java.getResource("/certificates/root.pem")!!.readText()
+    private val chainRootPem = HostedIdentityEntryFactoryTest::class.java.getResource("/certificates/chain/ca.pem")!!.readText()
+        .replace("\r", "")
+        .replace("\n", System.lineSeparator())
+    private val chainCertificatesPems = (0..3).map { index ->
+        HostedIdentityEntryFactoryTest::class.java.getResource("/certificates/chain/certificate.$index.pem")!!.readText()
+            .replace("\r", "")
+            .replace("\n", System.lineSeparator())
+    }
     private val certificatePublicKey = certificatePem.let {
         CertificateFactory.getInstance("X.509").generateCertificate(it.byteInputStream()).publicKey
     }
     private val wrongSignCertificatePublicKey = wrongSignCertificatePem.let {
+        CertificateFactory.getInstance("X.509").generateCertificate(it.byteInputStream()).publicKey
+    }
+    private val chainCertificatePublicKey = chainCertificatesPems.first().let {
         CertificateFactory.getInstance("X.509").generateCertificate(it.byteInputStream()).publicKey
     }
     private val filter = argumentCaptor<Map<String, String>>()
@@ -104,6 +117,12 @@ class HostedIdentityEntryFactoryTest {
             filterMyKeys(eq(P2P), eq(listOf(certificatePublicKey)), any())
         }.doReturn(listOf(certificatePublicKey))
         on {
+            filterMyKeys(eq(P2P), eq(listOf(chainCertificatePublicKey)), any())
+        }.doReturn(listOf(chainCertificatePublicKey))
+        on {
+            filterMyKeys(eq(VALID_NODE.toString()), eq(listOf(chainCertificatePublicKey)), any())
+        }.doReturn(listOf(chainCertificatePublicKey))
+        on {
             filterMyKeys(eq(VALID_NODE.toString()), eq(listOf(wrongSignCertificatePublicKey)), any())
         }.doReturn(listOf(wrongSignCertificatePublicKey))
         on {
@@ -124,7 +143,7 @@ class HostedIdentityEntryFactoryTest {
         on { sessionTrustRoots } doReturn listOf(rootPem)
     }
     private val p2pParams: GroupPolicy.P2PParameters = mock {
-        on { tlsTrustRoots } doReturn listOf(rootPem)
+        on { tlsTrustRoots } doReturn listOf(rootPem, chainRootPem)
         on { sessionPki } doReturn GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
     }
     private val groupPolicy = mock<GroupPolicy> {
@@ -145,6 +164,7 @@ class HostedIdentityEntryFactoryTest {
         when (alias) {
             VALID_CERTIFICATE_ALIAS -> certificatePem
             WRONG_SIGN_CERTIFICATE_ALIAS -> wrongSignCertificatePem
+            VALID_CHAIN_CERTIFICATE_ALIAS -> chainCertificatesPems.joinToString(System.lineSeparator())
             else -> null
         }
     }
@@ -649,5 +669,96 @@ class HostedIdentityEntryFactoryTest {
                 useClusterLevelTlsCertificateAndKey = true,
             )
         }
+    }
+
+    @Test
+    fun `valid certificate chain is created when needed`() {
+        val record = factory.createIdentityRecord(
+            holdingIdentityShortHash = VALID_NODE,
+            tlsCertificateChainAlias = VALID_CHAIN_CERTIFICATE_ALIAS,
+            preferredSessionKeyAndCertificate = CertificatesClient.SessionKeyAndCertificate(
+                sessionKeyId = SESSION_KEY_ID,
+                sessionCertificateChainAlias = null,
+            ),
+            useClusterLevelTlsCertificateAndKey = false,
+            alternativeSessionKeyAndCertificates = emptyList(),
+        )
+
+        assertThat(record.value?.tlsCertificates).isEqualTo(chainCertificatesPems)
+    }
+
+    @Test
+    fun `invalid certificate chain due to wrong order will fail`() {
+        val factory = HostedIdentityEntryFactory(
+            virtualNodeInfoReadService,
+            cryptoOpsClient,
+            keyEncodingService,
+            groupPolicyProvider,
+            mtlsMgmClientCertificateKeeper,
+        ) { _, _, _ ->
+            chainCertificatesPems.reversed().joinToString(separator = System.lineSeparator())
+        }
+        assertThatThrownBy {
+            factory.createIdentityRecord(
+                holdingIdentityShortHash = VALID_NODE,
+                tlsCertificateChainAlias = VALID_CHAIN_CERTIFICATE_ALIAS,
+                preferredSessionKeyAndCertificate = CertificatesClient.SessionKeyAndCertificate(
+                    sessionKeyId = SESSION_KEY_ID,
+                    sessionCertificateChainAlias = null,
+                ),
+                useClusterLevelTlsCertificateAndKey = false,
+                alternativeSessionKeyAndCertificates = emptyList(),
+            )
+        }.hasMessageContaining("The previous certificate in the chain was issued by")
+    }
+
+    @Test
+    fun `invalid certificate chain due to missing first certificate`() {
+        val factory = HostedIdentityEntryFactory(
+            virtualNodeInfoReadService,
+            cryptoOpsClient,
+            keyEncodingService,
+            groupPolicyProvider,
+            mtlsMgmClientCertificateKeeper,
+        ) { _, _, _ ->
+            chainCertificatesPems.drop(1).joinToString(separator = System.lineSeparator())
+        }
+        assertThatThrownBy {
+            factory.createIdentityRecord(
+                holdingIdentityShortHash = VALID_NODE,
+                tlsCertificateChainAlias = VALID_CHAIN_CERTIFICATE_ALIAS,
+                preferredSessionKeyAndCertificate = CertificatesClient.SessionKeyAndCertificate(
+                    sessionKeyId = SESSION_KEY_ID,
+                    sessionCertificateChainAlias = null,
+                ),
+                useClusterLevelTlsCertificateAndKey = false,
+                alternativeSessionKeyAndCertificates = emptyList(),
+            )
+        }.hasMessageContaining("This certificate public key is unknown to")
+    }
+
+    @Test
+    fun `invalid certificate chain due to certificate not sign by ca`() {
+        val factory = HostedIdentityEntryFactory(
+            virtualNodeInfoReadService,
+            cryptoOpsClient,
+            keyEncodingService,
+            groupPolicyProvider,
+            mtlsMgmClientCertificateKeeper,
+        ) { _, _, _ ->
+            chainCertificatesPems.take(2).joinToString(separator = System.lineSeparator())
+        }
+        assertThatThrownBy {
+            factory.createIdentityRecord(
+                holdingIdentityShortHash = VALID_NODE,
+                tlsCertificateChainAlias = VALID_CHAIN_CERTIFICATE_ALIAS,
+                preferredSessionKeyAndCertificate = CertificatesClient.SessionKeyAndCertificate(
+                    sessionKeyId = SESSION_KEY_ID,
+                    sessionCertificateChainAlias = null,
+                ),
+                useClusterLevelTlsCertificateAndKey = false,
+                alternativeSessionKeyAndCertificates = emptyList(),
+            )
+        }.hasMessageContaining("The TLS certificate was not signed by the correct certificate authority")
     }
 }

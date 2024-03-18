@@ -9,7 +9,7 @@ internal fun parseRegistrationRequestId(requestId: String): UUID {
     } catch (e: IllegalArgumentException) {
         throw InvalidInputDataException(
             details = mapOf("registrationRequestId" to requestId),
-            message = "'$requestId' is not a valid registration request ID."
+            title = "'$requestId' is not a valid registration request ID."
         )
     }
 }

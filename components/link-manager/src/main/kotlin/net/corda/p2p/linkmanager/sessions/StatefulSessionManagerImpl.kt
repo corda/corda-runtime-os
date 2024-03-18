@@ -202,7 +202,7 @@ internal class StatefulSessionManagerImpl(
                 OutboundSessionStatus.SentInitiatorHello, OutboundSessionStatus.SentInitiatorHandshake -> {
                     state.state.replaySessionMessage(state.first.message.message.header.statusFilter)?.let { (needed, newState) ->
                         state.toResultsFirstAndOther(
-                            action = UpdateAction(newState),
+                            action = UpdateAction(newState, true),
                             firstState = needed,
                             otherStates = SessionAlreadyPending(counterparties),
                         )
@@ -647,6 +647,7 @@ internal class StatefulSessionManagerImpl(
                 serial = counterParties.serial,
                 membershipStatus = counterParties.status,
                 communicationWithMgm = counterParties.communicationWithMgm,
+                initiationTimestamp = timestamp,
             )
         val newState =
             State(
@@ -758,9 +759,7 @@ internal class StatefulSessionManagerImpl(
                         processInitiatorHello(state, lastMessage)
                     }
                     is InboundSessionMessage.InitiatorHandshakeMessage -> {
-                        processInitiatorHandshake(state, lastMessage)?.let { (message, stateUpdate, session) ->
-                            Result(message, UpdateAction(stateUpdate), session)
-                        }
+                        processInitiatorHandshake(state, lastMessage)
                     }
                 }
             otherContexts.map {
@@ -795,14 +794,10 @@ internal class StatefulSessionManagerImpl(
             val result =
                 when (val lastMessage = lastContext.outboundSessionMessage) {
                     is OutboundSessionMessage.ResponderHelloMessage -> {
-                        processResponderHello(state, lastMessage)?.let { (message, stateUpdate) ->
-                            Result(message, UpdateAction(stateUpdate), null)
-                        }
+                        processResponderHello(state, lastMessage)
                     }
                     is OutboundSessionMessage.ResponderHandshakeMessage -> {
-                        processResponderHandshake(state, lastMessage)?.let { (message, stateUpdate, session) ->
-                            Result(message, UpdateAction(stateUpdate), session)
-                        }
+                        processResponderHandshake(state, lastMessage)
                     }
                 }
             otherContexts.map {
@@ -869,7 +864,7 @@ internal class StatefulSessionManagerImpl(
                             version = state.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
-                    Result(responderHelloToResend, UpdateAction(newState), null)
+                    Result(responderHelloToResend, UpdateAction(newState, true), null)
                 } else {
                     null
                 }
@@ -883,7 +878,7 @@ internal class StatefulSessionManagerImpl(
     private fun processResponderHello(
         state: State?,
         message: OutboundSessionMessage.ResponderHelloMessage,
-    ): Pair<LinkOutMessage?, State>? {
+    ): Result? {
         val metadata = state?.metadata?.toOutbound()
         return when (metadata?.status) {
             OutboundSessionStatus.SentInitiatorHello -> {
@@ -920,7 +915,7 @@ internal class StatefulSessionManagerImpl(
                             version = state.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
-                    responseMessage to newState
+                    Result(responseMessage, UpdateAction(newState, false), null)
                 }
             }
 
@@ -943,7 +938,7 @@ internal class StatefulSessionManagerImpl(
                             version = state.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
-                    initiatorHandshakeToResend to newState
+                    Result(initiatorHandshakeToResend, UpdateAction(newState, true), null)
                 } else {
                     null
                 }
@@ -964,16 +959,10 @@ internal class StatefulSessionManagerImpl(
         }
     }
 
-    private data class ProcessHandshakeResult(
-        val responseMessage: LinkOutMessage?,
-        val stateToUpdate: State,
-        val session: Session?,
-    )
-
     private fun processInitiatorHandshake(
         state: State?,
         message: InboundSessionMessage.InitiatorHandshakeMessage,
-    ): ProcessHandshakeResult? {
+    ): Result? {
         val metadata = state?.metadata?.toInbound()
         return when (metadata?.status) {
             null -> {
@@ -1012,7 +1001,7 @@ internal class StatefulSessionManagerImpl(
                             version = state.version,
                             metadata = newMetadata.toMetadata(),
                         )
-                    ProcessHandshakeResult(responseMessage, newState, session)
+                    Result(responseMessage, UpdateAction(newState, false), session)
                 }
             }
             InboundSessionStatus.SentResponderHandshake -> {
@@ -1035,7 +1024,7 @@ internal class StatefulSessionManagerImpl(
                             version = state.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
-                    ProcessHandshakeResult(responderHandshakeToResend, newState, null)
+                    Result(responderHandshakeToResend, UpdateAction(newState, true), null)
                 } else {
                     null
                 }
@@ -1046,7 +1035,7 @@ internal class StatefulSessionManagerImpl(
     private fun processResponderHandshake(
         state: State?,
         message: OutboundSessionMessage.ResponderHandshakeMessage,
-    ): ProcessHandshakeResult? {
+    ): Result? {
         val metadata = state?.metadata?.toOutbound()
         return when (metadata?.status) {
             OutboundSessionStatus.SentInitiatorHandshake -> {
@@ -1080,7 +1069,7 @@ internal class StatefulSessionManagerImpl(
                             version = state.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
-                    ProcessHandshakeResult(null, newState, session)
+                    Result(null, UpdateAction(newState, false), session)
                 }
             }
 

@@ -13,6 +13,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import static java.util.stream.Collectors.toUnmodifiableList;
+import static net.corda.osgi.framework.OSGiFrameworkUtils.getFrameworkFrom;
+import static net.corda.osgi.framework.OSGiFrameworkUtils.isBundleStoppable;
 
 /**
  * This class provided the main entry point for the applications built with the {@code corda.common-app} plugin.
@@ -52,11 +54,6 @@ final class OSGiFrameworkMain {
     private static final String FRAMEWORK_STORAGE_PREFIX = "osgi-cache";
 
     /**
-     * Wait for stop of the OSGi framework, without timeout.
-     */
-    private static final long NO_TIMEOUT = 0L;
-
-    /**
      * Default directory with JDBC drivers
      */
     private static final String DEFAULT_JDBC_DRIVER_DIRECTORY = "/opt/jdbc-driver";
@@ -73,17 +70,6 @@ final class OSGiFrameworkMain {
     static final String APPLICATION_BUNDLES = "application_bundles";
 
     /**
-     * Location of the file listing the extra system packages exposed from the JDK to the framework.
-     * See <a href="http://docs.osgi.org/specification/osgi.core/7.0.0/framework.lifecycle.html#framework.lifecycle.launchingproperties">OSGi Core Release 7 - 4.2.2 Launching Properties</a>
-     * The location is relative to run time class path:
-     * <ul>
-     * <li>{@code build/resources/main} in a gradle project</li>
-     * <li>the root of the fat executable {@code .jar}</li>
-     * </ul>
-     */
-    static final String SYSTEM_PACKAGES_EXTRA = "system_packages_extra";
-
-    /**
      * The main entry point for the bootable JAR built with the `corda.common-app` plugin.
      * <p/>
      * This method bootstraps the application:
@@ -98,7 +84,7 @@ final class OSGiFrameworkMain {
      *      <li>Call the {@link net.corda.osgi.api.Application#startup} method of active application bundles, if any,
      *      passing {@code args}.</li></ol>
      * </ol>
-     *
+     * <p>
      *  Then, the method waits for the JVM receives the signal to terminate to
      *  <ol>
      *  <li><b>Shut Down</b><ol>
@@ -145,14 +131,15 @@ final class OSGiFrameworkMain {
         try {
             final Path frameworkStorageDir = Files.createTempDirectory(FRAMEWORK_STORAGE_PREFIX);
             OSGiFrameworkWrap osgiFrameworkWrap = new OSGiFrameworkWrap(
-                OSGiFrameworkWrap.getFrameworkFrom(
-                    frameworkStorageDir,
-                    OSGiFrameworkWrap.getFrameworkPropertyFrom(SYSTEM_PACKAGES_EXTRA)
-                )
+                    getFrameworkFrom(
+                            frameworkStorageDir,
+                            OSGiFrameworkMain.class.getClassLoader(),
+                            logger
+                    )
             );
             try {
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                    if (OSGiFrameworkWrap.isStoppable(osgiFrameworkWrap.getState())) {
+                    if (isBundleStoppable(osgiFrameworkWrap.getState())) {
                         osgiFrameworkWrap.stop();
                     }
                 }, "shutdown"));
@@ -161,17 +148,17 @@ final class OSGiFrameworkMain {
                 final Path addonDirectory = getAddonDirectory(args);
 
                 osgiFrameworkWrap
-                    .start()
-                    .installFromDirectory(driverDirectory)
-                    .installFromDirectory(addonDirectory)
-                    .install(APPLICATION_BUNDLES)
-                    .activate()
-                    .startApplication(NO_TIMEOUT, args)
-                    .waitForStop(NO_TIMEOUT);
+                        .start()
+                        .installFromDirectory(driverDirectory)
+                        .installFromDirectory(addonDirectory)
+                        .install(APPLICATION_BUNDLES)
+                        .activate()
+                        .startApplication(args)
+                        .waitForStop();
             } finally {
                 // If osgiFrameworkWrap stopped because SIGINT/CTRL+C,
                 // this avoids to call stop twice and log warning.
-                if (OSGiFrameworkWrap.isStoppable(osgiFrameworkWrap.getState())) {
+                if (isBundleStoppable(osgiFrameworkWrap.getState())) {
                     osgiFrameworkWrap.stop();
                 }
             }
