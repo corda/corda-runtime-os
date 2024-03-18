@@ -888,7 +888,6 @@ class OutboundMessageProcessorTest {
 
         assertSoftly { softly ->
             softly.assertThat(records).hasSize(state.messages.size + messages.size)
-            records.filter { it.topic == Schemas.P2P.P2P_OUT_MARKERS }.forEach { println("QQQ ${it.key}") }
             softly.assertThat(records)
                 .filteredOn { it.topic == Schemas.P2P.LINK_OUT_TOPIC }
                 .hasSize(state.messages.size)
