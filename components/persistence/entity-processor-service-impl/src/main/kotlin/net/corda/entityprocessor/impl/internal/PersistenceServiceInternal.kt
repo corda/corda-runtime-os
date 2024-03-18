@@ -49,7 +49,8 @@ import javax.persistence.criteria.Selection
  * to the given [HoldingIdentity]
  * */
 class PersistenceServiceInternal(
-    private val classProvider: (fullyQualifiedClassName: String) -> Class<*>) {
+    private val classProvider: (fullyQualifiedClassName: String) -> Class<*>
+) {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -59,9 +60,9 @@ class PersistenceServiceInternal(
 
     fun persist(
         entityManager: EntityManager,
-        payload: List<Any>
+        entities: List<Any>
     ): EntityResponse {
-        payload.forEach { entityManager.persist(it) }
+        entities.forEach { entityManager.persist(it) }
         return EntityResponse(emptyList(), KeyValuePairList(emptyList()), null)
     }
 
@@ -186,10 +187,14 @@ class PersistenceServiceInternal(
         }
 
         val results = query.resultList
-        val result = when (results ) {
+        val result = when (results) {
             null -> emptyList()
             else -> results.filterNotNull().map { item -> serializationService.toBytes(item) }
         }
-        return EntityResponse(result, KeyValuePairList(listOf(KeyValuePair("numberOfRowsFromQuery", results.size.toString()))), null)
+        return EntityResponse(
+            result,
+            KeyValuePairList(listOf(KeyValuePair("numberOfRowsFromQuery", results.size.toString()))),
+            null
+        )
     }
 }

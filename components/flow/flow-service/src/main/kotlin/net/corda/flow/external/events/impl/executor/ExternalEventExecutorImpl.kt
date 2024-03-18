@@ -7,7 +7,7 @@ import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.utils.RequestID
+import net.corda.flow.utils.RequestIDGenerator
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.EncodingUtils.toBase64
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -55,7 +55,7 @@ class ExternalEventExecutorImpl @Activate constructor(
 
     private fun generateRequestId(flowFiber: FlowFiber, parameters: Any) =
         with(flowFiber.getExecutionContext().flowCheckpoint) {
-            RequestID.generateRequestId(parameters, flowId, suspendCount, serializationService) {
+            RequestIDGenerator.requestId(parameters, flowId, suspendCount, serializationService) {
                 toBase64(it.sha256Bytes())
             }
         }
