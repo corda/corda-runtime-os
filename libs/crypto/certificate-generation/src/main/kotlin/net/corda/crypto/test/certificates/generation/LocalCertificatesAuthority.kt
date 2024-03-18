@@ -4,12 +4,17 @@ import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.test.certificates.generation.CertificateAuthority.Companion.PASSWORD
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers
 import org.bouncycastle.asn1.x500.X500Name
+import org.bouncycastle.asn1.x509.AuthorityInformationAccess
 import org.bouncycastle.asn1.x509.BasicConstraints
+import org.bouncycastle.asn1.x509.CRLDistPoint
+import org.bouncycastle.asn1.x509.DistributionPoint
+import org.bouncycastle.asn1.x509.DistributionPointName
 import org.bouncycastle.asn1.x509.Extension
 import org.bouncycastle.asn1.x509.Extensions
 import org.bouncycastle.asn1.x509.GeneralName
 import org.bouncycastle.asn1.x509.GeneralNames
 import org.bouncycastle.asn1.x509.KeyUsage
+import org.bouncycastle.asn1.x509.X509ObjectIdentifiers
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -33,13 +38,26 @@ import java.util.Date
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 
+@Suppress("LongParameterList")
 internal open class LocalCertificatesAuthority(
     private val keysFactoryDefinitions: KeysFactoryDefinitions,
     private val validDuration: Duration,
     savedData: SavedData?,
     issuerName: String?,
-    private val parentCa: LocalCertificatesAuthority? = null
+    private val parentCa: LocalCertificatesAuthority? = null,
+    private val crlUrl: String? = null,
 ) : CertificateAuthority {
+    internal companion object {
+        fun PrivateKey.signer(): ContentSigner {
+            val signatureAlgorithm =
+                when (this.algorithm) {
+                    "RSA" -> SignatureSpecs.RSA_SHA256.signatureName
+                    "EC" -> SignatureSpecs.ECDSA_SHA256.signatureName
+                    else -> throw InvalidParameterException("Unsupported Algorithm")
+                }
+            return JcaContentSignerBuilder(signatureAlgorithm).build(this)
+        }
+    }
 
     protected val serialNumber = AtomicLong(savedData?.firstSerialNumber ?: 1)
     private val now = System.currentTimeMillis()
@@ -56,8 +74,35 @@ internal open class LocalCertificatesAuthority(
 
         return keysFactory.generateKeyPair()
     }
-    private val privateKeyAndCertificate by lazy {
+    internal val privateKeyAndCertificate by lazy {
         savedData?.privateKeyAndCertificate ?: generatePrivateKeyAndCertificate()
+    }
+
+    private fun addLDistributionPoints(certBuilder: JcaX509v3CertificateBuilder) {
+        if (crlUrl != null) {
+            val name = GeneralName(GeneralName.uniformResourceIdentifier, crlUrl)
+            val distributionPointName = DistributionPointName(DistributionPointName.FULL_NAME, name)
+            val extension = CRLDistPoint(
+                arrayOf(
+                    DistributionPoint(
+                        distributionPointName,
+                        null,
+                        null,
+                    )
+                )
+            )
+            certBuilder.addExtension(Extension.cRLDistributionPoints, false, extension)
+        }
+    }
+    private fun addAuthorityInformationAccess(certBuilder: JcaX509v3CertificateBuilder) {
+        if (crlUrl != null) {
+            val name = GeneralName(GeneralName.uniformResourceIdentifier, crlUrl)
+            val authorityInformationAccess = AuthorityInformationAccess(
+                X509ObjectIdentifiers.ocspAccessMethod,name
+            )
+            certBuilder.addExtension(Extension.authorityInfoAccess, false, authorityInformationAccess)
+        }
+        addLDistributionPoints(certBuilder)
     }
 
     private fun generatePrivateKeyAndCertificate(): PrivateKeyWithCertificateChain {
@@ -85,6 +130,7 @@ internal open class LocalCertificatesAuthority(
                         or KeyUsage.cRLSign
             )
         )
+        addLDistributionPoints(certBuilder)
 
         val signer = signerPrivateKey.signer()
 
@@ -92,16 +138,6 @@ internal open class LocalCertificatesAuthority(
             certBuilder.build(signer)
         )
         return PrivateKeyWithCertificateChain(caKeyPair.private, listOf(certificate))
-    }
-
-    private fun PrivateKey.signer(): ContentSigner {
-        val signatureAlgorithm =
-            when (this.algorithm) {
-                "RSA" -> SignatureSpecs.RSA_SHA256.signatureName
-                "EC" -> SignatureSpecs.ECDSA_SHA256.signatureName
-                else -> throw InvalidParameterException("Unsupported Algorithm")
-            }
-        return JcaContentSignerBuilder(signatureAlgorithm).build(this)
     }
 
     private fun nextSerialNumber() =
@@ -146,6 +182,7 @@ internal open class LocalCertificatesAuthority(
             val subjectAltName = GeneralNames(altName)
             certificateBuilder.addExtension(Extension.subjectAlternativeName, true, subjectAltName)
         }
+        addAuthorityInformationAccess(certificateBuilder)
 
         return listOf(
             JcaX509CertificateConverter().getCertificate(
@@ -193,6 +230,7 @@ internal open class LocalCertificatesAuthority(
                     certificateGenerator.addExtension(extension)
                 }
             }
+        addAuthorityInformationAccess(certificateGenerator)
 
         val holder = certificateGenerator.build(privateKeyAndCertificate.privateKey.signer())
         val structure = holder.toASN1Structure()

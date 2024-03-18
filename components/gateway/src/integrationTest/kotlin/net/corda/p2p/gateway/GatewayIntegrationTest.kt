@@ -1300,6 +1300,7 @@ internal class GatewayIntegrationTest : TestBase() {
         private fun testClientWith(
             server: URI,
             trustStorePem: String,
+            mode: RevocationConfigMode = RevocationConfigMode.OFF,
         ) {
             val truststore = TrustStoresMap.TrustedCertificates(listOf(trustStorePem))
             val serverInfo = DestinationInfo(
@@ -1310,7 +1311,7 @@ internal class GatewayIntegrationTest : TestBase() {
             val gatewayMessage = GatewayMessage(UUID.randomUUID().toString(), linkInMessage.payload)
             HttpClient(
                 serverInfo,
-                SslConfiguration(RevocationConfig(RevocationConfigMode.OFF), TlsType.ONE_WAY),
+                SslConfiguration(RevocationConfig(mode), TlsType.ONE_WAY),
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
                 ConnectionConfiguration(),
@@ -1330,13 +1331,6 @@ internal class GatewayIntegrationTest : TestBase() {
                 listOf(
                     this.caCertificate.toPem()
                 )
-            )
-        }
-
-        private fun PrivateKeyWithCertificateChain.toKeyStoreAndPassword(): KeyStoreWithPassword {
-            return KeyStoreWithPassword(
-                this.toKeyStore(),
-                CertificateAuthority.PASSWORD
             )
         }
 
@@ -1621,6 +1615,105 @@ internal class GatewayIntegrationTest : TestBase() {
 
         }
 
+        @Test
+        @Timeout(120)
+        fun `support revocable certificates`() {
+            data class Server(
+                val node: Node,
+                val privateKeyWithCertificateChain: PrivateKeyWithCertificateChain,
+                val wasRevoked: Boolean,
+                val uri: URI,
+            )
+            val holdingId = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", GROUP_ID)
+            val configPublisher = ConfigPublisher().also {
+                keep(it)
+            }
+            val size = 6
+            CertificateAuthorityFactory
+                .createRevocableAuthority(
+                    RSA_TEMPLATE.toFactoryDefinitions(),
+                ).use { ca ->
+                    val servers = (1..size).map { index ->
+                        val node = Node("server-$index").also {
+                            it.listenToLinkManagerRpc()
+                        }
+                        val uri = URI.create("https://www.alice.net:${getOpenPort()}")
+                        val privateKeyWithCertificate= ca.generateKeyAndCertificates(uri.host)
+                        val revoke = index % 2 == 0
+                        if (revoke) {
+                            ca.revoke(privateKeyWithCertificate.certificates.first())
+                        }
+                        Server(
+                            node,
+                            privateKeyWithCertificate,
+                            wasRevoked = revoke,
+                            uri = uri,
+                        )
+                    }
+                    servers.forEach { server ->
+                        configPublisher.publishConfig(
+                            GatewayConfiguration(
+                                listOf(
+                                    GatewayServerConfiguration(
+                                        server.uri.host,
+                                        server.uri.port,
+                                        "/",
+                                    )
+                                ),
+                                SslConfiguration(
+                                    revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL),
+                                    tlsType = TlsType.ONE_WAY,
+                                ),
+                                MAX_REQUEST_SIZE
+                            ),
+                        )
+                        Gateway(
+                            configPublisher.readerService,
+                            server.node.subscriptionFactory,
+                            server.node.publisherFactory,
+                            server.node.lifecycleCoordinatorFactory,
+                            server.node.cryptoOpsClient,
+                            avroSchemaRegistry,
+                            platformInfoProvider,
+                            bootConfig,
+                            messagingConfig(),
+                        ).usingLifecycle { gateway ->
+                            gateway.startAndWaitForStarted()
+                            val name = holdingId.x500Name
+                            server.node.publish(
+                                Record(
+                                    GATEWAY_TLS_TRUSTSTORES, "$name-$GROUP_ID",
+                                    ca.toGatewayTrustStore(name)
+                                ),
+                            )
+                            val keyStore = server.privateKeyWithCertificateChain.toKeyStoreAndPassword()
+                            server.node.publishKeyStoreCertificatesAndKeys(keyStore, holdingId, name)
+
+                            if (server.wasRevoked) {
+                                eventually {
+                                    assertThrows<RuntimeException> {
+                                        testClientWith(
+                                            server.uri,
+                                            ca.caCertificate.toPem(),
+                                            mode = RevocationConfigMode.HARD_FAIL,
+                                        )
+                                    }
+                                }
+                            } else {
+                                eventually {
+                                    testClientWith(
+                                        server.uri,
+                                        ca.caCertificate.toPem(),
+                                        mode = RevocationConfigMode.HARD_FAIL,
+                                    )
+                                }
+                            }
+                        }
+
+                    }
+
+                }
+        }
     }
 
     @Nested
