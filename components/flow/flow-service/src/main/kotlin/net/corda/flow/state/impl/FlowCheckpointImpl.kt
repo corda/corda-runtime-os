@@ -1,6 +1,7 @@
 package net.corda.flow.state.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePair
@@ -46,7 +47,7 @@ class FlowCheckpointImpl(
     }
 
     private companion object {
-        val objectMapper = ObjectMapper().registerKotlinModule()
+        val objectMapper = ObjectMapper().registerKotlinModule().registerModule(JavaTimeModule())
     }
 
     private val pipelineStateManager = PipelineStateManager(checkpoint.pipelineState)

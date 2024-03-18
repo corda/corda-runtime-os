@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.flow.impl.persistence
 
 import io.micrometer.core.instrument.Timer
 import net.corda.crypto.core.fullIdHash
+import net.corda.flow.application.services.FlowCheckpointService
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.fiber.metrics.recordSuspendable
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
@@ -10,6 +11,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTr
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionAndSignaturesImpl
+import net.corda.ledger.utxo.data.transaction.UtxoLedgerLastPersistedTimestamp
 import net.corda.ledger.utxo.flow.impl.cache.StateAndRefCache
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindFilteredTransactionsAndSignatures
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindSignedLedgerTransactionWithStatus
@@ -67,6 +69,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import java.security.PrivilegedExceptionAction
 import java.security.PublicKey
 import java.time.Instant
 
@@ -77,22 +80,17 @@ import java.time.Instant
     scope = PROTOTYPE
 )
 class UtxoLedgerPersistenceServiceImpl @Activate constructor(
-    @Reference(service = CurrentSandboxGroupContext::class)
-    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
-    @Reference(service = ExternalEventExecutor::class)
-    private val externalEventExecutor: ExternalEventExecutor,
-    @Reference(service = SerializationService::class)
-    private val serializationService: SerializationService,
-    @Reference(service = UtxoLedgerTransactionFactory::class)
-    private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
-    @Reference(service = UtxoSignedTransactionFactory::class)
-    private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
-    @Reference(service = UtxoFilteredTransactionFactory::class)
-    private val utxoFilteredTransactionFactory: UtxoFilteredTransactionFactory,
-    @Reference(service = NotarySignatureVerificationService::class)
-    private val notarySignatureVerificationService: NotarySignatureVerificationService,
-    @Reference(service = StateAndRefCache::class)
-    private val stateAndRefCache: StateAndRefCache
+    @Reference(service = CurrentSandboxGroupContext::class) private val currentSandboxGroupContext: CurrentSandboxGroupContext,
+    @Reference(service = ExternalEventExecutor::class) private val externalEventExecutor: ExternalEventExecutor,
+    @Reference(service = SerializationService::class) private val serializationService: SerializationService,
+    @Reference(service = UtxoLedgerTransactionFactory::class) private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
+    @Reference(service = UtxoSignedTransactionFactory::class) private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
+    @Reference(service = UtxoFilteredTransactionFactory::class) private val utxoFilteredTransactionFactory: UtxoFilteredTransactionFactory,
+    @Reference(
+        service = NotarySignatureVerificationService::class
+    ) private val notarySignatureVerificationService: NotarySignatureVerificationService,
+    @Reference(service = StateAndRefCache::class) private val stateAndRefCache: StateAndRefCache,
+    @Reference(service = FlowCheckpointService::class) private val flowCheckpointService: FlowCheckpointService
 ) : UtxoLedgerPersistenceService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -112,7 +110,9 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                     FindTransactionParameters(id.toString(), transactionStatus)
                 )
             }.firstOrNull()?.let {
-                val (transaction, status) = serializationService.deserialize<Pair<SignedTransactionContainer?, String?>>(it.array())
+                val (transaction, status) = serializationService.deserialize<Pair<SignedTransactionContainer?, String?>>(
+                    it.array()
+                )
                 if (status == null) {
                     return@let null
                 }
@@ -127,9 +127,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     FindTransactionIdsAndStatusesExternalEventFactory::class.java,
-                    FindTransactionIdsAndStatusesParameters(
-                        ids.map { it.toString() }
-                    )
+                    FindTransactionIdsAndStatusesParameters(ids.map { it.toString() })
                 )
             }
         }.firstOrNull()?.let {
@@ -155,7 +153,9 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                     FindSignedLedgerTransactionParameters(id.toString(), transactionStatus)
                 )
             }.firstOrNull()?.let {
-                val (transaction, status) = serializationService.deserialize<Pair<SignedLedgerTransactionContainer?, String?>>(it.array())
+                val (transaction, status) = serializationService.deserialize<Pair<SignedLedgerTransactionContainer?, String?>>(
+                    it.array()
+                )
                 if (status == null) {
                     return@let null
                 }
@@ -204,10 +204,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
 
                     val utxoFilteredTransaction = utxoFilteredTransactionFactory.create(filteredTransaction)
                     notarySignatureVerificationService.verifyNotarySignatures(
-                        utxoFilteredTransaction,
-                        notaryKey,
-                        signatures,
-                        mutableMapOf()
+                        utxoFilteredTransaction, notaryKey, signatures, mutableMapOf()
                     )
 
                     require(notaryName == utxoFilteredTransaction.notaryName) {
@@ -241,10 +238,32 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     PersistTransactionExternalEventFactory::class.java,
-                    PersistTransactionParameters(serialize(transaction.toContainer()), transactionStatus, visibleStatesIndexes)
+                    PersistTransactionParameters(
+                        serialize(transaction.toContainer()),
+                        transactionStatus,
+                        visibleStatesIndexes
+                    )
                 )
-            }.first().let { serializationService.deserialize(it.array()) }
+            }.first().let {
+                val newLastPersistedTimestamp = serializationService.deserialize<Instant>(it.array())
+                updateTimeInCheckpoint(newLastPersistedTimestamp)
+                newLastPersistedTimestamp
+            }
         }
+    }
+
+    private fun updateTimeInCheckpoint(persistTimeStamp: Instant) {
+        @Suppress("deprecation", "removal")
+        java.security.AccessController.doPrivileged(
+            PrivilegedExceptionAction {
+                val previousTimeStamp =
+                    flowCheckpointService.getCheckpoint().readCustomState(UtxoLedgerLastPersistedTimestamp::class.java)
+                if (previousTimeStamp == null || previousTimeStamp.lastPersistedTimestamp < persistTimeStamp) {
+                    flowCheckpointService.getCheckpoint()
+                        .writeCustomState(UtxoLedgerLastPersistedTimestamp(persistTimeStamp))
+                }
+            }
+        )
     }
 
     @Suspendable
@@ -282,7 +301,11 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun persistTransactionSignatures(id: SecureHash, startingIndex: Int, signatures: List<DigitalSignatureAndMetadata>) {
+    override fun persistTransactionSignatures(
+        id: SecureHash,
+        startingIndex: Int,
+        signatures: List<DigitalSignatureAndMetadata>
+    ) {
         return recordSuspendable(
             { ledgerPersistenceFlowTimer(LedgerPersistenceMetricOperationName.PersistTransactionSignatures) }
         ) @Suspendable {
@@ -376,10 +399,8 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     private fun serialize(payload: Any) = serializationService.serialize(payload).bytes
 
     private fun ledgerPersistenceFlowTimer(operationName: LedgerPersistenceMetricOperationName): Timer {
-        return CordaMetrics.Metric.Ledger.PersistenceFlowTime
-            .builder()
+        return CordaMetrics.Metric.Ledger.PersistenceFlowTime.builder()
             .forVirtualNode(currentSandboxGroupContext.get().virtualNodeContext.holdingIdentity.shortHash.toString())
-            .withTag(CordaMetrics.Tag.OperationName, operationName.name)
-            .build()
+            .withTag(CordaMetrics.Tag.OperationName, operationName.name).build()
     }
 }
