@@ -28,8 +28,8 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransacti
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionsWithStatusBeforeTimeExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionsWithStatusBeforeTimeParameters
-import net.corda.ledger.utxo.flow.impl.persistence.external.events.IncrementRecoveryAttemptCountExternalEventFactory
-import net.corda.ledger.utxo.flow.impl.persistence.external.events.IncrementRecoveryAttemptCountParameters
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.IncrementTransactionRecoveryAttemptCountExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.IncrementTransactionRecoveryAttemptCountParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistFilteredTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistFilteredTransactionsExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
@@ -341,14 +341,14 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun incrementRecoveryAttemptCount(id: SecureHash) {
+    override fun incrementTransactionRecoveryAttemptCount(id: SecureHash) {
         return recordSuspendable(
-            { ledgerPersistenceFlowTimer(LedgerPersistenceMetricOperationName.IncrementRecoveryAttemptCount) }
+            { ledgerPersistenceFlowTimer(LedgerPersistenceMetricOperationName.IncrementTransactionRecoveryAttemptCount) }
         ) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
-                    IncrementRecoveryAttemptCountExternalEventFactory::class.java,
-                    IncrementRecoveryAttemptCountParameters(id)
+                    IncrementTransactionRecoveryAttemptCountExternalEventFactory::class.java,
+                    IncrementTransactionRecoveryAttemptCountParameters(id)
                 )
             }
         }

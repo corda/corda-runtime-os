@@ -97,7 +97,7 @@ class UtxoRecoveryFlow(
                         }
                         // We do not need to worry about concurrent calls for the same transaction from a separate recovery flow run, because
                         // the transaction has technically had an attempted recovery in both flows.
-                        persistenceService.incrementRecoveryAttemptCount(id)
+                        persistenceService.incrementTransactionRecoveryAttemptCount(id)
                     }
                     Invalid -> numberOfInvalidTransactions++
                     Skipped -> numberOfSkippedTransactions++

@@ -604,7 +604,7 @@ class UtxoRepositoryImpl(
             .resultList as List<String>
     }
 
-    override fun incrementRecoveryAttemptCount(
+    override fun incrementTransactionRecoveryAttemptCount(
         entityManager: EntityManager,
         id: String
     ) {

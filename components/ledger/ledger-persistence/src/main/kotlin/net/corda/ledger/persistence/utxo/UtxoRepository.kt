@@ -237,5 +237,5 @@ interface UtxoRepository {
 
     data class TransactionMerkleProofLeaf(val merkleProofId: String, val leafIndex: Int)
 
-    fun incrementRecoveryAttemptCount(entityManager: EntityManager, id: String)
+    fun incrementTransactionRecoveryAttemptCount(entityManager: EntityManager, id: String)
 }
