@@ -18,7 +18,6 @@ import io.swagger.v3.oas.models.responses.ApiResponses
 import io.swagger.v3.oas.models.tags.Tag
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.annotations.RestApiVersion
-import net.corda.rest.annotations.retrieveApiVersionsSet
 import net.corda.rest.server.impl.apigen.models.Endpoint
 import net.corda.rest.server.impl.apigen.models.EndpointMethod
 import net.corda.rest.server.impl.apigen.models.EndpointParameter
@@ -65,7 +64,7 @@ internal fun List<Resource>.toOpenAPI(
                 apiVersion
             )
         )
-        tags.add(resource.toTag(apiVersion))
+        tags.add(resource.toTag())
     }
     val paths = Paths().apply { swaggerPathInfos.toSortedMap().forEach { addPathItem(it.key, it.value) } }
     val schemas =
@@ -282,20 +281,10 @@ private fun Class<*>.isNull(): Boolean {
         .also { log.trace { "Invoke isNull on class: ${this.name} returned $it." } }
 }
 
-private fun Resource.toTag(apiVersion: RestApiVersion): Tag {
+private fun Resource.toTag(): Tag {
     log.trace { "Map resource: ${this.name} to OpenApi Tag." }
-    val newName = if (retrieveApiVersionsSet(
-            RestApiVersion.C5_0,
-            RestApiVersion.C5_2
-        ).contains(apiVersion)
-    ) {
-        name
-    } else {
-        name.removeSuffix(" API")
-    }
-
     return Tag()
-        .name(newName)
+        .name(name)
         .description(description)
         .also { log.trace { "Map resource: \"${this.name}\" to OpenApi Tag: \"$it\" completed." } }
 }
@@ -304,16 +293,6 @@ private fun Resource.getPathToPathItems(
     schemaModelProvider: SchemaModelProvider,
     apiVersion: RestApiVersion
 ): Map<String, PathItem> {
-    val newName = if (retrieveApiVersionsSet(
-            RestApiVersion.C5_0,
-            RestApiVersion.C5_2
-        ).contains(apiVersion)
-    ) {
-        name
-    } else {
-        name.removeSuffix(" API")
-    }
-
     log.trace { "Map resource: \"${this.name}\" to Map of Path to PathItem." }
     return endpoints.filter { apiVersion in it.apiVersions }
         .groupBy { joinResourceAndEndpointPaths(path, it.path).toOpenApiPath() }.map {
@@ -324,7 +303,7 @@ private fun Resource.getPathToPathItems(
             val fullPath = it.key
 
             fullPath to PathItem().also { pathItem ->
-                val tagName = singletonList(newName)
+                val tagName = singletonList(name)
                 getEndpoint?.let {
                     pathItem.get(getEndpoint.toOperation(fullPath, schemaModelProvider).tags(tagName))
                 }
