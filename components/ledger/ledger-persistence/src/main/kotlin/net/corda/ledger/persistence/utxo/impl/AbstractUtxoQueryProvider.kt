@@ -205,9 +205,9 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
     override val updateTransactionToVerified: String
         get() = """
             UPDATE {h-schema}utxo_transaction 
-            SET status = '$VERIFIED', updated = :updatedAt
+            SET status = '$VERIFIED', updated = :updatedAt, is_filtered = FALSE
             WHERE id = :transactionId
             AND status in ('$UNVERIFIED', '$DRAFT') 
-            OR (status = $VERIFIED AND is_filtered = TRUE)
+            OR (status = '$VERIFIED' AND is_filtered = TRUE)
         """.trimIndent()
 }

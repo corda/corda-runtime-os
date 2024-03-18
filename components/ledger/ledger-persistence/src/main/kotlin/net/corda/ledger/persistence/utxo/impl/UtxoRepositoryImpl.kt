@@ -576,8 +576,6 @@ class UtxoRepositoryImpl(
     }
 
     // select from transaction sources where input states of "previous" transaction are seen as sourceTransactionIds + indexes
-
-
     override fun findConsumedTransactionSourcesForTransaction(
         entityManager: EntityManager,
         transactionId: String,
@@ -586,8 +584,8 @@ class UtxoRepositoryImpl(
         return entityManager.createNativeQuery(queryProvider.findConsumedTransactionSourcesForTransaction)
             .setParameter("transactionId", transactionId)
             .setParameter("inputStateIndexes", indexes)
-            .resultListAsTuples()
-            .map { it.get(0) as Int }
+            .resultList
+            .map { it as Int }
     }
 
     private fun <T> EntityManager.connection(block: (connection: Connection) -> T) {
