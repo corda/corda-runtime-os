@@ -284,7 +284,7 @@ fun ClusterInfo.getTime(
             condition { it.code == ResponseCode.OK.statusCode }
         }
     }.headers.single { it.first == "Date" }.second
-)
+).toInstant()
 
 private fun <T> Semaphore.runWith(block: () -> T): T {
     this.acquire()
