@@ -18,6 +18,8 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.lib.MemberInfoExtension.Companion.isNotary
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -43,6 +45,8 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
     private val cpiInfoReadService: CpiInfoReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = MembershipGroupReaderProvider::class)
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = VirtualNodeInfoReadService::class)
@@ -72,7 +76,7 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
                         "recover.notarized.transactions.task",
                         Schemas.ScheduledTask.SCHEDULE_TASK_TOPIC_MISSED_NOTARIZED_TRANSACTION_RECOVERY_PROCESSOR
                     ),
-                    ActualProcessor(cpiInfoReadService, virtualNodeInfoReadService),
+                    Processor(cpiInfoReadService, membershipGroupReaderProvider, virtualNodeInfoReadService),
                     messagingConfig,
                     partitionAssignmentListener = null
                 )
@@ -107,8 +111,9 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
         }
     }
 
-    private class ActualProcessor(
+    private class Processor(
         private val cpiInfoReadService: CpiInfoReadService,
+        private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
         private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
         private val messageFactory: StartFlowMessageFactoryImpl = StartFlowMessageFactoryImpl()
     ) : DurableProcessor<String, ScheduledTaskTrigger> {
@@ -145,11 +150,27 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
         }
 
         private fun hasUtxoAndNotANotary(virtualNode: VirtualNodeInfo): Boolean {
-            return cpiInfoReadService.get(virtualNode.cpiIdentifier)?.let { cpiMetadata ->
-                val hasContracts = cpiMetadata.cpksMetadata.any { it.isContractCpk() }
-                val isNotary = cpiMetadata.cpiId.name.contains("notary")
-                hasContracts && !isNotary
+            val hasContracts = cpiInfoReadService.get(virtualNode.cpiIdentifier)?.let { cpiMetadata ->
+                cpiMetadata.cpksMetadata.any { it.isContractCpk() }
             } ?: false
+
+            if (!hasContracts) {
+                return false
+            }
+
+            val isNotary = try {
+                membershipGroupReaderProvider
+                    .getGroupReader(virtualNode.holdingIdentity)
+                    .lookup(virtualNode.holdingIdentity.x500Name)
+                    ?.isNotary() ?: false
+            } catch (e: IllegalStateException) {
+                // If the member does not exist, then we should return false and not schedule anything
+                return false
+            }
+
+            logger.info("vnode: ${virtualNode.holdingIdentity} | isNotary: $isNotary")
+
+            return !isNotary
         }
 
         private fun createRecoveryFlowStartEvent(virtualNode: VirtualNodeInfo): Triple<ShortHash, FlowMapperEvent, FlowStatus> {
