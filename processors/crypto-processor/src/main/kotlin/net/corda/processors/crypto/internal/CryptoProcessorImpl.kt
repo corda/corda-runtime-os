@@ -208,13 +208,6 @@ class CryptoProcessorImpl @Activate constructor(
 
                 logger.trace("Bootstrapping {}", dbConnectionManager::class.simpleName)
                 dbConnectionManager.bootstrap(bootstrapConfig.getConfig(BOOT_DB))
-
-                if (bootstrapConfig.hasPath(StateManagerConfig.STATE_MANAGER)) {
-                    val stateManagerConfig = bootstrapConfig.getConfig(StateManagerConfig.STATE_MANAGER)
-                    stateManager =
-                        stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION)
-                            .also { it.start() }
-                }
             }
 
             is RegistrationStatusChangeEvent -> {
@@ -228,7 +221,14 @@ class CryptoProcessorImpl @Activate constructor(
 
             is ConfigChangedEvent -> {
                 val tenantInfoService = createTenantInfoService()
-                val cryptoService = startCryptoService(event.config.getConfig(CRYPTO_CONFIG), tenantInfoService)
+                val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
+                val cryptoService = startCryptoService(cryptoConfig, tenantInfoService)
+
+                val stateManagerConfig = event.config.getConfig(STATE_MANAGER_CONFIG)
+                stateManager?.stop()
+                stateManager =
+                    stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION)
+                        .also { it.start() }
 
                 (CryptoConsts.Categories.all - ENCRYPTION_SECRET).forEach { category ->
                     CryptoTenants.allClusterTenants.forEach { tenantId ->
