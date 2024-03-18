@@ -34,6 +34,7 @@ import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.schema.CordaDb
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.TestDbInfo
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
@@ -59,6 +60,7 @@ import net.corda.processors.crypto.tests.infra.makeBootstrapConfig
 import net.corda.processors.crypto.tests.infra.makeClientId
 import net.corda.processors.crypto.tests.infra.makeCryptoConfig
 import net.corda.processors.crypto.tests.infra.makeMessagingConfig
+import net.corda.processors.crypto.tests.infra.makeStateManagerConfig
 import net.corda.processors.crypto.tests.infra.publishVirtualNodeInfo
 import net.corda.processors.crypto.tests.infra.randomDataByteArray
 import net.corda.processors.crypto.tests.infra.webServerPort
@@ -194,6 +196,7 @@ class CryptoProcessorTests {
         private val boostrapConfig = makeBootstrapConfig(clusterDb.config)
         private val messagingConfig = makeMessagingConfig()
         private val cryptoConfig = makeCryptoConfig()
+        private val statemanagerConfig = makeStateManagerConfig(clusterDb.config)
 
         private lateinit var connectionIds: Map<String, UUID>
 
@@ -253,8 +256,8 @@ class CryptoProcessorTests {
                         CONFIG_TOPIC,
                         STATE_MANAGER_CONFIG,
                         Configuration(
-                            SmartConfigImpl.empty().root().render(),
-                            SmartConfigImpl.empty().root().render(),
+                            statemanagerConfig.root().render(),
+                            statemanagerConfig.root().render(),
                             0,
                             ConfigurationSchemaVersion(1, 0)
                         )
