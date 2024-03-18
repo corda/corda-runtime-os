@@ -1,6 +1,5 @@
 package net.corda.cli.plugins.vnode.commands
 
-import liquibase.Contexts
 import liquibase.Liquibase
 import liquibase.command.CommandArgumentDefinition
 import liquibase.command.CommandScope
