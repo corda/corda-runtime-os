@@ -1,36 +1,22 @@
 {{- include "corda.worker" ( list $ .Values.workers.crypto "crypto"
-  ( dict "additionalWorkerArgs" ( list "--hsm-id=SOFT" "--trace-tag=namespace=$(K8S_NAMESPACE)" "--trace-tag=pod=$(K8S_POD_NAME)" "--trace-tag=node_name=$(K8S_NODE_NAME)" "--trace-tag=container=$(K8_CONTAINER_NAME)") )
+  ( dict "additionalWorkerArgs" ( list "--hsm-id=SOFT" ) )
 ) }}
-{{- include "corda.worker" ( list $ .Values.workers.db "db"
-    ( dict "additionalWorkerArgs" ( list "--trace-tag=namespace=$(K8S_NAMESPACE)" "--trace-tag=pod=$(K8S_POD_NAME)" "--trace-tag=node_name=$(K8S_NODE_NAME)" "--trace-tag=container=$(K8_CONTAINER_NAME)") )
-) }}
+{{- include "corda.worker" ( list $ .Values.workers.db "db" ) }}
 {{- include "corda.worker" ( list $ .Values.workers.flow "flow"
-  ( dict "servicesAccessed" ( list "crypto" "verification" "uniqueness" "persistence" "tokenSelection" ) "additionalWorkerArgs" ( list "--trace-tag=namespace=$(K8S_NAMESPACE)" "--trace-tag=pod=$(K8S_POD_NAME)" "--trace-tag=node_name=$(K8S_NODE_NAME)" "--trace-tag=container=$(K8_CONTAINER_NAME)") )
+  ( dict "servicesAccessed" ( list "crypto" "verification" "uniqueness" "persistence" "tokenSelection" ) )
 ) }}
-{{- include "corda.worker" ( list $ .Values.workers.flowMapper "flowMapper"
-    ( dict "additionalWorkerArgs" ( list "--trace-tag=namespace=$(K8S_NAMESPACE)" "--trace-tag=pod=$(K8S_POD_NAME)" "--trace-tag=node_name=$(K8S_NODE_NAME)" "--trace-tag=container=$(K8_CONTAINER_NAME)") )
-) }}
-{{- include "corda.worker" ( list $ .Values.workers.verification "verification"
-    ( dict "additionalWorkerArgs" ( list "--trace-tag=namespace=$(K8S_NAMESPACE)" "--trace-tag=pod=$(K8S_POD_NAME)" "--trace-tag=node_name=$(K8S_NODE_NAME)" "--trace-tag=container=$(K8_CONTAINER_NAME)") )
-) }}
-{{- include "corda.worker" ( list $ .Values.workers.membership "membership"
-    ( dict "additionalWorkerArgs" ( list "--trace-tag=namespace=$(K8S_NAMESPACE)" "--trace-tag=pod=$(K8S_POD_NAME)" "--trace-tag=node_name=$(K8S_NODE_NAME)" "--trace-tag=container=$(K8_CONTAINER_NAME)") )
-) }}
+{{- include "corda.worker" ( list $ .Values.workers.flowMapper "flowMapper" ) }}
+{{- include "corda.worker" ( list $ .Values.workers.verification "verification" ) }}
+{{- include "corda.worker" ( list $ .Values.workers.membership "membership" ) }}
 {{- include "corda.worker" ( list $ .Values.workers.p2pGateway "p2pGateway"
-  ( dict "httpPort" 8080 "servicesAccessed" ( list "p2pLinkManager" ) "additionalWorkerArgs" ( list "--trace-tag=namespace=$(K8S_NAMESPACE)" "--trace-tag=pod=$(K8S_POD_NAME)" "--trace-tag=node_name=$(K8S_NODE_NAME)" "--trace-tag=container=$(K8_CONTAINER_NAME)") )
-) }}
+    ( dict "httpPort" 8080 "servicesAccessed" ( list "p2pLinkManager" ) )
+  ) }}
 {{- include "corda.worker" ( list $ .Values.workers.p2pLinkManager "p2pLinkManager"
-    ( dict "servicesAccessed" ( list "crypto" )  "additionalWorkerArgs" ( list "--trace-tag=namespace=$(K8S_NAMESPACE)" "--trace-tag=pod=$(K8S_POD_NAME)" "--trace-tag=node_name=$(K8S_NODE_NAME)" "--trace-tag=container=$(K8_CONTAINER_NAME)") )
+    ( dict "servicesAccessed" ( list "crypto" ) )
 ) }}
-{{- include "corda.worker" ( list $ .Values.workers.persistence "persistence"
-  ( dict "additionalWorkerArgs" ( list "--trace-tag=namespace=$(K8S_NAMESPACE)" "--trace-tag=pod=$(K8S_POD_NAME)" "--trace-tag=node_name=$(K8S_NODE_NAME)" "--trace-tag=container=$(K8_CONTAINER_NAME)") )
-) }}
-{{- include "corda.worker" ( list $ .Values.workers.tokenSelection "tokenSelection"
-    ( dict "additionalWorkerArgs" ( list "--trace-tag=namespace=$(K8S_NAMESPACE)" "--trace-tag=pod=$(K8S_POD_NAME)" "--trace-tag=node_name=$(K8S_NODE_NAME)" "--trace-tag=container=$(K8_CONTAINER_NAME)") )
-) }}
+{{- include "corda.worker" ( list $ .Values.workers.persistence "persistence" ) }}
+{{- include "corda.worker" ( list $ .Values.workers.tokenSelection "tokenSelection" ) }}
 {{- include "corda.worker" ( list $ .Values.workers.rest "rest"
-  ( dict "httpPort" 8888 "tlsSecretName" ( include "corda.restTlsSecretName" $ ) "additionalWorkerArgs" ( list "-rtls.crt.path=/tls/tls.crt" "-rtls.key.path=/tls/tls.key" "-rtls.ca.crt.path=/tls/ca.crt"  "--trace-tag=namespace=$(K8S_NAMESPACE)" "--trace-tag=pod=$(K8S_POD_NAME)" "--trace-tag=node_name=$(K8S_NODE_NAME)" "--trace-tag=container=$(K8_CONTAINER_NAME)") )
+  ( dict "httpPort" 8888 "tlsSecretName" ( include "corda.restTlsSecretName" $ ) "additionalWorkerArgs" ( list "-rtls.crt.path=/tls/tls.crt" "-rtls.key.path=/tls/tls.key" "-rtls.ca.crt.path=/tls/ca.crt"  ) )
 ) }}
-{{- include "corda.worker" ( list $ .Values.workers.uniqueness "uniqueness"
-  ( dict "additionalWorkerArgs" ( list "--trace-tag=namespace=$(K8S_NAMESPACE)" "--trace-tag=pod=$(K8S_POD_NAME)" "--trace-tag=node_name=$(K8S_NODE_NAME)" "--trace-tag=container=$(K8_CONTAINER_NAME)") )
-) }}
+{{- include "corda.worker" ( list $ .Values.workers.uniqueness "uniqueness" ) }}

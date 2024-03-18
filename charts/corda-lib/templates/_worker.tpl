@@ -332,6 +332,10 @@ spec:
           {{- if $.Values.tracing.samplesPerSecond }}
           - "--trace-samples-per-second={{ $.Values.tracing.samplesPerSecond }}"
           {{- end }}
+          - "--trace-tag=namespace=$(K8S_NAMESPACE)"
+          - "--trace-tag=pod=$(K8S_POD_NAME)"
+          - "--trace-tag=node_name=$(K8S_NODE_NAME)"
+          - "--trace-tag=container=$(K8_CONTAINER_NAME)"
           {{- with $.Values.metrics.keepNames }}
           - "--metrics-keep-names={{ join "|" . }}"
           {{- end }}
