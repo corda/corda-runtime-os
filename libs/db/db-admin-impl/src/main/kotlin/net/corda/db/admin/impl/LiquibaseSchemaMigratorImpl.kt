@@ -14,7 +14,7 @@ import liquibase.command.core.UpdateCommandStep
 import liquibase.command.core.UpdateSqlCommandStep
 import liquibase.command.core.helpers.ChangeExecListenerCommandStep
 import liquibase.command.core.helpers.DatabaseChangelogCommandStep
-import liquibase.command.core.helpers.DbUrlConnectionCommandStep
+import liquibase.command.core.helpers.DbUrlConnectionArgumentsCommandStep
 import liquibase.command.core.helpers.ShowSummaryArgument
 import liquibase.database.Database
 import liquibase.database.DatabaseFactory
@@ -189,8 +189,20 @@ class LiquibaseSchemaMigratorImpl(
             )
 
             log.info("Retrieving ${database.databaseProductName} DB Schema")
-            lb.update(Contexts(), LabelExpression(), sql)
-
+            val scopeObjects = mapOf(
+                Scope.Attr.resourceAccessor.name to lb.resourceAccessor
+            )
+            Scope.child(scopeObjects) {
+                commandScopeFactory(UpdateSqlCommandStep.COMMAND_NAME).configure(lb, null).also {
+                    it.setOutput(
+                        WriterOutputStream(
+                            sql,
+                            GlobalConfiguration.OUTPUT_FILE_ENCODING.currentValue
+                        )
+                    )
+                    it.execute()
+                }
+            }
             File(offlineChangeLogFileName).delete()
         }
     }
@@ -225,7 +237,7 @@ class LiquibaseSchemaMigratorImpl(
 }
 
 private fun CommandScope.configure(lb: Liquibase, tag: String?): CommandScope {
-    return this.addArgumentValue(DbUrlConnectionCommandStep.DATABASE_ARG, lb.database)
+    return this.addArgumentValue(DbUrlConnectionArgumentsCommandStep.DATABASE_ARG, lb.database)
         .addArgumentValue(UpdateCommandStep.CHANGELOG_ARG, lb.databaseChangeLog)
         .addArgumentValue(UpdateCommandStep.CHANGELOG_FILE_ARG, lb.changeLogFile)
         .addArgumentValue(UpdateCommandStep.CONTEXTS_ARG, Contexts().toString())

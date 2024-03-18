@@ -1,12 +1,26 @@
 package net.corda.cli.plugins.dbconfig
 
 import liquibase.Contexts
+import liquibase.GlobalConfiguration
+import liquibase.LabelExpression
 import liquibase.Liquibase
+import liquibase.Scope
+import liquibase.UpdateSummaryEnum
+import liquibase.UpdateSummaryOutputEnum
+import liquibase.command.CommandScope
+import liquibase.command.core.TagCommandStep
+import liquibase.command.core.UpdateCommandStep
+import liquibase.command.core.UpdateSqlCommandStep
+import liquibase.command.core.helpers.ChangeExecListenerCommandStep
+import liquibase.command.core.helpers.DatabaseChangelogCommandStep
+import liquibase.command.core.helpers.DbUrlConnectionArgumentsCommandStep
+import liquibase.command.core.helpers.ShowSummaryArgument
 import liquibase.database.Database
 import liquibase.database.DatabaseFactory
 import liquibase.database.OfflineConnection
 import liquibase.database.core.PostgresDatabase
 import liquibase.database.jvm.JdbcConnection
+import liquibase.io.WriterOutputStream
 import liquibase.resource.ClassLoaderResourceAccessor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -25,7 +39,13 @@ import java.sql.DriverManager
             "migration to a new version."],
     mixinStandardHelpOptions = true
 )
-class Spec(private val config: SpecConfig = SpecConfig()) : Runnable {
+class Spec(
+    private val config: SpecConfig = SpecConfig(),
+    private val commandScopeFactory: (commandNames: Array<String>) -> CommandScope = { commandNames ->
+        @Suppress("SpreadOperator")
+        (CommandScope(*commandNames))
+    }
+) : Runnable {
     @CommandLine.Option(
         names = ["--change-log"],
         description = ["Path and filename of the databasechangelog CSV file which is created by Liquibase in offline" +
@@ -200,7 +220,21 @@ class Spec(private val config: SpecConfig = SpecConfig()) : Runnable {
                 outputFile.write(System.lineSeparator())
             }
 
-            config.liquibaseFactory(filename, database).update(Contexts(), outputFile)
+            val lb = config.liquibaseFactory(filename, database)
+            val scopeObjects = mapOf(
+                Scope.Attr.resourceAccessor.name to lb.resourceAccessor
+            )
+            Scope.child(scopeObjects) {
+                commandScopeFactory(UpdateSqlCommandStep.COMMAND_NAME).configure(lb, null).also {
+                    it.setOutput(
+                        WriterOutputStream(
+                            outputFile,
+                            GlobalConfiguration.OUTPUT_FILE_ENCODING.currentValue
+                        )
+                    )
+                    it.execute()
+                }
+            }
         }
     }
 
@@ -216,4 +250,23 @@ class Spec(private val config: SpecConfig = SpecConfig()) : Runnable {
         val database = config.jdbcDatabaseFactory(connection)
         Pair(connection, database)
     }
+}
+
+private fun CommandScope.configure(lb: Liquibase, tag: String?): CommandScope {
+    return this.addArgumentValue(DbUrlConnectionArgumentsCommandStep.DATABASE_ARG, lb.database)
+        .addArgumentValue(UpdateCommandStep.CHANGELOG_ARG, lb.databaseChangeLog)
+        .addArgumentValue(UpdateCommandStep.CHANGELOG_FILE_ARG, lb.changeLogFile)
+        .addArgumentValue(UpdateCommandStep.CONTEXTS_ARG, Contexts().toString())
+        .addArgumentValue(UpdateCommandStep.LABEL_FILTER_ARG, LabelExpression().originalString)
+        .addArgumentValue(
+            ChangeExecListenerCommandStep.CHANGE_EXEC_LISTENER_ARG,
+            lb.defaultChangeExecListener
+        )
+        .addArgumentValue(ShowSummaryArgument.SHOW_SUMMARY_OUTPUT, UpdateSummaryOutputEnum.LOG)
+        .addArgumentValue(
+            DatabaseChangelogCommandStep.CHANGELOG_PARAMETERS,
+            lb.changeLogParameters
+        )
+        .addArgumentValue(ShowSummaryArgument.SHOW_SUMMARY, UpdateSummaryEnum.SUMMARY)
+        .addArgumentValue(TagCommandStep.TAG_ARG, tag)
 }
