@@ -250,14 +250,16 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
 
     private fun updateTimeInCheckpoint(persistTimeStamp: Instant) {
         @Suppress("deprecation", "removal")
-        java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
-            val previousTimeStamp =
-                flowCheckpointService.getCheckpoint().readCustomState(UtxoLedgerLastPersistedTimestamp::class.java)
-            if (previousTimeStamp == null || previousTimeStamp.lastPersistedTimestamp < persistTimeStamp) {
-                flowCheckpointService.getCheckpoint()
-                    .writeCustomState(UtxoLedgerLastPersistedTimestamp(persistTimeStamp))
+        java.security.AccessController.doPrivileged(
+            PrivilegedExceptionAction {
+                val previousTimeStamp =
+                    flowCheckpointService.getCheckpoint().readCustomState(UtxoLedgerLastPersistedTimestamp::class.java)
+                if (previousTimeStamp == null || previousTimeStamp.lastPersistedTimestamp < persistTimeStamp) {
+                    flowCheckpointService.getCheckpoint()
+                        .writeCustomState(UtxoLedgerLastPersistedTimestamp(persistTimeStamp))
+                }
             }
-        })
+        )
     }
 
     @Suspendable
