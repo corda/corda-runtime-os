@@ -15,6 +15,7 @@ import net.corda.messagebus.kafka.utils.toCordaTopicPartitions
 import net.corda.messagebus.kafka.utils.toTopicPartition
 import net.corda.messagebus.kafka.utils.toTopicPartitions
 import net.corda.messaging.api.chunking.ConsumerChunkDeserializerService
+import net.corda.messaging.api.exception.CordaMessageAPIAuthException
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.metrics.CordaMetrics
@@ -35,6 +36,7 @@ import org.apache.kafka.common.errors.FencedInstanceIdException
 import org.apache.kafka.common.errors.InconsistentGroupProtocolException
 import org.apache.kafka.common.errors.InterruptException
 import org.apache.kafka.common.errors.RebalanceInProgressException
+import org.apache.kafka.common.errors.SaslAuthenticationException
 import org.apache.kafka.common.errors.TimeoutException
 import org.apache.kafka.common.errors.WakeupException
 import org.slf4j.LoggerFactory
@@ -80,6 +82,9 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             KafkaException::class.java,
             ConcurrentModificationException::class.java,
             RebalanceInProgressException::class.java
+        )
+        val authExceptions: Set<Class<out Throwable>> = setOf(
+            SaslAuthenticationException::class.java,
         )
     }
 
@@ -476,6 +481,11 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         throw CordaMessageAPIIntermittentException(errorMessage, ex)
     }
 
+    private fun logWarningAndThrowAuthException(errorMessage: String, ex: Exception? = null): Nothing {
+        log.warn(errorMessage, ex)
+        throw CordaMessageAPIAuthException(errorMessage, ex)
+    }
+
     override fun assign(partitions: Collection<CordaTopicPartition>) {
         try {
             consumer.assign(partitions.toTopicPartitions(config.topicPrefix))
@@ -658,6 +668,13 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 in transientExceptions -> {
                     logWarningAndThrowIntermittentException(
                         "Intermittent error attempting to get end offsets.",
+                        ex
+                    )
+                }
+
+                in authExceptions -> {
+                    logWarningAndThrowAuthException(
+                        "Authentication error attempting to get end offsets.",
                         ex
                     )
                 }

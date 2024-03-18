@@ -7,6 +7,7 @@ import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messaging.TOPIC_PREFIX
+import net.corda.messaging.api.exception.CordaMessageAPIAuthException
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -353,6 +354,29 @@ class CompactedSubscriptionImplTest {
 
         // Four calls: First time and after each exception thrown
         verify(consumerBuilder, times(4)).createConsumer<Any, Any>(any(), any(), any(), any(), any(), anyOrNull())
+
+        assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
+    }
+
+    @Test
+    @Timeout(TEST_TIMEOUT_SECONDS, unit = TimeUnit.SECONDS)
+    fun `subscription attempts to reconnect 3 times after auth failure`() {
+        val processor = TestProcessor()
+        val (_, consumerBuilder) = setupStandardMocks(1) {
+            throw CordaMessageAPIAuthException("Kaboom!")
+        }
+
+        val subscription = CompactedSubscriptionImpl(
+            config,
+            mapFactory,
+            consumerBuilder,
+            processor,
+            lifecycleCoordinatorFactory
+        )
+        subscription.start()
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
+
+        verify(consumerBuilder, times(3)).createConsumer<Any, Any>(any(), any(), any(), any(), any(), anyOrNull())
 
         assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
     }

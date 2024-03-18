@@ -18,6 +18,13 @@ open class CordaMessageAPIIntermittentException(message: String?, exception: Exc
     CordaRuntimeException(message, exception)
 
 /**
+ * Intermittent error during authentication which can be retried a few times.
+ * We will attempt to retry a few times just in case if we face with an intermittent error from kafka side.
+ */
+open class CordaMessageAPIAuthException(message: String?, exception: Exception? = null) :
+    CordaRuntimeException(message, exception)
+
+/**
  * Only thrown from a producer. In this case the error is not fatal in the way [CordaMessageAPIFatalException] is, but
  * the producer must be closed and re-instantiated. Re-using the producer when this is thrown is not an option and
  * results in undefined behaviour. Subclass of [CordaMessageAPIIntermittentException] so if you are resetting the

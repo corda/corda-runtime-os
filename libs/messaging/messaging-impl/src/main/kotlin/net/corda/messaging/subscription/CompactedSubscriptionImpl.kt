@@ -8,6 +8,7 @@ import net.corda.messagebus.api.constants.ConsumerRoles
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
+import net.corda.messaging.api.exception.CordaMessageAPIAuthException
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -101,6 +102,16 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
                 when (ex) {
                     is CordaMessageAPIIntermittentException -> {
                         log.warn("$errorMsg. Attempts: $attempts. Retrying.", ex)
+                    }
+
+                    is CordaMessageAPIAuthException -> {
+                        if (attempts < 3) {
+                            log.warn("$errorMsg. Attempts: $attempts. Retrying.", ex)
+                        } else {
+                            log.error("$errorMsg. Fatal error occurred. Closing subscription.", ex)
+                            threadLooper.updateLifecycleStatus(LifecycleStatus.ERROR, errorMsg)
+                            threadLooper.stopLoop()
+                        }
                     }
 
                     else -> {
