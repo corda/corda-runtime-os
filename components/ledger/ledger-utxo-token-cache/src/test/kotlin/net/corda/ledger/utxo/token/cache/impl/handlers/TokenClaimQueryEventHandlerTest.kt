@@ -132,8 +132,8 @@ class TokenClaimQueryEventHandlerTest {
     @Test
     fun `ensure the cache expiry period avoids multiple calls to the db in a short period of time`() {
         // Make the expiry period long enough so the second call does not go to the database
-        val serviceConfigurationLongExpiryPeriod = mock<ServiceConfiguration>() {
-            whenever(it.tokenCacheExpiryPeriodMilliseconds).doAnswer { 30000 }
+        val serviceConfigurationLongExpiryPeriod = mock<ServiceConfiguration> {
+            whenever(it.tokenCacheExpiryPeriodMilliseconds).thenReturn(30000)
         }
 
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, serviceConfigurationLongExpiryPeriod)
@@ -159,8 +159,8 @@ class TokenClaimQueryEventHandlerTest {
         val tokenCacheExpiryPeriodMilliseconds = 1000L
 
         // Make the expiry period long enough so the second call does not go to the database
-        val serviceConfigurationLongExpiryPeriod = mock<ServiceConfiguration>() {
-            whenever(it.tokenCacheExpiryPeriodMilliseconds).doAnswer { tokenCacheExpiryPeriodMilliseconds }
+        val serviceConfigurationLongExpiryPeriod = mock<ServiceConfiguration> {
+            whenever(it.tokenCacheExpiryPeriodMilliseconds).thenReturn(tokenCacheExpiryPeriodMilliseconds)
         }
 
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, serviceConfigurationLongExpiryPeriod)
@@ -191,7 +191,7 @@ class TokenClaimQueryEventHandlerTest {
         val tokenCacheExpiryPeriodMilliseconds = 0L
 
         // Make the expiry period long enough so the second call does not go to the database
-        val serviceConfigurationLongExpiryPeriod = mock<ServiceConfiguration>() {
+        val serviceConfigurationLongExpiryPeriod = mock<ServiceConfiguration> {
             whenever(it.tokenCacheExpiryPeriodMilliseconds).doAnswer { tokenCacheExpiryPeriodMilliseconds }
         }
 
