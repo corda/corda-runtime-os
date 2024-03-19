@@ -9,7 +9,6 @@ import net.corda.data.persistence.FindAll
 import net.corda.data.persistence.FindEntities
 import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.data.persistence.MergeEntities
-import net.corda.data.persistence.PersistEntities
 import net.corda.persistence.common.exceptions.InvalidPaginationException
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
@@ -50,7 +49,8 @@ import javax.persistence.criteria.Selection
  * to the given [HoldingIdentity]
  * */
 class PersistenceServiceInternal(
-    private val classProvider: (fullyQualifiedClassName: String) -> Class<*>) {
+    private val classProvider: (fullyQualifiedClassName: String) -> Class<*>
+) {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -59,11 +59,10 @@ class PersistenceServiceInternal(
 
 
     fun persist(
-        serializationService: SerializationService,
         entityManager: EntityManager,
-        payload: PersistEntities
+        entities: List<Any>
     ): EntityResponse {
-        payload.entities.map { entityManager.persist(serializationService.deserialize(it.array(), Any::class.java)) }
+        entities.forEach { entityManager.persist(it) }
         return EntityResponse(emptyList(), KeyValuePairList(emptyList()), null)
     }
 
@@ -188,10 +187,14 @@ class PersistenceServiceInternal(
         }
 
         val results = query.resultList
-        val result = when (results ) {
+        val result = when (results) {
             null -> emptyList()
             else -> results.filterNotNull().map { item -> serializationService.toBytes(item) }
         }
-        return EntityResponse(result, KeyValuePairList(listOf(KeyValuePair("numberOfRowsFromQuery", results.size.toString()))), null)
+        return EntityResponse(
+            result,
+            KeyValuePairList(listOf(KeyValuePair("numberOfRowsFromQuery", results.size.toString()))),
+            null
+        )
     }
 }
