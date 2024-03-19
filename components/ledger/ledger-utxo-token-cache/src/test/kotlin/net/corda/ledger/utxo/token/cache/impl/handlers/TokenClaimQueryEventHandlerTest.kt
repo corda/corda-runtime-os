@@ -205,10 +205,10 @@ class TokenClaimQueryEventHandlerTest {
         // First call go to the database
         target.handle(tokenCache, poolCacheState, claimQuery)
 
-        // Second call. Go to the database because of the expiry period
+        // Second call. Go to the database
         target.handle(tokenCache, poolCacheState, claimQuery)
 
-        // Third call. Go to the database because the cached has been invalidated
+        // Third call. Go to the database
         target.handle(tokenCache, poolCacheState, claimQuery)
 
         // Ensure the database call was made twice
