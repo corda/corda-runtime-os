@@ -23,6 +23,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.math.BigDecimal
@@ -127,18 +128,28 @@ class TokenClaimQueryEventHandlerTest {
     }
 
     @Test
-    fun `query for tokens finds none when sum of available tokens is less than target`() {
-        val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, serviceConfiguration)
+    fun `ensure the cache expiry period avoids multiple calls to the db in a short period of time`() {
+        // Make the expiry period long enough so the second call does not go to the database
+        val serviceConfigurationLongExpiryPeriod = mock<ServiceConfiguration>() {
+            whenever(it.tokenCacheExpiryPeriodMilliseconds).doAnswer { 30000 }
+        }
+
+        val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, serviceConfigurationLongExpiryPeriod)
         val claimQuery = createClaimQuery(100)
         whenever(recordFactory.getFailedClaimResponse(any(), any(), any())).thenReturn(claimQueryResult)
         whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any()))
             .thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
-        cachedTokens += token99
 
-        val result = target.handle(tokenCache, poolCacheState, claimQuery)
+        // There are no tokens available so the handle has always to go to the database
 
-        assertThat(result).isSameAs(claimQueryResult)
-        verify(recordFactory).getFailedClaimResponse(flowId, claimId, POOL_KEY)
+        // First call go to the database
+        target.handle(tokenCache, poolCacheState, claimQuery)
+
+        // Second call. Can't go to the database because of the expiry period
+        target.handle(tokenCache, poolCacheState, claimQuery)
+
+        // Ensure the database call was made only once
+        verify(availableTokenService, times(1)).findAvailTokens(any(), eq(null), eq(null), any())
     }
 
     @Test
