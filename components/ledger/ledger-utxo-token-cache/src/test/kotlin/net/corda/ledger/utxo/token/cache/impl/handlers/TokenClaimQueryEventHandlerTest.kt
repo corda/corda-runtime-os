@@ -7,6 +7,7 @@ import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.ClaimQuery
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
+import net.corda.ledger.utxo.token.cache.entities.internal.TokenCacheImpl
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.ledger.utxo.token.cache.handlers.TokenClaimQueryEventHandler
 import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
@@ -30,10 +31,9 @@ import java.lang.Thread.sleep
 import java.math.BigDecimal
 
 class TokenClaimQueryEventHandlerTest {
-
+    private var tokenCache = TokenCacheImpl()
     private val recordFactory: RecordFactory = mock()
     private val availableTokenService: AvailableTokenService = mock()
-    private val tokenCache: TokenCache = mock()
     private val filterStrategy = mock<TokenFilterStrategy>()
     private val serviceConfiguration = mock<ServiceConfiguration>()
     private val poolCacheState: PoolCacheState = mock()
@@ -67,6 +67,7 @@ class TokenClaimQueryEventHandlerTest {
 
     @BeforeEach
     fun setup() {
+        tokenCache = TokenCacheImpl()
         whenever(filterStrategy.filterTokens(any(), any())).doAnswer { cachedTokens.toList() }
         whenever(serviceConfiguration.tokenCacheExpiryPeriodMilliseconds).doAnswer { 200 }
     }

@@ -12,7 +12,6 @@ import net.corda.ledger.utxo.token.cache.services.TokenFilterStrategy
 import net.corda.messaging.api.records.Record
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
-import java.time.Instant
 
 class TokenClaimQueryEventHandler(
     private val filterStrategy: TokenFilterStrategy,
@@ -21,8 +20,7 @@ class TokenClaimQueryEventHandler(
     private val serviceConfiguration: ServiceConfiguration,
 ) : TokenEventHandler<ClaimQuery> {
 
-    private var tokenCacheExpiryTime = Instant.now()
-    private val tokenCacheEnabled = serviceConfiguration.tokenCacheExpiryPeriodMilliseconds > 0
+    private val isTokenCacheEnabled = serviceConfiguration.tokenCacheExpiryPeriodMilliseconds > 0
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -30,7 +28,7 @@ class TokenClaimQueryEventHandler(
 
     init {
         logger.info("Token cache expiry period: ${serviceConfiguration.tokenCacheExpiryPeriodMilliseconds} ms")
-        logger.info("Token cache enabled: $tokenCacheEnabled")
+        logger.info("Token cache enabled: $isTokenCacheEnabled")
     }
 
     override fun handle(
@@ -51,7 +49,7 @@ class TokenClaimQueryEventHandler(
             )
         }
 
-        val selectionResult = if (tokenCacheEnabled) {
+        val selectionResult = if (isTokenCacheEnabled) {
             selectTokenWithCacheEnabled(tokenCache, state, event)
         } else {
             selectTokenWithCacheDisabled(tokenCache, state, event)
@@ -91,7 +89,7 @@ class TokenClaimQueryEventHandler(
         val tokens = findResult.tokens.filterNot { state.isTokenClaimed(it.stateRef) }
 
         // Replace the tokens in the cache with the ones from the query result that have not been claimed
-        tokenCache.add(tokens)
+        tokenCache.add(tokens, serviceConfiguration.tokenCacheExpiryPeriodMilliseconds)
     }
 
     private fun selectTokenWithCacheEnabled(
@@ -105,15 +103,13 @@ class TokenClaimQueryEventHandler(
         // if we didn't reach the target amount, reload the cache to ensure it's full and retry.
         // But only if the cache has not been recently reloaded.
         if (selectionResult.first < event.targetAmount) {
-            val currentTime = Instant.now()
-            if (tokenCacheExpiryTime < currentTime) {
-                tokenCacheExpiryTime = currentTime.plusMillis(serviceConfiguration.tokenCacheExpiryPeriodMilliseconds)
+            if (tokenCache.hasExpired()) {
                 // The cache is only updated periodically when required. This is to avoid going to often to the database
                 // which can degrade performance. For instance, when there are too few tokens available.
                 updateCache(tokenCache, state, event)
                 selectionResult = selectTokens(tokenCache, state, event)
             } else {
-                logger.warn("Some tokens might not be accessible. Token cache expiry time: $tokenCacheExpiryTime")
+                logger.warn("Some tokens might not be accessible. Token cache expiry time: ${tokenCache.getExpiryTime()}")
             }
         }
 
