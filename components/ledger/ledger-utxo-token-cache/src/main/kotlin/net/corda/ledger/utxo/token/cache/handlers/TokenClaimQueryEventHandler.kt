@@ -19,13 +19,18 @@ class TokenClaimQueryEventHandler(
     private val recordFactory: RecordFactory,
     private val availableTokenService: AvailableTokenService,
     private val serviceConfiguration: ServiceConfiguration,
-    private var cacheRefreshIntervalMillis: Long = 200L
 ) : TokenEventHandler<ClaimQuery> {
 
-    private var timeNextCacheRefresh = Instant.now()
+    private var tokenCacheExpiryTime = Instant.now()
+    private val tokenCacheEnabled = serviceConfiguration.tokenCacheExpiryPeriodMilliseconds >= 0
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
+    init {
+        logger.info("Token cache expiry period: ${serviceConfiguration.tokenCacheExpiryPeriodMilliseconds} ms")
+        logger.info("Token cache enabled: $tokenCacheEnabled")
     }
 
     override fun handle(
@@ -46,11 +51,9 @@ class TokenClaimQueryEventHandler(
             )
         }
 
-        val selectionResult = if (cacheRefreshIntervalMillis >= 0) {
-            logger.debug("Selecting tokens with token cache enabled")
+        val selectionResult = if (tokenCacheEnabled) {
             selectTokenWithCacheEnabled(tokenCache, state, event)
         } else {
-            logger.debug("Selecting tokens with token cache disabled")
             selectTokenWithCacheDisabled(tokenCache, state, event)
         }
 
@@ -103,14 +106,14 @@ class TokenClaimQueryEventHandler(
         // But only if the cache has not been recently reloaded.
         if (selectionResult.first < event.targetAmount) {
             val currentTime = Instant.now()
-            if (timeNextCacheRefresh < currentTime) {
-                timeNextCacheRefresh = currentTime.plusMillis(cacheRefreshIntervalMillis)
+            if (tokenCacheExpiryTime < currentTime) {
+                tokenCacheExpiryTime = currentTime.plusMillis(serviceConfiguration.tokenCacheExpiryPeriodMilliseconds)
                 // The cache is only updated periodically when required. This is to avoid going to often to the database
                 // which can degrade performance. For instance, when there are too few tokens available.
                 updateCache(tokenCache, state, event)
                 selectionResult = selectTokens(tokenCache, state, event)
             } else {
-                logger.warn("Some tokens might not be accessible. Next cache refresh: $timeNextCacheRefresh")
+                logger.warn("Some tokens might not be accessible. Token cache expiry time: $tokenCacheExpiryTime")
             }
         }
 
@@ -125,6 +128,7 @@ class TokenClaimQueryEventHandler(
         event: ClaimQuery
     ): Pair<BigDecimal, List<CachedToken>> {
         // Update the cache regardless. There are use cases when going to the database is mandatory.
+        // For instance, when tokens with short expiry dates are continuously being generated.
         updateCache(tokenCache, state, event)
         return selectTokens(tokenCache, state, event)
     }
