@@ -65,6 +65,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     fun processTopic(consumerFactory: MediatorConsumerFactory, consumerConfig: MediatorConsumerConfig<K, E>) {
         var attempts = 0
         var consumer: MediatorConsumer<K, E>? = null
+        val failureCounts = mutableMapOf<String, Int>()
         while (!mediatorSubscriptionState.stopped()) {
             attempts++
             try {
@@ -72,7 +73,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     consumer = consumerFactory.create(consumerConfig)
                     consumer.subscribe()
                 }
-                pollLoop(consumer)
+                pollLoop(consumer, failureCounts)
                 attempts = 0
             } catch (exception: Exception) {
                 val cause = if (exception is CompletionException) { exception.cause ?: exception} else exception
@@ -96,45 +97,30 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         consumer?.close()
     }
 
-    private sealed interface KeyStatus {
-        data class Succeeded(val eventProcessingOutput: EventProcessingOutput) : KeyStatus
-        data class Failed(val failureCount: Int) : KeyStatus
-        object Transient : KeyStatus
-        object Committed : KeyStatus
-    }
-
-    private fun pollLoop(consumer: MediatorConsumer<K, E>) {
-        val statuses = mutableMapOf<String, KeyStatus>()
+    private fun pollLoop(consumer: MediatorConsumer<K, E>, failureCounts: MutableMap<String, Int>) {
         metrics.processorTimer.recordCallable {
-            while (true) {
-                try {
-                    val inputs = getInputs(consumer, statuses)
-                    val outputs = processInputs(inputs)
-                    categorizeOutputs(outputs, statuses)
-                    commit(statuses)
-                    metrics.commitTimer.recordCallable {
-                        consumer.syncCommitOffsets()
-                    }
-                    break
-                } catch (e: Exception) {
-                    log.warn("Retrying processing: ${e.message}.")
-                    consumer.resetEventOffsetPosition()
+            try {
+                val inputs = getInputs(consumer)
+                val outputs = processInputs(inputs)
+                categorizeOutputs(outputs, failureCounts)
+                commit(outputs, failureCounts)
+                metrics.commitTimer.recordCallable {
+                    consumer.syncCommitOffsets()
                 }
+            } catch (e: Exception) {
+                log.warn("Retrying processing: ${e.message}.")
+                consumer.resetEventOffsetPosition()
             }
         }
     }
 
     private fun getInputs(
         consumer: MediatorConsumer<K, E>,
-        statuses: Map<String, KeyStatus>
     ): List<EventProcessingInput<K, E>> {
         val messages = consumer.poll(pollTimeout)
         val records = messages.map {
             it.toRecord()
-        }.groupBy { it.key }.filter {
-            val status = statuses[it.key.toString()]
-            status !is KeyStatus.Succeeded && status !is KeyStatus.Committed
-        }
+        }.groupBy { it.key }
         val states = stateManager.get(records.keys.map { it.toString() })
         return generateInputs(states.values, records)
     }
@@ -170,70 +156,47 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             }
         }.fold(mapOf<K, EventProcessingOutput>()) { acc, cur ->
             acc + cur
-        }.mapKeys {
-            it.toString()
+        }.mapKeys { (key, _) ->
+            key.toString()
         }
     }
 
     private fun categorizeOutputs(
         outputs: Map<String, EventProcessingOutput>,
-        statuses: MutableMap<String, KeyStatus>
+        failureCounts: MutableMap<String, Int>
     ) {
-        outputs.forEach {
-            val status = when {
-                // Processing failed
-                it.value.stateChangeAndOperation.outputState?.metadata?.containsKey(PROCESSING_FAILURE) == true -> {
-                    val failureCount = (statuses[it.key] as? KeyStatus.Failed)?.failureCount ?: 0
-                    if (failureCount < MAX_FAILURE_ATTEMPTS) {
-                        KeyStatus.Failed(failureCount + 1)
-                    } else {
-                        // Marking as succeeded here triggers the commit logic to commit this failure back to the bus
-                        KeyStatus.Succeeded(it.value)
-                    }
-                }
-                // Transient error occurred
-                it.value.stateChangeAndOperation is StateChangeAndOperation.Transient -> {
-                    KeyStatus.Transient
-                }
-                // Everything succeeded
-                else -> {
-                    KeyStatus.Succeeded(it.value)
-                }
+        val transients = outputs.filter {
+            it.value.stateChangeAndOperation is StateChangeAndOperation.Transient
+        }
+        val failures = outputs.filter {
+            it.value.stateChangeAndOperation.outputState?.metadata?.containsKey(PROCESSING_FAILURE) == true
+        }
+        failures.forEach { (key, _) ->
+            failureCounts.compute(key) { _, value ->
+                val currentValue = value ?: 0
+                currentValue + 1
             }
-            statuses[it.key] = status
+        }
+        val retryableFailures = failures.filter {
+            (failureCounts[it.key] ?: 0) < MAX_FAILURE_ATTEMPTS
+        }
+        if (retryableFailures.isNotEmpty() || transients.isNotEmpty()) {
+            throw CordaMessageAPIIntermittentException(
+                "Retrying poll and process due to ${retryableFailures.size}/${transients.size} " +
+                        "retryable failures/transient failures (out of ${outputs.size} total outputs"
+            )
         }
     }
 
-    private fun commit(statuses: MutableMap<String, KeyStatus>) {
-        if (statuses.any { it.value is KeyStatus.Failed || it.value is KeyStatus.Transient }) {
-            val errors = statuses.filter {
-                it.value is KeyStatus.Failed
-            }
-            val transients = statuses.filter {
-                it.value is KeyStatus.Transient
-            }
-            throw CordaMessageAPIIntermittentException(
-                "Retry of poll and process required. ${errors.size}/${transients.size}/${statuses.size} errors/transients/total states"
-            )
-        }
-        val outputsToProcess = statuses.mapNotNull {
-            val status = it.value
-            if (status is KeyStatus.Succeeded) {
-                it.key to status.eventProcessingOutput
-            } else {
-                null
-            }
-        }.toMap()
-        val (failed, toDelete) = processOutputs(outputsToProcess)
+    private fun commit(outputs: Map<String, EventProcessingOutput>, failureCounts: MutableMap<String, Int>) {
+        val (failed, toDelete) = processOutputs(outputs)
         val deleteFails = stateManager.delete(toDelete)
         val totalFails = failed + deleteFails
-        outputsToProcess.forEach {
-            if (it.key !in totalFails) {
-                statuses[it.key] = KeyStatus.Committed
-            }
-        }
         if (totalFails.isNotEmpty()) {
             throw CordaMessageAPIIntermittentException("Error occurred while writing states, retrying")
+        }
+        outputs.forEach { (key, _) ->
+            failureCounts.remove(key)
         }
     }
 
