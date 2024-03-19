@@ -18,6 +18,7 @@ dependencies {
 
     implementation project(":libs:virtual-node:virtual-node-endpoints-maintenance")
     implementation project(":libs:virtual-node:cpi-upload-endpoints")
+    implementation project(":libs:db:db-admin-impl")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-db-schema'

@@ -19,6 +19,7 @@ dependencies {
     kapt "info.picocli:picocli:$picocliVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(":libs:db:db-admin-impl")
     implementation 'net.corda:corda-db-schema'
     implementation 'javax.persistence:javax.persistence-api'
     implementation libs.liquibase

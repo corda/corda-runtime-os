@@ -1,26 +1,13 @@
 package net.corda.cli.plugins.vnode.commands
 
-import liquibase.Contexts
-import liquibase.GlobalConfiguration
-import liquibase.LabelExpression
 import liquibase.Liquibase
-import liquibase.Scope
-import liquibase.UpdateSummaryEnum
-import liquibase.UpdateSummaryOutputEnum
 import liquibase.command.CommandScope
-import liquibase.command.core.TagCommandStep
-import liquibase.command.core.UpdateCommandStep
-import liquibase.command.core.UpdateSqlCommandStep
-import liquibase.command.core.helpers.ChangeExecListenerCommandStep
-import liquibase.command.core.helpers.DatabaseChangelogCommandStep
-import liquibase.command.core.helpers.DbUrlConnectionArgumentsCommandStep
-import liquibase.command.core.helpers.ShowSummaryArgument
 import liquibase.database.Database
 import liquibase.database.DatabaseFactory
 import liquibase.database.jvm.JdbcConnection
-import liquibase.io.WriterOutputStream
 import liquibase.resource.ClassLoaderResourceAccessor
 import net.corda.cli.plugins.vnode.withPluginClassLoader
+import net.corda.db.admin.impl.LiquibaseManager
 import picocli.CommandLine
 import java.io.File
 import java.io.FileWriter
@@ -37,10 +24,7 @@ import java.sql.DriverManager
 )
 class PlatformMigration(
     private val config: PlatformMigrationConfig = PlatformMigrationConfig(),
-    private val commandScopeFactory: (commandNames: Array<String>) -> CommandScope = { commandNames ->
-        @Suppress("SpreadOperator")
-        CommandScope(*commandNames)
-    }
+    private val liquibaseManager: LiquibaseManager = LiquibaseManager()
 ) : Runnable {
     @CommandLine.Option(
         names = ["--jdbc-url"],
@@ -143,40 +127,8 @@ class PlatformMigration(
 
             connection.use {
                 val lb = config.liquibaseFactory(fileAndSchema.filename, database)
-                val scopeObjects = mapOf(
-                    Scope.Attr.resourceAccessor.name to lb.resourceAccessor
-                )
-                Scope.child(scopeObjects) {
-                    commandScopeFactory(UpdateSqlCommandStep.COMMAND_NAME).configure(lb, null).also {
-                        it.setOutput(
-                            WriterOutputStream(
-                                fileWriter,
-                                GlobalConfiguration.OUTPUT_FILE_ENCODING.currentValue
-                            )
-                        )
-                        it.execute()
-                    }
-                }
+                liquibaseManager.update(lb, fileWriter)
             }
         }
     }
-}
-
-private fun CommandScope.configure(lb: Liquibase, tag: String?): CommandScope {
-    return this.addArgumentValue(DbUrlConnectionArgumentsCommandStep.DATABASE_ARG, lb.database)
-        .addArgumentValue(UpdateCommandStep.CHANGELOG_ARG, lb.databaseChangeLog)
-        .addArgumentValue(UpdateCommandStep.CHANGELOG_FILE_ARG, lb.changeLogFile)
-        .addArgumentValue(UpdateCommandStep.CONTEXTS_ARG, Contexts().toString())
-        .addArgumentValue(UpdateCommandStep.LABEL_FILTER_ARG, LabelExpression().originalString)
-        .addArgumentValue(
-            ChangeExecListenerCommandStep.CHANGE_EXEC_LISTENER_ARG,
-            lb.defaultChangeExecListener
-        )
-        .addArgumentValue(ShowSummaryArgument.SHOW_SUMMARY_OUTPUT, UpdateSummaryOutputEnum.LOG)
-        .addArgumentValue(
-            DatabaseChangelogCommandStep.CHANGELOG_PARAMETERS,
-            lb.changeLogParameters
-        )
-        .addArgumentValue(ShowSummaryArgument.SHOW_SUMMARY, UpdateSummaryEnum.SUMMARY)
-        .addArgumentValue(TagCommandStep.TAG_ARG, tag)
 }
