@@ -23,7 +23,7 @@ import java.time.Duration
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-@Component(service = [StateManagerFactory::class])
+// @Component(service = [StateManagerFactory::class])
 class StateManagerFactoryImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
