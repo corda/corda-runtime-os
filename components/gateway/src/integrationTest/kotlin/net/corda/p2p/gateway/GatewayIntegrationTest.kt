@@ -1621,82 +1621,100 @@ internal class GatewayIntegrationTest : TestBase() {
             val configPublisher = ConfigPublisher().also {
                 keep(it)
             }
-            val size = 6
             val host = "www.alice.net"
             CertificateAuthorityFactory
                 .createRevocableAuthority(
                     RSA_TEMPLATE.toFactoryDefinitions(),
                 ).use { ca ->
-                    val certificates = (1..size).map { index ->
-                        val privateKeyWithCertificateChain = ca.generateKeyAndCertificates(host)
-                        val revoke = index % 2 == 0
-                        if (revoke) {
-                            ca.revoke(privateKeyWithCertificateChain.certificates.first())
-                        }
-                        privateKeyWithCertificateChain to revoke
+                    val privateKeyWithCertificateChain = ca.generateKeyAndCertificates(host)
+                    val node = Node(UUID.randomUUID().toString()).also {
+                        it.listenToLinkManagerRpc()
                     }
-                    certificates.forEach { (privateKeyWithCertificateChain, revoke) ->
-                        val node = Node(UUID.randomUUID().toString()).also {
-                            it.listenToLinkManagerRpc()
-                        }
-                        val uri = URI.create("https://$host:${getOpenPort()}")
-                        configPublisher.publishConfig(
-                            GatewayConfiguration(
-                                listOf(
-                                    GatewayServerConfiguration(
-                                        uri.host,
-                                        uri.port,
-                                        "/",
-                                    )
-                                ),
-                                SslConfiguration(
-                                    revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL),
-                                    tlsType = TlsType.ONE_WAY,
-                                ),
-                                MAX_REQUEST_SIZE
+                    val uri = URI.create("https://$host:${getOpenPort()}")
+                    configPublisher.publishConfig(
+                        GatewayConfiguration(
+                            listOf(
+                                GatewayServerConfiguration(
+                                    uri.host,
+                                    uri.port,
+                                    "/",
+                                )
+                            ),
+                            SslConfiguration(
+                                revocationCheck = RevocationConfig(RevocationConfigMode.HARD_FAIL),
+                                tlsType = TlsType.ONE_WAY,
+                            ),
+                            MAX_REQUEST_SIZE
+                        ),
+                    )
+                    Gateway(
+                        configPublisher.readerService,
+                        node.subscriptionFactory,
+                        node.publisherFactory,
+                        node.lifecycleCoordinatorFactory,
+                        node.cryptoOpsClient,
+                        avroSchemaRegistry,
+                        platformInfoProvider,
+                        bootConfig,
+                        messagingConfig(),
+                    ).usingLifecycle { gateway ->
+                        gateway.startAndWaitForStarted()
+                        val name = holdingId.x500Name
+                        node.publish(
+                            Record(
+                                GATEWAY_TLS_TRUSTSTORES, "$name-$GROUP_ID",
+                                ca.toGatewayTrustStore(name)
                             ),
                         )
-                        Gateway(
-                            configPublisher.readerService,
-                            node.subscriptionFactory,
-                            node.publisherFactory,
-                            node.lifecycleCoordinatorFactory,
-                            node.cryptoOpsClient,
-                            avroSchemaRegistry,
-                            platformInfoProvider,
-                            bootConfig,
-                            messagingConfig(),
-                        ).usingLifecycle { gateway ->
-                            gateway.startAndWaitForStarted()
-                            val name = holdingId.x500Name
-                            node.publish(
-                                Record(
-                                    GATEWAY_TLS_TRUSTSTORES, "$name-$GROUP_ID",
-                                    ca.toGatewayTrustStore(name)
-                                ),
-                            )
-                            val keyStore = privateKeyWithCertificateChain.toKeyStoreAndPassword()
-                            node.publishKeyStoreCertificatesAndKeys(keyStore, holdingId, name)
+                        val keyStore = privateKeyWithCertificateChain.toKeyStoreAndPassword()
+                        node.publishKeyStoreCertificatesAndKeys(keyStore, holdingId, name)
 
-                            if (revoke) {
-                                eventually {
-                                    assertThrows<RuntimeException> {
-                                        testClientWith(
-                                            uri,
-                                            ca.caCertificate.toPem(),
-                                            mode = RevocationConfigMode.HARD_FAIL,
-                                        )
-                                    }
-                                }
-                            } else {
-                                eventually {
-                                    testClientWith(
-                                        uri,
-                                        ca.caCertificate.toPem(),
-                                        mode = RevocationConfigMode.HARD_FAIL,
-                                    )
-                                }
+                        eventually {
+                            testClientWith(
+                                uri,
+                                ca.caCertificate.toPem(),
+                                mode = RevocationConfigMode.HARD_FAIL,
+                            )
+                        }
+
+                        ca.revoke(privateKeyWithCertificateChain.certificates.first())
+                        eventually {
+                            assertThrows<RuntimeException> {
+                                testClientWith(
+                                    uri,
+                                    ca.caCertificate.toPem(),
+                                    mode = RevocationConfigMode.HARD_FAIL,
+                                )
                             }
+                        }
+
+                        ca.reintroduce(privateKeyWithCertificateChain.certificates.first())
+                        eventually {
+                            testClientWith(
+                                uri,
+                                ca.caCertificate.toPem(),
+                                mode = RevocationConfigMode.HARD_FAIL,
+                            )
+                        }
+
+                        ca.revoke(privateKeyWithCertificateChain.certificates.first())
+                        eventually {
+                            assertThrows<RuntimeException> {
+                                testClientWith(
+                                    uri,
+                                    ca.caCertificate.toPem(),
+                                    mode = RevocationConfigMode.HARD_FAIL,
+                                )
+                            }
+                        }
+
+                        ca.reintroduce(privateKeyWithCertificateChain.certificates.first())
+                        eventually {
+                            testClientWith(
+                                uri,
+                                ca.caCertificate.toPem(),
+                                mode = RevocationConfigMode.HARD_FAIL,
+                            )
                         }
 
                     }
