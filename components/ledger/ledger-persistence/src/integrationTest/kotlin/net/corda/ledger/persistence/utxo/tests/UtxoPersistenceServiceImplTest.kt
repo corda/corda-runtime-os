@@ -1156,7 +1156,6 @@ class UtxoPersistenceServiceImplTest {
             assertThat(transaction).isNotNull
             assertThat(transaction.field<Boolean>("isFiltered")).isTrue()
             assertThat(transaction.field<String>("status")).isEqualTo("V")
-            transaction.field<Instant>("created") to transaction.field<Instant>("updated")
         }
 
         // persist the subsequent transaction
