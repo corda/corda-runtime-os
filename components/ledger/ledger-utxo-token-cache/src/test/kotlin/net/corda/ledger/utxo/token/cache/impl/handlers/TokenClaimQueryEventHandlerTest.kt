@@ -129,6 +129,21 @@ class TokenClaimQueryEventHandlerTest {
     }
 
     @Test
+    fun `query for tokens finds none when sum of available tokens is less than target`() {
+        val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, mock())
+        val claimQuery = createClaimQuery(100)
+        whenever(recordFactory.getFailedClaimResponse(any(), any(), any())).thenReturn(claimQueryResult)
+        whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any()))
+            .thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
+        cachedTokens += token99
+
+        val result = target.handle(tokenCache, poolCacheState, claimQuery)
+
+        assertThat(result).isSameAs(claimQueryResult)
+        verify(recordFactory).getFailedClaimResponse(flowId, claimId, POOL_KEY)
+    }
+
+    @Test
     fun `ensure the cache expiry period avoids multiple calls to the db in a short period of time`() {
         // Make the expiry period long enough so the second call does not go to the database
         val serviceConfigurationLongExpiryPeriod = mock<ServiceConfiguration>() {
