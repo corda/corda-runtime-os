@@ -79,6 +79,7 @@ class SchedulerProcessorImpl @Activate constructor(
             ScheduledTask.SCHEDULE_TASK_NAME_FLOW_STATUS_CLEANUP,
             60, ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_STATUS_PROCESSOR
         ),
+        // TODO CORE-16331 Add configuration with a default of 2 minutes under the ledger.repair configuration section
         Schedule(
             ScheduledTask.SCHEDULE_TASK_NAME_LEDGER_REPAIR,
             120, ScheduledTask.SCHEDULE_TASK_TOPIC_LEDGER_REPAIR_PROCESSOR
