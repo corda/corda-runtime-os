@@ -181,7 +181,7 @@ class TokenClaimQueryEventHandlerTest {
         // Third call. Go to the database because the cached has been invalidated
         target.handle(tokenCache, poolCacheState, claimQuery)
 
-        // Ensure the database call was made only once
+        // Ensure the database call was made twice
         verify(availableTokenService, times(2)).findAvailTokens(any(), eq(null), eq(null), any())
     }
 
