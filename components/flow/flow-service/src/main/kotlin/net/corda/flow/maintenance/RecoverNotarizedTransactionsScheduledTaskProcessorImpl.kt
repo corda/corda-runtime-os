@@ -26,6 +26,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.LedgerConfig
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -37,7 +38,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Instant
-import java.time.temporal.ChronoUnit
 
 @Component(service = [RecoverNotarizedTransactionsScheduledTaskProcessor::class])
 class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate constructor(
@@ -70,13 +70,18 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
             /**
              * Task and executor for the cleanup of checkpoints that are idle or timed out.
              */
-            coordinator.createManagedResource("RECOVER_NOTARIZED_TRANSACTIONS") {
+            coordinator.createManagedResource("LEDGER_REPAIR") {
                 subscriptionFactory.createDurableSubscription(
                     SubscriptionConfig(
-                        "recover.notarized.transactions.task",
-                        Schemas.ScheduledTask.SCHEDULE_TASK_TOPIC_MISSED_NOTARIZED_TRANSACTION_RECOVERY_PROCESSOR
+                        "ledger.repair.task",
+                        Schemas.ScheduledTask.SCHEDULE_TASK_TOPIC_LEDGER_REPAIR_PROCESSOR
                     ),
-                    Processor(cpiInfoReadService, membershipGroupReaderProvider, virtualNodeInfoReadService),
+                    Processor(
+                        config.getConfig(ConfigKeys.UTXO_LEDGER_CONFIG),
+                        cpiInfoReadService,
+                        membershipGroupReaderProvider,
+                        virtualNodeInfoReadService
+                    ),
                     messagingConfig,
                     partitionAssignmentListener = null
                 )
@@ -112,6 +117,7 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
     }
 
     private class Processor(
+        ledgerConfig: SmartConfig,
         private val cpiInfoReadService: CpiInfoReadService,
         private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
         private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
@@ -126,15 +132,19 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
 
         private val objectMapper = ObjectMapper()
 
+        private val runtimeDuration = ledgerConfig.getDuration(LedgerConfig.UTXO_LEDGER_REPAIR_RUNTIME_DURATION).toSeconds()
+        private val fromDuration = ledgerConfig.getDuration(LedgerConfig.UTXO_LEDGER_REPAIR_FROM_DURATION)
+        private val untilDuration = ledgerConfig.getDuration(LedgerConfig.UTXO_LEDGER_REPAIR_UNTIL_DURATION)
+
         override fun onNext(events: List<Record<String, ScheduledTaskTrigger>>): List<Record<*, *>> {
-            logger.info("Processing ${events.size} scheduled event for notarized transaction recovery")
+            logger.debug { "Processing ${events.size} scheduled event for notarized transaction recovery" }
 
             val records = mutableListOf<Record<*, *>>()
 
             virtualNodeInfoReadService
                 .getAll()
                 .filter(::hasUtxoAndNotANotary)
-                .map(::createRecoveryFlowStartEvent)
+                .map(::createRepairFlowStartEvent)
                 .forEach { (shortHash, start, status) ->
                     records += Record(
                         Schemas.Flow.FLOW_MAPPER_START,
@@ -143,8 +153,6 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
                     )
                     records += Record(Schemas.Flow.FLOW_STATUS_TOPIC, status.key, status)
                 }
-
-            logger.info("Created recovery start events = $records")
 
             return records
         }
@@ -168,16 +176,13 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
                 return false
             }
 
-            logger.info("vnode: ${virtualNode.holdingIdentity} | isNotary: $isNotary")
-
             return !isNotary
         }
 
-        private fun createRecoveryFlowStartEvent(virtualNode: VirtualNodeInfo): Triple<ShortHash, FlowMapperEvent, FlowStatus> {
+        private fun createRepairFlowStartEvent(virtualNode: VirtualNodeInfo): Triple<ShortHash, FlowMapperEvent, FlowStatus> {
             val virtualNodeAvro = virtualNode.toAvro()
-            val until = Instant.now().minus(5, ChronoUnit.MINUTES)
-            val from = until.minus(1, ChronoUnit.HOURS)
-            val duration = 120 // Matches the 2 minute period that the task is scheduled at
+            val until = Instant.now().minus(untilDuration)
+            val from = until.minus(fromDuration)
             val clientRequestId =
                 "recover-notarized-transactions-${virtualNode.holdingIdentity.shortHash}-${until.toEpochMilli()}"
 
@@ -196,7 +201,7 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
                     mapOf(
                         "from" to from.toEpochMilli(),
                         "until" to until.toEpochMilli(),
-                        "duration" to duration
+                        "duration" to runtimeDuration
                     )
                 ),
                 flowContextPlatformProperties

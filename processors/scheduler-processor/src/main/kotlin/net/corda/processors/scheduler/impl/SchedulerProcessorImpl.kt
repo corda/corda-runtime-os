@@ -80,8 +80,8 @@ class SchedulerProcessorImpl @Activate constructor(
             60, ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_STATUS_PROCESSOR
         ),
         Schedule(
-            ScheduledTask.SCHEDULE_TASK_NAME_MISSED_NOTARIZED_TRANSACTION_RECOVERY,
-            120, ScheduledTask.SCHEDULE_TASK_TOPIC_MISSED_NOTARIZED_TRANSACTION_RECOVERY_PROCESSOR
+            ScheduledTask.SCHEDULE_TASK_NAME_LEDGER_REPAIR,
+            120, ScheduledTask.SCHEDULE_TASK_TOPIC_LEDGER_REPAIR_PROCESSOR
         )
     )
     private var schedulers: Schedulers? = null
