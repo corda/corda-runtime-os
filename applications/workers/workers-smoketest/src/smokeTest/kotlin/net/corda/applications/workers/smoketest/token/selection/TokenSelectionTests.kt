@@ -2,8 +2,6 @@ package net.corda.applications.workers.smoketest.token.selection
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import net.corda.e2etest.utilities.ClusterReadiness
-import net.corda.e2etest.utilities.ClusterReadinessChecker
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.REST_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
@@ -18,20 +16,12 @@ import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.e2etest.utilities.startRestFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.MethodOrderer
-import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
-import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
-import org.junit.jupiter.api.TestMethodOrder
 import java.math.BigDecimal
-import java.time.Duration
 import java.util.UUID
 
-@TestInstance(PER_CLASS)
-@TestMethodOrder(MethodOrderer.OrderAnnotation::class)
-class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
+class TokenSelectionTests {
 
     private companion object {
         const val TEST_CPI_NAME = "ledger-utxo-demo-app"
@@ -60,6 +50,41 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         val objectMapper = ObjectMapper().apply {
             registerModule(KotlinModule.Builder().build())
         }
+
+        @JvmStatic
+        @BeforeAll
+        fun beforeAll() {
+            DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
+
+            conditionallyUploadCordaPackage(
+                cpiName,
+                TEST_CPB_LOCATION,
+                groupId,
+                staticMemberList
+            )
+            conditionallyUploadCordaPackage(
+                notaryCpiName,
+                TEST_NOTARY_CPB_LOCATION,
+                groupId,
+                staticMemberList
+            )
+
+            val aliceActualHoldingId = getOrCreateVirtualNodeFor(aliceX500, cpiName)
+            val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, cpiName)
+            val notaryActualHoldingId = getOrCreateVirtualNodeFor(notaryX500, notaryCpiName)
+
+            assertThat(aliceActualHoldingId).isEqualTo(aliceHoldingId)
+            assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
+            assertThat(notaryActualHoldingId).isEqualTo(notaryHoldingId)
+
+            registerStaticMember(aliceHoldingId)
+            registerStaticMember(bobHoldingId)
+            registerStaticMember(notaryHoldingId, NOTARY_SERVICE_X500)
+
+            println("Alice: $aliceX500 - $aliceHoldingId")
+            println("Alice: $bobX500 - $bobHoldingId")
+            println("Alice: $notaryX500 - $notaryHoldingId")
+        }
     }
 
     private fun convertToTokenBalanceQueryResponseMsg(tokenBalanceQueryResponseMsgStr: String) =
@@ -86,45 +111,7 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         return convertToTokenBalanceQueryResponseMsg(flowResult.flowResult!!)
     }
 
-    @BeforeAll
-    fun beforeAll() {
-        // check cluster is ready
-        assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(100))
-
-        DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
-
-        conditionallyUploadCordaPackage(
-            cpiName,
-            TEST_CPB_LOCATION,
-            groupId,
-            staticMemberList
-        )
-        conditionallyUploadCordaPackage(
-            notaryCpiName,
-            TEST_NOTARY_CPB_LOCATION,
-            groupId,
-            staticMemberList
-        )
-
-        val aliceActualHoldingId = getOrCreateVirtualNodeFor(aliceX500, cpiName)
-        val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, cpiName)
-        val notaryActualHoldingId = getOrCreateVirtualNodeFor(notaryX500, notaryCpiName)
-
-        assertThat(aliceActualHoldingId).isEqualTo(aliceHoldingId)
-        assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
-        assertThat(notaryActualHoldingId).isEqualTo(notaryHoldingId)
-
-        registerStaticMember(aliceHoldingId)
-        registerStaticMember(bobHoldingId)
-        registerStaticMember(notaryHoldingId, NOTARY_SERVICE_X500)
-
-        println("Alice: $aliceX500 - $aliceHoldingId")
-        println("Alice: $bobX500 - $bobHoldingId")
-        println("Alice: $notaryX500 - $notaryHoldingId")
-    }
-
     @Test
-    @Order(1)
     fun `ensure it is possible to send a balance query request and receive a response`(testInfo: TestInfo) {
         val idGenerator = TestRequestIdGenerator(testInfo)
 
@@ -137,7 +124,6 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
     }
 
     @Test
-    @Order(2)
     fun `Claim a token in a flow and let the flow finish to validate the token claim is automatically released`(testInfo: TestInfo){
         val idGenerator = TestRequestIdGenerator(testInfo)
         // Create a simple UTXO transaction
