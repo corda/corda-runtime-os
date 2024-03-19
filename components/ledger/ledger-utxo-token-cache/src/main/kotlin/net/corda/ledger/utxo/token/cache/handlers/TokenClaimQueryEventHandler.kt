@@ -22,7 +22,7 @@ class TokenClaimQueryEventHandler(
 ) : TokenEventHandler<ClaimQuery> {
 
     private var tokenCacheExpiryTime = Instant.now()
-    private val tokenCacheEnabled = serviceConfiguration.tokenCacheExpiryPeriodMilliseconds >= 0
+    private val tokenCacheEnabled = serviceConfiguration.tokenCacheExpiryPeriodMilliseconds > 0
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
