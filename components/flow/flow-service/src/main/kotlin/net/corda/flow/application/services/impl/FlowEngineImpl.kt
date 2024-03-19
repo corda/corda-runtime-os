@@ -79,8 +79,8 @@ class FlowEngineImpl @Activate constructor(
 
             return result
         } catch (e: FlowRetryException) {
-            log.warn("Subflow exception Flow to be retried from previous checkpoint, Removing cache entry", e)
-            flowFiberCache.remove(getFiberExecutionContext().flowCheckpoint.flowKey)
+            log.warn("Subflow exception Flow to be retried from previous checkpoint", e)
+           // flowFiberCache.remove(getFiberExecutionContext().flowCheckpoint.flowKey)
             // Rethrow to the top level, but don't do any cleanup actions. The checkpoint will be rewound to the previous
             // state. Sessions therefore should be intact when the replay happens.
             throw e
