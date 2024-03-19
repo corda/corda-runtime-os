@@ -12,8 +12,6 @@ import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 /**
  * This class handles a request received by the Flow Engine from the flow fiber.
@@ -33,10 +31,6 @@ class CounterPartyFlowInfoRequestHandler @Activate constructor(
 
     override val type = FlowIORequest.CounterPartyFlowInfo::class.java
 
-    private companion object {
-        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
-
     override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.CounterPartyFlowInfo): WaitingFor {
         return WaitingFor(CounterPartyFlowInfo(request.sessionInfo.sessionId))
     }
@@ -44,7 +38,6 @@ class CounterPartyFlowInfoRequestHandler @Activate constructor(
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.CounterPartyFlowInfo): FlowEventContext<Any> {
         try {
             val sessionInfo = request.sessionInfo
-            log.info("FlowId ${context.checkpoint.flowId} request counterparty info for ${request.sessionInfo.sessionId}")
             generateSessionService.generateSessions(context, setOf(sessionInfo), true)
         } catch (e: FlowSessionStateException) {
             throw FlowPlatformException("Failed to send: ${e.message}. $PROTOCOL_MISMATCH_HINT", e)

@@ -31,8 +31,6 @@ import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Instant
 
@@ -44,10 +42,6 @@ class FlowSessionManagerImpl @Activate constructor(
     @Reference(service = FlowRecordFactory::class)
     private val flowRecordFactory: FlowRecordFactory,
 ) : FlowSessionManager {
-
-    private companion object {
-        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
 
     override fun getSessionErrorEventRecords(checkpoint: FlowCheckpoint, flowConfig: SmartConfig, instant: Instant):
             List<Record<*, FlowMapperEvent>> {
@@ -73,7 +67,6 @@ class FlowSessionManagerImpl @Activate constructor(
         x500Name: MemberX500Name,
         instant: Instant
     ): SessionState {
-        log.info("Flow ${checkpoint.flowId} sending counterparty info request")
         val sessionState = getAndRequireSession(checkpoint, sessionId)
         val sessionInit = SessionInit.newBuilder()
             .setFlowId(checkpoint.flowId)
@@ -108,7 +101,6 @@ class FlowSessionManagerImpl @Activate constructor(
         sessionProperties: KeyValuePairList,
         instant: Instant
     ): SessionState {
-        log.info("Flow ${checkpoint.flowId} generating session $sessionId")
         return sessionManager.generateSessionState(
             sessionId,
             sessionProperties,
@@ -347,7 +339,7 @@ class FlowSessionManagerImpl @Activate constructor(
         val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(
             sessionState, checkpoint.holdingIdentity.toAvro()
         )
-        log.info("Flow ${checkpoint.flowId} sending sata to session $sessionId")
+
         return sessionManager.processMessageToSend(
             key = checkpoint.flowId,
             sessionState = sessionState,

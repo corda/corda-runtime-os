@@ -13,6 +13,7 @@ import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSIONS_SUPPORTED
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_TIMEOUT_MS
+import net.corda.utilities.trace
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -70,7 +71,7 @@ class GenerateSessionService @Activate constructor(
     ) {
         val checkpoint = context.checkpoint
 
-        logger.info("Initiating flows with sessionIds ${sessionsNotGenerated.map { it.sessionId }}" )
+        logger.trace { "Initiating flows with sessionIds ${sessionsNotGenerated.map { it.sessionId }}" }
         // throw an error if the session already exists (shouldn't really get here for real, but for this class, it's not valid)
         val protocolStore = try {
             flowSandboxService.get(checkpoint.holdingIdentity, checkpoint.cpkFileHashes).protocolStore

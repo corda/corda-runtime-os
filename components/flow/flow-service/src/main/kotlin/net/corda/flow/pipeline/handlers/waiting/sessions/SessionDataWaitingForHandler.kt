@@ -28,8 +28,7 @@ class SessionDataWaitingForHandler @Activate constructor(
 
     override fun runOrContinue(context: FlowEventContext<*>, waitingFor: SessionData): FlowContinuation {
         val checkpoint = context.checkpoint
-        logger.info("waiting for data for sessions ${waitingFor.sessionIds} from counterparties ${context.checkpoint.sessions.map { it
-            .counterpartyIdentity }}")
+        logger.info("waiting for data for sessions ${waitingFor.sessionIds}")
 
         return try {
             val receivedSessionEvents = flowSessionManager.getReceivedEvents(checkpoint, waitingFor.sessionIds)
