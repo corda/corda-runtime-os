@@ -42,7 +42,8 @@ interface KeyRotationRestResource : RestResource {
     )
     fun getKeyRotationStatus(
         @RestPathParameter(description = "Can either be a holding identity ID, the value 'master' for master wrapping " +
-                "key or one of the values 'p2p', 'rest', 'crypto' for corresponding cluster-level services.")
+                "key or one of the values 'rest', 'crypto' for corresponding cluster-level services.  NOTE: the 'p2p' "+
+                "tenant ID does not support key rotation and should not be used.")
         tenantId: String
     ): KeyRotationStatusResponse
 
@@ -67,7 +68,8 @@ interface KeyRotationRestResource : RestResource {
     )
     fun startKeyRotation(
         @RestPathParameter(description = "Can either be a holding identity ID, the value 'master' for master wrapping " +
-                "key or one of the values 'p2p', 'rest', 'crypto' for corresponding cluster-level services.")
+                "key or one of the values 'rest', 'crypto' for corresponding cluster-level services.  NOTE: the" +
+                " 'p2p' tenant ID does not support key rotation and should not be used.")
         tenantId: String
     ): ResponseEntity<KeyRotationResponse>
 }
