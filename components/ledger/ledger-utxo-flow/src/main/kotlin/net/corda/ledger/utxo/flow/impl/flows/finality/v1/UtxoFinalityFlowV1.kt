@@ -101,7 +101,7 @@ class UtxoFinalityFlowV1(
         }
 
         val (notarizedTransaction, notarySignatures) = notarize(transaction)
-//        persistNotarizedTransaction(notarizedTransaction)
+        persistNotarizedTransaction(notarizedTransaction)
         sendNotarySignaturesToCounterparties(notarySignatures)
         log.trace("Finalisation of transaction {} has been finished.", transactionId)
         return notarizedTransaction
