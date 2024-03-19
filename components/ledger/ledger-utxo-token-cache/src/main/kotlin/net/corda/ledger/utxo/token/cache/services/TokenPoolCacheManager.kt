@@ -6,6 +6,8 @@ import net.corda.ledger.utxo.token.cache.entities.TokenEvent
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolCache
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 class TokenPoolCacheManager(
     private val tokenPoolCache: TokenPoolCache,
