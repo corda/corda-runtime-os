@@ -6,7 +6,6 @@ import net.corda.ledger.utxo.token.cache.entities.AvailTokenQueryResult
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.ClaimQuery
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
-import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.entities.internal.TokenCacheImpl
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.ledger.utxo.token.cache.handlers.TokenClaimQueryEventHandler
