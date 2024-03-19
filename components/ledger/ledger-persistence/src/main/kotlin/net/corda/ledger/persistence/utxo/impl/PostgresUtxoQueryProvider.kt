@@ -24,7 +24,7 @@ class PostgresUtxoQueryProvider @Activate constructor(
                 VALUES (:id, :privacySalt, :accountId, :createdAt, :status, :updatedAt, :metadataHash, FALSE)
             ON CONFLICT(id) DO
             UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated, is_filtered = FALSE
-            WHERE utxo_transaction.status in ('$UNVERIFIED', '$DRAFT') and utxo_transaction.is_filtered = FALSE
+            WHERE utxo_transaction.status in ('$UNVERIFIED', '$DRAFT')
             """
             .trimIndent()
 
