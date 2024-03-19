@@ -18,7 +18,7 @@ import net.corda.rest.response.ResponseEntity
  * Permission endpoint exposes functionality for management of Permissions in the RBAC permission system.
  */
 @HttpRestResource(
-    name = "RBAC Permission API",
+    name = "RBAC Permission",
     description = "The RBAC Permission API consists of a number of endpoints enabling permissions management in the " +
         "RBAC (role-based access control) permission system. You can get details of specified permissions " +
         "and create new permissions.",

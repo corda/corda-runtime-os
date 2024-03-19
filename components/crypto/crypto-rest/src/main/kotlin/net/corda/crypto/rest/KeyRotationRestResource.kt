@@ -18,7 +18,7 @@ import net.corda.rest.response.ResponseEntity
  * Key Rotation API consists of endpoints to request a key rotation operation and to check the status of such operation.
  */
 @HttpRestResource(
-    name = "Key Rotation API",
+    name = "Key Rotation",
     description = "Contains operations related to rotation of the master, cluster-level and vNode wrapping keys.",
     path = "wrappingkey",
     minVersion = RestApiVersion.C5_2

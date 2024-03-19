@@ -24,9 +24,9 @@ import java.util.concurrent.ExecutorService
  * if the server is listening on the default 9411 port. Example value: http://localhost:9411
  *
  */
-fun configureTracing(serviceName: String, zipkinHost: String?, samplesPerSecond: String?) {
+fun configureTracing(serviceName: String, zipkinHost: String?, samplesPerSecond: String?, extraTraceTags: Map<String, String>) {
     ServiceLoader.load(TracingServiceFactory::class.java, TracingService::class.java.classLoader).single().also {
-        TracingState.currentTraceService = it.create(serviceName, zipkinHost, samplesPerSecond)
+        TracingState.currentTraceService = it.create(serviceName, zipkinHost, samplesPerSecond, extraTraceTags)
     }
 }
 
