@@ -49,8 +49,6 @@ class UtxoLedgerRepairFlow(
     @Suppress("NestedBlockDepth")
     @Suspendable
     fun call(): Result {
-        flowEngine.flowContextProperties.asFlowContext.platformProperties["corda.notary.check"] = "true"
-
         var lastCallToNotaryTime = clock.instant()
         var numberOfNotarizedTransactions = 0
         var numberOfNotNotarizedTransactions = 0
@@ -62,51 +60,50 @@ class UtxoLedgerRepairFlow(
         var transactionsToRepair = findTransactionsToRepair()
         var firstNotNotarizedTransaction: SecureHash? = null
 
-        pagingLoop@ while (transactionsToRepair.isNotEmpty()) {
-            for (id in transactionsToRepair) {
-                val now = clock.instant()
-                if (now.isAfter(endTime)) {
-                    exceededDuration = true
-                    break@pagingLoop
-                }
-                if (now.isAfter(lastCallToNotaryTime.plus(MAX_DURATION_WITHOUT_SUSPENDING))) {
-                    exceededLastNotarizationTime = true
-                    break@pagingLoop
-                }
-                // As we update the [repair_attempt_count] each time we attempt to recover a transaction, if the very first unrecoverable
-                // transaction is seen again in [transactionsToRecover] then it means that we have looped all the way round and reached
-                // an already visited transaction but with an incremented [repair_attempt_count] compared to the previous visit.
-                if (id == firstNotNotarizedTransaction) {
-                    break@pagingLoop
-                }
+        try {
 
-                val result = potentiallyRepairTransaction(id)
-
-                if (result != Skipped) {
-                    lastCallToNotaryTime = clock.instant()
-                }
-
-                when (result) {
-                    Notarized -> numberOfNotarizedTransactions++
-                    NotNotarized -> {
-                        numberOfNotNotarizedTransactions++
-                        if (firstNotNotarizedTransaction == null) {
-                            firstNotNotarizedTransaction = id
-                        }
-                        // We do not need to worry about concurrent calls for the same transaction from a separate recovery flow run, because
-                        // the transaction has technically had an attempted recovery in both flows.
-                        persistenceService.incrementTransactionRepairAttemptCount(id)
+            pagingLoop@ while (transactionsToRepair.isNotEmpty()) {
+                for (id in transactionsToRepair) {
+                    // As we update the [repair_attempt_count] each time we attempt to recover a transaction, if the very first unrecoverable
+                    // transaction is seen again in [transactionsToRecover] then it means that we have looped all the way round and reached
+                    // an already visited transaction but with an incremented [repair_attempt_count] compared to the previous visit.
+                    if (id == firstNotNotarizedTransaction) {
+                        break@pagingLoop
                     }
-                    Invalid -> numberOfInvalidTransactions++
-                    Skipped -> numberOfSkippedTransactions++
+
+                    val result = potentiallyRepairTransaction(id, lastCallToNotaryTime)
+
+                    if (result != Skipped) {
+                        lastCallToNotaryTime = clock.instant()
+                    }
+
+                    when (result) {
+                        Notarized -> numberOfNotarizedTransactions++
+                        NotNotarized -> {
+                            numberOfNotNotarizedTransactions++
+                            if (firstNotNotarizedTransaction == null) {
+                                firstNotNotarizedTransaction = id
+                            }
+                            // We do not need to worry about concurrent calls for the same transaction from a separate recovery flow run, because
+                            // the transaction has technically had an attempted recovery in both flows.
+                            persistenceService.incrementTransactionRepairAttemptCount(id)
+                        }
+                        Invalid -> numberOfInvalidTransactions++
+                        Skipped -> numberOfSkippedTransactions++
+                    }
+                }
+
+                transactionsToRepair = if (transactionsToRepair.size >= QUERY_LIMIT) {
+                    checkDeadlinesNotExceeded(lastCallToNotaryTime)
+                    findTransactionsToRepair()
+                } else {
+                    emptyList()
                 }
             }
-
-            transactionsToRepair = if (transactionsToRepair.size >= QUERY_LIMIT) {
-                findTransactionsToRepair()
-            } else {
-                emptyList()
-            }
+        } catch (e: ExceededDurationException) {
+            exceededDuration = true
+        } catch (e: ExceededLastNotarizationTimeException) {
+            exceededLastNotarizationTime = true
         }
         return Result(
             exceededDuration,
@@ -129,7 +126,8 @@ class UtxoLedgerRepairFlow(
     }
 
     @Suspendable
-    private fun potentiallyRepairTransaction(id: SecureHash): RepairedTransactionResult {
+    private fun potentiallyRepairTransaction(id: SecureHash, lastCallToNotaryTime: Instant): RepairedTransactionResult {
+        checkDeadlinesNotExceeded(lastCallToNotaryTime)
         val transaction = persistenceService.findSignedTransaction(id, TransactionStatus.UNVERIFIED)
 
         if (transaction == null) {
@@ -158,6 +156,7 @@ class UtxoLedgerRepairFlow(
             // Empty as we continue recovering this transaction.
         }
 
+        checkDeadlinesNotExceeded(lastCallToNotaryTime)
         return notarize(transaction)
     }
 
@@ -271,8 +270,14 @@ class UtxoLedgerRepairFlow(
         log.info("Recorded transaction as invalid: ${transaction.id}")
     }
 
-    private enum class RepairedTransactionResult {
-        Notarized, NotNotarized, Invalid, Skipped
+    private fun checkDeadlinesNotExceeded(lastCallToNotaryTime: Instant) {
+        val now = clock.instant()
+        if (now.isAfter(endTime)) {
+            throw ExceededDurationException()
+        }
+        if (now.isAfter(lastCallToNotaryTime.plus(MAX_DURATION_WITHOUT_SUSPENDING))) {
+            throw ExceededLastNotarizationTimeException()
+        }
     }
 
     data class Result(
@@ -283,4 +288,11 @@ class UtxoLedgerRepairFlow(
         val numberOfInvalidTransactions: Int,
         val numberOfSkippedTransactions: Int
     )
+
+    private enum class RepairedTransactionResult {
+        Notarized, NotNotarized, Invalid, Skipped
+    }
+
+    private class ExceededDurationException() : IllegalStateException()
+    private class ExceededLastNotarizationTimeException() : IllegalStateException()
 }
