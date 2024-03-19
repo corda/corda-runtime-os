@@ -1,14 +1,13 @@
-package net.corda.ledger.utxo.flow.impl.flows.recovery
+package net.corda.ledger.utxo.flow.impl.flows.repair
 
 import net.corda.flow.state.asFlowContext
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
-import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
-import net.corda.ledger.utxo.flow.impl.flows.recovery.UtxoRecoveryFlow.RecoveredTransactionResult.Invalid
-import net.corda.ledger.utxo.flow.impl.flows.recovery.UtxoRecoveryFlow.RecoveredTransactionResult.NotNotarized
-import net.corda.ledger.utxo.flow.impl.flows.recovery.UtxoRecoveryFlow.RecoveredTransactionResult.Notarized
-import net.corda.ledger.utxo.flow.impl.flows.recovery.UtxoRecoveryFlow.RecoveredTransactionResult.Skipped
+import net.corda.ledger.utxo.flow.impl.flows.repair.UtxoLedgerRepairFlow.RepairedTransactionResult.Invalid
+import net.corda.ledger.utxo.flow.impl.flows.repair.UtxoLedgerRepairFlow.RepairedTransactionResult.NotNotarized
+import net.corda.ledger.utxo.flow.impl.flows.repair.UtxoLedgerRepairFlow.RepairedTransactionResult.Notarized
+import net.corda.ledger.utxo.flow.impl.flows.repair.UtxoLedgerRepairFlow.RepairedTransactionResult.Skipped
 import net.corda.ledger.utxo.flow.impl.notary.PluggableNotaryService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
@@ -31,13 +30,12 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
-class UtxoRecoveryFlow(
+class UtxoLedgerRepairFlow(
     private val from: Instant,
     private val until: Instant,
     private val endTime: Instant,
     private val clock: Clock = UTCClock(),
     private var flowEngine: FlowEngine,
-    private val virtualNodeSelectorService: NotaryVirtualNodeSelectorService,
     private val pluggableNotaryService: PluggableNotaryService,
     private val persistenceService: UtxoLedgerPersistenceService,
     private val visibilityChecker: VisibilityChecker
@@ -45,7 +43,7 @@ class UtxoRecoveryFlow(
 
     private companion object {
         const val QUERY_LIMIT = 100
-        val log: Logger = LoggerFactory.getLogger(UtxoRecoveryFlow::class.java)
+        val log: Logger = LoggerFactory.getLogger(UtxoLedgerRepairFlow::class.java)
     }
 
     @Suppress("NestedBlockDepth")
@@ -61,11 +59,11 @@ class UtxoRecoveryFlow(
         var exceededDuration = false
         var exceededLastNotarizationTime = false
 
-        var transactionsToRecover = findTransactionsToRecover()
+        var transactionsToRepair = findTransactionsToRepair()
         var firstNotNotarizedTransaction: SecureHash? = null
 
-        pagingLoop@ while (transactionsToRecover.isNotEmpty()) {
-            for (id in transactionsToRecover) {
+        pagingLoop@ while (transactionsToRepair.isNotEmpty()) {
+            for (id in transactionsToRepair) {
                 val now = clock.instant()
                 if (now.isAfter(endTime)) {
                     exceededDuration = true
@@ -75,14 +73,14 @@ class UtxoRecoveryFlow(
                     exceededLastNotarizationTime = true
                     break@pagingLoop
                 }
-                // As we update the [recovery_attempt_count] each time we attempt to recover a transaction, if the very first unrecoverable
+                // As we update the [repair_attempt_count] each time we attempt to recover a transaction, if the very first unrecoverable
                 // transaction is seen again in [transactionsToRecover] then it means that we have looped all the way round and reached
-                // an already visited transaction but with an incremented [recovery_attempt_count] compared to the previous visit.
+                // an already visited transaction but with an incremented [repair_attempt_count] compared to the previous visit.
                 if (id == firstNotNotarizedTransaction) {
                     break@pagingLoop
                 }
 
-                val result = potentiallyRecoverTransaction(id)
+                val result = potentiallyRepairTransaction(id)
 
                 if (result != Skipped) {
                     lastCallToNotaryTime = clock.instant()
@@ -97,15 +95,15 @@ class UtxoRecoveryFlow(
                         }
                         // We do not need to worry about concurrent calls for the same transaction from a separate recovery flow run, because
                         // the transaction has technically had an attempted recovery in both flows.
-                        persistenceService.incrementTransactionRecoveryAttemptCount(id)
+                        persistenceService.incrementTransactionRepairAttemptCount(id)
                     }
                     Invalid -> numberOfInvalidTransactions++
                     Skipped -> numberOfSkippedTransactions++
                 }
             }
 
-            transactionsToRecover = if (transactionsToRecover.size >= QUERY_LIMIT) {
-                findTransactionsToRecover()
+            transactionsToRepair = if (transactionsToRepair.size >= QUERY_LIMIT) {
+                findTransactionsToRepair()
             } else {
                 emptyList()
             }
@@ -121,7 +119,7 @@ class UtxoRecoveryFlow(
     }
 
     @Suspendable
-    fun findTransactionsToRecover(): List<SecureHash> {
+    fun findTransactionsToRepair(): List<SecureHash> {
         return persistenceService.findTransactionsWithStatusCreatedBeforeTime(
             TransactionStatus.UNVERIFIED,
             from,
@@ -131,11 +129,11 @@ class UtxoRecoveryFlow(
     }
 
     @Suspendable
-    private fun potentiallyRecoverTransaction(id: SecureHash): RecoveredTransactionResult {
+    private fun potentiallyRepairTransaction(id: SecureHash): RepairedTransactionResult {
         val transaction = persistenceService.findSignedTransaction(id, TransactionStatus.UNVERIFIED)
 
         if (transaction == null) {
-            log.warn("Transaction $id is no longer unverified, skipping from ledger recovery")
+            log.warn("Transaction $id is no longer unverified, skipping from ledger repair")
             return Skipped
         }
         transaction as UtxoSignedTransactionInternal
@@ -143,7 +141,7 @@ class UtxoRecoveryFlow(
         try {
             transaction.verifySignatorySignatures()
         } catch (e: TransactionMissingSignaturesException) {
-            log.info("Transaction $id is missing non-notary signatures, skipping from ledger recovery")
+            log.info("Transaction $id is missing non-notary signatures, skipping from ledger repair")
             return Skipped
         }
 
@@ -152,7 +150,7 @@ class UtxoRecoveryFlow(
             // So we can use this API and disregard the invalid signatures possibility.
             transaction.verifyAttachedNotarySignature()
             log.warn(
-                "Transaction $id is signed by the notary but stored as unverified, skipping from ledger recovery as this is in " +
+                "Transaction $id is signed by the notary but stored as unverified, skipping from ledger repair as this is in " +
                     "an invalid state"
             )
             return Skipped
@@ -167,7 +165,7 @@ class UtxoRecoveryFlow(
     @Suspendable
     private fun notarize(
         transaction: UtxoSignedTransactionInternal
-    ): RecoveredTransactionResult {
+    ): RepairedTransactionResult {
         val notary = transaction.notaryName
         val notarizationFlow = pluggableNotaryService.create(
             transaction,
@@ -176,7 +174,7 @@ class UtxoRecoveryFlow(
         )
 
         log.info(
-            "Recovering transaction ${transaction.id}. Sending it for notarisation using using pluggable notary client flow of " +
+            "Repairing transaction ${transaction.id}. Sending it for notarisation using using pluggable notary client flow of " +
                 "${notarizationFlow::class.java.name} with notary $notary"
         )
 
@@ -189,7 +187,7 @@ class UtxoRecoveryFlow(
                     return NotNotarized
                 }
                 is NotaryExceptionUnknown -> {
-                    log.info("Transaction ${transaction.id} has not been previously notarized by notary $notary, skipping from ledger recovery")
+                    log.info("Transaction ${transaction.id} has not been previously notarized by notary $notary, skipping from ledger repair")
                     return NotNotarized
                 }
                 is NotaryExceptionFatal -> {
@@ -264,7 +262,7 @@ class UtxoRecoveryFlow(
     private fun persistNotarizedTransaction(transaction: UtxoSignedTransactionInternal) {
         val visibleStatesIndexes = transaction.getVisibleStateIndexes(visibilityChecker)
         persistenceService.persist(transaction, TransactionStatus.VERIFIED, visibleStatesIndexes)
-        log.info("Recovered transaction ${transaction.id}. The transaction has been stored in the vault as notarized.")
+        log.info("Repaired transaction ${transaction.id}. The transaction has been stored in the vault as notarized.")
     }
 
     @Suspendable
@@ -273,7 +271,7 @@ class UtxoRecoveryFlow(
         log.info("Recorded transaction as invalid: ${transaction.id}")
     }
 
-    private enum class RecoveredTransactionResult {
+    private enum class RepairedTransactionResult {
         Notarized, NotNotarized, Invalid, Skipped
     }
 

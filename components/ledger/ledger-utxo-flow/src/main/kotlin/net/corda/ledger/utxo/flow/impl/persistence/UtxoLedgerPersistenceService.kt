@@ -167,5 +167,5 @@ interface UtxoLedgerPersistenceService {
     ): List<SecureHash>
 
     @Suspendable
-    fun incrementTransactionRecoveryAttemptCount(id: SecureHash)
+    fun incrementTransactionRepairAttemptCount(id: SecureHash)
 }

@@ -196,7 +196,7 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
             val start = messageFactory.createStartFlowEvent(
                 clientRequestId,
                 virtualNodeAvro,
-                flowClassName = "com.r3.corda.notary.plugin.common.recovery.NotarizedTransactionRecoveryFlow",
+                flowClassName = "com.r3.corda.notary.plugin.common.repair.NotarizedTransactionRepairFlow",
                 flowStartArgs = objectMapper.writeValueAsString(
                     mapOf(
                         "from" to from.toEpochMilli(),
@@ -210,7 +210,7 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
             val status = messageFactory.createStartFlowStatus(
                 clientRequestId,
                 virtualNodeAvro,
-                flowClassName = "com.r3.corda.notary.plugin.common.recovery.NotarizedTransactionRecoveryFlow"
+                flowClassName = "com.r3.corda.notary.plugin.common.repair.NotarizedTransactionRepairFlow"
             )
 
             return Triple(virtualNode.holdingIdentity.shortHash, start, status)

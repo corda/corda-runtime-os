@@ -778,9 +778,9 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
-    override fun incrementTransactionRecoveryAttemptCount(id: String) {
+    override fun incrementTransactionRepairAttemptCount(id: String) {
         entityManagerFactory.transaction { em ->
-            repository.incrementTransactionRecoveryAttemptCount(em, id)
+            repository.incrementTransactionRepairAttemptCount(em, id)
         }
     }
 

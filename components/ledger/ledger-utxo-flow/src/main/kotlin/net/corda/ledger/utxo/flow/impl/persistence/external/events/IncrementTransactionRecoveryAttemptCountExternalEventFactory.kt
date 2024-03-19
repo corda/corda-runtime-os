@@ -1,6 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.persistence.external.events
 
-import net.corda.data.ledger.persistence.IncrementTransactionRecoveryAttemptCount
+import net.corda.data.ledger.persistence.IncrementTransactionRepairAttemptCount
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.SecureHash
@@ -9,18 +9,18 @@ import org.osgi.service.component.annotations.Component
 import java.time.Clock
 
 @Component(service = [ExternalEventFactory::class])
-class IncrementTransactionRecoveryAttemptCountExternalEventFactory :
-    AbstractUtxoLedgerExternalEventFactory<IncrementTransactionRecoveryAttemptCountParameters> {
+class IncrementTransactionRepairAttemptCountExternalEventFactory :
+    AbstractUtxoLedgerExternalEventFactory<IncrementTransactionRepairAttemptCountParameters> {
     @Activate
     constructor() : super()
     constructor(clock: Clock) : super(clock)
 
-    override fun createRequest(parameters: IncrementTransactionRecoveryAttemptCountParameters): Any {
-        return IncrementTransactionRecoveryAttemptCount.newBuilder()
+    override fun createRequest(parameters: IncrementTransactionRepairAttemptCountParameters): Any {
+        return IncrementTransactionRepairAttemptCount.newBuilder()
             .setId(parameters.id.toString())
             .build()
     }
 }
 
 @CordaSerializable
-data class IncrementTransactionRecoveryAttemptCountParameters(val id: SecureHash)
+data class IncrementTransactionRepairAttemptCountParameters(val id: SecureHash)

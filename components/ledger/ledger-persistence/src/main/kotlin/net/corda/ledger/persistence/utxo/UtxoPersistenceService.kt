@@ -103,5 +103,5 @@ interface UtxoPersistenceService {
         limit: Int,
     ): List<SecureHash>
 
-    fun incrementTransactionRecoveryAttemptCount(id: String)
+    fun incrementTransactionRepairAttemptCount(id: String)
 }

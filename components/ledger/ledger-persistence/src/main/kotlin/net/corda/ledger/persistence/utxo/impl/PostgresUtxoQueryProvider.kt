@@ -20,7 +20,7 @@ class PostgresUtxoQueryProvider @Activate constructor(
 
     override val persistTransaction: String
         get() = """
-            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered, recovery_attempt_count)
+            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered, repair_attempt_count)
                 VALUES (:id, :privacySalt, :accountId, :createdAt, :status, :updatedAt, :metadataHash, FALSE, 0)
             ON CONFLICT(id) DO
             UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated, is_filtered = FALSE
@@ -30,7 +30,7 @@ class PostgresUtxoQueryProvider @Activate constructor(
 
     override val persistUnverifiedTransaction: String
         get() = """
-            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered, recovery_attempt_count)
+            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered, repair_attempt_count)
                 VALUES (:id, :privacySalt, :accountId, :createdAt, '$UNVERIFIED', :updatedAt, :metadataHash, FALSE, 0)
             ON CONFLICT(id) DO
             UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated
@@ -41,7 +41,7 @@ class PostgresUtxoQueryProvider @Activate constructor(
 
     override val persistFilteredTransaction: String
         get() = """
-            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered, recovery_attempt_count)
+            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered, repair_attempt_count)
                 VALUES (:id, :privacySalt, :accountId, :createdAt, '$VERIFIED', :updatedAt, :metadataHash, TRUE, 0)
             ON CONFLICT(id) DO
             UPDATE SET is_filtered = TRUE
