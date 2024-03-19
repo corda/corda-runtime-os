@@ -3,7 +3,6 @@ package net.corda.db.admin.impl
 import liquibase.Contexts
 import liquibase.LabelExpression
 import liquibase.Liquibase
-import liquibase.command.CommandScope
 import liquibase.command.core.StatusCommandStep
 import liquibase.database.Database
 import liquibase.database.DatabaseFactory
