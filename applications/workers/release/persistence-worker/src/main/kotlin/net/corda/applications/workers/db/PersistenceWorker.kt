@@ -72,7 +72,13 @@ class PersistenceWorker @Activate constructor(
         )
         Health.configure(webServer, lifecycleRegistry)
 
-        configureTracing("Persistence Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
+        logger.info("Trace tags captured from the CLI: ${params.defaultParams.extraTraceTags}")
+        configureTracing(
+            "Persistence Worker",
+            params.defaultParams.zipkinTraceUrl,
+            params.defaultParams.traceSamplesPerSecond,
+            params.defaultParams.extraTraceTags
+        )
 
         val config = WorkerHelpers.getBootstrapConfig(
             secretsServiceFactoryResolver,
