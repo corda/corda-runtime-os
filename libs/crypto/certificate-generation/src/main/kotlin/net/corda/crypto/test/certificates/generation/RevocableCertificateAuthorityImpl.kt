@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap
 internal class RevocableCertificateAuthorityImpl(
     private val authority: LocalCertificatesAuthority,
     port: Int,
-): RevocableCertificateAuthority, CertificateAuthority by authority {
+) : RevocableCertificateAuthority, CertificateAuthority by authority {
     companion object {
         internal const val PATH = "/ca.crl"
     }
@@ -61,13 +61,13 @@ internal class RevocableCertificateAuthorityImpl(
         app.close()
     }
 
-    private inner class CrlHandler: Handler {
+    private inner class CrlHandler : Handler {
         override fun handle(context: Context) {
             val crl = createCrl()
             context.result(crl.encoded)
         }
 
-        private fun createCrl() : X509CRL  {
+        private fun createCrl(): X509CRL {
             val now = clock.instant().toEpochMilli()
             val crlGen = JcaX509v2CRLBuilder(
                 (authority.caCertificate as X509Certificate).subjectX500Principal,
@@ -78,15 +78,18 @@ internal class RevocableCertificateAuthorityImpl(
                 val extGen = ExtensionsGenerator()
                 val reason = CRLReason.lookup(CRLReason.privilegeWithdrawn)
                 extGen.addExtension(Extension.reasonCode, false, reason)
-                crlGen.addCRLEntry(serialNumber,
-                    Date(now-1000), extGen.generate())
+                crlGen.addCRLEntry(
+                    serialNumber,
+                    Date(now - 1000),
+                    extGen.generate(),
+                )
             }
             val signer = authority.privateKeyAndCertificate.privateKey.signer()
             val converter = JcaX509CRLConverter().setProvider(BouncyCastleProvider())
             return converter.getCRL(crlGen.build(signer))
         }
     }
-    private inner class OcspHandler: Handler {
+    private inner class OcspHandler : Handler {
         override fun handle(context: Context) {
             val request = OCSPReq(
                 Base64.decode(
@@ -94,13 +97,13 @@ internal class RevocableCertificateAuthorityImpl(
                         context.path()
                             .removePrefix("$PATH/"),
                         "UTF-8",
-                    )
-                )
+                    ),
+                ),
             )
             val responseBuilder = BasicOCSPRespBuilder(
                 RespID(
-                    authority.issuer
-                )
+                    authority.issuer,
+                ),
             )
             val now = clock.instant().toEpochMilli()
             request.requestList.forEach { req ->
@@ -117,12 +120,10 @@ internal class RevocableCertificateAuthorityImpl(
 
             val response = OCSPRespBuilder().build(
                 OCSPResp.SUCCESSFUL,
-                responseBuilder.build(signer, request.certs, Date(now))
+                responseBuilder.build(signer, request.certs, Date(now)),
             )
 
             context.result(response.encoded)
         }
-
     }
-
 }
