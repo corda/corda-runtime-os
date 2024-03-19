@@ -429,7 +429,7 @@ internal class StatefulSessionManagerImpl(
         val trace: T,
     )
 
-    private data class OutboundMessageContext<T>(
+    internal data class OutboundMessageContext<T>(
         val trace: T,
         val message: AuthenticatedMessageAndKey,
     )
