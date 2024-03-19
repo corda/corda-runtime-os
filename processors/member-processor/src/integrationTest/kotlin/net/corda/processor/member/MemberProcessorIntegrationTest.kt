@@ -47,12 +47,13 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeBootstr
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeCryptoConfig
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeMembershipConfig
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeMessagingConfig
+import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeStateManagerConfig
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishDefaultCryptoConf
-import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishEmptyStateManagerConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishGatewayConfig
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishMembershipConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishMessagingConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishRawGroupPolicyData
+import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishStatemanagerConfig
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.register
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.sampleGroupPolicy1
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.sampleGroupPolicy2
@@ -172,6 +173,7 @@ class MemberProcessorIntegrationTest {
         private val membershipConfig = makeMembershipConfig()
         private val messagingConfig = makeMessagingConfig()
         private val cryptoConfig = makeCryptoConfig()
+        private val statemanagerConfig = makeStateManagerConfig(clusterDb.config)
 
         private lateinit var connectionIds: Map<String, UUID>
 
@@ -207,7 +209,7 @@ class MemberProcessorIntegrationTest {
             publisher.publishMessagingConf(messagingConfig)
             publisher.publishMembershipConf(membershipConfig)
             publisher.publishDefaultCryptoConf(cryptoConfig)
-            publisher.publishEmptyStateManagerConf()
+            publisher.publishStatemanagerConfig(statemanagerConfig)
             publisher.publishGatewayConfig()
             publisher.publishRawGroupPolicyData(
                 virtualNodeInfoReader,
