@@ -6,6 +6,8 @@ import brave.baggage.BaggagePropagation
 import brave.baggage.BaggagePropagationConfig
 import brave.baggage.CorrelationScopeConfig
 import brave.context.slf4j.MDCScopeDecorator
+import brave.handler.MutableSpan
+import brave.handler.SpanHandler
 import brave.http.HttpRequest
 import brave.http.HttpRequestMatchers.pathStartsWith
 import brave.http.HttpRequestParser
@@ -45,7 +47,12 @@ internal object Unlimited : SampleRate
 internal data class PerSecond(val samplesPerSecond: Int) : SampleRate
 
 @Suppress("TooManyFunctions")
-internal class BraveTracingService(serviceName: String, zipkinHost: String?, samplesPerSecond: SampleRate) :
+internal class BraveTracingService(
+    serviceName: String,
+    zipkinHost: String?,
+    samplesPerSecond: SampleRate,
+    extraTraceTags: Map<String, String>
+) :
     TracingService {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
@@ -73,7 +80,26 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
             }
         }
 
-        val tracingBuilder = Tracing.newBuilder().currentTraceContext(braveCurrentTraceContext).supportsJoin(false)
+        logger.info("The following trace tags will be applied to all spans. Trace tags: ${extraTraceTags}")
+        val tracingBuilder = Tracing.newBuilder()
+            .currentTraceContext(braveCurrentTraceContext)
+            .addSpanHandler(
+                // Add the default tags.
+                // Default tags are applied to all spans upon creation.
+                object : SpanHandler() {
+                    override fun end(
+                        context: brave.propagation.TraceContext?,
+                        span: MutableSpan,
+                        cause: Cause?
+                    ): Boolean {
+                        extraTraceTags.forEach { (k,v) ->
+                            span.tag(k,v)
+                        }
+                        return super.end(context, span, cause)
+                    }
+                }
+            )
+            .supportsJoin(false)
             .localServiceName(serviceName).traceId128Bit(true).sampler(sampler).propagationFactory(
                 BaggagePropagation.newFactoryBuilder(B3Propagation.FACTORY)
                     .add(BaggagePropagationConfig.SingleBaggageField.remote(BraveBaggageFields.REQUEST_ID))

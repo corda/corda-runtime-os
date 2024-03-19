@@ -67,6 +67,10 @@ class DefaultWorkerParams(healthPortOverride: Int = WORKER_SERVER_PORT) {
             "defaults to 1 sample per second. Set to \"unlimited\" to record all samples"])
     var traceSamplesPerSecond: String? = null
 
+    @Option(names = ["--trace-tag"], description = ["Tags that are applied to trace spans " +
+            "which can later be used to filter traces."])
+    var extraTraceTags = emptyMap<String, String>()
+
     @Option(names = ["--metrics-keep-names"], description = ["A regular expression for the names of metrics that " +
             "Corda should keep; if unspecified, defaults to keeping all metrics"])
     var metricsKeepNames: String? = null
