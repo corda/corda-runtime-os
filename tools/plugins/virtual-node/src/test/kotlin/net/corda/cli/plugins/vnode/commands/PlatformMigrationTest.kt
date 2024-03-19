@@ -4,6 +4,7 @@ import liquibase.Liquibase
 import liquibase.command.CommandArgumentDefinition
 import liquibase.command.CommandScope
 import liquibase.database.Database
+import net.corda.db.admin.impl.LiquibaseManager
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentMatchers
@@ -47,6 +48,8 @@ class PlatformMigrationTest {
         on { invoke(any()) } doReturn (commandScope)
     }
 
+    private val liquibaseManager = LiquibaseManager(commandScopeFactory)
+
     val pmConfig = PlatformMigration.PlatformMigrationConfig(
         lineReader = mockLineReader,
         writerFactory = mockWriterFactory,
@@ -65,7 +68,7 @@ class PlatformMigrationTest {
         val validHoldingIds = listOf("30f232111e9a", "25ab40d125a6", "ebf080aaeb79")
     }
 
-    private fun createPlatformMigration() = PlatformMigration(pmConfig, commandScopeFactory).apply {
+    private fun createPlatformMigration() = PlatformMigration(pmConfig, liquibaseManager).apply {
         jdbcUrl = JDBC_URL
         user = USER
         password = PASSWORD
