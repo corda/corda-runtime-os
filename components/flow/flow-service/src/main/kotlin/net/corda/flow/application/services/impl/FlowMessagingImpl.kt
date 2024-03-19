@@ -108,11 +108,17 @@ class FlowMessagingImpl @Activate constructor(
         val versionSendingFlowSessionPayloads = getVersionSendingFlowSessionPayloads(sessionsToReceiveFrom)
 
         if (versionSendingFlowSessionPayloads.isNotEmpty()) {
+            logger.info("calling versioned send for receiveAll suspend. sessions: ${versionSendingFlowSessionPayloads.keys.map {
+                it.sessionId }}")
             fiber.suspend(FlowIORequest.Send(versionSendingFlowSessionPayloads))
         }
 
         val request = FlowIORequest.Receive(sessions = sessionsToReceiveFrom.map { it.getSessionInfo() }.toSet())
+        logger.info("calling receiveAll suspend for for sessions ${sessionsToReceiveFrom.map { it.getSessionId() }}")
+
         val received = fiber.suspend(request)
+        logger.info("Waking up from receiveAll with keys/values : [${received.keys}}/[${received.values}] \n" +
+                "Waking up from receive expecting to find sessions : [${sessionsToReceiveFrom.map { it.getSessionId() }}]")
         setSessionsAsConfirmed(flowSessionInternals)
         return deserializeReceivedPayload(received, receiveType) + versionReceivingFlowSessionPayloads.values
     }
@@ -141,10 +147,12 @@ class FlowMessagingImpl @Activate constructor(
         val versionSendingFlowSessionPayloads = getVersionSendingFlowSessionPayloads(sessionsToReceiveFrom)
 
         if (versionSendingFlowSessionPayloads.isNotEmpty()) {
+            logger.info("calling versioned send for receiveAllMap suspend. sessions: ${versionSendingFlowSessionPayloads.keys.map {
+                it.sessionId }}")
             fiber.suspend(FlowIORequest.Send(versionSendingFlowSessionPayloads))
         }
 
-        logger.info("calling suspend for for sessions ${sessionsToReceiveFrom.map { it.key.getSessionId() }}")
+        logger.info("calling receiveAllMap suspend for for sessions ${sessionsToReceiveFrom.map { it.key.getSessionId() }}")
 
         val request = FlowIORequest.Receive(
             sessions = sessionsToReceiveFrom.map {
@@ -154,7 +162,7 @@ class FlowMessagingImpl @Activate constructor(
         )
 
         val received = fiber.suspend(request)
-        logger.info("Waking up from receive with keys/values : [${received.keys}}/[${received.values}] \n" +
+        logger.info("Waking up from receiveAllMap with keys/values : [${received.keys}}/[${received.values}] \n" +
                 "Waking up from receive expecting to find sessions : [${sessionsToReceiveFrom.keys}]")
 
         setSessionsAsConfirmed(flowSessionInternals.keys)
@@ -176,6 +184,7 @@ class FlowMessagingImpl @Activate constructor(
                 else -> serializedPayload
             }
         }
+        logger.info("calling sendAll suspend for for sessions ${sessionToPayload.map { it.key.sessionId }}")
         fiber.suspend(FlowIORequest.Send(sessionToPayload))
         setSessionsAsConfirmed(flowSessionInternals)
     }
@@ -193,12 +202,14 @@ class FlowMessagingImpl @Activate constructor(
                 else -> serialize(payload)
             }
         }.toMap()
+        logger.info("calling sendAllMap suspend for for sessions ${sessionPayload.map { it.key.sessionId }}")
         fiber.suspend(FlowIORequest.Send(sessionPayload))
         @Suppress("unchecked_cast")
         setSessionsAsConfirmed(payloadsPerSession.keys as Set<FlowSessionInternal>)
     }
 
     private fun setSessionsAsConfirmed(flowSessionInternals: Set<FlowSessionInternal>) {
+        logger.info("Setting session as confirmed for sessions ${flowSessionInternals.map { it.getSessionId() }}")
         flowSessionInternals.onEach { it.setSessionConfirmed() }
     }
 
@@ -210,7 +221,7 @@ class FlowMessagingImpl @Activate constructor(
         flowContextPropertiesBuilder: FlowContextPropertiesBuilder? = null
     ): FlowSession {
         val sessionId = UUID.randomUUID().toString()
-        logger.info("Creating sessions with $x500Name with sessionid $sessionId")
+        logger.info("Creating session with $x500Name with sessionid $sessionId")
         checkFlowCanBeInitiated()
         addSessionIdToFlowStackItem(sessionId)
         return flowSessionFactory.createInitiatingFlowSession(

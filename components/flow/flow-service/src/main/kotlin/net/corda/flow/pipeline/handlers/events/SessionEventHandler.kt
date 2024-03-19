@@ -32,7 +32,6 @@ import net.corda.session.manager.Constants.Companion.FLOW_SESSION_TIMEOUT_MS
 import net.corda.session.manager.SessionManager
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.debug
-import net.corda.utilities.trace
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -61,7 +60,7 @@ class SessionEventHandler @Activate constructor(
     override fun preProcess(context: FlowEventContext<SessionEvent>): FlowEventContext<SessionEvent> {
         val checkpoint = context.checkpoint
         val sessionEvent = context.inputEventPayload
-        log.trace { "Session event in handler: ${sessionEvent.payload}" }
+        log.info("Session event for session ${sessionEvent.sessionId} in handler: ${sessionEvent.payload::class.java.name}" )
 
         createCheckpointIfDoesNotExist(checkpoint, sessionEvent, context)
         processSessionEvent(sessionEvent, checkpoint)
@@ -150,6 +149,7 @@ class SessionEventHandler @Activate constructor(
 
         initiatedFlowNameAndProtocolResult.let { result ->
             if (result.isSuccess) {
+                log.info("Session event received for session ${sessionEvent.sessionId} is creating new session state" )
                 context.checkpoint.putSessionState(sessionManager.generateSessionState(
                     sessionId,
                     getContextSessionProperties(sessionEvent.contextSessionProperties, result.getOrThrow()),

@@ -13,6 +13,8 @@ import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.time.Instant
 
 @Component(service = [FlowRequestHandler::class])
@@ -25,7 +27,13 @@ class SendAndReceiveRequestHandler @Activate constructor(
 
     override val type = FlowIORequest.SendAndReceive::class.java
 
+    private companion object {
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
     override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.SendAndReceive): WaitingFor {
+        log.info("FlowId ${context.checkpoint.flowId} is called send and receive for ${request.sessionToInfo.keys.map { it.sessionId }}. " +
+                "setting getUpdatedWaitingFor")
         return WaitingFor(SessionData(request.sessionToInfo.map { it.key.sessionId }))
     }
 
@@ -34,6 +42,7 @@ class SendAndReceiveRequestHandler @Activate constructor(
         request: FlowIORequest.SendAndReceive
     ): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
+        log.info("FlowId ${context.checkpoint.flowId} is called send and receive for ${request.sessionToInfo.keys.map { it.sessionId }}")
 
         //generate init messages for sessions which do not exist yet
         generateSessionService.generateSessions(context, request.sessionToInfo.keys)

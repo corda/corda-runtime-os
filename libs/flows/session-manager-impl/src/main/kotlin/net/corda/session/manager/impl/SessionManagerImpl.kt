@@ -44,7 +44,7 @@ class SessionManagerImpl @Activate constructor(
         val updatedSessionState = sessionState?.apply {
             lastReceivedMessageTime = instant
         }
-
+        logger.info("Session on key $key with sessionId  ${sessionState?.sessionId} is receiving a ${event.payload::class.java.name}")
         return sessionEventProcessorFactory.createEventReceivedProcessor(key, event, updatedSessionState, instant).execute()
     }
 
@@ -55,6 +55,7 @@ class SessionManagerImpl @Activate constructor(
         instant: Instant,
         maxMsgSize: Long,
     ): SessionState {
+        logger.info("Session on key $key with sessionId  ${sessionState.sessionId} is sending a ${event.payload::class.java.name}")
         return sessionEventProcessorFactory.createEventToSendProcessor(key, event, sessionState, instant, maxMsgSize).execute()
     }
 
