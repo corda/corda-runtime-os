@@ -16,7 +16,7 @@ import org.junit.jupiter.params.provider.MethodSource
 import java.math.BigDecimal.TEN
 import kotlin.test.assertEquals
 
-class TokenBalanceCriteriaSerializationTests {
+class TokenClaimCriteriaSerializationTests {
 
     companion object {
         @JvmStatic
