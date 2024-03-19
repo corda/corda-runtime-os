@@ -63,15 +63,6 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
         this.memberLookup = memberLookup
     }
 
-    // custom signed tx type / filtered tx type for non validating notary
-    // check that it has no inputs, references, outputs
-    // switch based on that (skips the signing parts)
-    // in the uniqueness checker, also check for no inputs, reference, outputs
-    // for those transactions just do a lookup, no notarisation
-    // then return to the flow with the existing code path
-    // use the flow context, we can set it in the recovery flow and read it in the server flow
-    // no other changes needed
-
     /**
      * The main logic is implemented in this function.
      *

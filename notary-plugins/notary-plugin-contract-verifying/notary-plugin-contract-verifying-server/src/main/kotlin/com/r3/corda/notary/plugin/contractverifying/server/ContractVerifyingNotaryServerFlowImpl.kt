@@ -71,12 +71,6 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
         this.notarySignatureVerificationService = notarySignatureVerificationService
     }
 
-    // custom signed tx type / filtered tx type for non validating notary
-    // check that it has no inputs, references, outputs
-    // switch based on that (skips the signing parts)
-    // in the uniqueness checker, also check for no inputs, reference, outputs
-    // for those transactions just do a lookup, no notarisation
-    // then return to the flow with the existing code path
     @Suspendable
     override fun call(session: FlowSession) {
         try {
