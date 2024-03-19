@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.flow.impl.recovery
+package net.corda.ledger.utxo.flow.impl.repair
 
 import net.corda.ledger.utxo.flow.impl.flows.repair.UtxoLoggingLedgerRepairFlow
 import net.corda.sandbox.type.UsedByFlow
