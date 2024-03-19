@@ -99,7 +99,7 @@ internal class PartitionsStates(
             group.execute()
         } catch (e: RuntimeException) {
             logger.error("Could not update delivery tracker partition states.", e)
-            dominoTile.close()
+            dominoTile.setError(e)
             return
         }
 
@@ -113,6 +113,9 @@ internal class PartitionsStates(
                 null
             }
         }
+
+        // Reload any failed partition
+        loadPartitions(reschedule)
 
         if (reschedule.isNotEmpty()) {
             scheduleRetryUpdate(reschedule, stopRetrying)
@@ -148,6 +151,10 @@ internal class PartitionsStates(
         }.filter {
             !partitions.contains(it)
         }
+        loadPartitions(partitionsIndices)
+    }
+
+    private fun loadPartitions(partitionsIndices: Collection<Int>) {
         if (partitionsIndices.isEmpty()) {
             return
         }
