@@ -52,7 +52,7 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
 ) : RecoverNotarizedTransactionsScheduledTaskProcessor {
-    companion object {
+    private companion object {
         private val logger = LoggerFactory.getLogger(RecoverNotarizedTransactionsScheduledTaskProcessor::class.java)
     }
 
@@ -124,6 +124,7 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
         private val messageFactory: StartFlowMessageFactoryImpl = StartFlowMessageFactoryImpl()
     ) : DurableProcessor<String, ScheduledTaskTrigger> {
         private companion object {
+            private const val REPAIR_FLOW = "com.r3.corda.notary.plugin.common.repair.NotarizedTransactionRepairFlow"
             private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         }
 
@@ -196,7 +197,7 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
             val start = messageFactory.createStartFlowEvent(
                 clientRequestId,
                 virtualNodeAvro,
-                flowClassName = "com.r3.corda.notary.plugin.common.repair.NotarizedTransactionRepairFlow",
+                flowClassName = REPAIR_FLOW,
                 flowStartArgs = objectMapper.writeValueAsString(
                     mapOf(
                         "from" to from.toEpochMilli(),
@@ -210,7 +211,7 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
             val status = messageFactory.createStartFlowStatus(
                 clientRequestId,
                 virtualNodeAvro,
-                flowClassName = "com.r3.corda.notary.plugin.common.repair.NotarizedTransactionRepairFlow"
+                flowClassName = REPAIR_FLOW
             )
 
             return Triple(virtualNode.holdingIdentity.shortHash, start, status)
