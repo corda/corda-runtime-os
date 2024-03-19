@@ -40,7 +40,7 @@ class TokenClaimCriteriaSerializationTests {
 
     @ParameterizedTest
     @MethodSource("testData")
-    fun testSerializationTestsSerialization(instance: TokenClaimCriteria) {
+    fun `test TokenClaimCriteria serialization`(instance: TokenClaimCriteria) {
         // Serialize
         val bytes = SerializationOutput(serializerFactory).serialize(instance, testSerializationContext)
 
