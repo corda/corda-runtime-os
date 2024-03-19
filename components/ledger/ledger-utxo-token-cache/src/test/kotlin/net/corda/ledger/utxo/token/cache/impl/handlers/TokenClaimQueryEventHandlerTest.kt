@@ -26,6 +26,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.lang.Thread.sleep
 import java.math.BigDecimal
 
 class TokenClaimQueryEventHandlerTest {
@@ -150,6 +151,38 @@ class TokenClaimQueryEventHandlerTest {
 
         // Ensure the database call was made only once
         verify(availableTokenService, times(1)).findAvailTokens(any(), eq(null), eq(null), any())
+    }
+
+    @Test
+    fun `ensure the cache expiry period is respected`() {
+        val tokenCacheExpiryPeriodMilliseconds = 1000L
+
+        // Make the expiry period long enough so the second call does not go to the database
+        val serviceConfigurationLongExpiryPeriod = mock<ServiceConfiguration>() {
+            whenever(it.tokenCacheExpiryPeriodMilliseconds).doAnswer { tokenCacheExpiryPeriodMilliseconds }
+        }
+
+        val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, serviceConfigurationLongExpiryPeriod)
+        val claimQuery = createClaimQuery(100)
+        whenever(recordFactory.getFailedClaimResponse(any(), any(), any())).thenReturn(claimQueryResult)
+        whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any()))
+            .thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
+
+        // There are no tokens available so the handle has always to go to the database
+
+        // First call go to the database
+        target.handle(tokenCache, poolCacheState, claimQuery)
+
+        // Second call. Can't go to the database because of the expiry period
+        target.handle(tokenCache, poolCacheState, claimQuery)
+
+        sleep(tokenCacheExpiryPeriodMilliseconds)
+
+        // Third call. Go to the database because the cached has been invalidated
+        target.handle(tokenCache, poolCacheState, claimQuery)
+
+        // Ensure the database call was made only once
+        verify(availableTokenService, times(2)).findAvailTokens(any(), eq(null), eq(null), any())
     }
 
     @Test
