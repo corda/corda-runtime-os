@@ -41,7 +41,6 @@ class TokenBalanceCriteriaSerializationTests {
     @ParameterizedTest
     @MethodSource("testData")
     fun testSerializationTestsSerialization(instance: TokenClaimCriteria) {
-
         // Serialize
         val bytes = SerializationOutput(serializerFactory).serialize(instance, testSerializationContext)
 
