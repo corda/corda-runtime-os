@@ -132,12 +132,12 @@ class BatchedUniquenessCheckerImpl(
 
         if ( numMalformed > 0 ) { log.debug { "$numMalformed malformed requests were rejected" } }
 
-        val grouped = requestsToProcess.groupBy { (_, request) -> request.uniquenessCheckType }
+        val groupedRequests = requestsToProcess.groupBy { (_, request) -> request.uniquenessCheckType }
 
         // TODO - Re-instate batch processing logic based on number of states if needed - need to
         // establish what batching there is in the message bus layer first
-        grouped[UniquenessCheckType.NOTARIZE]?.let { notarizations -> processBatches(notarizations, results, ::processUniquenessCheckBatch) }
-        grouped[UniquenessCheckType.CHECK]?.let { checks -> processBatches(checks, results, ::processExistingUniquenessCheckBatch) }
+        processNotarizations(groupedRequests, results)
+        processChecks(groupedRequests, results)
 
         CordaMetrics.Metric.UniquenessCheckerBatchExecutionTime
             .builder()
@@ -150,6 +150,28 @@ class BatchedUniquenessCheckerImpl(
             .record(requests.size.toDouble())
 
         return results
+    }
+
+    private fun processNotarizations(
+        groupedRequests: Map<UniquenessCheckType, List<Pair<UniquenessCheckRequestInternal, UniquenessCheckRequestAvro>>>,
+        results: HashMap<UniquenessCheckRequestAvro, UniquenessCheckResponseAvro>
+    ) {
+        groupedRequests[UniquenessCheckType.NOTARIZE]?.let { notarizations ->
+            processBatches(
+                notarizations,
+                results,
+                ::processUniquenessCheckBatch
+            )
+        }
+    }
+
+    private fun processChecks(
+        groupedRequests: Map<UniquenessCheckType, List<Pair<UniquenessCheckRequestInternal, UniquenessCheckRequestAvro>>>,
+        results: HashMap<UniquenessCheckRequestAvro, UniquenessCheckResponseAvro>
+    ) {
+        groupedRequests[UniquenessCheckType.CHECK]?.let { checks ->
+            processBatches(checks, results, ::processExistingUniquenessCheckBatch)
+        }
     }
 
     private inline fun processBatches(

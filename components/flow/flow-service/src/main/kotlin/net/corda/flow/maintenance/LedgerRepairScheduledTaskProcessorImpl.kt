@@ -39,8 +39,8 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
-@Component(service = [RecoverNotarizedTransactionsScheduledTaskProcessor::class])
-class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate constructor(
+@Component(service = [LedgerRepairScheduledTaskProcessor::class])
+class LedgerRepairScheduledTaskProcessorImpl @Activate constructor(
     @Reference(service = CpiInfoReadService::class)
     private val cpiInfoReadService: CpiInfoReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -51,12 +51,12 @@ class RecoverNotarizedTransactionsScheduledTaskProcessorImpl @Activate construct
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-) : RecoverNotarizedTransactionsScheduledTaskProcessor {
+) : LedgerRepairScheduledTaskProcessor {
     private companion object {
-        private val logger = LoggerFactory.getLogger(RecoverNotarizedTransactionsScheduledTaskProcessor::class.java)
+        private val logger = LoggerFactory.getLogger(LedgerRepairScheduledTaskProcessor::class.java)
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator<RecoverNotarizedTransactionsScheduledTaskProcessor>(::eventHandler)
+    private val coordinator = coordinatorFactory.createCoordinator<LedgerRepairScheduledTaskProcessor>(::eventHandler)
     private var stateManager: StateManager? = null
     private var subscriptionRegistrationHandle: RegistrationHandle? = null
 

@@ -38,6 +38,7 @@ class ContractVerifyingNotaryClientFlowImpl(
     /**
      * Constructor used for testing to initialize the necessary services
      */
+    @Suppress("LongParameterList")
     @VisibleForTesting
     internal constructor(
         stx: UtxoSignedTransaction,

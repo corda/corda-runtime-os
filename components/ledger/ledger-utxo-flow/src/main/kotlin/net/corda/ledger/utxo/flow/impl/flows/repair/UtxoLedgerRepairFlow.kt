@@ -1,6 +1,5 @@
 package net.corda.ledger.utxo.flow.impl.flows.repair
 
-import net.corda.flow.state.asFlowContext
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
@@ -30,6 +29,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
+@Suppress("LongParameterList")
 class UtxoLedgerRepairFlow(
     private val from: Instant,
     private val until: Instant,
@@ -61,12 +61,12 @@ class UtxoLedgerRepairFlow(
         var firstNotNotarizedTransaction: SecureHash? = null
 
         try {
-
             pagingLoop@ while (transactionsToRepair.isNotEmpty()) {
                 for (id in transactionsToRepair) {
-                    // As we update the [repair_attempt_count] each time we attempt to recover a transaction, if the very first unrecoverable
-                    // transaction is seen again in [transactionsToRecover] then it means that we have looped all the way round and reached
-                    // an already visited transaction but with an incremented [repair_attempt_count] compared to the previous visit.
+                    // As we update the [repair_attempt_count] each time we attempt to recover a transaction, if the very first
+                    // unrecoverable transaction is seen again in [transactionsToRecover] then it means that we have looped all the way
+                    // round and reached an already visited transaction but with an incremented [repair_attempt_count] compared to the
+                    // previous visit.
                     if (id == firstNotNotarizedTransaction) {
                         break@pagingLoop
                     }
@@ -84,8 +84,8 @@ class UtxoLedgerRepairFlow(
                             if (firstNotNotarizedTransaction == null) {
                                 firstNotNotarizedTransaction = id
                             }
-                            // We do not need to worry about concurrent calls for the same transaction from a separate recovery flow run, because
-                            // the transaction has technically had an attempted recovery in both flows.
+                            // We do not need to worry about concurrent calls for the same transaction from a separate recovery flow run,
+                            // because the transaction has technically had an attempted recovery in both flows.
                             persistenceService.incrementTransactionRepairAttemptCount(id)
                         }
                         Invalid -> numberOfInvalidTransactions++
@@ -186,7 +186,9 @@ class UtxoLedgerRepairFlow(
                     return NotNotarized
                 }
                 is NotaryExceptionUnknown -> {
-                    log.info("Transaction ${transaction.id} has not been previously notarized by notary $notary, skipping from ledger repair")
+                    log.info(
+                        "Transaction ${transaction.id} has not been previously notarized by notary $notary, skipping from ledger repair"
+                    )
                     return NotNotarized
                 }
                 is NotaryExceptionFatal -> {
@@ -293,6 +295,6 @@ class UtxoLedgerRepairFlow(
         Notarized, NotNotarized, Invalid, Skipped
     }
 
-    private class ExceededDurationException() : IllegalStateException()
-    private class ExceededLastNotarizationTimeException() : IllegalStateException()
+    private class ExceededDurationException : IllegalStateException()
+    private class ExceededLastNotarizationTimeException : IllegalStateException()
 }

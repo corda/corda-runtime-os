@@ -80,7 +80,12 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
     @Suspendable
     override fun call(session: FlowSession) {
         try {
-            val (initialTransaction, filteredTransactionsAndSignatures, notarizationType) = session.receive(ContractVerifyingNotarizationPayload::class.java)
+            val (
+                initialTransaction,
+                filteredTransactionsAndSignatures,
+                notarizationType
+            ) = session.receive(ContractVerifyingNotarizationPayload::class.java)
+
             if (logger.isTraceEnabled) {
                 logger.trace("Received notarization request for transaction {}", initialTransaction.id)
             }

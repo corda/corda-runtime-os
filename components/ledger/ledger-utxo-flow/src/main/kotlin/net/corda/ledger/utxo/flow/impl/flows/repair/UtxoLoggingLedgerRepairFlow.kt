@@ -63,7 +63,6 @@ class UtxoLoggingLedgerRepairFlow(
             visibilityChecker
         ).call()
 
-
         if (exceededDuration) {
             log.info(
                 "Ledger repair result: $numberOfNotarizedTransactions/$numberOfNotNotarizedTransactions/" +
