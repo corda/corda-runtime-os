@@ -10,6 +10,7 @@ import net.corda.flow.exceptions.FlowRetryException
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.state.asFlowContext
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.flows.FlowContextProperties
@@ -32,7 +33,9 @@ import java.util.UUID
 @Component(service = [ FlowEngine::class, UsedByFlow::class ], scope = PROTOTYPE)
 class FlowEngineImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
-    private val flowFiberService: FlowFiberService
+    private val flowFiberService: FlowFiberService,
+    @Reference(service = FlowFiberCache::class)
+    private val flowFiberCache: FlowFiberCache
 ) : FlowEngine, UsedByFlow, SingletonSerializeAsToken {
 
     companion object {
@@ -76,6 +79,7 @@ class FlowEngineImpl @Activate constructor(
 
             return result
         } catch (e: FlowRetryException) {
+            flowFiberCache.remove(getFiberExecutionContext().flowCheckpoint.flowKey)
             log.warn("Subflow exception Flow to be retried from previous checkpoint", e)
             // Rethrow to the top level, but don't do any cleanup actions. The checkpoint will be rewound to the previous
             // state. Sessions therefore should be intact when the replay happens.
