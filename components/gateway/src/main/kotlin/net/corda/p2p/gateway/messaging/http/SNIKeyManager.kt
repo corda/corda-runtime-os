@@ -44,7 +44,7 @@ class SNIKeyManager(
                             true
                         } else {
                             val issuesrsSet = issuers.toSet()
-                            val certificate = keyManager.getCertificateChain(alias).firstOrNull()
+                            val certificate = keyManager.getCertificateChain(alias).lastOrNull()
                             val issuer = certificate?.issuerX500Principal
                             if (issuer==null) {
                                 false

@@ -3,6 +3,7 @@ package net.corda.e2etest.utilities.types
 import net.corda.crypto.test.certificates.generation.Algorithm.Companion.toAlgorithm
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.FileSystemCertificatesAuthority
+import net.corda.crypto.test.certificates.generation.CertificateAuthority as Authority
 import net.corda.crypto.test.certificates.generation.KeysFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.e2etest.utilities.CAT_SESSION_INIT
@@ -27,7 +28,7 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 class CertificateAuthority private constructor(
-    val ca: FileSystemCertificatesAuthority,
+    private val ca: Authority,
     val name: String,
 ) {
     companion object {
@@ -80,13 +81,20 @@ class CertificateAuthority private constructor(
         return caLock.withLock {
             ca.signCsr(request as PKCS10CertificationRequest)
                 .also {
-                    ca.save()
+                    (ca as? FileSystemCertificatesAuthority)?.save()
                 }.toPem()
         }
     }
 
     val caCertificatePem by lazy {
         ca.caCertificate.toPem()
+    }
+
+    fun createIntermediateCertificateAuthority(): CertificateAuthority {
+        return CertificateAuthority(
+            ca.createIntermediateCertificateAuthority(),
+            UUID.randomUUID().toString(),
+        )
     }
 
     fun importTlsCertificateIfNotExists(
