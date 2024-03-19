@@ -7,7 +7,6 @@ import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.test.certificates.generation.CertificateAuthority
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
-import net.corda.crypto.test.certificates.generation.PrivateKeyWithCertificateChain
 import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.data.identity.HoldingIdentity
@@ -1618,45 +1617,35 @@ internal class GatewayIntegrationTest : TestBase() {
         @Test
         @Timeout(120)
         fun `support revocable certificates`() {
-            data class Server(
-                val node: Node,
-                val privateKeyWithCertificateChain: PrivateKeyWithCertificateChain,
-                val wasRevoked: Boolean,
-                val uri: URI,
-            )
             val holdingId = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", GROUP_ID)
             val configPublisher = ConfigPublisher().also {
                 keep(it)
             }
             val size = 6
+            val host = "www.alice.net"
             CertificateAuthorityFactory
                 .createRevocableAuthority(
                     RSA_TEMPLATE.toFactoryDefinitions(),
                 ).use { ca ->
-                    val servers = (1..size).map { index ->
-                        val node = Node("server-$index").also {
-                            it.listenToLinkManagerRpc()
-                        }
-                        val uri = URI.create("https://www.alice.net:${getOpenPort()}")
-                        val privateKeyWithCertificate= ca.generateKeyAndCertificates(uri.host)
+                    val certificates = (1..size).map { index ->
+                        val privateKeyWithCertificateChain = ca.generateKeyAndCertificates(host)
                         val revoke = index % 2 == 0
                         if (revoke) {
-                            ca.revoke(privateKeyWithCertificate.certificates.first())
+                            ca.revoke(privateKeyWithCertificateChain.certificates.first())
                         }
-                        Server(
-                            node,
-                            privateKeyWithCertificate,
-                            wasRevoked = revoke,
-                            uri = uri,
-                        )
+                        privateKeyWithCertificateChain to revoke
                     }
-                    servers.forEach { server ->
+                    certificates.forEach { (privateKeyWithCertificateChain, revoke) ->
+                        val node = Node(UUID.randomUUID().toString()).also {
+                            it.listenToLinkManagerRpc()
+                        }
+                        val uri = URI.create("https://$host:${getOpenPort()}")
                         configPublisher.publishConfig(
                             GatewayConfiguration(
                                 listOf(
                                     GatewayServerConfiguration(
-                                        server.uri.host,
-                                        server.uri.port,
+                                        uri.host,
+                                        uri.port,
                                         "/",
                                     )
                                 ),
@@ -1669,10 +1658,10 @@ internal class GatewayIntegrationTest : TestBase() {
                         )
                         Gateway(
                             configPublisher.readerService,
-                            server.node.subscriptionFactory,
-                            server.node.publisherFactory,
-                            server.node.lifecycleCoordinatorFactory,
-                            server.node.cryptoOpsClient,
+                            node.subscriptionFactory,
+                            node.publisherFactory,
+                            node.lifecycleCoordinatorFactory,
+                            node.cryptoOpsClient,
                             avroSchemaRegistry,
                             platformInfoProvider,
                             bootConfig,
@@ -1680,20 +1669,20 @@ internal class GatewayIntegrationTest : TestBase() {
                         ).usingLifecycle { gateway ->
                             gateway.startAndWaitForStarted()
                             val name = holdingId.x500Name
-                            server.node.publish(
+                            node.publish(
                                 Record(
                                     GATEWAY_TLS_TRUSTSTORES, "$name-$GROUP_ID",
                                     ca.toGatewayTrustStore(name)
                                 ),
                             )
-                            val keyStore = server.privateKeyWithCertificateChain.toKeyStoreAndPassword()
-                            server.node.publishKeyStoreCertificatesAndKeys(keyStore, holdingId, name)
+                            val keyStore = privateKeyWithCertificateChain.toKeyStoreAndPassword()
+                            node.publishKeyStoreCertificatesAndKeys(keyStore, holdingId, name)
 
-                            if (server.wasRevoked) {
+                            if (revoke) {
                                 eventually {
                                     assertThrows<RuntimeException> {
                                         testClientWith(
-                                            server.uri,
+                                            uri,
                                             ca.caCertificate.toPem(),
                                             mode = RevocationConfigMode.HARD_FAIL,
                                         )
@@ -1702,7 +1691,7 @@ internal class GatewayIntegrationTest : TestBase() {
                             } else {
                                 eventually {
                                     testClientWith(
-                                        server.uri,
+                                        uri,
                                         ca.caCertificate.toPem(),
                                         mode = RevocationConfigMode.HARD_FAIL,
                                     )
