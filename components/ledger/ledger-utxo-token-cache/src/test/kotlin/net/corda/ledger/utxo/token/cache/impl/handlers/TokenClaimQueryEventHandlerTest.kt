@@ -186,6 +186,36 @@ class TokenClaimQueryEventHandlerTest {
     }
 
     @Test
+    fun `ensure the handler always calls the db`() {
+        val tokenCacheExpiryPeriodMilliseconds = 0L
+
+        // Make the expiry period long enough so the second call does not go to the database
+        val serviceConfigurationLongExpiryPeriod = mock<ServiceConfiguration>() {
+            whenever(it.tokenCacheExpiryPeriodMilliseconds).doAnswer { tokenCacheExpiryPeriodMilliseconds }
+        }
+
+        val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, serviceConfigurationLongExpiryPeriod)
+        val claimQuery = createClaimQuery(100)
+        whenever(recordFactory.getFailedClaimResponse(any(), any(), any())).thenReturn(claimQueryResult)
+        whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any()))
+            .thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
+
+        // There are no tokens available so the handle has always to go to the database
+
+        // First call go to the database
+        target.handle(tokenCache, poolCacheState, claimQuery)
+
+        // Second call. Go to the database because of the expiry period
+        target.handle(tokenCache, poolCacheState, claimQuery)
+
+        // Third call. Go to the database because the cached has been invalidated
+        target.handle(tokenCache, poolCacheState, claimQuery)
+
+        // Ensure the database call was made twice
+        verify(availableTokenService, times(3)).findAvailTokens(any(), eq(null), eq(null), any())
+    }
+
+    @Test
     fun `query for tokens with exact amount should claim token`() {
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, serviceConfiguration)
         val claimQuery = createClaimQuery(100)
