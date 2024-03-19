@@ -8,4 +8,6 @@ interface ServiceConfiguration {
     val cachedTokenPageSize: Int
 
     val claimTimeoutSeconds: Int
+
+    val tokenCacheExpiryPeriodMilliseconds: Long
 }
