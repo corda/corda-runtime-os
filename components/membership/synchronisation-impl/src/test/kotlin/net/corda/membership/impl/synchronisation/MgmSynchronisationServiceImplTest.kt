@@ -35,7 +35,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.softwareVersion
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
-import net.corda.membership.p2p.helpers.MembershipP2pRecordsFactory
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.Signer
@@ -46,6 +45,8 @@ import net.corda.membership.persistence.client.MembershipQueryResult.QueryExcept
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.messaging.P2pRecordsFactory
+import net.corda.p2p.messaging.P2pRecordsFactory.Companion.MEMBERSHIP_DATA_DISTRIBUTION_PREFIX
 import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -239,33 +240,33 @@ class MgmSynchronisationServiceImplTest {
     private val allMembershipPackageRecord = mock<Record<String, AppMessage>>()
     private val bobMembershipPackageRecord = mock<Record<String, AppMessage>>()
     private val simonMembershipPackageRecord = mock<Record<String, AppMessage>>()
-    private val membershipP2PRecordsFactory = mock<MembershipP2pRecordsFactory> {
+    private val membershipP2PRecordsFactory = mock<P2pRecordsFactory> {
         on {
-            createAuthenticatedMessageRecord(
+            createMembershipAuthenticatedMessageRecord(
                 any(),
                 any(),
                 eq(allMembershipPackage),
-                any(),
+                eq(MEMBERSHIP_DATA_DISTRIBUTION_PREFIX),
                 any(),
                 eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED),
             )
         } doReturn allMembershipPackageRecord
         on {
-            createAuthenticatedMessageRecord(
+            createMembershipAuthenticatedMessageRecord(
                 any(),
                 any(),
                 eq(bobMembershipPackage),
-                any(),
+                eq(MEMBERSHIP_DATA_DISTRIBUTION_PREFIX),
                 any(),
                 eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED),
             )
         } doReturn bobMembershipPackageRecord
         on {
-            createAuthenticatedMessageRecord(
+            createMembershipAuthenticatedMessageRecord(
                 any(),
                 any(),
                 eq(simonMembershipPackage),
-                any(),
+                eq(MEMBERSHIP_DATA_DISTRIBUTION_PREFIX),
                 any(),
                 eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED),
             )

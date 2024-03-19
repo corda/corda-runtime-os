@@ -29,7 +29,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PEND
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.VersionedMessageBuilder
 import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
-import net.corda.membership.p2p.helpers.MembershipP2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -38,6 +37,8 @@ import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.messaging.P2pRecordsFactory
+import net.corda.p2p.messaging.P2pRecordsFactory.Companion.MEMBERSHIP_REGISTRATION_PREFIX
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.UPDATE_TO_PENDING_AUTO_APPROVAL
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -154,13 +155,13 @@ class ProcessMemberVerificationResponseHandlerTest {
     }
     private val record = mock<Record<String, AppMessage>>()
     private val capturedStatus = argumentCaptor<SpecificRecordBase>()
-    private val membershipP2PRecordsFactory = mock<MembershipP2pRecordsFactory> {
+    private val membershipP2PRecordsFactory = mock<P2pRecordsFactory> {
         on {
-            createAuthenticatedMessageRecord(
+            createMembershipAuthenticatedMessageRecord(
                 eq(mgm),
                 eq(member),
                 capturedStatus.capture(),
-                any(),
+                eq(MEMBERSHIP_REGISTRATION_PREFIX),
                 any(),
                 eq(MembershipStatusFilter.PENDING),
             )
@@ -507,7 +508,10 @@ class ProcessMemberVerificationResponseHandlerTest {
             }
 
             val results = invokeTestFunction()
-            verify(membershipP2PRecordsFactory, never()).createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any())
+            verify(
+                membershipP2PRecordsFactory,
+                never()
+            ).createMembershipAuthenticatedMessageRecord(any(), any(), any(), eq(MEMBERSHIP_REGISTRATION_PREFIX), anyOrNull(), any())
             assertThat(results.outputStates)
                 .hasSize(2)
             results.outputStates.forEach { assertThat(it.value).isNotInstanceOf(AppMessage::class.java) }
@@ -604,13 +608,13 @@ class ProcessMemberVerificationResponseHandlerTest {
     }
 
     private fun verifySetOwnRegistrationStatus(status: RegistrationStatus) {
-        verify(membershipP2PRecordsFactory).createAuthenticatedMessageRecord(
+        verify(membershipP2PRecordsFactory).createMembershipAuthenticatedMessageRecord(
             eq(mgm),
             eq(member),
             argThat<SetOwnRegistrationStatus> {
                 registrationId == REGISTRATION_ID && newStatus == status
             },
-            any(),
+            eq(MEMBERSHIP_REGISTRATION_PREFIX),
             any(),
             eq(MembershipStatusFilter.PENDING),
         )

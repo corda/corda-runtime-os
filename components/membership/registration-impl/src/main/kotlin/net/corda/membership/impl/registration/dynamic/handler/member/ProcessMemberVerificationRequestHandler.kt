@@ -14,9 +14,9 @@ import net.corda.membership.impl.registration.VerificationResponseKeys.VERIFIED
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
-import net.corda.membership.p2p.helpers.MembershipP2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.p2p.messaging.P2pRecordsFactory
+import net.corda.p2p.messaging.P2pRecordsFactory.Companion.MEMBERSHIP_REGISTRATION_PREFIX
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
@@ -26,10 +26,10 @@ internal class ProcessMemberVerificationRequestHandler(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val membershipPersistenceClient: MembershipPersistenceClient,
     private val memberTypeChecker: MemberTypeChecker,
-    private val membershipP2PRecordsFactory: MembershipP2pRecordsFactory = MembershipP2pRecordsFactory(
+    private val membershipP2PRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
+        clock,
         cordaAvroSerializationFactory,
-        P2pRecordsFactory(clock),
-    )
+    ),
 ) : RegistrationHandler<ProcessMemberVerificationRequest> {
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -68,13 +68,14 @@ internal class ProcessMemberVerificationRequestHandler(
         return RegistrationHandlerResult(
             null,
             listOf(
-                membershipP2PRecordsFactory.createAuthenticatedMessageRecord(
+                membershipP2PRecordsFactory.createMembershipAuthenticatedMessageRecord(
                     member,
                     mgm,
                     VerificationResponse(
                         registrationId,
                         KeyValuePairList(payload)
-                    )
+                    ),
+                    MEMBERSHIP_REGISTRATION_PREFIX,
                 )
             ) + commands
         )

@@ -29,8 +29,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
-import net.corda.membership.p2p.helpers.MembershipP2pRecordsFactory
-import net.corda.membership.p2p.helpers.MembershipP2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.SignerFactory
@@ -40,6 +38,8 @@ import net.corda.membership.synchronisation.MgmSynchronisationService
 import net.corda.membership.synchronisation.SynchronisationService
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.messaging.P2pRecordsFactory
+import net.corda.p2p.messaging.P2pRecordsFactory.Companion.MEMBERSHIP_DATA_DISTRIBUTION_PREFIX
+import net.corda.p2p.messaging.P2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.MEMBERS_PACKAGE_UPDATE
 import net.corda.utilities.time.Clock
@@ -91,9 +91,9 @@ class MgmSynchronisationServiceImpl internal constructor(
         }
 
         val membershipP2PRecordsFactory by lazy {
-            MembershipP2pRecordsFactory(
+            P2pRecordsFactory(
+                clock,
                 cordaAvroSerializationFactory,
-                P2pRecordsFactory(clock),
             )
         }
     }
@@ -240,10 +240,11 @@ class MgmSynchronisationServiceImpl internal constructor(
             dest: net.corda.data.identity.HoldingIdentity,
             data: MembershipPackage
         ): Record<*, *> {
-            return services.membershipP2PRecordsFactory.createAuthenticatedMessageRecord(
+            return services.membershipP2PRecordsFactory.createMembershipAuthenticatedMessageRecord(
                 source = source,
                 destination = dest,
                 content = data,
+                messageIdPrefix = MEMBERSHIP_DATA_DISTRIBUTION_PREFIX,
                 minutesToWait = config.getTtlMinutes(MEMBERS_PACKAGE_UPDATE),
                 filter = ACTIVE_OR_SUSPENDED
             )

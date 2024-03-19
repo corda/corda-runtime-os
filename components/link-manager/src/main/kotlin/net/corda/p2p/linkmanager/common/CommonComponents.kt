@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.common
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
@@ -38,6 +39,7 @@ import java.util.concurrent.Executors
 @Suppress("LongParameterList")
 internal class CommonComponents(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     linkManagerHostingMap: LinkManagerHostingMap,
     groupPolicyProvider: GroupPolicyProvider,
     membershipGroupReaderProvider: MembershipGroupReaderProvider,
@@ -101,7 +103,7 @@ internal class CommonComponents(
     private val deadSessionMonitorConfigHandler =
         DeadSessionMonitorConfigurationHandler(deadSessionMonitor, configurationReaderService)
 
-    private val p2pRecordsFactory = P2pRecordsFactory(clock)
+    private val p2pRecordsFactory = P2pRecordsFactory(clock, cordaAvroSerializationFactory)
 
     internal val sessionManager = StatefulSessionManagerImpl(
         subscriptionFactory,

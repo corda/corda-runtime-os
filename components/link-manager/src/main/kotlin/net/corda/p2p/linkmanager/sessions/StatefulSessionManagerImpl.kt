@@ -47,6 +47,7 @@ import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Compa
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
 import net.corda.p2p.linkmanager.state.SessionState
 import net.corda.p2p.messaging.P2pRecordsFactory
+import net.corda.p2p.messaging.P2pRecordsFactory.Companion.P2P_PREFIX
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.time.Clock
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -59,7 +60,6 @@ import org.slf4j.LoggerFactory
 import java.security.MessageDigest
 import java.time.Duration
 import java.util.Base64
-import java.util.UUID
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage as AvroInitiatorHandshakeMessage
 import net.corda.data.p2p.crypto.InitiatorHelloMessage as AvroInitiatorHelloMessage
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage as AvroResponderHandshakeMessage
@@ -1160,15 +1160,12 @@ internal class StatefulSessionManagerImpl(
         destination: HoldingIdentity,
         sessionId: String,
     ) {
-        val messageBytes = schemaRegistry.serialize(
-            ReEstablishSessionMessage(sessionId),
-        ).array()
         val record = p2pRecordsFactory.createAuthenticatedMessageRecord(
             source.toAvro(),
             destination.toAvro(),
-            messageBytes,
+            ReEstablishSessionMessage(sessionId),
             LINK_MANAGER_SUBSYSTEM,
-            UUID.randomUUID().toString(),
+            P2P_PREFIX,
             filter = MembershipStatusFilter.ACTIVE,
         )
         logger.info("Sending '{}' to session initiator '{}'.", ReEstablishSessionMessage::class.simpleName, destination)

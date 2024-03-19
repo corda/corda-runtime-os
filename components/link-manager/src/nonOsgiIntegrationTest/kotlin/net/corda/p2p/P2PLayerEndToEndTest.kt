@@ -58,6 +58,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messagebus.db.configuration.DbBusConfigMergerImpl
+import net.corda.messagebus.kafka.serialization.CordaAvroSerializationFactoryImpl
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -511,6 +512,7 @@ class P2PLayerEndToEndTest {
         private val emulator = EmulatorFactory.create(lifecycleCoordinatorFactory)
         private val configMerger = ConfigMergerImpl(DbBusConfigMergerImpl())
         private val avroSchemaRegistry = AvroSchemaRegistryImpl()
+        private val cordaAvroSerializationFactory = CordaAvroSerializationFactoryImpl(avroSchemaRegistry)
         private val configReadService = ConfigurationReadServiceImpl(
             lifecycleCoordinatorFactory,
             emulator.subscriptionFactory,
@@ -766,6 +768,7 @@ class P2PLayerEndToEndTest {
                 emulator.publisherFactory,
                 lifecycleCoordinatorFactory,
                 configReadService,
+                cordaAvroSerializationFactory,
                 bootstrapConfig,
                 groupPolicyProvider,
                 mock(),

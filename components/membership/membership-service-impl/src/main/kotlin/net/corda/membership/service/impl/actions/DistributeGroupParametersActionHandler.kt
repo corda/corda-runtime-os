@@ -13,14 +13,14 @@ import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
-import net.corda.membership.p2p.helpers.MembershipP2pRecordsFactory
-import net.corda.membership.p2p.helpers.MembershipP2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.SignerFactory
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.messaging.P2pRecordsFactory
+import net.corda.p2p.messaging.P2pRecordsFactory.Companion.MEMBERSHIP_DATA_DISTRIBUTION_PREFIX
+import net.corda.p2p.messaging.P2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.MembershipConfig
 import net.corda.utilities.time.Clock
@@ -47,9 +47,9 @@ class DistributeGroupParametersActionHandler(
         merkleTreeProvider,
         cordaAvroSerializationFactory
     ),
-    private val membershipP2PRecordsFactory: MembershipP2pRecordsFactory = MembershipP2pRecordsFactory(
+    private val membershipP2PRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
+        clock,
         cordaAvroSerializationFactory,
-        P2pRecordsFactory(clock),
     ),
     private val membershipPackageFactory: MembershipPackageFactory = MembershipPackageFactory(
         clock,
@@ -106,10 +106,11 @@ class DistributeGroupParametersActionHandler(
         }
 
         val groupParametersToAllActiveMembers = allActiveMembersExcludingMgm.map { memberToSendUpdateTo ->
-            membershipP2PRecordsFactory.createAuthenticatedMessageRecord(
+            membershipP2PRecordsFactory.createMembershipAuthenticatedMessageRecord(
                 source = approvedBy,
                 destination = memberToSendUpdateTo.holdingIdentity.toAvro(),
                 content = memberPackage,
+                messageIdPrefix = MEMBERSHIP_DATA_DISTRIBUTION_PREFIX,
                 minutesToWait = membershipConfig.getTtlMinutes(MembershipConfig.TtlsConfig.MEMBERS_PACKAGE_UPDATE),
             )
         }

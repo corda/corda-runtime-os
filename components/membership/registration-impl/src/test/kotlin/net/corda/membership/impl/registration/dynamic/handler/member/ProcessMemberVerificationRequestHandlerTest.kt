@@ -12,17 +12,17 @@ import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.impl.registration.VerificationResponseKeys
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
-import net.corda.membership.p2p.helpers.MembershipP2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.messaging.P2pRecordsFactory
+import net.corda.p2p.messaging.P2pRecordsFactory.Companion.MEMBERSHIP_REGISTRATION_PREFIX
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -69,14 +69,14 @@ class ProcessMemberVerificationRequestHandlerTest {
     }
     private val memberTypeChecker = mock<MemberTypeChecker>()
     private val p2pMessage = mock<Record<String, AppMessage>>()
-    private val membershipP2PRecordsFactory = mock<MembershipP2pRecordsFactory> {
+    private val membershipP2PRecordsFactory = mock<P2pRecordsFactory> {
         on {
-            createAuthenticatedMessageRecord(
+            createMembershipAuthenticatedMessageRecord(
                 eq(member),
                 eq(mgm),
                 response.capture(),
+                eq(MEMBERSHIP_REGISTRATION_PREFIX),
                 isNull(),
-                anyOrNull(),
                 eq(MembershipStatusFilter.ACTIVE)
             )
         } doReturn p2pMessage

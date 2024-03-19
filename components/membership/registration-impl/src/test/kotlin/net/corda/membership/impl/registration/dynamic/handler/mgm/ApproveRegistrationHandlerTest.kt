@@ -22,13 +22,14 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.VersionedMessageBuilder
-import net.corda.membership.p2p.helpers.MembershipP2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.messaging.P2pRecordsFactory
+import net.corda.p2p.messaging.P2pRecordsFactory.Companion.MEMBERSHIP_REGISTRATION_PREFIX
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
@@ -102,14 +103,14 @@ class ApproveRegistrationHandlerTest {
     private val clock = TestClock(Instant.ofEpochMilli(0))
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>()
     private val record = mock<Record<String, AppMessage>>()
-    private val membershipP2PRecordsFactory = mock<MembershipP2pRecordsFactory> {
+    private val membershipP2PRecordsFactory = mock<P2pRecordsFactory> {
         on {
-            createAuthenticatedMessageRecord(
+            createMembershipAuthenticatedMessageRecord(
                 any(),
                 any(),
                 any(),
+                eq(MEMBERSHIP_REGISTRATION_PREFIX),
                 anyOrNull(),
-                any(),
                 eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED),
             )
         } doReturn record
@@ -165,7 +166,7 @@ class ApproveRegistrationHandlerTest {
     fun `invoke sends the approved state to the member over P2P`() {
         val record = mock<Record<String, AppMessage>>()
         whenever(
-            membershipP2PRecordsFactory.createAuthenticatedMessageRecord(
+            membershipP2PRecordsFactory.createMembershipAuthenticatedMessageRecord(
                 eq(owner.toAvro()),
                 eq(member.toAvro()),
                 eq(
@@ -175,8 +176,8 @@ class ApproveRegistrationHandlerTest {
                         null
                     )
                 ),
+                eq(MEMBERSHIP_REGISTRATION_PREFIX),
                 anyOrNull(),
-                any(),
                 eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED),
             )
         ).doReturn(record)
@@ -263,7 +264,10 @@ class ApproveRegistrationHandlerTest {
         }
 
         val results = handler.invoke(state, key, command)
-        verify(membershipP2PRecordsFactory, never()).createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any())
+        verify(
+            membershipP2PRecordsFactory,
+            never()
+        ).createMembershipAuthenticatedMessageRecord(any(), any(), any(), eq(MEMBERSHIP_REGISTRATION_PREFIX), anyOrNull(), any())
         assertThat(results.outputStates)
             .hasSize(3)
         results.outputStates.forEach { assertThat(it.value).isNotInstanceOf(AppMessage::class.java) }

@@ -19,6 +19,7 @@ dependencies {
 
     implementation project(':libs:utilities')
     implementation project(':libs:messaging:messaging')
+    implementation project(':libs:serialization:serialization-avro')
 
     testImplementation project(':testing:test-utilities')
 }

@@ -14,7 +14,6 @@ import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
-import net.corda.membership.p2p.helpers.MembershipP2pRecordsFactory
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.Signer
@@ -24,6 +23,8 @@ import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.messaging.P2pRecordsFactory
+import net.corda.p2p.messaging.P2pRecordsFactory.Companion.MEMBERSHIP_DATA_DISTRIBUTION_PREFIX
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.MembershipConfig
 import net.corda.test.util.time.TestClock
@@ -92,15 +93,15 @@ class DistributeMemberInfoActionHandlerTest {
         on { createSigner(mgm) } doReturn signer
     }
     private val record = mock<Record<String, AppMessage>>()
-    private val membershipP2PRecordsFactory = mock<MembershipP2pRecordsFactory> {
+    private val membershipP2PRecordsFactory = mock<P2pRecordsFactory> {
         on {
-            createAuthenticatedMessageRecord(
+            createMembershipAuthenticatedMessageRecord(
                 any(),
                 any(),
                 any(),
+                eq(MEMBERSHIP_DATA_DISTRIBUTION_PREFIX),
                 anyOrNull(),
                 any(),
-                any()
             )
         } doReturn record
     }
@@ -165,12 +166,12 @@ class DistributeMemberInfoActionHandlerTest {
         ).doReturn(allMembershipPackage)
         val allMemberPackage = mock<Record<String, AppMessage>>()
         whenever(
-            membershipP2PRecordsFactory.createAuthenticatedMessageRecord(
+            membershipP2PRecordsFactory.createMembershipAuthenticatedMessageRecord(
                 eq(owner.toAvro()),
                 eq(member.toAvro()),
                 eq(allMembershipPackage),
+                eq(MEMBERSHIP_DATA_DISTRIBUTION_PREFIX),
                 anyOrNull(),
-                any(),
                 any(),
             )
         ).doReturn(allMemberPackage)
@@ -193,12 +194,12 @@ class DistributeMemberInfoActionHandlerTest {
         ).doReturn(onlyOwnMembershipPackage)
         val onlyOwnMemberPackage = mock<Record<String, AppMessage>>()
         whenever(
-            membershipP2PRecordsFactory.createAuthenticatedMessageRecord(
+            membershipP2PRecordsFactory.createMembershipAuthenticatedMessageRecord(
                 eq(owner.toAvro()),
                 eq(member.toAvro()),
                 eq(onlyOwnMembershipPackage),
+                eq(MEMBERSHIP_DATA_DISTRIBUTION_PREFIX),
                 anyOrNull(),
-                any(),
                 any(),
             )
         ).doReturn(onlyOwnMemberPackage)
@@ -224,12 +225,12 @@ class DistributeMemberInfoActionHandlerTest {
             val ownerAvro = owner.toAvro()
             val memberAvro = it.holdingIdentity.toAvro()
             whenever(
-                membershipP2PRecordsFactory.createAuthenticatedMessageRecord(
+                membershipP2PRecordsFactory.createMembershipAuthenticatedMessageRecord(
                     eq(ownerAvro),
                     eq(memberAvro),
                     eq(memberPackage),
+                    eq(MEMBERSHIP_DATA_DISTRIBUTION_PREFIX),
                     anyOrNull(),
-                    any(),
                     any(),
                 )
             ).doReturn(record)
