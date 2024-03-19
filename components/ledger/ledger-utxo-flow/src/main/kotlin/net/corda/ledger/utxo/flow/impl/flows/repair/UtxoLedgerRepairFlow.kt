@@ -16,7 +16,6 @@ import net.corda.utilities.time.UTCClock
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.ledger.notary.plugin.api.NotarizationType
@@ -38,7 +37,8 @@ class UtxoLedgerRepairFlow(
     private var flowEngine: FlowEngine,
     private val pluggableNotaryService: PluggableNotaryService,
     private val persistenceService: UtxoLedgerPersistenceService,
-    private val visibilityChecker: VisibilityChecker
+    private val visibilityChecker: VisibilityChecker,
+    private val queryLimit: Int = QUERY_LIMIT
 ) {
 
     private companion object {
@@ -86,6 +86,7 @@ class UtxoLedgerRepairFlow(
                             }
                             // We do not need to worry about concurrent calls for the same transaction from a separate recovery flow run,
                             // because the transaction has technically had an attempted recovery in both flows.
+                            checkDeadlinesNotExceeded(lastCallToNotaryTime)
                             persistenceService.incrementTransactionRepairAttemptCount(id)
                         }
                         Invalid -> numberOfInvalidTransactions++
@@ -93,7 +94,7 @@ class UtxoLedgerRepairFlow(
                     }
                 }
 
-                transactionsToRepair = if (transactionsToRepair.size >= QUERY_LIMIT) {
+                transactionsToRepair = if (transactionsToRepair.size >= queryLimit) {
                     checkDeadlinesNotExceeded(lastCallToNotaryTime)
                     findTransactionsToRepair()
                 } else {
@@ -117,11 +118,12 @@ class UtxoLedgerRepairFlow(
 
     @Suspendable
     fun findTransactionsToRepair(): List<SecureHash> {
+        // TODO RENAME THIS METHOD
         return persistenceService.findTransactionsWithStatusCreatedBeforeTime(
             TransactionStatus.UNVERIFIED,
             from,
             until,
-            QUERY_LIMIT
+            queryLimit
         )
     }
 
@@ -179,7 +181,7 @@ class UtxoLedgerRepairFlow(
 
         val notarySignatures = try {
             flowEngine.subFlow(notarizationFlow)
-        } catch (e: CordaRuntimeException) {
+        } catch (e: Exception) {
             when (e) {
                 is NotaryExceptionGeneral -> {
                     log.warn("Notarization check of transaction ${transaction.id} failed with ${e.message}")
