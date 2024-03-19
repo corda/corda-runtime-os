@@ -99,6 +99,8 @@ class FlowFiberCacheImpl @Activate constructor(
     }
 
     override fun remove(key: FlowKey) {
+
+        logger.info("Removing key $key from the cache for flowId")
         cache.invalidate(key)
     }
 

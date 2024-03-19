@@ -27,8 +27,8 @@ class FlowRetryRequestHandler @Activate constructor(
     }
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.FlowRetry): FlowEventContext<Any> {
+        log.warn("Flow ${context.checkpoint.flowId} requested a retry, removing cache entry")
         flowFiberCache.remove(context.checkpoint.flowKey)
-        log.warn("Flow ${context.checkpoint.flowId} requested a retry")
         throw CordaMessageAPIConsumerResetException("Flow ${context.checkpoint.flowId} requested a retry")
     }
 }
