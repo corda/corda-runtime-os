@@ -41,6 +41,7 @@ class ThreadLooper(
             block = block,
         )
     },
+    private val callUntilStopped: Boolean = false,
 ) : LifecycleStatusUpdater {
     @Volatile
     private var _isRunning = true
@@ -101,9 +102,14 @@ class ThreadLooper(
 
                 _loopStopped = false
                 lifecycleCoordinator.start()
+                val pollLoopType: () -> Unit = if (callUntilStopped) {
+                    ::runContinuousPollLoop
+                } else {
+                    ::runConsumeLoop
+                }
                 thread = threadFactory(
                     "$threadNamePrefix ${config.group}-${config.topic}",
-                    ::runConsumeLoop,
+                    pollLoopType,
                 )
             }
         }
@@ -163,6 +169,33 @@ class ThreadLooper(
     override fun updateLifecycleStatus(newStatus: LifecycleStatus, reason: String) {
         if (isRunning) {
             lifecycleCoordinator.updateStatus(newStatus, reason)
+        }
+    }
+
+    /**
+     * Background: This variant was added after the initial development of the thread looper. The other implementation
+     * puts a dependency on the consuming code to manage the call while running loop + set the lifecycle states for the
+     * looper.
+     *
+     * The continuously running poll loop will keep calling the loop function until the looper is marked as stopped
+     * The Looper will mark itself as up if it can complete the first poll successfully.
+     */
+    private fun runContinuousPollLoop() {
+        try {
+            var isFirstPoll = true
+            while (_isRunning) {
+                loopFunction()
+                if (isFirstPoll) {
+                    lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+                    isFirstPoll = false
+                }
+            }
+            lifecycleCoordinator.close()
+        } catch (t: Throwable) {
+            _isRunning = false
+            val msg = "runConsumeLoop Throwable caught, subscription in an unrecoverable bad state"
+            log.error(msg, t)
+            lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, msg)
         }
     }
 

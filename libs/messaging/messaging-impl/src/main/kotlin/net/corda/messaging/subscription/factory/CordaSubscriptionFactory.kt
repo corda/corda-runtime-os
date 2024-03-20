@@ -31,18 +31,23 @@ import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.subscription.CompactedSubscriptionImpl
 import net.corda.messaging.subscription.DurableSubscriptionImpl
 import net.corda.messaging.subscription.EventLogSubscriptionImpl
+import net.corda.messaging.subscription.EventSourceConsumer
+import net.corda.messaging.subscription.EventSourceRecordConsumer
 import net.corda.messaging.subscription.EventSourceSubscriptionImpl
 import net.corda.messaging.subscription.PubSubSubscriptionImpl
 import net.corda.messaging.subscription.RPCSubscriptionImpl
 import net.corda.messaging.subscription.StateAndEventSubscriptionImpl
 import net.corda.messaging.subscription.SyncRPCSubscriptionImpl
+import net.corda.messaging.subscription.ThreadLooper
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
+import net.corda.messaging.utils.toEventLogRecord
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.web.api.WebServer
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -176,12 +181,49 @@ class CordaSubscriptionFactory @Activate constructor(
     ): Subscription<K, V> {
 
         val config = getConfig(SubscriptionType.EVENT_LOG, subscriptionConfig, messagingConfig)
+
+        val consumerFactory = EventSourceCordaConsumerFactory(
+            config.group,
+            config.clientId,
+            config.topic,
+            processor.keyClass,
+            processor.valueClass,
+            config.messageBusConfig,
+            partitionAssignmentListener,
+            cordaConsumerBuilder,
+            LoggerFactory.getLogger("${EventSourceCordaConsumerFactory<K, V>::javaClass.name}-${config.clientId}")
+        )
+
+        val eventSourceRecordConsumer = EventSourceRecordConsumer(
+            config.group,
+            config.clientId,
+            config.topic,
+            config.pollTimeout,
+            config.processorRetries,
+            processor,
+            { record -> record.toEventLogRecord() },
+            LoggerFactory.getLogger("${EventSourceRecordConsumer<K, V>::javaClass.name}-${config.clientId}")
+        )
+
+        val eventSourceConsumer = EventSourceConsumer(
+            config.group,
+            config.topic,
+            consumerFactory,
+            eventSourceRecordConsumer,
+            LoggerFactory.getLogger("${EventSourceConsumer<K, V>::javaClass.name}-${config.clientId}")
+        )
+
+        val logger = LoggerFactory.getLogger(
+            "${EventSourceSubscriptionImpl<K, V>::javaClass.name}-${config.clientId}"
+        )
+
         return EventSourceSubscriptionImpl(
             config,
-            cordaConsumerBuilder,
-            processor,
-            partitionAssignmentListener,
-            lifecycleCoordinatorFactory
+            eventSourceConsumer,
+            { name, callback ->
+                ThreadLooper(logger, config, lifecycleCoordinatorFactory, name, callback, callUntilStopped = true)
+            },
+            logger
         )
     }
 
@@ -213,8 +255,10 @@ class CordaSubscriptionFactory @Activate constructor(
         val cordaAvroSerializer = cordaAvroSerializationFactory.createAvroSerializer<RESPONSE> { }
         val cordaAvroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({ }, processor.requestClass)
 
-        return SyncRPCSubscriptionImpl(rpcConfig, processor,
-            lifecycleCoordinatorFactory, webServer, cordaAvroSerializer, cordaAvroDeserializer)
+        return SyncRPCSubscriptionImpl(
+            rpcConfig, processor,
+            lifecycleCoordinatorFactory, webServer, cordaAvroSerializer, cordaAvroDeserializer
+        )
     }
 
 
