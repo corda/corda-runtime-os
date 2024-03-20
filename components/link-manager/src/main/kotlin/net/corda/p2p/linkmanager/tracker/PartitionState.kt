@@ -5,6 +5,10 @@ import com.fasterxml.jackson.core.JacksonException
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.InboundUnauthenticatedMessage
+import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateOperationGroup
 import net.corda.messaging.api.records.EventLogRecord
@@ -37,6 +41,21 @@ internal class PartitionState(
                 PartitionState(partition)
             }
         }
+
+        private val AppMessage.id
+            get() =
+                when (val message = this.message) {
+                    is AuthenticatedMessage -> {
+                        message.header.messageId
+                    }
+                    is OutboundUnauthenticatedMessage -> {
+                        message.header.messageId
+                    }
+                    is InboundUnauthenticatedMessage -> {
+                        message.header.messageId
+                    }
+                    else -> null
+                }
     }
 
     @JsonProperty("messages")
@@ -82,16 +101,19 @@ internal class PartitionState(
 
     fun read(
         now: Instant,
-        records: List<EventLogRecord<String, *>>,
+        records: List<EventLogRecord<String, AppMessage>>,
     ) {
         val offset = records.onEach { record ->
-            trackedMessages[record.key] = TrackedMessageState(
-                messageId = record.key,
-                timeStamp = now,
-                persisted = false,
-            )
-        }.maxOfOrNull {
-            it.offset
+            val id = record.value?.id
+            if (id != null) {
+                trackedMessages[id] = TrackedMessageState(
+                    messageId = id,
+                    timeStamp = now,
+                    persisted = false,
+                )
+            }
+        }.maxOfOrNull { record ->
+            record.offset
         } ?: return
         if (offset > lastSentOffset) {
             lastSentOffset = offset

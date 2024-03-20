@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.tracker
 
+import net.corda.data.p2p.app.AppMessage
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -30,11 +31,11 @@ internal class PartitionsStates(
     private val task = AtomicReference<Future<*>>()
     private val numberOfFailedRetries = AtomicInteger(0)
 
-    fun read(records: List<EventLogRecord<String, *>>) {
+    fun read(records: List<EventLogRecord<String, AppMessage>>) {
         val now = clock.instant()
         records.groupBy {
             it.partition
-        }.forEach { partition, partitionRecords ->
+        }.forEach { (partition, partitionRecords) ->
             partitions[partition]?.read(now, partitionRecords)
         }
     }

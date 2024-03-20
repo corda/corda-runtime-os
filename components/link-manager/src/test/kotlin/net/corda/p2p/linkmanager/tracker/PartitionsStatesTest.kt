@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.tracker
 
+import net.corda.data.p2p.app.AppMessage
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateOperationGroup
@@ -227,7 +228,7 @@ class PartitionsStatesTest {
                 3,
             ),
         )
-        val records = listOf(
+        val records: List<EventLogRecord<String, AppMessage>> = listOf(
             EventLogRecord(
                 topic = "topic",
                 key = "key",
@@ -385,7 +386,7 @@ class PartitionsStatesTest {
             states.loadPartitions(
                 setOf(1, 3),
             )
-            val records = listOf(
+            val records: List<EventLogRecord<String, AppMessage>> = listOf(
                 EventLogRecord(
                     topic = "topic",
                     key = "key",
@@ -431,7 +432,7 @@ class PartitionsStatesTest {
                     3,
                 ),
             )
-            val records = listOf(
+            val records: List<EventLogRecord<String, AppMessage>> = listOf(
                 EventLogRecord(
                     topic = "topic",
                     key = "key",

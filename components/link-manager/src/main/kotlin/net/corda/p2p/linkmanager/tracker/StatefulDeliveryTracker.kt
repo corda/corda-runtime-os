@@ -9,7 +9,7 @@ import net.corda.p2p.linkmanager.common.CommonComponents
 import net.corda.p2p.linkmanager.outbound.OutboundMessageProcessor
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 
-internal class StatelessDeliveryTracker(
+internal class StatefulDeliveryTracker(
     private val commonComponents: CommonComponents,
     messagingConfiguration: SmartConfig,
     publisher: PublisherWithDominoLogic,

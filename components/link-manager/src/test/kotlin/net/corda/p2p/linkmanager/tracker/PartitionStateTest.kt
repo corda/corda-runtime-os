@@ -1,6 +1,12 @@
 package net.corda.p2p.linkmanager.tracker
 
 import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.InboundUnauthenticatedMessage
+import net.corda.data.p2p.app.InboundUnauthenticatedMessageHeader
+import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
+import net.corda.data.p2p.app.OutboundUnauthenticatedMessageHeader
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateOperationGroup
 import net.corda.messaging.api.records.EventLogRecord
@@ -323,35 +329,23 @@ class PartitionStateTest {
     }
 
     @Test
-    fun `read will save the messages`() {
+    fun `read will save the messages if the message is AuthenticatedMessage`() {
         val now = Instant.ofEpochMilli(1000)
+        val messageHeader = mock<AuthenticatedMessageHeader> {
+            on { messageId } doReturn "message ID"
+        }
+        val authenticatedMessage = mock<AuthenticatedMessage> {
+            on { header } doReturn messageHeader
+        }
+        val value = mock<AppMessage> {
+            on { message } doReturn authenticatedMessage
+        }
         val records = listOf(
             EventLogRecord(
                 partition = 1,
                 offset = 200,
                 key = "a",
-                value = mock<AppMessage>(),
-                topic = "",
-            ),
-            EventLogRecord(
-                partition = 1,
-                offset = 201,
-                key = "b",
-                value = mock<AppMessage>(),
-                topic = "",
-            ),
-            EventLogRecord(
-                partition = 1,
-                offset = 202,
-                key = "c",
-                value = mock<AppMessage>(),
-                topic = "",
-            ),
-            EventLogRecord(
-                partition = 1,
-                offset = 100,
-                key = "d",
-                value = mock<AppMessage>(),
+                value = value,
                 topic = "",
             ),
         )
@@ -360,9 +354,79 @@ class PartitionStateTest {
 
         state.read(now, records)
 
-        assertThat(state.getTrackMessage("a")).isEqualTo(
+        assertThat(state.getTrackMessage("message ID")).isEqualTo(
             TrackedMessageState(
-                "a",
+                "message ID",
+                now,
+                false,
+            ),
+        )
+    }
+
+    @Test
+    fun `read will save the messages if the message is OutboundUnauthenticatedMessage`() {
+        val now = Instant.ofEpochMilli(1000)
+        val messageHeader = mock<OutboundUnauthenticatedMessageHeader> {
+            on { messageId } doReturn "message ID"
+        }
+        val outboundUnauthenticatedMessage = mock<OutboundUnauthenticatedMessage> {
+            on { header } doReturn messageHeader
+        }
+        val value = mock<AppMessage> {
+            on { message } doReturn outboundUnauthenticatedMessage
+        }
+        val records = listOf(
+            EventLogRecord(
+                partition = 1,
+                offset = 200,
+                key = "a",
+                value = value,
+                topic = "",
+            ),
+        )
+        val state = PartitionState(1)
+        state.lastSentOffset = 1000
+
+        state.read(now, records)
+
+        assertThat(state.getTrackMessage("message ID")).isEqualTo(
+            TrackedMessageState(
+                "message ID",
+                now,
+                false,
+            ),
+        )
+    }
+
+    @Test
+    fun `read will save the messages if the message is InboundUnauthenticatedMessage`() {
+        val now = Instant.ofEpochMilli(1000)
+        val messageHeader = mock<InboundUnauthenticatedMessageHeader> {
+            on { messageId } doReturn "message ID"
+        }
+        val inboundUnauthenticatedMessage = mock<InboundUnauthenticatedMessage> {
+            on { header } doReturn messageHeader
+        }
+        val value = mock<AppMessage> {
+            on { message } doReturn inboundUnauthenticatedMessage
+        }
+        val records = listOf(
+            EventLogRecord(
+                partition = 1,
+                offset = 200,
+                key = "a",
+                value = value,
+                topic = "",
+            ),
+        )
+        val state = PartitionState(1)
+        state.lastSentOffset = 1000
+
+        state.read(now, records)
+
+        assertThat(state.getTrackMessage("message ID")).isEqualTo(
+            TrackedMessageState(
+                "message ID",
                 now,
                 false,
             ),

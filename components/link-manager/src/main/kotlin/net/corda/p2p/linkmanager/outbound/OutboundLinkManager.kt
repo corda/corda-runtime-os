@@ -16,7 +16,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.common.CommonComponents
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.delivery.DeliveryTracker
-import net.corda.p2p.linkmanager.tracker.StatelessDeliveryTracker
+import net.corda.p2p.linkmanager.tracker.StatefulDeliveryTracker
 import net.corda.schema.Schemas
 import net.corda.utilities.flags.Features
 import net.corda.utilities.time.Clock
@@ -68,7 +68,7 @@ internal class OutboundLinkManager(
         )
     }
 
-    override val dominoTile = if (features.enableP2PStatelessDeliveryTracker) {
+    override val dominoTile = if (features.enableP2PStatefulDeliveryTracker) {
         val publisher = PublisherWithDominoLogic(
             publisherFactory = commonComponents.publisherFactory,
             coordinatorFactory = commonComponents.lifecycleCoordinatorFactory,
@@ -78,7 +78,7 @@ internal class OutboundLinkManager(
             ),
             messagingConfiguration = messagingConfiguration,
         )
-        val statelessDeliveryTracker = StatelessDeliveryTracker(
+        val statefulDeliveryTracker = StatefulDeliveryTracker(
             commonComponents = commonComponents,
             publisher = publisher,
             messagingConfiguration = messagingConfiguration,
@@ -88,11 +88,11 @@ internal class OutboundLinkManager(
             OUTBOUND_MESSAGE_PROCESSOR_GROUP,
             coordinatorFactory = lifecycleCoordinatorFactory,
             dependentChildren = listOf(
-                statelessDeliveryTracker.dominoTile.coordinatorName,
+                statefulDeliveryTracker.dominoTile.coordinatorName,
                 publisher.dominoTile.coordinatorName,
             ),
             managedChildren = listOf(
-                statelessDeliveryTracker.dominoTile.toNamedLifecycle(),
+                statefulDeliveryTracker.dominoTile.toNamedLifecycle(),
                 publisher.dominoTile.toNamedLifecycle(),
             ),
         )
