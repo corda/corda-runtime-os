@@ -3,8 +3,10 @@ package net.corda.p2p.linkmanager.tracker
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateOperationGroup
+import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
@@ -65,6 +67,7 @@ class PartitionsStatesTest {
             maxCacheOffsetAge = 50000,
             statePersistencePeriodSeconds = 1.0,
             outboundBatchProcessingTimeoutSeconds = 30.0,
+            maxNumberOfPersistenceRetries = 3,
         )
     }
     private val ends = mock<Instant>()
@@ -155,12 +158,9 @@ class PartitionsStatesTest {
     }
 
     @Test
-    fun `onPartitionsAssigned will create new partition if partition is not in the state manager`() {
-        states.onPartitionsAssigned(
-            listOf(
-                "topic" to 1,
-                "topic" to 3,
-            ),
+    fun `loadPartitions will create new partition if partition is not in the state manager`() {
+        states.loadPartitions(
+            setOf(1, 3),
         )
 
         val partition = states.get(3)
@@ -169,13 +169,14 @@ class PartitionsStatesTest {
     }
 
     @Test
-    fun `onPartitionsAssigned will read partition from the state manager`() {
+    fun `loadPartitions will read partition from the state manager`() {
         val key = stateKey(3)
         val json = """
             {
                 "restartOffset": 301,
                 "lastSentOffset": 403,
-                "trackedMessages": []
+                "partition": 3,
+                "messages": {}
             }
         """.trimIndent()
         whenever(
@@ -192,10 +193,10 @@ class PartitionsStatesTest {
                 ),
             ),
         )
-        states.onPartitionsAssigned(
-            listOf(
-                "topic" to 1,
-                "topic" to 3,
+        states.loadPartitions(
+            setOf(
+                1,
+                3,
             ),
         )
 
@@ -205,18 +206,12 @@ class PartitionsStatesTest {
     }
 
     @Test
-    fun `onPartitionsUnassigned will forget the partition details`() {
-        states.onPartitionsAssigned(
-            listOf(
-                "topic" to 1,
-                "topic" to 3,
-            ),
+    fun `forgetPartitions will forget the partition details`() {
+        states.loadPartitions(
+            setOf(1, 3),
         )
-        states.onPartitionsUnassigned(
-            listOf(
-                "topic" to 2,
-                "topic" to 3,
-            ),
+        states.forgetPartitions(
+            setOf(2, 3),
         )
 
         val partition = states.get(3)
@@ -226,10 +221,10 @@ class PartitionsStatesTest {
 
     @Test
     fun `read will update the offsets`() {
-        states.onPartitionsAssigned(
-            listOf(
-                "topic" to 1,
-                "topic" to 3,
+        states.loadPartitions(
+            setOf(
+                1,
+                3,
             ),
         )
         val records = listOf(
@@ -282,10 +277,10 @@ class PartitionsStatesTest {
 
     @Test
     fun `sent will update the offsets`() {
-        states.onPartitionsAssigned(
-            listOf(
-                "topic" to 1,
-                "topic" to 3,
+        states.loadPartitions(
+            setOf(
+                1,
+                3,
             ),
         )
         val records = listOf(
@@ -367,7 +362,9 @@ class PartitionsStatesTest {
             {
                 "restartOffset": 301,
                 "lastSentOffset": 403,
-                "trackedMessages": []
+                "partition": 3,
+                "version": 12,
+                "messages": {}
             }
             """.trimIndent()
             whenever(
@@ -385,11 +382,8 @@ class PartitionsStatesTest {
                     ),
                 ),
             )
-            states.onPartitionsAssigned(
-                listOf(
-                    "topic" to 1,
-                    "topic" to 3,
-                ),
+            states.loadPartitions(
+                setOf(1, 3),
             )
             val records = listOf(
                 EventLogRecord(
@@ -426,16 +420,15 @@ class PartitionsStatesTest {
         }
 
         @Test
-        fun `persist failure will retry`() {
-            whenever(operationGroup.execute())
-                .thenReturn(mapOf(stateKey(3) to mock()))
-                .thenReturn(mapOf(stateKey(3) to mock()))
-                .thenReturn(emptyMap())
+        fun `persist failure will set as error if the state manager is out of sync`() {
+            whenever(operationGroup.execute()).doReturn(mapOf(stateKey(3) to mock()))
+            val events = argumentCaptor<LifecycleEvent>()
+            whenever(coordinator.postEvent(events.capture())).doAnswer { }
             states.changed()
-            states.onPartitionsAssigned(
-                listOf(
-                    "topic" to 1,
-                    "topic" to 3,
+            states.loadPartitions(
+                setOf(
+                    1,
+                    3,
                 ),
             )
             val records = listOf(
@@ -458,77 +451,83 @@ class PartitionsStatesTest {
 
             persist.firstValue.run()
 
-            verify(operationGroup, times(3)).execute()
+            val error = (events.firstValue as? ErrorEvent)?.cause
+            assertThat(error).isExactlyInstanceOf(IllegalStateException::class.java)
         }
 
         @Test
-        fun `persist failure will retry the failed key`() {
-            val key = stateKey(3)
-            val create = argumentCaptor<State>()
-            whenever(operationGroup.create(create.capture())).doReturn(operationGroup)
-            whenever(operationGroup.execute())
-                .thenReturn(mapOf(key to mock()))
-                .thenReturn(mapOf(key to mock()))
-                .thenReturn(emptyMap())
-            states.changed()
-            states.onPartitionsAssigned(
-                listOf(
-                    "topic" to 1,
-                    "topic" to 3,
-                ),
-            )
-            val records = listOf(
-                EventLogRecord(
-                    topic = "topic",
-                    key = "key",
-                    value = null,
-                    partition = 1,
-                    offset = 101,
-                ),
-                EventLogRecord(
-                    topic = "topic",
-                    key = "key",
-                    value = null,
-                    partition = 3,
-                    offset = 3003,
-                ),
-            )
-            states.read(records)
-
-            persist.firstValue.run()
-
-            assertThat(create.allValues.map { it.key }).containsExactly(
-                stateKey(1),
-                key,
-                key,
-                key,
-            )
-        }
-
-        @Test
-        fun `persist exceptional failure will close the tile`() {
+        fun `persist exceptional failure will not post an error for the first time`() {
             whenever(operationGroup.execute())
                 .doThrow(CordaRuntimeException("Ooops"))
             states.changed()
-            states.onPartitionsAssigned(
-                listOf(
-                    "topic" to 1,
-                    "topic" to 3,
+            states.loadPartitions(
+                setOf(
+                    1,
+                    3,
                 ),
             )
 
             persist.firstValue.run()
 
-            verify(future).cancel(false)
+            verify(coordinator, never()).postEvent(any())
+        }
+
+        @Test
+        fun `persist exceptional failure will post an error after the Nth time`() {
+            val e = CordaRuntimeException("Ooops")
+            whenever(operationGroup.execute())
+                .doThrow(e)
+            val events = argumentCaptor<LifecycleEvent>()
+            whenever(coordinator.postEvent(events.capture())).doAnswer { }
+            states.changed()
+            states.loadPartitions(
+                setOf(
+                    1,
+                    3,
+                ),
+            )
+
+            persist.firstValue.run()
+            persist.firstValue.run()
+            persist.firstValue.run()
+
+            val error = (events.firstValue as? ErrorEvent)?.cause
+            assertThat(error).isSameAs(e)
+        }
+
+        @Test
+        fun `persist exceptional failure will not post an error after the Nth time if it had any success in between`() {
+            whenever(operationGroup.execute())
+                .thenThrow(CordaRuntimeException("Ooops"))
+                .thenThrow(CordaRuntimeException("Ooops"))
+                .thenReturn(emptyMap())
+                .thenThrow(CordaRuntimeException("Ooops"))
+                .thenThrow(CordaRuntimeException("Ooops"))
+                .thenReturn(emptyMap())
+            states.changed()
+            states.loadPartitions(
+                setOf(
+                    1,
+                    3,
+                ),
+            )
+
+            persist.firstValue.run()
+            persist.firstValue.run()
+            persist.firstValue.run()
+            persist.firstValue.run()
+            persist.firstValue.run()
+
+            verify(coordinator, never()).postEvent(any())
         }
 
         @Test
         fun `persist will update the state`() {
             states.changed()
-            states.onPartitionsAssigned(
-                listOf(
-                    "topic" to 1,
-                    "topic" to 3,
+            states.loadPartitions(
+                setOf(
+                    1,
+                    3,
                 ),
             )
 
@@ -538,24 +537,6 @@ class PartitionsStatesTest {
             val group = mock<StateOperationGroup>()
             info?.addToOperationGroup(group)
             verify(group).update(any<State>())
-        }
-
-        @Test
-        fun `persist failure will stop retrying after a while`() {
-            whenever(operationGroup.execute())
-                .doReturn(mapOf(stateKey(3) to mock()))
-            whenever(ends.isAfter(now)).doReturn(true)
-            states.changed()
-            states.onPartitionsAssigned(
-                listOf(
-                    "topic" to 1,
-                    "topic" to 3,
-                ),
-            )
-
-            persist.firstValue.run()
-
-            verify(future).cancel(false)
         }
     }
 }

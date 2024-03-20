@@ -17,6 +17,7 @@ class LinkManagerConfiguration {
         const val DELIVERY_TRACKER_MAX_CACHE_OFFSET_AGE = "deliveryTracker.maxCacheOffsetAge"
         const val DELIVERY_TRACKER_STATE_PERSISTENCE_PERIOD_SECONDS = "deliveryTracker.statePersistencePeriodSeconds"
         const val DELIVERY_TRACKER_OUTBOUND_BATCH_PROCESSING_TIMEOUT_SECONDS = "deliveryTracker.outboundBatchProcessingTimeoutSeconds"
+        const val DELIVERY_TRACKER_MAX_NUMBER_OF_PERSISTENCE_RETRIES = "deliveryTracker.maxNumberOfPersistenceRetries"
     }
 
     enum class ReplayAlgorithm {

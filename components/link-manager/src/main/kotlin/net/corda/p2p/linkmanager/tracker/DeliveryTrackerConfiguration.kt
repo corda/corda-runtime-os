@@ -4,6 +4,7 @@ import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.DELIVERY_TRACKER_MAX_CACHE_OFFSET_AGE
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.DELIVERY_TRACKER_MAX_CACHE_SIZE_MEGABYTES
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.DELIVERY_TRACKER_MAX_NUMBER_OF_PERSISTENCE_RETRIES
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.DELIVERY_TRACKER_OUTBOUND_BATCH_PROCESSING_TIMEOUT_SECONDS
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.DELIVERY_TRACKER_STATE_PERSISTENCE_PERIOD_SECONDS
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -33,12 +34,14 @@ internal class DeliveryTrackerConfiguration(
                 maxCacheOffsetAge = config.getLong(DELIVERY_TRACKER_MAX_CACHE_OFFSET_AGE),
                 statePersistencePeriodSeconds = config.getDouble(DELIVERY_TRACKER_STATE_PERSISTENCE_PERIOD_SECONDS),
                 outboundBatchProcessingTimeoutSeconds = config.getDouble(DELIVERY_TRACKER_OUTBOUND_BATCH_PROCESSING_TIMEOUT_SECONDS),
+                maxNumberOfPersistenceRetries = config.getInt(DELIVERY_TRACKER_MAX_NUMBER_OF_PERSISTENCE_RETRIES),
             )
         }
     }
     data class Configuration(
         val maxCacheSizeMegabytes: Long,
         val maxCacheOffsetAge: Long,
+        val maxNumberOfPersistenceRetries: Int,
         val statePersistencePeriodSeconds: Double,
         val outboundBatchProcessingTimeoutSeconds: Double,
     )
@@ -52,6 +55,7 @@ internal class DeliveryTrackerConfiguration(
             maxCacheOffsetAge = 50000,
             statePersistencePeriodSeconds = 1.0,
             outboundBatchProcessingTimeoutSeconds = 30.0,
+            maxNumberOfPersistenceRetries = 3,
         ),
     )
     private val listeners = ConcurrentHashMap.newKeySet<ConfigurationChanged>()

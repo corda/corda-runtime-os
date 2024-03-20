@@ -19,7 +19,7 @@ import java.time.Instant
 class PartitionStateTest {
     @Test
     fun `restartOffset set works as expected`() {
-        val state = PartitionState(1, null)
+        val state = PartitionState(1)
 
         state.restartOffset = 400
 
@@ -28,7 +28,7 @@ class PartitionStateTest {
 
     @Test
     fun `lastSentOffset set works as expected`() {
-        val state = PartitionState(1, null)
+        val state = PartitionState(1)
 
         state.lastSentOffset = 420
 
@@ -37,7 +37,7 @@ class PartitionStateTest {
 
     @Test
     fun `addMessage works as expected`() {
-        val state = PartitionState(1, null)
+        val state = PartitionState(1)
         val message = TrackedMessageState(
             messageId = "id",
             timeStamp = mock(),
@@ -51,7 +51,7 @@ class PartitionStateTest {
 
     @Test
     fun `untrackMessage removes message from list`() {
-        val state = PartitionState(1, null)
+        val state = PartitionState(1)
         val message = TrackedMessageState(
             messageId = "id",
             timeStamp = mock(),
@@ -65,24 +65,25 @@ class PartitionStateTest {
     }
 
     @Nested
-    inner class InitTests {
+    inner class FromStateTests {
         @Test
         fun `init happy path`() {
             val json = """
 {
+    "partition": 1,
     "restartOffset": 100000,
     "lastSentOffset": 200000,
-    "trackedMessages": [
-        {
+    "messages": {
+        "id1": {
             "id": "id1",
-            "ts": 10000,
+            "ts": 10,
             "p": true
-        }, {
+        }, "id2": {
             "id": "id2",
-            "ts": 10002,
+            "ts": 10.002,
             "p": false
         }
-    ]
+    }
 }
             """.trimIndent()
             val state = State(
@@ -91,7 +92,7 @@ class PartitionStateTest {
                 version = 100,
             )
 
-            val partitionState = PartitionState(3, state)
+            val partitionState = PartitionState.fromState(3, state)
 
             assertSoftly {
                 it.assertThat(partitionState.restartOffset).isEqualTo(100000)
@@ -115,7 +116,7 @@ class PartitionStateTest {
 
         @Test
         fun `init works find for null state`() {
-            val partitionState = PartitionState(3, null)
+            val partitionState = PartitionState.fromState(3, null)
 
             assertSoftly {
                 it.assertThat(partitionState.restartOffset).isEqualTo(0)
@@ -135,27 +136,15 @@ class PartitionStateTest {
                 )
 
                 assertThrows<CordaRuntimeException> {
-                    PartitionState(3, state)
+                    PartitionState.fromState(3, state)
                 }
             }
 
             @Test
-            fun `init fails with missing restartOffset`() {
+            fun `init fails with invalid field`() {
                 val json = """
 {
-    "restartOffset": "100000",
-    "lastSentOffset": 200000,
-    "trackedMessages": [
-        {
-            "id": "id1",
-            "ts": 10000,
-            "p": true
-        }, {
-            "id": "id2",
-            "ts": 10002,
-            "p": false
-        }
-    ]
+    "partition": "1",
 }
                 """.trimIndent()
                 val state = State(
@@ -165,167 +154,7 @@ class PartitionStateTest {
                 )
 
                 assertThrows<CordaRuntimeException> {
-                    PartitionState(3, state)
-                }
-            }
-
-            @Test
-            fun `init fails with missing lastSentOffset`() {
-                val json = """
-{
-    "restartOffset": 100000,
-    "lastSentOffset": null,
-    "trackedMessages": [
-        {
-            "id": "id1",
-            "ts": 10000,
-            "p": true
-        }, {
-            "id": "id2",
-            "ts": 10002,
-            "p": false
-        }
-    ]
-}
-                """.trimIndent()
-                val state = State(
-                    key = "",
-                    value = json.toByteArray(),
-                    version = 100,
-                )
-
-                assertThrows<CordaRuntimeException> {
-                    PartitionState(3, state)
-                }
-            }
-
-            @Test
-            fun `init fails with invalid rawTrackedMessages`() {
-                val json = """
-{
-    "restartOffset": 100000,
-    "lastSentOffset": null,
-    "trackedMessages": 100
-}
-                """.trimIndent()
-                val state = State(
-                    key = "",
-                    value = json.toByteArray(),
-                    version = 100,
-                )
-
-                assertThrows<CordaRuntimeException> {
-                    PartitionState(3, state)
-                }
-            }
-
-            @Test
-            fun `init fails with invalid data in rawTrackedMessages`() {
-                val json = """
-{
-    "restartOffset": 100000,
-    "lastSentOffset": null,
-    "trackedMessages": [100]
-}
-                """.trimIndent()
-                val state = State(
-                    key = "",
-                    value = json.toByteArray(),
-                    version = 100,
-                )
-
-                assertThrows<CordaRuntimeException> {
-                    PartitionState(3, state)
-                }
-            }
-
-            @Test
-            fun `init fails with invalid message ID`() {
-                val json = """
-{
-    "restartOffset": 100000,
-    "lastSentOffset": 200000,
-    "trackedMessages": [
-        {
-            "id": "id1",
-            "ts": 10000,
-            "p": true
-        }, {
-            "id": 3,
-            "ts": 10002,
-            "p": false
-        }
-    ]
-}
-                """.trimIndent()
-                val state = State(
-                    key = "",
-                    value = json.toByteArray(),
-                    version = 100,
-                )
-
-                assertThrows<CordaRuntimeException> {
-                    PartitionState(3, state)
-                }
-            }
-
-            @Test
-            fun `init fails with invalid timeStamp`() {
-                val json = """
-{
-    "restartOffset": 100000,
-    "lastSentOffset": 200000,
-    "trackedMessages": [
-        {
-            "id": "id1",
-            "ts": null,
-            "p": true
-        }, {
-            "id": "id3",
-            "ts": 10002,
-            "p": false
-        }
-    ]
-}
-                """.trimIndent()
-                val state = State(
-                    key = "",
-                    value = json.toByteArray(),
-                    version = 100,
-                )
-
-                assertThrows<CordaRuntimeException> {
-                    PartitionState(3, state)
-                }
-            }
-
-            @Test
-            fun `init fails with invalid persisted`() {
-                val json = """
-{
-    "restartOffset": 100000,
-    "lastSentOffset": 200000,
-    "trackedMessages": [
-        {
-            "id": "id1",
-            "ts": null,
-            "p": true
-        }, {
-            "id": "id3",
-            "ts": 10002,
-            "p": "false"
-        }
-    ]
-}
-                """.trimIndent()
-                val state = State(
-                    key = "",
-                    value = json.toByteArray(),
-                    version = 100,
-                )
-
-                assertThrows<CordaRuntimeException> {
-                    PartitionState(3, state)
+                    PartitionState.fromState(3, state)
                 }
             }
         }
@@ -333,7 +162,7 @@ class PartitionStateTest {
 
     @Test
     fun `addToOperationGroup add the correct state to the created group`() {
-        val partitionState = PartitionState(
+        val partitionState = PartitionState.fromState(
             1,
             null,
         )
@@ -354,7 +183,7 @@ class PartitionStateTest {
             ),
         )
         val state = argumentCaptor<State>()
-        val group = mock<StateOperationGroup>() {
+        val group = mock<StateOperationGroup> {
             on { create(state.capture()) } doReturn mock
         }
 
@@ -363,7 +192,7 @@ class PartitionStateTest {
         assertSoftly {
             it.assertThat(state.firstValue.version).isEqualTo(State.VERSION_INITIAL_VALUE)
             it.assertThat(state.firstValue.key).isEqualTo(stateKey(1))
-            val created = PartitionState(1, state.firstValue)
+            val created = PartitionState.fromState(1, state.firstValue)
             it.assertThat(created.restartOffset).isEqualTo(partitionState.restartOffset)
             it.assertThat(created.lastSentOffset).isEqualTo(partitionState.lastSentOffset)
             it.assertThat(created.getTrackMessage("id1")).isEqualTo(partitionState.getTrackMessage("id1"))
@@ -373,7 +202,7 @@ class PartitionStateTest {
 
     @Test
     fun `addToOperationGroup add the correct state to the updated group`() {
-        val partitionState = PartitionState(
+        val partitionState = PartitionState.fromState(
             1,
             null,
         )
@@ -394,7 +223,7 @@ class PartitionStateTest {
             ),
         )
         val state = argumentCaptor<State>()
-        val group = mock<StateOperationGroup>() {
+        val group = mock<StateOperationGroup> {
             on { update(state.capture()) } doReturn mock
         }
         partitionState.saved()
@@ -404,7 +233,7 @@ class PartitionStateTest {
         assertSoftly {
             it.assertThat(state.firstValue.version).isEqualTo(State.VERSION_INITIAL_VALUE + 1)
             it.assertThat(state.firstValue.key).isEqualTo(stateKey(1))
-            val created = PartitionState(1, state.firstValue)
+            val created = PartitionState.fromState(1, state.firstValue)
             it.assertThat(created.restartOffset).isEqualTo(partitionState.restartOffset)
             it.assertThat(created.lastSentOffset).isEqualTo(partitionState.lastSentOffset)
             it.assertThat(created.getTrackMessage("id1")).isEqualTo(partitionState.getTrackMessage("id1"))
@@ -445,7 +274,7 @@ class PartitionStateTest {
                 topic = "",
             ),
         )
-        val state = PartitionState(1, null)
+        val state = PartitionState(1)
 
         state.read(now, records)
 
@@ -485,7 +314,7 @@ class PartitionStateTest {
                 topic = "",
             ),
         )
-        val state = PartitionState(1, null)
+        val state = PartitionState(1)
         state.lastSentOffset = 1000
 
         state.read(now, records)
@@ -526,7 +355,7 @@ class PartitionStateTest {
                 topic = "",
             ),
         )
-        val state = PartitionState(1, null)
+        val state = PartitionState(1)
         state.lastSentOffset = 1000
 
         state.read(now, records)
@@ -572,7 +401,7 @@ class PartitionStateTest {
                 topic = "",
             ),
         )
-        val state = PartitionState(1, null)
+        val state = PartitionState(1)
 
         state.sent(records)
 
@@ -611,7 +440,7 @@ class PartitionStateTest {
                 topic = "",
             ),
         )
-        val state = PartitionState(1, null)
+        val state = PartitionState(1)
         state.restartOffset = 1000
 
         state.sent(records)

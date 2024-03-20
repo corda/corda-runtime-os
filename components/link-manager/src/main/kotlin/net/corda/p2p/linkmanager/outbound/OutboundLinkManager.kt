@@ -5,9 +5,11 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -67,16 +69,32 @@ internal class OutboundLinkManager(
     }
 
     override val dominoTile = if (features.enableP2PStatelessDeliveryTracker) {
+        val publisher = PublisherWithDominoLogic(
+            publisherFactory = commonComponents.publisherFactory,
+            coordinatorFactory = commonComponents.lifecycleCoordinatorFactory,
+            publisherConfig = PublisherConfig(
+                transactional = true,
+                clientId = "DeliveryTracker",
+            ),
+            messagingConfiguration = messagingConfiguration,
+        )
         val statelessDeliveryTracker = StatelessDeliveryTracker(
             commonComponents = commonComponents,
+            publisher = publisher,
             messagingConfiguration = messagingConfiguration,
             outboundMessageProcessor = outboundMessageProcessor,
         )
         ComplexDominoTile(
             OUTBOUND_MESSAGE_PROCESSOR_GROUP,
             coordinatorFactory = lifecycleCoordinatorFactory,
-            dependentChildren = listOf(statelessDeliveryTracker.dominoTile.coordinatorName),
-            managedChildren = listOf(statelessDeliveryTracker.dominoTile.toNamedLifecycle()),
+            dependentChildren = listOf(
+                statelessDeliveryTracker.dominoTile.coordinatorName,
+                publisher.dominoTile.coordinatorName,
+            ),
+            managedChildren = listOf(
+                statelessDeliveryTracker.dominoTile.toNamedLifecycle(),
+                publisher.dominoTile.toNamedLifecycle(),
+            ),
         )
     } else {
         SubscriptionDominoTile(

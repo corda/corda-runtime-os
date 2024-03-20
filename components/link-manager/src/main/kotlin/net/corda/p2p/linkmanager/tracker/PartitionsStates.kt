@@ -5,16 +5,15 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.messaging.api.records.EventLogRecord
-import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.p2p.linkmanager.tracker.PartitionState.Companion.stateKey
 import net.corda.utilities.time.Clock
 import org.slf4j.LoggerFactory
-import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
 internal class PartitionsStates(
@@ -23,13 +22,13 @@ internal class PartitionsStates(
     private val config: DeliveryTrackerConfiguration,
     private val clock: Clock,
     private val executor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(),
-) : LifecycleWithDominoTile, PartitionAssignmentListener, DeliveryTrackerConfiguration.ConfigurationChanged {
+) : LifecycleWithDominoTile, DeliveryTrackerConfiguration.ConfigurationChanged {
     private companion object {
         const val NAME = "PartitionsStates"
-        const val RETRY_LIMIT_SECONDS_TO_MILLIS = 800.0
         val logger = LoggerFactory.getLogger(this::class.java.name)
     }
     private val task = AtomicReference<Future<*>>()
+    private val numberOfFailedRetries = AtomicInteger(0)
 
     fun read(records: List<EventLogRecord<String, *>>) {
         val now = clock.instant()
@@ -77,84 +76,55 @@ internal class PartitionsStates(
         )?.cancel(false)
     }
 
-    private fun persist(
-        stopRetrying: Instant = clock.instant().plusMillis(
-            (config.config.outboundBatchProcessingTimeoutSeconds * RETRY_LIMIT_SECONDS_TO_MILLIS).toLong(),
-        ),
-        partitionsToPersist: Collection<Int> = partitions.keys,
-
-    ) {
-        val group = stateManager.createOperationGroup()
-        val updates = partitionsToPersist.mapNotNull {
-            partitions[it]
-        }.map { stateToPersist ->
-            stateToPersist.addToOperationGroup(group)
-            stateToPersist.partition
+    private fun persist() {
+        if (partitions.isEmpty()) {
+            return
         }
 
-        if (updates.isEmpty()) {
-            return
+        val group = stateManager.createOperationGroup()
+        partitions.values.forEach { stateToPersist ->
+            stateToPersist.addToOperationGroup(group)
         }
         val failedUpdates = try {
-            group.execute()
-        } catch (e: RuntimeException) {
-            logger.error("Could not update delivery tracker partition states.", e)
-            dominoTile.setError(e)
-            return
-        }
-
-        val reschedule = updates.mapNotNull { partition ->
-            val key = stateKey(partition)
-            if (failedUpdates.containsKey(key)) {
-                logger.info("Could not update delivery tracker for partition: $partition.")
-                partition
-            } else {
-                partitions[partition]?.saved()
-                null
+            group.execute().also {
+                numberOfFailedRetries.set(0)
             }
-        }
-
-        // Reload any failed partition
-        loadPartitions(reschedule)
-
-        if (reschedule.isNotEmpty()) {
-            scheduleRetryUpdate(reschedule, stopRetrying)
-        }
-    }
-    private fun scheduleRetryUpdate(
-        partitions: Collection<Int>,
-        stopRetrying: Instant,
-    ) {
-        if (stopRetrying.isAfter(clock.instant())) {
-            logger.error("Could not update delivery tracker partition states. Have tried for too long")
-            dominoTile.close()
+        } catch (e: Exception) {
+            if (numberOfFailedRetries.incrementAndGet() >= config.config.maxNumberOfPersistenceRetries) {
+                logger.error("Could not update delivery tracker partition states.", e)
+                dominoTile.setError(e)
+            } else {
+                logger.warn("Could not update delivery tracker partition states.", e)
+            }
             return
         }
 
-        logger.info("Trying to persist partitions: $partitions again")
-        persist(stopRetrying, partitions)
+        if (failedUpdates.isNotEmpty()) {
+            val error = IllegalStateException(
+                "Failed to persist the state of partitions ${failedUpdates.keys}." +
+                    "Another worker might have the partition.",
+            )
+            logger.error("Failed to persist the state of the partitions", error)
+            dominoTile.setError(error)
+            return
+        }
+
+        partitions.values.forEach {
+            it.saved()
+        }
     }
 
     override fun changed() {
         startTask()
     }
 
-    override fun onPartitionsUnassigned(topicPartitions: List<Pair<String, Int>>) {
-        topicPartitions.forEach { (_, partition) ->
-            partitions.remove(partition)
-        }
+    fun forgetPartitions(partitionsToForget: Set<Int>) {
+        partitions.keys.removeAll(partitionsToForget)
     }
 
-    override fun onPartitionsAssigned(topicPartitions: List<Pair<String, Int>>) {
-        val partitionsIndices = topicPartitions.map {
-            it.second
-        }.filter {
-            !partitions.contains(it)
-        }
-        loadPartitions(partitionsIndices)
-    }
+    fun loadPartitions(partitionsToLoad: Set<Int>) {
+        val partitionsIndices = partitionsToLoad - partitions.keys
 
-    private fun loadPartitions(partitionsIndices: Collection<Int>) {
         if (partitionsIndices.isEmpty()) {
             return
         }
@@ -164,7 +134,7 @@ internal class PartitionsStates(
         val states = stateManager.get(keys)
         partitionsIndices.forEach { partitionIndex ->
             val state = states[stateKey(partitionIndex)]
-            partitions[partitionIndex] = PartitionState(partitionIndex, state)
+            partitions[partitionIndex] = PartitionState.fromState(partitionIndex, state)
         }
     }
 

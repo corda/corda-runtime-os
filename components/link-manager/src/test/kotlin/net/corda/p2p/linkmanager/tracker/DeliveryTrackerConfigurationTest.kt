@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.DELIVERY_TRACKER_MAX_CACHE_OFFSET_AGE
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.DELIVERY_TRACKER_MAX_CACHE_SIZE_MEGABYTES
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.DELIVERY_TRACKER_MAX_NUMBER_OF_PERSISTENCE_RETRIES
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.DELIVERY_TRACKER_OUTBOUND_BATCH_PROCESSING_TIMEOUT_SECONDS
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.DELIVERY_TRACKER_STATE_PERSISTENCE_PERIOD_SECONDS
 import org.assertj.core.api.Assertions.assertThat
@@ -19,7 +20,7 @@ class DeliveryTrackerConfigurationTest {
     )
 
     @Test
-    fun `without any notificateon, default configuration is returned`() {
+    fun `without any notification, default configuration is returned`() {
         val config = configurationTile.config
 
         assertThat(config).isEqualTo(
@@ -28,6 +29,7 @@ class DeliveryTrackerConfigurationTest {
                 maxCacheOffsetAge = 50000,
                 statePersistencePeriodSeconds = 1.0,
                 outboundBatchProcessingTimeoutSeconds = 30.0,
+                maxNumberOfPersistenceRetries = 3,
             ),
         )
     }
@@ -39,6 +41,7 @@ class DeliveryTrackerConfigurationTest {
             maxCacheOffsetAge = 300,
             statePersistencePeriodSeconds = 400.0,
             outboundBatchProcessingTimeoutSeconds = 500.0,
+            maxNumberOfPersistenceRetries = 12,
         )
 
         configurationTile.applyNewConfiguration(
@@ -57,6 +60,7 @@ class DeliveryTrackerConfigurationTest {
             maxCacheOffsetAge = 300,
             statePersistencePeriodSeconds = 400.0,
             outboundBatchProcessingTimeoutSeconds = 500.0,
+            maxNumberOfPersistenceRetries = 12,
         )
 
         val future = configurationTile.applyNewConfiguration(
@@ -77,6 +81,7 @@ class DeliveryTrackerConfigurationTest {
             maxCacheOffsetAge = 300,
             statePersistencePeriodSeconds = 400.0,
             outboundBatchProcessingTimeoutSeconds = 500.0,
+            maxNumberOfPersistenceRetries = 12,
         )
         configurationTile.applyNewConfiguration(
             config,
@@ -120,6 +125,10 @@ class DeliveryTrackerConfigurationTest {
                 DELIVERY_TRACKER_OUTBOUND_BATCH_PROCESSING_TIMEOUT_SECONDS,
                 ConfigValueFactory.fromAnyRef(404),
             )
+            .withValue(
+                DELIVERY_TRACKER_MAX_NUMBER_OF_PERSISTENCE_RETRIES,
+                ConfigValueFactory.fromAnyRef(31),
+            )
 
         val configuration = configurationTile.configFactory(config)
 
@@ -129,6 +138,7 @@ class DeliveryTrackerConfigurationTest {
                 maxCacheOffsetAge = 202,
                 statePersistencePeriodSeconds = 303.0,
                 outboundBatchProcessingTimeoutSeconds = 404.0,
+                maxNumberOfPersistenceRetries = 31,
             ),
         )
     }
