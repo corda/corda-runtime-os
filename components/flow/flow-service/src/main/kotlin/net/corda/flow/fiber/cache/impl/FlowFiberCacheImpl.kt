@@ -4,6 +4,7 @@ import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.state.session.SessionState
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.cache.FlowFiberCache
@@ -70,28 +71,32 @@ class FlowFiberCacheImpl @Activate constructor(
         remove(vnc)
     }
 
-    override fun put(key: FlowKey, suspendCount: Int, fiber: FlowFiber) {
-        logger.info("Putting fiber into cache with key $key and suspend count $suspendCount")
+    override fun put(key: FlowKey, suspendCount: Int, fiber: FlowFiber, sessions: List<SessionState>) {
+        logger.info("Putting fiber into cache with key $key and suspend count $suspendCount. Current Session ids in checkpoint are " +
+                "${sessions.map { it.sessionId }}")
         cache.put(key, FiberCacheValue(fiber, suspendCount))
     }
 
-    override fun get(key: FlowKey, suspendCount: Int, sandboxGroupId: UUID): FlowFiber? {
+    override fun get(key: FlowKey, suspendCount: Int, sandboxGroupId: UUID, sessions: List<SessionState>): FlowFiber? {
         val fiberCacheEntry = cache.getIfPresent(key)
+        logger.info("Getting fiber from cache with checkpoint sessions of ${sessions.map { it.sessionId }}. Fiber object null: " +
+                "${fiberCacheEntry == null}")
         return if (null == fiberCacheEntry) {
             logger.info("Fiber not found in cache: ${key.id}")
             null
         } else if (fiberCacheEntry.suspendCount == suspendCount && sandboxGroupId == fiberCacheEntry.fiber.getSandboxGroupId()) {
-            logger.info("Fiber found in cache: key: ${key.id},  suspend count: $suspendCount ")
+            logger.info("Fiber found in cache: key: ${key},  suspend count: $suspendCount ")
             fiberCacheEntry.fiber
         } else {
             if (fiberCacheEntry.suspendCount != suspendCount) {
-                logger.info("Fiber found in cache but at wrong suspendCount (${fiberCacheEntry.suspendCount} <-> $suspendCount): ${key.id}")
+                logger.info("Fiber $key found in cache but at wrong suspendCount (${fiberCacheEntry.suspendCount} <-> $suspendCount): ${key
+                    .id}")
             }
             if (sandboxGroupId != fiberCacheEntry.fiber.getSandboxGroupId()) {
                 // This is for information only, actually it's quite possible because the flow fiber might have been
                 // cached at suspension after the sandbox was already evicted from the cache, so when we resume this
                 // fiber we are going to need another one bound to the new sandbox instead.
-                logger.info("Fiber found in cache but for wrong sandbox group id")
+                logger.info("Fiber found in cache but for wrong sandbox group id $key")
             }
             cache.invalidate(key)
             null
@@ -100,7 +105,7 @@ class FlowFiberCacheImpl @Activate constructor(
 
     override fun remove(key: FlowKey) {
 
-        logger.info("Removing key $key from the cache for flowId")
+        logger.info("Removing key $key from the cache")
         cache.invalidate(key)
     }
 

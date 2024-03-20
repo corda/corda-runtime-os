@@ -366,8 +366,9 @@ class FlowExecutionPipelineStageTest {
 
         // Fiber cache
         verify(fiberCache, times(suspends.filter { (it as FlowIORequest.FlowSuspended<*>).cacheableFiber != null }.size))
-            .put(any(), any(), any()
-        )
+            .put(
+                any(), any(), any(), context.checkpoint.sessions
+            )
         verify(fiberCache, times(other.size)).remove(any<FlowKey>())
     }
 

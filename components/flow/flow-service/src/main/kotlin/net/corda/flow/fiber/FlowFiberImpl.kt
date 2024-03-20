@@ -175,7 +175,7 @@ class FlowFiberImpl(
         removeCurrentSandboxGroupContext()
         parkAndCustomSerialize { _ ->
             resetLoggingContext()
-            log.trace { "Parking..." }
+            log.info( "Parking... Execution context sessions: ${getExecutionContext().flowCheckpoint.sessions.map { it.sessionId }})" )
             val fiberState = CordaMetrics.Metric.FlowFiberSerializationTime.builder()
                 .forVirtualNode(getExecutionContext().flowCheckpoint.holdingIdentity.shortHash.toString())
                 .withTag(
@@ -194,6 +194,7 @@ class FlowFiberImpl(
                 )
             )
         }
+        log.info( "Resuming... Execution context sessions: ${getExecutionContext().flowCheckpoint.sessions.map { it.sessionId }})" )
 
         resetLoggingContext()
         setCurrentSandboxGroupContext()

@@ -123,8 +123,6 @@ class FlowMessagingImpl @Activate constructor(
             it.key as FlowSessionInternal
         }
 
-        logger.info("calling receiveAllMap for sessions ${flowSessionInternals.map { it.key.getSessionId() }}")
-
         flowSessionInternals.forEach { session ->
             verifySessionStatusNotErrorOrClose(session.key.getSessionId(), flowFiberService)
         }
@@ -154,7 +152,7 @@ class FlowMessagingImpl @Activate constructor(
         )
 
         val received = fiber.suspend(request)
-        logger.info("Waking up from receive with keys/values : [${received.keys}}/[${received.values}] \n" +
+        logger.info("Waking up from receive with keys : [${received.keys}}] \n" +
                 "Waking up from receive expecting to find sessions : [${sessionsToReceiveFrom.keys}]")
 
         setSessionsAsConfirmed(flowSessionInternals.keys)

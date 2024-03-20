@@ -114,7 +114,7 @@ internal class FlowExecutionPipelineStage(
             is FlowIORequest.FlowSuspended<*> -> {
                 context.checkpoint.serializedFiber = fiberResult.fiber
                 fiberResult.cacheableFiber?.let {
-                    fiberCache.put(context.checkpoint.flowKey, context.checkpoint.suspendCount, it)
+                    fiberCache.put(context.checkpoint.flowKey, context.checkpoint.suspendCount, it, context.checkpoint.sessions)
                 }
                 context.flowMetrics.flowFiberExitedWithSuspension(
                     flowIORequestTypeConverter.convertToActionName(fiberResult.output)

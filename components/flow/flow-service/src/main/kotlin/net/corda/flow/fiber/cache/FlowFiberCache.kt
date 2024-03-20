@@ -1,6 +1,7 @@
 package net.corda.flow.fiber.cache
 
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.state.session.SessionState
 import net.corda.flow.fiber.FlowFiber
 import net.corda.sandboxgroupcontext.SandboxedCache
 import java.util.UUID
@@ -12,12 +13,12 @@ interface FlowFiberCache : SandboxedCache {
     /**
      * Put a flow fiber into the cache keyed by the given [FlowKey] and [suspendCount].
      */
-    fun put(key: FlowKey, suspendCount: Int, fiber: FlowFiber)
+    fun put(key: FlowKey, suspendCount: Int, fiber: FlowFiber, sessions: List<SessionState>)
 
     /**
      * Get a flow fiber from the cache with the given [FlowKey], [suspendCount] and [sandboxGroupId], or else return null.
      */
-    fun get(key: FlowKey, suspendCount: Int, sandboxGroupId: UUID): FlowFiber?
+    fun get(key: FlowKey, suspendCount: Int, sandboxGroupId: UUID, sessions: List<SessionState>): FlowFiber?
 
     /**
      * Invalidate and remove a flow fiber from the cache with the given [FlowKey].

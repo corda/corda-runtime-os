@@ -33,33 +33,33 @@ class FlowFibreCacheTest {
     @Test
     fun `when get and no entry return null`() {
         val cache = FlowFiberCacheImpl(cacheEviction)
-        val entry = cache.get(mock(), 123, sandboxGroupId)
+        val entry = cache.get(mock(), 123, sandboxGroupId, flowFiberExecutionContext.flowCheckpoint.sessions)
         assertThat(entry).isNull()
     }
 
     @Test
     fun `when get and entry wrong version return null and entry evicted`() {
         val cache = FlowFiberCacheImpl(cacheEviction)
-        cache.put(key, 1, value)
-        val entry = cache.get(key, 123, sandboxGroupId)
+        cache.put(key, 1, value, context.checkpoint.sessions)
+        val entry = cache.get(key, 123, sandboxGroupId, flowFiberExecutionContext.flowCheckpoint.sessions)
         assertThat(entry).isNull()
-        assertThat(cache.get(key, 1, sandboxGroupId)).isNull()
+        assertThat(cache.get(key, 1, sandboxGroupId, flowFiberExecutionContext.flowCheckpoint.sessions)).isNull()
     }
 
     @Test
     fun `when get and entry wrong sandbox group ID return null and entry evicted`() {
         val cache = FlowFiberCacheImpl(cacheEviction)
-        cache.put(key, 1, value)
-        val entry = cache.get(key, 1, UUID.randomUUID())
+        cache.put(key, 1, value, context.checkpoint.sessions)
+        val entry = cache.get(key, 1, UUID.randomUUID(), flowFiberExecutionContext.flowCheckpoint.sessions)
         assertThat(entry).isNull()
-        assertThat(cache.get(key, 1, sandboxGroupId)).isNull()
+        assertThat(cache.get(key, 1, sandboxGroupId, flowFiberExecutionContext.flowCheckpoint.sessions)).isNull()
     }
 
     @Test
     fun `when get and entry and version exist and matches sandbox group ID return`() {
         val cache = FlowFiberCacheImpl(cacheEviction)
-        cache.put(key, 1, value)
-        val entry = cache.get(key, 1, sandboxGroupId)
+        cache.put(key, 1, value, context.checkpoint.sessions)
+        val entry = cache.get(key, 1, sandboxGroupId, flowFiberExecutionContext.flowCheckpoint.sessions)
         assertThat(entry).isSameAs(value)
     }
 
@@ -74,9 +74,9 @@ class FlowFibreCacheTest {
     @Test
     fun `when remove and exists`() {
         val cache = FlowFiberCacheImpl(cacheEviction)
-        cache.put(key, 1, value)
+        cache.put(key, 1, value, context.checkpoint.sessions)
         cache.remove(key)
-        assertThat(cache.get(key, 1, sandboxGroupId)).isNull()
+        assertThat(cache.get(key, 1, sandboxGroupId, flowFiberExecutionContext.flowCheckpoint.sessions)).isNull()
     }
 
     @Test
@@ -96,10 +96,10 @@ class FlowFibreCacheTest {
         val key2 = mock<FlowKey> {
             on { identity } doReturn (avroId)
         }
-        cache.put(key1, 1, mock())
-        cache.put(key2, 1, mock())
+        cache.put(key1, 1, mock(), context.checkpoint.sessions)
+        cache.put(key2, 1, mock(), context.checkpoint.sessions)
         cache.remove(vnodeContext)
-        assertThat(cache.get(key1, 1, sandboxGroupId)).isNull()
-        assertThat(cache.get(key2, 1, sandboxGroupId)).isNull()
+        assertThat(cache.get(key1, 1, sandboxGroupId, flowFiberExecutionContext.flowCheckpoint.sessions)).isNull()
+        assertThat(cache.get(key2, 1, sandboxGroupId, flowFiberExecutionContext.flowCheckpoint.sessions)).isNull()
     }
 }

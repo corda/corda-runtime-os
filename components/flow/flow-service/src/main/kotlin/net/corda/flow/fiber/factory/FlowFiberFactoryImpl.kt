@@ -85,7 +85,8 @@ class FlowFiberFactoryImpl @Activate constructor(
             flowFiberCache.get(
                 flowFiberExecutionContext.flowCheckpoint.flowKey,
                 flowFiberExecutionContext.flowCheckpoint.suspendCount,
-                flowFiberExecutionContext.sandboxGroupContext.sandboxGroup.id
+                flowFiberExecutionContext.sandboxGroupContext.sandboxGroup.id,
+                flowFiberExecutionContext.flowCheckpoint.sessions,
             )
         } catch (e: Exception) {
             logger.warn("Exception when getting from flow fiber cache.", e)
