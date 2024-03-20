@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.common
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
@@ -29,6 +30,7 @@ import net.corda.p2p.linkmanager.sessions.StateConvertor
 import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl
 import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 import net.corda.p2p.linkmanager.sessions.expiration.StaleSessionProcessor
+import net.corda.p2p.messaging.P2pRecordsFactory
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -37,6 +39,7 @@ import java.util.concurrent.Executors
 @Suppress("LongParameterList")
 internal class CommonComponents(
     internal val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     linkManagerHostingMap: LinkManagerHostingMap,
     groupPolicyProvider: GroupPolicyProvider,
     membershipGroupReaderProvider: MembershipGroupReaderProvider,
@@ -100,6 +103,8 @@ internal class CommonComponents(
     private val deadSessionMonitorConfigHandler =
         DeadSessionMonitorConfigurationHandler(deadSessionMonitor, configurationReaderService)
 
+    private val p2pRecordsFactory = P2pRecordsFactory(clock, cordaAvroSerializationFactory)
+
     internal val sessionManager = StatefulSessionManagerImpl(
         subscriptionFactory,
         messagingConfiguration,
@@ -127,6 +132,7 @@ internal class CommonComponents(
         schemaRegistry,
         sessionCache,
         sessionEventPublisher,
+        p2pRecordsFactory,
     )
 
     private val trustStoresPublisher = TrustStoresPublisher(

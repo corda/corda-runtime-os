@@ -4,6 +4,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.SessionEncryptionOpsClient
@@ -42,8 +43,8 @@ import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
-import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.configuration.StateManagerConfig
+import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.test.util.eventually
 import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.utilities.seconds
@@ -92,6 +93,9 @@ class LinkManagerIntegrationTest {
 
         @InjectService(timeout = 4000)
         lateinit var configReadService: ConfigurationReadService
+
+        @InjectService(timeout = 4000)
+        lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
 
         @InjectService(timeout = 4000)
         lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
@@ -211,6 +215,7 @@ class LinkManagerIntegrationTest {
             publisherFactory,
             lifecycleCoordinatorFactory,
             configReadService,
+            cordaAvroSerializationFactory,
             bootstrapConfig,
             GroupPolicyProviderStub(),
             VirtualNodeInfoReadServiceStub(),
