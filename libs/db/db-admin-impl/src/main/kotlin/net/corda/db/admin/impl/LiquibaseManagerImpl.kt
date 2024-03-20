@@ -16,23 +16,19 @@ import liquibase.command.core.helpers.DatabaseChangelogCommandStep
 import liquibase.command.core.helpers.DbUrlConnectionArgumentsCommandStep
 import liquibase.command.core.helpers.ShowSummaryArgument
 import liquibase.io.WriterOutputStream
+import net.corda.db.admin.LiquibaseManager
 import java.io.Writer
 
-class LiquibaseManager(
+class LiquibaseManagerImpl(
     private val commandScopeFactory: (commandNames: Array<String>) -> CommandScope = { commandNames ->
         @Suppress("SpreadOperator")
         CommandScope(*commandNames)
     }
-) {
-    /**
-     * @param lb The liquibase object to run the update on
-     * @param sql The writer to write the sql to
-     * @param tag The tag to apply to the change if any
-     */
-    fun update(
+): LiquibaseManager {
+    override fun update(
         lb: Liquibase,
-        sql: Writer? = null,
-        tag: String? = null
+        sql: Writer?,
+        tag: String?
     ) {
         val scopeObjects = mapOf(
             Scope.Attr.resourceAccessor.name to lb.resourceAccessor
@@ -73,8 +69,8 @@ private fun CommandScope.configure(lb: Liquibase, tag: String?): CommandScope {
             lb.changeLogParameters
         )
         .addArgumentValue(ShowSummaryArgument.SHOW_SUMMARY, UpdateSummaryEnum.SUMMARY)
-        tag?.let {
-            command.addArgumentValue(TagCommandStep.TAG_ARG, tag)
-        }
+    tag?.let {
+        command.addArgumentValue(TagCommandStep.TAG_ARG, tag)
+    }
     return command
 }

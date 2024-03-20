@@ -4,7 +4,7 @@ import liquibase.Liquibase
 import liquibase.command.CommandArgumentDefinition
 import liquibase.command.CommandScope
 import liquibase.database.Database
-import net.corda.db.admin.impl.LiquibaseManager
+import net.corda.db.admin.impl.LiquibaseManagerImpl
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentMatchers
@@ -48,7 +48,7 @@ class PlatformMigrationTest {
         on { invoke(any()) } doReturn (commandScope)
     }
 
-    private val liquibaseManager = LiquibaseManager(commandScopeFactory)
+    private val liquibaseManager = LiquibaseManagerImpl(commandScopeFactory)
 
     val pmConfig = PlatformMigration.PlatformMigrationConfig(
         lineReader = mockLineReader,
