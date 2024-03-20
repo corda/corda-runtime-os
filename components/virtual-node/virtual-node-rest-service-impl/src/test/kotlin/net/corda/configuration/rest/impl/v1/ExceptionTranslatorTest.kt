@@ -51,7 +51,9 @@ class ExceptionTranslatorTest {
         val httpApiException = ExceptionTranslator.translate(exception)
 
         assertEquals(ResourceAlreadyExistsException::class.java, httpApiException::class.java)
-        assertEquals("test", httpApiException.message)
+        assertEquals("Virtual Node Already Exists Exception", httpApiException.message)
+        assertEquals(VirtualNodeAlreadyExistsException::class.java.name, httpApiException.exceptionDetails!!.cause)
+        assertEquals("test", httpApiException.exceptionDetails!!.reason)
     }
 
     @Test
