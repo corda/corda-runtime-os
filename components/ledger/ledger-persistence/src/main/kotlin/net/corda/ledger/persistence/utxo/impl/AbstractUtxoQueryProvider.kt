@@ -218,7 +218,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             WHERE status = :status 
                 AND created >= :from 
                 AND created < :until
-            ORDER BY repair_attempt_count ASC, created DESC
+            ORDER BY repair_attempt_count ASC, created ASC
         """.trimIndent()
 
     override val incrementRepairAttemptCount: String

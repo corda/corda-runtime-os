@@ -1712,6 +1712,224 @@ class UtxoPersistenceServiceImplTest {
         assertThat(foundFilteredTransactions[signedTransaction.id]?.second).isEqualTo(signatures)
     }
 
+    @Test
+    fun `findTransactionsWithStatusCreatedBetweenTime finds transactions within the specified period and status`() {
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        entityManagerFactory.transaction { em ->
+            em.createNamedQuery("UtxoTransactionEntity.findAll", entityFactory.utxoTransaction)
+                .resultList
+                .forEach { entity ->
+                    em.remove(entity)
+                }
+        }
+        val now = Instant.now()
+        val transaction1 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now)
+        val transaction2 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(5))
+        val transaction3 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(10))
+        val transaction4 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(30))
+        persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(60))
+        persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.minusSeconds(1))
+        persistTransactionViaEntity(entityFactory, VERIFIED, createdTs = now.plusSeconds(5))
+        persistTransactionViaEntity(entityFactory, DRAFT, createdTs = now.plusSeconds(5))
+        persistTransactionViaEntity(entityFactory, INVALID, createdTs = now.plusSeconds(5))
+        val transactionIds = persistenceService.findTransactionsWithStatusCreatedBetweenTime(
+            UNVERIFIED,
+            from = now,
+            until = now.plusSeconds(60),
+            limit = 10
+        )
+        assertThat(transactionIds)
+            .containsExactlyInAnyOrder(transaction1.id, transaction2.id, transaction3.id, transaction4.id)
+    }
+
+    @Test
+    fun `findTransactionsWithStatusCreatedBetweenTime returns nothing if no transactions are within the specified period`() {
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        entityManagerFactory.transaction { em ->
+            em.createNamedQuery("UtxoTransactionEntity.findAll", entityFactory.utxoTransaction)
+                .resultList
+                .forEach { entity ->
+                    em.remove(entity)
+                }
+        }
+        val now = Instant.now()
+        persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(120))
+        persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(65))
+        persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(70))
+        persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(90))
+        persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(60))
+        persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.minusSeconds(1))
+        persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.minusSeconds(10))
+        val transactionIds = persistenceService.findTransactionsWithStatusCreatedBetweenTime(
+            UNVERIFIED,
+            from = now,
+            until = now.plusSeconds(60),
+            limit = 10
+        )
+        assertThat(transactionIds).isEmpty()
+    }
+
+    @Test
+    fun `findTransactionsWithStatusCreatedBetweenTime orders by repair_attempt_count ascending and created time ascending`() {
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        entityManagerFactory.transaction { em ->
+            em.createNamedQuery("UtxoTransactionEntity.findAll", entityFactory.utxoTransaction)
+                .resultList
+                .forEach { entity ->
+                    em.remove(entity)
+                }
+        }
+        val now = Instant.now()
+        val transaction1 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(5), repairAttemptCount = 0)
+        val transaction2 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(10), repairAttemptCount = 0)
+        val transaction3 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now, repairAttemptCount = 1)
+        val transaction4 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(1), repairAttemptCount = 1)
+        val transaction5 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(5), repairAttemptCount = 1)
+        val transaction6 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(6), repairAttemptCount = 1)
+        val transaction7 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(5), repairAttemptCount = 2)
+        val transaction8 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(59), repairAttemptCount = 3)
+        val transaction9 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(30), repairAttemptCount = 4)
+        val transactionIds = persistenceService.findTransactionsWithStatusCreatedBetweenTime(
+            UNVERIFIED,
+            from = now,
+            until = now.plusSeconds(60),
+            limit = 10
+        )
+        assertThat(transactionIds)
+            .containsExactly(
+                transaction1.id,
+                transaction2.id,
+                transaction3.id,
+                transaction4.id,
+                transaction5.id,
+                transaction6.id,
+                transaction7.id,
+                transaction8.id,
+                transaction9.id
+            )
+    }
+
+    @Test
+    fun `findTransactionsWithStatusCreatedBetweenTime only returns results that fit into the limit`() {
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        entityManagerFactory.transaction { em ->
+            em.createNamedQuery("UtxoTransactionEntity.findAll", entityFactory.utxoTransaction)
+                .resultList
+                .forEach { entity ->
+                    em.remove(entity)
+                }
+        }
+        val now = Instant.now()
+        val transaction1 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now)
+        val transaction2 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now)
+        val transaction3 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now)
+        val transaction4 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now)
+        persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(30))
+        persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(30))
+        persistTransactionViaEntity(entityFactory, VERIFIED, createdTs = now.plusSeconds(30))
+        persistTransactionViaEntity(entityFactory, DRAFT, createdTs = now.plusSeconds(30))
+        persistTransactionViaEntity(entityFactory, INVALID, createdTs = now.plusSeconds(30))
+        val transactionIds = persistenceService.findTransactionsWithStatusCreatedBetweenTime(
+            UNVERIFIED,
+            from = now,
+            until = now.plusSeconds(60),
+            limit = 4
+        )
+        assertThat(transactionIds)
+            .containsExactlyInAnyOrder(transaction1.id, transaction2.id, transaction3.id, transaction4.id)
+    }
+
+    @Test
+    fun `incrementTransactionRepairAttemptCount increments the count by 1`() {
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        val transaction1 = persistTransactionViaEntity(entityFactory, UNVERIFIED, repairAttemptCount = 0)
+        val transaction2 = persistTransactionViaEntity(entityFactory, UNVERIFIED, repairAttemptCount = 0)
+
+        persistenceService.incrementTransactionRepairAttemptCount(transaction1.id.toString())
+        entityManagerFactory.transaction { em ->
+            val updated1 = em.find(entityFactory.utxoTransaction, transaction1.id.toString())
+            assertThat(updated1).isNotNull
+            assertThat(updated1.field<Int>("repairAttemptCount")).isOne()
+            val updated2 = em.find(entityFactory.utxoTransaction, transaction2.id.toString())
+            assertThat(updated2).isNotNull
+            assertThat(updated2.field<Int>("repairAttemptCount")).isZero()
+        }
+
+        persistenceService.incrementTransactionRepairAttemptCount(transaction1.id.toString())
+        entityManagerFactory.transaction { em ->
+            val updated1 = em.find(entityFactory.utxoTransaction, transaction1.id.toString())
+            assertThat(updated1).isNotNull
+            assertThat(updated1.field<Int>("repairAttemptCount")).isEqualTo(2)
+            val updated2 = em.find(entityFactory.utxoTransaction, transaction2.id.toString())
+            assertThat(updated2).isNotNull
+            assertThat(updated2.field<Int>("repairAttemptCount")).isZero()
+        }
+    }
+
+    @Test
+    fun `incrementing the repair count removes the need for offset paging when calling findTransactionsWithStatusCreatedBetweenTime`() {
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        entityManagerFactory.transaction { em ->
+            em.createNamedQuery("UtxoTransactionEntity.findAll", entityFactory.utxoTransaction)
+                .resultList
+                .forEach { entity ->
+                    em.remove(entity)
+                }
+        }
+        val now = Instant.now()
+        val transaction1 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(1), repairAttemptCount = 0)
+        val transaction2 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(2), repairAttemptCount = 0)
+        val transaction3 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(3), repairAttemptCount = 0)
+        val transaction4 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(4), repairAttemptCount = 0)
+        val transaction5 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(5), repairAttemptCount = 0)
+        val transaction6 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(6), repairAttemptCount = 0)
+        val transaction7 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(7), repairAttemptCount = 0)
+        val transaction8 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(8), repairAttemptCount = 0)
+        val transaction9 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(9), repairAttemptCount = 0)
+
+        val transactionIds1 = persistenceService.findTransactionsWithStatusCreatedBetweenTime(
+            UNVERIFIED,
+            from = now,
+            until = now.plusSeconds(60),
+            limit = 3
+        )
+        persistenceService.incrementTransactionRepairAttemptCount(transaction1.id.toString())
+        persistenceService.incrementTransactionRepairAttemptCount(transaction2.id.toString())
+        persistenceService.incrementTransactionRepairAttemptCount(transaction3.id.toString())
+
+        val transactionIds2 = persistenceService.findTransactionsWithStatusCreatedBetweenTime(
+            UNVERIFIED,
+            from = now,
+            until = now.plusSeconds(60),
+            limit = 3
+        )
+        persistenceService.incrementTransactionRepairAttemptCount(transaction4.id.toString())
+        persistenceService.incrementTransactionRepairAttemptCount(transaction5.id.toString())
+        persistenceService.incrementTransactionRepairAttemptCount(transaction6.id.toString())
+
+        val transactionIds3 = persistenceService.findTransactionsWithStatusCreatedBetweenTime(
+            UNVERIFIED,
+            from = now,
+            until = now.plusSeconds(60),
+            limit = 3
+        )
+        persistenceService.incrementTransactionRepairAttemptCount(transaction7.id.toString())
+        persistenceService.incrementTransactionRepairAttemptCount(transaction8.id.toString())
+        persistenceService.incrementTransactionRepairAttemptCount(transaction9.id.toString())
+
+        val transactionIds4 = persistenceService.findTransactionsWithStatusCreatedBetweenTime(
+            UNVERIFIED,
+            from = now,
+            until = now.plusSeconds(60),
+            limit = 3
+        )
+
+        assertThat(transactionIds1).containsExactly(transaction1.id, transaction2.id, transaction3.id)
+        assertThat(transactionIds2).containsExactly(transaction4.id, transaction5.id, transaction6.id)
+        assertThat(transactionIds3).containsExactly(transaction7.id, transaction8.id, transaction9.id)
+        assertThat(transactionIds4).containsExactly(transaction1.id, transaction2.id, transaction3.id)
+    }
+
     @Suppress("LongParameterList")
     private fun createUtxoTokenMap(
         transactionReader: TestUtxoTransactionReader,
@@ -1742,11 +1960,27 @@ class UtxoPersistenceServiceImplTest {
         status: TransactionStatus = UNVERIFIED,
         inputStateRefs: List<StateRef> = defaultInputStateRefs,
         referenceStateRefs: List<StateRef> = defaultReferenceStateRefs,
-        isFiltered: Boolean = false
+        isFiltered: Boolean = false,
+        createdTs: Instant = testClock.instant(),
+        repairAttemptCount: Int = 0
     ): SignedTransactionContainer {
-        val signedTransaction = createSignedTransaction(inputStateRefs = inputStateRefs, referenceStateRefs = referenceStateRefs)
+        val signedTransaction = createSignedTransaction(
+            instant = createdTs,
+            inputStateRefs = inputStateRefs,
+            referenceStateRefs = referenceStateRefs
+        )
         entityManagerFactory.transaction { em ->
-            em.persist(createTransactionEntity(entityFactory, signedTransaction, status = status, isFiltered = isFiltered))
+            em.persist(
+                createTransactionEntity(
+                    entityFactory,
+                    signedTransaction,
+                    status = status,
+                    isFiltered = isFiltered,
+                    createdTs = createdTs,
+//                    createdTs = testClock.instant(),
+                    repairAttemptCount = repairAttemptCount
+                )
+            )
         }
         return signedTransaction
     }
@@ -1758,7 +1992,8 @@ class UtxoPersistenceServiceImplTest {
         account: String = "Account",
         createdTs: Instant = testClock.instant(),
         status: TransactionStatus = UNVERIFIED,
-        isFiltered: Boolean = false
+        isFiltered: Boolean = false,
+        repairAttemptCount: Int = 0
     ): Any {
         val metadataBytes = signedTransaction.wireTransaction.componentGroupLists[0][0]
         val metadata = entityFactory.createOrFindUtxoTransactionMetadataEntity(
@@ -1776,7 +2011,8 @@ class UtxoPersistenceServiceImplTest {
             status.value,
             createdTs,
             metadata,
-            isFiltered
+            isFiltered,
+            repairAttemptCount
         ).also { transaction ->
             transaction.field<MutableCollection<Any>>("components").addAll(
                 signedTransaction.wireTransaction.componentGroupLists.flatMapIndexed { groupIndex, componentGroup ->
@@ -1875,10 +2111,11 @@ class UtxoPersistenceServiceImplTest {
 
     private fun createSignedTransaction(
         seed: String = seedSequence.incrementAndGet().toString(),
+        instant: Instant = testClock.instant(),
         inputStateRefs: List<StateRef> = defaultInputStateRefs,
         referenceStateRefs: List<StateRef> = defaultReferenceStateRefs,
         outputStates: List<ContractState> = defaultVisibleTransactionOutputs,
-        signatures: List<DigitalSignatureAndMetadata> = createSignatures()
+        signatures: List<DigitalSignatureAndMetadata> = createSignatures(instant),
     ): SignedTransactionContainer {
         val transactionMetadata = utxoTransactionMetadataExample(cpkPackageSeed = seed)
         val timeWindow = Instant.now().plusMillis(Duration.ofDays(1).toMillis())
