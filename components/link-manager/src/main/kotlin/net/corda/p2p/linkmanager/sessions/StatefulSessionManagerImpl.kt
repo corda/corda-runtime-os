@@ -7,9 +7,7 @@ import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.ReEstablishSessionMessage
-import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
-import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.event.SessionDirection
 import net.corda.libs.configuration.SmartConfig
@@ -22,7 +20,6 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
@@ -49,7 +46,8 @@ import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.toOutbound
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
 import net.corda.p2p.linkmanager.state.SessionState
-import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
+import net.corda.p2p.messaging.P2pRecordsFactory
+import net.corda.p2p.messaging.Subsystem
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.time.Clock
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -59,11 +57,9 @@ import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.time.Duration
 import java.util.Base64
-import java.util.UUID
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage as AvroInitiatorHandshakeMessage
 import net.corda.data.p2p.crypto.InitiatorHelloMessage as AvroInitiatorHelloMessage
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage as AvroResponderHandshakeMessage
@@ -83,6 +79,7 @@ internal class StatefulSessionManagerImpl(
     private val schemaRegistry: AvroSchemaRegistry,
     private val sessionCache: SessionCache,
     private val sessionEventPublisher: StatefulSessionEventPublisher,
+    private val p2pRecordsFactory: P2pRecordsFactory,
 ) : SessionManager {
     companion object {
         const val LINK_MANAGER_SUBSYSTEM = "link-manager"
@@ -1163,39 +1160,15 @@ internal class StatefulSessionManagerImpl(
         destination: HoldingIdentity,
         sessionId: String,
     ) {
-        val messageBytes = schemaRegistry.serialize(
+        val record = p2pRecordsFactory.createAuthenticatedMessageRecord(
+            source.toAvro(),
+            destination.toAvro(),
             ReEstablishSessionMessage(sessionId),
-        ).array()
-        val record = createAuthenticatedMessageRecord(source, destination, messageBytes)
+            Subsystem.LINK_MANAGER,
+            filter = MembershipStatusFilter.ACTIVE,
+        )
         logger.info("Sending '{}' to session initiator '{}'.", ReEstablishSessionMessage::class.simpleName, destination)
         sessionManagerImpl.publisher.publish(listOf(record))
-    }
-
-    private fun createAuthenticatedMessageRecord(
-        source: HoldingIdentity,
-        destination: HoldingIdentity,
-        payload: ByteArray,
-    ): Record<String, AppMessage> {
-        val header = AuthenticatedMessageHeader.newBuilder()
-            .setDestination(destination.toAvro())
-            .setSource(source.toAvro())
-            .setMessageId(UUID.randomUUID().toString())
-            .setSubsystem(LINK_MANAGER_SUBSYSTEM)
-            .setStatusFilter(MembershipStatusFilter.ACTIVE)
-            .setTtl(null)
-            .setTraceId(null)
-            .build()
-        val message = AuthenticatedMessage.newBuilder()
-            .setHeader(header)
-            .setPayload(ByteBuffer.wrap(payload))
-            .build()
-        val appMessage = AppMessage(message)
-
-        return Record(
-            P2P_OUT_TOPIC,
-            UUID.randomUUID().toString(),
-            appMessage,
-        )
     }
 
     private val sessionEventListener = StatefulSessionEventProcessor(
