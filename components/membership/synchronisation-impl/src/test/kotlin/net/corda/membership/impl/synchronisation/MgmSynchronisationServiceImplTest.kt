@@ -46,7 +46,7 @@ import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.messaging.P2pRecordsFactory
-import net.corda.p2p.messaging.P2pRecordsFactory.Companion.MEMBERSHIP_DATA_DISTRIBUTION_PREFIX
+import net.corda.p2p.messaging.Subsystem
 import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -242,31 +242,37 @@ class MgmSynchronisationServiceImplTest {
     private val simonMembershipPackageRecord = mock<Record<String, AppMessage>>()
     private val membershipP2PRecordsFactory = mock<P2pRecordsFactory> {
         on {
-            createMembershipAuthenticatedMessageRecord(
+            createAuthenticatedMessageRecord(
                 any(),
                 any(),
                 eq(allMembershipPackage),
-                eq(MEMBERSHIP_DATA_DISTRIBUTION_PREFIX),
+                eq(Subsystem.MEMBERSHIP),
+                any(),
+                any(),
                 any(),
                 eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED),
             )
         } doReturn allMembershipPackageRecord
         on {
-            createMembershipAuthenticatedMessageRecord(
+            createAuthenticatedMessageRecord(
                 any(),
                 any(),
                 eq(bobMembershipPackage),
-                eq(MEMBERSHIP_DATA_DISTRIBUTION_PREFIX),
+                eq(Subsystem.MEMBERSHIP),
+                any(),
+                any(),
                 any(),
                 eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED),
             )
         } doReturn bobMembershipPackageRecord
         on {
-            createMembershipAuthenticatedMessageRecord(
+            createAuthenticatedMessageRecord(
                 any(),
                 any(),
                 eq(simonMembershipPackage),
-                eq(MEMBERSHIP_DATA_DISTRIBUTION_PREFIX),
+                eq(Subsystem.MEMBERSHIP),
+                any(),
+                any(),
                 any(),
                 eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED),
             )

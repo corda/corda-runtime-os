@@ -20,6 +20,7 @@ import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.lib.getMembershipRecordKey
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -27,7 +28,7 @@ import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.messaging.P2pRecordsFactory
-import net.corda.p2p.messaging.P2pRecordsFactory.Companion.MEMBERSHIP_REGISTRATION_PREFIX
+import net.corda.p2p.messaging.Subsystem
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
@@ -123,7 +124,7 @@ class QueueRegistrationHandlerTest {
     private val authenticatedMessageRecord = mock<Record<String, AppMessage>>()
     private val membershipP2PRecordsFactory = mock<P2pRecordsFactory> {
         on {
-            createMembershipAuthenticatedMessageRecord(any(), any(), any(), eq(MEMBERSHIP_REGISTRATION_PREFIX), anyOrNull(), any())
+            createAuthenticatedMessageRecord(any(), any(), any(), any(), any(), anyOrNull(), any(), any())
         } doReturn authenticatedMessageRecord
     }
 
@@ -170,7 +171,7 @@ class QueueRegistrationHandlerTest {
         whenever(mockPersistenceOperation.execute()).thenReturn(MembershipPersistenceResult.success())
         val outputStates = handler.invoke(null, Record(TOPIC, KEY, inputCommand)).outputStates
         assertThat(outputStates).contains(authenticatedMessageRecord)
-        verify(membershipP2PRecordsFactory).createMembershipAuthenticatedMessageRecord(
+        verify(membershipP2PRecordsFactory).createAuthenticatedMessageRecord(
             eq(mgm),
             eq(member),
             eq(
@@ -180,8 +181,10 @@ class QueueRegistrationHandlerTest {
                     null
                 )
             ),
-            eq(MEMBERSHIP_REGISTRATION_PREFIX),
+            eq(Subsystem.MEMBERSHIP),
+            eq(getMembershipRecordKey(mgm, member)),
             eq(5),
+            any(),
             eq(MembershipStatusFilter.PENDING),
         )
     }

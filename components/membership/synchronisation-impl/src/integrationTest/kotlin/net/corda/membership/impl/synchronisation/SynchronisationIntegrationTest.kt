@@ -57,7 +57,6 @@ import net.corda.membership.impl.synchronisation.dummy.TestMembershipPersistence
 import net.corda.membership.impl.synchronisation.dummy.TestMembershipQueryClient
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
-import net.corda.membership.lib.MEMBERSHIP_P2P_SUBSYSTEM
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -79,6 +78,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.p2p.messaging.Subsystem
 import net.corda.schema.Schemas.Config.CONFIG_TOPIC
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
@@ -445,7 +445,7 @@ class SynchronisationIntegrationTest {
             clock.instant().truncatedTo(ChronoUnit.MILLIS).plusMillis(300000L),
             UUID.randomUUID().toString(),
             null,
-            MEMBERSHIP_P2P_SUBSYSTEM,
+            Subsystem.MEMBERSHIP.systemName,
             MembershipStatusFilter.ACTIVE
         )
         val payload = ByteBuffer.wrap(syncRequestSerializer.serialize(syncRequest))
@@ -629,7 +629,7 @@ class SynchronisationIntegrationTest {
             clock.instant().truncatedTo(ChronoUnit.MILLIS).plusMillis(300000L),
             UUID.randomUUID().toString(),
             null,
-            MEMBERSHIP_P2P_SUBSYSTEM,
+            Subsystem.MEMBERSHIP.systemName,
             MembershipStatusFilter.ACTIVE
         )
         val payload = ByteBuffer.wrap(membershipPackageSerializer.serialize(membershipPackage))

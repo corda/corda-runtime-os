@@ -8,6 +8,7 @@ import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
 import net.corda.p2p.messaging.P2pRecordsFactory
+import net.corda.p2p.messaging.Subsystem
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.MembershipConfig
 import net.corda.test.util.time.TestClock
@@ -69,7 +70,7 @@ class MembershipRecordsUtilsTest {
                 val header = value?.header
                 it.assertThat(header?.source).isEqualTo(holdingIdentity1)
                 it.assertThat(header?.destination).isEqualTo(holdingIdentity2)
-                it.assertThat(header?.subsystem).isEqualTo(MEMBERSHIP_P2P_SUBSYSTEM)
+                it.assertThat(header?.subsystem).isEqualTo(Subsystem.MEMBERSHIP.systemName)
                 it.assertThat(header?.ttl).isBeforeOrEqualTo(clock.instant().plus(MINUTES_TO_WAIT, ChronoUnit.MINUTES))
                 it.assertThat(header?.messageId).isEqualTo(MESSAGE_ID)
                 it.assertThat(header?.statusFilter).isEqualTo(MembershipStatusFilter.ACTIVE)

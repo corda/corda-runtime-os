@@ -62,7 +62,6 @@ import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.messaging.P2pRecordsFactory
-import net.corda.p2p.messaging.P2pRecordsFactory.Companion.MEMBERSHIP_REGISTRATION_PREFIX
 import net.corda.schema.Schemas
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.parse
@@ -229,7 +228,7 @@ class StartRegistrationHandlerTest {
     private val authenticatedMessageRecord = mock<Record<String, AppMessage>>()
     private val membershipP2PRecordsFactory = mock<P2pRecordsFactory> {
         on {
-            createMembershipAuthenticatedMessageRecord(any(), any(), any(), eq(MEMBERSHIP_REGISTRATION_PREFIX), anyOrNull(), any())
+            createAuthenticatedMessageRecord(any(), any(), any(), any(), any(), anyOrNull(), any(), any())
         } doReturn authenticatedMessageRecord
     }
 
@@ -405,7 +404,7 @@ class StartRegistrationHandlerTest {
         verify(
             membershipP2PRecordsFactory,
             never()
-        ).createMembershipAuthenticatedMessageRecord(any(), any(), any(), eq(MEMBERSHIP_REGISTRATION_PREFIX), anyOrNull(), any())
+        ).createAuthenticatedMessageRecord(any(), any(), any(), any(), any(), anyOrNull(), any(), any())
         assertThat(results.outputStates)
             .hasSize(2)
         results.outputStates.forEach { assertThat(it.value).isNotInstanceOf(AppMessage::class.java) }

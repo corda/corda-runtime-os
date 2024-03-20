@@ -7,6 +7,7 @@ import net.corda.data.p2p.app.AppMessage
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.lib.getMembershipRecordKey
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.Signer
 import net.corda.membership.p2p.helpers.SignerFactory
@@ -14,7 +15,7 @@ import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.messaging.P2pRecordsFactory
-import net.corda.p2p.messaging.P2pRecordsFactory.Companion.MEMBERSHIP_DATA_DISTRIBUTION_PREFIX
+import net.corda.p2p.messaging.Subsystem
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.MembershipConfig
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -59,12 +60,14 @@ class DistributeGroupParametersActionHandlerTest {
     private val record = mock<Record<String, AppMessage>>()
     private val membershipP2PRecordsFactory = mock<P2pRecordsFactory> {
         on {
-            createMembershipAuthenticatedMessageRecord(
+            createAuthenticatedMessageRecord(
                 any(),
                 any(),
                 any(),
-                eq(MEMBERSHIP_DATA_DISTRIBUTION_PREFIX),
+                eq(Subsystem.MEMBERSHIP),
+                any(),
                 anyOrNull(),
+                any(),
                 any(),
             )
         } doReturn record
@@ -120,12 +123,14 @@ class DistributeGroupParametersActionHandlerTest {
             val ownerAvro = owner.toAvro()
             val memberAvro = it.holdingIdentity.toAvro()
             whenever(
-                membershipP2PRecordsFactory.createMembershipAuthenticatedMessageRecord(
+                membershipP2PRecordsFactory.createAuthenticatedMessageRecord(
                     eq(ownerAvro),
                     eq(memberAvro),
                     eq(groupParametersPackage),
-                    eq(MEMBERSHIP_DATA_DISTRIBUTION_PREFIX),
+                    eq(Subsystem.MEMBERSHIP),
+                    eq(getMembershipRecordKey(ownerAvro, memberAvro)),
                     anyOrNull(),
+                    any(),
                     any(),
                 )
             ).doReturn(record)
