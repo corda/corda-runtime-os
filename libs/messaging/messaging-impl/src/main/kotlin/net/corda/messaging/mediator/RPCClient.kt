@@ -3,6 +3,7 @@ package net.corda.messaging.mediator
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.messaging.api.exception.CordaHTTPClientErrorException
+import net.corda.messaging.api.exception.CordaHTTPClientSideTransientException
 import net.corda.messaging.api.exception.CordaHTTPServerErrorException
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -140,7 +141,8 @@ class RPCClient(
                 IOException::class.java,
                 TimeoutException::class.java,
                 CordaHTTPClientErrorException::class.java,
-                CordaHTTPServerErrorException::class.java
+                CordaHTTPServerErrorException::class.java,
+                CordaHTTPClientSideTransientException::class.java
             )
             .additionalMetrics(EnumMap(mutableMapOf(CordaMetrics.Tag.HttpRequestUri to uri)))
             .build()
@@ -150,7 +152,8 @@ class RPCClient(
         val exceptionToThrow = when (e) {
             is IOException,
             is InterruptedException,
-            is TimeoutException -> {
+            is TimeoutException,
+            is CordaHTTPClientSideTransientException -> {
                 log.warn("Intermittent error in RPCClient request $endpoint: ", e)
                 CordaMessageAPIIntermittentException(e.message, e)
             }
