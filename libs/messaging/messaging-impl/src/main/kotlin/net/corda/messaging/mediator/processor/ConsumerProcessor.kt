@@ -150,6 +150,9 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                             }
                             EventProcessingOutput(listOf(), stateChange)
                         }
+                        future.cancel(true)
+                        consumerNeedsToBeReset = true
+                        mapOf()
                     } catch (e: CordaMessageAPIConsumerResetException) {
                         log.warn("Event processing threw consumer reset exception for keys: ${group.keys}")
                         consumerNeedsToBeReset = true
