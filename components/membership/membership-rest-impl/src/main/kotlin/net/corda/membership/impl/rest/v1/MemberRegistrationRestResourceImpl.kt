@@ -18,6 +18,7 @@ import net.corda.membership.rest.v1.types.response.RegistrationRequestProgress
 import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
@@ -140,7 +141,13 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
                     holdingIdentityShortHash,
                 )
             } catch (e: CordaRPCAPIPartitionException) {
-                throw ServiceUnavailableException("Could not perform start registration operation: Repartition Event!")
+                throw ServiceUnavailableException(
+                    "Corda RPC API Partition Exception",
+                    ExceptionDetails(
+                        e::class.java.name,
+                        "Could not perform start registration operation: Repartition Event!"
+                    )
+                )
             }
         }
 
@@ -154,9 +161,18 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
             } catch (e: ContextDeserializationException) {
                 throw InternalServerException(e.message!!)
             } catch (e: ServiceNotReadyException) {
-                throw ServiceUnavailableException(e.message!!)
+                throw ServiceUnavailableException(
+                    "Service Not Ready Exception",
+                    ExceptionDetails(e::class.java.name, e.message!!)
+                )
             } catch (e: CordaRPCAPIPartitionException) {
-                throw ServiceUnavailableException("Could not perform check registration operation: Repartition Event!")
+                throw ServiceUnavailableException(
+                    "Corda RPC API Partition Exception",
+                    ExceptionDetails(
+                        e::class.java.name,
+                        "Could not perform check registration operation: Repartition Event!"
+                    )
+                )
             }
         }
 
@@ -176,9 +192,18 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
             } catch (e: ContextDeserializationException) {
                 throw InternalServerException(e.message!!)
             } catch (e: ServiceNotReadyException) {
-                throw ServiceUnavailableException(e.message!!)
+                throw ServiceUnavailableException(
+                    "Service Not Ready Exception",
+                    ExceptionDetails(e::class.java.name, e.message!!)
+                )
             } catch (e: CordaRPCAPIPartitionException) {
-                throw ServiceUnavailableException("Could not perform check specific registration operation: Repartition Event!")
+                throw ServiceUnavailableException(
+                    "Corda RPC API Partition Exception",
+                    ExceptionDetails(
+                        e::class.java.name,
+                        "Could not perform check specific registration operation: Repartition Event!"
+                    )
+                )
             }
         }
     }

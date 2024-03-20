@@ -55,7 +55,10 @@ fun <T : Any?> withPermissionManager(
         }
     } catch (e: CordaRPCAPIPartitionException) {
         logger.warn("Error waiting for permission management response.", e)
-        throw ServiceUnavailableException("Error waiting for permission management response: Repartition Event!")
+        throw ServiceUnavailableException(
+            "Corda RPC API Partition Exception",
+            ExceptionDetails(e::class.java.name, "Error waiting for permission management response: Repartition Event!")
+        )
     } catch (e: CordaRPCAPISenderException) {
         logger.warn("Error during sending of permission management request.", e)
         throw InternalServerException(

@@ -15,6 +15,7 @@ import net.corda.membership.rest.v1.MGMAdminRestResource
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceNotFoundException
@@ -107,7 +108,13 @@ class MGMAdminRestResourceImpl @Activate constructor(
                     title = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
                 )
             } catch (e: CordaRPCAPIPartitionException) {
-                throw ServiceUnavailableException("Could not perform operation for $holdingIdentityShortHash: Repartition Event!")
+                throw ServiceUnavailableException(
+                    "Corda RPC API Partition Exception",
+                    ExceptionDetails(
+                        e::class.java.name,
+                        "Could not perform operation for $holdingIdentityShortHash: Repartition Event!"
+                    )
+                )
             } catch (e: IllegalArgumentException) {
                 throw BadRequestException("${e.message}")
             } catch (e: ContextDeserializationException) {

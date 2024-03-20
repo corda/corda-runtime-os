@@ -267,7 +267,7 @@ class KeyRestResourceImplTest {
                 )
             }
 
-            assertThat(details.message).isEqualTo("Could not lookup keys for tenant $TENANT_ID: Repartition Event!")
+            assertThat(details.exceptionDetails!!.reason).isEqualTo("Could not lookup keys for tenant $TENANT_ID: Repartition Event!")
         }
 
         @Test
@@ -292,7 +292,7 @@ class KeyRestResourceImplTest {
                 )
             }
 
-            assertThat(details.message).isEqualTo("Could not lookup keys for tenant $TENANT_ID: Repartition Event!")
+            assertThat(details.exceptionDetails!!.reason).isEqualTo("Could not lookup keys for tenant $TENANT_ID: Repartition Event!")
         }
 
         @Test
@@ -367,7 +367,7 @@ class KeyRestResourceImplTest {
                 keysOps.generateKeyPair(tenantId = TENANT_ID, alias = ALIAS, hsmCategory = CATEGORY, scheme = SCHEME)
             }
 
-            assertThat(details.message).isEqualTo("Could not generate key pair for tenant $TENANT_ID: Repartition Event!")
+            assertThat(details.exceptionDetails!!.reason).isEqualTo("Could not generate key pair for tenant $TENANT_ID: Repartition Event!")
         }
 
         @Test
@@ -408,7 +408,7 @@ class KeyRestResourceImplTest {
                 keysOps.generateKeyPem(TENANT_ID, createKeyId("A"))
             }
 
-            assertThat(details.message).isEqualTo("Could not lookup keys for tenant $TENANT_ID: Repartition Event!")
+            assertThat(details.exceptionDetails!!.reason).isEqualTo("Could not lookup keys for tenant $TENANT_ID: Repartition Event!")
         }
 
         @Test
@@ -429,7 +429,7 @@ class KeyRestResourceImplTest {
                 keysOps.listSchemes(TENANT_ID, CATEGORY)
             }
 
-            assertThat(details.message).isEqualTo("Could not list supported schemes for tenant $TENANT_ID: Repartition Event!")
+            assertThat(details.exceptionDetails!!.reason).isEqualTo("Could not list supported schemes for tenant $TENANT_ID: Repartition Event!")
         }
 
         @Test

@@ -108,7 +108,8 @@ internal class PermissionManagementHandlerTest {
             }
         }
 
-        assertEquals("Error waiting for permission management response: Repartition Event!", e.message)
+        assertEquals("Error waiting for permission management response: Repartition Event!", e.exceptionDetails!!.reason)
+        assertEquals(CordaRPCAPIPartitionException::class.java.name, e.exceptionDetails!!.cause)
         assertEquals(0, e.details.size)
     }
 
