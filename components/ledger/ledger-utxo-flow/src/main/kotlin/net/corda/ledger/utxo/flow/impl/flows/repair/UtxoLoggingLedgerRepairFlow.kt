@@ -1,7 +1,5 @@
 package net.corda.ledger.utxo.flow.impl.flows.repair
 
-import net.corda.ledger.utxo.flow.impl.notary.PluggableNotaryService
-import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.application.flows.CordaInject
@@ -9,7 +7,6 @@ import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.ledger.utxo.VisibilityChecker
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
@@ -29,6 +26,7 @@ class UtxoLoggingLedgerRepairFlow private constructor(
 
     constructor(from: Instant, until: Instant, duration: Duration) : this(from, until, duration, UTCClock(), STATIC_LOGGER)
 
+    @Suppress("LongParameterList")
     @VisibleForTesting
     constructor(
         from: Instant,

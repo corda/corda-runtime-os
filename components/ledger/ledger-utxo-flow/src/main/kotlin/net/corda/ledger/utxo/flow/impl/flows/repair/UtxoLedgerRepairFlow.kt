@@ -38,7 +38,7 @@ class UtxoLedgerRepairFlow(
     private val endTime: Instant,
     private val clock: Clock = UTCClock(),
     private val queryLimit: Int = QUERY_LIMIT
-): SubFlow<UtxoLedgerRepairFlow.Result> {
+) : SubFlow<UtxoLedgerRepairFlow.Result> {
 
     private companion object {
         const val QUERY_LIMIT = 100
@@ -56,7 +56,7 @@ class UtxoLedgerRepairFlow(
         pluggableNotaryService: PluggableNotaryService,
         visibilityChecker: VisibilityChecker,
         queryLimit: Int = QUERY_LIMIT
-    ): this(from, until, endTime, clock, queryLimit) {
+    ) : this(from, until, endTime, clock, queryLimit) {
         this.flowEngine = flowEngine
         this.persistenceService = persistenceService
         this.pluggableNotaryService = pluggableNotaryService

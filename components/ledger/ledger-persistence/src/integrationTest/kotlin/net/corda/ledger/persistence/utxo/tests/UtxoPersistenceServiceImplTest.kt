@@ -1955,6 +1955,7 @@ class UtxoPersistenceServiceImplTest {
             )
         }.toMap()
 
+    @Suppress("LongParameterList")
     private fun persistTransactionViaEntity(
         entityFactory: UtxoEntityFactory,
         status: TransactionStatus = UNVERIFIED,
@@ -2109,6 +2110,7 @@ class UtxoPersistenceServiceImplTest {
         )
     }
 
+    @Suppress("LongParameterList")
     private fun createSignedTransaction(
         seed: String = seedSequence.incrementAndGet().toString(),
         instant: Instant = testClock.instant(),

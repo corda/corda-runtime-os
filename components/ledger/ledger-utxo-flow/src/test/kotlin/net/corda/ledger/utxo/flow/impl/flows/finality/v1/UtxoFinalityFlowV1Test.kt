@@ -1469,7 +1469,6 @@ class UtxoFinalityFlowV1Test {
             )
         )
 
-
         flow.notaryLookup = notaryLookup
         flow.memberLookup = memberLookup
         flow.flowEngine = flowEngine
