@@ -6,7 +6,7 @@ import liquibase.database.DatabaseFactory
 import liquibase.database.jvm.JdbcConnection
 import liquibase.resource.ClassLoaderResourceAccessor
 import net.corda.cli.plugins.vnode.withPluginClassLoader
-import net.corda.db.admin.impl.LiquibaseManager
+import net.corda.db.admin.impl.LiquibaseManagerImpl
 import picocli.CommandLine
 import java.io.File
 import java.io.FileWriter
@@ -23,7 +23,7 @@ import java.sql.DriverManager
 )
 class PlatformMigration(
     private val config: PlatformMigrationConfig = PlatformMigrationConfig(),
-    private val liquibaseManager: LiquibaseManager = LiquibaseManager()
+    private val liquibaseManager: LiquibaseManagerImpl = LiquibaseManagerImpl()
 ) : Runnable {
     @CommandLine.Option(
         names = ["--jdbc-url"],

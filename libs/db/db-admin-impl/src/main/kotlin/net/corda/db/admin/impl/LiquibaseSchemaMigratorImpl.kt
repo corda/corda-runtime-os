@@ -10,6 +10,7 @@ import liquibase.database.OfflineConnection
 import liquibase.database.jvm.JdbcConnection
 import liquibase.resource.ResourceAccessor
 import net.corda.db.admin.DbChange
+import net.corda.db.admin.LiquibaseManager
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
@@ -39,7 +40,7 @@ class LiquibaseSchemaMigratorImpl(
                 .getInstance()
                 .findCorrectDatabaseImplementation(OfflineConnection(url, resourceAccessor))
         },
-    private val liquibaseManager: LiquibaseManager = LiquibaseManager()
+    private val liquibaseManager: LiquibaseManager = LiquibaseManagerImpl()
 ) : LiquibaseSchemaMigrator {
     companion object {
         // default schema

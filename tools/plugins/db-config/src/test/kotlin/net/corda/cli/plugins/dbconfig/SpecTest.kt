@@ -4,7 +4,7 @@ import liquibase.Liquibase
 import liquibase.command.CommandArgumentDefinition
 import liquibase.command.CommandScope
 import liquibase.database.Database
-import net.corda.db.admin.impl.LiquibaseManager
+import net.corda.db.admin.impl.LiquibaseManagerImpl
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers
 import org.mockito.kotlin.any
@@ -46,7 +46,7 @@ class SpecTest {
     private val commandScopeFactory = mock<(commandNames: Array<String>) -> CommandScope> {
         on { invoke(any()) } doReturn (commandScope)
     }
-    private val liquibaseManager = LiquibaseManager(commandScopeFactory)
+    private val liquibaseManager = LiquibaseManagerImpl(commandScopeFactory)
 
     private val specConfig = Spec.SpecConfig(
         writerFactory = mockWriterFactory,
