@@ -49,8 +49,8 @@ class UtxoLedgerRepairFlowTest {
 
     private val clock = mock<Clock>()
     private val flowEngine = mock<FlowEngine>()
-    private val pluggableNotaryService = mock<PluggableNotaryService>()
     private val persistenceService = mock<UtxoLedgerPersistenceService>()
+    private val pluggableNotaryService = mock<PluggableNotaryService>()
     private val visibilityChecker = mock<VisibilityChecker>()
 
     private val transaction1 = mock<UtxoSignedTransactionInternal>()
@@ -70,7 +70,7 @@ class UtxoLedgerRepairFlowTest {
 
     @BeforeEach
     fun beforeEach() {
-        whenever(persistenceService.findTransactionsWithStatusCreatedBeforeTime(eq(UNVERIFIED), any(), any(), any()))
+        whenever(persistenceService.findTransactionsWithStatusCreatedBetweenTime(eq(UNVERIFIED), any(), any(), any()))
             .thenReturn(listOf(TX_ID_1, TX_ID_2, TX_ID_3))
         whenever(persistenceService.findSignedTransaction(TX_ID_1, UNVERIFIED)).thenReturn(transaction1)
         whenever(persistenceService.findSignedTransaction(TX_ID_2, UNVERIFIED)).thenReturn(transaction2)
@@ -144,7 +144,7 @@ class UtxoLedgerRepairFlowTest {
         // Initial [lastCallToNotaryTime], duration check x2, updating [lastCallToNotaryTime] and duration check x2
         whenever(clock.instant()).thenReturn(NOW, NOW, NOW, NOW, NOW, NOW.plusSeconds(10))
         // Returning one so that the loop tries to re-query which hits the duration check
-        whenever(persistenceService.findTransactionsWithStatusCreatedBeforeTime(eq(UNVERIFIED), any(), any(), any()))
+        whenever(persistenceService.findTransactionsWithStatusCreatedBetweenTime(eq(UNVERIFIED), any(), any(), any()))
             .thenReturn(listOf(TX_ID_1))
         whenever(transaction1.verifyAttachedNotarySignature()).thenThrow(TransactionSignatureException(TX_ID_1, "", RuntimeException()))
         whenever(flowEngine.subFlow(pluggableNotaryFlow1)).thenThrow(notaryExceptionUnknown)
@@ -231,7 +231,7 @@ class UtxoLedgerRepairFlowTest {
             NOW
         )
         // Returning one so that the loop tries to re-query which hits the duration check
-        whenever(persistenceService.findTransactionsWithStatusCreatedBeforeTime(eq(UNVERIFIED), any(), any(), any()))
+        whenever(persistenceService.findTransactionsWithStatusCreatedBetweenTime(eq(UNVERIFIED), any(), any(), any()))
             .thenReturn(listOf(TX_ID_1))
         whenever(transaction1.verifyAttachedNotarySignature()).thenThrow(TransactionSignatureException(TX_ID_1, "", RuntimeException()))
         whenever(flowEngine.subFlow(pluggableNotaryFlow1)).thenThrow(notaryExceptionUnknown)
@@ -257,7 +257,7 @@ class UtxoLedgerRepairFlowTest {
             NOW,
             NOW
         )
-        whenever(persistenceService.findTransactionsWithStatusCreatedBeforeTime(eq(UNVERIFIED), any(), any(), any()))
+        whenever(persistenceService.findTransactionsWithStatusCreatedBetweenTime(eq(UNVERIFIED), any(), any(), any()))
             .thenReturn(listOf(TX_ID_1))
         whenever(transaction1.verifyAttachedNotarySignature()).thenThrow(TransactionSignatureException(TX_ID_1, "", RuntimeException()))
         whenever(flowEngine.subFlow(pluggableNotaryFlow1)).thenThrow(notaryExceptionGeneral)
@@ -282,7 +282,7 @@ class UtxoLedgerRepairFlowTest {
             NOW,
             NOW
         )
-        whenever(persistenceService.findTransactionsWithStatusCreatedBeforeTime(eq(UNVERIFIED), any(), any(), any()))
+        whenever(persistenceService.findTransactionsWithStatusCreatedBetweenTime(eq(UNVERIFIED), any(), any(), any()))
             .thenReturn(listOf(TX_ID_1))
         whenever(transaction1.verifyAttachedNotarySignature()).thenThrow(TransactionSignatureException(TX_ID_1, "", RuntimeException()))
         whenever(flowEngine.subFlow(pluggableNotaryFlow1)).thenThrow(notaryExceptionUnknown)
@@ -306,7 +306,7 @@ class UtxoLedgerRepairFlowTest {
             NOW.minus(MAX_DURATION_WITHOUT_SUSPENDING.plusSeconds(1)),
             NOW,
         )
-        whenever(persistenceService.findTransactionsWithStatusCreatedBeforeTime(eq(UNVERIFIED), any(), any(), any()))
+        whenever(persistenceService.findTransactionsWithStatusCreatedBetweenTime(eq(UNVERIFIED), any(), any(), any()))
             .thenReturn(listOf(TX_ID_1))
         whenever(transaction1.verifyAttachedNotarySignature()).thenThrow(TransactionSignatureException(TX_ID_1, "", RuntimeException()))
         whenever(flowEngine.subFlow(pluggableNotaryFlow1)).thenThrow(notaryExceptionFatal)
@@ -323,7 +323,7 @@ class UtxoLedgerRepairFlowTest {
 
     @Test
     fun `does nothing when there are no unverified transactions created within specified time period`() {
-        whenever(persistenceService.findTransactionsWithStatusCreatedBeforeTime(eq(UNVERIFIED), any(), any(), any()))
+        whenever(persistenceService.findTransactionsWithStatusCreatedBetweenTime(eq(UNVERIFIED), any(), any(), any()))
             .thenReturn(emptyList())
         val utxoLedgerRepairFlow = createUtxoLedgerRepairFlow()
         val result = utxoLedgerRepairFlow.call()
@@ -539,7 +539,7 @@ class UtxoLedgerRepairFlowTest {
                 NOW
             }
         }
-        whenever(persistenceService.findTransactionsWithStatusCreatedBeforeTime(eq(UNVERIFIED), any(), any(), any()))
+        whenever(persistenceService.findTransactionsWithStatusCreatedBetweenTime(eq(UNVERIFIED), any(), any(), any()))
             .thenReturn(listOf(TX_ID_1), listOf(TX_ID_2), listOf(TX_ID_3))
         whenever(transaction1.verifyAttachedNotarySignature()).thenThrow(TransactionSignatureException(TX_ID_1, "", RuntimeException()))
         whenever(transaction2.verifyAttachedNotarySignature()).thenThrow(TransactionSignatureException(TX_ID_2, "", RuntimeException()))
@@ -554,7 +554,7 @@ class UtxoLedgerRepairFlowTest {
         assertThat(result.numberOfNotNotarizedTransactions).isEqualTo(3)
         assertThat(result.numberOfInvalidTransactions).isZero()
         assertThat(result.numberOfSkippedTransactions).isZero()
-        verify(persistenceService, times(3)).findTransactionsWithStatusCreatedBeforeTime(eq(UNVERIFIED), any(), any(), any())
+        verify(persistenceService, times(3)).findTransactionsWithStatusCreatedBetweenTime(eq(UNVERIFIED), any(), any(), any())
     }
 
     @Test
@@ -568,7 +568,7 @@ class UtxoLedgerRepairFlowTest {
                 NOW.minus(MAX_DURATION_WITHOUT_SUSPENDING.plusSeconds(1))
             }
         }
-        whenever(persistenceService.findTransactionsWithStatusCreatedBeforeTime(eq(UNVERIFIED), any(), any(), any()))
+        whenever(persistenceService.findTransactionsWithStatusCreatedBetweenTime(eq(UNVERIFIED), any(), any(), any()))
             .thenReturn(listOf(TX_ID_1), listOf(TX_ID_2), listOf(TX_ID_3))
         whenever(transaction1.verifyAttachedNotarySignature()).thenThrow(TransactionSignatureException(TX_ID_1, "", RuntimeException()))
         whenever(transaction2.verifyAttachedNotarySignature()).thenThrow(TransactionSignatureException(TX_ID_2, "", RuntimeException()))
@@ -583,12 +583,12 @@ class UtxoLedgerRepairFlowTest {
         assertThat(result.numberOfNotNotarizedTransactions).isEqualTo(3)
         assertThat(result.numberOfInvalidTransactions).isZero()
         assertThat(result.numberOfSkippedTransactions).isZero()
-        verify(persistenceService, times(3)).findTransactionsWithStatusCreatedBeforeTime(eq(UNVERIFIED), any(), any(), any())
+        verify(persistenceService, times(3)).findTransactionsWithStatusCreatedBetweenTime(eq(UNVERIFIED), any(), any(), any())
     }
 
     @Test
     fun `repair loop is repeated until the first not notarized transaction is returned from the query again`() {
-        whenever(persistenceService.findTransactionsWithStatusCreatedBeforeTime(eq(UNVERIFIED), any(), any(), any()))
+        whenever(persistenceService.findTransactionsWithStatusCreatedBetweenTime(eq(UNVERIFIED), any(), any(), any()))
             .thenReturn(listOf(TX_ID_1), listOf(TX_ID_2), listOf(TX_ID_1))
         whenever(transaction1.verifyAttachedNotarySignature()).thenThrow(TransactionSignatureException(TX_ID_1, "", RuntimeException()))
         whenever(transaction2.verifyAttachedNotarySignature()).thenThrow(TransactionSignatureException(TX_ID_2, "", RuntimeException()))
@@ -602,12 +602,12 @@ class UtxoLedgerRepairFlowTest {
         assertThat(result.numberOfNotNotarizedTransactions).isEqualTo(2)
         assertThat(result.numberOfInvalidTransactions).isZero()
         assertThat(result.numberOfSkippedTransactions).isZero()
-        verify(persistenceService, times(3)).findTransactionsWithStatusCreatedBeforeTime(eq(UNVERIFIED), any(), any(), any())
+        verify(persistenceService, times(3)).findTransactionsWithStatusCreatedBetweenTime(eq(UNVERIFIED), any(), any(), any())
     }
 
     @Test
     fun `repair loop is repeated until the transactions returned from the query is smaller than the QUERY_LIMIT`() {
-        whenever(persistenceService.findTransactionsWithStatusCreatedBeforeTime(eq(UNVERIFIED), any(), any(), any()))
+        whenever(persistenceService.findTransactionsWithStatusCreatedBetweenTime(eq(UNVERIFIED), any(), any(), any()))
             .thenReturn(listOf(TX_ID_1, TX_ID_2), listOf(TX_ID_3))
         whenever(transaction1.verifyAttachedNotarySignature()).thenThrow(TransactionSignatureException(TX_ID_1, "", RuntimeException()))
         whenever(transaction2.verifyAttachedNotarySignature()).thenThrow(TransactionSignatureException(TX_ID_2, "", RuntimeException()))
@@ -622,12 +622,12 @@ class UtxoLedgerRepairFlowTest {
         assertThat(result.numberOfNotNotarizedTransactions).isEqualTo(3)
         assertThat(result.numberOfInvalidTransactions).isZero()
         assertThat(result.numberOfSkippedTransactions).isZero()
-        verify(persistenceService, times(2)).findTransactionsWithStatusCreatedBeforeTime(eq(UNVERIFIED), any(), any(), any())
+        verify(persistenceService, times(2)).findTransactionsWithStatusCreatedBetweenTime(eq(UNVERIFIED), any(), any(), any())
     }
 
     @Test
     fun `each transaction can be checked by a different notary`() {
-        whenever(persistenceService.findTransactionsWithStatusCreatedBeforeTime(eq(UNVERIFIED), any(), any(), any()))
+        whenever(persistenceService.findTransactionsWithStatusCreatedBetweenTime(eq(UNVERIFIED), any(), any(), any()))
             .thenReturn(listOf(TX_ID_1), listOf(TX_ID_2), listOf(TX_ID_3), emptyList())
         whenever(transaction1.verifyAttachedNotarySignature()).thenThrow(TransactionSignatureException(TX_ID_1, "", RuntimeException()))
         whenever(transaction2.verifyAttachedNotarySignature()).thenThrow(TransactionSignatureException(TX_ID_2, "", RuntimeException()))
@@ -672,8 +672,8 @@ class UtxoLedgerRepairFlowTest {
             endTime,
             clock,
             flowEngine,
-            pluggableNotaryService,
             persistenceService,
+            pluggableNotaryService,
             visibilityChecker,
             queryLimit
         )

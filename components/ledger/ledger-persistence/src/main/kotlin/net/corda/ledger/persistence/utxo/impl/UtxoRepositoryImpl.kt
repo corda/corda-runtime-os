@@ -588,7 +588,7 @@ class UtxoRepositoryImpl(
             .map { it as Int }
     }
 
-    override fun findTransactionsWithStatusBeforeTime(
+    override fun findTransactionsWithStatusCreatedBetweenTime(
         entityManager: EntityManager,
         status: TransactionStatus,
         from: Instant,
@@ -596,7 +596,7 @@ class UtxoRepositoryImpl(
         limit: Int,
     ): List<String> {
         @Suppress("UNCHECKED_CAST")
-        return entityManager.createNativeQuery(queryProvider.findTransactionsWithStatusBeforeTime)
+        return entityManager.createNativeQuery(queryProvider.findTransactionsWithStatusCreatedBetweenTime)
             .setParameter("status", status.value)
             .setParameter("from", from)
             .setParameter("until", until)
@@ -608,7 +608,7 @@ class UtxoRepositoryImpl(
         entityManager: EntityManager,
         id: String
     ) {
-        entityManager.createNativeQuery(queryProvider.incrementRecoveryAttemptCount)
+        entityManager.createNativeQuery(queryProvider.incrementRepairAttemptCount)
             .setParameter("transactionId", id)
             .executeUpdate()
     }

@@ -26,8 +26,8 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransacti
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionIdsAndStatusesExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionIdsAndStatusesParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionParameters
-import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionsWithStatusBeforeTimeExternalEventFactory
-import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionsWithStatusBeforeTimeParameters
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionsWithStatusCreatedBetweenTimeExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionsWithStatusCreatedBetweenTimeParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.IncrementTransactionRepairAttemptCountExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.IncrementTransactionRepairAttemptCountParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistFilteredTransactionParameters
@@ -322,19 +322,19 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun findTransactionsWithStatusCreatedBeforeTime(
+    override fun findTransactionsWithStatusCreatedBetweenTime(
         status: TransactionStatus,
         from: Instant,
         until: Instant,
         limit: Int
     ): List<SecureHash> {
         return recordSuspendable(
-            { ledgerPersistenceFlowTimer(LedgerPersistenceMetricOperationName.FindTransactionsWithStatusBeforeTime) }
+            { ledgerPersistenceFlowTimer(LedgerPersistenceMetricOperationName.FindTransactionsWithStatusCreatedBetweenTime) }
         ) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
-                    FindTransactionsWithStatusBeforeTimeExternalEventFactory::class.java,
-                    FindTransactionsWithStatusBeforeTimeParameters(status, from, until, limit)
+                    FindTransactionsWithStatusCreatedBetweenTimeExternalEventFactory::class.java,
+                    FindTransactionsWithStatusCreatedBetweenTimeParameters(status, from, until, limit)
                 )
             }
         }.map { serializationService.deserialize(it.array()) }

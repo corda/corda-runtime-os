@@ -5,7 +5,7 @@ import net.corda.data.ledger.persistence.FindSignedGroupParameters
 import net.corda.data.ledger.persistence.FindSignedLedgerTransaction
 import net.corda.data.ledger.persistence.FindTransaction
 import net.corda.data.ledger.persistence.FindTransactionIdsAndStatuses
-import net.corda.data.ledger.persistence.FindTransactionsWithStatusBeforeTime
+import net.corda.data.ledger.persistence.FindTransactionsWithStatusCreatedBetweenTime
 import net.corda.data.ledger.persistence.FindUnconsumedStatesByType
 import net.corda.data.ledger.persistence.IncrementTransactionRepairAttemptCount
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
@@ -30,7 +30,7 @@ import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedGro
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedLedgerTransactionRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionIdsAndStatusesRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionRequestHandler
-import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionsWithStatusBeforeTimeRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionsWithStatusCreatedBetweenTimeRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindUnconsumedStatesByTypeRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoIncrementTransactionRepairAttemptCountRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistFilteredTransactionRequestHandler
@@ -206,8 +206,8 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     serializationService
                 )
             }
-            is FindTransactionsWithStatusBeforeTime -> {
-                UtxoFindTransactionsWithStatusBeforeTimeRequestHandler(
+            is FindTransactionsWithStatusCreatedBetweenTime -> {
+                UtxoFindTransactionsWithStatusCreatedBetweenTimeRequestHandler(
                     req,
                     externalEventContext,
                     persistenceService,

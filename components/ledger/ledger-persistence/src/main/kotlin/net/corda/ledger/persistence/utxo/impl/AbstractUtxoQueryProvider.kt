@@ -211,7 +211,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             OR (status = '$VERIFIED' AND is_filtered = TRUE)
         """.trimIndent()
 
-    override val findTransactionsWithStatusBeforeTime: String
+    override val findTransactionsWithStatusCreatedBetweenTime: String
         get() = """
             SELECT id
             FROM {h-schema}utxo_transaction
@@ -221,7 +221,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             ORDER BY repair_attempt_count ASC, created DESC
         """.trimIndent()
 
-    override val incrementRecoveryAttemptCount: String
+    override val incrementRepairAttemptCount: String
         get() = """
             UPDATE {h-schema}utxo_transaction
             SET repair_attempt_count = repair_attempt_count + 1

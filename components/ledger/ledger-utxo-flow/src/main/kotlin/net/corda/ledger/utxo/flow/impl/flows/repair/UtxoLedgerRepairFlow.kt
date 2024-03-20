@@ -14,8 +14,11 @@ import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
+import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.ledger.notary.plugin.api.NotarizationType
@@ -34,21 +37,47 @@ class UtxoLedgerRepairFlow(
     private val until: Instant,
     private val endTime: Instant,
     private val clock: Clock = UTCClock(),
-    private var flowEngine: FlowEngine,
-    private val pluggableNotaryService: PluggableNotaryService,
-    private val persistenceService: UtxoLedgerPersistenceService,
-    private val visibilityChecker: VisibilityChecker,
     private val queryLimit: Int = QUERY_LIMIT
-) {
+): SubFlow<UtxoLedgerRepairFlow.Result> {
 
     private companion object {
         const val QUERY_LIMIT = 100
         val log: Logger = LoggerFactory.getLogger(UtxoLedgerRepairFlow::class.java)
     }
 
+    @VisibleForTesting
+    constructor(
+        from: Instant,
+        until: Instant,
+        endTime: Instant,
+        clock: Clock = UTCClock(),
+        flowEngine: FlowEngine,
+        persistenceService: UtxoLedgerPersistenceService,
+        pluggableNotaryService: PluggableNotaryService,
+        visibilityChecker: VisibilityChecker,
+        queryLimit: Int = QUERY_LIMIT
+    ): this(from, until, endTime, clock, queryLimit) {
+        this.flowEngine = flowEngine
+        this.persistenceService = persistenceService
+        this.pluggableNotaryService = pluggableNotaryService
+        this.visibilityChecker = visibilityChecker
+    }
+
+    @CordaInject
+    private lateinit var flowEngine: FlowEngine
+
+    @CordaInject
+    private lateinit var persistenceService: UtxoLedgerPersistenceService
+
+    @CordaInject
+    private lateinit var pluggableNotaryService: PluggableNotaryService
+
+    @CordaInject
+    private lateinit var visibilityChecker: VisibilityChecker
+
     @Suppress("NestedBlockDepth")
     @Suspendable
-    fun call(): Result {
+    override fun call(): Result {
         var lastCallToNotaryTime = clock.instant()
         var numberOfNotarizedTransactions = 0
         var numberOfNotNotarizedTransactions = 0
@@ -119,7 +148,7 @@ class UtxoLedgerRepairFlow(
     @Suspendable
     fun findTransactionsToRepair(): List<SecureHash> {
         // TODO RENAME THIS METHOD
-        return persistenceService.findTransactionsWithStatusCreatedBeforeTime(
+        return persistenceService.findTransactionsWithStatusCreatedBetweenTime(
             TransactionStatus.UNVERIFIED,
             from,
             until,

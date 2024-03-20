@@ -15,6 +15,6 @@ enum class LedgerPersistenceMetricOperationName {
     PersistTransactionSignatures,
     ResolveStateRefs,
     UpdateTransactionStatus,
-    FindTransactionsWithStatusBeforeTime,
+    FindTransactionsWithStatusCreatedBetweenTime,
     IncrementTransactionRepairAttemptCount
 }

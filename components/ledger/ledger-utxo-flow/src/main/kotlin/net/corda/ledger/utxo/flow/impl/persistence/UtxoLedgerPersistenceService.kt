@@ -159,7 +159,7 @@ interface UtxoLedgerPersistenceService {
     )
 
     @Suspendable
-    fun findTransactionsWithStatusCreatedBeforeTime(
+    fun findTransactionsWithStatusCreatedBetweenTime(
         status: TransactionStatus,
         from: Instant,
         until: Instant,

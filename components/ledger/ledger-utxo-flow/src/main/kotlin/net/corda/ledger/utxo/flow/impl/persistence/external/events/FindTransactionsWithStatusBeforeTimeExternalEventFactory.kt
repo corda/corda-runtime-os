@@ -1,6 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.persistence.external.events
 
-import net.corda.data.ledger.persistence.FindTransactionsWithStatusBeforeTime
+import net.corda.data.ledger.persistence.FindTransactionsWithStatusCreatedBetweenTime
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.v5.base.annotations.CordaSerializable
@@ -10,14 +10,14 @@ import java.time.Clock
 import java.time.Instant
 
 @Component(service = [ExternalEventFactory::class])
-class FindTransactionsWithStatusBeforeTimeExternalEventFactory :
-    AbstractUtxoLedgerExternalEventFactory<FindTransactionsWithStatusBeforeTimeParameters> {
+class FindTransactionsWithStatusCreatedBetweenTimeExternalEventFactory :
+    AbstractUtxoLedgerExternalEventFactory<FindTransactionsWithStatusCreatedBetweenTimeParameters> {
     @Activate
     constructor() : super()
     constructor(clock: Clock) : super(clock)
 
-    override fun createRequest(parameters: FindTransactionsWithStatusBeforeTimeParameters): Any {
-        return FindTransactionsWithStatusBeforeTime.newBuilder()
+    override fun createRequest(parameters: FindTransactionsWithStatusCreatedBetweenTimeParameters): Any {
+        return FindTransactionsWithStatusCreatedBetweenTime.newBuilder()
             .setTransactionStatus(parameters.status.value)
             .setFrom(parameters.from)
             .setUntil(parameters.until)
@@ -27,7 +27,7 @@ class FindTransactionsWithStatusBeforeTimeExternalEventFactory :
 }
 
 @CordaSerializable
-data class FindTransactionsWithStatusBeforeTimeParameters(
+data class FindTransactionsWithStatusCreatedBetweenTimeParameters(
     val status: TransactionStatus,
     val from: Instant,
     val until: Instant,

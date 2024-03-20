@@ -96,7 +96,7 @@ interface UtxoPersistenceService {
         stateRefs: List<StateRef>
     ): Map<SecureHash, Pair<FilteredTransaction?, List<DigitalSignatureAndMetadata>>>
 
-    fun findTransactionsWithStatusBeforeTime(
+    fun findTransactionsWithStatusCreatedBetweenTime(
         status: TransactionStatus,
         from: Instant,
         until: Instant,

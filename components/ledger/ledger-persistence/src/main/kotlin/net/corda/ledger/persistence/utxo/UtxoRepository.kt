@@ -206,7 +206,7 @@ interface UtxoRepository {
 
     fun findConsumedTransactionSourcesForTransaction(entityManager: EntityManager, transactionId: String, indexes: List<Int>): List<Int>
 
-    fun findTransactionsWithStatusBeforeTime(
+    fun findTransactionsWithStatusCreatedBetweenTime(
         entityManager: EntityManager,
         status: TransactionStatus,
         from: Instant,

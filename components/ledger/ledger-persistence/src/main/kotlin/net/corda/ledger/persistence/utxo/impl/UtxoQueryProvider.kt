@@ -126,7 +126,7 @@ interface UtxoQueryProvider {
 
     val updateTransactionToVerified: String
 
-    val findTransactionsWithStatusBeforeTime: String
+    val findTransactionsWithStatusCreatedBetweenTime: String
 
-    val incrementRecoveryAttemptCount: String
+    val incrementRepairAttemptCount: String
 }
