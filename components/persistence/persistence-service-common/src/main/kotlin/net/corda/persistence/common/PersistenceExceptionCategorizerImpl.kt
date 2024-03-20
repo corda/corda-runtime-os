@@ -30,7 +30,7 @@ internal class PersistenceExceptionCategorizerImpl : PersistenceExceptionCategor
             isFatal(exception) -> FATAL
             else -> PLATFORM
         }.also {
-            logger.warn("Categorized exception as $it: $exception")
+            logger.warn("Categorized exception as $it: $exception", exception)
         }
     }
 
