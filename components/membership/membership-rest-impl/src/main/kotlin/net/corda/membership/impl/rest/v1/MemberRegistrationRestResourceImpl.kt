@@ -142,7 +142,7 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
                 )
             } catch (e: CordaRPCAPIPartitionException) {
                 throw ServiceUnavailableException(
-                    "Corda RPC API Partition Exception",
+                    e::class.java.simpleName,
                     ExceptionDetails(
                         e::class.java.name,
                         "Could not perform start registration operation: Repartition Event!"
@@ -162,12 +162,12 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
                 throw InternalServerException(e.message!!)
             } catch (e: ServiceNotReadyException) {
                 throw ServiceUnavailableException(
-                    "Service Not Ready Exception",
+                    e::class.java.simpleName,
                     ExceptionDetails(e::class.java.name, e.message!!)
                 )
             } catch (e: CordaRPCAPIPartitionException) {
                 throw ServiceUnavailableException(
-                    "Corda RPC API Partition Exception",
+                    e::class.java.simpleName,
                     ExceptionDetails(
                         e::class.java.name,
                         "Could not perform check registration operation: Repartition Event!"
@@ -193,12 +193,12 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
                 throw InternalServerException(e.message!!)
             } catch (e: ServiceNotReadyException) {
                 throw ServiceUnavailableException(
-                    "Service Not Ready Exception",
+                    e::class.java.simpleName,
                     ExceptionDetails(e::class.java.name, e.message!!)
                 )
             } catch (e: CordaRPCAPIPartitionException) {
                 throw ServiceUnavailableException(
-                    "Corda RPC API Partition Exception",
+                    e::class.java.simpleName,
                     ExceptionDetails(
                         e::class.java.name,
                         "Could not perform check specific registration operation: Repartition Event!"

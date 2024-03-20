@@ -58,7 +58,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.UUID
+import java.util.*
 import java.util.regex.PatternSyntaxException
 import javax.persistence.PessimisticLockException
 import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
@@ -643,9 +643,9 @@ class MGMRestResourceImpl internal constructor(
             } catch (e: NoSuchElementException) {
                 throw ResourceNotFoundException("${e.message}")
             } catch (e: PessimisticLockException) {
-                throw InvalidStateChangeException("Pessimistic Lock Exception", ExceptionDetails(e::class.java.name, "${e.message}"))
+                throw InvalidStateChangeException(e::class.java.simpleName, ExceptionDetails(e::class.java.name, "${e.message}"))
             } catch (e: InvalidEntityUpdateException) {
-                throw InvalidStateChangeException("Invalid Entity Update Exception", ExceptionDetails(e::class.java.name, "${e.message}"))
+                throw InvalidStateChangeException(e::class.java.simpleName, ExceptionDetails(e::class.java.name, "${e.message}"))
             }
         }
         override fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters) {
@@ -665,12 +665,12 @@ class MGMRestResourceImpl internal constructor(
                 throw ResourceNotFoundException("${e.message}")
             } catch (e: PessimisticLockException) {
                 throw InvalidStateChangeException(
-                    "Pessimistic Lock Exception",
+                    e::class.java.simpleName,
                     ExceptionDetails(e::class.java.name, "${e.message}")
                 )
             } catch (e: InvalidEntityUpdateException) {
                 throw InvalidStateChangeException(
-                    "Invalid Entity Update Exception",
+                    e::class.java.simpleName,
                     ExceptionDetails(e::class.java.name, "${e.message}")
                 )
             }
@@ -688,7 +688,7 @@ class MGMRestResourceImpl internal constructor(
                 }
             } catch (e: PessimisticLockException) {
                 throw InvalidStateChangeException(
-                    "Pessimistic Lock Exception",
+                    e::class.java.simpleName,
                     ExceptionDetails(e.javaClass.name, "${e.message}")
                 )
             }
@@ -824,7 +824,7 @@ class MGMRestResourceImpl internal constructor(
                 notAnMgmError(holdingIdentityShortHash)
             } catch (e: CordaRPCAPIPartitionException) {
                 throw ServiceUnavailableException(
-                    "Corda RPC API Partition Exception",
+                    e::class.java.simpleName,
                     ExceptionDetails(
                         e::class.java.name,
                         "Could not perform operation for $holdingIdentityShortHash: Repartition Event!"
@@ -832,7 +832,7 @@ class MGMRestResourceImpl internal constructor(
                 )
             } catch (e: ServiceNotReadyException) {
                 throw ServiceUnavailableException(
-                    "Service Not Ready Exception",
+                    e::class.java.simpleName,
                     ExceptionDetails(
                         e::class.java.name,
                         "Could not perform operation for $holdingIdentityShortHash. Service not ready."

@@ -77,7 +77,7 @@ class NetworkRestResourceImpl @Activate constructor(
         } catch (e: CordaRPCAPIPartitionException) {
             logger.warn("Could not $operation", e)
             throw ServiceUnavailableException(
-                "Corda RPC API Partition Exception",
+                e::class.java.simpleName,
                 ExceptionDetails(e::class.java.name, "Could not $operation: Repartition Event!")
             )
         } catch (e: Throwable) {

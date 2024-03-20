@@ -109,7 +109,7 @@ class MGMAdminRestResourceImpl @Activate constructor(
                 )
             } catch (e: CordaRPCAPIPartitionException) {
                 throw ServiceUnavailableException(
-                    "Corda RPC API Partition Exception",
+                    e::class.java.simpleName,
                     ExceptionDetails(
                         e::class.java.name,
                         "Could not perform operation for $holdingIdentityShortHash: Repartition Event!"

@@ -105,7 +105,7 @@ class CpiUploadRestResourceImpl @Activate constructor(
             ValidationException::class.java.name -> throw BadRequestException(ex.errorMessage, details)
             ConfigurationValidationException::class.java.name -> throw BadRequestException(ex.errorMessage, details)
             DuplicateCpiUploadException::class.java.name -> throw ResourceAlreadyExistsException(
-                "Duplicate CPI Upload Exception",
+                DuplicateCpiUploadException::class.java.simpleName,
                 ExceptionDetails(ex.errorType, ex.errorMessage)
             )
             else -> throw InternalServerException(ex.toString(), details)

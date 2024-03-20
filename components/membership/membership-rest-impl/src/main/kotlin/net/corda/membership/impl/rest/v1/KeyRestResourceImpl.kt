@@ -204,7 +204,7 @@ class KeyRestResourceImpl @Activate constructor(
             )
         } catch (e: KeyAlreadyExistsException) {
             throw ResourceAlreadyExistsException(
-                "Key Already Exists Exception",
+                e::class.java.simpleName,
                 ExceptionDetails(e::class.java.name, e.message!!)
             )
         } catch (e: InvalidParamsException) {

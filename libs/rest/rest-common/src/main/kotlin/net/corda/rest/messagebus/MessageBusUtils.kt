@@ -43,7 +43,7 @@ object MessageBusUtils {
                 ex is CordaRPCAPIPartitionException -> {
                     logger.warn("Could not $operation", ex)
                     throw ServiceUnavailableException(
-                        "Corda RPC API Partition Exception",
+                        ex::class.java.simpleName,
                         ExceptionDetails(ex::class.java.name, "Could not $operation: Repartition Event!")
                     )
                 }

@@ -42,11 +42,11 @@ fun <T : Any?> withPermissionManager(
             EntityNotFoundException::class.java.name -> throw ResourceNotFoundException(e.message!!)
             EntityAssociationDoesNotExistException::class.java.name -> throw InvalidInputDataException(e.message!!)
             EntityAssociationAlreadyExistsException::class.java.name -> throw ResourceAlreadyExistsException(
-                "Entity Association Already Exists Exception",
+                EntityAssociationAlreadyExistsException::class.java.simpleName,
                 ExceptionDetails(e.exceptionType, e.message!!)
             )
             EntityAlreadyExistsException::class.java.name -> throw ResourceAlreadyExistsException(
-                "Entity Already Exists Exception",
+                EntityAlreadyExistsException::class.java.simpleName,
                 ExceptionDetails(e.exceptionType, e.message!!)
             )
             else -> throw InternalServerException(
@@ -56,7 +56,7 @@ fun <T : Any?> withPermissionManager(
     } catch (e: CordaRPCAPIPartitionException) {
         logger.warn("Error waiting for permission management response.", e)
         throw ServiceUnavailableException(
-            "Corda RPC API Partition Exception",
+            e::class.java.simpleName,
             ExceptionDetails(e::class.java.name, "Error waiting for permission management response: Repartition Event!")
         )
     } catch (e: CordaRPCAPISenderException) {

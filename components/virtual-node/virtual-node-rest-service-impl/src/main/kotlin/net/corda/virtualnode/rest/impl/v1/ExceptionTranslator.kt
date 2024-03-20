@@ -29,7 +29,7 @@ class ExceptionTranslator {
                 -> BadRequestException(exception.errorMessage)
                 VirtualNodeAlreadyExistsException::class.java.name
                 -> ResourceAlreadyExistsException(
-                    "Virtual Node Already Exists Exception",
+                    VirtualNodeAlreadyExistsException::class.java.simpleName,
                     ExceptionDetails(exception.errorType, exception.errorMessage)
                 )
                 else
