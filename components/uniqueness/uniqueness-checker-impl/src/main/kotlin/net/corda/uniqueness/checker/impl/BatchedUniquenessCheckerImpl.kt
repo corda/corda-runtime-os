@@ -136,8 +136,8 @@ class BatchedUniquenessCheckerImpl(
 
         // TODO - Re-instate batch processing logic based on number of states if needed - need to
         // establish what batching there is in the message bus layer first
-        processNotarizations(groupedRequests, results)
-        processChecks(groupedRequests, results)
+        processUniquenessChecks(groupedRequests, results)
+        processExistingUniquenessChecks(groupedRequests, results)
 
         CordaMetrics.Metric.UniquenessCheckerBatchExecutionTime
             .builder()
@@ -152,7 +152,7 @@ class BatchedUniquenessCheckerImpl(
         return results
     }
 
-    private fun processNotarizations(
+    private fun processUniquenessChecks(
         groupedRequests: Map<UniquenessCheckType, List<Pair<UniquenessCheckRequestInternal, UniquenessCheckRequestAvro>>>,
         results: HashMap<UniquenessCheckRequestAvro, UniquenessCheckResponseAvro>
     ) {
@@ -165,7 +165,7 @@ class BatchedUniquenessCheckerImpl(
         }
     }
 
-    private fun processChecks(
+    private fun processExistingUniquenessChecks(
         groupedRequests: Map<UniquenessCheckType, List<Pair<UniquenessCheckRequestInternal, UniquenessCheckRequestAvro>>>,
         results: HashMap<UniquenessCheckRequestAvro, UniquenessCheckResponseAvro>
     ) {
