@@ -14,9 +14,9 @@ import net.corda.membership.impl.registration.VerificationResponseKeys.VERIFIED
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
+import net.corda.membership.lib.createMembershipAuthenticatedMessageRecord
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.p2p.messaging.P2pRecordsFactory
-import net.corda.p2p.messaging.P2pRecordsFactory.Companion.MEMBERSHIP_REGISTRATION_PREFIX
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
@@ -75,7 +75,6 @@ internal class ProcessMemberVerificationRequestHandler(
                         registrationId,
                         KeyValuePairList(payload)
                     ),
-                    MEMBERSHIP_REGISTRATION_PREFIX,
                 )
             ) + commands
         )

@@ -57,6 +57,7 @@ import net.corda.membership.impl.synchronisation.dummy.TestMembershipPersistence
 import net.corda.membership.impl.synchronisation.dummy.TestMembershipQueryClient
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
+import net.corda.membership.lib.MEMBERSHIP_P2P_SUBSYSTEM
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -242,7 +243,6 @@ class SynchronisationIntegrationTest {
                 ConfigValueFactory.fromAnyRef(1L)
             ).root()
             .render(ConfigRenderOptions.concise())
-        const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
         const val CATEGORY = "SESSION_INIT"
         const val SCHEME = ECDSA_SECP256R1_CODE_NAME
         const val EPOCH = "5"

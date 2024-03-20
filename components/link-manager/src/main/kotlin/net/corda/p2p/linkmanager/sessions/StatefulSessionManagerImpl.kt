@@ -47,7 +47,7 @@ import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Compa
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
 import net.corda.p2p.linkmanager.state.SessionState
 import net.corda.p2p.messaging.P2pRecordsFactory
-import net.corda.p2p.messaging.P2pRecordsFactory.Companion.P2P_PREFIX
+import net.corda.p2p.messaging.Subsystem
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.time.Clock
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -1164,8 +1164,7 @@ internal class StatefulSessionManagerImpl(
             source.toAvro(),
             destination.toAvro(),
             ReEstablishSessionMessage(sessionId),
-            LINK_MANAGER_SUBSYSTEM,
-            P2P_PREFIX,
+            Subsystem.LINK_MANAGER,
             filter = MembershipStatusFilter.ACTIVE,
         )
         logger.info("Sending '{}' to session initiator '{}'.", ReEstablishSessionMessage::class.simpleName, destination)

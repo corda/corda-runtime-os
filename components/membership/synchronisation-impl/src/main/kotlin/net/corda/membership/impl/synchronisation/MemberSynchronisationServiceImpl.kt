@@ -34,6 +34,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.createMembershipAuthenticatedMessageRecord
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -46,7 +47,6 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.messaging.P2pRecordsFactory
-import net.corda.p2p.messaging.P2pRecordsFactory.Companion.MEMBERSHIP_DATA_DISTRIBUTION_PREFIX
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
@@ -419,7 +419,6 @@ class MemberSynchronisationServiceImpl internal constructor(
                 // TODO Set CPI whitelist Hash
                 memberHash,
             ),
-            messageIdPrefix = MEMBERSHIP_DATA_DISTRIBUTION_PREFIX,
         )
     }
 

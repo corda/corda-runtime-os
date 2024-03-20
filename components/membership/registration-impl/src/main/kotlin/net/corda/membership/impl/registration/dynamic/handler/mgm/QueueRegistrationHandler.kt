@@ -18,12 +18,12 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.KEYS_PEM_SUFFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS
 import net.corda.membership.lib.VersionedMessageBuilder
+import net.corda.membership.lib.createMembershipAuthenticatedMessageRecord
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.messaging.P2pRecordsFactory
-import net.corda.p2p.messaging.P2pRecordsFactory.Companion.MEMBERSHIP_REGISTRATION_PREFIX
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -139,7 +139,6 @@ internal class QueueRegistrationHandler(
                 source = command.mgm,
                 destination = command.member,
                 content = statusUpdateMessage,
-                messageIdPrefix = MEMBERSHIP_REGISTRATION_PREFIX,
                 minutesToWait = 5,
                 filter = MembershipStatusFilter.PENDING
             )
