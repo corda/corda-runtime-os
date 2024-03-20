@@ -2,7 +2,11 @@ package net.corda.messaging.emulation.subscription.eventsource
 
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
-import net.corda.messaging.emulation.topic.model.*
+import net.corda.messaging.emulation.topic.model.CommitStrategy
+import net.corda.messaging.emulation.topic.model.Consumer
+import net.corda.messaging.emulation.topic.model.OffsetStrategy
+import net.corda.messaging.emulation.topic.model.PartitionStrategy
+import net.corda.messaging.emulation.topic.model.RecordMetadata
 
 class EventSourceConsumer<K : Any, V : Any>(
     private val subscription: EventSourceSubscription<K, V>,

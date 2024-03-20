@@ -7,7 +7,12 @@ import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.service.TopicService
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.*
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 
 
 class EventSourceSubscriptionTest {

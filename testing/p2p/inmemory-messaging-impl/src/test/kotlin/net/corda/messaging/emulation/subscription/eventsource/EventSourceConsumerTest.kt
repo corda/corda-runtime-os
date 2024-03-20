@@ -11,7 +11,9 @@ import net.corda.messaging.emulation.topic.model.RecordMetadata
 import net.corda.messaging.emulation.topic.service.TopicService
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.*
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 
 class EventSourceConsumerTest {
     private val processor = mock< EventSourceProcessor<String, SubscriptionConfig>> {

@@ -5,9 +5,11 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
+import net.corda.messaging.api.processor.EventSourceProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
