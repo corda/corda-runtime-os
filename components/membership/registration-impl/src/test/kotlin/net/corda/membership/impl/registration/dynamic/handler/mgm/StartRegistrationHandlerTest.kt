@@ -53,7 +53,6 @@ import net.corda.membership.lib.VersionedMessageBuilder
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.toMap
-import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -62,6 +61,7 @@ import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.messaging.P2pRecordsFactory
 import net.corda.schema.Schemas
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.parse
@@ -226,9 +226,9 @@ class StartRegistrationHandlerTest {
         on { serial } doReturn 1L
     }
     private val authenticatedMessageRecord = mock<Record<String, AppMessage>>()
-    private val p2pRecordsFactory = mock<P2pRecordsFactory> {
+    private val membershipP2PRecordsFactory = mock<P2pRecordsFactory> {
         on {
-            createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any())
+            createAuthenticatedMessageRecord(any(), any(), any(), any(), any(), anyOrNull(), any(), any())
         } doReturn authenticatedMessageRecord
     }
 
@@ -401,7 +401,10 @@ class StartRegistrationHandlerTest {
         }
 
         val results = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
-        verify(p2pRecordsFactory, never()).createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any())
+        verify(
+            membershipP2PRecordsFactory,
+            never()
+        ).createAuthenticatedMessageRecord(any(), any(), any(), any(), any(), anyOrNull(), any(), any())
         assertThat(results.outputStates)
             .hasSize(2)
         results.outputStates.forEach { assertThat(it.value).isNotInstanceOf(AppMessage::class.java) }

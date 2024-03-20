@@ -46,6 +46,7 @@ import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Compa
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
 import net.corda.p2p.linkmanager.sessions.metadata.toCounterparties
 import net.corda.p2p.linkmanager.state.SessionState
+import net.corda.p2p.messaging.P2pRecordsFactory
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.time.Clock
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -76,6 +77,7 @@ internal class StatefulSessionManagerImpl(
     private val schemaRegistry: AvroSchemaRegistry,
     private val sessionCache: SessionCache,
     private val sessionEventPublisher: StatefulSessionEventPublisher,
+    p2pRecordsFactory: P2pRecordsFactory,
 ) : SessionManager {
     companion object {
         const val LINK_MANAGER_SUBSYSTEM = "link-manager"
@@ -1118,7 +1120,7 @@ internal class StatefulSessionManagerImpl(
         sessionManagerImpl,
     )
     private val reEstablishmentMessageSender = ReEstablishmentMessageSender(
-        schemaRegistry,
+        p2pRecordsFactory,
         sessionManagerImpl,
     )
     private val stateManager = StateManagerWrapper(

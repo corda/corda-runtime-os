@@ -1,8 +1,10 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.SessionEncryptionOpsClient
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -19,12 +21,11 @@ import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMapImpl
 import net.corda.p2p.linkmanager.inbound.InboundLinkManager
 import net.corda.p2p.linkmanager.outbound.OutboundLinkManager
+import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import java.util.UUID
-import net.corda.crypto.client.SessionEncryptionOpsClient
-import net.corda.schema.registry.AvroSchemaRegistry
 
 @Suppress("LongParameterList")
 class LinkManager(
@@ -32,6 +33,7 @@ class LinkManager(
     publisherFactory: PublisherFactory,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     messagingConfiguration: SmartConfig,
     groupPolicyProvider: GroupPolicyProvider,
     virtualNodeInfoReadService: VirtualNodeInfoReadService,
@@ -60,6 +62,7 @@ class LinkManager(
 
     private val commonComponents = CommonComponents(
         lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,
+        cordaAvroSerializationFactory = cordaAvroSerializationFactory,
         linkManagerHostingMap = linkManagerHostingMap,
         groupPolicyProvider = groupPolicyProvider,
         membershipGroupReaderProvider = membershipGroupReaderProvider,
