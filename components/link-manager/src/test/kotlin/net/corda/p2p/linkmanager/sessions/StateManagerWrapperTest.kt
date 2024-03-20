@@ -4,6 +4,8 @@ import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.p2p.crypto.protocol.api.CheckRevocation
+import net.corda.p2p.linkmanager.state.SessionState
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -28,10 +30,24 @@ class StateManagerWrapperTest {
     private val sessionCache = mock<SessionCache> {
         on { validateStatesAndScheduleExpiry(keysToStates) } doReturn keysToStates
     }
+    private val sessionState = mock<SessionState>()
+    private val checkRevocation = mock<CheckRevocation>()
+    private val reEstablishmentMessageSender = mock<ReEstablishmentMessageSender>()
+    private val stateConvertor = mock<StateConvertor> {
+        on {
+            toCordaSessionState(
+                state,
+                checkRevocation,
+            )
+        } doReturn sessionState
+    }
 
     private val wrapper = StateManagerWrapper(
         stateManager,
         sessionCache,
+        stateConvertor,
+        checkRevocation,
+        reEstablishmentMessageSender,
     )
 
     @Test
@@ -52,7 +68,38 @@ class StateManagerWrapperTest {
     fun `get returns the correct value`() {
         val ret = wrapper.get(keys)
 
-        assertThat(ret).isEqualTo(keysToStates)
+        assertThat(ret).isEqualTo(
+            mapOf(
+                "key1" to StateManagerWrapper.StateAndSessionState(
+                    state,
+                    sessionState,
+                )
+            )
+        )
+    }
+
+    @Test
+    fun `get will not return unrecoverable state`() {
+        whenever(stateConvertor.toCordaSessionState(state, checkRevocation)).thenReturn(null)
+        val ret = wrapper.get(keys)
+
+        assertThat(ret).isEmpty()
+    }
+
+    @Test
+    fun `get will forget unrecoverable state`() {
+        whenever(stateConvertor.toCordaSessionState(state, checkRevocation)).thenReturn(null)
+        wrapper.get(keys)
+
+        verify(sessionCache).forgetState(state)
+    }
+
+    @Test
+    fun `get will send a re-establish request for unrecoverable state`() {
+        whenever(stateConvertor.toCordaSessionState(state, checkRevocation)).thenReturn(null)
+        wrapper.get(keys)
+
+        verify(reEstablishmentMessageSender).send(state)
     }
 
     @Test
@@ -73,7 +120,38 @@ class StateManagerWrapperTest {
     fun `findStatesMatchingAny returns the correct value`() {
         val ret = wrapper.findStatesMatchingAny(filters)
 
-        assertThat(ret).isEqualTo(keysToStates)
+        assertThat(ret).isEqualTo(
+            mapOf(
+                "key1" to StateManagerWrapper.StateAndSessionState(
+                    state,
+                    sessionState,
+                )
+            )
+        )
+    }
+
+    @Test
+    fun `findStatesMatchingAny will not return unrecoverable state`() {
+        whenever(stateConvertor.toCordaSessionState(state, checkRevocation)).thenReturn(null)
+        val ret = wrapper.findStatesMatchingAny(filters)
+
+        assertThat(ret).isEmpty()
+    }
+
+    @Test
+    fun `findStatesMatchingAny will forget unrecoverable state`() {
+        whenever(stateConvertor.toCordaSessionState(state, checkRevocation)).thenReturn(null)
+        wrapper.findStatesMatchingAny(filters)
+
+        verify(sessionCache).forgetState(state)
+    }
+
+    @Test
+    fun `findStatesMatchingAny will send a re-establish request for unrecoverable state`() {
+        whenever(stateConvertor.toCordaSessionState(state, checkRevocation)).thenReturn(null)
+        wrapper.findStatesMatchingAny(filters)
+
+        verify(reEstablishmentMessageSender).send(state)
     }
 
     @Test

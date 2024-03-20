@@ -4,11 +4,13 @@ import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.metrics.CordaMetrics
+import net.corda.p2p.crypto.protocol.api.CheckRevocation
 import net.corda.p2p.linkmanager.metrics.recordP2PMetric
 import net.corda.p2p.linkmanager.metrics.recordSessionCreationTime
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.isOutbound
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.toOutbound
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
+import net.corda.p2p.linkmanager.state.SessionState
 import net.corda.p2p.linkmanager.state.direction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -16,21 +18,29 @@ import org.slf4j.LoggerFactory
 internal class StateManagerWrapper(
     private val stateManager: StateManager,
     private val sessionCache: SessionCache,
+    private val stateConvertor: StateConvertor,
+    private val checkRevocation: CheckRevocation,
+    private val reEstablishmentMessageSender: ReEstablishmentMessageSender,
 ) {
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(StateManagerWrapper::class.java)
     }
+
+    data class StateAndSessionState(
+        val state: State,
+        val sessionState: SessionState,
+    )
     fun get(
         keys: Collection<String>,
     ) = sessionCache.validateStatesAndScheduleExpiry(
         stateManager.get(keys),
-    )
+    ).toStates()
 
     fun findStatesMatchingAny(
         filters: Collection<MetadataFilter>,
     ) = sessionCache.validateStatesAndScheduleExpiry(
         stateManager.findByMetadataMatchingAny(filters),
-    )
+    ).toStates()
 
     fun upsert(
         changes: Collection<StateManagerAction>,
@@ -91,5 +101,20 @@ internal class StateManagerWrapper(
         updates.filter { it.isReplay }.groupBy { it.state.direction() }.forEach {
             recordP2PMetric(CordaMetrics.Metric.SessionMessageReplayCount, it.key, it.value.size.toDouble())
         }
+    }
+    private fun Map<String, State>.toStates():  Map<String, StateAndSessionState> {
+        return this.mapNotNull { (key, state) ->
+            val session = stateConvertor.toCordaSessionState(
+                state,
+                checkRevocation,
+            )
+            if (session == null) {
+                sessionCache.forgetState(state)
+                reEstablishmentMessageSender.send(state)
+                null
+            } else {
+                key to StateAndSessionState(state, session)
+            }
+        }.toMap()
     }
 }
