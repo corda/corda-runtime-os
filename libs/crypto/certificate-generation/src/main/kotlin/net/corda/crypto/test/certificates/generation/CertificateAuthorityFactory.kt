@@ -44,12 +44,12 @@ object CertificateAuthorityFactory {
     }
 
     /**
-     * Create a local certificates authority that support revocation of certificate.
+     * Create a local certificate authority that support certificate revocation.
      *
      * @param keysFactoryDefinitions - The keys factory definitions (currently, only RSA and EC are supported)
      * @param validDuration - The duration after which the certificate will become invalid
      * @param host - The revocation server host name (default to localhost).
-     * @param port - The revocation server port number (default to a random open port).
+     * @param port - The revocation server port number (default to a random unused port).
      */
     fun createRevocableAuthority(
         keysFactoryDefinitions: KeysFactoryDefinitions,
