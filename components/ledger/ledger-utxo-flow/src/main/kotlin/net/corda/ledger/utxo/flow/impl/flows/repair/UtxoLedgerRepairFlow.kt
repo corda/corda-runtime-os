@@ -147,7 +147,6 @@ class UtxoLedgerRepairFlow(
 
     @Suspendable
     fun findTransactionsToRepair(): List<SecureHash> {
-        // TODO RENAME THIS METHOD
         return persistenceService.findTransactionsWithStatusCreatedBetweenTime(
             TransactionStatus.UNVERIFIED,
             from,
