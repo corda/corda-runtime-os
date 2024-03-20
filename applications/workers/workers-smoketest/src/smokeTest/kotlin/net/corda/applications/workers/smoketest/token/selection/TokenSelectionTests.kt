@@ -162,9 +162,49 @@ class TokenSelectionTests {
         assertThat(tokenSelectionResult2.flowError).isNull()
         assertThat(tokenSelectionResult2.flowResult).isEqualTo("SUCCESS")
     }
-}
 
-private data class TokenBalanceQueryResponseMsg(
-    val availableBalance: BigDecimal,
-    val totalBalance: BigDecimal
-)
+    @Test
+    fun `Test priority selection strategy`(testInfo: TestInfo){
+        val idGenerator = TestRequestIdGenerator(testInfo)
+        // Create a simple UTXO transaction
+        val input = "token test input"
+        val utxoFlowRequestId = startRestFlow(
+            bobHoldingId,
+            mapOf("input" to input, "members" to listOf(aliceX500), "notary" to NOTARY_SERVICE_X500),
+            "com.r3.corda.demo.utxo.TokenPriorityUtxoDemoFlow",
+            requestId = idGenerator.nextId
+        )
+        val utxoFlowResult = awaitRestFlowFinished(bobHoldingId, utxoFlowRequestId)
+        assertThat(utxoFlowResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
+        assertThat(utxoFlowResult.flowError).isNull()
+
+        // Attempt to select the token created by the transaction
+        val tokenSelectionFlowId1 = startRestFlow(
+            aliceHoldingId,
+            mapOf(),
+            "com.r3.corda.demo.utxo.token.selection.PriortyTokenSelectionFlow",
+            requestId = idGenerator.nextId
+        )
+        val tokenSelectionResult1 = awaitRestFlowFinished(aliceHoldingId, tokenSelectionFlowId1)
+        assertThat(tokenSelectionResult1.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
+        assertThat(tokenSelectionResult1.flowError).isNull()
+        assertThat(tokenSelectionResult1.flowResult).isEqualTo("SUCCESS")
+
+        // Attempt to select the token created by the transaction
+        val tokenSelectionFlowId2 = startRestFlow(
+            aliceHoldingId,
+            mapOf(),
+            "com.r3.corda.demo.utxo.token.selection.PriortyTokenSelectionFlow",
+            requestId = idGenerator.nextId
+        )
+        val tokenSelectionResult2 = awaitRestFlowFinished(aliceHoldingId, tokenSelectionFlowId2)
+        assertThat(tokenSelectionResult2.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
+        assertThat(tokenSelectionResult2.flowError).isNull()
+        assertThat(tokenSelectionResult2.flowResult).isEqualTo("SUCCESS")
+    }
+
+    private data class TokenBalanceQueryResponseMsg(
+        val availableBalance: BigDecimal,
+        val totalBalance: BigDecimal
+    )
+}
