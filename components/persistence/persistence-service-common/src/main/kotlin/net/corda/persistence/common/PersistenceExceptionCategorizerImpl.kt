@@ -9,6 +9,7 @@ import org.hibernate.TransactionException
 import org.hibernate.cache.CacheException
 import org.hibernate.exception.JDBCConnectionException
 import org.hibernate.exception.LockAcquisitionException
+import org.slf4j.LoggerFactory
 import java.sql.SQLTransientConnectionException
 import javax.persistence.LockTimeoutException
 import javax.persistence.OptimisticLockException
@@ -18,11 +19,18 @@ import javax.persistence.RollbackException
 import javax.persistence.TransactionRequiredException
 
 internal class PersistenceExceptionCategorizerImpl : PersistenceExceptionCategorizer {
+
+    private companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
     override fun categorize(exception: Exception): PersistenceExceptionType {
         return when {
             isTransient(exception) -> TRANSIENT
             isFatal(exception) -> FATAL
             else -> PLATFORM
+        }.also {
+            logger.warn("Categorized exception as $it: $exception")
         }
     }
 
@@ -55,4 +63,22 @@ internal class PersistenceExceptionCategorizerImpl : PersistenceExceptionCategor
             else -> false
         }
     }
+/*
+    @Suppress("UNCHECKED_CAST")
+    private fun <T : Throwable> Throwable?.meetsCriteria(
+        exceptionType: Class<T>,
+        check: (T) -> Boolean = { _ -> true }
+    ): Boolean {
+        if (this == null) {
+            return false
+        }
+        val meetsCriteria = if (exceptionType.isAssignableFrom(this::class.java)) {
+            val param = this as? T
+            param?.let { check(it) } ?: false
+        } else {
+            false
+        }
+        return (meetsCriteria || cause.meetsCriteria(exceptionType, check))
+    }
+    */
 }
