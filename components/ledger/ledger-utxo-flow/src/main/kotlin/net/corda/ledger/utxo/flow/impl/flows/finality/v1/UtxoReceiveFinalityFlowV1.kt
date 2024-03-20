@@ -45,7 +45,11 @@ class UtxoReceiveFinalityFlowV1(
     private val session: FlowSession,
     private val validator: UtxoTransactionValidator
 ) : UtxoFinalityBaseV1() {
-
+    // Runs on the other vnodes in a UTXO transaction when one vnode initiates a finality flow.
+    // Checks signatures, contracts (verification) and runs `validator` which is a user supplied callback
+    // which can accept or reject the transaction. Should all that work the transaction is persisted and
+    // we check centrally that the transaction wins the race of consuming states at most once, using a notary,
+    // then persist that we notarized the approved transaction.
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(UtxoReceiveFinalityFlowV1::class.java)
     }
