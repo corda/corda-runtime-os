@@ -4,6 +4,7 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
 import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.HttpApiException
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.ResourceAlreadyExistsException
@@ -27,7 +28,10 @@ class ExceptionTranslator {
                 CpiNotFoundException::class.java.name
                 -> BadRequestException(exception.errorMessage)
                 VirtualNodeAlreadyExistsException::class.java.name
-                -> ResourceAlreadyExistsException(exception.errorMessage)
+                -> ResourceAlreadyExistsException(
+                    "Virtual Node Already Exists Exception",
+                    ExceptionDetails(exception.errorType, exception.errorMessage)
+                )
                 else
                 -> InternalServerException(exception.errorMessage)
             }

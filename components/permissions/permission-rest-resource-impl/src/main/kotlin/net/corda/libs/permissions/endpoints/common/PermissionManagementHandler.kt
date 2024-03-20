@@ -10,6 +10,7 @@ import net.corda.libs.permissions.manager.exception.UnexpectedPermissionResponse
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
+import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.HttpApiException
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.InvalidInputDataException
@@ -40,8 +41,14 @@ fun <T : Any?> withPermissionManager(
         when (e.exceptionType) {
             EntityNotFoundException::class.java.name -> throw ResourceNotFoundException(e.message!!)
             EntityAssociationDoesNotExistException::class.java.name -> throw InvalidInputDataException(e.message!!)
-            EntityAssociationAlreadyExistsException::class.java.name -> throw ResourceAlreadyExistsException(e.message!!)
-            EntityAlreadyExistsException::class.java.name -> throw ResourceAlreadyExistsException(e.message!!)
+            EntityAssociationAlreadyExistsException::class.java.name -> throw ResourceAlreadyExistsException(
+                "Entity Association Already Exists Exception",
+                ExceptionDetails(e.exceptionType, e.message!!)
+            )
+            EntityAlreadyExistsException::class.java.name -> throw ResourceAlreadyExistsException(
+                "Entity Already Exists Exception",
+                ExceptionDetails(e.exceptionType, e.message!!)
+            )
             else -> throw InternalServerException(
                 details = buildExceptionCauseDetails(e.exceptionType, e.message ?: "Remote permission management error occurred.")
             )

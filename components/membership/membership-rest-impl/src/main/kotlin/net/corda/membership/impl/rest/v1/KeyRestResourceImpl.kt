@@ -26,6 +26,7 @@ import net.corda.membership.rest.v1.KeyRestResource
 import net.corda.membership.rest.v1.types.response.KeyMetaData
 import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceAlreadyExistsException
 import net.corda.rest.exception.ResourceNotFoundException
@@ -202,7 +203,10 @@ class KeyRestResourceImpl @Activate constructor(
                 }.publicKeyId()
             )
         } catch (e: KeyAlreadyExistsException) {
-            throw ResourceAlreadyExistsException(e.message!!)
+            throw ResourceAlreadyExistsException(
+                "Key Already Exists Exception",
+                ExceptionDetails(e::class.java.name, e.message!!)
+            )
         } catch (e: InvalidParamsException) {
             throw InvalidInputDataException(e.message!!)
         }
