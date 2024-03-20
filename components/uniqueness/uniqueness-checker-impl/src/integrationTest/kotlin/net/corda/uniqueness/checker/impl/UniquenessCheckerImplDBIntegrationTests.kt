@@ -6,6 +6,7 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
+import net.corda.data.uniqueness.UniquenessCheckType
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.DBConfigurationException
@@ -21,10 +22,13 @@ import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl
 import net.corda.uniqueness.backingstore.impl.JPABackingStoreTestUtilities
 import net.corda.uniqueness.checker.UniquenessChecker
+import net.corda.uniqueness.utils.UniquenessAssertions
 import net.corda.uniqueness.utils.UniquenessAssertions.assertInputStateConflictResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertMalformedRequestResponse
+import net.corda.uniqueness.utils.UniquenessAssertions.assertNotPreviouslySeenTransactionResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertReferenceStateConflictResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertStandardSuccessResponse
+import net.corda.uniqueness.utils.UniquenessAssertions.assertTimeWindowBeforeLowerBoundResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertTimeWindowOutOfBoundsResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertUnhandledExceptionResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertUniqueCommitTimestamps
@@ -117,8 +121,10 @@ class UniquenessCheckerImplDBIntegrationTests {
 
     private fun currentTime(): Instant = testClock.peekTime()
 
-    private fun newRequestBuilder(txId: SecureHash = SecureHashUtils.randomSecureHash())
-            : UniquenessCheckRequestAvro.Builder =
+    private fun newRequestBuilder(
+        txId: SecureHash = SecureHashUtils.randomSecureHash(),
+        type: UniquenessCheckType = UniquenessCheckType.NOTARIZE
+    ): UniquenessCheckRequestAvro.Builder =
         UniquenessCheckRequestAvro.newBuilder(
             UniquenessCheckRequestAvro(
                 defaultHoldingIdentity.toAvro(),
@@ -129,7 +135,8 @@ class UniquenessCheckerImplDBIntegrationTests {
                 emptyList(),
                 0,
                 null,
-                defaultTimeWindowUpperBound
+                defaultTimeWindowUpperBound,
+                type
             )
         )
 
@@ -1890,7 +1897,7 @@ class UniquenessCheckerImplDBIntegrationTests {
 
             // check that the transaction is known via the checker code
             processRequests(
-                newRequestBuilder(transactionId)
+                newRequestBuilder(transactionId, UniquenessCheckType.CHECK)
                     .build()
             ).let { responses ->
                 assertAll(
@@ -1920,7 +1927,7 @@ class UniquenessCheckerImplDBIntegrationTests {
 
             // check that the failure gets replayed via the checker
             processRequests(
-                newRequestBuilder(transactionId)
+                newRequestBuilder(transactionId, UniquenessCheckType.CHECK)
                     .build()
             ).let { responses ->
                 assertAll(
@@ -1933,7 +1940,7 @@ class UniquenessCheckerImplDBIntegrationTests {
 
 
         @Test
-        fun `transaction that has not been notarized returns as failed but does not consume things`() {
+        fun `transaction that has not been notarized returns as failed and does not consume things`() {
 
             val inputs = generateUnspentStates(2)
 
@@ -1941,20 +1948,18 @@ class UniquenessCheckerImplDBIntegrationTests {
 
             // check if transaction has yet been notarized
             processRequests(
-                newRequestBuilder(transactionId)
+                newRequestBuilder(transactionId, UniquenessCheckType.CHECK)
                     .setTimeWindowLowerBound(currentTime().minusSeconds(10))
                     .setTimeWindowUpperBound(currentTime().plusSeconds(10))
                     .build()
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertUnhandledExceptionResponse(
-                        responses[0], "UniquenessCheckErrorNotPreviouslyNotarizedException"
-                    )
-                })
+                    { assertNotPreviouslySeenTransactionResponse(responses[0]) }
+                )
             }
 
-            // check that it still can be notarized
+            // check that it can still be notarized
             processRequests(
                 newRequestBuilder(transactionId)
                     .setInputStates(inputs)
@@ -1976,7 +1981,7 @@ class UniquenessCheckerImplDBIntegrationTests {
 
             // check for unknown transaction after time window elapsed
             processRequests(
-                newRequestBuilder()
+                newRequestBuilder(type = UniquenessCheckType.CHECK)
                     .setTimeWindowUpperBound(upperBound)
                     .build()
             ).let { responses ->
@@ -1993,21 +1998,18 @@ class UniquenessCheckerImplDBIntegrationTests {
 
         @Test
         fun `transaction that is not notarized and before time window fails in check but can still be notarized later`(){
-            // check for unkown transaction before time window
+            // check for unknown transaction before time window
             val lowerBound = currentTime().plusSeconds(100)
             val transactionId = SecureHashUtils.randomSecureHash()
             processRequests(
-                newRequestBuilder(transactionId)
+                newRequestBuilder(transactionId, UniquenessCheckType.CHECK)
                     .setTimeWindowLowerBound(lowerBound)
                     .build()
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    {
-                        assertTimeWindowOutOfBoundsResponse(
-                            responses[0], lowerBound, defaultTimeWindowUpperBound
-                        )
-                    })
+                    { assertTimeWindowBeforeLowerBoundResponse(responses[0]) }
+                )
             }
 
             // move clock into time window
@@ -2015,15 +2017,13 @@ class UniquenessCheckerImplDBIntegrationTests {
 
             // check for transaction now should return that the notary doesn't know about it
             processRequests(
-                newRequestBuilder(transactionId)
+                newRequestBuilder(transactionId, UniquenessCheckType.CHECK)
                     .setTimeWindowLowerBound(lowerBound)
                     .build()
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { assertUnhandledExceptionResponse(
-                        responses[0], "UniquenessCheckErrorNotPreviouslyNotarizedException"
-                    )}
+                    { assertNotPreviouslySeenTransactionResponse(responses[0]) }
                 )
             }
         }
@@ -2060,7 +2060,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                     .setTimeWindowUpperBound(upperBound)
                     .setNumOutputStates(3)
                     .build(),
-                newRequestBuilder(transactionId)
+                newRequestBuilder(transactionId, UniquenessCheckType.CHECK)
                     .setTimeWindowLowerBound(currentTime().minusSeconds(10))
                     .setTimeWindowUpperBound(currentTime().plusSeconds(10))
                     .build()
@@ -2073,7 +2073,5 @@ class UniquenessCheckerImplDBIntegrationTests {
                 )
             }
         }
-
-
     }
 }
