@@ -183,7 +183,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         if (retryableFailures.isNotEmpty() || transients.isNotEmpty()) {
             throw CordaMessageAPIIntermittentException(
                 "Retrying poll and process due to ${retryableFailures.size}/${transients.size} " +
-                        "retryable failures/transient failures (out of ${outputs.size} total outputs"
+                        "retryable failures/transient failures (out of ${outputs.size} total outputs)"
             )
         }
     }
