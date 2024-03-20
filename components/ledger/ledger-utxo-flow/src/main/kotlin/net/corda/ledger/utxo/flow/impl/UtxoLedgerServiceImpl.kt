@@ -79,6 +79,9 @@ class UtxoLedgerServiceImpl @Activate constructor(
      * Therefore the methods of this class are typically running from within flow sandboxes, and are subject
      * to the limitations of flows. In particular since flows use Quasar every method that can be block must be annotated
      * @Suspendable, and since it is not possible to annotate lambdas they sometimes cannot be used.
+     *
+     * (This comment is here rather than the UtxoLedgerService interface javadoc since UtxoLedgerService is public API
+     * and this comments concerns implementation details).
      */
     private companion object {
         const val FIND_UNCONSUMED_STATES_BY_EXACT_TYPE = "CORDA_FIND_UNCONSUMED_STATES_BY_EXACT_TYPE"
