@@ -78,20 +78,16 @@ internal class LifecycleProcessor(
             is StartEvent -> {
                 processStartEvent(event, coordinator)
             }
-
             is StopEvent -> {
                 processStopEvent(event, coordinator)
             }
-
             is SetUpTimer -> {
                 processSetupTimerEvent(event, timerGenerator)
             }
-
             is CancelTimer -> {
                 state.cancelTimer(event.key)
                 true
             }
-
             is TimerEvent -> {
                 if (state.isRunning && state.isTimerRunning(event.key)) {
                     val succeeded = runUserEventHandler(event, coordinator)
@@ -105,28 +101,23 @@ internal class LifecycleProcessor(
                     true
                 }
             }
-
             is NewRegistration -> {
                 state.registrations.add(event.registration)
                 event.registration.updateCoordinatorStatus(coordinator, state.status)
                 true
             }
-
             is CancelRegistration -> {
                 state.registrations.remove(event.registration)
                 true
             }
-
             is TrackRegistration -> {
                 state.trackedRegistrations.add(event.registration)
                 true
             }
-
             is StopTrackingRegistration -> {
                 state.trackedRegistrations.remove(event.registration)
                 true
             }
-
             is StatusChange -> {
                 if (state.isRunning) {
                     updateStatus(coordinator, event.newStatus, event.reason)
@@ -138,11 +129,9 @@ internal class LifecycleProcessor(
                 }
                 true
             }
-
             is CloseCoordinator -> {
                 processClose(coordinator)
             }
-
             else -> {
                 if (state.isRunning) {
                     runUserEventHandler(event, coordinator)
@@ -177,9 +166,6 @@ internal class LifecycleProcessor(
             state.isRunning = false
             val (newStatus, reason) = if (event.errored) {
                 Pair(LifecycleStatus.ERROR, ERRORED_REASON)
-            // Ensure we don't transition from an error state
-            } else if (coordinator.status == LifecycleStatus.ERROR) {
-                Pair(LifecycleStatus.ERROR, STOPPED_REASON)
             } else {
                 Pair(LifecycleStatus.DOWN, STOPPED_REASON)
             }
@@ -278,7 +264,7 @@ internal class LifecycleProcessor(
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun <T : Resource> addManagedResource(name: String, generator: () -> Resource): T {
+    fun <T: Resource> addManagedResource(name: String, generator: () -> Resource): T {
         return managedResources.compute(name) { _, old ->
             old?.close()
             generator.invoke()
@@ -291,7 +277,7 @@ internal class LifecycleProcessor(
 
     internal fun closeManagedResources(resources: Set<String>?) {
         managedResources.entries.removeIf { (name, resource) ->
-            if ((resources == null) || (resources.contains(name))) {
+            if((resources == null) || (resources.contains(name))) {
                 resource.close()
                 true
             } else {
