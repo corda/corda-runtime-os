@@ -238,54 +238,55 @@ class P2PLayerEndToEndTest {
     @Timeout(60)
     fun `two hosts can exchange data messages over p2p using RSA keys with revocable certificate`() {
         val numberOfMessages = 10
-        val ca = CertificateAuthorityFactory.createRevocableAuthority(
+        CertificateAuthorityFactory.createRevocableAuthority(
             RSA_TEMPLATE.toFactoryDefinitions(),
-        )
-        val aliceCertificates = ca.generateKeyAndCertificates("www.alice.net")
-        val chipCertificate = ca.generateKeyAndCertificates("chip.net")
-        val aliceId = Identity("O=Alice, L=London, C=GB", GROUP_ID, aliceCertificates)
-        val chipId = Identity("O=Chip, L=London, C=GB", GROUP_ID, chipCertificate)
-        val truststoreCertificatePem = ca.caCertificate.toPem()
-        Host(
-            listOf(aliceId),
-            "www.alice.net",
-            truststoreCertificatePem,
-            bootstrapConfig,
-            true,
-            RSA_TEMPLATE,
-        ).use { hostA ->
+        ).use { ca ->
+            val aliceCertificates = ca.generateKeyAndCertificates("www.alice.net")
+            val chipCertificate = ca.generateKeyAndCertificates("chip.net")
+            val aliceId = Identity("O=Alice, L=London, C=GB", GROUP_ID, aliceCertificates)
+            val chipId = Identity("O=Chip, L=London, C=GB", GROUP_ID, chipCertificate)
+            val truststoreCertificatePem = ca.caCertificate.toPem()
             Host(
-                listOf(chipId),
-                "chip.net",
+                listOf(aliceId),
+                "www.alice.net",
                 truststoreCertificatePem,
                 bootstrapConfig,
                 true,
                 RSA_TEMPLATE,
-            ).use { hostB ->
-                hostA.startWith(hostB)
-                hostB.startWith(hostA)
+            ).use { hostA ->
+                Host(
+                    listOf(chipId),
+                    "chip.net",
+                    truststoreCertificatePem,
+                    bootstrapConfig,
+                    true,
+                    RSA_TEMPLATE,
+                ).use { hostB ->
+                    hostA.startWith(hostB)
+                    hostB.startWith(hostA)
 
-                val hostAReceivedMessages = ConcurrentHashMap.newKeySet<String>()
-                val hostAApplicationReader = hostA.listenForReceivedMessages(hostAReceivedMessages)
-                val hostBApplicationReaderWriter = hostB.addReadWriter()
-                val hostAMarkers = CopyOnWriteArrayList<Record<String, AppMessageMarker>>()
-                val hostAMarkerReader = hostA.listenForMarkers(hostAMarkers)
-                hostA.sendMessages(numberOfMessages, aliceId, chipId)
+                    val hostAReceivedMessages = ConcurrentHashMap.newKeySet<String>()
+                    val hostAApplicationReader = hostA.listenForReceivedMessages(hostAReceivedMessages)
+                    val hostBApplicationReaderWriter = hostB.addReadWriter()
+                    val hostAMarkers = CopyOnWriteArrayList<Record<String, AppMessageMarker>>()
+                    val hostAMarkerReader = hostA.listenForMarkers(hostAMarkers)
+                    hostA.sendMessages(numberOfMessages, aliceId, chipId)
 
-                eventually(20.seconds) {
-                    val messagesWithProcessedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerProcessedMarker }
-                        .map { it.key }.toSet()
-                    val messagesWithReceivedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerReceivedMarker }
-                        .map { it.key }.toSet()
+                    eventually(20.seconds) {
+                        val messagesWithProcessedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerProcessedMarker }
+                            .map { it.key }.toSet()
+                        val messagesWithReceivedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerReceivedMarker }
+                            .map { it.key }.toSet()
 
-                    assertThat(messagesWithProcessedMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
-                    assertThat(messagesWithReceivedMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
-                    assertThat(hostAReceivedMessages).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { "pong ($it)" })
+                        assertThat(messagesWithProcessedMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
+                        assertThat(messagesWithReceivedMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
+                        assertThat(hostAReceivedMessages).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { "pong ($it)" })
+                    }
+
+                    hostAApplicationReader.close()
+                    hostBApplicationReaderWriter.close()
+                    hostAMarkerReader.close()
                 }
-
-                hostAApplicationReader.close()
-                hostBApplicationReaderWriter.close()
-                hostAMarkerReader.close()
             }
         }
     }
@@ -488,7 +489,7 @@ class P2PLayerEndToEndTest {
             x500Name: String,
             groupId: String,
             keyStoreURL: URL,
-        ) :this(
+        ) : this(
             x500Name,
             groupId,
             keyStoreURL.toPrivateKeyAndCertificateChain()

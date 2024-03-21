@@ -6,9 +6,6 @@ import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.AuthorityInformationAccess
 import org.bouncycastle.asn1.x509.BasicConstraints
-import org.bouncycastle.asn1.x509.CRLDistPoint
-import org.bouncycastle.asn1.x509.DistributionPoint
-import org.bouncycastle.asn1.x509.DistributionPointName
 import org.bouncycastle.asn1.x509.Extension
 import org.bouncycastle.asn1.x509.Extensions
 import org.bouncycastle.asn1.x509.GeneralName
@@ -45,7 +42,7 @@ internal open class LocalCertificatesAuthority(
     savedData: SavedData?,
     issuerName: String?,
     private val parentCa: LocalCertificatesAuthority? = null,
-    private val crlUrl: String? = null,
+    private val ocspAccessMethod: String? = null,
 ) : CertificateAuthority {
     internal companion object {
         fun PrivateKey.signer(): ContentSigner {
@@ -78,31 +75,15 @@ internal open class LocalCertificatesAuthority(
         savedData?.privateKeyAndCertificate ?: generatePrivateKeyAndCertificate()
     }
 
-    private fun addLDistributionPoints(certBuilder: JcaX509v3CertificateBuilder) {
-        if (crlUrl != null) {
-            val name = GeneralName(GeneralName.uniformResourceIdentifier, crlUrl)
-            val distributionPointName = DistributionPointName(DistributionPointName.FULL_NAME, name)
-            val extension = CRLDistPoint(
-                arrayOf(
-                    DistributionPoint(
-                        distributionPointName,
-                        null,
-                        null,
-                    )
-                )
-            )
-            certBuilder.addExtension(Extension.cRLDistributionPoints, false, extension)
-        }
-    }
-    private fun addAuthorityInformationAccess(certBuilder: JcaX509v3CertificateBuilder) {
-        if (crlUrl != null) {
-            val name = GeneralName(GeneralName.uniformResourceIdentifier, crlUrl)
+    private fun addOcspAuthorityInformationAccess(certBuilder: JcaX509v3CertificateBuilder) {
+        if (ocspAccessMethod != null) {
+            val name = GeneralName(GeneralName.uniformResourceIdentifier, ocspAccessMethod)
             val authorityInformationAccess = AuthorityInformationAccess(
-                X509ObjectIdentifiers.ocspAccessMethod,name
+                X509ObjectIdentifiers.ocspAccessMethod,
+                name,
             )
             certBuilder.addExtension(Extension.authorityInfoAccess, false, authorityInformationAccess)
         }
-        addLDistributionPoints(certBuilder)
     }
 
     private fun generatePrivateKeyAndCertificate(): PrivateKeyWithCertificateChain {
@@ -130,7 +111,6 @@ internal open class LocalCertificatesAuthority(
                         or KeyUsage.cRLSign
             )
         )
-        addLDistributionPoints(certBuilder)
 
         val signer = signerPrivateKey.signer()
 
@@ -182,7 +162,7 @@ internal open class LocalCertificatesAuthority(
             val subjectAltName = GeneralNames(altName)
             certificateBuilder.addExtension(Extension.subjectAlternativeName, true, subjectAltName)
         }
-        addAuthorityInformationAccess(certificateBuilder)
+        addOcspAuthorityInformationAccess(certificateBuilder)
 
         return listOf(
             JcaX509CertificateConverter().getCertificate(
@@ -230,7 +210,7 @@ internal open class LocalCertificatesAuthority(
                     certificateGenerator.addExtension(extension)
                 }
             }
-        addAuthorityInformationAccess(certificateGenerator)
+        addOcspAuthorityInformationAccess(certificateGenerator)
 
         val holder = certificateGenerator.build(privateKeyAndCertificate.privateKey.signer())
         val structure = holder.toASN1Structure()

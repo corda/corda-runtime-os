@@ -62,7 +62,7 @@ object CertificateAuthorityFactory {
         }
         val url = "http://$host:$actualPort$PATH"
         val localCertificatesAuthority = LocalCertificatesAuthority(
-            keysFactoryDefinitions, validDuration, null, issuerName = null, crlUrl = url
+            keysFactoryDefinitions, validDuration, null, issuerName = null, ocspAccessMethod = url
         )
         return RevocableCertificateAuthorityImpl(
             authority = localCertificatesAuthority,
