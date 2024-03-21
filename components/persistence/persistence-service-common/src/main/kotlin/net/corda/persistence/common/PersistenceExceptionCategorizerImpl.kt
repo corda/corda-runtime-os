@@ -7,9 +7,12 @@ import org.hibernate.ResourceClosedException
 import org.hibernate.SessionException
 import org.hibernate.TransactionException
 import org.hibernate.cache.CacheException
+import org.hibernate.exception.ConstraintViolationException
 import org.hibernate.exception.JDBCConnectionException
 import org.hibernate.exception.LockAcquisitionException
 import org.slf4j.LoggerFactory
+import java.net.SocketException
+import java.sql.SQLException
 import java.sql.SQLTransientConnectionException
 import javax.persistence.LockTimeoutException
 import javax.persistence.OptimisticLockException
@@ -26,24 +29,72 @@ internal class PersistenceExceptionCategorizerImpl : PersistenceExceptionCategor
 
     override fun categorize(exception: Exception): PersistenceExceptionType {
         return when {
-            isTransient(exception) -> TRANSIENT
             isFatal(exception) -> FATAL
+            isPlatform(exception) -> PLATFORM
+            isTransient(exception) -> TRANSIENT
             else -> PLATFORM
         }.also {
             logger.warn("Categorized exception as $it: $exception", exception)
         }
     }
 
-    private fun isFatal(exception: Exception): Boolean {
-        return when (exception) {
-            // [PersistenceException]s
-            is TransactionRequiredException, is ResourceClosedException, is SessionException -> true
-            else -> false
+    private data class ExceptionCriteria<T: Throwable>(val type: Class<T>, val check: (T) -> Boolean = { _ -> true }) {
+        fun meetsCriteria(exception: Throwable?) : Boolean {
+            if (exception == null) {
+                return false
+            }
+            val meetsCriteria = if (type.isAssignableFrom(exception::class.java)) {
+                check(type.cast(exception))
+            } else {
+                false
+            }
+            return (meetsCriteria || meetsCriteria(exception.cause))
         }
     }
 
+    private inline fun <reified T: Throwable> criteria(
+        noinline check: (T) -> Boolean = { _ -> true }
+    ) : ExceptionCriteria<T> = ExceptionCriteria(T::class.java, check)
+
+    private fun isFatal(exception: Exception): Boolean {
+        val checks = listOf(
+            criteria<TransactionRequiredException>(),
+            criteria<ResourceClosedException>(),
+            criteria<SessionException>(),
+        )
+        return checks.any { it.meetsCriteria(exception) }
+    }
+
+    private fun isPlatform(exception: Exception): Boolean {
+        val checks = listOf(
+            criteria<ConstraintViolationException>()
+        )
+        return checks.any { it.meetsCriteria(exception) }
+    }
+
     private fun isTransient(exception: Exception): Boolean {
-        return when (exception) {
+        val checks = listOf(
+            criteria<LockTimeoutException>(),
+            criteria<OptimisticLockException>(),
+            criteria<PessimisticLockException>(),
+            criteria<QueryTimeoutException>(),
+            criteria<RollbackException>(),
+            criteria<org.hibernate.PessimisticLockException>(),
+            criteria<org.hibernate.QueryTimeoutException>(),
+            criteria<JDBCConnectionException>(),
+            criteria<LockTimeoutException>(),
+            criteria<TransactionException>(),
+            criteria<CacheException>(),
+            criteria<SQLTransientConnectionException> {
+                exception.message?.lowercase()?.contains("connection is not available") == true
+            },
+            criteria<SQLException> {
+                it.sqlState in setOf("08001", "08003", "08004", "08006", "08006", "58030")
+            },
+            criteria<SocketException>()
+        )
+        return checks.any { it.meetsCriteria(exception) }
+/*        return when (exception) {
             // [PersistenceException]s
             is LockTimeoutException,
             is OptimisticLockException,
@@ -61,24 +112,6 @@ internal class PersistenceExceptionCategorizerImpl : PersistenceExceptionCategor
             // Exception thrown by Hikari
             is SQLTransientConnectionException -> exception.message?.lowercase()?.contains("connection is not available") == true
             else -> false
-        }
+        }*/
     }
-/*
-    @Suppress("UNCHECKED_CAST")
-    private fun <T : Throwable> Throwable?.meetsCriteria(
-        exceptionType: Class<T>,
-        check: (T) -> Boolean = { _ -> true }
-    ): Boolean {
-        if (this == null) {
-            return false
-        }
-        val meetsCriteria = if (exceptionType.isAssignableFrom(this::class.java)) {
-            val param = this as? T
-            param?.let { check(it) } ?: false
-        } else {
-            false
-        }
-        return (meetsCriteria || cause.meetsCriteria(exceptionType, check))
-    }
-    */
 }
