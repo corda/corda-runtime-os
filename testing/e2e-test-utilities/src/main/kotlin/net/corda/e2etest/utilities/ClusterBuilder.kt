@@ -18,7 +18,7 @@ import java.time.Instant
  *  The caller needs to marshall the response body to json, and then query
  *  the json for the expected results.
  */
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LargeClass")
 class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String) {
 
     internal companion object {
@@ -297,16 +297,17 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     private fun registerNotaryBody(
         notaryServiceName: String,
         customMetadata: Map<String, String>,
-        isBackchainRequiredNotary: Boolean = true,
+        isBackchainRequiredNotary: String? = null,
         notaryPlugin: String = "nonvalidating"
     ): String {
+        val isBackchainRequiredBoolean = getIsBackchainRequiredOrDefault(isBackchainRequiredNotary)
         val context = (mapOf(
             "corda.key.scheme" to "CORDA.ECDSA.SECP256R1",
             "corda.roles.0" to "notary",
             "corda.notary.service.name" to notaryServiceName,
             "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.$notaryPlugin",
             "corda.notary.service.flow.protocol.version.0" to "1",
-            "corda.notary.service.backchain.required" to "$isBackchainRequiredNotary"
+            "corda.notary.service.backchain.required" to "$isBackchainRequiredBoolean"
         ) + customMetadata)
             .map { "\"${it.key}\" : \"${it.value}\"" }
             .joinToString()
@@ -550,7 +551,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         holdingIdShortHash: String,
         notaryServiceName: String? = null,
         customMetadata: Map<String, String> = emptyMap(),
-        isBackchainRequiredNotary: Boolean = true,
+        isBackchainRequiredNotary: String? = null,
         notaryPlugin: String = "nonvalidating"
     ) = register(
         holdingIdShortHash,
