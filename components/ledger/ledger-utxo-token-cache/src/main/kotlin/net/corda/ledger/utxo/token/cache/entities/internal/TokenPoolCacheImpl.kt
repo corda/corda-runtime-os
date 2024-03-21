@@ -4,9 +4,7 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolCache
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
-import java.util.concurrent.TimeUnit
-import kotlin.time.Duration
-import kotlin.time.DurationUnit
+import java.time.Duration
 
 class TokenPoolCacheImpl(expiryPeriod: Duration) : TokenPoolCache {
 
@@ -14,7 +12,7 @@ class TokenPoolCacheImpl(expiryPeriod: Duration) : TokenPoolCache {
         Caffeine.newBuilder().build<TokenPoolKey, TokenCache>()
     } else {
         Caffeine.newBuilder()
-            .expireAfterWrite(expiryPeriod.toLong(DurationUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
+            .expireAfterWrite(expiryPeriod)
             .build<TokenPoolKey, TokenCache>()
     }
 
