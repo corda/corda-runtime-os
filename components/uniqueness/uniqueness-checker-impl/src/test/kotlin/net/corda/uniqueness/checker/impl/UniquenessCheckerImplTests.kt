@@ -90,7 +90,7 @@ class UniquenessCheckerImplTests {
                 0,
                 null,
                 defaultTimeWindowUpperBound,
-                UniquenessCheckType.NOTARIZE
+                UniquenessCheckType.WRITE
             )
         )
 
