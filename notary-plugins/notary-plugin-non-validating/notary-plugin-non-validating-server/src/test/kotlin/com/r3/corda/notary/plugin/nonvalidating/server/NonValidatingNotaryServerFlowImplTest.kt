@@ -45,6 +45,7 @@ import org.mockito.kotlin.whenever
 import java.security.PublicKey
 import java.time.Instant
 
+@Suppress("MaxLineLength")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class NonValidatingNotaryServerFlowImplTest {
 

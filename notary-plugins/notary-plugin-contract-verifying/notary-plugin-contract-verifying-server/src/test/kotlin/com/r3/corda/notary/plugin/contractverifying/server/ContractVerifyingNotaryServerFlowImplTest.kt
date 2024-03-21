@@ -59,6 +59,7 @@ import java.time.Clock
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
+@Suppress("MaxLineLength")
 @TestInstance(PER_CLASS)
 class ContractVerifyingNotaryServerFlowImplTest {
 
