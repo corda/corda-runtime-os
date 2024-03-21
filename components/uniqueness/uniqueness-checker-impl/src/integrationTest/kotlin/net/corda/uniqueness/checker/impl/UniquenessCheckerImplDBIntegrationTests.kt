@@ -1,4 +1,4 @@
-package net.corda.uniqueness.checker.impl
+package net.corda.uniqueness.READer.impl
 
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.testkit.SecureHashUtils
@@ -22,6 +22,7 @@ import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl
 import net.corda.uniqueness.backingstore.impl.JPABackingStoreTestUtilities
 import net.corda.uniqueness.checker.UniquenessChecker
+import net.corda.uniqueness.checker.impl.BatchedUniquenessCheckerImpl
 import net.corda.uniqueness.utils.UniquenessAssertions.assertInputStateConflictResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertMalformedRequestResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertNotPreviouslySeenTransactionResponse
@@ -123,7 +124,7 @@ class UniquenessCheckerImplDBIntegrationTests {
 
     private fun newRequestBuilder(
         txId: SecureHash = SecureHashUtils.randomSecureHash(),
-        type: UniquenessCheckType = UniquenessCheckType.NOTARIZE
+        type: UniquenessCheckType = UniquenessCheckType.WRITE
     ): UniquenessCheckRequestAvro.Builder =
         UniquenessCheckRequestAvro.newBuilder(
             UniquenessCheckRequestAvro(
@@ -1897,7 +1898,7 @@ class UniquenessCheckerImplDBIntegrationTests {
 
             // check that the transaction is known via the checker code
             processRequests(
-                newRequestBuilder(transactionId, UniquenessCheckType.CHECK)
+                newRequestBuilder(transactionId, UniquenessCheckType.READ)
                     .build()
             ).let { responses ->
                 assertAll(
@@ -1927,7 +1928,7 @@ class UniquenessCheckerImplDBIntegrationTests {
 
             // check that the failure gets replayed via the checker
             processRequests(
-                newRequestBuilder(transactionId, UniquenessCheckType.CHECK)
+                newRequestBuilder(transactionId, UniquenessCheckType.READ)
                     .build()
             ).let { responses ->
                 assertAll(
@@ -1948,7 +1949,7 @@ class UniquenessCheckerImplDBIntegrationTests {
 
             // check if transaction has yet been notarized
             processRequests(
-                newRequestBuilder(transactionId, UniquenessCheckType.CHECK)
+                newRequestBuilder(transactionId, UniquenessCheckType.READ)
                     .setTimeWindowLowerBound(currentTime().minusSeconds(10))
                     .setTimeWindowUpperBound(currentTime().plusSeconds(10))
                     .build()
@@ -1981,7 +1982,7 @@ class UniquenessCheckerImplDBIntegrationTests {
 
             // check for unknown transaction after time window elapsed
             processRequests(
-                newRequestBuilder(type = UniquenessCheckType.CHECK)
+                newRequestBuilder(type = UniquenessCheckType.READ)
                     .setTimeWindowUpperBound(upperBound)
                     .build()
             ).let { responses ->
@@ -2002,7 +2003,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             val lowerBound = currentTime().plusSeconds(100)
             val transactionId = SecureHashUtils.randomSecureHash()
             processRequests(
-                newRequestBuilder(transactionId, UniquenessCheckType.CHECK)
+                newRequestBuilder(transactionId, UniquenessCheckType.READ)
                     .setTimeWindowLowerBound(lowerBound)
                     .build()
             ).let { responses ->
@@ -2017,7 +2018,7 @@ class UniquenessCheckerImplDBIntegrationTests {
 
             // check for transaction now should return that the notary doesn't know about it
             processRequests(
-                newRequestBuilder(transactionId, UniquenessCheckType.CHECK)
+                newRequestBuilder(transactionId, UniquenessCheckType.READ)
                     .setTimeWindowLowerBound(lowerBound)
                     .build()
             ).let { responses ->
@@ -2060,7 +2061,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                     .setTimeWindowUpperBound(upperBound)
                     .setNumOutputStates(3)
                     .build(),
-                newRequestBuilder(transactionId, UniquenessCheckType.CHECK)
+                newRequestBuilder(transactionId, UniquenessCheckType.READ)
                     .setTimeWindowLowerBound(currentTime().minusSeconds(10))
                     .setTimeWindowUpperBound(currentTime().plusSeconds(10))
                     .build()
