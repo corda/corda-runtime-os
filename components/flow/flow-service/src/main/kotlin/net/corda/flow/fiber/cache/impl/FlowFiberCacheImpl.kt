@@ -103,8 +103,8 @@ class FlowFiberCacheImpl @Activate constructor(
     }
 
     override fun removeAll() {
-        cache.invalidateAll()
-        cache.cleanUp()
+        //cache.invalidateAll()
+        //cache.cleanUp()
     }
 
     override fun remove(virtualNodeContext: VirtualNodeContext) {
