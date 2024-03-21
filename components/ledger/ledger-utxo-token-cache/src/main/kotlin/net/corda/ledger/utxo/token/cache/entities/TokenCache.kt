@@ -15,7 +15,7 @@ interface TokenCache : Iterable<CachedToken> {
      *
      * @param tokens The list of [CachedToken] to add
      */
-    fun add(tokens: Collection<CachedToken>, tokenCacheExpiryPeriodMilliseconds: Long)
+    fun add(tokens: Collection<CachedToken>)
 
     /**
      * Removes a set of [CachedToken] from the cache
@@ -30,14 +30,4 @@ interface TokenCache : Iterable<CachedToken> {
      * Empties the cache
      */
     fun removeAll()
-
-    /**
-     * Returns true if the cached tokens have expired
-     */
-    fun hasExpired(): Boolean
-
-    /**
-     * Returns the time after which the cache has expired
-     */
-    fun getExpiryTime(): Instant
 }

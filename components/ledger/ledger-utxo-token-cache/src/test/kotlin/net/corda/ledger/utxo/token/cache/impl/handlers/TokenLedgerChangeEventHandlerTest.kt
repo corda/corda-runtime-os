@@ -4,6 +4,7 @@ import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.LedgerChange
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
+import net.corda.ledger.utxo.token.cache.entities.TokenPoolCache
 import net.corda.ledger.utxo.token.cache.handlers.TokenLedgerChangeEventHandler
 import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
 import org.assertj.core.api.Assertions.assertThat
@@ -17,6 +18,9 @@ import org.mockito.kotlin.whenever
 class TokenLedgerChangeEventHandlerTest {
 
     private val tokenCache = mock<TokenCache>()
+    private val tokenPoolCache: TokenPoolCache = mock() {
+        whenever(it.get(any())).thenReturn(tokenCache)
+    }
     private val poolCacheState = mock<PoolCacheState>()
 
     @Test
@@ -26,11 +30,11 @@ class TokenLedgerChangeEventHandlerTest {
         val ledgerChange = LedgerChange(POOL_KEY, "", "", "", listOf(), listOf(token1))
 
         val target = TokenLedgerChangeEventHandler()
-        val result = target.handle(tokenCache, poolCacheState, ledgerChange)
+        val result = target.handle(tokenPoolCache, poolCacheState, ledgerChange)
 
         assertThat(result).isNull()
 
-        verify(tokenCache, never()).add(any(), any())
+        verify(tokenCache, never()).add(any())
     }
 
     @Test
@@ -41,7 +45,7 @@ class TokenLedgerChangeEventHandlerTest {
         val ledgerChange = LedgerChange(POOL_KEY, "", "", "", listOf(token1, token2), listOf())
 
         val target = TokenLedgerChangeEventHandler()
-        val result = target.handle(tokenCache, poolCacheState, ledgerChange)
+        val result = target.handle(tokenPoolCache, poolCacheState, ledgerChange)
 
         assertThat(result).isNull()
 

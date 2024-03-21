@@ -5,6 +5,7 @@ import net.corda.ledger.utxo.token.cache.entities.ClaimRelease
 import net.corda.ledger.utxo.token.cache.entities.ForceClaimRelease
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
+import net.corda.ledger.utxo.token.cache.entities.TokenPoolCache
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.ledger.utxo.token.cache.handlers.TokenClaimReleaseEventHandler
 import net.corda.ledger.utxo.token.cache.handlers.TokenForceClaimReleaseEventHandler
@@ -21,6 +22,9 @@ import org.mockito.kotlin.whenever
 class TokenClaimReleaseEventHandlerTest {
 
     private val tokenCache: TokenCache = mock()
+    private val tokenPoolCache: TokenPoolCache = mock() {
+        whenever(it.get(any())).thenReturn(tokenCache)
+    }
     private val poolCacheState: PoolCacheState = mock()
     private val recordFactory: RecordFactory = mock()
 
@@ -36,7 +40,7 @@ class TokenClaimReleaseEventHandlerTest {
 
         val target = TokenClaimReleaseEventHandler(recordFactory)
         val claimRelease = createClaimRelease()
-        val result = target.handle(tokenCache, poolCacheState, claimRelease)
+        val result = target.handle(tokenPoolCache, poolCacheState, claimRelease)
         Assertions.assertThat(result).isSameAs(response)
     }
 
@@ -46,7 +50,7 @@ class TokenClaimReleaseEventHandlerTest {
         val claimRelease = createClaimRelease()
         whenever(poolCacheState.claimExists(claimId)).thenReturn(false)
 
-        val result = target.handle(tokenCache, poolCacheState, claimRelease)
+        val result = target.handle(tokenPoolCache, poolCacheState, claimRelease)
 
         Assertions.assertThat(result).isNull()
         verify(tokenCache, never()).removeAll(any())
@@ -58,7 +62,7 @@ class TokenClaimReleaseEventHandlerTest {
         val claimRelease = createClaimRelease()
         whenever(poolCacheState.claimExists(claimId)).thenReturn(true)
 
-        val result = target.handle(tokenCache, poolCacheState, claimRelease)
+        val result = target.handle(tokenPoolCache, poolCacheState, claimRelease)
 
         Assertions.assertThat(result).isNull()
         verify(poolCacheState).removeClaim(claimId)
@@ -70,7 +74,7 @@ class TokenClaimReleaseEventHandlerTest {
         val claimRelease = createClaimRelease()
         whenever(poolCacheState.claimExists(claimId)).thenReturn(true)
 
-        val result = target.handle(tokenCache, poolCacheState, claimRelease)
+        val result = target.handle(tokenPoolCache, poolCacheState, claimRelease)
 
         Assertions.assertThat(result).isNull()
         verify(tokenCache).removeAll(setOf(tokenRef1))
@@ -84,6 +88,9 @@ class TokenClaimReleaseEventHandlerTest {
 class TokenForceClaimReleaseEventHandlerTest {
 
     private val tokenCache: TokenCache = mock()
+    private val tokenPoolCache: TokenPoolCache = mock() {
+        whenever(it.get(any())).thenReturn(tokenCache)
+    }
     private val poolCacheState: PoolCacheState = mock()
     private val claimId = "r1"
 
@@ -93,7 +100,7 @@ class TokenForceClaimReleaseEventHandlerTest {
         val claimRelease = createForceClaimRelease()
         whenever(poolCacheState.claimExists(claimId)).thenReturn(false)
 
-        val result = target.handle(tokenCache, poolCacheState, claimRelease)
+        val result = target.handle(tokenPoolCache, poolCacheState, claimRelease)
 
         Assertions.assertThat(result).isNull()
         verify(poolCacheState, never()).removeClaim(any())
@@ -105,7 +112,7 @@ class TokenForceClaimReleaseEventHandlerTest {
         val claimRelease = createForceClaimRelease()
         whenever(poolCacheState.claimExists(claimId)).thenReturn(true)
 
-        val result = target.handle(tokenCache, poolCacheState, claimRelease)
+        val result = target.handle(tokenPoolCache, poolCacheState, claimRelease)
 
         Assertions.assertThat(result).isNull()
         verify(poolCacheState).removeClaim(claimId)

@@ -5,6 +5,7 @@ import net.corda.ledger.utxo.token.cache.entities.BalanceQuery
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
+import net.corda.ledger.utxo.token.cache.entities.TokenPoolCache
 import net.corda.ledger.utxo.token.cache.entities.internal.TokenBalanceCacheImpl
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.ledger.utxo.token.cache.handlers.TokenBalanceQueryEventHandler
@@ -28,6 +29,9 @@ class TokenBalanceQueryEventHandlerTest {
     private val recordFactory: RecordFactory = mock()
     private val availableTokenService: AvailableTokenService = mock()
     private val tokenCache: TokenCache = mock()
+    private val tokenPoolCache: TokenPoolCache = mock() {
+        whenever(it.get(any())).thenReturn(tokenCache)
+    }
     private val poolCacheState: PoolCacheState = mock()
 
     private val token99Ref = "r1"
@@ -68,7 +72,7 @@ class TokenBalanceQueryEventHandlerTest {
             )
         ).thenReturn(tokenBalance)
 
-        val result = target.handle(tokenCache, poolCacheState, balanceQuery)
+        val result = target.handle(tokenPoolCache, poolCacheState, balanceQuery)
 
         assertThat(result).isSameAs(balanceQueryResult)
         verify(recordFactory).getBalanceResponse(
@@ -96,7 +100,7 @@ class TokenBalanceQueryEventHandlerTest {
         ).thenReturn(tokenBalance)
         cachedTokens += token99
 
-        val result = target.handle(tokenCache, poolCacheState, balanceQuery)
+        val result = target.handle(tokenPoolCache, poolCacheState, balanceQuery)
 
         assertThat(result).isSameAs(balanceQueryResult)
         verify(recordFactory).getBalanceResponse(
@@ -129,7 +133,7 @@ class TokenBalanceQueryEventHandlerTest {
             whenever(it.isTokenClaimed(eq(token100Ref))).thenReturn(true)
         }
 
-        val result = target.handle(tokenCache, poolCacheState, balanceQuery)
+        val result = target.handle(tokenPoolCache, poolCacheState, balanceQuery)
 
         assertThat(result).isSameAs(balanceQueryResult)
         verify(recordFactory).getBalanceResponse(

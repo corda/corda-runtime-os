@@ -41,6 +41,7 @@ dependencies {
     implementation "net.corda:corda-topic-schema"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation libs.slf4j.api
+    implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
 
     testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testImplementation libs.jackson.module.kotlin

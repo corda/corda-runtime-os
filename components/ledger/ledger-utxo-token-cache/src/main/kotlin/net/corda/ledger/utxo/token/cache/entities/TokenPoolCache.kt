@@ -12,4 +12,12 @@ interface TokenPoolCache {
      * @param poolKey The key for the required [TokenCache]
      */
     fun get(poolKey: TokenPoolKey): TokenCache
+
+    /**
+     * Updated the cached tokens for a given pool
+     *
+     * @param poolKey The key for the required [TokenCache]
+     * @param tokenCache The value for the required [TokenCache]
+     */
+    fun put(poolKey: TokenPoolKey, tokenCache: TokenCache)
 }
