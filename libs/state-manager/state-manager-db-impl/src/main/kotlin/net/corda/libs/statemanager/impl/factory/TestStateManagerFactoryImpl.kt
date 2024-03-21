@@ -9,7 +9,12 @@ import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.libs.statemanager.api.StateOperationGroup
-import net.corda.libs.statemanager.impl.compression.CompressionService
+import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.CREATE
+import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.DELETE
+import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.FIND
+import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.GET
+import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.UPDATE
+import net.corda.libs.statemanager.impl.metrics.MetricsRecorderImpl
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.schema.configuration.StateManagerConfig
@@ -47,44 +52,54 @@ class TestStateManagerFactoryImpl  @Activate constructor(
 
             }
 
+            private val metricsRecorder = MetricsRecorderImpl()
+
             override fun create(states: Collection<State>): Set<String> {
-                return states.mapNotNull {
-                    storage.putIfAbsent(it.key, it)
-                }.map { it.key }.toSet()
+                return metricsRecorder.recordProcessingTime(CREATE) {
+                    states.mapNotNull {
+                        storage.putIfAbsent(it.key, it)
+                    }.map { it.key }.toSet()
+                }
             }
 
             override fun get(keys: Collection<String>): Map<String, State> {
-                return keys.mapNotNull { storage[it] }.associateBy { it.key }
+                return metricsRecorder.recordProcessingTime(GET) {
+                    keys.mapNotNull { storage[it] }.associateBy { it.key }
+                }
             }
 
             override fun update(states: Collection<State>): Map<String, State> {
-                return states.mapNotNull {
-                    var output: State? = null
-                    storage.compute(it.key) { _, existingState ->
-                        if (existingState?.version == it.version) {
-                            it.copy(version = it.version + 1)
-                        } else {
-                            output = it
-                            it
+                return metricsRecorder.recordProcessingTime(UPDATE) {
+                    states.mapNotNull {
+                        var output: State? = null
+                        storage.compute(it.key) { _, existingState ->
+                            if (existingState?.version == it.version) {
+                                it.copy(version = it.version + 1)
+                            } else {
+                                output = it
+                                it
+                            }
                         }
-                    }
-                    output
-                }.associateBy { it.key }
+                        output
+                    }.associateBy { it.key }
+                }
             }
 
             override fun delete(states: Collection<State>): Map<String, State> {
-                return states.mapNotNull {
-                    var output: State? = null
-                    storage.compute(it.key) { _, existingState ->
-                        if (existingState?.version == it.version) {
-                            null
-                        } else {
-                            output = it
-                            existingState
+                return metricsRecorder.recordProcessingTime(DELETE) {
+                    states.mapNotNull {
+                        var output: State? = null
+                        storage.compute(it.key) { _, existingState ->
+                            if (existingState?.version == it.version) {
+                                null
+                            } else {
+                                output = it
+                                existingState
+                            }
                         }
-                    }
-                    output
-                }.associateBy { it.key }
+                        output
+                    }.associateBy { it.key }
+                }
             }
 
             override fun createOperationGroup(): StateOperationGroup {
@@ -108,10 +123,12 @@ class TestStateManagerFactoryImpl  @Activate constructor(
                 intervalFilter: IntervalFilter,
                 metadataFilter: MetadataFilter
             ): Map<String, State> {
-                return storage.filter { (_, state) ->
-                    state.modifiedTime >= intervalFilter.start && state.modifiedTime <= intervalFilter.finish
-                }.filter {
-                    matchesAll(it.value, listOf(metadataFilter))
+                return metricsRecorder.recordProcessingTime(FIND) {
+                    storage.filter { (_, state) ->
+                        state.modifiedTime >= intervalFilter.start && state.modifiedTime <= intervalFilter.finish
+                    }.filter {
+                        matchesAll(it.value, listOf(metadataFilter))
+                    }
                 }
             }
 
@@ -119,10 +136,12 @@ class TestStateManagerFactoryImpl  @Activate constructor(
                 intervalFilter: IntervalFilter,
                 metadataFilters: Collection<MetadataFilter>
             ): Map<String, State> {
-                return storage.filter { (_, state) ->
-                    state.modifiedTime >= intervalFilter.start && state.modifiedTime <= intervalFilter.finish
-                }.filter {
-                    matchesAll(it.value, metadataFilters)
+                return metricsRecorder.recordProcessingTime(FIND) {
+                    storage.filter { (_, state) ->
+                        state.modifiedTime >= intervalFilter.start && state.modifiedTime <= intervalFilter.finish
+                    }.filter {
+                        matchesAll(it.value, metadataFilters)
+                    }
                 }
             }
 
@@ -130,10 +149,12 @@ class TestStateManagerFactoryImpl  @Activate constructor(
                 intervalFilter: IntervalFilter,
                 metadataFilters: Collection<MetadataFilter>
             ): Map<String, State> {
-                return storage.filter { (_, state) ->
-                    state.modifiedTime >= intervalFilter.start && state.modifiedTime <= intervalFilter.finish
-                }.filter {
-                    matchesAny(it.value, metadataFilters)
+                return metricsRecorder.recordProcessingTime(FIND) {
+                    storage.filter { (_, state) ->
+                        state.modifiedTime >= intervalFilter.start && state.modifiedTime <= intervalFilter.finish
+                    }.filter {
+                        matchesAny(it.value, metadataFilters)
+                    }
                 }
             }
 
