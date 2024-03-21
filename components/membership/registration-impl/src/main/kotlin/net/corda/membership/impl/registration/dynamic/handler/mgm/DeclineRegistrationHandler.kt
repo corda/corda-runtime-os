@@ -16,12 +16,12 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.VersionedMessageBuilder.retrieveRegistrationStatusMessage
+import net.corda.membership.lib.createMembershipAuthenticatedMessageRecord
+import net.corda.membership.lib.getTtlMinutes
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.messaging.P2pRecordsFactory
-import net.corda.p2p.messaging.P2pRecordsFactory.Companion.MEMBERSHIP_REGISTRATION_PREFIX
-import net.corda.p2p.messaging.P2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.DECLINE_REGISTRATION
 import net.corda.utilities.time.Clock
@@ -83,7 +83,6 @@ internal class DeclineRegistrationHandler(
                 membershipP2PRecordsFactory.createMembershipAuthenticatedMessageRecord(
                     source = declinedBy,
                     destination = declinedMember,
-                    messageIdPrefix = MEMBERSHIP_REGISTRATION_PREFIX,
                     // Setting TTL to avoid resending the message in case the decline reason is that the
                     // P2P channel could not be established.
                     minutesToWait = membershipConfig.getTtlMinutes(DECLINE_REGISTRATION),

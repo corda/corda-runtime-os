@@ -24,11 +24,10 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.Session
-import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl.Companion.LINK_MANAGER_SUBSYSTEM
 import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 import net.corda.p2p.linkmanager.state.SessionState
 import net.corda.p2p.messaging.P2pRecordsFactory
-import net.corda.p2p.messaging.P2pRecordsFactory.Companion.P2P_PREFIX
+import net.corda.p2p.messaging.Subsystem
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.utilities.time.Clock
@@ -289,10 +288,10 @@ class StatefulSessionManagerImplTest {
                 eq(HoldingIdentity("O=Alice, L=London, C=GB", "group ID")),
                 eq(HoldingIdentity("O=Bob, L=London, C=GB", "group ID")),
                 eq(ReEstablishSessionMessage(testSessionId)),
-                eq(LINK_MANAGER_SUBSYSTEM),
-                eq(P2P_PREFIX),
+                eq(Subsystem.LINK_MANAGER),
                 any(),
                 anyOrNull(),
+                any(),
                 eq(MembershipStatusFilter.ACTIVE),
             )
         }

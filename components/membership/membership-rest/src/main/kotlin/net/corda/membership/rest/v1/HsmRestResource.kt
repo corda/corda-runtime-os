@@ -13,7 +13,7 @@ import net.corda.rest.annotations.RestPathParameter
  * assigned to the specified tenant.
  */
 @HttpRestResource(
-    name = "HSM API",
+    name = "HSM",
     description = "The HSM API consists of endpoints used to work with Hardware Security Modules (HSM) for securely storing keys.",
     path = "hsm"
 )

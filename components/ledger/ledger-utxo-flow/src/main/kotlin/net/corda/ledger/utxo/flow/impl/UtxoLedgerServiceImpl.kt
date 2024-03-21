@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl
 
+import net.corda.flow.application.services.FlowCheckpointService
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
@@ -71,7 +72,8 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Reference(service = ExternalEventExecutor::class) private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = ResultSetFactory::class) private val resultSetFactory: ResultSetFactory,
     @Reference(service = UtxoLedgerTransactionVerificationService::class)
-    private val transactionVerificationService: UtxoLedgerTransactionVerificationService
+    private val transactionVerificationService: UtxoLedgerTransactionVerificationService,
+    @Reference(service = FlowCheckpointService::class) private val flowCheckpointService: FlowCheckpointService,
 ) : UtxoLedgerService, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
@@ -204,7 +206,8 @@ class UtxoLedgerServiceImpl @Activate constructor(
             limit = Int.MAX_VALUE,
             offset = 0,
             resultClass,
-            clock
+            clock,
+            flowCheckpointService
         )
     }
 

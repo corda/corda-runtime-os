@@ -22,7 +22,7 @@ import net.corda.rest.response.ResponseEntity
 
 /** Rest operations for virtual node management. */
 @HttpRestResource(
-    name = "Virtual Node API",
+    name = "Virtual Node",
     description = "The Virtual Nodes API consists of a number of endpoints to manage virtual nodes.",
     path = "virtualnode"
 )

@@ -23,7 +23,9 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.VersionedMessageBuilder.retrieveRegistrationStatusMessage
 import net.corda.membership.lib.approval.RegistrationRule
 import net.corda.membership.lib.approval.RegistrationRulesEngine
+import net.corda.membership.lib.createMembershipAuthenticatedMessageRecord
 import net.corda.membership.lib.deserializeContext
+import net.corda.membership.lib.getTtlMinutes
 import net.corda.membership.lib.registration.DECLINED_REASON_FOR_USER_INTERNAL_ERROR
 import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.toMap
@@ -33,8 +35,6 @@ import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.messaging.P2pRecordsFactory
-import net.corda.p2p.messaging.P2pRecordsFactory.Companion.MEMBERSHIP_REGISTRATION_PREFIX
-import net.corda.p2p.messaging.P2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.UPDATE_TO_PENDING_AUTO_APPROVAL
 import net.corda.utilities.time.Clock
@@ -133,7 +133,6 @@ internal class ProcessMemberVerificationResponseHandler(
                     source = mgm,
                     destination = member,
                     content = statusUpdateMessage,
-                    messageIdPrefix = MEMBERSHIP_REGISTRATION_PREFIX,
                     minutesToWait = membershipConfig.getTtlMinutes(UPDATE_TO_PENDING_AUTO_APPROVAL),
                     filter = MembershipStatusFilter.PENDING,
                 )
