@@ -9,6 +9,7 @@ import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.ledger.notary.plugin.api.NotarizationType
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
@@ -16,10 +17,11 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionBuilder
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertAll
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -31,9 +33,6 @@ import java.time.Instant
 class NonValidatingNotaryClientFlowImplTest {
 
     private companion object {
-        /* Members */
-        const val DUMMY_PLATFORM_VERSION = 9001
-
         /* Signature */
         val dummyUniquenessSignature = DigitalSignatureAndMetadata(
             mock(),
@@ -62,20 +61,22 @@ class NonValidatingNotaryClientFlowImplTest {
         }
     }
 
-    @Test
-    fun `Non-validating notary plugin client generates payload properly`() {
-        val client = createClient(mock())
+    @ParameterizedTest
+    @EnumSource(NotarizationType::class)
+    fun `Non-validating notary plugin client generates payload properly`(notarizationType: NotarizationType) {
+        val client = createClient(notarizationType, mock())
 
         val payload = client.generatePayload(mockUtxoTx)
 
         assertAll({
-            assertThat(payload).isNotNull
-            assertThat(payload.transaction).isEqualTo(mockFilteredTx)
-        })
+                      assertThat(payload).isNotNull
+                      assertThat(payload.transaction).isEqualTo(mockFilteredTx)
+                  })
     }
 
-    @Test
-    fun `Non-validating notary plugin client returns signature on successful notarization`() {
+    @ParameterizedTest
+    @EnumSource(NotarizationType::class)
+    fun `Non-validating notary plugin client returns signature on successful notarization`(notarizationType: NotarizationType) {
         val mockSession = mock<FlowSession> {
             on { sendAndReceive(eq(NotarizationResponse::class.java), any()) } doReturn NotarizationResponse(
                 listOf(dummyUniquenessSignature),
@@ -86,15 +87,16 @@ class NonValidatingNotaryClientFlowImplTest {
             on { initiateFlow(any()) } doReturn mockSession
         }
 
-        val client = createClient(mockFlowMessaging)
+        val client = createClient(notarizationType, mockFlowMessaging)
 
         val signatures = client.call()
 
         assertThat(signatures).containsExactly(dummyUniquenessSignature)
     }
 
-    @Test
-    fun `Non-validating notary plugin client throws error on failed notarization`() {
+    @ParameterizedTest
+    @EnumSource(NotarizationType::class)
+    fun `Non-validating notary plugin client throws error on failed notarization`(notarizationType: NotarizationType) {
         val mockSession = mock<FlowSession> {
             on { sendAndReceive(eq(NotarizationResponse::class.java), any()) } doReturn NotarizationResponse(
                 emptyList(),
@@ -105,7 +107,7 @@ class NonValidatingNotaryClientFlowImplTest {
             on { initiateFlow(any()) } doReturn mockSession
         }
 
-        val client = createClient(mockFlowMessaging)
+        val client = createClient(notarizationType, mockFlowMessaging)
 
         val ex = assertThrows<NotaryExceptionReferenceStateUnknown> {
             client.call()
@@ -114,7 +116,7 @@ class NonValidatingNotaryClientFlowImplTest {
         assertThat(ex.txId).isEqualTo(txId)
     }
 
-    private fun createClient(flowMessaging: FlowMessaging): NonValidatingNotaryClientFlowImpl {
+    private fun createClient(notarizationType: NotarizationType, flowMessaging: FlowMessaging): NonValidatingNotaryClientFlowImpl {
 
         val mockBuilder = mock<UtxoFilteredTransactionBuilder> {
             on { withInputStates() } doReturn this.mock
@@ -128,10 +130,11 @@ class NonValidatingNotaryClientFlowImplTest {
         return NonValidatingNotaryClientFlowImpl(
             mockUtxoTx,
             MemberX500Name("Alice", "Alice Corp", "LDN", "GB"),
+            notarizationType,
             flowMessaging,
             mock {
                 on { filterSignedTransaction(any()) } doReturn mockBuilder
-            }
+            },
         )
     }
 }
