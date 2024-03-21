@@ -39,19 +39,17 @@ class TokenSelectionSyncRPCProcessor(
 
         return tokenSelectionMetrics.recordProcessingTime(tokenEvent) {
             try {
-                val poolKey = entityConverter.toTokenPoolKey(request.poolKey)
 
                 var responseEvent: FlowEvent? = null
 
                 val eventCompletion = eventProcessLock.withLock {
-                    val claimStateStore = claimStateStoreCache.get(poolKey)
+                    val claimStateStore = claimStateStoreCache.get(tokenEvent.poolKey)
 
                     claimStateStore.enqueueRequest { poolState ->
 
                         val state = entityConverter.toPoolCacheState(poolState)
                         val result = tokenPoolCacheManager.processEvent(
                             state,
-                            poolKey,
                             tokenEvent
                         )
 

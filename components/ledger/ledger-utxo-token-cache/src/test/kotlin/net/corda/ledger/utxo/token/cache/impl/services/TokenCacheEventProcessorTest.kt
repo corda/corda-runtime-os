@@ -1,13 +1,11 @@
 package net.corda.ledger.utxo.token.cache.impl.services
 
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenEvent
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.ledger.utxo.token.cache.entities.internal.TokenPoolCacheImpl
 import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
-import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY
 import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
 import net.corda.ledger.utxo.token.cache.services.TokenPoolCacheManager
 import net.corda.messaging.api.records.Record
@@ -19,16 +17,15 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import kotlin.time.Duration
 
 class TokenCacheEventProcessorTest {
 
     private val mockHandler = mock<TokenEventHandler<FakeTokenEvent>>()
     private val tokenCacheEventHandlerMap = mutableMapOf<Class<*>, TokenEventHandler<in TokenEvent>>()
     private val event = FakeTokenEvent()
-    private val tokenPoolCache = TokenPoolCacheImpl()
+    private val tokenPoolCache = TokenPoolCacheImpl(Duration.ZERO)
     private val cachePoolState = mock<PoolCacheState>()
-
-    private val tokenPoolCacheEvent = TokenPoolCacheEvent(POOL_CACHE_KEY, null)
 
     @BeforeEach
     fun setup() {
@@ -44,7 +41,7 @@ class TokenCacheEventProcessorTest {
 
         val tokenPoolCacheManager = createTokenPoolCacheManager()
 
-        val result = tokenPoolCacheManager.processEvent(cachePoolState, POOL_KEY, event)
+        val result = tokenPoolCacheManager.processEvent(cachePoolState, event)
 
         assertThat(result.state).isSameAs(cachePoolState)
         assertThat(result.response).isSameAs(handlerResponse.value)
@@ -58,7 +55,7 @@ class TokenCacheEventProcessorTest {
 
         val tokenPoolCacheManager = createTokenPoolCacheManager()
 
-        tokenPoolCacheManager.processEvent(cachePoolState, POOL_KEY, event)
+        tokenPoolCacheManager.processEvent(cachePoolState, event)
 
         val inOrder = inOrder(cachePoolState, mockHandler)
 

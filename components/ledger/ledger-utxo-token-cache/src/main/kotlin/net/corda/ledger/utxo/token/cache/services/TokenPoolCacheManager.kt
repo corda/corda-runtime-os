@@ -13,7 +13,6 @@ class TokenPoolCacheManager(
 ) {
     fun processEvent(
         state: PoolCacheState,
-        poolKey: TokenPoolKey,
         tokenEvent: TokenEvent
     ): ResponseAndState {
         // Cleanup
@@ -25,9 +24,7 @@ class TokenPoolCacheManager(
             "Received an event with and unrecognized payload '${tokenEvent.javaClass}'"
         }
 
-        // Ask the respective handler to process the event
-        val tokenCache = tokenPoolCache.get(poolKey)
-        val result = handler.handle(tokenCache, state, tokenEvent)
+        val result = handler.handle(tokenPoolCache, state, tokenEvent)
 
         return ResponseAndState(result?.value, state)
     }

@@ -5,6 +5,7 @@ import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.ClaimQuery
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
+import net.corda.ledger.utxo.token.cache.entities.TokenPoolCache
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
@@ -17,22 +18,15 @@ class TokenClaimQueryEventHandler(
     private val filterStrategy: TokenFilterStrategy,
     private val recordFactory: RecordFactory,
     private val availableTokenService: AvailableTokenService,
-    private val serviceConfiguration: ServiceConfiguration,
+    private val serviceConfiguration: ServiceConfiguration
 ) : TokenEventHandler<ClaimQuery> {
-
-    private val isTokenCacheEnabled = serviceConfiguration.tokenCacheExpiryPeriodMilliseconds > 0
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    init {
-        logger.info("Token cache expiry period: ${serviceConfiguration.tokenCacheExpiryPeriodMilliseconds} ms")
-        logger.info("Token cache enabled: $isTokenCacheEnabled")
-    }
-
     override fun handle(
-        tokenCache: TokenCache,
+        tokenPoolCache: TokenPoolCache,
         state: PoolCacheState,
         event: ClaimQuery
     ): Record<String, FlowEvent> {
@@ -49,10 +43,29 @@ class TokenClaimQueryEventHandler(
             )
         }
 
-        val selectionResult = if (isTokenCacheEnabled) {
-            selectTokenWithCacheEnabled(tokenCache, state, event)
-        } else {
-            selectTokenWithCacheDisabled(tokenCache, state, event)
+        // Ask the respective handler to process the event
+        val tokenCache = tokenPoolCache.get(event.poolKey)
+
+        // Attempt to select the tokens from the current cache
+        var selectionResult = selectTokens(tokenCache, state, event)
+
+        // if we didn't reach the target amount, reload the cache to ensure it's full and retry
+        if (selectionResult.first < event.targetAmount) {
+            // The max. number of tokens retrieved should be the configured size plus the number of claimed tokens
+            // This way the cache size will be equal to the configured size once the claimed tokens are removed
+            // from the query results
+            val maxTokens = serviceConfiguration.cachedTokenPageSize + state.claimedTokens().size
+            val findResult = availableTokenService.findAvailTokens(event.poolKey, event.ownerHash, event.tagRegex, maxTokens)
+
+            // Remove the claimed tokens from the query results
+            val tokens = findResult.tokens.filterNot { state.isTokenClaimed(it.stateRef) }
+
+            // Replace the tokens in the cache with the ones from the query result that have not been claimed
+            tokenCache.add(tokens)
+            // Update the token pool cache so the expiry period is refreshed
+            tokenPoolCache.put(event.poolKey, tokenCache)
+
+            selectionResult = selectTokens(tokenCache, state, event)
         }
 
         val selectedAmount = selectionResult.first
@@ -71,62 +84,6 @@ class TokenClaimQueryEventHandler(
         } else {
             recordFactory.getFailedClaimResponse(event.flowId, event.externalEventRequestId, event.poolKey)
         }
-    }
-
-    private fun updateCache(
-        tokenCache: TokenCache,
-        state: PoolCacheState,
-        event: ClaimQuery
-    ) {
-        // The max. number of tokens retrieved should be the configured size plus the number of claimed tokens
-        // This way the cache size will be equal to the configured size once the claimed tokens are removed
-        // from the query results
-        val maxTokens = serviceConfiguration.cachedTokenPageSize + state.claimedTokens().size
-        val findResult =
-            availableTokenService.findAvailTokens(event.poolKey, event.ownerHash, event.tagRegex, maxTokens)
-
-        // Remove the claimed tokens from the query results
-        val tokens = findResult.tokens.filterNot { state.isTokenClaimed(it.stateRef) }
-
-        // Replace the tokens in the cache with the ones from the query result that have not been claimed
-        tokenCache.add(tokens, serviceConfiguration.tokenCacheExpiryPeriodMilliseconds)
-    }
-
-    private fun selectTokenWithCacheEnabled(
-        tokenCache: TokenCache,
-        state: PoolCacheState,
-        event: ClaimQuery
-    ): Pair<BigDecimal, List<CachedToken>> {
-        // Attempt to select the tokens from the current cache
-        var selectionResult = selectTokens(tokenCache, state, event)
-
-        // if we didn't reach the target amount, reload the cache to ensure it's full and retry.
-        // But only if the cache has not been recently reloaded.
-        if (selectionResult.first < event.targetAmount) {
-            if (tokenCache.hasExpired()) {
-                // The cache is only updated periodically when required. This is to avoid going to often to the database
-                // which can degrade performance. For instance, when there are too few tokens available.
-                updateCache(tokenCache, state, event)
-                selectionResult = selectTokens(tokenCache, state, event)
-            } else {
-                logger.warn("Some tokens might not be accessible. Token cache expiry time: ${tokenCache.getExpiryTime()}")
-            }
-        }
-
-        return selectionResult
-    }
-
-    // Call this method with caution. This is only for scenarios when going to the database is unavoidable. This
-    // method can easily degrade performance.
-    private fun selectTokenWithCacheDisabled(
-        tokenCache: TokenCache,
-        state: PoolCacheState,
-        event: ClaimQuery
-    ): Pair<BigDecimal, List<CachedToken>> {
-        // Update the cache regardless. There are use cases when going to the database is mandatory.
-        // For instance, when tokens with short expiry dates are continuously being generated.
-        updateCache(tokenCache, state, event)
-        return selectTokens(tokenCache, state, event)
     }
 
     private fun selectTokens(

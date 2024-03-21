@@ -6,6 +6,9 @@ import net.corda.schema.configuration.LedgerConfig.UTXO_TOKEN_CACHED_TOKEN_PAGE_
 import net.corda.schema.configuration.LedgerConfig.UTXO_TOKEN_CACHE_REFRESH_PERIOD_MILLISECONDS
 import net.corda.schema.configuration.LedgerConfig.UTXO_TOKEN_CLAIM_TIMEOUT_SECONDS
 import org.osgi.service.component.annotations.Component
+import kotlin.time.Duration
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 @Component
 class ServiceConfigurationImpl : ServiceConfiguration {
@@ -22,8 +25,8 @@ class ServiceConfigurationImpl : ServiceConfiguration {
     override val claimTimeoutSeconds: Int
         get() = getIntValue(UTXO_TOKEN_CLAIM_TIMEOUT_SECONDS)
 
-    override val tokenCacheExpiryPeriodMilliseconds: Long
-        get() = getLongValue(UTXO_TOKEN_CACHE_REFRESH_PERIOD_MILLISECONDS)
+    override val tokenCacheExpiryPeriodMilliseconds: Duration
+        get() = getLongValue(UTXO_TOKEN_CACHE_REFRESH_PERIOD_MILLISECONDS).toDuration(DurationUnit.MILLISECONDS)
 
     private fun getIntValue(name: String): Int {
         return checkNotNull(config?.getInt(name)) { "The token service has not been configured, missing $name." }

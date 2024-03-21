@@ -9,13 +9,11 @@ import org.mockito.kotlin.whenever
 
 class TokenCacheImplTest {
 
-    private val expiryPeriod = 0L
-
     @Test
     fun `adding a token`() {
         val target = TokenCacheImpl()
         val cachedToken = mock<CachedToken>()
-        target.add(listOf(cachedToken), expiryPeriod)
+        target.add(listOf(cachedToken))
         assertThat(target.toList()).containsOnly(cachedToken)
     }
 
@@ -24,11 +22,11 @@ class TokenCacheImplTest {
         val target = TokenCacheImpl()
         val cachedToken1 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s1") }
         val cachedToken2 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s1") }
-        target.add(listOf(cachedToken1), expiryPeriod)
+        target.add(listOf(cachedToken1))
 
         assertThat(target.toList()).containsOnly(cachedToken1)
 
-        target.add(listOf(cachedToken2), expiryPeriod)
+        target.add(listOf(cachedToken2))
 
         assertThat(target.toList()).containsOnly(cachedToken2)
     }
@@ -39,7 +37,7 @@ class TokenCacheImplTest {
         val cachedToken1 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s1") }
         val cachedToken2 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s2") }
         val cachedToken3 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s3") }
-        target.add(listOf(cachedToken1, cachedToken2, cachedToken3), expiryPeriod)
+        target.add(listOf(cachedToken1, cachedToken2, cachedToken3))
 
         assertThat(target.toList()).containsOnly(cachedToken1, cachedToken2, cachedToken3)
         target.removeAll(setOf("s1", "s3"))
@@ -52,7 +50,7 @@ class TokenCacheImplTest {
         val cachedToken1 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s1") }
         val cachedToken2 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s2") }
         val cachedToken3 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s3") }
-        target.add(listOf(cachedToken1, cachedToken2, cachedToken3), expiryPeriod)
+        target.add(listOf(cachedToken1, cachedToken2, cachedToken3))
 
         assertThat(target.toList()).containsOnly(cachedToken1, cachedToken2, cachedToken3)
         target.removeAll()
@@ -65,7 +63,7 @@ class TokenCacheImplTest {
         val cachedToken1 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s1") }
         val cachedToken2 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s2") }
         val cachedToken3 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s3") }
-        target.add(listOf(cachedToken1, cachedToken2, cachedToken3), expiryPeriod)
+        target.add(listOf(cachedToken1, cachedToken2, cachedToken3))
 
         assertThat(target.toList()).containsOnly(cachedToken1, cachedToken2, cachedToken3)
     }
