@@ -202,11 +202,6 @@ internal class InboundMessageProcessor(
         sessionIdAndMessage: SessionIdAndMessage<T>,
         sessionDirection: SessionManager.SessionDirection.Inbound
     ): InboundResponse? {
-        sessionManager.dataMessageReceived(
-            sessionIdAndMessage.sessionId,
-            sessionDirection.counterparties.counterpartyId,
-            sessionDirection.counterparties.ourId
-        )
         return if (isCommunicationAllowed(sessionDirection.counterparties)) {
             processLinkManagerPayload(
                 sessionDirection.counterparties,
@@ -265,9 +260,7 @@ internal class InboundMessageProcessor(
             }
             makeAckMessageForFlowMessage(innerMessage.message, session)?.plus(
                 Record(Schemas.P2P.P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message))
-            )?.also {
-                sessionManager.inboundSessionEstablished(session.sessionId)
-            }
+            )
         } else if (sessionSource != messageSource.toCorda()) {
             logger.warn(
                 "The identity in the message's source header ($messageSource)" +
