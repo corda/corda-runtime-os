@@ -16,6 +16,14 @@ fun Certificate.toPem(): String {
         str.toString()
     }
 }
+/**
+ * Convert a Certificate collection to PEM string.
+ */
+fun Collection<Certificate>.toPem(): String {
+    return this.map {
+        it.toPem()
+    }.joinToString(separator = "\n")
+}
 
 /**
  * Convert a Key to PEM string.
