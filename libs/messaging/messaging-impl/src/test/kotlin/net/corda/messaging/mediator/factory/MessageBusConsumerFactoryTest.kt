@@ -28,6 +28,8 @@ class MessageBusConsumerFactoryTest {
             "group",
             messageBusConfig,
             cordaConsumerBuilder,
+            "clientId",
+            mock()
         )
     }
 

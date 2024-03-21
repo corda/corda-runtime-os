@@ -10,6 +10,7 @@ import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
+import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.libs.configuration.SmartConfig
@@ -52,6 +53,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 @Suppress("LongParameterList")
 @Component(service = [FlowEventMediatorFactory::class])
@@ -68,6 +70,8 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = PlatformInfoProvider::class)
     val platformInfoProvider: PlatformInfoProvider,
+    @Reference(service = FlowFiberCache::class)
+    val flowFiberCache: FlowFiberCache,
 ) : FlowEventMediatorFactory {
     companion object {
         private const val CONSUMER_GROUP = "FlowEventConsumer"
@@ -123,25 +127,27 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
 
     private fun createMediatorConsumerFactories(messagingConfig: SmartConfig, bootConfig: SmartConfig): List<MediatorConsumerFactory> {
         val mediatorConsumerFactory: MutableList<MediatorConsumerFactory> = mutableListOf(
-            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_START, CONSUMER_GROUP, messagingConfig
-            ),
-            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_EVENT_TOPIC, CONSUMER_GROUP, messagingConfig
-            )
+            mediatorConsumerFactory(FLOW_START, messagingConfig),
+            mediatorConsumerFactory(FLOW_EVENT_TOPIC, messagingConfig)
         )
 
         val mediatorReplicas = bootConfig.getIntOrDefault(WORKER_MEDIATOR_REPLICAS_FLOW_SESSION, 1)
         logger.info("Creating $mediatorReplicas mediator(s) consumer factories for $FLOW_SESSION")
         for(i in 1..mediatorReplicas) {
-            mediatorConsumerFactory.add(
-                mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                    FLOW_SESSION, CONSUMER_GROUP, messagingConfig
-                )
-            )
+            mediatorConsumerFactory.add(mediatorConsumerFactory(FLOW_SESSION, messagingConfig))
         }
 
         return mediatorConsumerFactory
+    }
+
+    private fun mediatorConsumerFactory(
+        topic: String,
+        messagingConfig: SmartConfig
+    ): MediatorConsumerFactory {
+        val clientId = "MultiSourceSubscription--$CONSUMER_GROUP--$topic--${UUID.randomUUID()}"
+        return mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
+            topic, CONSUMER_GROUP, clientId, messagingConfig, FlowMediatorRebalanceListener(clientId, flowFiberCache)
+        )
     }
 
 
