@@ -44,6 +44,7 @@ class DurableFlowStatusProcessorTest {
     private val flowKey1Identity = FlowStatusLookupServiceImplTest.FLOW_KEY_1.identity.toString()
     private val flowKey2Identity = FlowStatusLookupServiceImplTest.FLOW_KEY_2.identity.toString()
     private val running = FlowStates.RUNNING.name
+    private val completed = FlowStates.COMPLETED.name
     private val startRequested = FlowStates.START_REQUESTED.name
 
     @Test
@@ -113,6 +114,37 @@ class DurableFlowStatusProcessorTest {
         assertThat(result2[key]?.version).isEqualTo(1)
         assertThat(result2[key].holdingIdentityFromMetadata()).isEqualTo(flowKey1Identity)
         assertThat(result2[key].statusFromMetadata()).isEqualTo(running)
+    }
+
+    @Test
+    fun `Test onNext does not update existing key if it has a completed status`() {
+        val record1 = Record(
+            FLOW_STATUS_TOPIC, FlowStatusLookupServiceImplTest.FLOW_KEY_1, createFlowStatus(
+                FlowStates.COMPLETED))
+        val record2 = Record(
+            FLOW_STATUS_TOPIC, FlowStatusLookupServiceImplTest.FLOW_KEY_1, createFlowStatus(
+                FlowStates.FAILED))
+        val key = FlowStatusLookupServiceImplTest.FLOW_KEY_1.hash()
+
+        flowStatusProcessor.onNext(listOf(record1))
+
+        val result1 = stateManager.get(setOf(key))
+
+        assertThat(result1.size).isEqualTo(1)
+        assertThat(result1.containsKey(key)).isTrue()
+        assertThat(result1[key]?.version).isEqualTo(0)
+        assertThat(result1[key].holdingIdentityFromMetadata()).isEqualTo(flowKey1Identity)
+        assertThat(result1[key].statusFromMetadata()).isEqualTo(completed)
+
+        flowStatusProcessor.onNext(listOf(record2))
+
+        val result2 = stateManager.get(setOf(key))
+
+        assertThat(result2.size).isEqualTo(1)
+        assertThat(result2.containsKey(key)).isTrue()
+        assertThat(result2[key]?.version).isEqualTo(0)
+        assertThat(result2[key].holdingIdentityFromMetadata()).isEqualTo(flowKey1Identity)
+        assertThat(result2[key].statusFromMetadata()).isEqualTo(completed)
     }
 
     @Test

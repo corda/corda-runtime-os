@@ -26,7 +26,7 @@ class StatefulSessionEventPublisher(
     private val config = PublisherConfig(CLIENT_ID)
     private val publisher = PublisherWithDominoLogic(publisherFactory, coordinatorFactory, config, messagingConfiguration)
 
-    fun recordsForSessionCreated(key: String, direction: SessionDirection): List<Record<String, *>> {
+    fun recordsForSessionCreated(key: String, direction: SessionDirection): List<Record<String, SessionEvent>> {
         return listOf(Record(Schemas.P2P.SESSION_EVENTS, key, SessionEvent(SessionCreated(direction, key))))
     }
 

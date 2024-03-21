@@ -1,6 +1,7 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers
 
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.virtualnode.VirtualNodeCreateStatusResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.data.virtualnode.VirtualNodeOperationStatus
@@ -26,35 +27,48 @@ internal class VirtualNodeOperationStatusHandler(
         try {
             val em = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
 
-            val operationStatuses = virtualNodeRepository.findVirtualNodeOperationByRequestId(em, request.requestId)
+            val operationStatus = virtualNodeRepository.findVirtualNodeOperationByRequestId(em, request.requestId)
 
-            val operationStatusesAvro = operationStatuses.map {
+            val operationStatusesAvro = with(operationStatus) {
                 VirtualNodeOperationStatus(
-                    it.requestId,
-                    it.requestData,
-                    it.requestTimestamp,
-                    it.latestUpdateTimestamp,
-                    it.heartbeatTimestamp,
-                    it.state,
-                    it.errors
+                    requestId,
+                    requestData,
+                    requestTimestamp,
+                    latestUpdateTimestamp,
+                    heartbeatTimestamp,
+                    state,
+                    errors
                 )
             }
 
             val response: VirtualNodeManagementResponse =
-                if (operationStatuses.firstOrNull()?.operationType == VirtualNodeOperationType.CHANGE_DB.name) {
-                    VirtualNodeManagementResponse(
-                        instant,
-                        VirtualNodeUpdateDbStatusResponse(
-                            request.requestId,
-                            VirtualNodeOperationType.CHANGE_DB.name,
-                            operationStatusesAvro.first()
+                when (operationStatus.operationType) {
+                    VirtualNodeOperationType.CHANGE_DB.name -> {
+                        VirtualNodeManagementResponse(
+                            instant,
+                            VirtualNodeUpdateDbStatusResponse(
+                                request.requestId,
+                                VirtualNodeOperationType.CHANGE_DB.name,
+                                operationStatusesAvro
+                            )
                         )
-                    )
-                } else {
-                    VirtualNodeManagementResponse(
-                        instant,
-                        VirtualNodeOperationStatusResponse(request.requestId, operationStatusesAvro)
-                    )
+                    }
+                    VirtualNodeOperationType.CREATE.name -> {
+                        VirtualNodeManagementResponse(
+                            instant,
+                            VirtualNodeCreateStatusResponse(
+                                request.requestId,
+                                VirtualNodeOperationType.CREATE.name,
+                                operationStatusesAvro
+                            )
+                        )
+                    }
+                    else -> {
+                        VirtualNodeManagementResponse(
+                            instant,
+                            VirtualNodeOperationStatusResponse(request.requestId, listOf(operationStatusesAvro))
+                        )
+                    }
                 }
             respFuture.complete(response)
         } catch (e: Exception) {

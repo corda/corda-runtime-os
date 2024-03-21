@@ -21,7 +21,7 @@ import net.corda.rest.annotations.RestQueryParameter
  */
 @Deprecated("Deprecated in favour of KeyRestResource")
 @HttpRestResource(
-    name = "Keys Management API",
+    name = "Keys Management",
     description = "The Keys Management API consists of endpoints used to manage public and private key pairs. The API" +
         " allows you to list scheme codes which are supported by the associated HSM integration, retrieve" +
         " information about key pairs owned by a tenant, generate a key pair for a tenant, and retrieve a tenant's" +

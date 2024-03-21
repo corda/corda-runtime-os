@@ -5,6 +5,8 @@ import net.corda.rest.ResponseCode
 /**
  * Indicates a requested resource is in an incompatible state with the request.
  *
- * @param message the exception message
+ * @param title the exception title
+ * @param exceptionDetails contains cause and reason
  */
-class OperationNotAllowedException(message: String) : HttpApiException(ResponseCode.METHOD_NOT_ALLOWED, message)
+class OperationNotAllowedException(title: String, exceptionDetails: ExceptionDetails? = null) :
+    HttpApiException(ResponseCode.METHOD_NOT_ALLOWED, title, exceptionDetails = exceptionDetails)

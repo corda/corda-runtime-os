@@ -7,9 +7,7 @@ import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.ReEstablishSessionMessage
-import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
-import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.event.SessionDirection
 import net.corda.libs.configuration.SmartConfig
@@ -22,13 +20,13 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.Session
+import net.corda.p2p.linkmanager.common.MessageConverter.Companion.createLinkOutMessage
 import net.corda.p2p.linkmanager.membership.lookup
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.CannotEstablishSession
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionsNeeded
@@ -48,7 +46,8 @@ import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.toOutbound
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
 import net.corda.p2p.linkmanager.state.SessionState
-import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
+import net.corda.p2p.messaging.P2pRecordsFactory
+import net.corda.p2p.messaging.Subsystem
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.time.Clock
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -58,16 +57,13 @@ import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.time.Duration
 import java.util.Base64
-import java.util.UUID
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage as AvroInitiatorHandshakeMessage
 import net.corda.data.p2p.crypto.InitiatorHelloMessage as AvroInitiatorHelloMessage
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage as AvroResponderHandshakeMessage
 import net.corda.data.p2p.crypto.ResponderHelloMessage as AvroResponderHelloMessage
-import net.corda.p2p.linkmanager.common.MessageConverter.Companion.createLinkOutMessage
 
 @Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 internal class StatefulSessionManagerImpl(
@@ -83,6 +79,7 @@ internal class StatefulSessionManagerImpl(
     private val schemaRegistry: AvroSchemaRegistry,
     private val sessionCache: SessionCache,
     private val sessionEventPublisher: StatefulSessionEventPublisher,
+    private val p2pRecordsFactory: P2pRecordsFactory,
 ) : SessionManager {
     companion object {
         const val LINK_MANAGER_SUBSYSTEM = "link-manager"
@@ -205,7 +202,7 @@ internal class StatefulSessionManagerImpl(
                 OutboundSessionStatus.SentInitiatorHello, OutboundSessionStatus.SentInitiatorHandshake -> {
                     state.state.replaySessionMessage(state.first.message.message.header.statusFilter)?.let { (needed, newState) ->
                         state.toResultsFirstAndOther(
-                            action = UpdateAction(newState),
+                            action = UpdateAction(newState, true),
                             firstState = needed,
                             otherStates = SessionAlreadyPending(counterparties),
                         )
@@ -368,20 +365,6 @@ internal class StatefulSessionManagerImpl(
 
     override fun messageAcknowledged(sessionId: String) {
         deadSessionMonitor.ackReceived(sessionId)
-    }
-
-    override fun inboundSessionEstablished(sessionId: String) {
-        // Not needed by the Stateful Session Manager
-        return
-    }
-
-    override fun dataMessageReceived(
-        sessionId: String,
-        source: HoldingIdentity,
-        destination: HoldingIdentity,
-    ) {
-        // Not needed by the Stateful Session Manager
-        return
     }
 
     override fun dataMessageSent(session: Session) {
@@ -651,6 +634,7 @@ internal class StatefulSessionManagerImpl(
                 serial = counterParties.serial,
                 membershipStatus = counterParties.status,
                 communicationWithMgm = counterParties.communicationWithMgm,
+                initiationTimestamp = timestamp,
             )
         val newState =
             State(
@@ -762,9 +746,7 @@ internal class StatefulSessionManagerImpl(
                         processInitiatorHello(state, lastMessage)
                     }
                     is InboundSessionMessage.InitiatorHandshakeMessage -> {
-                        processInitiatorHandshake(state, lastMessage)?.let { (message, stateUpdate, session) ->
-                            Result(message, UpdateAction(stateUpdate), session)
-                        }
+                        processInitiatorHandshake(state, lastMessage)
                     }
                 }
             otherContexts.map {
@@ -799,14 +781,10 @@ internal class StatefulSessionManagerImpl(
             val result =
                 when (val lastMessage = lastContext.outboundSessionMessage) {
                     is OutboundSessionMessage.ResponderHelloMessage -> {
-                        processResponderHello(state, lastMessage)?.let { (message, stateUpdate) ->
-                            Result(message, UpdateAction(stateUpdate), null)
-                        }
+                        processResponderHello(state, lastMessage)
                     }
                     is OutboundSessionMessage.ResponderHandshakeMessage -> {
-                        processResponderHandshake(state, lastMessage)?.let { (message, stateUpdate, session) ->
-                            Result(message, UpdateAction(stateUpdate), session)
-                        }
+                        processResponderHandshake(state, lastMessage)
                     }
                 }
             otherContexts.map {
@@ -873,7 +851,7 @@ internal class StatefulSessionManagerImpl(
                             version = state.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
-                    Result(responderHelloToResend, UpdateAction(newState), null)
+                    Result(responderHelloToResend, UpdateAction(newState, true), null)
                 } else {
                     null
                 }
@@ -887,7 +865,7 @@ internal class StatefulSessionManagerImpl(
     private fun processResponderHello(
         state: State?,
         message: OutboundSessionMessage.ResponderHelloMessage,
-    ): Pair<LinkOutMessage?, State>? {
+    ): Result? {
         val metadata = state?.metadata?.toOutbound()
         return when (metadata?.status) {
             OutboundSessionStatus.SentInitiatorHello -> {
@@ -924,7 +902,7 @@ internal class StatefulSessionManagerImpl(
                             version = state.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
-                    responseMessage to newState
+                    Result(responseMessage, UpdateAction(newState, false), null)
                 }
             }
 
@@ -947,7 +925,7 @@ internal class StatefulSessionManagerImpl(
                             version = state.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
-                    initiatorHandshakeToResend to newState
+                    Result(initiatorHandshakeToResend, UpdateAction(newState, true), null)
                 } else {
                     null
                 }
@@ -968,16 +946,10 @@ internal class StatefulSessionManagerImpl(
         }
     }
 
-    private data class ProcessHandshakeResult(
-        val responseMessage: LinkOutMessage?,
-        val stateToUpdate: State,
-        val session: Session?,
-    )
-
     private fun processInitiatorHandshake(
         state: State?,
         message: InboundSessionMessage.InitiatorHandshakeMessage,
-    ): ProcessHandshakeResult? {
+    ): Result? {
         val metadata = state?.metadata?.toInbound()
         return when (metadata?.status) {
             null -> {
@@ -1016,7 +988,7 @@ internal class StatefulSessionManagerImpl(
                             version = state.version,
                             metadata = newMetadata.toMetadata(),
                         )
-                    ProcessHandshakeResult(responseMessage, newState, session)
+                    Result(responseMessage, UpdateAction(newState, false), session)
                 }
             }
             InboundSessionStatus.SentResponderHandshake -> {
@@ -1039,7 +1011,7 @@ internal class StatefulSessionManagerImpl(
                             version = state.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
-                    ProcessHandshakeResult(responderHandshakeToResend, newState, null)
+                    Result(responderHandshakeToResend, UpdateAction(newState, true), null)
                 } else {
                     null
                 }
@@ -1050,7 +1022,7 @@ internal class StatefulSessionManagerImpl(
     private fun processResponderHandshake(
         state: State?,
         message: OutboundSessionMessage.ResponderHandshakeMessage,
-    ): ProcessHandshakeResult? {
+    ): Result? {
         val metadata = state?.metadata?.toOutbound()
         return when (metadata?.status) {
             OutboundSessionStatus.SentInitiatorHandshake -> {
@@ -1084,7 +1056,7 @@ internal class StatefulSessionManagerImpl(
                             version = state.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
-                    ProcessHandshakeResult(null, newState, session)
+                    Result(null, UpdateAction(newState, false), session)
                 }
             }
 
@@ -1175,39 +1147,15 @@ internal class StatefulSessionManagerImpl(
         destination: HoldingIdentity,
         sessionId: String,
     ) {
-        val messageBytes = schemaRegistry.serialize(
+        val record = p2pRecordsFactory.createAuthenticatedMessageRecord(
+            source.toAvro(),
+            destination.toAvro(),
             ReEstablishSessionMessage(sessionId),
-        ).array()
-        val record = createAuthenticatedMessageRecord(source, destination, messageBytes)
+            Subsystem.LINK_MANAGER,
+            filter = MembershipStatusFilter.ACTIVE,
+        )
         logger.info("Sending '{}' to session initiator '{}'.", ReEstablishSessionMessage::class.simpleName, destination)
         sessionManagerImpl.publisher.publish(listOf(record))
-    }
-
-    private fun createAuthenticatedMessageRecord(
-        source: HoldingIdentity,
-        destination: HoldingIdentity,
-        payload: ByteArray,
-    ): Record<String, AppMessage> {
-        val header = AuthenticatedMessageHeader.newBuilder()
-            .setDestination(destination.toAvro())
-            .setSource(source.toAvro())
-            .setMessageId(UUID.randomUUID().toString())
-            .setSubsystem(LINK_MANAGER_SUBSYSTEM)
-            .setStatusFilter(MembershipStatusFilter.ACTIVE)
-            .setTtl(null)
-            .setTraceId(null)
-            .build()
-        val message = AuthenticatedMessage.newBuilder()
-            .setHeader(header)
-            .setPayload(ByteBuffer.wrap(payload))
-            .build()
-        val appMessage = AppMessage(message)
-
-        return Record(
-            P2P_OUT_TOPIC,
-            UUID.randomUUID().toString(),
-            appMessage,
-        )
     }
 
     private val sessionEventListener = StatefulSessionEventProcessor(

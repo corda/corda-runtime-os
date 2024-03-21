@@ -20,14 +20,15 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.VersionedMessageBuilder.retrieveRegistrationStatusMessage
+import net.corda.membership.lib.createMembershipAuthenticatedMessageRecord
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.registration.DECLINED_REASON_FOR_USER_INTERNAL_ERROR
-import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.messaging.P2pRecordsFactory
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
@@ -46,9 +47,9 @@ internal class ApproveRegistrationHandler(
     private val groupReaderProvider: MembershipGroupReaderProvider,
     private val groupParametersWriterService: GroupParametersWriterService,
     private val memberInfoFactory: MemberInfoFactory,
-    private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
-        cordaAvroSerializationFactory,
+    private val membershipP2PRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
         clock,
+        cordaAvroSerializationFactory,
     ),
 ) : RegistrationHandler<ApproveRegistration> {
     private companion object {
@@ -141,7 +142,7 @@ internal class ApproveRegistrationHandler(
                 null
             )
             val persistApproveMessage = if (statusUpdateMessage != null) {
-                p2pRecordsFactory.createAuthenticatedMessageRecord(
+                membershipP2PRecordsFactory.createMembershipAuthenticatedMessageRecord(
                     source = approvedBy,
                     destination = approvedMember,
                     content = statusUpdateMessage,

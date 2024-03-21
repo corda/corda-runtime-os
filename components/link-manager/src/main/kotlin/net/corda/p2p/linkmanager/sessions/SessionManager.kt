@@ -22,9 +22,8 @@ internal interface SessionManager : LifecycleWithDominoTile {
         getMessage: (T) -> LinkInMessage,
     ): Collection<Pair<T, ProcessSessionMessagesResult>>
 
-    fun inboundSessionEstablished(sessionId: String)
     fun messageAcknowledged(sessionId: String)
-    fun dataMessageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity)
+
     fun deleteOutboundSession(counterParties: Counterparties, message: AuthenticatedMessage)
 
     fun dataMessageSent(session: Session)

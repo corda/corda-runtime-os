@@ -104,6 +104,13 @@ abstract class FunctionalBaseTest : Javalin() {
         buildFile.writeText(newContent)
     }
 
+    /**
+     * Allow tests to edit the network config file
+     */
+    fun getNetworkConfigFile() : File {
+        return File("$projectDir/config/static-network-config.json")
+    }
+
     fun executeWithRunner(vararg args: String): BuildResult {
         return GradleRunner
             .create()

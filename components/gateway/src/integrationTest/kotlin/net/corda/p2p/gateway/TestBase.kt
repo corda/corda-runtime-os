@@ -21,10 +21,7 @@ import net.corda.messagebus.db.configuration.DbBusConfigMergerImpl
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
-import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
-import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
-import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
+import net.corda.messaging.emulation.EmulatorFactory
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
@@ -139,8 +136,7 @@ internal open class TestBase {
         init {
             coordinatorFactory = coordinatorFactory ?: lifecycleCoordinatorFactory
         }
-        private val configurationTopicService = TopicServiceImpl()
-        private val rpcTopicService = RPCTopicServiceImpl()
+        private val emulator = EmulatorFactory.create(coordinatorFactory!!)
         private val configPublisherClientId = "config.${UUID.randomUUID().toString().replace("-", "")}"
         private val messagingConfig = SmartConfigImpl.empty()
         private val configMerger = ConfigMergerImpl(DbBusConfigMergerImpl())
@@ -148,10 +144,10 @@ internal open class TestBase {
         val readerService by lazy {
             ConfigurationReadServiceImpl(
                 coordinatorFactory!!,
-                InMemSubscriptionFactory(configurationTopicService, rpcTopicService, coordinatorFactory!!),
+                emulator.subscriptionFactory,
                 configMerger,
                 AvroSchemaRegistryImpl(),
-                CordaPublisherFactory(configurationTopicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory),
+                emulator.publisherFactory,
             ).also {
                 it.start()
                 val bootstrapper = ConfigFactory.empty()
@@ -204,7 +200,7 @@ internal open class TestBase {
                     ConfigValueFactory.fromAnyRef(configuration.connectionConfig.initialReconnectionDelay))
                 .withValue("connectionConfig.maxReconnectionDelay",
                     ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxReconnectionDelay))
-            CordaPublisherFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory)
+            emulator.publisherFactory
                 .createPublisher(PublisherConfig(configPublisherClientId, false), messagingConfig)
                 .use { publisher ->
                     publisher.publishGatewayConfig(publishConfig)
@@ -213,7 +209,7 @@ internal open class TestBase {
         fun publishBadConfig() {
             val publishConfig = ConfigFactory.empty()
                 .withValue("hello", ConfigValueFactory.fromAnyRef("world"))
-            CordaPublisherFactory(configurationTopicService, rpcTopicService, lifecycleCoordinatorFactory)
+            emulator.publisherFactory
                 .createPublisher(PublisherConfig(configPublisherClientId, false), messagingConfig)
                 .use { publisher ->
                     publisher.publishGatewayConfig(publishConfig)
@@ -221,7 +217,7 @@ internal open class TestBase {
         }
 
         override fun close() {
-            configurationTopicService.close()
+            emulator.close()
         }
     }
 

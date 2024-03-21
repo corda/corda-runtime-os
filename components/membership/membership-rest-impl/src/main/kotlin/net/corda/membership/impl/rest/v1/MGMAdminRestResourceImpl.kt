@@ -104,7 +104,7 @@ class MGMAdminRestResourceImpl @Activate constructor(
             } catch (e: MemberNotAnMgmException) {
                 throw InvalidInputDataException(
                     details = mapOf("holdingIdentityShortHash" to holdingIdentityShortHash),
-                    message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
+                    title = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
                 )
             } catch (e: CordaRPCAPIPartitionException) {
                 throw ServiceUnavailableException("Could not perform operation for $holdingIdentityShortHash: Repartition Event!")

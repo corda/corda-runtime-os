@@ -125,19 +125,12 @@ class UtxoPersistenceServiceImpl(
 
         return entityManagerFactory.transaction { em ->
             txIdToIndexesMap.keys.forEach { transactionId ->
-
-                require(txIdToFilteredTxAndSignature.containsKey(transactionId)) { "transaction Id $transactionId is not found." }
-
                 val signedTransactionContainer = findSignedTransaction(transactionId.toString(), TransactionStatus.VERIFIED, em).first
                 val wireTransaction = signedTransactionContainer?.wireTransaction
                 val signatures = signedTransactionContainer?.signatures ?: emptyList()
-                val indexesOfTxId = requireNotNull(txIdToIndexesMap[transactionId])
+                val indexesOfTxId = txIdToIndexesMap[transactionId]!!
 
                 if (wireTransaction != null) {
-                    if (wireTransaction.id != transactionId) {
-                        return@forEach
-                    }
-
                     /** filter wire transaction that is equivalent to:
                      * var filteredTxBuilder = filteredTransactionBuilder
                      *   .withTimeWindow()

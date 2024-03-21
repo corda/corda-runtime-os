@@ -23,7 +23,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
 
     internal companion object {
         init {
-            configureTracing("E2eClusterTracing", null, null)
+            configureTracing("E2eClusterTracing", null, null, emptyMap())
         }
     }
 

@@ -8,6 +8,7 @@ import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
+import net.corda.messaging.emulation.http.HttpService
 import net.corda.messaging.emulation.publisher.CordaPublisher
 import net.corda.messaging.emulation.publisher.HttpRpcClientImpl
 import net.corda.messaging.emulation.publisher.RPCSenderImpl
@@ -23,13 +24,15 @@ import java.util.concurrent.atomic.AtomicInteger
  * @property topicService OSGi DS Injected topic service
  */
 @Component
-class CordaPublisherFactory @Activate constructor(
+internal class CordaPublisherFactory @Activate constructor(
     @Reference(service = TopicService::class)
     private val topicService: TopicService,
     @Reference(service = RPCTopicService::class)
     private val rpcTopicService: RPCTopicService,
     @Reference(service = LifecycleCoordinatorFactory::class)
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = HttpService::class)
+    private val httpService: HttpService,
 ) : PublisherFactory {
     private companion object {
         val instanceIndex = AtomicInteger()
@@ -55,6 +58,6 @@ class CordaPublisherFactory @Activate constructor(
     }
 
     override fun createHttpRpcClient(): HttpRpcClient {
-        return HttpRpcClientImpl()
+        return HttpRpcClientImpl(httpService)
     }
 }

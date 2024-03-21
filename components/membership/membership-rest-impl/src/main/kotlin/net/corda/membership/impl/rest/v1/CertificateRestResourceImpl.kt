@@ -159,7 +159,7 @@ class CertificateRestResourceImpl @Activate constructor(
             } else {
                 val message = "$name is not a valid domain name or IP address"
                 throw InvalidInputDataException(
-                    message = message,
+                    title = message,
                     details = mapOf("subjectAlternativeNames" to message),
                 )
             }
@@ -235,6 +235,28 @@ class CertificateRestResourceImpl @Activate constructor(
             throw InvalidInputDataException(
                 "No certificates in PEM"
             )
+        }
+        if (x509Certificates.size != x509Certificates.toSet().size) {
+            throw InvalidInputDataException(
+                details = mapOf(
+                    "certificate" to
+                        "Certificate chain can not hold a loop."
+                )
+            )
+        }
+        x509Certificates.fold(null) { previousCertificate: X509Certificate?, certificate ->
+            if (previousCertificate != null) {
+                if (previousCertificate.issuerX500Principal != certificate.subjectX500Principal) {
+                    throw InvalidInputDataException(
+                        details = mapOf(
+                            "certificate" to
+                                "This previous certificate in the chain was issued by ${previousCertificate.issuerX500Principal} and " +
+                                "not by ${certificate.subjectX500Principal}"
+                        )
+                    )
+                }
+            }
+            certificate
         }
         if (usageType == CertificateUsage.P2P_SESSION) {
             if (holdingIdentityShortHash == null) {

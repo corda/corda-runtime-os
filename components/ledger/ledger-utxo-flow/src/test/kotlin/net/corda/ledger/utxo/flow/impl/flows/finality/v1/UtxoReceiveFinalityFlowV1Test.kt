@@ -214,8 +214,12 @@ class UtxoReceiveFinalityFlowV1Test {
 
         whenever(signedTransactionWithOwnKeys.id).thenReturn(ID)
         whenever(signedTransactionWithOwnKeys.toLedgerTransaction()).thenReturn(ledgerTransaction)
-        whenever(signedTransactionWithOwnKeys.signatures).thenReturn(listOf(signature1, signature2))
-        whenever(signedTransactionWithOwnKeys.addSignature(signature3)).thenReturn(signedTransactionWithOwnKeys)
+        val signaturesOfTransactionWithOwnKey = mutableListOf(signature1, signature2)
+        whenever(signedTransactionWithOwnKeys.signatures).thenReturn(signaturesOfTransactionWithOwnKey)
+        whenever(signedTransactionWithOwnKeys.addSignature(signature3)).then {
+            signaturesOfTransactionWithOwnKey.add(signature3)
+            signedTransactionWithOwnKeys
+        }
         whenever(signedTransactionWithOwnKeys.addSignature(signatureNotary)).thenReturn(notarizedTransaction)
         whenever(signedTransactionWithOwnKeys.notaryKey).thenReturn(publicKeyNotary)
 
@@ -256,7 +260,7 @@ class UtxoReceiveFinalityFlowV1Test {
         verify(persistenceService).persistTransactionSignatures(
             ID,
             2,
-            listOf()
+            listOf(signature3)
         )
         verify(persistenceService).persist(notarizedTransaction, TransactionStatus.VERIFIED)
         verify(session).send(Payload.Success(listOf(signature1, signature2)))
@@ -332,7 +336,7 @@ class UtxoReceiveFinalityFlowV1Test {
         verify(persistenceService).persistTransactionSignatures(
             ID,
             2,
-            listOf()
+            listOf(signature3)
         )
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.INVALID)
@@ -359,7 +363,7 @@ class UtxoReceiveFinalityFlowV1Test {
         verify(persistenceService).persistTransactionSignatures(
             ID,
             2,
-            listOf()
+            listOf(signature3)
         )
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.INVALID)
@@ -381,7 +385,7 @@ class UtxoReceiveFinalityFlowV1Test {
         verify(persistenceService).persistTransactionSignatures(
             ID,
             2,
-            listOf()
+            listOf(signature3)
         )
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.INVALID), any())
@@ -407,7 +411,7 @@ class UtxoReceiveFinalityFlowV1Test {
         verify(persistenceService).persistTransactionSignatures(
             ID,
             2,
-            listOf()
+            listOf(signature3)
         )
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.INVALID)
@@ -434,7 +438,7 @@ class UtxoReceiveFinalityFlowV1Test {
         verify(persistenceService).persistTransactionSignatures(
             ID,
             2,
-            listOf()
+            listOf(signature3)
         )
         verify(persistenceService, never()).persist(any(), eq(TransactionStatus.VERIFIED), any())
         verify(persistenceService).persist(signedTransactionWithOwnKeys, TransactionStatus.INVALID)
@@ -648,7 +652,7 @@ class UtxoReceiveFinalityFlowV1Test {
         verify(persistenceService).persistTransactionSignatures(
             ID,
             2,
-            listOf()
+            listOf(signature3)
         )
     }
 
