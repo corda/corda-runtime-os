@@ -34,7 +34,7 @@ fun <T : Any?> withPermissionManager(
     } catch (e: UnexpectedPermissionResponseException) {
         logger.warn("Permission manager received an unexpected response: ${e::class.java.name}: ${e.message}")
         throw InternalServerException(
-            details = buildExceptionCauseDetails(e)
+            exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
         )
     } catch (e: RemotePermissionManagementException) {
         logger.warn("Remote permission management error: ${e.exceptionType}: ${e.message}")
@@ -50,43 +50,36 @@ fun <T : Any?> withPermissionManager(
                 ExceptionDetails(e.exceptionType, e.message!!)
             )
             else -> throw InternalServerException(
-                details = buildExceptionCauseDetails(e.exceptionType, e.message ?: "Remote permission management error occurred.")
+                exceptionDetails = ExceptionDetails(e.exceptionType, e.message ?: "Remote permission management error occurred.")
             )
         }
     } catch (e: CordaRPCAPIPartitionException) {
         logger.warn("Error waiting for permission management response.", e)
         throw ServiceUnavailableException(
-            e::class.java.simpleName,
-            ExceptionDetails(e::class.java.name, "Error waiting for permission management response: Repartition Event!")
+            "Error waiting for permission management response: Repartition Event!",
+            ExceptionDetails(e::class.java.name, "${e.message}")
         )
     } catch (e: CordaRPCAPISenderException) {
         logger.warn("Error during sending of permission management request.", e)
         throw InternalServerException(
-            details = buildExceptionCauseDetails(e.cause ?: e)
+            exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
         )
     } catch (e: CordaRPCAPIResponderException) {
         logger.warn("Permission manager received error from responder: ${e.message}", e.cause)
         throw InternalServerException(
-            details = buildExceptionCauseDetails(e.cause ?: e)
+            exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
         )
     } catch (e: TimeoutException) {
         logger.warn("Permission management operation timed out.", e)
-        throw InternalServerException("Permission management operation timed out.")
+        throw InternalServerException(
+            title = "Permission management operation timed out.",
+            exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
+        )
     } catch (e: Exception) {
         logger.warn("Unexpected error during permission management operation.", e)
         throw InternalServerException(
-            "Unexpected permission management error occurred.",
-            details = buildExceptionCauseDetails(e)
+            title = "Unexpected permission management error occurred.",
+            exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
         )
     }
 }
-
-private fun buildExceptionCauseDetails(e: Throwable) = mapOf(
-    "cause" to e::class.java.name,
-    "reason" to (e.message ?: "")
-)
-
-private fun buildExceptionCauseDetails(type: String, reason: String) = mapOf(
-    "cause" to type,
-    "reason" to reason
-)

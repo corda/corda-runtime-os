@@ -82,7 +82,10 @@ class NetworkRestResourceImpl @Activate constructor(
             )
         } catch (e: Throwable) {
             logger.warn("Could not publish to locally hosted identities", e)
-            throw InternalServerException("Could not import certificate: ${e.message}")
+            throw InternalServerException(
+                title = e::class.java.simpleName,
+                exceptionDetails = ExceptionDetails(e::class.java.name, "Could not import certificate: ${e.message}")
+            )
         }
     }
 

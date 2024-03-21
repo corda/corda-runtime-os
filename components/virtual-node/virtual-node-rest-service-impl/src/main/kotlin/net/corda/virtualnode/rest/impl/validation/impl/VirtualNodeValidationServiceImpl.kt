@@ -11,6 +11,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.membership.lib.grouppolicy.GroupPolicyParseException
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceAlreadyExistsException
@@ -21,7 +22,7 @@ import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.rest.impl.validation.VirtualNodeValidationService
-import java.util.UUID
+import java.util.*
 
 internal class VirtualNodeValidationServiceImpl(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
@@ -149,7 +150,13 @@ internal class VirtualNodeValidationServiceImpl(
                 val groupId = try {
                     GroupPolicyParser.groupIdFromJson(groupPolicyJson)
                 } catch (e: GroupPolicyParseException) {
-                    throw InternalServerException("Could not find group ID in CPI policy data '$groupPolicyJson'")
+                    throw InternalServerException(
+                        title = e::class.java.simpleName,
+                        exceptionDetails = ExceptionDetails(
+                            e::class.java.name,
+                            "Could not find group ID in CPI policy data '$groupPolicyJson'"
+                        )
+                    )
                 }
 
                 // generate a group ID when creating a virtual node for an MGM default group.

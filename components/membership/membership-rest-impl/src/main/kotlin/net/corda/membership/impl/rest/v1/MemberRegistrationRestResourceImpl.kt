@@ -159,7 +159,10 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
             } catch (e: CouldNotFindEntityException) {
                 throw ResourceNotFoundException(e.message!!)
             } catch (e: ContextDeserializationException) {
-                throw InternalServerException(e.message!!)
+                throw InternalServerException(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(e::class.java.name, e.message!!)
+                )
             } catch (e: ServiceNotReadyException) {
                 throw ServiceUnavailableException(
                     e::class.java.simpleName,
@@ -190,7 +193,10 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
             } catch (e: CouldNotFindEntityException) {
                 throw ResourceNotFoundException(e.message!!)
             } catch (e: ContextDeserializationException) {
-                throw InternalServerException(e.message!!)
+                throw InternalServerException(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(e::class.java.name, e.message!!)
+                )
             } catch (e: ServiceNotReadyException) {
                 throw ServiceUnavailableException(
                     e::class.java.simpleName,

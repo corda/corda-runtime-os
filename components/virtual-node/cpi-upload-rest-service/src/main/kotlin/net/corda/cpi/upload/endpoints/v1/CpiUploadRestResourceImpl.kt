@@ -108,7 +108,10 @@ class CpiUploadRestResourceImpl @Activate constructor(
                 DuplicateCpiUploadException::class.java.simpleName,
                 ExceptionDetails(ex.errorType, ex.errorMessage)
             )
-            else -> throw InternalServerException(ex.toString(), details)
+            else -> throw InternalServerException(
+                details = details,
+                exceptionDetails = ExceptionDetails(ex.errorType, ex.errorMessage)
+            )
         }
     }
 

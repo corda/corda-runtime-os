@@ -210,7 +210,9 @@ class CertificateRestResourceImplTest {
                 )
             }
 
-            assertThat(details.exceptionDetails!!.reason).isEqualTo("Could not find key with ID $keyId for $holdingIdentityShortHash: Repartition Event!")
+            assertThat(
+                details.exceptionDetails!!.reason
+            ).isEqualTo("Could not find key with ID $keyId for $holdingIdentityShortHash: Repartition Event!")
         }
 
         @Test

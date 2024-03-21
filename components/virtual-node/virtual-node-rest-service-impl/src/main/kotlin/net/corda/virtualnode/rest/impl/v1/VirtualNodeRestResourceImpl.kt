@@ -49,6 +49,7 @@ import net.corda.rest.PluggableRestResource
 import net.corda.rest.asynchronous.v1.AsyncOperationStatus
 import net.corda.rest.asynchronous.v1.AsyncResponse
 import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.InvalidStateChangeException
@@ -596,7 +597,12 @@ internal class VirtualNodeRestResourceImpl(
             VirtualNodeOperationBadRequestException::class.java.name,
             LiquibaseDiffCheckFailedException::class.java.name,
             javax.persistence.RollbackException::class.java.name -> BadRequestException(exception.errorMessage)
-            else -> InternalServerException(exception.errorMessage)
+            else -> InternalServerException(
+                exceptionDetails = ExceptionDetails(
+                    exception.errorType,
+                    exception.errorMessage
+                )
+            )
         }
     }
 

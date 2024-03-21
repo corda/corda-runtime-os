@@ -29,6 +29,7 @@ import net.corda.rbac.schema.RbacKeys.PREFIX_SEPARATOR
 import net.corda.rbac.schema.RbacKeys.START_FLOW_PREFIX
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.ForbiddenException
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.InvalidInputDataException
@@ -249,7 +250,10 @@ class FlowRestResourceImpl @Activate constructor(
         fatalErrorOccurred = true
         log.error(FlowRestExceptionConstants.FATAL_ERROR, exception)
         onFatalError()
-        return InternalServerException(FlowRestExceptionConstants.FATAL_ERROR)
+        return InternalServerException(
+            title = exception::class.java.simpleName,
+            exceptionDetails = ExceptionDetails(exception::class.java.name, FlowRestExceptionConstants.FATAL_ERROR)
+        )
     }
 
     private fun getStartableFlows(holdingIdentityShortHash: String, vNode: VirtualNodeInfo): List<String> {

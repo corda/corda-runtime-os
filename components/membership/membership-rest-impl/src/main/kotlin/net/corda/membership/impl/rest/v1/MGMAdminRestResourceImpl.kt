@@ -118,7 +118,10 @@ class MGMAdminRestResourceImpl @Activate constructor(
             } catch (e: IllegalArgumentException) {
                 throw BadRequestException("${e.message}")
             } catch (e: ContextDeserializationException) {
-                throw InternalServerException("${e.message}")
+                throw InternalServerException(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
+                )
             }
         }
     }

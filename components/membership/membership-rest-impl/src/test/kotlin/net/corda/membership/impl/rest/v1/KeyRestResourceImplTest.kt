@@ -429,7 +429,9 @@ class KeyRestResourceImplTest {
                 keysOps.listSchemes(TENANT_ID, CATEGORY)
             }
 
-            assertThat(details.exceptionDetails!!.reason).isEqualTo("Could not list supported schemes for tenant $TENANT_ID: Repartition Event!")
+            assertThat(
+                details.exceptionDetails!!.reason
+            ).isEqualTo("Could not list supported schemes for tenant $TENANT_ID: Repartition Event!")
         }
 
         @Test

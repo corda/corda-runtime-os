@@ -33,7 +33,12 @@ class ExceptionTranslator {
                     ExceptionDetails(exception.errorType, exception.errorMessage)
                 )
                 else
-                -> InternalServerException(exception.errorMessage)
+                -> InternalServerException(
+                    exceptionDetails = ExceptionDetails(
+                        exception.errorType,
+                        exception.errorMessage
+                    )
+                )
             }
         }
     }

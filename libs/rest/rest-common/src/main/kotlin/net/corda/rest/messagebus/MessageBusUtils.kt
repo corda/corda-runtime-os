@@ -50,7 +50,10 @@ object MessageBusUtils {
 
                 else -> {
                     logger.warn("Could not $operation", ex)
-                    throw InternalServerException("Could not $operation: ${ex.message}")
+                    throw InternalServerException(
+                        title = ex::class.java.simpleName,
+                        exceptionDetails = ExceptionDetails(ex::class.java.name, "Could not $operation: ${ex.message}")
+                    )
                 }
             }
         }
