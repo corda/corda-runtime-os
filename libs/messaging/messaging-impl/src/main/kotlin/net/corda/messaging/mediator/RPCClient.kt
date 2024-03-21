@@ -22,6 +22,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.IOException
+import java.net.ConnectException
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -150,6 +151,7 @@ class RPCClient(
 
     private fun handleExceptions(e: Exception, endpoint: String): Nothing {
         val exceptionToThrow = when (e) {
+            is ConnectException,
             is IOException,
             is InterruptedException,
             is TimeoutException,

@@ -82,7 +82,7 @@ internal class PersistenceExceptionCategorizerImpl : PersistenceExceptionCategor
             criteria<org.hibernate.PessimisticLockException>(),
             criteria<org.hibernate.QueryTimeoutException>(),
             criteria<JDBCConnectionException>(),
-            criteria<LockTimeoutException>(),
+            criteria<LockAcquisitionException>(),
             criteria<TransactionException>(),
             criteria<CacheException>(),
             criteria<SQLTransientConnectionException> {
@@ -90,6 +90,9 @@ internal class PersistenceExceptionCategorizerImpl : PersistenceExceptionCategor
             },
             criteria<SQLException> {
                 it.sqlState in setOf("08001", "08003", "08004", "08006", "08006", "58030")
+            },
+            criteria<SQLException> {
+                it.message == "Connection is closed"
             },
             criteria<SocketException>()
         )
