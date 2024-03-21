@@ -3,14 +3,13 @@ package net.corda.ledger.utxo.token.cache.impl.entities
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.internal.TokenPoolCacheImpl
 import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
+import net.corda.utilities.millis
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.math.BigDecimal
-import kotlin.time.Duration
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
+import java.time.Duration
 
 class TokenPoolImplTest {
 
@@ -36,7 +35,7 @@ class TokenPoolImplTest {
     @Test
     fun `ensure the cache expires after the expiry period`() {
         // Cache will expire after one millisecond
-        val expiryPeriod = 200.toDuration(DurationUnit.MILLISECONDS)
+        val expiryPeriod = 200.millis
 
         val tokenPoolCache = TokenPoolCacheImpl(expiryPeriod)
         val cache = tokenPoolCache.get(POOL_KEY)
@@ -47,7 +46,7 @@ class TokenPoolImplTest {
         Assertions.assertThat(tokenPoolCache.get(POOL_KEY)).isNotEmpty()
 
         // Wait until the expiry period is over
-        Thread.sleep(expiryPeriod.toLong(DurationUnit.MILLISECONDS))
+        Thread.sleep(expiryPeriod.toMillis())
 
         // Ensure there are no cached tokens
         Assertions.assertThat(tokenPoolCache.get(POOL_KEY)).isEmpty()
@@ -56,7 +55,7 @@ class TokenPoolImplTest {
     @Test
     fun `ensure the expiry period is refreshed after an update`() {
         // Cache will expire after one millisecond
-        val expiryPeriod = 200.toDuration(DurationUnit.MILLISECONDS)
+        val expiryPeriod = 200.millis
 
         val tokenPoolCache = TokenPoolCacheImpl(expiryPeriod)
         val cache = tokenPoolCache.get(POOL_KEY)
@@ -67,14 +66,14 @@ class TokenPoolImplTest {
         Assertions.assertThat(cache).isNotEmpty()
 
         // Wait until half the expiry period
-        Thread.sleep(expiryPeriod.toLong(DurationUnit.MILLISECONDS) / 2)
+        Thread.sleep(expiryPeriod.toMillis() / 2)
 
         // Update the cache again
         cache.add(listOf(cachedToken))
         tokenPoolCache.put(POOL_KEY, cache)
 
         // Wait another half
-        Thread.sleep(expiryPeriod.toLong(DurationUnit.MILLISECONDS) / 2)
+        Thread.sleep(expiryPeriod.toMillis() / 2)
 
         // The cache must still have the tokens due to the second update
         Assertions.assertThat(tokenPoolCache.get(POOL_KEY)).isNotEmpty()
@@ -82,7 +81,7 @@ class TokenPoolImplTest {
 
     @Test
     fun `ensure the expiry period is applied to different caches`() {
-        val expiryPeriod = 1000.toDuration(DurationUnit.MILLISECONDS)
+        val expiryPeriod = 1000.millis
         val tokenPoolCache = TokenPoolCacheImpl(expiryPeriod)
 
         // Add token to cache
@@ -92,7 +91,7 @@ class TokenPoolImplTest {
         Assertions.assertThat(tokenPoolCache.get(POOL_KEY)).isNotEmpty()
 
         // Wait half the time of expiry period
-        Thread.sleep(expiryPeriod.toLong(DurationUnit.MILLISECONDS) / 2)
+        Thread.sleep(expiryPeriod.toMillis() / 2)
 
         val poolKeyH2 = POOL_KEY.copy(shortHolderId = "h2")
         val cacheH2 = tokenPoolCache.get(poolKeyH2)
@@ -104,7 +103,7 @@ class TokenPoolImplTest {
         Assertions.assertThat(tokenPoolCache.get(poolKeyH2)).isNotEmpty()
 
         // Wait until the first cache expires but not the second
-        Thread.sleep(expiryPeriod.toLong(DurationUnit.MILLISECONDS) / 2)
+        Thread.sleep(expiryPeriod.toMillis() / 2)
 
         // Ensure there are no cached tokens in the first cache
         Assertions.assertThat(tokenPoolCache.get(POOL_KEY)).isEmpty()
@@ -112,7 +111,7 @@ class TokenPoolImplTest {
         Assertions.assertThat(tokenPoolCache.get(poolKeyH2)).isNotEmpty()
 
         // Wait until the second cache expires too
-        Thread.sleep(expiryPeriod.toLong(DurationUnit.MILLISECONDS))
+        Thread.sleep(expiryPeriod.toMillis())
 
         // Ensure there are no tokens on the second cache
         Assertions.assertThat(tokenPoolCache.get(poolKeyH2)).isEmpty()

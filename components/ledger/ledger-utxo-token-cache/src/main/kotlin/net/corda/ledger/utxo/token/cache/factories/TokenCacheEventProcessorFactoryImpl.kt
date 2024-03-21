@@ -28,7 +28,7 @@ import net.corda.libs.statemanager.api.StateManager
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import kotlin.time.Duration
+import java.time.Duration
 
 @Suppress("LongParameterList")
 class TokenCacheEventProcessorFactoryImpl(

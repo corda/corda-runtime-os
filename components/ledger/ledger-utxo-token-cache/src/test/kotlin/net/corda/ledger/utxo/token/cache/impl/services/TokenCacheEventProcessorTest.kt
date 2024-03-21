@@ -17,7 +17,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import kotlin.time.Duration
+import java.time.Duration
 
 class TokenCacheEventProcessorTest {
 
