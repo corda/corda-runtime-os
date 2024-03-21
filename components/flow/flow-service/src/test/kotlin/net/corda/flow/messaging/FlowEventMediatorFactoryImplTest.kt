@@ -10,6 +10,7 @@ import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
+import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.messaging.mediator.FlowEventMediatorFactory
 import net.corda.flow.messaging.mediator.FlowEventMediatorFactoryImpl
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
@@ -51,6 +52,7 @@ class FlowEventMediatorFactoryImplTest {
     private val multiSourceEventMediatorFactory = mock<MultiSourceEventMediatorFactory>()
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>()
     private val platformInfoProvider = mock<PlatformInfoProvider>()
+    private val flowFiberCache = mock<FlowFiberCache>()
     private val config = mock<SmartConfig>()
 
     val captor = argumentCaptor<EventMediatorConfig<String, Checkpoint, FlowEvent>>()
@@ -71,7 +73,8 @@ class FlowEventMediatorFactoryImplTest {
             messagingClientFactoryFactory,
             multiSourceEventMediatorFactory,
             cordaAvroSerializationFactory,
-            platformInfoProvider
+            platformInfoProvider,
+            flowFiberCache
         )
     }
 

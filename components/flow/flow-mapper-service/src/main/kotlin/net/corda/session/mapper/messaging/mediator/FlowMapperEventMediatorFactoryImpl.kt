@@ -34,6 +34,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 @Component(service = [FlowMapperEventMediatorFactory::class])
 class FlowMapperEventMediatorFactoryImpl @Activate constructor(
@@ -92,9 +93,10 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
         .build()
 
     private fun createMediatorConsumerFactories(messagingConfig: SmartConfig,  bootConfig: SmartConfig): List<MediatorConsumerFactory> {
+        val clientId = "MultiSourceSubscription--$CONSUMER_GROUP--$FLOW_MAPPER_START--${UUID.randomUUID()}"
         val mediatorConsumerFactory: MutableList<MediatorConsumerFactory> = mutableListOf(
             mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_MAPPER_START, CONSUMER_GROUP, messagingConfig
+                FLOW_MAPPER_START, CONSUMER_GROUP, clientId, messagingConfig,
             ),
         )
 
@@ -126,11 +128,11 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
     ): List<MediatorConsumerFactory> {
         val mediatorReplicas = bootConfig.getIntOrDefault(configName, 1)
         logger.info("Creating $mediatorReplicas mediator(s) consumer factories for $topicName")
-
         val mediatorConsumerFactory: List<MediatorConsumerFactory> = (1..mediatorReplicas).map {
-                mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                    topicName, CONSUMER_GROUP, messagingConfig
-                )
+            val clientId = "MultiSourceSubscription--$CONSUMER_GROUP--$topicName--${UUID.randomUUID()}"
+            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
+                topicName, CONSUMER_GROUP, clientId, messagingConfig
+            )
         }
 
         return mediatorConsumerFactory
