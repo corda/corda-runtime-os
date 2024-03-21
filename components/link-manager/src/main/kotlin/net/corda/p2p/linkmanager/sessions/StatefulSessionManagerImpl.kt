@@ -357,20 +357,6 @@ internal class StatefulSessionManagerImpl(
         deadSessionMonitor.ackReceived(sessionId)
     }
 
-    override fun inboundSessionEstablished(sessionId: String) {
-        // Not needed by the Stateful Session Manager
-        return
-    }
-
-    override fun dataMessageReceived(
-        sessionId: String,
-        source: HoldingIdentity,
-        destination: HoldingIdentity,
-    ) {
-        // Not needed by the Stateful Session Manager
-        return
-    }
-
     override fun dataMessageSent(session: Session) {
         deadSessionMonitor.messageSent(session.sessionId)
     }
