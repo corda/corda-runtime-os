@@ -2,8 +2,6 @@ package net.corda.p2p.linkmanager.sessions
 
 import net.corda.data.p2p.ReEstablishSessionMessage
 import net.corda.libs.statemanager.api.State
-import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.isOutbound
-import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.toOutbound
 import net.corda.p2p.linkmanager.sessions.metadata.toCounterparties
 import net.corda.p2p.messaging.P2pRecordsFactory
 import net.corda.p2p.messaging.Subsystem
@@ -24,11 +22,7 @@ internal class ReEstablishmentMessageSender(
     fun send(
         state: State,
     ) {
-        val sessionId = if (state.metadata.isOutbound()) {
-            state.metadata.toOutbound().sessionId
-        } else {
-            state.key
-        }
+        val sessionId = state.key
         val counterparties = state.toCounterparties()
         val source = counterparties.ourId
         val destination = counterparties.counterpartyId

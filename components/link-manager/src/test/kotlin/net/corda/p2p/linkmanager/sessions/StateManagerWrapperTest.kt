@@ -103,6 +103,26 @@ class StateManagerWrapperTest {
     }
 
     @Test
+    fun `get will not send a re-establish request for outbound state`() {
+        val outboundState = mock<State> {
+            on { metadata } doReturn Metadata(
+                mapOf(
+                    "sessionId" to "sessionId"
+                )
+            )
+        }
+        val keysToStates = mapOf("key3" to outboundState)
+        whenever(sessionCache.validateStatesAndScheduleExpiry(keysToStates)).doReturn(keysToStates)
+        whenever(stateManager.get(any())).doReturn(mapOf("key3" to outboundState))
+        whenever(stateConvertor.toCordaSessionState(outboundState, checkRevocation)).thenReturn(null)
+
+        wrapper.get(setOf("key3"))
+
+        verify(reEstablishmentMessageSender, never()).send(any())
+        verify(sessionCache).forgetState(outboundState)
+    }
+
+    @Test
     fun `findStatesMatchingAny calls the state manager`() {
         wrapper.findStatesMatchingAny(filters)
 

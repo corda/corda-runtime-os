@@ -43,23 +43,9 @@ class ReEstablishmentMessageSenderTest {
     private val inboundMetadata = Metadata(
         commonMetadata
     )
-    private val outboundMetadata = Metadata(
-        commonMetadata +
-        mapOf(
-            "sessionId" to SESSION_ID,
-            "status" to "SessionReady",
-            "serial" to 4L,
-            "membershipStatus" to MembershipStatusFilter.ACTIVE_OR_SUSPENDED.toString(),
-            "communicationWithMgm" to true,
-            "initiationTimestampMillis" to 10L,
-        ),
-    )
     private val inboundState = mock<State> {
         on { metadata } doReturn inboundMetadata
         on { key } doReturn SESSION_ID
-    }
-    private val outboundState = mock<State> {
-        on { metadata } doReturn outboundMetadata
     }
     private val record = mock<Record<String, AppMessage>> { }
     private val p2pRecordsFactory = mock<P2pRecordsFactory> {
@@ -94,13 +80,6 @@ class ReEstablishmentMessageSenderTest {
     @Test
     fun `send inbound message will send the correct data`() {
         sender.send(inboundState)
-
-        assertThat(publishedRecords.firstValue.firstOrNull()).isEqualTo(record)
-    }
-
-    @Test
-    fun `send outbound message will send the correct data`() {
-        sender.send(outboundState)
 
         assertThat(publishedRecords.firstValue.firstOrNull()).isEqualTo(record)
     }

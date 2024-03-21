@@ -113,7 +113,9 @@ internal class StateManagerWrapper(
             )
             if (session == null) {
                 sessionCache.forgetState(state)
-                reEstablishmentMessageSender.send(state)
+                if (!state.metadata.isOutbound()) {
+                    reEstablishmentMessageSender.send(state)
+                }
                 null
             } else {
                 key to StateManagerSessionState(state, session)
