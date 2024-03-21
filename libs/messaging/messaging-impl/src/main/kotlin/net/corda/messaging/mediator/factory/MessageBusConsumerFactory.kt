@@ -22,6 +22,7 @@ import net.corda.messaging.subscription.consumer.listener.LoggingConsumerRebalan
  * @param clientId Consumer client Id
  * @param rebalanceListener Rebalance listener
  */
+@Suppress("LongParameterList")
 class MessageBusConsumerFactory(
     private val topicName: String,
     private val groupName: String,
