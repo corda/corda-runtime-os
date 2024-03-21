@@ -359,7 +359,7 @@ internal class StatefulSessionManagerImpl(
                 }
                 else -> emptyList()
             }
-            result.traceable to SessionManager.ProcessSessionMessagesResult(result.result?.message, sessionCreationRecords)
+            result.traceable to SessionManager.ProcessSessionMessagesResult(linkOutMessage, sessionCreationRecords)
         }
     }
 
