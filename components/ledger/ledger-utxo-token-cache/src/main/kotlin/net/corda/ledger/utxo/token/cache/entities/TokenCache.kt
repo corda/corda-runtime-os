@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.token.cache.entities
 
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
-import java.time.Instant
 
 /**
  * The [TokenCache] is a cache of all tokens for a given [TokenPoolCacheKey]
