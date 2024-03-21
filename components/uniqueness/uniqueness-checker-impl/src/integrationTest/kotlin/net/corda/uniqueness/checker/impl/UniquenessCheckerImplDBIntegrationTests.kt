@@ -22,7 +22,6 @@ import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl
 import net.corda.uniqueness.backingstore.impl.JPABackingStoreTestUtilities
 import net.corda.uniqueness.checker.UniquenessChecker
-import net.corda.uniqueness.checker.impl.BatchedUniquenessCheckerImpl
 import net.corda.uniqueness.utils.UniquenessAssertions.assertInputStateConflictResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertMalformedRequestResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertNotPreviouslySeenTransactionResponse
