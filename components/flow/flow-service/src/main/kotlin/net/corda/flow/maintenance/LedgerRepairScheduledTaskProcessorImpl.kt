@@ -66,10 +66,7 @@ class LedgerRepairScheduledTaskProcessorImpl @Activate constructor(
             val messagingConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
             // close the lifecycle registration first to prevent down being signaled
             subscriptionRegistrationHandle?.close()
-
-            /**
-             * Task and executor for the cleanup of checkpoints that are idle or timed out.
-             */
+            
             coordinator.createManagedResource("LEDGER_REPAIR") {
                 subscriptionFactory.createDurableSubscription(
                     SubscriptionConfig(
@@ -101,7 +98,7 @@ class LedgerRepairScheduledTaskProcessorImpl @Activate constructor(
     }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.debug { "Recovery flow event $event." }
+        logger.debug { "Ledger repair scheduled task processor lifecycle event $event." }
 
         when (event) {
             is StartEvent -> {
@@ -109,7 +106,7 @@ class LedgerRepairScheduledTaskProcessorImpl @Activate constructor(
             }
 
             is StopEvent -> {
-                logger.trace { "Recovery flow task processor is stopping..." }
+                logger.trace { "Ledger repair scheduled task processor is stopping..." }
                 subscriptionRegistrationHandle?.close()
                 stateManager?.stop()
             }
@@ -138,7 +135,7 @@ class LedgerRepairScheduledTaskProcessorImpl @Activate constructor(
         private val untilDuration = ledgerConfig.getDuration(LedgerConfig.UTXO_LEDGER_REPAIR_UNTIL_DURATION)
 
         override fun onNext(events: List<Record<String, ScheduledTaskTrigger>>): List<Record<*, *>> {
-            logger.debug { "Processing ${events.size} scheduled event for notarized transaction recovery" }
+            logger.debug { "Processing ${events.size} scheduled event(s) to trigger ledger repair" }
 
             val records = mutableListOf<Record<*, *>>()
 
@@ -185,7 +182,7 @@ class LedgerRepairScheduledTaskProcessorImpl @Activate constructor(
             val until = Instant.now().minus(untilDuration)
             val from = until.minus(fromDuration)
             val clientRequestId =
-                "recover-notarized-transactions-${virtualNode.holdingIdentity.shortHash}-${until.toEpochMilli()}"
+                "ledger-repair-${virtualNode.holdingIdentity.shortHash}-${until.toEpochMilli()}"
 
             // TODO Platform properties to be populated correctly.
             // This is a placeholder which indicates access to everything, see CORE-6076
@@ -218,7 +215,7 @@ class LedgerRepairScheduledTaskProcessorImpl @Activate constructor(
         }
 
         private fun getKeyForStartEvent(flowKey: FlowKey, holdingIdentityShortHash: String): String {
-            return "${flowKey.id}-${holdingIdentityShortHash}"
+            return "${flowKey.id}-$holdingIdentityShortHash"
         }
     }
 }

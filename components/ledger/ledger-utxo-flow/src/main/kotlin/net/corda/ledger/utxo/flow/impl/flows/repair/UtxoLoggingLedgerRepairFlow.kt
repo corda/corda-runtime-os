@@ -1,5 +1,9 @@
 package net.corda.ledger.utxo.flow.impl.flows.repair
 
+import net.corda.flow.application.services.FlowConfigService
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_PROCESSOR_TIMEOUT
+import net.corda.utilities.seconds
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.application.flows.CordaInject
@@ -33,11 +37,16 @@ class UtxoLoggingLedgerRepairFlow private constructor(
         until: Instant,
         duration: Duration,
         clock: Clock,
+        flowConfigService: FlowConfigService,
         flowEngine: FlowEngine,
         log: Logger
     ) : this(from, until, duration, clock, log) {
+        this.flowConfigService = flowConfigService
         this.flowEngine = flowEngine
     }
+
+    @CordaInject
+    lateinit var flowConfigService: FlowConfigService
 
     @CordaInject
     private lateinit var flowEngine: FlowEngine
@@ -48,6 +57,7 @@ class UtxoLoggingLedgerRepairFlow private constructor(
 
         val startTime = System.currentTimeMillis()
         val endTime = Instant.ofEpochMilli(startTime).plus(duration)
+        val maxDurationWithoutSuspending = getMaxTimeWithoutSuspending()
 
         val (
             exceededDuration,
@@ -56,7 +66,7 @@ class UtxoLoggingLedgerRepairFlow private constructor(
             numberOfNotNotarizedTransactions,
             numberOfInvalidTransactions,
             numberOfSkippedTransactions
-        ) = flowEngine.subFlow(UtxoLedgerRepairFlow(from, until, endTime, clock))
+        ) = flowEngine.subFlow(UtxoLedgerRepairFlow(from, until, endTime, maxDurationWithoutSuspending, clock))
 
         when {
             exceededDuration -> {
@@ -74,7 +84,7 @@ class UtxoLoggingLedgerRepairFlow private constructor(
                         "$numberOfInvalidTransactions/$numberOfSkippedTransactions (Notarized/Not-notarized/Invalidated/Skipped). " +
                         "Parameters: $from - $until, $duration. Time taken: " +
                         "${Duration.ofMillis(System.currentTimeMillis() - startTime)}. Exceeded the duration of " +
-                        "$MAX_DURATION_WITHOUT_SUSPENDING between notarizing transactions. There may be more transactions to repair."
+                        "$maxDurationWithoutSuspending between notarizing transactions. There may be more transactions to repair."
                 )
             }
             else -> {
@@ -87,5 +97,13 @@ class UtxoLoggingLedgerRepairFlow private constructor(
             }
         }
         return numberOfNotarizedTransactions
+    }
+
+    @VisibleForTesting
+    internal fun getMaxTimeWithoutSuspending(): Duration {
+        // Shorten the time compared to the configured the mediator's processing timeout, which will normally cause it to timeout. Set the
+        // minimum time to 1 second which is the minimum value for the timeout.
+        val maxIdleTime = flowConfigService.getConfig(MESSAGING_CONFIG).getLong(MEDIATOR_PROCESSING_PROCESSOR_TIMEOUT)
+        return Duration.ofMillis((maxIdleTime - 10.seconds.toMillis()).coerceAtLeast(1.seconds.toMillis()))
     }
 }

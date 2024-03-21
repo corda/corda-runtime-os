@@ -90,8 +90,6 @@ class UtxoDemoFlow : ClientStartableFlow {
                     sessions
                 )
 
-//                utxoLedgerService.recoverMissedNotarisedTransactions(Instant.now())
-
                 finalizationResult.transaction.id.toString().also {
                     log.info("Success! Response: $it")
                 }
@@ -128,7 +126,6 @@ class UtxoResponderFlow : ResponderFlow {
                 }
                 log.info("Verified the transaction- ${ledgerTransaction.id}")
             }
-//            utxoLedgerService.recoverMissedNotarisedTransactions(Instant.now())
             log.info("Finished responder flow - ${finalizationResult.transaction.id}")
         } catch (e: Exception) {
             log.warn("Exceptionally finished responder flow", e)

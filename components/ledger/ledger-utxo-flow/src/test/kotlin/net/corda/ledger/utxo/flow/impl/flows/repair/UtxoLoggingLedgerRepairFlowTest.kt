@@ -1,5 +1,11 @@
 package net.corda.ledger.utxo.flow.impl.flows.repair
 
+import net.corda.flow.application.services.FlowConfigService
+import net.corda.libs.configuration.SmartConfig
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.MessagingConfig.Subscription.MEDIATOR_PROCESSING_PROCESSOR_TIMEOUT
+import net.corda.utilities.minutes
+import net.corda.utilities.seconds
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import org.assertj.core.api.Assertions.assertThat
@@ -20,6 +26,8 @@ class UtxoLoggingLedgerRepairFlowTest {
         private val NOW = Instant.now()
     }
 
+    private val config = mock<SmartConfig>()
+    private val flowConfigService = mock<FlowConfigService>()
     private val flowEngine = mock<FlowEngine>()
     private val log = mock<Logger>()
     private val captor = argumentCaptor<String>()
@@ -28,6 +36,7 @@ class UtxoLoggingLedgerRepairFlowTest {
         NOW,
         Duration.ofSeconds(1),
         mock(),
+        flowConfigService,
         flowEngine,
         log
     )
@@ -35,6 +44,8 @@ class UtxoLoggingLedgerRepairFlowTest {
     @BeforeEach
     fun beforeEach() {
         doNothing().whenever(log).info(captor.capture())
+        whenever(flowConfigService.getConfig(MESSAGING_CONFIG)).thenReturn(config)
+        whenever(config.getLong(MEDIATOR_PROCESSING_PROCESSOR_TIMEOUT)).thenReturn(2.minutes.toMillis())
     }
 
     @Test
@@ -95,5 +106,21 @@ class UtxoLoggingLedgerRepairFlowTest {
             .contains("1/2/3/4")
             .doesNotContain("Exceeded the duration")
             .doesNotContain("without notarizing a transaction")
+    }
+
+    @Test
+    fun `gets max time without notarizing from messaging config`() {
+        whenever(flowConfigService.getConfig(MESSAGING_CONFIG)).thenReturn(config)
+        whenever(config.getLong(MEDIATOR_PROCESSING_PROCESSOR_TIMEOUT)).thenReturn(2.minutes.toMillis())
+        val duration = utxoLoggingLedgerRepairFlow.getMaxTimeWithoutSuspending()
+        assertThat(duration).isEqualTo(110.seconds)
+    }
+
+    @Test
+    fun `coerces max time without notarizing to have a minimum value of 1 second`() {
+        whenever(flowConfigService.getConfig(MESSAGING_CONFIG)).thenReturn(config)
+        whenever(config.getLong(MEDIATOR_PROCESSING_PROCESSOR_TIMEOUT)).thenReturn(1.seconds.toMillis())
+        val duration = utxoLoggingLedgerRepairFlow.getMaxTimeWithoutSuspending()
+        assertThat(duration).isEqualTo(1.seconds)
     }
 }

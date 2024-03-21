@@ -29,6 +29,7 @@ import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import java.time.Instant
 
 @Suppress("LongParameterList")
@@ -36,6 +37,7 @@ class UtxoLedgerRepairFlow(
     private val from: Instant,
     private val until: Instant,
     private val endTime: Instant,
+    private val maxTimeWithoutSuspending: Duration,
     private val clock: Clock = UTCClock(),
     private val queryLimit: Int = QUERY_LIMIT
 ) : SubFlow<UtxoLedgerRepairFlow.Result> {
@@ -50,13 +52,14 @@ class UtxoLedgerRepairFlow(
         from: Instant,
         until: Instant,
         endTime: Instant,
+        maxTimeWithoutSuspending: Duration,
         clock: Clock = UTCClock(),
         flowEngine: FlowEngine,
         persistenceService: UtxoLedgerPersistenceService,
         pluggableNotaryService: PluggableNotaryService,
         visibilityChecker: VisibilityChecker,
         queryLimit: Int = QUERY_LIMIT
-    ) : this(from, until, endTime, clock, queryLimit) {
+    ) : this(from, until, endTime, maxTimeWithoutSuspending, clock, queryLimit) {
         this.flowEngine = flowEngine
         this.persistenceService = persistenceService
         this.pluggableNotaryService = pluggableNotaryService
@@ -307,7 +310,7 @@ class UtxoLedgerRepairFlow(
         if (now.isAfter(endTime)) {
             throw ExceededDurationException()
         }
-        if (now.isAfter(lastCallToNotaryTime.plus(MAX_DURATION_WITHOUT_SUSPENDING))) {
+        if (now.isAfter(lastCallToNotaryTime.plus(maxTimeWithoutSuspending))) {
             throw ExceededLastNotarizationTimeException()
         }
     }

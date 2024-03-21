@@ -10,6 +10,7 @@ import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.impl.token.selection.impl.ALICE_X500_NAME
 import net.corda.ledger.utxo.impl.token.selection.impl.BOB_X500_NAME
+import net.corda.utilities.minutes
 import net.corda.utilities.time.Clock
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.FlowEngine
@@ -33,12 +34,14 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Duration
 import java.time.Instant
 
 class UtxoLedgerRepairFlowTest {
 
     private companion object {
         private val NOW = Instant.now()
+        private val MAX_DURATION_WITHOUT_SUSPENDING = 2.minutes
         private val TX_ID_1 = mock<SecureHash>()
         private val TX_ID_2 = mock<SecureHash>()
         private val TX_ID_3 = mock<SecureHash>()
@@ -664,12 +667,14 @@ class UtxoLedgerRepairFlowTest {
         from: Instant = NOW,
         until: Instant = NOW,
         endTime: Instant = NOW,
+        maxTimeWithoutSuspending: Duration = MAX_DURATION_WITHOUT_SUSPENDING,
         queryLimit: Int = 10
     ): UtxoLedgerRepairFlow {
         return UtxoLedgerRepairFlow(
             from,
             until,
             endTime,
+            maxTimeWithoutSuspending,
             clock,
             flowEngine,
             persistenceService,
