@@ -29,7 +29,7 @@ class TokenBalanceQueryEventHandlerTest {
     private val recordFactory: RecordFactory = mock()
     private val availableTokenService: AvailableTokenService = mock()
     private val tokenCache: TokenCache = mock()
-    private val tokenPoolCache: TokenPoolCache = mock() {
+    private val tokenPoolCache: TokenPoolCache = mock {
         whenever(it.get(any())).thenReturn(tokenCache)
     }
     private val poolCacheState: PoolCacheState = mock()

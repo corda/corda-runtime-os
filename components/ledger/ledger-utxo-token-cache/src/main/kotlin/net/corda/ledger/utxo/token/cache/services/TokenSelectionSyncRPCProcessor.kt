@@ -39,7 +39,6 @@ class TokenSelectionSyncRPCProcessor(
 
         return tokenSelectionMetrics.recordProcessingTime(tokenEvent) {
             try {
-
                 var responseEvent: FlowEvent? = null
 
                 val eventCompletion = eventProcessLock.withLock {

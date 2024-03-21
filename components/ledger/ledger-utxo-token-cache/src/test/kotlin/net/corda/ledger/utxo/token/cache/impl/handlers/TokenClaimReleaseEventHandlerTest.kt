@@ -22,7 +22,7 @@ import org.mockito.kotlin.whenever
 class TokenClaimReleaseEventHandlerTest {
 
     private val tokenCache: TokenCache = mock()
-    private val tokenPoolCache: TokenPoolCache = mock() {
+    private val tokenPoolCache: TokenPoolCache = mock {
         whenever(it.get(any())).thenReturn(tokenCache)
     }
     private val poolCacheState: PoolCacheState = mock()
@@ -88,7 +88,7 @@ class TokenClaimReleaseEventHandlerTest {
 class TokenForceClaimReleaseEventHandlerTest {
 
     private val tokenCache: TokenCache = mock()
-    private val tokenPoolCache: TokenPoolCache = mock() {
+    private val tokenPoolCache: TokenPoolCache = mock {
         whenever(it.get(any())).thenReturn(tokenCache)
     }
     private val poolCacheState: PoolCacheState = mock()

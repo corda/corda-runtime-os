@@ -43,7 +43,6 @@ class TokenClaimQueryEventHandler(
             )
         }
 
-        // Ask the respective handler to process the event
         val tokenCache = tokenPoolCache.get(event.poolKey)
 
         // Attempt to select the tokens from the current cache

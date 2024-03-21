@@ -18,7 +18,7 @@ import org.mockito.kotlin.whenever
 class TokenLedgerChangeEventHandlerTest {
 
     private val tokenCache = mock<TokenCache>()
-    private val tokenPoolCache: TokenPoolCache = mock() {
+    private val tokenPoolCache: TokenPoolCache = mock {
         whenever(it.get(any())).thenReturn(tokenCache)
     }
     private val poolCacheState = mock<PoolCacheState>()

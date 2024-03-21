@@ -10,7 +10,7 @@ import kotlin.time.DurationUnit
 
 class TokenPoolCacheImpl(expiryPeriod: Duration) : TokenPoolCache {
 
-    private val cache = if(expiryPeriod == Duration.ZERO) {
+    private val cache = if (expiryPeriod == Duration.ZERO) {
         Caffeine.newBuilder().build<TokenPoolKey, TokenCache>()
     } else {
         Caffeine.newBuilder()
