@@ -13,10 +13,12 @@ import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
-import net.corda.membership.p2p.helpers.P2pRecordsFactory
+import net.corda.membership.lib.getMembershipRecordKey
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.messaging.P2pRecordsFactory
+import net.corda.p2p.messaging.Subsystem
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.VERIFY_MEMBER_REQUEST
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -76,7 +78,7 @@ class VerifyMemberHandlerTest {
         } doReturn operation
     }
     private val verificationRequestRecord = mock<Record<String, AppMessage>>()
-    private val p2pRecordsFactory = mock<P2pRecordsFactory> {
+    private val membershipP2PRecordsFactory = mock<P2pRecordsFactory> {
         on {
             createAuthenticatedMessageRecord(
                 eq(mgm),
@@ -87,6 +89,8 @@ class VerifyMemberHandlerTest {
                         KeyValuePairList(emptyList<KeyValuePair>())
                     )
                 ),
+                eq(Subsystem.MEMBERSHIP),
+                eq(getMembershipRecordKey(mgm, member)),
                 eq(10),
                 any(),
                 eq(MembershipStatusFilter.PENDING),
@@ -103,7 +107,7 @@ class VerifyMemberHandlerTest {
         membershipPersistenceClient,
         memberTypeChecker,
         config,
-        p2pRecordsFactory
+        membershipP2PRecordsFactory
     )
 
     @Test

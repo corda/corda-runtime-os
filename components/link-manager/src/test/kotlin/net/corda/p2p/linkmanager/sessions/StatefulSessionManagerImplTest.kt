@@ -5,7 +5,6 @@ import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutHeader
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.ReEstablishSessionMessage
-import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
@@ -25,10 +24,10 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.Session
-import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl.Companion.LINK_MANAGER_SUBSYSTEM
 import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 import net.corda.p2p.linkmanager.state.SessionState
-import net.corda.schema.Schemas
+import net.corda.p2p.messaging.P2pRecordsFactory
+import net.corda.p2p.messaging.Subsystem
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.utilities.time.Clock
@@ -40,6 +39,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
@@ -49,7 +49,6 @@ import org.mockito.kotlin.same
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
 import java.time.Instant
 
 class StatefulSessionManagerImplTest {
@@ -83,9 +82,8 @@ class StatefulSessionManagerImplTest {
         }
         whenever(mock.dominoTile).thenReturn(mockDominoTile)
     }
-    private val serialized = argumentCaptor<ReEstablishSessionMessage>()
+
     private val schemaRegistry = mock<AvroSchemaRegistry> {
-        on { serialize(serialized.capture()) } doReturn ByteBuffer.wrap(byteArrayOf(0))
         on {
             deserialize(
                 any(),
@@ -107,6 +105,8 @@ class StatefulSessionManagerImplTest {
         sessionEventPublisher,
     )
 
+    private val p2pRecordsFactory = mock<P2pRecordsFactory>()
+
     private val manager = StatefulSessionManagerImpl(
         mock(),
         mock(),
@@ -120,6 +120,7 @@ class StatefulSessionManagerImplTest {
         schemaRegistry,
         sessionCache,
         sessionEventPublisher,
+        p2pRecordsFactory,
     )
 
     private data class Wrapper<T>(
@@ -283,11 +284,16 @@ class StatefulSessionManagerImplTest {
                 setOf(Wrapper(testSessionId)),
             ) { it.value }
 
-            val publishedRecord = published.firstValue.single()
-            assertThat(publishedRecord.topic).isEqualTo(Schemas.P2P.P2P_OUT_TOPIC)
-            val publishedMessageHeader = ((publishedRecord.value as AppMessage).message as AuthenticatedMessage).header
-            assertThat(publishedMessageHeader.subsystem).isEqualTo(LINK_MANAGER_SUBSYSTEM)
-            assertThat(serialized.firstValue.sessionId).isEqualTo(testSessionId)
+            verify(p2pRecordsFactory).createAuthenticatedMessageRecord(
+                eq(HoldingIdentity("O=Alice, L=London, C=GB", "group ID")),
+                eq(HoldingIdentity("O=Bob, L=London, C=GB", "group ID")),
+                eq(ReEstablishSessionMessage(testSessionId)),
+                eq(Subsystem.LINK_MANAGER),
+                any(),
+                anyOrNull(),
+                any(),
+                eq(MembershipStatusFilter.ACTIVE),
+            )
         }
 
         @Test
