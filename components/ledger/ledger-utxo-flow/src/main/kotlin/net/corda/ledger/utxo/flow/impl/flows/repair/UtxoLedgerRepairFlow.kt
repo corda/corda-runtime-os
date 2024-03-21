@@ -202,7 +202,7 @@ class UtxoLedgerRepairFlow(
         val notarizationFlow = pluggableNotaryService.create(
             transaction,
             pluggableNotaryService.get(transaction.notaryName),
-            NotarizationType.CHECK
+            NotarizationType.READ
         )
 
         log.info(

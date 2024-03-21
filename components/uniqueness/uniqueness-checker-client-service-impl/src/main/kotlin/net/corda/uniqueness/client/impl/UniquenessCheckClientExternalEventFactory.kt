@@ -66,12 +66,12 @@ data class UniquenessCheckExternalEventParams(
 
 @CordaSerializable
 enum class UniquenessCheckType {
-    NOTARIZE, CHECK;
+    WRITE, READ;
 
     fun toAvro(): UniquenessCheckTypeAvro {
         return when (this) {
-            NOTARIZE -> UniquenessCheckTypeAvro.NOTARIZE
-            CHECK -> UniquenessCheckTypeAvro.CHECK
+            WRITE -> UniquenessCheckTypeAvro.WRITE
+            READ -> UniquenessCheckTypeAvro.READ
         }
     }
 }

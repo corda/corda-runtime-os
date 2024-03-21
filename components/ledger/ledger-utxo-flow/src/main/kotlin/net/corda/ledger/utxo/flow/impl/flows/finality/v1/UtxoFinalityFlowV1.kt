@@ -265,7 +265,7 @@ class UtxoFinalityFlowV1(
         val notary = transaction.notaryName
 
         val notarize = @Suspendable { attemptNumber: Int ->
-            val notarizationFlow = pluggableNotaryService.create(transaction, pluggableNotaryDetails, NotarizationType.NOTARIZE)
+            val notarizationFlow = pluggableNotaryService.create(transaction, pluggableNotaryDetails, NotarizationType.WRITE)
             // `log.trace {}` and `log.debug {}` are not used in this method due to a Quasar issue.
             if (log.isTraceEnabled) {
                 log.trace(

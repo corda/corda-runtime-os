@@ -17,7 +17,7 @@ import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
-import net.corda.v5.ledger.notary.plugin.api.NotarizationType.CHECK
+import net.corda.v5.ledger.notary.plugin.api.NotarizationType.READ
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionGeneral
@@ -84,9 +84,9 @@ class UtxoLedgerRepairFlowTest {
         whenever(transaction3.notaryName).thenReturn(ALICE_X500_NAME)
 
         whenever(pluggableNotaryService.get(ALICE_X500_NAME)).thenReturn(PLUGGABLE_NOTARY_DETAILS)
-        whenever(pluggableNotaryService.create(transaction1, PLUGGABLE_NOTARY_DETAILS, CHECK)).thenReturn(pluggableNotaryFlow1)
-        whenever(pluggableNotaryService.create(transaction2, PLUGGABLE_NOTARY_DETAILS, CHECK)).thenReturn(pluggableNotaryFlow1)
-        whenever(pluggableNotaryService.create(transaction3, PLUGGABLE_NOTARY_DETAILS, CHECK)).thenReturn(pluggableNotaryFlow1)
+        whenever(pluggableNotaryService.create(transaction1, PLUGGABLE_NOTARY_DETAILS, READ)).thenReturn(pluggableNotaryFlow1)
+        whenever(pluggableNotaryService.create(transaction2, PLUGGABLE_NOTARY_DETAILS, READ)).thenReturn(pluggableNotaryFlow1)
+        whenever(pluggableNotaryService.create(transaction3, PLUGGABLE_NOTARY_DETAILS, READ)).thenReturn(pluggableNotaryFlow1)
 
         whenever(flowEngine.subFlow(pluggableNotaryFlow1)).thenReturn(listOf(SIGNATURE))
 
@@ -646,9 +646,9 @@ class UtxoLedgerRepairFlowTest {
         whenever(pluggableNotaryService.get(ALICE_X500_NAME)).thenReturn(PLUGGABLE_NOTARY_DETAILS)
         whenever(pluggableNotaryService.get(BOB_X500_NAME)).thenReturn(pluggableNotaryDetails2)
         whenever(pluggableNotaryService.get(CHARLIE_X500_NAME)).thenReturn(pluggableNotaryDetails3)
-        whenever(pluggableNotaryService.create(transaction1, PLUGGABLE_NOTARY_DETAILS, CHECK)).thenReturn(pluggableNotaryFlow1)
-        whenever(pluggableNotaryService.create(transaction2, pluggableNotaryDetails2, CHECK)).thenReturn(pluggableNotaryFlow2)
-        whenever(pluggableNotaryService.create(transaction3, pluggableNotaryDetails3, CHECK)).thenReturn(pluggableNotaryFlow3)
+        whenever(pluggableNotaryService.create(transaction1, PLUGGABLE_NOTARY_DETAILS, READ)).thenReturn(pluggableNotaryFlow1)
+        whenever(pluggableNotaryService.create(transaction2, pluggableNotaryDetails2, READ)).thenReturn(pluggableNotaryFlow2)
+        whenever(pluggableNotaryService.create(transaction3, pluggableNotaryDetails3, READ)).thenReturn(pluggableNotaryFlow3)
         whenever(flowEngine.subFlow(pluggableNotaryFlow1)).thenThrow(notaryExceptionUnknown)
         whenever(flowEngine.subFlow(pluggableNotaryFlow2)).thenThrow(notaryExceptionUnknown)
         whenever(flowEngine.subFlow(pluggableNotaryFlow3)).thenThrow(notaryExceptionUnknown)

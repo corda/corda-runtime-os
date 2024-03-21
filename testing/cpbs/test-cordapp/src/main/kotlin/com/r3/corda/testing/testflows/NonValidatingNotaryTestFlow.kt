@@ -102,7 +102,7 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
             val signatures = flowEngine.subFlow(NonValidatingNotaryClientFlowImpl(
                 stx,
                 findNotaryVNodeName(),
-                NotarizationType.NOTARIZE
+                NotarizationType.WRITE
             ))
 
             // TODO The below is static and needs aligning if signatures > 1

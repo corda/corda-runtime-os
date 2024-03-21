@@ -81,7 +81,7 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
             ) = session.receive(ContractVerifyingNotarizationPayload::class.java)
 
             if (logger.isTraceEnabled) {
-                logger.trace("Received notarization request for transaction {}", initialTransaction.id)
+                logger.trace("Received notarization request ($notarizationType) for transaction {}", initialTransaction.id)
             }
 
             val initialTransactionDetails = getInitialTransactionDetail(initialTransaction)
@@ -93,14 +93,14 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
             verifyTransaction(initialTransaction, filteredTransactionsAndSignatures)
 
             if (logger.isTraceEnabled) {
-                logger.trace("Requesting uniqueness check for transaction {}", initialTransactionDetails.id)
+                logger.trace("Requesting uniqueness check ($notarizationType) for transaction {}", initialTransactionDetails.id)
             }
 
             val uniquenessResult = checkUniqueness(initialTransactionDetails, session, notarizationType)
 
             if (logger.isDebugEnabled) {
                 logger.debug(
-                    "Uniqueness check completed for transaction {}, result is: {}. Sending response to {}",
+                    "Uniqueness check ($notarizationType) completed for transaction {}, result is: {}. Sending response to {}",
                     initialTransaction.id, uniquenessResult, session.counterparty
                 )
             }
@@ -233,7 +233,7 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
         notarizationType: NotarizationType
     ): UniquenessCheckResult {
         return when (notarizationType) {
-            NotarizationType.NOTARIZE -> clientService.requestUniquenessCheck(
+            NotarizationType.WRITE -> clientService.requestUniquenessCheckWrite(
                 txDetails.id.toString(),
                 session.counterparty.toString(),
                 txDetails.inputs.map { it.toString() },
@@ -242,7 +242,7 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
                 txDetails.timeWindow.from,
                 txDetails.timeWindow.until
             )
-            NotarizationType.CHECK -> clientService.requestUniquenessCheck(
+            NotarizationType.READ -> clientService.requestUniquenessCheckRead(
                 txDetails.id.toString(),
                 session.counterparty.toString(),
                 txDetails.timeWindow.from,

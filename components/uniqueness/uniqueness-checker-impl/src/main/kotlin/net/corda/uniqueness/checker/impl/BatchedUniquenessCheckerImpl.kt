@@ -136,8 +136,8 @@ class BatchedUniquenessCheckerImpl(
 
         // TODO - Re-instate batch processing logic based on number of states if needed - need to
         // establish what batching there is in the message bus layer first
-        processUniquenessChecks(groupedRequests, results)
-        processExistingUniquenessChecks(groupedRequests, results)
+        processUniquenessCheckWrites(groupedRequests, results)
+        processUniquenessCheckReads(groupedRequests, results)
 
         CordaMetrics.Metric.UniquenessCheckerBatchExecutionTime
             .builder()
@@ -152,25 +152,25 @@ class BatchedUniquenessCheckerImpl(
         return results
     }
 
-    private fun processUniquenessChecks(
+    private fun processUniquenessCheckWrites(
         groupedRequests: Map<UniquenessCheckType, List<Pair<UniquenessCheckRequestInternal, UniquenessCheckRequestAvro>>>,
         results: HashMap<UniquenessCheckRequestAvro, UniquenessCheckResponseAvro>
     ) {
-        groupedRequests[UniquenessCheckType.NOTARIZE]?.let { notarizations ->
+        groupedRequests[UniquenessCheckType.WRITE]?.let { notarizations ->
             processBatches(
                 notarizations,
                 results,
-                ::processUniquenessCheckBatch
+                ::processUniquenessCheckWriteBatch
             )
         }
     }
 
-    private fun processExistingUniquenessChecks(
+    private fun processUniquenessCheckReads(
         groupedRequests: Map<UniquenessCheckType, List<Pair<UniquenessCheckRequestInternal, UniquenessCheckRequestAvro>>>,
         results: HashMap<UniquenessCheckRequestAvro, UniquenessCheckResponseAvro>
     ) {
-        groupedRequests[UniquenessCheckType.CHECK]?.let { checks ->
-            processBatches(checks, results, ::processExistingUniquenessCheckBatch)
+        groupedRequests[UniquenessCheckType.READ]?.let { checks ->
+            processBatches(checks, results, ::processUniquenessCheckReadBatch)
         }
     }
 
@@ -262,7 +262,7 @@ class BatchedUniquenessCheckerImpl(
     }
 
     @Suppress("ComplexMethod", "LongMethod")
-    private fun processUniquenessCheckBatch(
+    private fun processUniquenessCheckWriteBatch(
         holdingIdentity: HoldingIdentity,
         batch: List<UniquenessCheckRequestInternal>
     ): List<Pair<UniquenessCheckRequestInternal, InternalUniquenessCheckResultWithContext>> {
@@ -398,7 +398,7 @@ class BatchedUniquenessCheckerImpl(
             val numSuccessful = resultsToRespondWith.filter {
                 it.second.result is UniquenessCheckResultSuccess }.size
 
-            log.debug { "Finished processing batch for $holdingIdentity. " +
+            log.debug { "Finished processing write batch for $holdingIdentity. " +
                     "$numSuccessful successful, " +
                     "${resultsToRespondWith.size - numSuccessful} rejected" }
         }
@@ -407,7 +407,7 @@ class BatchedUniquenessCheckerImpl(
     }
 
     @Suppress("ComplexMethod", "LongMethod")
-    private fun processExistingUniquenessCheckBatch(
+    private fun processUniquenessCheckReadBatch(
         holdingIdentity: HoldingIdentity,
         batch: List<UniquenessCheckRequestInternal>
     ): List<Pair<UniquenessCheckRequestInternal, InternalUniquenessCheckResultWithContext>> {
@@ -415,7 +415,7 @@ class BatchedUniquenessCheckerImpl(
         val resultsToRespondWith =
             mutableListOf<Pair<UniquenessCheckRequestInternal, InternalUniquenessCheckResultWithContext>>()
 
-        log.debug { "Processing existing uniqueness check batch of ${batch.size} requests for $holdingIdentity" }
+        log.debug { "Processing uniqueness check read batch of ${batch.size} requests for $holdingIdentity" }
 
         // DB operations are retried, removing conflicts from the batch on each attempt.
         backingStore.transactionSession(holdingIdentity) { session, _ ->
@@ -473,11 +473,11 @@ class BatchedUniquenessCheckerImpl(
                 (it.second.result as? UniquenessCheckResultFailure)?.error is UniquenessCheckErrorTimeWindowOutOfBounds
             }.size
 
-            val numNonExisting = resultsToRespondWith.size - (numSuccessful + numRejected)
+            val notFound = resultsToRespondWith.size - (numSuccessful + numRejected)
 
             log.debug(
-                "Finished processing batch for $holdingIdentity. " +
-                "$numSuccessful existing notarizations, $numNonExisting non-existing notarizations, $numRejected rejected"
+                "Finished processing read batch for $holdingIdentity. " +
+                "$numSuccessful successful, $notFound not found, $numRejected rejected"
             )
         }
 

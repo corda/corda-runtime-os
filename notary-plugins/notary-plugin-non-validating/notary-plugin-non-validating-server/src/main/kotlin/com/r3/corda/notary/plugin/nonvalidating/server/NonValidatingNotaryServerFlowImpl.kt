@@ -79,25 +79,26 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     override fun call(session: FlowSession) {
         try {
             val requestPayload = session.receive(NonValidatingNotarizationPayload::class.java)
+            val notarizationType = requestPayload.notarizationType
 
             val txDetails = validateRequest(requestPayload)
 
             validateTransactionNotaryAgainstCurrentNotary(txDetails)
 
             if (logger.isTraceEnabled) {
-                logger.trace("Received notarization request for transaction {}", txDetails.id)
+                logger.trace("Received notarization request ($notarizationType) for transaction {}", txDetails.id)
             }
 
             verifyTransaction(requestPayload)
 
             if (logger.isTraceEnabled) {
-                logger.trace("Requesting uniqueness check for transaction {}", txDetails.id)
+                logger.trace("Requesting uniqueness check ($notarizationType) for transaction {}", txDetails.id)
             }
 
             val uniquenessResult = checkUniqueness(txDetails, session, requestPayload.notarizationType)
 
             if (logger.isDebugEnabled) {
-                logger.debug("Uniqueness check completed for transaction {}, result is: {}. Sending response to {}",
+                logger.debug("Uniqueness check ($notarizationType) completed for transaction {}, result is: {}. Sending response to {}",
                     txDetails.id, uniquenessResult, session.counterparty)
             }
 
@@ -241,7 +242,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
         notarizationType: NotarizationType
     ): UniquenessCheckResult {
         return when (notarizationType) {
-            NotarizationType.NOTARIZE -> clientService.requestUniquenessCheck(
+            NotarizationType.WRITE -> clientService.requestUniquenessCheckWrite(
                 txDetails.id.toString(),
                 session.counterparty.toString(),
                 txDetails.inputs.map { it.toString() },
@@ -250,7 +251,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
                 txDetails.timeWindow.from,
                 txDetails.timeWindow.until
             )
-            NotarizationType.CHECK -> clientService.requestUniquenessCheck(
+            NotarizationType.READ -> clientService.requestUniquenessCheckRead(
                 txDetails.id.toString(),
                 session.counterparty.toString(),
                 txDetails.timeWindow.from,

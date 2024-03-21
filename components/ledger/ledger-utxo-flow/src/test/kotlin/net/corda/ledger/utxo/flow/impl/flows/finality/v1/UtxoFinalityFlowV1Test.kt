@@ -210,7 +210,7 @@ class UtxoFinalityFlowV1Test {
         whenever(transactionState.contractType).thenReturn(TestContact::class.java)
         whenever(transactionState.contractState).thenReturn(testState)
 
-        whenever(pluggableNotaryService.create(any(), any(), eq(NotarizationType.NOTARIZE))).thenReturn(pluggableNotaryClientFlow)
+        whenever(pluggableNotaryService.create(any(), any(), eq(NotarizationType.WRITE))).thenReturn(pluggableNotaryClientFlow)
         whenever(pluggableNotaryDetails.flowClass).thenReturn(pluggableNotaryClientFlow.javaClass)
     }
 

@@ -33,7 +33,7 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun requestUniquenessCheck(
+    override fun requestUniquenessCheckWrite(
         transactionId: String,
         originatorX500Name: String,
         inputStates: List<String>,
@@ -42,7 +42,7 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
         timeWindowLowerBound: Instant?,
         timeWindowUpperBound: Instant
     ): UniquenessCheckResult {
-        log.debug { "Received request with id: $transactionId, sending it to Uniqueness Checker" }
+        log.debug { "Received write request with id: $transactionId, sending it to Uniqueness Checker" }
 
         val startTime = System.nanoTime()
 
@@ -56,7 +56,7 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
                 numOutputStates,
                 timeWindowLowerBound,
                 timeWindowUpperBound,
-                UniquenessCheckType.NOTARIZE
+                UniquenessCheckType.WRITE
             )
         ).also {
             CordaMetrics.Metric.Ledger.UniquenessClientRunTime
@@ -74,13 +74,13 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun requestUniquenessCheck(
+    override fun requestUniquenessCheckRead(
         transactionId: String,
         originatorX500Name: String,
         timeWindowLowerBound: Instant?,
         timeWindowUpperBound: Instant
     ): UniquenessCheckResult {
-        log.debug { "Received check request with id: $transactionId, sending it to Uniqueness Checker" }
+        log.debug { "Received read request with id: $transactionId, sending it to Uniqueness Checker" }
 
         val startTime = System.nanoTime()
 
@@ -94,7 +94,7 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
                 0,
                 timeWindowLowerBound,
                 timeWindowUpperBound,
-                UniquenessCheckType.CHECK
+                UniquenessCheckType.READ
             )
         ).also {
             CordaMetrics.Metric.Ledger.UniquenessClientRunTime

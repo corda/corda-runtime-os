@@ -419,11 +419,11 @@ class NonValidatingNotaryServerFlowImplTest {
     }
 
     private fun mockThrowErrorUniquenessCheckClientService() = mock<LedgerUniquenessCheckerClientService> {
-        on { requestUniquenessCheck(any(), any(), any(), any(), any(), any(), any()) } doThrow
+        on { requestUniquenessCheckWrite(any(), any(), any(), any(), any(), any(), any()) } doThrow
                 IllegalArgumentException("Uniqueness checker cannot be reached")
     }
 
     private fun mockUniquenessClientService(response: UniquenessCheckResult) = mock<LedgerUniquenessCheckerClientService> {
-        on { requestUniquenessCheck(any(), any(), any(), any(), any(), any(), any()) } doReturn response
+        on { requestUniquenessCheckWrite(any(), any(), any(), any(), any(), any(), any()) } doReturn response
     }
 }

@@ -610,13 +610,13 @@ class ContractVerifyingNotaryServerFlowImplTest {
     }
 
     private fun mockThrowErrorUniquenessCheckClientService() = mock<LedgerUniquenessCheckerClientService>().also {
-        whenever(it.requestUniquenessCheck(any(), any(), any(), any(), any(), any(), any())).thenThrow(
+        whenever(it.requestUniquenessCheckWrite(any(), any(), any(), any(), any(), any(), any())).thenThrow(
             IllegalArgumentException("Uniqueness checker cannot be reached")
         )
     }
 
     private fun mockUniquenessClientService(response: UniquenessCheckResult) =
         mock<LedgerUniquenessCheckerClientService>().also {
-            whenever(it.requestUniquenessCheck(any(), any(), any(), any(), any(), any(), any())).thenReturn(response)
+            whenever(it.requestUniquenessCheckWrite(any(), any(), any(), any(), any(), any(), any())).thenReturn(response)
         }
 }
