@@ -15,6 +15,8 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.messaging.mediator.metrics.EventMediatorMetrics
 import net.corda.tracing.addTraceContextToRecord
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 /**
  * Class to process records received from the consumer.
@@ -30,6 +32,9 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     private val mediatorInputService: MediatorInputService,
 ) {
 
+    private companion object {
+        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
     private val metrics = EventMediatorMetrics(config.name)
 
     /**
@@ -50,18 +55,23 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     fun processEvents(
         inputs: Map<K, EventProcessingInput<K, E>>
     ): Map<K, EventProcessingOutput> {
-        return inputs.mapValues { (key, input) ->
-            val inputState = input.state
-            val allConsumerInputs = input.records
-            val processorState = stateManagerHelper.deserializeValue(inputState)?.let { stateValue ->
-                StateAndEventProcessor.State(
-                    stateValue,
-                    inputState?.metadata
-                )
-            }
+        return try {
+            inputs.mapValues { (key, input) ->
+                val inputState = input.state
+                val allConsumerInputs = input.records
+                val processorState = stateManagerHelper.deserializeValue(inputState)?.let { stateValue ->
+                    StateAndEventProcessor.State(
+                        stateValue,
+                        inputState?.metadata
+                    )
+                }
 
-            val newInputs = EventProcessingInput(key, allConsumerInputs, inputState)
-            processRecords(newInputs, processorState)
+                val newInputs = EventProcessingInput(key, allConsumerInputs, inputState)
+                processRecords(newInputs, processorState)
+            }
+        } catch (e: InterruptedException) {
+            logger.warn("Interrupted exception at event processor")
+            throw e
         }
     }
 
