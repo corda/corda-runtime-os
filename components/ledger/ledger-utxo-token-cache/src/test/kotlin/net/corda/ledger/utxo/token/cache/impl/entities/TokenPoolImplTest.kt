@@ -14,7 +14,7 @@ import kotlin.time.toDuration
 
 class TokenPoolImplTest {
 
-    private val cachedToken = mock<CachedToken>() {
+    private val cachedToken = mock<CachedToken> {
         whenever(it.stateRef).thenReturn("stateRef1")
         whenever(it.amount).thenReturn(BigDecimal(1))
     }
@@ -35,7 +35,6 @@ class TokenPoolImplTest {
 
     @Test
     fun `ensure the cache expires after the expiry period`() {
-
         // Cache will expire after one millisecond
         val expiryPeriod = 200.toDuration(DurationUnit.MILLISECONDS)
 
@@ -56,7 +55,6 @@ class TokenPoolImplTest {
 
     @Test
     fun `ensure the expiry period is refreshed after an update`() {
-
         // Cache will expire after one millisecond
         val expiryPeriod = 200.toDuration(DurationUnit.MILLISECONDS)
 
@@ -84,7 +82,6 @@ class TokenPoolImplTest {
 
     @Test
     fun `ensure the expiry period is applied to different caches`() {
-
         val expiryPeriod = 1000.toDuration(DurationUnit.MILLISECONDS)
         val tokenPoolCache = TokenPoolCacheImpl(expiryPeriod)
 
