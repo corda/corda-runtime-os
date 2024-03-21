@@ -71,6 +71,12 @@ class FlowFiberCacheImpl @Activate constructor(
     }
 
     override fun put(key: FlowKey, suspendCount: Int, fiber: FlowFiber) {
+        if (Thread.currentThread().isInterrupted) {
+            val msg = "An interrupted thread attempted to put into flow fiber cache with flow key $key"
+            logger.warn(msg)
+            throw InterruptedException(msg)
+        }
+        logger.info("Putting fiber into cache with key $key and suspend count $suspendCount")
         cache.put(key, FiberCacheValue(fiber, suspendCount))
     }
 

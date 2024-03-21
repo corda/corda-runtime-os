@@ -5,10 +5,13 @@ import io.micrometer.core.instrument.Timer
 import net.corda.metrics.CordaMetrics
 import net.corda.taskmanager.TaskManager
 import net.corda.utilities.VisibleForTesting
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.util.UUID
+import java.util.concurrent.Callable
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
@@ -30,16 +33,19 @@ internal class TaskManagerImpl(
     private val shortRunningTaskGauge = liveTaskGauge(Type.SHORT_RUNNING)
     private val longRunningTaskGauge = liveTaskGauge(Type.LONG_RUNNING)
 
-    override fun <T> executeShortRunningTask(command: () -> T): CompletableFuture<T> {
+    override fun <T> executeShortRunningTask(command: () -> T): Future<T> {
         val start = System.nanoTime()
         incrementTaskCount(Type.SHORT_RUNNING)
-        return CompletableFuture.supplyAsync(
-            { command() },
-            executorService
-        ).whenComplete { _, _ ->
-            shortRunningTaskCompletionTime.record(System.nanoTime() - start, TimeUnit.NANOSECONDS)
-            decrementTaskCount(Type.SHORT_RUNNING)
-        }
+        return executorService.submit(Callable {
+            try {
+                command()
+            } catch (e: InterruptedException) {
+                val interruptedAt = System.nanoTime()
+                shortRunningTaskCompletionTime.record(interruptedAt - start, TimeUnit.NANOSECONDS)
+                decrementTaskCount(Type.SHORT_RUNNING)
+                throw CordaRuntimeException("Short running task interrupted [startTime=$start, interruptedAt=$interruptedAt]")
+            }
+        })
     }
 
     override fun <T> executeLongRunningTask(command: () -> T): CompletableFuture<T> {
