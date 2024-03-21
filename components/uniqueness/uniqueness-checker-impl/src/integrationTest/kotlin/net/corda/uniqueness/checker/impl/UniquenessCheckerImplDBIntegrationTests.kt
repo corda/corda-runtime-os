@@ -1,4 +1,4 @@
-package net.corda.uniqueness.READer.impl
+package net.corda.uniqueness.checker.impl
 
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.testkit.SecureHashUtils
