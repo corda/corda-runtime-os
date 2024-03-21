@@ -34,7 +34,7 @@ class TokenPoolImplTest {
 
     @Test
     fun `ensure the cache expires after the expiry period`() {
-        // Cache will expire after one millisecond
+        // Cache will expire after two hundred millisecond
         val expiryPeriod = 200.millis
 
         val tokenPoolCache = TokenPoolCacheImpl(expiryPeriod)
