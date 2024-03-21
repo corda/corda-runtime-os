@@ -10,6 +10,7 @@ import net.corda.p2p.linkmanager.metrics.recordSessionCreationTime
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.isOutbound
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.toOutbound
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
+import net.corda.p2p.linkmanager.sessions.metadata.toCounterparties
 import net.corda.p2p.linkmanager.state.SessionState
 import net.corda.p2p.linkmanager.state.direction
 import org.slf4j.Logger
@@ -26,10 +27,12 @@ internal class StateManagerWrapper(
         val logger: Logger = LoggerFactory.getLogger(StateManagerWrapper::class.java)
     }
 
-    data class StateAndSessionState(
-        val state: State,
+    data class StateManagerSessionState(
+        val stateManagerOriginalState: State,
         val sessionState: SessionState,
-    )
+    ) {
+        fun toCounterparties() = stateManagerOriginalState.toCounterparties()
+    }
     fun get(
         keys: Collection<String>,
     ) = sessionCache.validateStatesAndScheduleExpiry(
@@ -102,7 +105,7 @@ internal class StateManagerWrapper(
             recordP2PMetric(CordaMetrics.Metric.SessionMessageReplayCount, it.key, it.value.size.toDouble())
         }
     }
-    private fun Map<String, State>.toStates():  Map<String, StateAndSessionState> {
+    private fun Map<String, State>.toStates():  Map<String, StateManagerSessionState> {
         return this.mapNotNull { (key, state) ->
             val session = stateConvertor.toCordaSessionState(
                 state,
@@ -113,7 +116,7 @@ internal class StateManagerWrapper(
                 reEstablishmentMessageSender.send(state)
                 null
             } else {
-                key to StateAndSessionState(state, session)
+                key to StateManagerSessionState(state, session)
             }
         }.toMap()
     }

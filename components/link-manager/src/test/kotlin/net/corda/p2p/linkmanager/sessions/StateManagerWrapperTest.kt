@@ -70,7 +70,7 @@ class StateManagerWrapperTest {
 
         assertThat(ret).isEqualTo(
             mapOf(
-                "key1" to StateManagerWrapper.StateAndSessionState(
+                "key1" to StateManagerWrapper.StateManagerSessionState(
                     state,
                     sessionState,
                 )
@@ -122,7 +122,7 @@ class StateManagerWrapperTest {
 
         assertThat(ret).isEqualTo(
             mapOf(
-                "key1" to StateManagerWrapper.StateAndSessionState(
+                "key1" to StateManagerWrapper.StateManagerSessionState(
                     state,
                     sessionState,
                 )

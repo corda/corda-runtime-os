@@ -20,6 +20,19 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 
 class ReEstablishmentMessageSenderTest {
+    private companion object {
+        const val GROUP_ID = "groupId"
+        const val ALICE_X500_NAME = "O=Alice, L=London, C=GB"
+        const val BOB_X500_NAME = "O=Bob, L=London, C=GB"
+        const val SESSION_ID = "sessionId"
+        private val commonMetadata = mapOf(
+            "sourceVnode" to ALICE_X500_NAME,
+            "destinationVnode" to BOB_X500_NAME,
+            "groupId" to GROUP_ID,
+            "lastSendTimestamp" to 100,
+            "expiry" to 900,
+        )
+    }
     private val publishedRecords = argumentCaptor<List<Record<Any, Any>>>()
     private val publisher = mock<PublisherWithDominoLogic> {
         on { publish(publishedRecords.capture()) } doReturn mock()
@@ -28,22 +41,12 @@ class ReEstablishmentMessageSenderTest {
         on { publisher } doReturn publisher
     }
     private val inboundMetadata = Metadata(
-        mapOf(
-            "sourceVnode" to "O=Alice, L=London, C=GB",
-            "destinationVnode" to "O=Bob, L=London, C=GB",
-            "groupId" to "groupId",
-            "lastSendTimestamp" to 100,
-            "expiry" to 900,
-        ),
+        commonMetadata
     )
     private val outboundMetadata = Metadata(
+        commonMetadata +
         mapOf(
-            "sessionId" to "sessionId",
-            "sourceVnode" to "O=Alice, L=London, C=GB",
-            "destinationVnode" to "O=Bob, L=London, C=GB",
-            "groupId" to "groupId",
-            "lastSendTimestamp" to 100,
-            "expiry" to 900,
+            "sessionId" to SESSION_ID,
             "status" to "SessionReady",
             "serial" to 4L,
             "membershipStatus" to MembershipStatusFilter.ACTIVE_OR_SUSPENDED.toString(),
@@ -53,7 +56,7 @@ class ReEstablishmentMessageSenderTest {
     )
     private val inboundState = mock<State> {
         on { metadata } doReturn inboundMetadata
-        on { key } doReturn "sessionId"
+        on { key } doReturn SESSION_ID
     }
     private val outboundState = mock<State> {
         on { metadata } doReturn outboundMetadata
@@ -64,17 +67,17 @@ class ReEstablishmentMessageSenderTest {
             createAuthenticatedMessageRecord(
                 source = eq(
                     HoldingIdentity(
-                        "O=Alice, L=London, C=GB",
-                        "groupId",
+                        ALICE_X500_NAME,
+                        GROUP_ID,
                     ),
                 ),
                 destination = eq(
                     HoldingIdentity(
-                        "O=Bob, L=London, C=GB",
-                        "groupId",
+                        BOB_X500_NAME,
+                        GROUP_ID,
                     ),
                 ),
-                content = eq(ReEstablishSessionMessage("sessionId")),
+                content = eq(ReEstablishSessionMessage(SESSION_ID)),
                 subsystem = eq(Subsystem.LINK_MANAGER),
                 recordKey = any(),
                 minutesToWait = anyOrNull(),

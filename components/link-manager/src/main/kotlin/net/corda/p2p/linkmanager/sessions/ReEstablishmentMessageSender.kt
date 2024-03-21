@@ -1,7 +1,6 @@
 package net.corda.p2p.linkmanager.sessions
 
 import net.corda.data.p2p.ReEstablishSessionMessage
-import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.isOutbound
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.toOutbound
@@ -38,7 +37,6 @@ internal class ReEstablishmentMessageSender(
             destination = destination.toAvro(),
             content = ReEstablishSessionMessage(sessionId),
             subsystem = Subsystem.LINK_MANAGER,
-            filter = MembershipStatusFilter.ACTIVE,
         )
         logger.info("Sending '{}' to session initiator '{}'.", ReEstablishSessionMessage::class.simpleName, destination)
         publisher.publish(listOf(record))
