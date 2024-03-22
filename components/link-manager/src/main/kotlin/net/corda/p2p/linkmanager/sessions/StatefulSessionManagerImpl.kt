@@ -161,7 +161,7 @@ internal class StatefulSessionManagerImpl(
             ?: return state.toResults(
                 CannotEstablishSession,
             )
-        val metadata = state.stateManagerSessionState?.stateManagerOriginalState?.metadata?.toOutbound()
+        val metadata = state.stateManagerSessionState?.managerState?.metadata?.toOutbound()
         return if (metadata?.lastSendExpired(clock) == false) {
             when (metadata.status) {
                 OutboundSessionStatus.SentInitiatorHello, OutboundSessionStatus.SentInitiatorHandshake -> {
@@ -278,7 +278,7 @@ internal class StatefulSessionManagerImpl(
                 .entries
                 .mapNotNull { (key, state) ->
                     val session = state.sessionState.sessionData as? Session ?: return@mapNotNull null
-                    val sessionId = state.stateManagerOriginalState.metadata.toOutbound().sessionId
+                    val sessionId = state.managerState.metadata.toOutbound().sessionId
                     sessionIdsNotInCache[sessionId]?.let {
                         val outboundSession =
                             SessionManager.SessionDirection.Outbound(
@@ -632,7 +632,7 @@ internal class StatefulSessionManagerImpl(
     ): Pair<NewSessionsNeeded, State>? {
         val previousSessionMessage = this.sessionState.message ?: return null
         val previousHeader = previousSessionMessage.header
-        val outboundMetadata = this.stateManagerOriginalState.metadata.toOutbound()
+        val outboundMetadata = this.managerState.metadata.toOutbound()
         val linkOutMessage = membershipGroupReaderProvider.lookup(
             previousHeader.sourceIdentity.toCorda(),
             previousHeader.destinationIdentity.toCorda(),
@@ -660,9 +660,9 @@ internal class StatefulSessionManagerImpl(
         )
         val updatedState =
             State(
-                this.stateManagerOriginalState.key,
-                this.stateManagerOriginalState.value,
-                version = this.stateManagerOriginalState.version,
+                this.managerState.key,
+                this.managerState.value,
+                version = this.managerState.version,
                 metadata = updatedMetadata.toMetadata(),
             )
         return NewSessionsNeeded(
@@ -751,7 +751,7 @@ internal class StatefulSessionManagerImpl(
             stateManager
                 .findStatesMatchingAny(messageContexts.keys.map { getSessionIdFilter(it) })
                 .values.associateBy { state ->
-                    state.stateManagerOriginalState.metadata.toOutbound().sessionId
+                    state.managerState.metadata.toOutbound().sessionId
                 }
         return messageContexts.flatMap { (sessionId, contexts) ->
             val state = states[sessionId]
@@ -784,7 +784,7 @@ internal class StatefulSessionManagerImpl(
         state: StateManagerWrapper.StateManagerSessionState?,
         message: InboundSessionMessage.InitiatorHelloMessage,
     ): Result? {
-        val metadata = state?.stateManagerOriginalState?.metadata?.toInbound()
+        val metadata = state?.managerState?.metadata?.toInbound()
         return when (metadata?.status) {
             null -> {
                 sessionManagerImpl.processInitiatorHello(message.initiatorHelloMessage)?.let {
@@ -822,9 +822,9 @@ internal class StatefulSessionManagerImpl(
                     val responderHelloToResend = sessionState.message
                     val newState =
                         State(
-                            key = state.stateManagerOriginalState.key,
-                            value = state.stateManagerOriginalState.value,
-                            version = state.stateManagerOriginalState.version,
+                            key = state.managerState.key,
+                            value = state.managerState.value,
+                            version = state.managerState.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
                     Result(responderHelloToResend, UpdateAction(newState, true), null)
@@ -842,11 +842,11 @@ internal class StatefulSessionManagerImpl(
         state: StateManagerWrapper.StateManagerSessionState?,
         message: OutboundSessionMessage.ResponderHelloMessage,
     ): Result? {
-        val metadata = state?.stateManagerOriginalState?.metadata?.toOutbound()
+        val metadata = state?.managerState?.metadata?.toOutbound()
         return when (metadata?.status) {
             OutboundSessionStatus.SentInitiatorHello -> {
                 val sessionState = state.sessionState.sessionData as? AuthenticationProtocolInitiator ?: return null
-                val counterparties = state.stateManagerOriginalState.getSessionCounterparties()
+                val counterparties = state.managerState.getSessionCounterparties()
 
                 sessionManagerImpl.processResponderHello(
                     counterparties,
@@ -871,7 +871,7 @@ internal class StatefulSessionManagerImpl(
                                 counterparties.serial,
                             ),
                             stateConvertor.toStateByteArray(SessionState(responseMessage, authenticationProtocol)),
-                            version = state.stateManagerOriginalState.version,
+                            version = state.managerState.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
                     Result(responseMessage, UpdateAction(newState, false), null)
@@ -888,9 +888,9 @@ internal class StatefulSessionManagerImpl(
                     val initiatorHandshakeToResend = state.sessionState.message ?: return null
                     val newState =
                         State(
-                            key = state.stateManagerOriginalState.key,
-                            value = state.stateManagerOriginalState.value,
-                            version = state.stateManagerOriginalState.version,
+                            key = state.managerState.key,
+                            value = state.managerState.value,
+                            version = state.managerState.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
                     Result(initiatorHandshakeToResend, UpdateAction(newState, true), null)
@@ -918,7 +918,7 @@ internal class StatefulSessionManagerImpl(
         state: StateManagerWrapper.StateManagerSessionState?,
         message: InboundSessionMessage.InitiatorHandshakeMessage,
     ): Result? {
-        val metadata = state?.stateManagerOriginalState?.metadata?.toInbound()
+        val metadata = state?.managerState?.metadata?.toInbound()
         return when (metadata?.status) {
             null -> {
                 null
@@ -927,7 +927,7 @@ internal class StatefulSessionManagerImpl(
                 val sessionData = state.sessionState.sessionData as? AuthenticationProtocolResponder
                 if (sessionData == null) {
                     logger.warn(
-                        "Session ${state.stateManagerOriginalState.key} has status SentResponderHello by the saved data is" +
+                        "Session ${state.managerState.key} has status SentResponderHello by the saved data is" +
                             " not AuthenticationProtocolResponder.",
                     )
                     return null
@@ -949,7 +949,7 @@ internal class StatefulSessionManagerImpl(
                         State(
                             message.initiatorHandshakeMessage.header.sessionId,
                             stateConvertor.toStateByteArray(SessionState(responseMessage, session)),
-                            version = state.stateManagerOriginalState.version,
+                            version = state.managerState.version,
                             metadata = newMetadata.toMetadata(),
                         )
                     Result(responseMessage, UpdateAction(newState, false), session)
@@ -966,9 +966,9 @@ internal class StatefulSessionManagerImpl(
                     val responderHandshakeToResend = state.sessionState.message
                     val newState =
                         State(
-                            key = state.stateManagerOriginalState.key,
-                            value = state.stateManagerOriginalState.value,
-                            version = state.stateManagerOriginalState.version,
+                            key = state.managerState.key,
+                            value = state.managerState.value,
+                            version = state.managerState.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
                     Result(responderHandshakeToResend, UpdateAction(newState, true), null)
@@ -983,11 +983,11 @@ internal class StatefulSessionManagerImpl(
         state: StateManagerWrapper.StateManagerSessionState?,
         message: OutboundSessionMessage.ResponderHandshakeMessage,
     ): Result? {
-        val metadata = state?.stateManagerOriginalState?.metadata?.toOutbound()
+        val metadata = state?.managerState?.metadata?.toOutbound()
         return when (metadata?.status) {
             OutboundSessionStatus.SentInitiatorHandshake -> {
                 val sessionState = state.sessionState.sessionData as? AuthenticationProtocolInitiator ?: return null
-                val counterparties = state.stateManagerOriginalState.getSessionCounterparties()
+                val counterparties = state.managerState.getSessionCounterparties()
 
                 sessionManagerImpl.processResponderHandshake(
                     message.responderHandshakeMessage,
@@ -1009,7 +1009,7 @@ internal class StatefulSessionManagerImpl(
                                 counterparties.serial,
                             ),
                             stateConvertor.toStateByteArray(SessionState(null, session)),
-                            version = state.stateManagerOriginalState.version,
+                            version = state.managerState.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
                     Result(null, UpdateAction(newState, false), session)

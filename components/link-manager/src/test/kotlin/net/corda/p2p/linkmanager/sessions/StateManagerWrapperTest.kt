@@ -95,7 +95,7 @@ class StateManagerWrapperTest {
     }
 
     @Test
-    fun `get will send a re-establish request for unrecoverable state`() {
+    fun `get will send a re-establish request for unrecoverable inbound state`() {
         whenever(stateConvertor.toCordaSessionState(state, checkRevocation)).thenReturn(null)
         wrapper.get(keys)
 

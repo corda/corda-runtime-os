@@ -28,10 +28,10 @@ internal class StateManagerWrapper(
     }
 
     data class StateManagerSessionState(
-        val stateManagerOriginalState: State,
+        val managerState: State,
         val sessionState: SessionState,
     ) {
-        fun toCounterparties() = stateManagerOriginalState.toCounterparties()
+        fun toCounterparties() = managerState.toCounterparties()
     }
     fun get(
         keys: Collection<String>,
