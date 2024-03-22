@@ -23,7 +23,8 @@ import javax.persistence.TransactionRequiredException
 
 internal class PersistenceExceptionCategorizerImpl : PersistenceExceptionCategorizer {
 
-    private companion object {
+    companion object {
+        internal const val CONNECTION_CLOSED_MESSAGE = "Connection is closed"
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
@@ -89,10 +90,10 @@ internal class PersistenceExceptionCategorizerImpl : PersistenceExceptionCategor
                 exception.message?.lowercase()?.contains("connection is not available") == true
             },
             criteria<SQLException> {
-                it.sqlState in setOf("08001", "08003", "08004", "08006", "08006", "58030")
+                it.sqlState in setOf("08001", "08003", "08004", "08006", "58030")
             },
             criteria<SQLException> {
-                it.message == "Connection is closed"
+                it.message == CONNECTION_CLOSED_MESSAGE
             },
             criteria<SocketException>()
         )
