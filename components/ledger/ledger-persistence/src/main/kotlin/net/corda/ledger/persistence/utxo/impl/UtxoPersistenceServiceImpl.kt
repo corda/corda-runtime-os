@@ -513,7 +513,6 @@ class UtxoPersistenceServiceImpl(
         account: String
     ) {
         entityManagerFactory.transaction { em ->
-
             filteredTransactionsAndSignatures.forEach { (filteredTransaction, signatures) ->
 
                 val nowUtc = utcClock.instant()
@@ -550,7 +549,7 @@ class UtxoPersistenceServiceImpl(
                 )
 
                 // 3. Persist the transaction itself to the utxo_transaction table
-                // if the same id of UNVERIFIED or DRAFT stx exists, override them to VERIFIED ftx
+                // if the same id of UNVERIFIED or DRAFT stx exists, override status to VERIFIED
                 repository.persistFilteredTransaction(
                     em,
                     filteredTransaction.id.toString(),

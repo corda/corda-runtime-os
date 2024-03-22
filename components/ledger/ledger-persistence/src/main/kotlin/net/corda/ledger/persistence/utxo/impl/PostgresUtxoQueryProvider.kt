@@ -46,7 +46,7 @@ class PostgresUtxoQueryProvider @Activate constructor(
             INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
                 VALUES (:id, :privacySalt, :accountId, :createdAt, '$VERIFIED', :updatedAt, :metadataHash, TRUE)
             ON CONFLICT(id) DO
-            UPDATE SET is_filtered = TRUE
+            UPDATE SET status = '$VERIFIED', is_filtered = TRUE
             WHERE utxo_transaction.status in ('$UNVERIFIED', '$DRAFT') AND utxo_transaction.is_filtered = FALSE
             """
             .trimIndent()
