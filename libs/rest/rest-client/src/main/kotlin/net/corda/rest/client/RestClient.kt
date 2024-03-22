@@ -179,4 +179,14 @@ class RestClient<I : RestResource> internal constructor(
             connectionEventDistributor.onDisconnect(throwable)
             false
         }
+
+    @VisibleForTesting
+    fun baseAddress(): String {
+        return baseAddress
+    }
+
+    @VisibleForTesting
+    fun clientConfig(): RestClientConfig {
+        return clientConfig
+    }
 }

@@ -69,6 +69,38 @@ object RestClientUtils {
         return restClient
     }
 
+    /**
+     * Create a restClient to set HTTP requests to a Corda instance
+     * As configured by [restClientTargetInfo]
+     * Please update the target info before instantiating a restClient
+     */
+    fun <I : RestResource> createRestClientForTarget(
+        restResource: KClass<I>
+    ): RestClient<I> {
+        val targetUrl = restClientTargetInfo.targetUrl
+        validateTargetUrl(targetUrl)
+        val localTargetUrl = if (targetUrl.endsWith("/")) {
+            targetUrl.dropLast(1)
+        } else {
+            targetUrl
+        }
+
+        val restClient = RestClient(
+            baseAddress = "$localTargetUrl/api/${restClientTargetInfo.apiVersion.versionPath}/",
+            restResource.java,
+            RestClientConfig()
+                .enableSSL(true)
+                .secureSSL(!restClientTargetInfo.insecure)
+                .minimumServerProtocolVersion(restClientTargetInfo.minimumServerProtocolVersion)
+                .username(restClientTargetInfo.username)
+                .password(restClientTargetInfo.password),
+            healthCheckInterval = 500
+        )
+
+        restClient.addConnectionListener(ConnectionListener())
+        return restClient
+    }
+
     private class ConnectionListener<I : RestResource> : RestConnectionListener<I> {
         override fun onConnect(context: RestConnectionListener.RestConnectionContext<I>) {
             // do nothing
@@ -141,3 +173,15 @@ object RestClientUtils {
         throw lastException!!
     }
 }
+
+data class RestClientTargetInfo(
+    var apiVersion: RestApiVersion = RestApiVersion.C5_0,
+    var insecure: Boolean = false,
+    var minimumServerProtocolVersion: Int = 1,
+    var username: String = "admin",
+    var password: String = "admin",
+    var targetUrl: String = "https://localhost:8888"
+)
+
+// Static instance where all RCs can pick up the target details
+var restClientTargetInfo = RestClientTargetInfo()
