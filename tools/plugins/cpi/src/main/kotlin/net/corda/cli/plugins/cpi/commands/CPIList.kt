@@ -39,13 +39,14 @@ class CPIList : RestCommand(), Runnable {
                 restClient = restClient,
                 wait = waitDurationSeconds.seconds
             )
-        }catch (e: Exception) {
+        }
+        catch (e: Exception) {
             sysOut.info(e.message)
             logger.error("Unexpected error during fetching the list of CPI's", e)
             exitProcess(1)
         }
 
-        if(result.cpis.isEmpty()) {
+        if (result.cpis.isEmpty()) {
             sysOut.info("No cpi is uploaded in the cluster")
             exitProcess(2)
         } else {
@@ -53,6 +54,4 @@ class CPIList : RestCommand(), Runnable {
             exitProcess(3)
         }
     }
-
-
 }
