@@ -17,10 +17,7 @@ class PostgresQueryProvider : AbstractQueryProvider() {
         )
         INSERT INTO $STATE_MANAGER_TABLE
         SELECT * FROM data d
-        WHERE NOT EXISTS (
-            SELECT 1 FROM $STATE_MANAGER_TABLE t
-            WHERE t.$KEY_COLUMN = d.$KEY_COLUMN
-        )
+        ON CONFLICT DO NOTHING
         RETURNING $STATE_MANAGER_TABLE.$KEY_COLUMN;
     """.trimIndent()
 

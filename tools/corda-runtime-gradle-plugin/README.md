@@ -48,7 +48,7 @@ services:
       - 5432:5432
 
   kafka:
-    image: confluentinc/cp-kafka:latest
+    image: confluentinc/cp-kafka:7.6.0
     ports:
       - 9092:9092
     environment:
@@ -74,13 +74,14 @@ services:
     volumes:
       - ${CORDA_CLI:-~/.corda/cli}:/opt/corda-cli
     working_dir: /opt/corda-cli
-    command: [ "java",
-               "-jar",
-               "corda-cli.jar",
-               "topic",
-               "-b=kafka:29092",
-               "create",
-               "connect"
+    command: [
+      "java",
+      "-jar",
+      "corda-cli.jar",
+      "topic",
+      "-b=kafka:29092",
+      "create",
+      "connect"
     ]
 
   corda:
@@ -89,15 +90,17 @@ services:
       - postgresql
       - kafka
       - kafka-create-topics
-    command: [ "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005",
-               "-mbus.busType=KAFKA",
-               "-mbootstrap.servers=kafka:29092",
-               "-spassphrase=password",
-               "-ssalt=salt",
-               "-ddatabase.user=user",
-               "-ddatabase.pass=password",
-               "-ddatabase.jdbc.url=jdbc:postgresql://postgresql:5432/cordacluster",
-               "-ddatabase.jdbc.directory=/opt/jdbc-driver/"
+    environment:
+      JAVA_TOOL_OPTIONS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+    command: [
+      "-mbus.busType=KAFKA",
+      "-mbootstrap.servers=kafka:29092",
+      "-spassphrase=password",
+      "-ssalt=salt",
+      "-ddatabase.user=user",
+      "-ddatabase.pass=password",
+      "-ddatabase.jdbc.url=jdbc:postgresql://postgresql:5432/cordacluster",
+      "-ddatabase.jdbc.directory=/opt/jdbc-driver/"
     ]
     ports:
       - 8888:8888
@@ -132,14 +135,16 @@ services:
     image: corda-os-docker.software.r3.com/corda-os-combined-worker:5.2.0.0
     depends_on:
       - postgresql
-    command: [ "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005",
-               "-mbus.busType=DATABASE",
-               "-spassphrase=password",
-               "-ssalt=salt",
-               "-ddatabase.user=user",
-               "-ddatabase.pass=password",
-               "-ddatabase.jdbc.url=jdbc:postgresql://postgresql:5432/cordacluster",
-               "-ddatabase.jdbc.directory=/opt/jdbc-driver/"
+    environment:
+      JAVA_TOOL_OPTIONS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+    command: [
+      "-mbus.busType=DATABASE",
+      "-spassphrase=password",
+      "-ssalt=salt",
+      "-ddatabase.user=user",
+      "-ddatabase.pass=password",
+      "-ddatabase.jdbc.url=jdbc:postgresql://postgresql:5432/cordacluster",
+      "-ddatabase.jdbc.directory=/opt/jdbc-driver/"
     ]
     ports:
       - 8888:8888

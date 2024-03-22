@@ -320,7 +320,7 @@ class UtxoReceiveFinalityFlowV1(
         return TransactionAndReceivedSignatures(
             signedTransaction,
             initialSignaturesSize,
-            transaction.signatures.drop(initialSignaturesSize)
+            signedTransaction.signatures.drop(initialSignaturesSize)
         )
     }
 

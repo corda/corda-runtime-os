@@ -1,12 +1,13 @@
 package net.corda.crypto.test.certificates.generation
 
+import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import java.security.PublicKey
 import java.security.cert.Certificate
 
 /**
  * A certificate authority that can be used for testing.
  *
- * @see [CertificateAuthorityFactory], [LocalCertificatesAuthority], [FileSystemCertificatesAuthority] and [CloseableCertificateAuthority]
+ * @see [CertificateAuthorityFactory], [LocalCertificatesAuthority], and [FileSystemCertificatesAuthority]
  */
 interface CertificateAuthority {
     companion object {
@@ -21,27 +22,40 @@ interface CertificateAuthority {
     val caCertificate: Certificate
 
     /**
-     * Generate a keypair and a certificate with a single host name.
+     * Generate a keypair and a certificate chain where the leaf certificate has a single host name.
      *
      * @param host - the name of the host.
-     * @return A private key and certificate.
+     * @return A private key and certificates.
      */
-    fun generateKeyAndCertificate(host: String) = generateKeyAndCertificate(listOf(host))
+    fun generateKeyAndCertificates(host: String) = generateKeyAndCertificates(listOf(host))
 
     /**
-     * Generate a keypair and a certificate with a list of hosts names.
+     * Generate a keypair and a certificate chain where the leaf certificate has a list of hosts names.
      *
      * @param hosts - the list of hosts.
-     * @return A private key and certificate.
+     * @return A private key and certificates.
      */
-    fun generateKeyAndCertificate(hosts: Collection<String>): PrivateKeyWithCertificate
+    fun generateKeyAndCertificates(hosts: Collection<String>): PrivateKeyWithCertificateChain
 
     /**
-     * Generate a certificate from a [publicKey] with a list of hosts names.
+     * Generate a certificate chain from a [publicKey] with a list of hosts names.
      *
      * @param publicKey -
      * @param hosts - the list of hosts.
      * @return The generated certificate.
      */
-    fun generateCertificate(hosts: Collection<String>, publicKey: PublicKey): Certificate
+    fun generateCertificates(hosts: Collection<String>, publicKey: PublicKey): Collection<Certificate>
+
+    /**
+     * Sign a certificate chain from a certificate signing request.
+     *
+     * @param csr - The request.
+     * @return The sign certificate in a chain.
+     */
+    fun signCsr(csr: PKCS10CertificationRequest): Collection<Certificate>
+
+    /**
+     * Creates an intermediate CA.
+     */
+    fun createIntermediateCertificateAuthority() : CertificateAuthority
 }

@@ -54,14 +54,14 @@ class CreateCertificate : Runnable {
         }
 
         val certificate = if (publicKeyFile == null) {
-            val keysAndCertificate = ca.authority.generateKeyAndCertificate(dnsNames)
+            val keysAndCertificate = ca.authority.generateKeyAndCertificates(dnsNames)
             File(dir, "keys.pem").also {
                 it.writeText(keysAndCertificate.privateKey.toPem())
                 println("Wrote keys to $it")
             }
-            keysAndCertificate.certificate
+            keysAndCertificate.certificates.first()
         } else {
-            ca.authority.generateCertificate(dnsNames, readPemPublicKey(publicKeyFile!!))
+            ca.authority.generateCertificates(dnsNames, readPemPublicKey(publicKeyFile!!)).first()
         }
 
         // Save the authority because the serial number had changed.
