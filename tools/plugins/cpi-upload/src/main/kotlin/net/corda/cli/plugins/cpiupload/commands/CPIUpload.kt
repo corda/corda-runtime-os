@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
+import kotlin.system.exitProcess
 import kotlin.time.Duration.Companion.seconds
 
 @Command(
@@ -22,8 +23,9 @@ import kotlin.time.Duration.Companion.seconds
 class CPIUpload : RestCommand(), Runnable {
 
     private companion object {
-        private val logger: Logger = LoggerFactory.getLogger(this::class.java)
+        val logger: Logger = LoggerFactory.getLogger(this::class.java)
         val sysOut: Logger = LoggerFactory.getLogger("SystemOut")
+        val sysErr: Logger = LoggerFactory.getLogger("SystemErr")
     }
 
     @Option(
@@ -42,9 +44,13 @@ class CPIUpload : RestCommand(), Runnable {
 
     override fun run() {
         val cpi = File(cpiFilePath)
+        if (!cpi.isFile || !cpi.exists()) {
+            sysErr.error("Path: '$cpiFilePath' is not an existing file")
+            exitProcess(1)
+        }
         if (cpi.extension.lowercase() != "cpi") {
-            sysOut.info("File type must be .cpi")
-            System.exit(1)
+            sysErr.error("File type must be .cpi")
+            exitProcess(1)
         }
         val restClient = createRestClient(
             CpiUploadRestResource::class,
@@ -63,12 +69,12 @@ class CPIUpload : RestCommand(), Runnable {
                 wait = waitDurationSeconds.seconds
             ).id
         } catch (e: Exception) {
-            sysOut.info(e.message)
+            sysErr.error(e.message, e)
             logger.error("Unexpected error during CPI upload", e)
-            System.exit(2)
+            exitProcess(2)
         }
         if (wait) {
-            pollForOKStatus(cpiUploadResult.toString(), restClient)
+            pollForOKStatus(cpiUploadResult, restClient)
         } else {
             sysOut.info("The ID returned from the CPI upload request is $cpiUploadResult")
         }
@@ -85,9 +91,9 @@ class CPIUpload : RestCommand(), Runnable {
                 wait = waitDurationSeconds.seconds
             )
         } catch (e: Exception) {
-            sysOut.info(e.message)
+            sysErr.error(e.message, e)
             logger.error("Unexpected error during fetching CPI checksum", e)
-            return System.exit(3)
+            exitProcess(3)
         }
         sysOut.info("CPI with checksum $checksum successfully uploaded.")
     }
