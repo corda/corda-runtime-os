@@ -98,24 +98,5 @@ internal class PersistenceExceptionCategorizerImpl : PersistenceExceptionCategor
             criteria<SocketException>()
         )
         return checks.any { it.meetsCriteria(exception) }
-/*        return when (exception) {
-            // [PersistenceException]s
-            is LockTimeoutException,
-            is OptimisticLockException,
-            is PessimisticLockException,
-            is QueryTimeoutException,
-            is RollbackException,
-            // [JDBCException]s
-            is org.hibernate.PessimisticLockException,
-            is org.hibernate.QueryTimeoutException,
-            is JDBCConnectionException,
-            is LockAcquisitionException,
-            // [HibernateException]s
-            is TransactionException,
-            is CacheException -> true
-            // Exception thrown by Hikari
-            is SQLTransientConnectionException -> exception.message?.lowercase()?.contains("connection is not available") == true
-            else -> false
-        }*/
     }
 }
