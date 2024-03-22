@@ -193,12 +193,14 @@ class TestStateManagerFactoryImpl  @Activate constructor(
                 }
 
             override val isRunning: Boolean
-                get() = true
+                get() = lifecycleCoordinator.isRunning
 
             override fun start() {
+                lifecycleCoordinator.start()
             }
 
             override fun stop() {
+                lifecycleCoordinator.close()
             }
         }
     }
