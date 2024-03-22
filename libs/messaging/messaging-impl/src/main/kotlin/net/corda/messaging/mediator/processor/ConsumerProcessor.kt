@@ -103,10 +103,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 val inputs = getInputs(consumer)
                 val outputs = processInputs(inputs)
                 categorizeOutputs(outputs, failureCounts)
-                commit(outputs, failureCounts)
-                metrics.commitTimer.recordCallable {
-                    consumer.syncCommitOffsets()
-                }
+                commit(consumer, outputs, failureCounts)
             } catch (e: Exception) {
                 log.warn("Retrying processing: ${e.message}.")
                 consumer.resetEventOffsetPosition()
@@ -188,13 +185,21 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun commit(outputs: Map<String, EventProcessingOutput>, failureCounts: MutableMap<String, Int>) {
+    private fun commit(
+        consumer: MediatorConsumer<K, E>,
+        outputs: Map<String, EventProcessingOutput>,
+        failureCounts: MutableMap<String, Int>
+    ) {
         val (failed, toDelete) = processOutputs(outputs)
-        val deleteFails = stateManager.delete(toDelete)
-        val totalFails = failed + deleteFails
-        if (totalFails.isNotEmpty()) {
-            throw CordaMessageAPIIntermittentException("Error occurred while writing states, retrying")
+        if (failed.isNotEmpty()) {
+            throw CordaMessageAPIIntermittentException(
+                "Error occurred while writing states, retrying. ${failed.size} keys failed to write"
+            )
         }
+        metrics.commitTimer.recordCallable {
+            consumer.syncCommitOffsets()
+        }
+        stateManager.delete(toDelete)
         outputs.forEach { (key, _) ->
             failureCounts.remove(key)
         }

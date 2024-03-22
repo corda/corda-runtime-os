@@ -29,7 +29,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
 import org.mockito.kotlin.any
@@ -106,8 +105,7 @@ class ConsumerProcessorTest {
             )
         )
         whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(
-            getGroups(2, 4),
-            listOf()
+            getGroups(2, 4)
         )
         whenever(stateManagerHelper.createOrUpdateState(any(), any(), any())).thenReturn(mock())
         whenever(stateManager.get(any())).thenReturn(mapOf())
@@ -117,7 +115,7 @@ class ConsumerProcessorTest {
         verify(consumer, times(1)).poll(any())
         verify(consumerFactory, times(1)).create<String, String>(any())
         verify(consumer, times(1)).subscribe()
-        verify(groupAllocator, times(2)).allocateGroups<String, String, String>(any(), any())
+        verify(groupAllocator, times(1)).allocateGroups<String, String, String>(any(), any())
         verify(taskManager, times(2)).executeShortRunningTask<Unit>(any())
 
         verify(stateManager, times(2)).get(any())
@@ -195,30 +193,30 @@ class ConsumerProcessorTest {
         )
         whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(
             getGroups(2, 4),
-            listOf()
+            getGroups(2, 4)
         )
         whenever(stateManagerHelper.createOrUpdateState(any(), any(), any())).thenReturn(mock())
         whenever(stateManager.get(any())).thenReturn(mapOf())
-        whenever(consumer.syncCommitOffsets()).doThrow(CordaRuntimeException("Oops"))
+        doThrow(CordaRuntimeException("Oops")).doNothing().`when`(consumer).syncCommitOffsets()
 
-        assertThrows<CordaRuntimeException> { consumerProcessor.processTopic(getConsumerFactory(), getConsumerConfig()) }
+        consumerProcessor.processTopic(getConsumerFactory(2), getConsumerConfig())
 
-        verify(consumer, times(1)).poll(any())
+        verify(consumer, times(2)).poll(any())
         verify(consumerFactory, times(1)).create<String, String>(any())
         verify(consumer, times(1)).subscribe()
         verify(groupAllocator, times(2)).allocateGroups<String, String, String>(any(), any())
-        verify(taskManager, times(2)).executeShortRunningTask<Unit>(any())
+        verify(taskManager, times(4)).executeShortRunningTask<Unit>(any())
 
-        verify(stateManager, times(2)).get(any())
-        verify(stateManager, times(1)).create(any())
-        verify(stateManager, times(1)).update(any())
+        verify(stateManager, times(4)).get(any())
+        verify(stateManager, times(2)).create(any())
+        verify(stateManager, times(2)).update(any())
 
-        verify(messageRouter, times(2)).getDestination(any())
-        verify(client, times(2)).send(any())
+        verify(messageRouter, times(4)).getDestination(any())
+        verify(client, times(4)).send(any())
 
-        verify(consumer, times(1)).syncCommitOffsets()
+        verify(consumer, times(2)).syncCommitOffsets()
         verify(consumer, times(1)).close()
-        verify(stateManager, times(0)).delete(any())
+        verify(stateManager, times(1)).delete(any())
     }
 
     @Test
@@ -268,10 +266,14 @@ class ConsumerProcessorTest {
         return groups
     }
 
-    private fun getConsumerFactory(): MediatorConsumerFactory {
+    private fun getConsumerFactory(loops: Int = 1): MediatorConsumerFactory {
         consumer.apply {
+            var attempts = 0
             whenever(poll(any())).thenAnswer {
-                mediatorSubscriptionState.stop()
+                attempts++
+                if (attempts >= loops) {
+                    mediatorSubscriptionState.stop()
+                }
                 listOf(getConsumerRecord())
             }
         }
