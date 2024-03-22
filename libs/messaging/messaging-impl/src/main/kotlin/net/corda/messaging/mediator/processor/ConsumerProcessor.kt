@@ -187,6 +187,9 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                         StateChangeAndOperation.Create(state)
                     }
                     EventProcessingOutput(listOf(), stateChange)
+                }.also {
+                    log.warn("Cancelling task for key(s) ${group.keys}")
+                    future.cancel(true)
                 }
             }
         }.fold(mapOf<K, EventProcessingOutput>()) { acc, cur ->
