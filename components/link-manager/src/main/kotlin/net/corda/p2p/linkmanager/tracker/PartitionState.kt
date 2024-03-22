@@ -6,9 +6,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.data.p2p.app.AppMessage
-import net.corda.data.p2p.app.AuthenticatedMessage
-import net.corda.data.p2p.app.InboundUnauthenticatedMessage
-import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateOperationGroup
 import net.corda.messaging.api.records.EventLogRecord
@@ -41,21 +38,6 @@ internal class PartitionState(
                 PartitionState(partition)
             }
         }
-
-        private val AppMessage.id
-            get() =
-                when (val message = this.message) {
-                    is AuthenticatedMessage -> {
-                        message.header.messageId
-                    }
-                    is OutboundUnauthenticatedMessage -> {
-                        message.header.messageId
-                    }
-                    is InboundUnauthenticatedMessage -> {
-                        message.header.messageId
-                    }
-                    else -> null
-                }
     }
 
     @JsonProperty("messages")
