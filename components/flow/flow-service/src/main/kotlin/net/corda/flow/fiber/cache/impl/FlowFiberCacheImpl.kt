@@ -73,7 +73,6 @@ class FlowFiberCacheImpl @Activate constructor(
     override fun put(key: FlowKey, suspendCount: Int, fiber: FlowFiber) {
         checkIfThreadInterrupted("Interrupted thread prevented from writing into flow fiber cache with flow key $key")
 
-        logger.info("Putting fiber into cache with key $key and suspend count $suspendCount")
         cache.put(key, FiberCacheValue(fiber, suspendCount))
     }
 
