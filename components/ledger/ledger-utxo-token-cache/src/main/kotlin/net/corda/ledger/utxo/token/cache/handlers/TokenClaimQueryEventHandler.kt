@@ -6,6 +6,7 @@ import net.corda.ledger.utxo.token.cache.entities.ClaimQuery
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolCache
+import net.corda.ledger.utxo.token.cache.entities.internal.TokenCacheImpl
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
@@ -43,7 +44,7 @@ class TokenClaimQueryEventHandler(
             )
         }
 
-        val tokenCache = tokenPoolCache.get(event.poolKey)
+        var tokenCache = tokenPoolCache.get(event.poolKey)
 
         // Attempt to select the tokens from the current cache
         var selectionResult = selectTokens(tokenCache, state, event)
@@ -60,7 +61,8 @@ class TokenClaimQueryEventHandler(
             val tokens = findResult.tokens.filterNot { state.isTokenClaimed(it.stateRef) }
 
             // Replace the tokens in the cache with the ones from the query result that have not been claimed
-            tokenCache.add(tokens)
+            tokenCache = TokenCacheImpl().apply{ add(tokens) }
+
             // Update the token pool cache so the expiry period is refreshed
             tokenPoolCache.put(event.poolKey, tokenCache)
 
