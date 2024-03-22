@@ -49,7 +49,8 @@ class SchedulerProcessorImpl @Activate constructor(
         )
     }
 
-    companion object {
+    private companion object {
+        private const val LEDGER_REPAIR_SCHEDULE_PERIOD_ENV_VARIABLE =  "LEDGER_REPAIR_SCHEDULE_PERIOD"
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
@@ -82,7 +83,8 @@ class SchedulerProcessorImpl @Activate constructor(
         // TODO CORE-16331 Add configuration with a default of 2 minutes under the ledger.repair configuration section
         Schedule(
             ScheduledTask.SCHEDULE_TASK_NAME_LEDGER_REPAIR,
-            120, ScheduledTask.SCHEDULE_TASK_TOPIC_LEDGER_REPAIR_PROCESSOR
+            (System.getenv()[LEDGER_REPAIR_SCHEDULE_PERIOD_ENV_VARIABLE])?.toLongOrNull() ?: 120,
+            ScheduledTask.SCHEDULE_TASK_TOPIC_LEDGER_REPAIR_PROCESSOR
         )
     )
     private var schedulers: Schedulers? = null
