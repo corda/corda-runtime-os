@@ -60,6 +60,7 @@ class PersistenceExceptionCategorizerImplTest {
                 Arguments.of(SQLException(DUMMY_MESSAGE, "08003")),
                 Arguments.of(SQLException(DUMMY_MESSAGE, "08004")),
                 Arguments.of(SQLException(DUMMY_MESSAGE, "08006")),
+                Arguments.of(SQLException(DUMMY_MESSAGE, "08007")),
                 Arguments.of(SQLException(DUMMY_MESSAGE, "58030")),
             )
         }
