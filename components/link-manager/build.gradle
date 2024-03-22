@@ -103,8 +103,8 @@ dependencies {
     nonOsgiIntegrationTestImplementation project(':libs:schema-registry:schema-registry')
     nonOsgiIntegrationTestImplementation project(':libs:platform-info')
     nonOsgiIntegrationTestImplementation "net.corda:corda-avro-schema"
-    nonOsgiIntegrationTestImplementation project(":libs:schema-registry:schema-registry-impl")
     nonOsgiIntegrationTestImplementation project(':libs:schema-registry:schema-registry-impl')
+    nonOsgiIntegrationTestImplementation project(':libs:crypto:certificate-generation')
     nonOsgiIntegrationTestRuntimeOnly 'org.osgi:osgi.core'
 
     integrationTestImplementation project(":components:configuration:configuration-read-service-impl")
