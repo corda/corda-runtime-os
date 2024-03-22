@@ -45,7 +45,7 @@ class TestStateManagerFactoryImpl  @Activate constructor(
     override fun create(config: SmartConfig, stateType: StateManagerConfig.StateType, compressionType: CompressionType): StateManager {
         return  object : StateManager {
             override val name = LifecycleCoordinatorName(
-                "StateManager",
+                "TestStateManager",
                 UUID.randomUUID().toString()
             )
             private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(name) { _, _ ->
