@@ -269,6 +269,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         metrics.commitTimer.recordCallable {
             consumer.syncCommitOffsets()
         }
+        // Delete after committing offsets to satisfy flow engine replay requirements.
         stateManager.delete(toDelete)
         outputs.forEach { (key, _) ->
             failureCounts.remove(key)

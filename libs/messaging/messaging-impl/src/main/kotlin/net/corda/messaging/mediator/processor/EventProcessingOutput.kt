@@ -21,6 +21,8 @@ sealed interface StateChangeAndOperation {
         override val outputState: State? = null
     }
 
+    // This represents a transient error in event processing, and acts as a signal back to the poll loop that a retry
+    // should occur.
     object Transient : StateChangeAndOperation {
         override val outputState: State? = null
     }
