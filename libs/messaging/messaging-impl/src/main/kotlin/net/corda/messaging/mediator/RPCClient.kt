@@ -167,7 +167,7 @@ class RPCClient(
                 CordaMessageAPIFatalException(e.message, e)
             }
             is InterruptedException -> {
-                log.warn("Thread interrupted calling RPCClient: $endpoint", e)
+                log.info("Thread interrupted calling RPCClient: $endpoint", e)
                 throw e
             }
 
