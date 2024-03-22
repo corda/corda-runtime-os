@@ -8,6 +8,8 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.concurrent.Callable
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.ScheduledExecutorService
 
@@ -17,13 +19,23 @@ class TaskManagerImplTest {
         const val RESULT = 1
     }
 
-    private val executorService = mock<ScheduledExecutorService>()
-    private val captor = argumentCaptor<Runnable>()
+    private val callableCaptor = argumentCaptor<Callable<Int>>()
+    private val executorService = mock<ScheduledExecutorService>().apply {
+        // mocking executor service behaviour regarding completing future exceptionally
+        whenever(this.submit(callableCaptor.capture())).then {
+            val future = CompletableFuture<Int>()
+            try {
+                future.complete(callableCaptor.firstValue.call())
+            } catch (e: Exception) {
+                future.completeExceptionally(e)
+            }
+            future
+        }
+    }
     private val taskManager = TaskManagerImpl("", "", executorService)
 
     @Test
     fun `executeShortRunningTask increments the task count, runs the task and decrements the task count when finished`() {
-        whenever(executorService.execute(captor.capture())).then { captor.firstValue.run() }
         val result = taskManager.executeShortRunningTask {
             assertThat(taskManager.liveTaskCounts).containsExactlyEntriesOf(
                 mapOf(TaskManagerImpl.Type.SHORT_RUNNING to 1)
@@ -38,7 +50,6 @@ class TaskManagerImplTest {
 
     @Test
     fun `executeShortRunningTask increments the task count and decrements the task count when the task fails`() {
-        whenever(executorService.execute(captor.capture())).then { captor.firstValue.run() }
         val result = taskManager.executeShortRunningTask {
             assertThat(taskManager.liveTaskCounts).containsExactlyEntriesOf(
                 mapOf(TaskManagerImpl.Type.SHORT_RUNNING to 1)
@@ -48,6 +59,22 @@ class TaskManagerImplTest {
         assertThatThrownBy { result.get() }
             .isExactlyInstanceOf(ExecutionException::class.java)
             .hasCauseExactlyInstanceOf(IllegalStateException::class.java)
+        assertThat(taskManager.liveTaskCounts).containsExactlyEntriesOf(
+            mapOf(TaskManagerImpl.Type.SHORT_RUNNING to 0)
+        )
+    }
+
+    @Test
+    fun `executeShortRunningTask increments the task count and decrements the task count when the task fails with interrupted exception`() {
+        val result = taskManager.executeShortRunningTask {
+            assertThat(taskManager.liveTaskCounts).containsExactlyEntriesOf(
+                mapOf(TaskManagerImpl.Type.SHORT_RUNNING to 1)
+            )
+            throw InterruptedException("fails")
+        }
+        assertThatThrownBy { result.get() }
+            .isExactlyInstanceOf(ExecutionException::class.java)
+            .hasCauseExactlyInstanceOf(InterruptedException::class.java)
         assertThat(taskManager.liveTaskCounts).containsExactlyEntriesOf(
             mapOf(TaskManagerImpl.Type.SHORT_RUNNING to 0)
         )

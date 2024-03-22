@@ -43,6 +43,7 @@ import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
+import java.util.concurrent.Future
 import java.util.concurrent.TimeoutException
 
 @Execution(ExecutionMode.SAME_THREAD)
@@ -221,17 +222,23 @@ class ConsumerProcessorTest {
 
     @Test
     fun `when event processing times out, mark all states in the group as failed`() {
-        whenever(taskManager.executeShortRunningTask<Unit>(any())).thenAnswer {
-            val future = CompletableFuture<Map<String, EventProcessingOutput>>()
-            future.completeExceptionally(TimeoutException())
-            future
+        val future1 = mock<Future<Unit>>().apply {
+            whenever(get(any(), any())).thenThrow(TimeoutException("Timed out"))
         }
+        val future2 = mock<Future<Unit>>().apply {
+            whenever(get(any(), any())).thenThrow(TimeoutException("Timed out"))
+        }
+        whenever(taskManager.executeShortRunningTask<Unit>(any()))
+            .thenReturn(future1)
+            .thenReturn(future2)
         whenever(stateManagerHelper.failStateProcessing(any(), anyOrNull(), any())).thenReturn(mock())
         whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(getGroups(2, 4), listOf())
 
         consumerProcessor.processTopic(getConsumerFactory(), getConsumerConfig())
 
         verify(stateManagerHelper, times(2)).failStateProcessing(any(), anyOrNull(), any())
+        verify(future1, times(1)).cancel(true)
+        verify(future2, times(1)).cancel(true)
     }
 
     @Test

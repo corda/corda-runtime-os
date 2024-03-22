@@ -71,10 +71,14 @@ class FlowFiberCacheImpl @Activate constructor(
     }
 
     override fun put(key: FlowKey, suspendCount: Int, fiber: FlowFiber) {
+        checkIfThreadInterrupted("Interrupted thread prevented from writing into flow fiber cache with flow key $key")
+
         cache.put(key, FiberCacheValue(fiber, suspendCount))
     }
 
     override fun get(key: FlowKey, suspendCount: Int, sandboxGroupId: UUID): FlowFiber? {
+        checkIfThreadInterrupted("Interrupted thread prevented from getting from flow fiber cache for key $key suspendCount $suspendCount")
+
         val fiberCacheEntry = cache.getIfPresent(key)
         return if (null == fiberCacheEntry) {
             logger.info("Fiber not found in cache: ${key.id}")
@@ -98,6 +102,7 @@ class FlowFiberCacheImpl @Activate constructor(
     }
 
     override fun remove(key: FlowKey) {
+        checkIfThreadInterrupted("Interrupted thread prevented from removing from flow fiber cache for key $key")
         cache.invalidate(key)
     }
 
@@ -120,5 +125,12 @@ class FlowFiberCacheImpl @Activate constructor(
     //  I don't think we should have integration tests knowing about the internals of the cache.
     internal fun findInCache(holdingId: HoldingIdentity, flowId: String): FlowFiber? {
         return cache.getIfPresent(FlowKey(flowId, holdingId))?.fiber
+    }
+
+    private fun checkIfThreadInterrupted(msg: String) {
+        if (Thread.currentThread().isInterrupted) {
+            logger.info(msg)
+            throw InterruptedException(msg)
+        }
     }
 }

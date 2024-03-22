@@ -6,9 +6,11 @@ import net.corda.metrics.CordaMetrics
 import net.corda.taskmanager.TaskManager
 import net.corda.utilities.VisibleForTesting
 import java.util.UUID
+import java.util.concurrent.Callable
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
@@ -30,16 +32,19 @@ internal class TaskManagerImpl(
     private val shortRunningTaskGauge = liveTaskGauge(Type.SHORT_RUNNING)
     private val longRunningTaskGauge = liveTaskGauge(Type.LONG_RUNNING)
 
-    override fun <T> executeShortRunningTask(command: () -> T): CompletableFuture<T> {
+    override fun <T> executeShortRunningTask(command: () -> T): Future<T> {
         val start = System.nanoTime()
         incrementTaskCount(Type.SHORT_RUNNING)
-        return CompletableFuture.supplyAsync(
-            { command() },
-            executorService
-        ).whenComplete { _, _ ->
-            shortRunningTaskCompletionTime.record(System.nanoTime() - start, TimeUnit.NANOSECONDS)
-            decrementTaskCount(Type.SHORT_RUNNING)
-        }
+        return executorService.submit(Callable {
+            try {
+                command().also {
+                    recordCompletion(start, Type.SHORT_RUNNING)
+                }
+            } catch (e: Exception) {
+                recordCompletion(start, Type.SHORT_RUNNING)
+                throw e
+            }
+        })
     }
 
     override fun <T> executeLongRunningTask(command: () -> T): CompletableFuture<T> {
@@ -61,8 +66,7 @@ internal class TaskManagerImpl(
             }
         }
         return result.whenComplete { _, _ ->
-            longRunningTaskCompletionTime.record(System.nanoTime() - start, TimeUnit.NANOSECONDS)
-            decrementTaskCount(Type.LONG_RUNNING)
+            recordCompletion(start, Type.LONG_RUNNING)
         }
     }
 
@@ -80,6 +84,14 @@ internal class TaskManagerImpl(
             executorService.awaitTermination(100, TimeUnit.SECONDS)
         }
         return shutdownFuture
+    }
+
+    private fun recordCompletion(start: Long, type: Type) {
+        when (type) {
+            Type.SHORT_RUNNING -> shortRunningTaskCompletionTime.record(System.nanoTime() - start, TimeUnit.NANOSECONDS)
+            Type.LONG_RUNNING -> longRunningTaskCompletionTime.record(System.nanoTime() - start, TimeUnit.NANOSECONDS)
+        }
+        decrementTaskCount(type)
     }
 
     private fun incrementTaskCount(type: Type) {

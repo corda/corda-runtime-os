@@ -153,7 +153,6 @@ class RPCClient(
         val exceptionToThrow = when (e) {
             is ConnectException,
             is IOException,
-            is InterruptedException,
             is TimeoutException,
             is CordaHTTPClientSideTransientException -> {
                 log.warn("Intermittent error in RPCClient request $endpoint: ", e)
@@ -166,6 +165,10 @@ class RPCClient(
             is SecurityException -> {
                 log.warn("Fatal error in RPCClient request $endpoint: ", e)
                 CordaMessageAPIFatalException(e.message, e)
+            }
+            is InterruptedException -> {
+                log.info("Thread interrupted calling RPCClient: $endpoint", e)
+                throw e
             }
 
             else -> {
