@@ -4,7 +4,7 @@ import net.corda.ledger.utxo.flow.impl.flows.repair.UtxoLoggingLedgerRepairFlow
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.ledger.utxo.recovery.UtxoLedgerRepairService
+import net.corda.v5.ledger.utxo.repair.UtxoLedgerRepairService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
