@@ -1,4 +1,4 @@
-package net.corda.cli.plugins.cpiupload.commands
+package net.corda.cli.plugins.cpi.commands
 
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
