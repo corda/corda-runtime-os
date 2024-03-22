@@ -61,13 +61,15 @@ fun <T : Any?> withPermissionManager(
         )
     } catch (e: CordaRPCAPISenderException) {
         logger.warn("Error during sending of permission management request.", e)
+        val ex = e.cause ?: e
         throw InternalServerException(
-            exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
+            exceptionDetails = ExceptionDetails(ex::class.java.name, "${ex.message}")
         )
     } catch (e: CordaRPCAPIResponderException) {
         logger.warn("Permission manager received error from responder: ${e.message}", e.cause)
+        val ex = e.cause ?: e
         throw InternalServerException(
-            exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
+            exceptionDetails = ExceptionDetails(ex::class.java.name, "${ex.message}")
         )
     } catch (e: TimeoutException) {
         logger.warn("Permission management operation timed out.", e)

@@ -39,9 +39,9 @@ internal class PermissionManagementHandlerTest {
             }
         }
         assertEquals("Internal server error.", e.message)
-        assertEquals(2, e.details.size)
-        assertEquals(CordaRPCAPIResponderException::class.java.name, e.details["cause"])
-        assertEquals("Responder exception", e.details["reason"])
+        assertEquals(0, e.details.size)
+        assertEquals(CordaRPCAPIResponderException::class.java.name, e.exceptionDetails!!.cause)
+        assertEquals("Responder exception", e.exceptionDetails!!.reason)
     }
 
     @Test
@@ -56,9 +56,9 @@ internal class PermissionManagementHandlerTest {
             }
         }
         assertEquals("Internal server error.", e.message)
-        assertEquals(2, e.details.size)
-        assertEquals("java.lang.IllegalArgumentException", e.details["cause"])
-        assertEquals("illegal arg", e.details["reason"])
+        assertEquals(0, e.details.size)
+        assertEquals("java.lang.IllegalArgumentException", e.exceptionDetails!!.cause)
+        assertEquals("illegal arg", e.exceptionDetails!!.reason)
     }
 
     @Test
@@ -69,9 +69,9 @@ internal class PermissionManagementHandlerTest {
             }
         }
         assertEquals("Internal server error.", e.message)
-        assertEquals(2, e.details.size)
-        assertEquals("java.lang.IllegalArgumentException", e.details["cause"])
-        assertEquals("illegal arg", e.details["reason"])
+        assertEquals(0, e.details.size)
+        assertEquals("java.lang.IllegalArgumentException", e.exceptionDetails!!.cause)
+        assertEquals("illegal arg", e.exceptionDetails!!.reason)
     }
 
     @Test
@@ -82,9 +82,9 @@ internal class PermissionManagementHandlerTest {
             }
         }
         assertEquals("Internal server error.", e.message)
-        assertEquals(2, e.details.size)
-        assertEquals(CordaRPCAPISenderException::class.java.name, e.details["cause"])
-        assertEquals("Sender exception", e.details["reason"])
+        assertEquals(0, e.details.size)
+        assertEquals(CordaRPCAPISenderException::class.java.name, e.exceptionDetails!!.cause)
+        assertEquals("Sender exception", e.exceptionDetails!!.reason)
     }
 
     @Test
@@ -95,9 +95,9 @@ internal class PermissionManagementHandlerTest {
             }
         }
         assertEquals("Internal server error.", e.message)
-        assertEquals(2, e.details.size)
-        assertEquals(UnexpectedPermissionResponseException::class.java.name, e.details["cause"])
-        assertEquals("unexpected exception", e.details["reason"])
+        assertEquals(0, e.details.size)
+        assertEquals(UnexpectedPermissionResponseException::class.java.name, e.exceptionDetails!!.cause)
+        assertEquals("unexpected exception", e.exceptionDetails!!.reason)
     }
 
     @Test
@@ -107,10 +107,10 @@ internal class PermissionManagementHandlerTest {
                 throw CordaRPCAPIPartitionException("Repartition event.")
             }
         }
-
-        assertEquals("Error waiting for permission management response: Repartition Event!", e.exceptionDetails!!.reason)
-        assertEquals(CordaRPCAPIPartitionException::class.java.name, e.exceptionDetails!!.cause)
+        assertEquals("Error waiting for permission management response: Repartition Event!", e.message)
         assertEquals(0, e.details.size)
+        assertEquals(CordaRPCAPIPartitionException::class.java.name, e.exceptionDetails!!.cause)
+        assertEquals("Repartition event.", e.exceptionDetails!!.reason)
     }
 
     @Test
@@ -121,9 +121,9 @@ internal class PermissionManagementHandlerTest {
             }
         }
         assertEquals("Internal server error.", e.message)
-        assertEquals(2, e.details.size)
-        assertEquals("javax.persistence.OptimisticLockException", e.details["cause"])
-        assertEquals("JPA exception handled", e.details["reason"])
+        assertEquals(0, e.details.size)
+        assertEquals("javax.persistence.OptimisticLockException", e.exceptionDetails!!.cause)
+        assertEquals("JPA exception handled", e.exceptionDetails!!.reason)
     }
 
     @Suppress("TooGenericExceptionThrown")
@@ -135,8 +135,8 @@ internal class PermissionManagementHandlerTest {
             }
         }
         assertEquals("Unexpected permission management error occurred.", e.message)
-        assertEquals(2, e.details.size)
-        assertEquals(Exception::class.java.name, e.details["cause"])
-        assertEquals("random exception", e.details["reason"])
+        assertEquals(0, e.details.size)
+        assertEquals(Exception::class.java.name, e.exceptionDetails!!.cause)
+        assertEquals("random exception", e.exceptionDetails!!.reason)
     }
 }

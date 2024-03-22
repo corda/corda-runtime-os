@@ -63,6 +63,8 @@ class ExceptionTranslatorTest {
         val httpApiException = ExceptionTranslator.translate(exception)
 
         assertEquals(InternalServerException::class.java, httpApiException::class.java)
-        assertEquals("test", httpApiException.message)
+        assertEquals("Internal server error.", httpApiException.message)
+        assertEquals(Exception::class.java.name, httpApiException.exceptionDetails!!.cause)
+        assertEquals("test", httpApiException.exceptionDetails!!.reason)
     }
 }
