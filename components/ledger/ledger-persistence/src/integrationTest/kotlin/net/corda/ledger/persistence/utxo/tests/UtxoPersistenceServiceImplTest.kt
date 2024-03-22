@@ -1239,7 +1239,7 @@ class UtxoPersistenceServiceImplTest {
             txASignedTransaction,
             "account",
             UNVERIFIED,
-            emptyList(),
+            emptyList(), // visible states of unverified tx is always empty
             serializer = serializationService
         )
         val txAReaderVerified = TestUtxoTransactionReader(
