@@ -12,4 +12,5 @@ dependencies {
     implementation 'net.corda:corda-crypto'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation project(':libs:crypto:cipher-suite')
+    implementation libs.javalin
 }

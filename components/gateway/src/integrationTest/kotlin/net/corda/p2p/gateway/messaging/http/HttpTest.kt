@@ -9,6 +9,10 @@ import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.ssl.SslHandler
+import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
+import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
+import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
+import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.lifecycle.Resource
 import net.corda.p2p.gateway.LoggingInterceptor
 import net.corda.p2p.gateway.TestBase
@@ -22,15 +26,12 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.bouncycastle.asn1.x500.X500Name
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.net.URI
 import java.security.SecureRandom
 import java.time.Instant
-import java.util.*
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantLock
 import javax.net.ssl.KeyManagerFactory
@@ -58,7 +59,7 @@ internal class HttpTest : TestBase() {
         }
     }
 
-    private val serverAddress = URI.create("http://alice.net:10000")
+    private val serverAddress = URI.create("http://alice.net:${getOpenPort()}")
 
     @Test
     @Timeout(30)
@@ -210,7 +211,7 @@ internal class HttpTest : TestBase() {
             .toByteArray()
         val listener = object : RequestListener {
             override fun onRequest(httpWriter: HttpWriter, request: HttpRequest) {
-                assertTrue(Arrays.equals(hugePayload, request.payload))
+                assertThat(hugePayload).isEqualTo(request.payload)
                 httpWriter.write(HttpResponseStatus.OK, request.source, serverResponseContent.toByteArray(Charsets.UTF_8))
             }
         }
@@ -244,7 +245,6 @@ internal class HttpTest : TestBase() {
 
     @Test
     @Timeout(30)
-    @Disabled("Disabling temporarily until CORE-5879 is completed.")
     fun `tls handshake succeeds - revocation checking disabled C5`() {
         val listener = object : RequestListener {
             override fun onRequest(httpWriter: HttpWriter, request: HttpRequest) {
@@ -252,29 +252,40 @@ internal class HttpTest : TestBase() {
             }
         }
 
-        HttpServer(
-            listener,
-            MAX_REQUEST_SIZE,
-            GatewayServerConfiguration(
-                serverAddress.host,
-                serverAddress.port,
-                "/",
-            ),
-            bobKeyStore,
-            null,
-        ).use { server ->
-            server.startAndWaitForStarted()
-            HttpClient(
-                DestinationInfo(serverAddress, bobSNI[0], null, truststoreKeyStoreWithRevocation, null),
-                aliceSslConfig,
-                NioEventLoopGroup(1),
-                NioEventLoopGroup(1),
-                ConnectionConfiguration(),
-            ).use { client ->
-                client.start()
-                val response = client.write(ByteArray(0)).get()
-                assertThat(response.statusCode).isEqualTo(HttpResponseStatus.OK)
+        CertificateAuthorityFactory.createRevocableAuthority(
+            ECDSA_SECP256R1_TEMPLATE.toFactoryDefinitions(),
+        ).use { ca ->
+            val certificate = ca
+                .generateKeyAndCertificates(serverAddress.host)
+            ca.revoke(certificate.certificates.first())
+            val bobKeyStore = certificate
+                .toKeyStoreAndPassword()
+            val truststoreKeyStoreWithRevocation = TrustStoresMap.TrustedCertificates(listOf(ca.caCertificate.toPem()))
+            HttpServer(
+                listener,
+                MAX_REQUEST_SIZE,
+                GatewayServerConfiguration(
+                    serverAddress.host,
+                    serverAddress.port,
+                    "/",
+                ),
+                bobKeyStore,
+                null,
+            ).use { server ->
+                server.startAndWaitForStarted()
+                HttpClient(
+                    DestinationInfo(serverAddress, serverAddress.host, null, truststoreKeyStoreWithRevocation, null),
+                    aliceSslConfig,
+                    NioEventLoopGroup(1),
+                    NioEventLoopGroup(1),
+                    ConnectionConfiguration(),
+                ).use { client ->
+                    client.start()
+                    val response = client.write(ByteArray(0)).get()
+                    assertThat(response.statusCode).isEqualTo(HttpResponseStatus.OK)
+                }
             }
+
         }
     }
 
@@ -424,47 +435,60 @@ internal class HttpTest : TestBase() {
 
     @Test
     @Timeout(30)
-    @Disabled("Disabling temporarily until CORE-5879 is completed.")
     fun `tls handshake fails - server presents revoked certificate`() {
-        HttpServer(
-            object : RequestListener {
-                override fun onRequest(httpWriter: HttpWriter, request: HttpRequest) {
-                    httpWriter.write(HttpResponseStatus.OK, request.source, serverResponseContent.toByteArray(Charsets.UTF_8))
+        CertificateAuthorityFactory.createRevocableAuthority(
+            ECDSA_SECP256R1_TEMPLATE.toFactoryDefinitions(),
+        ).use { ca ->
+            val certificate = ca
+                .generateKeyAndCertificates(serverAddress.host)
+            ca.revoke(certificate.certificates.first())
+            val bobKeyStore = certificate
+                .toKeyStoreAndPassword()
+            val truststoreKeyStoreWithRevocation = TrustStoresMap.TrustedCertificates(listOf(ca.caCertificate.toPem()))
+            HttpServer(
+                object : RequestListener {
+                    override fun onRequest(httpWriter: HttpWriter, request: HttpRequest) {
+                        httpWriter.write(
+                            HttpResponseStatus.OK,
+                            request.source,
+                            serverResponseContent.toByteArray(Charsets.UTF_8)
+                        )
+                    }
+                },
+                MAX_REQUEST_SIZE,
+                GatewayServerConfiguration(
+                    serverAddress.host,
+                    serverAddress.port,
+                    "/",
+                ),
+                bobKeyStore,
+                null,
+            ).use { server ->
+                server.startAndWaitForStarted()
+                HttpClient(
+                    DestinationInfo(serverAddress, serverAddress.host, null, truststoreKeyStoreWithRevocation, null),
+                    chipSslConfig,
+                    NioEventLoopGroup(1),
+                    NioEventLoopGroup(1),
+                    ConnectionConfiguration(),
+                ).use { client ->
+                    client.start()
+                    val future = client.write(ByteArray(0))
+                    assertThatThrownBy {
+                        future.get()
+                    }.isInstanceOf(ExecutionException::class.java)
+                        .hasCauseInstanceOf(RuntimeException::class.java)
+                        .hasStackTraceContaining("Connection was closed.")
                 }
-            },
-            MAX_REQUEST_SIZE,
-            GatewayServerConfiguration(
-                serverAddress.host,
-                serverAddress.port,
-                "/",
-            ),
-            bobKeyStore,
-            null,
-        ).use { server ->
-            server.startAndWaitForStarted()
-            HttpClient(
-                DestinationInfo(serverAddress, bobSNI[0], null, truststoreKeyStore, null),
-                chipSslConfig,
-                NioEventLoopGroup(1),
-                NioEventLoopGroup(1),
-                ConnectionConfiguration(),
-            ).use { client ->
-                client.start()
-                val future = client.write(ByteArray(0))
-                assertThatThrownBy {
-                    future.get()
-                }.isInstanceOf(ExecutionException::class.java)
-                    .hasCauseInstanceOf(RuntimeException::class.java)
-                    .hasStackTraceContaining("Connection was closed.")
             }
-        }
 
-        eventually {
-            loggingInterceptor.assertMessageExists(
-                "Bad certificate identity or path. PKIX path validation failed: " +
-                    "java.security.cert.CertPathValidatorException: Certificate has been revoked",
-                Level.ERROR
-            )
+            eventually {
+                loggingInterceptor.assertMessageExists(
+                    "Bad certificate identity or path. PKIX path validation failed: " +
+                            "java.security.cert.CertPathValidatorException: Certificate has been revoked",
+                    Level.ERROR
+                )
+            }
         }
     }
 
