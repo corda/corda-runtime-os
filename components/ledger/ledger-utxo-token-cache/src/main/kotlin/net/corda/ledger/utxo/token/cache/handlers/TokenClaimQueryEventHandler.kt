@@ -63,7 +63,7 @@ class TokenClaimQueryEventHandler(
             // Replace the tokens in the cache with the ones from the query result that have not been claimed
             tokenCache = TokenCacheImpl().apply{ add(tokens) }
 
-            // Update the token pool cache so the expiry period is refreshed
+            // Update the token pool cache
             tokenPoolCache.put(event.poolKey, tokenCache)
 
             selectionResult = selectTokens(tokenCache, state, event)
