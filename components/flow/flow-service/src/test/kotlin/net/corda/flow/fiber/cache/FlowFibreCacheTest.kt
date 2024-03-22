@@ -76,22 +76,22 @@ class FlowFibreCacheTest {
     }
 
     @Test
-    fun `when remove and exists`() {
+    fun `removeAll when data exists`() {
         val cache = FlowFiberCacheImpl(cacheEviction)
         val key1 = mock<FlowKey>()
         val key2 = mock<FlowKey>()
         whenever(value1.getSandboxGroupId()).thenReturn(sandboxGroupId1)
-        whenever(value1.getSandboxGroupId()).thenReturn(sandboxGroupId1)
+        whenever(value2.getSandboxGroupId()).thenReturn(sandboxGroupId2)
 
         cache.put(key1, 1, value1)
-        cache.put(key2, 3, value1)
+        cache.put(key2, 3, value2)
         cache.removeAll()
         assertThat(cache.get(this.key1, 1, sandboxGroupId1)).isNull()
-        assertThat(cache.get(this.key1, 3, sandboxGroupId1)).isNull()
+        assertThat(cache.get(this.key2, 3, sandboxGroupId2)).isNull()
     }
 
     @Test
-    fun `removeAll clears cache when data exists`() {
+    fun `removeAll does not throw when no data exists`() {
         val cache = FlowFiberCacheImpl(cacheEviction)
         assertDoesNotThrow {
             cache.removeAll()
@@ -99,7 +99,7 @@ class FlowFibreCacheTest {
     }
 
     @Test
-    fun `removeAll does not throw when no data exists`() {
+    fun `removeAll clears cache when data exists`() {
         val cache = FlowFiberCacheImpl(cacheEviction)
         cache.put(key1, 1, value1)
         cache.put(key2, 1, value2)
