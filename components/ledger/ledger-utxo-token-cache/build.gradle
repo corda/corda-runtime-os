@@ -28,6 +28,7 @@ dependencies {
     implementation project(":libs:tracing")
     implementation project(":libs:utilities")
     implementation project(':libs:virtual-node:virtual-node-info')
+    implementation project(":libs:cache:cache-caffeine")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
@@ -41,7 +42,6 @@ dependencies {
     implementation "net.corda:corda-topic-schema"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation libs.slf4j.api
-    implementation libs.caffeine
 
     testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testImplementation libs.jackson.module.kotlin
