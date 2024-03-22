@@ -47,6 +47,7 @@ import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.api.StateOperationGroup
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -133,6 +134,7 @@ import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -817,6 +819,30 @@ class P2PLayerEndToEndTest {
                     }
                 }
                 emptySet()
+            }
+
+            on { createOperationGroup() } doReturn object : StateOperationGroup {
+                val creates = ConcurrentLinkedDeque<State>()
+                val updates = ConcurrentLinkedDeque<State>()
+                override fun create(states: Collection<State>): StateOperationGroup {
+                    creates.addAll(states)
+                    return this
+                }
+
+                override fun update(states: Collection<State>): StateOperationGroup {
+                    updates.addAll(states)
+                    return this
+                }
+
+                override fun delete(states: Collection<State>): StateOperationGroup {
+                    return this
+                }
+
+                override fun execute(): Map<String, State?> {
+                    return this@mockLifeCycle.mock.create(creates).associateWith { null } +
+                        this@mockLifeCycle.mock.update(updates)
+                }
+
             }
         }
         private val sessionEncryptionOpsClient = mockLifeCycle<SessionEncryptionOpsClient>() {
