@@ -2,6 +2,7 @@ package net.corda.messaging.mediator.processor
 
 import net.corda.libs.statemanager.api.State
 import net.corda.messaging.api.constants.MessagingMetadataKeys.PROCESSING_FAILURE
+import net.corda.messaging.api.exception.CordaMessageAPIAuthException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorConsumer
 import net.corda.messaging.api.mediator.MediatorMessage
@@ -54,6 +55,8 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
 
     private val stateManager = config.stateManager
 
+    private val errorMsg = "Multi-source event mediator ${config.name} failed to process records"
+
     /**
      * Creates a message bus consumer and begins processing records from the subscribed topic.
      * @param consumerFactory used to create a message bus consumer
@@ -76,11 +79,15 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 when (cause) {
                     is CordaMessageAPIIntermittentException -> {
                         log.warn(
-                            "Multi-source event mediator ${config.name} failed to process records, " +
-                                    "Retrying poll and process. Attempts: $attempts."
+                            "$errorMsg, retrying poll and process. Attempts: $attempts."
                         )
                         consumer?.resetEventOffsetPosition()
                     }
+
+                    is CordaMessageAPIAuthException -> {
+                        onAuthException(attempts, cause, consumer)
+                    }
+
                     else -> {
                         log.debug { "${exception.message} Attempts: $attempts. Fatal error occurred!: $exception"}
                         consumer?.close()
@@ -91,6 +98,17 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             }
         }
         consumer?.close()
+    }
+
+    private fun onAuthException(attempts: Int, ex: Exception, consumer: MediatorConsumer<K, E>?) {
+        if (attempts < 3) {
+            log.warn("$errorMsg, retrying poll and process. Attempts: $attempts.", ex)
+        } else {
+            log.error("$errorMsg. Fatal error occurred. Closing subscription.", ex)
+            consumer?.close()
+            //rethrow to break out of processing topic
+            throw ex
+        }
     }
 
     /**

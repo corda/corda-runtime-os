@@ -10,6 +10,7 @@ import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messagebus.kafka.config.ResolvedConsumerConfig
 import net.corda.messagebus.kafka.utils.toKafka
 import net.corda.messaging.api.chunking.ConsumerChunkDeserializerService
+import net.corda.messaging.api.exception.CordaMessageAPIAuthException
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -30,6 +31,7 @@ import org.apache.kafka.common.errors.AuthenticationException
 import org.apache.kafka.common.errors.AuthorizationException
 import org.apache.kafka.common.errors.FencedInstanceIdException
 import org.apache.kafka.common.errors.InconsistentGroupProtocolException
+import org.apache.kafka.common.errors.SaslAuthenticationException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.BeforeEach
@@ -156,6 +158,18 @@ class CordaKafkaConsumerImplTest {
     }
 
     @Test
+    fun testPollAuthException() {
+        consumer = mock()
+        cordaKafkaConsumer = createConsumer(consumer)
+
+        doThrow(SaslAuthenticationException("exception happened")).whenever(consumer).poll(Mockito.any(Duration::class.java))
+        assertThatExceptionOfType(CordaMessageAPIAuthException::class.java).isThrownBy {
+            cordaKafkaConsumer.poll(Duration.ofMillis(100L))
+        }
+        verify(consumer).poll(Mockito.any(Duration::class.java))
+    }
+
+    @Test
     fun testCloseInvoked() {
         consumer = mock()
         cordaKafkaConsumer = createConsumer(consumer)
@@ -197,6 +211,18 @@ class CordaKafkaConsumerImplTest {
             cordaKafkaConsumer.syncCommitOffsets()
         }
         verify(consumer, times(1)).commitSync()
+    }
+
+    @Test
+    fun testSyncCommitOffsetsAuthException() {
+        consumer = mock()
+        cordaKafkaConsumer = createConsumer(consumer)
+
+        doThrow(SaslAuthenticationException("exception happened")).whenever(consumer).commitSync()
+        assertThatExceptionOfType(CordaMessageAPIAuthException::class.java).isThrownBy {
+            cordaKafkaConsumer.syncCommitOffsets()
+        }
+        verify(consumer).commitSync()
     }
 
     @Test
@@ -300,6 +326,18 @@ class CordaKafkaConsumerImplTest {
     }
 
     @Test
+    fun testGetPartitionsAuthException() {
+        consumer = mock()
+        cordaKafkaConsumer = createConsumer(consumer)
+
+        doThrow(SaslAuthenticationException("exception happened")).`when`(consumer).partitionsFor(any())
+        assertThatExceptionOfType(CordaMessageAPIAuthException::class.java).isThrownBy {
+            cordaKafkaConsumer.getPartitions("topic")
+        }
+        verify(consumer).partitionsFor(any())
+    }
+
+    @Test
     fun testAssignInvokedFatal() {
         consumer = mock()
         cordaKafkaConsumer = createConsumer(consumer)
@@ -335,6 +373,22 @@ class CordaKafkaConsumerImplTest {
             cordaKafkaConsumer.position(CordaTopicPartition("null", 0))
         }
         verify(consumer, times(1)).position(
+            TopicPartition(consumerConfig.topicPrefix + "null", 0)
+        )
+    }
+
+    @Test
+    fun testPositionAuthException() {
+        consumer = mock()
+        cordaKafkaConsumer = createConsumer(consumer)
+
+        doThrow(SaslAuthenticationException("exception happened")).whenever(consumer).position(
+            TopicPartition(consumerConfig.topicPrefix + "null", 0)
+        )
+        assertThatExceptionOfType(CordaMessageAPIAuthException::class.java).isThrownBy {
+            cordaKafkaConsumer.position(CordaTopicPartition("null", 0))
+        }
+        verify(consumer).position(
             TopicPartition(consumerConfig.topicPrefix + "null", 0)
         )
     }
@@ -388,6 +442,22 @@ class CordaKafkaConsumerImplTest {
     }
 
     @Test
+    fun testBeginningOffsetsAuthException() {
+        consumer = mock()
+        cordaKafkaConsumer = createConsumer(consumer)
+
+        doThrow(SaslAuthenticationException("exception happened")).whenever(consumer).beginningOffsets(
+            mutableListOf(TopicPartition(consumerConfig.topicPrefix + "test", 0))
+        )
+        assertThatExceptionOfType(CordaMessageAPIAuthException::class.java).isThrownBy {
+            cordaKafkaConsumer.beginningOffsets(mutableListOf(CordaTopicPartition("test", 0)))
+        }
+        verify(consumer).beginningOffsets(
+            mutableListOf(TopicPartition(consumerConfig.topicPrefix + "test", 0))
+        )
+    }
+
+    @Test
     fun testEndOffsetsInvokedFatal() {
         consumer = mock()
         cordaKafkaConsumer = createConsumer(consumer)
@@ -398,6 +468,19 @@ class CordaKafkaConsumerImplTest {
             cordaKafkaConsumer.endOffsets(mutableListOf(CordaTopicPartition("test", 0)))
         }
         verify(consumer, times(1)).endOffsets(mutableListOf(TopicPartition(consumerConfig.topicPrefix + "test", 0)))
+    }
+
+    @Test
+    fun testEndOffsetsAuthException() {
+        consumer = mock()
+        cordaKafkaConsumer = createConsumer(consumer)
+
+        doThrow(SaslAuthenticationException("exception happened")).whenever(consumer)
+            .endOffsets(mutableListOf(TopicPartition(consumerConfig.topicPrefix + "test", 0)))
+        assertThatExceptionOfType(CordaMessageAPIAuthException::class.java).isThrownBy {
+            cordaKafkaConsumer.endOffsets(mutableListOf(CordaTopicPartition("test", 0)))
+        }
+        verify(consumer).endOffsets(mutableListOf(TopicPartition(consumerConfig.topicPrefix + "test", 0)))
     }
 
     @Test

@@ -1,8 +1,5 @@
 package net.corda.messaging.subscription
 
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.concurrent.CompletableFuture
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
@@ -22,6 +19,7 @@ import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
+import net.corda.messaging.api.exception.CordaMessageAPIAuthException
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.RPCResponderProcessor
@@ -29,9 +27,13 @@ import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.constants.MetricsConstants
 import net.corda.messaging.utils.ExceptionUtils
+import net.corda.messaging.utils.onAuthException
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.concurrent.CompletableFuture
 
 /**
  * RPC subscription implementation utilizing a message bus with producer and consumer to achieve asynchronous
@@ -92,6 +94,9 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                 when (ex) {
                     is CordaMessageAPIIntermittentException -> {
                         log.warn("$errorMsg. Attempts: $attempts. Retrying.", ex)
+                    }
+                    is CordaMessageAPIAuthException -> {
+                        onAuthException(log, attempts, threadLooper, ex, errorMsg)
                     }
                     else -> {
                         log.error("$errorMsg. Fatal error occurred. Closing subscription.", ex)

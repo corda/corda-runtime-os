@@ -7,6 +7,7 @@ import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.constants.MessagingMetadataKeys.PROCESSING_FAILURE
+import net.corda.messaging.api.exception.CordaMessageAPIAuthException
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorConsumer
@@ -147,6 +148,27 @@ class ConsumerProcessorTest {
         verify(taskManager, times(0)).executeShortRunningTask<Unit>(any())
 
         verify(consumer, times(1)).resetEventOffsetPosition()
+        verify(consumer, times(1)).close()
+    }
+
+    @Test
+    fun `auth exception as the cause is treated as intermittent and retries processing 3 times before failure`() {
+        whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(emptyList())
+
+        val consumerFactory = getConsumerFactory()
+        consumer.apply {
+            whenever(poll(any())).doThrow(CordaMessageAPIAuthException("exception"))
+        }
+        assertThrows(CordaMessageAPIAuthException::class.java) {
+            consumerProcessor.processTopic(consumerFactory, getConsumerConfig())
+        }
+
+        verify(consumer, times(3)).poll(any())
+        verify(consumerFactory, times(1)).create<String, String>(any())
+        verify(consumer, times(1)).subscribe()
+        verify(groupAllocator, never()).allocateGroups<String, String, String>(any(), any())
+        verify(taskManager, never()).executeShortRunningTask<Unit>(any())
+
         verify(consumer, times(1)).close()
     }
 

@@ -1,6 +1,5 @@
 package net.corda.messaging.subscription
 
-import java.util.UUID
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -15,6 +14,7 @@ import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
+import net.corda.messaging.api.exception.CordaMessageAPIAuthException
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.EventLogProcessor
@@ -25,12 +25,14 @@ import net.corda.messaging.constants.MetricsConstants
 import net.corda.messaging.subscription.consumer.listener.ForwardingRebalanceListener
 import net.corda.messaging.subscription.consumer.listener.LoggingConsumerRebalanceListener
 import net.corda.messaging.utils.ExceptionUtils
+import net.corda.messaging.utils.onAuthException
 import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toEventLogRecord
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getDLQTopic
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.util.*
 
 /**
  * Implementation of an EventLogSubscription.
@@ -174,6 +176,10 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                     is CordaMessageAPIIntermittentException -> {
                         attempts++
                         handlePollAndProcessIntermittentError(attempts, consumer, ex)
+                    }
+                    is CordaMessageAPIAuthException -> {
+                        attempts++
+                        onAuthException(log, attempts, threadLooper, ex, errorMsg)
                     }
                     else -> {
                         throw CordaMessageAPIFatalException(

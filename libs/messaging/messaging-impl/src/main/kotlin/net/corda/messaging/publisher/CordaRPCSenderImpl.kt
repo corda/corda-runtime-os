@@ -20,6 +20,7 @@ import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
+import net.corda.messaging.api.exception.CordaMessageAPIAuthException
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
@@ -31,6 +32,7 @@ import net.corda.messaging.constants.MetricsConstants
 import net.corda.messaging.subscription.ThreadLooper
 import net.corda.messaging.utils.ExceptionUtils
 import net.corda.messaging.utils.FutureTracker
+import net.corda.messaging.utils.onAuthException
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getRPCResponseTopic
 import net.corda.utilities.debug
@@ -38,7 +40,7 @@ import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 
 @Suppress("LongParameterList")
@@ -121,6 +123,10 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                 when (ex) {
                     is CordaMessageAPIIntermittentException -> {
                         log.warn("$errorMsg. Attempts: $attempts. Retrying.", ex)
+                    }
+
+                    is CordaMessageAPIAuthException -> {
+                        onAuthException(log, attempts, threadLooper, ex, errorMsg)
                     }
 
                     else -> {

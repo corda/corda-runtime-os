@@ -10,6 +10,7 @@ import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.chunking.ChunkSerializerService
+import net.corda.messaging.api.exception.CordaMessageAPIAuthException
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -23,6 +24,7 @@ import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerRebalanceListener
 import net.corda.messaging.utils.getEventsByBatch
+import net.corda.messaging.utils.onAuthException
 import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toRecord
 import net.corda.messaging.utils.tryGetResult
@@ -34,7 +36,7 @@ import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Clock
-import java.util.UUID
+import java.util.*
 
 @Suppress("LongParameterList")
 internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
@@ -160,6 +162,10 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                         )
                     }
 
+                    is CordaMessageAPIAuthException -> {
+                        onAuthException(log, attempts, threadLooper, ex, errorMsg)
+                    }
+
                     else -> {
                         log.error(
                             "$errorMsg Attempts: $attempts. Closing subscription.", ex
@@ -203,7 +209,10 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                         attempts++
                         handleProcessEventRetries(attempts, ex)
                     }
-
+                    is CordaMessageAPIAuthException -> {
+                        attempts++
+                        onAuthException(log, attempts, threadLooper, ex, errorMsg)
+                    }
                     else -> {
                         throw CordaMessageAPIFatalException(
                             "Failed to process records from topic $eventTopic, group ${config.group}, " +

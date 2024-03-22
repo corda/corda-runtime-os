@@ -6,6 +6,7 @@ import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
+import net.corda.messaging.api.exception.CordaMessageAPIAuthException
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
@@ -15,19 +16,20 @@ import net.corda.messaging.generateMockCordaConsumerRecordList
 import net.corda.messaging.stubs.StubEventLogProcessor
 import net.corda.messaging.subscription.consumer.listener.ForwardingRebalanceListener
 import net.corda.messaging.subscription.consumer.listener.LoggingConsumerRebalanceListener
+import net.corda.test.util.waitWhile
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import org.mockito.kotlin.argumentCaptor
-import net.corda.test.util.waitWhile
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.util.concurrent.CountDownLatch
@@ -263,6 +265,40 @@ class EventLogSubscriptionImplTest {
         verify(mockCordaProducer, times(0)).beginTransaction()
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).resetToLastCommittedPositions(any())
         verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount + 1)).poll(config.pollTimeout)
+        assertThat(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows).isFalse
+    }
+
+    @Test
+    fun testConsumerPollFailRetriesOnAuthException() {
+        whenever(mockCordaConsumer.poll(config.pollTimeout)).thenThrow(
+            CordaMessageAPIAuthException("exception happened")
+        )
+
+        kafkaEventLogSubscription = EventLogSubscriptionImpl(
+            config,
+            cordaConsumerBuilder,
+            cordaProducerBuilder,
+            processor,
+            null,
+            lifecycleCoordinatorFactory
+        )
+
+        kafkaEventLogSubscription.start()
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { kafkaEventLogSubscription.isRunning }
+
+        assertThat(eventsLatch.count).isEqualTo(mockRecordCount)
+        verify(cordaConsumerBuilder, times(1)).createConsumer<String, ByteBuffer>(
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+        )
+        verify(cordaProducerBuilder, times(1)).createProducer(any(), any(), anyOrNull())
+        verify(mockCordaProducer, times(0)).beginTransaction()
+        verify(mockCordaConsumer, never()).resetToLastCommittedPositions(any())
+        verify(mockCordaConsumer, times(consumerPollAndProcessRetriesCount)).poll(config.pollTimeout)
         assertThat(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows).isFalse
     }
 

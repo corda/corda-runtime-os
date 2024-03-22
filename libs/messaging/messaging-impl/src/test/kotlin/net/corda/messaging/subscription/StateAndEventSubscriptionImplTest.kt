@@ -1,10 +1,5 @@
 package net.corda.messaging.subscription
 
-import java.time.Duration
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.CordaTopicPartition
@@ -14,6 +9,7 @@ import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.TOPIC_PREFIX
 import net.corda.messaging.api.chunking.ChunkSerializerService
+import net.corda.messaging.api.exception.CordaMessageAPIAuthException
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -41,6 +37,11 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Duration
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 class StateAndEventSubscriptionImplTest {
 
@@ -168,6 +169,40 @@ class StateAndEventSubscriptionImplTest {
         verify(chunkSerializerService, times(5)).getChunkKeysToClear(any(), anyOrNull(), anyOrNull())
 
         assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
+    }
+
+    @Test
+    @Timeout(TEST_TIMEOUT_SECONDS * 100)
+    fun `state and event subscription retries 3 times after auth exception`() {
+        val (builder, _, stateAndEventConsumer) = setupMocks(5)
+        doAnswer {
+            throw CordaMessageAPIAuthException("test")
+        }.whenever(stateAndEventConsumer).pollEvents()
+
+        val subscription = StateAndEventSubscriptionImpl<String, String, String>(
+            config,
+            builder,
+            mock(),
+            cordaAvroSerializer,
+            lifecycleCoordinatorFactory,
+            chunkSerializerService
+        )
+
+        subscription.start()
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
+
+        verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
+            any(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull()
+        )
+        verify(stateAndEventConsumer, times(3)).pollEvents()
+        verify(stateAndEventConsumer, never()).getInMemoryStateValue(any())
+        verify(rebalanceListener).close()
     }
 
     @Test

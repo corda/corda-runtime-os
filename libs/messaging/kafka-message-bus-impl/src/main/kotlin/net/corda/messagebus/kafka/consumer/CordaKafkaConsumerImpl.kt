@@ -111,6 +111,12 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                     in transientExceptions -> {
                         logWarningAndThrowIntermittentException("Error attempting to poll.", ex)
                     }
+                    in authExceptions -> {
+                        logWarningAndThrowAuthException(
+                            "Authentication error attempting to get end offsets.",
+                            ex
+                        )
+                    }
                     else -> logErrorAndThrowFatalException("Unexpected error attempting to poll.", ex)
                 }
             }
@@ -329,6 +335,12 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                     in transientExceptions -> {
                         logWarningAndThrowIntermittentException("Failed to commitSync offsets.", ex)
                     }
+                    in authExceptions -> {
+                        logWarningAndThrowAuthException(
+                            "Authentication error attempting to get end offsets.",
+                            ex
+                        )
+                    }
                     else -> {
                         logErrorAndThrowFatalException(
                             "Unexpected error attempting to commitSync offsets .", ex
@@ -359,6 +371,12 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                     }
                     in transientExceptions -> {
                         logWarningAndThrowIntermittentException("Failed to commitSync offsets for record $event.", ex)
+                    }
+                    in authExceptions -> {
+                        logWarningAndThrowAuthException(
+                            "Authentication error attempting to get end offsets.",
+                            ex
+                        )
                     }
                     else -> {
                         logErrorAndThrowFatalException(
@@ -444,6 +462,12 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 in transientExceptions -> {
                     logWarningAndThrowIntermittentException(
                         "Intermittent error attempting to get partitions on topic $topic",
+                        ex
+                    )
+                }
+                in authExceptions -> {
+                    logWarningAndThrowAuthException(
+                        "Authentication error attempting to get end offsets.",
                         ex
                     )
                 }
@@ -539,6 +563,12 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 in transientExceptions -> {
                     logWarningAndThrowIntermittentException(
                         "Intermittent error attempting to get position.",
+                        ex
+                    )
+                }
+                in authExceptions -> {
+                    logWarningAndThrowAuthException(
+                        "Authentication error attempting to get end offsets.",
                         ex
                     )
                 }
@@ -641,6 +671,13 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 in transientExceptions -> {
                     logWarningAndThrowIntermittentException(
                         "Intermittent error attempting to get end offsets.",
+                        ex
+                    )
+                }
+
+                in authExceptions -> {
+                    logWarningAndThrowAuthException(
+                        "Authentication error attempting to get end offsets.",
                         ex
                     )
                 }

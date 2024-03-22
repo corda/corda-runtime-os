@@ -17,6 +17,7 @@ import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.constants.MetricsConstants
 import net.corda.messaging.subscription.factory.MapFactory
 import net.corda.messaging.utils.ExceptionUtils
+import net.corda.messaging.utils.onAuthException
 import net.corda.messaging.utils.toRecord
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
@@ -105,7 +106,7 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
                     }
 
                     is CordaMessageAPIAuthException -> {
-                        onAuthException(attempts, threadLooper, ex)
+                        onAuthException(log, attempts, threadLooper, ex, errorMsg)
                     }
 
                     else -> {
@@ -118,16 +119,6 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
         }
         latestValues?.apply { mapFactory.destroyMap(this) }
         latestValues = null
-    }
-
-    private fun onAuthException(attempts: Int, threadLooper: ThreadLooper, ex: Exception) {
-        if (attempts < 3) {
-            log.warn("$errorMsg. Attempts: $attempts. Retrying.", ex)
-        } else {
-            log.error("$errorMsg. Fatal error occurred. Closing subscription.", ex)
-            threadLooper.updateLifecycleStatus(LifecycleStatus.ERROR, errorMsg)
-            threadLooper.stopLoop()
-        }
     }
 
     private fun onError(bytes: ByteArray) {

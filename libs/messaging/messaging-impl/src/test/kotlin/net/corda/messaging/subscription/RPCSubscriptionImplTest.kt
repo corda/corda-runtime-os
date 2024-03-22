@@ -16,6 +16,7 @@ import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.TOPIC_PREFIX
+import net.corda.messaging.api.exception.CordaMessageAPIAuthException
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.RPCResponderProcessor
@@ -35,6 +36,7 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -362,6 +364,30 @@ class RPCSubscriptionImplTest {
         verify(kafkaConsumer, times(2)).subscribe(config.topic)
         assertThat(processor.incomingRecords.size).isEqualTo(1)
         assertFalse(firstTime)
+
+        assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
+    }
+
+    @Test
+    fun `rpc subscription receives auth exception and retries 3 times`() {
+        val (kafkaConsumer, consumerBuilder) = setupStandardMocks()
+        whenever(kafkaConsumer.poll(any())).doThrow(CordaMessageAPIAuthException("exception happened"))
+        val processor = TestProcessor(ResponseStatus.OK)
+        val subscription = RPCSubscriptionImpl(
+            config,
+            consumerBuilder,
+            cordaProducerBuilder,
+            processor,
+            serializer,
+            deserializer,
+            lifecycleCoordinatorFactory
+        )
+
+        subscription.start()
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
+
+        verify(kafkaConsumer, times(3)).subscribe(config.topic)
+        assertThat(processor.incomingRecords.size).isEqualTo(0)
 
         assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
     }

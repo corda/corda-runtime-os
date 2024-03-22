@@ -13,6 +13,7 @@ import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
+import net.corda.messaging.api.exception.CordaMessageAPIAuthException
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
@@ -294,6 +295,39 @@ class CordaRPCSenderImplTest {
 
         verify(cordaProducerBuilder, times(2)).createProducer(any(), any(), anyOrNull())
         verify(cordaConsumerBuilder, times(1)).createConsumer<Any, Any>(any(), any(), any(), any(), any(), anyOrNull())
+        assertThat(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows).isFalse()
+    }
+
+    @Test
+    fun `test CordaRPCSenderImpl receives auth exception and retries 3 times before failure`() {
+        doAnswer { cordaProducer }.whenever(cordaProducerBuilder).createProducer(any(), any(), anyOrNull())
+        whenever(cordaConsumer.getPartitions(any())).thenReturn(listOf(CordaTopicPartition("", 1)))
+        doAnswer { cordaConsumer }.whenever(cordaConsumerBuilder).createConsumer(
+            any(),
+            any(),
+            eq(String::class.java),
+            eq(RPCResponse::class.java),
+            any(),
+            anyOrNull(),
+        )
+
+        val cordaSenderImpl = CordaRPCSenderImpl(
+            config,
+            cordaConsumerBuilder,
+            cordaProducerBuilder,
+            serializer,
+            deserializer,
+            futureTracker,
+            lifecycleCoordinatorFactory
+        )
+        whenever(cordaConsumer.poll(any())).doThrow(CordaMessageAPIAuthException("exception happened"))
+        cordaSenderImpl.start()
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { cordaSenderImpl.isRunning }
+
+        verify(cordaProducerBuilder, times(3)).createProducer(any(), any(), anyOrNull())
+        verify(cordaConsumerBuilder, times(3)).createConsumer<Any, Any>(any(), any(), any(), any(), any(), anyOrNull())
+        verify(cordaConsumer, times(3)).poll(any())
+
         assertThat(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows).isFalse()
     }
 
