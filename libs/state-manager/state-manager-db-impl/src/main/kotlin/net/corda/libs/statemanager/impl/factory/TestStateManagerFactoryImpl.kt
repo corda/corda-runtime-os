@@ -17,6 +17,7 @@ import net.corda.libs.statemanager.impl.metrics.MetricsRecorder.OperationType.UP
 import net.corda.libs.statemanager.impl.metrics.MetricsRecorderImpl
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.schema.configuration.StateManagerConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -203,6 +204,7 @@ class TestStateManagerFactoryImpl  @Activate constructor(
             override fun start() {
                 log.info("$name started")
                 lifecycleCoordinator.start()
+                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
             }
 
             override fun stop() {
