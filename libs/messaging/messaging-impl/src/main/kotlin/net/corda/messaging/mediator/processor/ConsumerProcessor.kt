@@ -242,7 +242,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 is StateChangeAndOperation.Create -> statesToCreate.add(it.stateChangeAndOperation.outputState)
                 is StateChangeAndOperation.Update -> statesToUpdate.add(it.stateChangeAndOperation.outputState)
                 is StateChangeAndOperation.Delete -> statesToDelete.add(it.stateChangeAndOperation.outputState)
-                else -> {} // Do nothing
+                else -> Unit // No state change required.
             }
         }
         val failedToCreateKeys = stateManager.create(statesToCreate)
