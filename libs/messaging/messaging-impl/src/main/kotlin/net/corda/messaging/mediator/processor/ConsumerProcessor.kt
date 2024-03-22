@@ -97,6 +97,23 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         consumer?.close()
     }
 
+    /**
+     * Execute a single pass of the poll/process loop.
+     *
+     * Failure counts of processing per-key are provided from the outer loop as context for each pass of this function.
+     * When processing outputs, if an error is encountered that is not known to be transient when processing a key, the
+     * failure count is incremented by 1. If the count exceeds the MAX_FAILURE_COUNT value, then processing is marked as
+     * failed for this key.
+     *
+     * On any transient failure, or failure that has not exceeded MAX_FAILURE_COUNT, the poll position is reset and
+     * another attempt is made to process the input events. For transient failures, this causes events to be retried
+     * until the transient failure clears. For non-transient failures, processing will give up after a fixed number of
+     * attempts.
+     *
+     * @param consumer The consumer to retrieve input events from
+     * @param failureCounts A map of keys to number of failures for that key. Used to pass context between invocations
+     *                      of this function.
+     */
     private fun pollLoop(consumer: MediatorConsumer<K, E>, failureCounts: MutableMap<String, Int>) {
         metrics.processorTimer.recordCallable {
             try {
@@ -111,6 +128,15 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         }
     }
 
+    /**
+     * Retrieve a set of input events and states.
+     *
+     * Input events are grouped by key and associated with the corresponding state from the state manager. Any states
+     * that are marked as failed will not have the corresponding events processed.
+     *
+     * @param consumer The consumer to use to retrieve input events.
+     * @return The set of inputs for processing.
+     */
     private fun getInputs(
         consumer: MediatorConsumer<K, E>,
     ): List<EventProcessingInput<K, E>> {
@@ -122,6 +148,18 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         return generateInputs(states.values, records)
     }
 
+    /**
+     * Process a list of inputs into outputs.
+     *
+     * This function groups inputs into roughly even sizes (by event count), and then passes each group to a new thread
+     * for processing. The corresponding outputs are collected together for further categorization and commit.
+     *
+     * If processing times out, the state will be marked as failed. This will prevent further processing for events on
+     * that key if processing has been attempted MAX_FAILURE_ATTEMPTS times without success.
+     *
+     * @param inputs The set of input to process.
+     * @return The set of outputs for further processing.
+     */
     private fun processInputs(inputs: List<EventProcessingInput<K, E>>): Map<String, EventProcessingOutput> {
         val groups = groupAllocator.allocateGroups(inputs, config)
         return groups.filter {
@@ -158,6 +196,26 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         }
     }
 
+    /**
+     * Categorizes transient and non-transient failures from processing the batch.
+     *
+     * Transient failures are marked as such and should cause a StateChangeAndOperation.Transient to be returned for
+     * that key from processing. Non-transient failures are anything else that results in failure, and are marked in the
+     * state metadata.
+     *
+     * Note that "non-transient" failures are just those that are not identified to be transient, and so may clear up on
+     * retry if they are incorrectly categorized. It is important that anything marked as transient is so 100% of the
+     * time however. As such this retry logic is a balance between failing anything that is a true failure and allowing
+     * some non-identified transient failures to be corrected.
+     *
+     * If any transient failures, or any non-transient failures that haven't been retried MAX_FAILURE_ATTEMPTS times,
+     * are identified, this function will throw an error signalling that processing should be retried from the last poll
+     * position.
+     *
+     * @param outputs The outputs from this round of processing.
+     * @param failureCounts The current failure counts for all keys that have not subsequently succeeded.
+     * @throws CordaMessageAPIIntermittentException if any retryable errors are identified.
+     */
     private fun categorizeOutputs(
         outputs: Map<String, EventProcessingOutput>,
         failureCounts: MutableMap<String, Int>
@@ -185,6 +243,18 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         }
     }
 
+    /**
+     * Commits output states, publishes asynchronous records, and updates the consumer sync position.
+     *
+     * A failure while committing state creates and updates, or while publishing output events, will result in a retry
+     * occurring. This may result in duplicate messages being sent. Deletes are not subject to this and are done
+     * best-effort.
+     *
+     * @param consumer The consumer to commit the offsets for
+     * @param outputs The outputs to commit back
+     * @param failureCounts Context from previous runs. This is cleared for each key present in the outputs on
+     *                      successful commit.
+     */
     private fun commit(
         consumer: MediatorConsumer<K, E>,
         outputs: Map<String, EventProcessingOutput>,
