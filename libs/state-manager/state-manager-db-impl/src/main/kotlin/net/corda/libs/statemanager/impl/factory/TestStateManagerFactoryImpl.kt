@@ -46,171 +46,177 @@ class TestStateManagerFactoryImpl  @Activate constructor(
     }
 
     override fun create(config: SmartConfig, stateType: StateManagerConfig.StateType, compressionType: CompressionType): StateManager {
-        return  object : StateManager {
-            override val name = LifecycleCoordinatorName(
-                "TestStateManager",
-                UUID.randomUUID().toString()
-            )
-            private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(name) { _, _ ->
+        return TestStateManager(lifecycleCoordinatorFactory)
+    }
 
+    class TestStateManager(
+        lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    ): StateManager {
+        override val name = LifecycleCoordinatorName(
+            "TestStateManager",
+            UUID.randomUUID().toString()
+        )
+        private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(name) { _, _ ->
+
+        }
+
+        private val metricsRecorder = MetricsRecorderImpl()
+
+        override fun create(states: Collection<State>): Set<String> {
+            return metricsRecorder.recordProcessingTime(CREATE) {
+                states.mapNotNull {
+                    storage.putIfAbsent(it.key, it)
+                }.map { it.key }.toSet()
             }
+        }
 
-            private val metricsRecorder = MetricsRecorderImpl()
-
-            override fun create(states: Collection<State>): Set<String> {
-                return metricsRecorder.recordProcessingTime(CREATE) {
-                    states.mapNotNull {
-                        storage.putIfAbsent(it.key, it)
-                    }.map { it.key }.toSet()
-                }
+        override fun get(keys: Collection<String>): Map<String, State> {
+            return metricsRecorder.recordProcessingTime(GET) {
+                keys.mapNotNull { storage[it] }.associateBy { it.key }
             }
+        }
 
-            override fun get(keys: Collection<String>): Map<String, State> {
-                return metricsRecorder.recordProcessingTime(GET) {
-                    keys.mapNotNull { storage[it] }.associateBy { it.key }
-                }
-            }
-
-            override fun update(states: Collection<State>): Map<String, State> {
-                return metricsRecorder.recordProcessingTime(UPDATE) {
-                    states.mapNotNull {
-                        var output: State? = null
-                        storage.compute(it.key) { _, existingState ->
-                            if (existingState?.version == it.version) {
-                                it.copy(version = it.version + 1)
-                            } else {
-                                output = it
-                                it
-                            }
+        override fun update(states: Collection<State>): Map<String, State> {
+            return metricsRecorder.recordProcessingTime(UPDATE) {
+                states.mapNotNull {
+                    var output: State? = null
+                    storage.compute(it.key) { _, existingState ->
+                        if (existingState?.version == it.version) {
+                            it.copy(version = it.version + 1)
+                        } else {
+                            log.warn("Update failed for key [${it.key}], version [${it.version}]")
+                            output = it
+                            it
                         }
-                        output
-                    }.associateBy { it.key }
-                }
+                    }
+                    output
+                }.associateBy { it.key }
             }
+        }
 
-            override fun delete(states: Collection<State>): Map<String, State> {
-                return metricsRecorder.recordProcessingTime(DELETE) {
-                    states.mapNotNull {
-                        var output: State? = null
-                        storage.compute(it.key) { _, existingState ->
-                            if (existingState?.version == it.version) {
-                                null
-                            } else {
-                                output = it
-                                existingState
-                            }
+        override fun delete(states: Collection<State>): Map<String, State> {
+            return metricsRecorder.recordProcessingTime(DELETE) {
+                states.mapNotNull {
+                    var output: State? = null
+                    storage.compute(it.key) { _, existingState ->
+                        if (existingState?.version == it.version) {
+                            null
+                        } else {
+                            log.warn("Delete failed for key [${it.key}], version [${it.version}]")
+                            output = it
+                            existingState
                         }
-                        output
-                    }.associateBy { it.key }
-                }
-            }
-
-            override fun createOperationGroup(): StateOperationGroup {
-                TODO("Not yet implemented")
-            }
-
-            override fun updatedBetween(interval: IntervalFilter): Map<String, State> {
-                TODO("Not yet implemented")
-            }
-
-            override fun findByMetadataMatchingAll(filters: Collection<MetadataFilter>): Map<String, State> {
-                TODO("Not yet implemented")
-            }
-
-            override fun findByMetadataMatchingAny(filters: Collection<MetadataFilter>): Map<String, State> {
-                TODO("Not yet implemented")
-            }
-
-            // Only supporting equals for now.
-            override fun findUpdatedBetweenWithMetadataFilter(
-                intervalFilter: IntervalFilter,
-                metadataFilter: MetadataFilter
-            ): Map<String, State> {
-                return metricsRecorder.recordProcessingTime(FIND) {
-                    storage.filter { (_, state) ->
-                        state.modifiedTime >= intervalFilter.start && state.modifiedTime <= intervalFilter.finish
-                    }.filter {
-                        matchesAll(it.value, listOf(metadataFilter))
                     }
+                    output
+                }.associateBy { it.key }
+            }
+        }
+
+        override fun createOperationGroup(): StateOperationGroup {
+            TODO("Not yet implemented")
+        }
+
+        override fun updatedBetween(interval: IntervalFilter): Map<String, State> {
+            TODO("Not yet implemented")
+        }
+
+        override fun findByMetadataMatchingAll(filters: Collection<MetadataFilter>): Map<String, State> {
+            TODO("Not yet implemented")
+        }
+
+        override fun findByMetadataMatchingAny(filters: Collection<MetadataFilter>): Map<String, State> {
+            TODO("Not yet implemented")
+        }
+
+        // Only supporting equals for now.
+        override fun findUpdatedBetweenWithMetadataFilter(
+            intervalFilter: IntervalFilter,
+            metadataFilter: MetadataFilter
+        ): Map<String, State> {
+            return metricsRecorder.recordProcessingTime(FIND) {
+                storage.filter { (_, state) ->
+                    state.modifiedTime >= intervalFilter.start && state.modifiedTime <= intervalFilter.finish
+                }.filter {
+                    matchesAll(it.value, listOf(metadataFilter))
                 }
             }
+        }
 
-            override fun findUpdatedBetweenWithMetadataMatchingAll(
-                intervalFilter: IntervalFilter,
-                metadataFilters: Collection<MetadataFilter>
-            ): Map<String, State> {
-                return metricsRecorder.recordProcessingTime(FIND) {
-                    storage.filter { (_, state) ->
-                        state.modifiedTime >= intervalFilter.start && state.modifiedTime <= intervalFilter.finish
-                    }.filter {
-                        matchesAll(it.value, metadataFilters)
+        override fun findUpdatedBetweenWithMetadataMatchingAll(
+            intervalFilter: IntervalFilter,
+            metadataFilters: Collection<MetadataFilter>
+        ): Map<String, State> {
+            return metricsRecorder.recordProcessingTime(FIND) {
+                storage.filter { (_, state) ->
+                    state.modifiedTime >= intervalFilter.start && state.modifiedTime <= intervalFilter.finish
+                }.filter {
+                    matchesAll(it.value, metadataFilters)
+                }
+            }
+        }
+
+        override fun findUpdatedBetweenWithMetadataMatchingAny(
+            intervalFilter: IntervalFilter,
+            metadataFilters: Collection<MetadataFilter>
+        ): Map<String, State> {
+            return metricsRecorder.recordProcessingTime(FIND) {
+                storage.filter { (_, state) ->
+                    state.modifiedTime >= intervalFilter.start && state.modifiedTime <= intervalFilter.finish
+                }.filter {
+                    matchesAny(it.value, metadataFilters)
+                }
+            }
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        private fun matchesAny(state: State, filters: Collection<MetadataFilter>) =
+            filters.any {
+                if (state.metadata.containsKey(it.key)) {
+                    val source = state.metadata[it.key] as Comparable<Any>
+
+                    when (it.operation) {
+                        Operation.Equals -> source == it.value
+                        Operation.NotEquals -> source != it.value
+                        Operation.LesserThan -> source < it.value
+                        Operation.GreaterThan -> source > it.value
                     }
+                } else {
+                    false
                 }
             }
 
-            override fun findUpdatedBetweenWithMetadataMatchingAny(
-                intervalFilter: IntervalFilter,
-                metadataFilters: Collection<MetadataFilter>
-            ): Map<String, State> {
-                return metricsRecorder.recordProcessingTime(FIND) {
-                    storage.filter { (_, state) ->
-                        state.modifiedTime >= intervalFilter.start && state.modifiedTime <= intervalFilter.finish
-                    }.filter {
-                        matchesAny(it.value, metadataFilters)
+        @Suppress("UNCHECKED_CAST")
+        private fun matchesAll(state: State, filters: Collection<MetadataFilter>) =
+            filters.all {
+                if (state.metadata.containsKey(it.key)) {
+                    val source = state.metadata[it.key] as Comparable<Any>
+
+                    when (it.operation) {
+                        Operation.Equals -> source == it.value
+                        Operation.NotEquals -> source != it.value
+                        Operation.LesserThan -> source < it.value
+                        Operation.GreaterThan -> source > it.value
                     }
+                } else {
+                    false
                 }
             }
 
-            @Suppress("UNCHECKED_CAST")
-            private fun matchesAny(state: State, filters: Collection<MetadataFilter>) =
-                filters.any {
-                    if (state.metadata.containsKey(it.key)) {
-                        val source = state.metadata[it.key] as Comparable<Any>
+        override val isRunning: Boolean
+        get() {
+            log.info("$name running = ${lifecycleCoordinator.isRunning}")
+            return lifecycleCoordinator.isRunning
+        }
 
-                        when (it.operation) {
-                            Operation.Equals -> source == it.value
-                            Operation.NotEquals -> source != it.value
-                            Operation.LesserThan -> source < it.value
-                            Operation.GreaterThan -> source > it.value
-                        }
-                    } else {
-                        false
-                    }
-                }
+        override fun start() {
+            log.info("$name started")
+            lifecycleCoordinator.start()
+            lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+        }
 
-            @Suppress("UNCHECKED_CAST")
-            private fun matchesAll(state: State, filters: Collection<MetadataFilter>) =
-                filters.all {
-                    if (state.metadata.containsKey(it.key)) {
-                        val source = state.metadata[it.key] as Comparable<Any>
-
-                        when (it.operation) {
-                            Operation.Equals -> source == it.value
-                            Operation.NotEquals -> source != it.value
-                            Operation.LesserThan -> source < it.value
-                            Operation.GreaterThan -> source > it.value
-                        }
-                    } else {
-                        false
-                    }
-                }
-
-            override val isRunning: Boolean
-                get() {
-                    log.info("$name running = ${lifecycleCoordinator.isRunning}")
-                    return lifecycleCoordinator.isRunning
-                }
-
-            override fun start() {
-                log.info("$name started")
-                lifecycleCoordinator.start()
-                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
-            }
-
-            override fun stop() {
-                log.info("$name closed")
-                lifecycleCoordinator.close()
-            }
+        override fun stop() {
+            log.info("$name closed")
+            lifecycleCoordinator.close()
         }
     }
 }
