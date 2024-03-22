@@ -240,4 +240,19 @@ class RPCClientTest {
         verify(environment.mockHttpClient, times(3))
             .send(any<HttpRequest>(), any<HttpResponse.BodyHandler<*>>())
     }
+
+
+    @Test
+    fun `send processes messages and throws InterruptException and bubbles up to caller`() {
+        val environment = MockEnvironment().apply {
+            whenever(mockHttpClient.send(any<HttpRequest>(), any<HttpResponse.BodyHandler<*>>()))
+                .thenThrow(InterruptedException("interrupted"))
+        }
+        client = createClient(environment.mocks)
+
+        assertThrows<InterruptedException> {
+            client.send(message)
+        }
+    }
+
 }
