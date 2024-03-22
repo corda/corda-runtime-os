@@ -21,6 +21,7 @@ import net.corda.schema.configuration.StateManagerConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -37,6 +38,7 @@ class TestStateManagerFactoryImpl  @Activate constructor(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
 ) : StateManagerFactory {
     companion object {
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private val storage = ConcurrentHashMap<String, State>()
 
         fun clear() = storage.clear()
@@ -193,13 +195,18 @@ class TestStateManagerFactoryImpl  @Activate constructor(
                 }
 
             override val isRunning: Boolean
-                get() = lifecycleCoordinator.isRunning
+                get() {
+                    log.info("$name running = ${lifecycleCoordinator.isRunning}")
+                    return lifecycleCoordinator.isRunning
+                }
 
             override fun start() {
+                log.info("$name started")
                 lifecycleCoordinator.start()
             }
 
             override fun stop() {
+                log.info("$name closed")
                 lifecycleCoordinator.close()
             }
         }
