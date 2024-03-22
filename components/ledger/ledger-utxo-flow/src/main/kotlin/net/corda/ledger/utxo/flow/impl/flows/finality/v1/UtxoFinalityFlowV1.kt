@@ -28,6 +28,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
+import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionUnknown
 import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -266,32 +267,46 @@ class UtxoFinalityFlowV1(
     ): Pair<UtxoSignedTransactionInternal, List<DigitalSignatureAndMetadata>> {
         val notary = transaction.notaryName
 
-        val notarizationFlow = newPluggableNotaryClientFlowInstance(transaction)
-
-        // `log.trace {}` and `log.debug {}` are not used in this method due to a Quasar issue.
-        if (log.isTraceEnabled) {
-            log.trace(
-                "Notarizing transaction $transactionId using pluggable notary client flow of ${notarizationFlow::class.java.name} with " +
-                    "notary $notary"
-            )
+        val notarize = @Suspendable { attemptNumber: Int ->
+            val notarizationFlow = newPluggableNotaryClientFlowInstance(transaction)
+            // `log.trace {}` and `log.debug {}` are not used in this method due to a Quasar issue.
+            if (log.isTraceEnabled) {
+                log.trace(
+                    "Notarizing transaction $transactionId using pluggable notary client flow of " +
+                        "${notarizationFlow::class.java.name} with notary $notary. Attempt number $attemptNumber"
+                )
+            }
+            flowEngine.subFlow(notarizationFlow)
         }
 
-        val notarySignatures = try {
-            flowEngine.subFlow(notarizationFlow)
-        } catch (e: CordaRuntimeException) {
-            val (message, failureReason) = if (e is NotaryExceptionFatal) {
-                persistInvalidTransaction(transaction)
-                "Notarization failed permanently with ${e.message}." to FinalityNotarizationFailureType.FATAL
-            } else {
-                "Notarization failed with ${e.message}." to FinalityNotarizationFailureType.UNKNOWN
-            }
+        var notarySignatures: List<DigitalSignatureAndMetadata>
+        var attemptNumber = 0
 
-            flowMessaging.sendAll(
-                Payload.Failure<List<DigitalSignatureAndMetadata>>(message, failureReason.value),
-                sessions.toSet()
-            )
-            log.warn(message)
-            throw e
+        while (true) {
+            try {
+                notarySignatures = notarize(++attemptNumber)
+                break
+            } catch (e: NotaryExceptionUnknown) {
+                log.warn(
+                    "Received unknown error from notarization for transaction: ${transaction.id} on attempt: $attemptNumber. " +
+                        "Error: ${e.message} Retrying notarisation."
+                )
+                continue
+            } catch (e: CordaRuntimeException) {
+                val (message, failureReason) = if (e is NotaryExceptionFatal) {
+                    persistInvalidTransaction(transaction)
+                    "Notarization failed permanently with ${e.message}." to FinalityNotarizationFailureType.FATAL
+                } else {
+                    "Notarization failed with ${e.message}." to FinalityNotarizationFailureType.UNKNOWN
+                }
+
+                flowMessaging.sendAll(
+                    Payload.Failure<List<DigitalSignatureAndMetadata>>(message, failureReason.value),
+                    sessions.toSet()
+                )
+                log.warn(message)
+                throw e
+            }
         }
 
         if (log.isTraceEnabled) {

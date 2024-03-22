@@ -144,7 +144,7 @@ class RPCClientTest {
 
         val client = createClient(environment.mocks)
 
-        assertThrows<CordaMessageAPIIntermittentException> {
+        assertThrows<CordaMessageAPIFatalException> {
             client.send(message)
         }
     }
@@ -153,6 +153,18 @@ class RPCClientTest {
     fun `send() handles 5XX error`() {
         val environment = MockEnvironment()
             .withHttpStatus(500)
+
+        val client = createClient(environment.mocks)
+
+        assertThrows<CordaMessageAPIFatalException> {
+            client.send(message)
+        }
+    }
+
+    @Test
+    fun `send() handles 503 error`() {
+        val environment = MockEnvironment()
+            .withHttpStatus(503)
 
         val client = createClient(environment.mocks)
 

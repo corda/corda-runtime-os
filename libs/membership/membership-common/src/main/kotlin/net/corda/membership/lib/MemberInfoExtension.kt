@@ -5,6 +5,7 @@ import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.utilities.NetworkHostAndPort
+import net.corda.utilities.debug
 import net.corda.utilities.parse
 import net.corda.utilities.parseList
 import net.corda.utilities.parseOrNull
@@ -301,10 +302,10 @@ class MemberInfoExtension {
             key: String,
             keyListGetter: () -> Collection<PublicKey>
         ) = memberProvidedContext.parseSet<SecureHash>(key).ifEmpty {
-            logger.warn(
+            logger.debug {
                 "Calculating the key hash for $name in group $groupId for property $key. " +
                     "It is preferable to store this hash in the member context to avoid calculating on each access."
-            )
+            }
             keyListGetter().map { it.fullIdHash() }
         }
     }
