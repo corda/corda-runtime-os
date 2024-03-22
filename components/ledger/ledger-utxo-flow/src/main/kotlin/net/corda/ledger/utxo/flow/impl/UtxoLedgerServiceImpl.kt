@@ -168,8 +168,9 @@ class UtxoLedgerServiceImpl @Activate constructor(
         // `signedTransaction` has various bits of data for the transaction. It is self-signed by the originator
         // at this point, and includes a list of the public keys of other parties that should be used to sign the transaction.
         //
-        // `sessions` has one entry for each other virtual node that should receive the transaction and hopefully
-        // sign it; they will hopefully call in via `receiveFinality.
+        // `sessions` has one entry for each other virtual node that should receive the transaction,
+        // and potentially sign it; they will hopefully call in via `receiveFinality`. It is also possible that
+        // the other vnodes running `receiveFinality` will simply see observe the transaction.
         //
         // Need [doPrivileged] due to [contextLogger] being used in the flow's constructor.
         // Creating the executing the SubFlow must be independent otherwise the security manager causes issues with Quasar.
