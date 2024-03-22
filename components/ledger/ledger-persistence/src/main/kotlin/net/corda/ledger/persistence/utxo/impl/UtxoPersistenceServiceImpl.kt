@@ -317,18 +317,26 @@ class UtxoPersistenceServiceImpl(
                 requireNotNull(metadata.getCpiMetadata()) { "Metadata without CPI metadata" }.fileChecksum
             )
 
-            val inserted = if (transaction.status != TransactionStatus.UNVERIFIED) {
-                // Insert the Transaction
-                repository.persistTransaction(
-                    em,
-                    transactionIdString,
-                    transaction.privacySalt.bytes,
-                    transaction.account,
-                    nowUtc,
-                    transaction.status,
-                    metadataHash,
-                )
+            val inserted =
+                if (transaction.status != TransactionStatus.UNVERIFIED) {
+                    /**
+                     * Insert the Transaction
+                     * The record will only be inserted when:
+                     * - there is no record exists given txId
+                     * - there is record which is UNVERIFIED stx
+                     * - there is record which is DRAFT stx
+                     * */
+                    repository.persistTransaction(
+                        em,
+                        transactionIdString,
+                        transaction.privacySalt.bytes,
+                        transaction.account,
+                        nowUtc,
+                        transaction.status,
+                        metadataHash,
+                    )
             } else {
+                // ignore if incoming transaction is an unverified stx
                 repository.persistUnverifiedTransaction(
                     em,
                     transactionIdString,
@@ -357,9 +365,10 @@ class UtxoPersistenceServiceImpl(
 
             repository.persistTransactionSources(em, transactionIdString, consumedTransactionSources + referenceTransactionSources)
 
+            // rectify data from U -> V
             if (inserted != null && !inserted) {
-                // inserted != null means the tx in question is not UNVERIFIED
-                // tx not being inserted implies that tx of the same ID exists in the table
+                // inserted != null means the incoming tx is not UNVERIFIED (incoming U is always stx)
+                // tx not being inserted implies that tx of the same ID exists in the table, and need to be rectified
 
                 val indexes = repository.findConsumedTransactionSourcesForTransaction(
                     em,
@@ -384,7 +393,7 @@ class UtxoPersistenceServiceImpl(
                 }
                 repository.updateTransactionToVerified(em, transactionIdString, nowUtc)
             } else {
-                // outputs of UNVERIFIED would be empty
+                // outputs of stx UNVERIFIED would be empty
                 repository.persistVisibleTransactionOutputs(
                     em,
                     transactionIdString,
@@ -549,7 +558,7 @@ class UtxoPersistenceServiceImpl(
                 )
 
                 // 3. Persist the transaction itself to the utxo_transaction table
-                // if the same id of UNVERIFIED or DRAFT stx exists, override status to VERIFIED
+                // if the same id of UNVERIFIED or DRAFT stx exists, leaving the status as it is.
                 repository.persistFilteredTransaction(
                     em,
                     filteredTransaction.id.toString(),

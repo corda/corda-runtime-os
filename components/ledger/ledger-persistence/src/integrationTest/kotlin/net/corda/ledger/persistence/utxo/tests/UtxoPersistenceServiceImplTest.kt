@@ -735,7 +735,7 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
-    fun `persist filtered transaction when an unverified signed transaction exists for the same id sets is_filtered to true and override stauts to VERIFIED`() {
+    fun `persist filtered transaction when an unverified signed transaction exists for the same id sets is_filtered to true and leaves the status as UNVERIFIED`() {
         val signatures = createSignatures(Instant.now())
         val signedTransaction = createSignedTransaction(signatures = signatures)
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
@@ -760,7 +760,7 @@ class UtxoPersistenceServiceImplTest {
             val transaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
             assertThat(transaction).isNotNull
             assertThat(transaction.field<Boolean>("isFiltered")).isTrue()
-            assertThat(transaction.field<String>("status")).isEqualTo("V")
+            assertThat(transaction.field<String>("status")).isEqualTo("U")
             assertThat(transaction.field<Instant>("created")).isEqualTo(createdTimestamp)
             assertThat(transaction.field<Instant>("updated")).isEqualTo(updatedTimestamp)
         }
@@ -796,7 +796,7 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
-    fun `persist filtered transaction when a draft signed transaction exists for the same id sets is_filtered to true and override the status to VERIFIED`() {
+    fun `persist filtered transaction when a draft signed transaction exists for the same id sets is_filtered to true and leaves the status as DRAFT`() {
         val signatures = createSignatures(Instant.now())
         val signedTransaction = createSignedTransaction(signatures = signatures)
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
@@ -821,7 +821,7 @@ class UtxoPersistenceServiceImplTest {
             val transaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
             assertThat(transaction).isNotNull
             assertThat(transaction.field<Boolean>("isFiltered")).isTrue()
-            assertThat(transaction.field<String>("status")).isEqualTo("V")
+            assertThat(transaction.field<String>("status")).isEqualTo("D")
             assertThat(transaction.field<Instant>("created")).isEqualTo(createdTimestamp)
             assertThat(transaction.field<Instant>("updated")).isEqualTo(updatedTimestamp)
         }
@@ -1294,7 +1294,7 @@ class UtxoPersistenceServiceImplTest {
             val transaction = em.find(entityFactory.utxoTransaction, txASignedTransaction.id.toString())
             assertThat(transaction).isNotNull
             assertThat(transaction.field<Boolean>("isFiltered")).isTrue()
-            assertThat(transaction.field<String>("status")).isEqualTo("V")
+            assertThat(transaction.field<String>("status")).isEqualTo("U")
         }
 
         // persist verified signed txB
