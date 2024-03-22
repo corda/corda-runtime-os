@@ -101,6 +101,11 @@ class FlowFiberCacheImpl @Activate constructor(
         cache.invalidate(key)
     }
 
+    override fun removeAll() {
+        cache.invalidateAll()
+        cache.cleanUp()
+    }
+
     override fun remove(virtualNodeContext: VirtualNodeContext) {
         val holdingIdentityToRemove = virtualNodeContext.holdingIdentity.toAvro()
         val keysToInvalidate = cache.asMap().keys.filter { holdingIdentityToRemove == it.identity }

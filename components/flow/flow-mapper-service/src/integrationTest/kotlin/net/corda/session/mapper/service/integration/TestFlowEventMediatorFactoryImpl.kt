@@ -64,10 +64,10 @@ class TestFlowEventMediatorFactoryImpl @Activate constructor(
         .messagingConfig(messagingConfig)
         .consumerFactories(
             mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_START, CONSUMER_GROUP, messagingConfig
+                FLOW_START, CONSUMER_GROUP, UUID.randomUUID().toString(), messagingConfig
             ),
             mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_SESSION, CONSUMER_GROUP, messagingConfig
+                FLOW_SESSION, CONSUMER_GROUP, UUID.randomUUID().toString(), messagingConfig
             ),
         )
         .clientFactories(
