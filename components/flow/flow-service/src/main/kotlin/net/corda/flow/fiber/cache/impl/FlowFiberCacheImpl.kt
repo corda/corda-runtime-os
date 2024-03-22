@@ -72,7 +72,7 @@ class FlowFiberCacheImpl @Activate constructor(
 
     override fun put(key: FlowKey, suspendCount: Int, fiber: FlowFiber) {
         if (Thread.currentThread().isInterrupted) {
-            val msg = "An interrupted thread attempted to put into flow fiber cache with flow key $key"
+            val msg = "Interrupted thread prevented from writing into flow fiber cache with flow key $key"
             logger.warn(msg)
             throw InterruptedException(msg)
         }
@@ -81,6 +81,11 @@ class FlowFiberCacheImpl @Activate constructor(
     }
 
     override fun get(key: FlowKey, suspendCount: Int, sandboxGroupId: UUID): FlowFiber? {
+        if (Thread.currentThread().isInterrupted) {
+            val msg = "Interrupted thread prevented from getting from flow fiber cache for key $key suspendCount $suspendCount"
+            logger.warn(msg)
+            throw InterruptedException(msg)
+        }
         val fiberCacheEntry = cache.getIfPresent(key)
         return if (null == fiberCacheEntry) {
             logger.info("Fiber not found in cache: ${key.id}")
@@ -104,6 +109,11 @@ class FlowFiberCacheImpl @Activate constructor(
     }
 
     override fun remove(key: FlowKey) {
+        if (Thread.currentThread().isInterrupted) {
+            val msg = "Interrupted thread prevented from removing from flow fiber cache for key $key"
+            logger.warn(msg)
+            throw InterruptedException(msg)
+        }
         cache.invalidate(key)
     }
 

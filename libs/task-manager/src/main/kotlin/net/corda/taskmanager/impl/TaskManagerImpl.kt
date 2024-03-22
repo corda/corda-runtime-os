@@ -5,7 +5,6 @@ import io.micrometer.core.instrument.Timer
 import net.corda.metrics.CordaMetrics
 import net.corda.taskmanager.TaskManager
 import net.corda.utilities.VisibleForTesting
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.util.UUID
 import java.util.concurrent.Callable
 import java.util.concurrent.CompletableFuture
@@ -38,12 +37,12 @@ internal class TaskManagerImpl(
         incrementTaskCount(Type.SHORT_RUNNING)
         return executorService.submit(Callable {
             try {
-                command()
-            } catch (e: InterruptedException) {
-                val interruptedAt = System.nanoTime()
-                shortRunningTaskCompletionTime.record(interruptedAt - start, TimeUnit.NANOSECONDS)
-                decrementTaskCount(Type.SHORT_RUNNING)
-                throw CordaRuntimeException("Short running task interrupted [startTime=$start, interruptedAt=$interruptedAt]")
+                command().also {
+                    recordCompletion(start, Type.SHORT_RUNNING)
+                }
+            } catch (e: Exception) {
+                recordCompletion(start, Type.SHORT_RUNNING)
+                throw e
             }
         })
     }
@@ -67,8 +66,7 @@ internal class TaskManagerImpl(
             }
         }
         return result.whenComplete { _, _ ->
-            longRunningTaskCompletionTime.record(System.nanoTime() - start, TimeUnit.NANOSECONDS)
-            decrementTaskCount(Type.LONG_RUNNING)
+            recordCompletion(start, Type.LONG_RUNNING)
         }
     }
 
@@ -86,6 +84,14 @@ internal class TaskManagerImpl(
             executorService.awaitTermination(100, TimeUnit.SECONDS)
         }
         return shutdownFuture
+    }
+
+    private fun recordCompletion(start: Long, type: Type) {
+        when (type) {
+            Type.SHORT_RUNNING -> shortRunningTaskCompletionTime.record(System.nanoTime() - start, TimeUnit.NANOSECONDS)
+            Type.LONG_RUNNING -> longRunningTaskCompletionTime.record(System.nanoTime() - start, TimeUnit.NANOSECONDS)
+        }
+        decrementTaskCount(type)
     }
 
     private fun incrementTaskCount(type: Type) {

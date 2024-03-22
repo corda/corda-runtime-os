@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -57,6 +58,36 @@ class FlowFibreCacheTest {
         val entry = cache.get(key1, 1, UUID.randomUUID())
         assertThat(entry).isNull()
         assertThat(cache.get(key1, 1, sandboxGroupId1)).isNull()
+    }
+
+    @Test
+    fun `interrupted thread prevented from writing to cache`() {
+        val cache = FlowFiberCacheImpl(cacheEviction)
+        Thread.currentThread().interrupt()
+
+        assertThrows<InterruptedException> {
+            cache.put(key, 1, value)
+        }
+    }
+
+    @Test
+    fun `interrupted thread prevented from getting from cache`() {
+        val cache = FlowFiberCacheImpl(cacheEviction)
+        Thread.currentThread().interrupt()
+
+        assertThrows<InterruptedException> {
+            cache.get(key, 1, UUID.randomUUID())
+        }
+    }
+
+    @Test
+    fun `interrupted thread prevented from removing from cache`() {
+        val cache = FlowFiberCacheImpl(cacheEviction)
+        Thread.currentThread().interrupt()
+
+        assertThrows<InterruptedException> {
+            cache.remove(key)
+        }
     }
 
     @Test
