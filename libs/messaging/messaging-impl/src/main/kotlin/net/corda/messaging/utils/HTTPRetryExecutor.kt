@@ -68,6 +68,7 @@ class HTTPRetryExecutor {
             }
         }
 
+        @Suppress("ThrowsCount")
         private fun checkResponseStatus(statusCode: Int) {
             log.trace { "Received response with status code $statusCode" }
             when (statusCode) {

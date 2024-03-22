@@ -458,14 +458,16 @@ class UtxoFinalityFlowV1Test {
             )
         ).thenReturn(
             mapOf(
-                sessionAlice to Payload.Success(listOf(
-                    signatureAlice1,
-                    signatureAlice2
-                )
+                sessionAlice to Payload.Success(
+                    listOf(
+                        signatureAlice1,
+                        signatureAlice2
+                    )
                 ),
-                sessionBob to Payload.Success(listOf(
-                    signatureBob
-                )
+                sessionBob to Payload.Success(
+                    listOf(
+                        signatureBob
+                    )
                 )
             )
         )

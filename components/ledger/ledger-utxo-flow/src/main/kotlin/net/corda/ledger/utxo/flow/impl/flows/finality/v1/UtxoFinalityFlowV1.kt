@@ -272,8 +272,8 @@ class UtxoFinalityFlowV1(
             // `log.trace {}` and `log.debug {}` are not used in this method due to a Quasar issue.
             if (log.isTraceEnabled) {
                 log.trace(
-                    "Notarizing transaction $transactionId using pluggable notary client flow of ${notarizationFlow::class.java.name} with " +
-                            "notary $notary. Attempt number $attemptNumber"
+                    "Notarizing transaction $transactionId using pluggable notary client flow of " +
+                        "${notarizationFlow::class.java.name} with notary $notary. Attempt number $attemptNumber"
                 )
             }
             flowEngine.subFlow(notarizationFlow)
@@ -289,7 +289,7 @@ class UtxoFinalityFlowV1(
             } catch (e: NotaryExceptionUnknown) {
                 log.warn(
                     "Received unknown error from notarization for transaction: ${transaction.id} on attempt: $attemptNumber. " +
-                            "Error: ${e.message} Retrying notarisation."
+                        "Error: ${e.message} Retrying notarisation."
                 )
                 continue
             } catch (e: CordaRuntimeException) {

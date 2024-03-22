@@ -304,7 +304,7 @@ class MemberInfoExtension {
         ) = memberProvidedContext.parseSet<SecureHash>(key).ifEmpty {
             logger.debug {
                 "Calculating the key hash for $name in group $groupId for property $key. " +
-                        "It is preferable to store this hash in the member context to avoid calculating on each access."
+                    "It is preferable to store this hash in the member context to avoid calculating on each access."
             }
             keyListGetter().map { it.fullIdHash() }
         }
