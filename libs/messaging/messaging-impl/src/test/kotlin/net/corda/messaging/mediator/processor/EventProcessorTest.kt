@@ -2,7 +2,7 @@ package net.corda.messaging.mediator.processor
 
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.statemanager.api.State
-import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.mediator.MediatorInputService
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
@@ -113,7 +113,7 @@ class EventProcessorTest {
         val input = mapOf("key" to EventProcessingInput("key", getStringRecords(1, "key"), null))
 
         val updatedState = mock<StateAndEventProcessor.State<String>>()
-        whenever(client.send(any())).thenThrow(CordaMessageAPIIntermittentException("baz"))
+        whenever(client.send(any())).thenThrow(CordaMessageAPIFatalException("baz"))
         whenever(stateAndEventProcessor.onNext(anyOrNull(), any())).thenAnswer {
             Response(
                 updatedState,
@@ -138,7 +138,7 @@ class EventProcessorTest {
         val mockedState = mock<State>()
         val input = mapOf("key" to EventProcessingInput("key", getStringRecords(1, "key"), null))
 
-        whenever(client.send(any())).thenThrow(CordaMessageAPIIntermittentException("baz"))
+        whenever(client.send(any())).thenThrow(CordaMessageAPIFatalException("baz"))
         whenever(stateAndEventProcessor.onNext(anyOrNull(), any())).thenAnswer {
             Response<State>(
                 null,
@@ -167,7 +167,7 @@ class EventProcessorTest {
         whenever(stateAndEventProcessor.onNext(anyOrNull(), any()))
             .thenAnswer { Response(firstLoopUpdatedState, emptyList()) }
             .thenAnswer { Response<String>(null, listOf(Record("", "key", syncMessage))) }
-        whenever(client.send(any())).thenThrow(CordaMessageAPIIntermittentException("baz"))
+        whenever(client.send(any())).thenThrow(CordaMessageAPIFatalException("baz"))
         whenever(stateManagerHelper.createOrUpdateState(any(), eq(null), eq(firstLoopUpdatedState))).thenReturn(mergedState)
         whenever(stateManagerHelper.failStateProcessing(any(), eq(mergedState), any())).thenReturn(mockedState)
 
