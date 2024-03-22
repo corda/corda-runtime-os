@@ -6,6 +6,8 @@ import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
+import net.corda.crypto.test.certificates.generation.CertificateAuthority
+import net.corda.crypto.test.certificates.generation.PrivateKeyWithCertificateChain
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfigFactory
@@ -65,19 +67,11 @@ internal open class TestBase {
         Certificates.truststoreCertificatePem.readText()
     }
 
-    protected val truststoreWithRevocationCertificatePem by lazy {
-        Certificates.truststoreCertificateWithRevocationPem.readText()
-    }
-
     private val c4TruststoreCertificatePem by lazy {
         Certificates.c4TruststoreCertificatePem.readText()
     }
     internal val truststoreKeyStore by lazy {
         TrustStoresMap.TrustedCertificates(listOf(truststoreCertificatePem))
-    }
-
-    internal val truststoreKeyStoreWithRevocation by lazy {
-        TrustStoresMap.TrustedCertificates(listOf(truststoreWithRevocationCertificatePem))
     }
 
     internal val c4TruststoreKeyStore by lazy {
@@ -97,9 +91,9 @@ internal open class TestBase {
     }
     protected val clientMessageContent = "PING"
     protected val serverResponseContent = "PONG"
-    protected val keystorePass = "password"
+    private val keystorePass = "password"
 
-    protected val keystorePassC4 = "cordacadevpass"
+    private val keystorePassC4 = "cordacadevpass"
     protected val aliceSNI = listOf("alice.net", "www.alice.net")
     protected val bobSNI = listOf("bob.net", "www.bob.net")
     protected val partyAx500Name = X500Name("O=PartyA, L=London, C=GB")
@@ -110,7 +104,6 @@ internal open class TestBase {
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF),
         tlsType = TlsType.ONE_WAY,
     )
-    protected val bobKeyStore = readKeyStore(Certificates.bobKeyStoreFile)
     protected val bobSslConfig = SslConfiguration(
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF),
         tlsType = TlsType.ONE_WAY,
@@ -254,5 +247,12 @@ internal open class TestBase {
         eventually(duration = 20.seconds) {
             assertThat(this.isRunning).isTrue
         }
+    }
+
+    fun PrivateKeyWithCertificateChain.toKeyStoreAndPassword(): KeyStoreWithPassword {
+        return KeyStoreWithPassword(
+            this.toKeyStore(),
+            CertificateAuthority.PASSWORD
+        )
     }
 }
