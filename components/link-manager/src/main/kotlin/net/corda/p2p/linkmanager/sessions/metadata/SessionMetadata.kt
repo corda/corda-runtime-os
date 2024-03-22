@@ -2,6 +2,8 @@ package net.corda.p2p.linkmanager.sessions.metadata
 
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.statemanager.api.Metadata
+import net.corda.libs.statemanager.api.State
+import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata.Companion.toCommonMetadata
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
@@ -171,4 +173,12 @@ internal data class CommonMetadata(
     fun sessionExpired(clock: Clock): Boolean {
         return clock.instant() > expiry
     }
+}
+
+internal fun State.toCounterparties(): SessionManager.Counterparties {
+    val common = this.metadata.toCommonMetadata()
+    return SessionManager.Counterparties(
+        ourId = common.source,
+        counterpartyId = common.destination,
+    )
 }
