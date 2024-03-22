@@ -5,7 +5,7 @@ import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.ledger.utxo.recovery.UtxoLedgerRepairService
+import net.corda.v5.ledger.utxo.repair.UtxoLedgerRepairService
 import java.time.Duration
 import java.time.Instant
 
