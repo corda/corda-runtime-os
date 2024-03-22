@@ -66,7 +66,7 @@ class FlowFibreCacheTest {
         Thread.currentThread().interrupt()
 
         assertThrows<InterruptedException> {
-            cache.put(key, 1, value)
+            cache.put(key1, 1, value1)
         }
     }
 
@@ -76,7 +76,7 @@ class FlowFibreCacheTest {
         Thread.currentThread().interrupt()
 
         assertThrows<InterruptedException> {
-            cache.get(key, 1, UUID.randomUUID())
+            cache.get(key1, 1, UUID.randomUUID())
         }
     }
 
@@ -86,7 +86,7 @@ class FlowFibreCacheTest {
         Thread.currentThread().interrupt()
 
         assertThrows<InterruptedException> {
-            cache.remove(key)
+            cache.remove(key1)
         }
     }
 
