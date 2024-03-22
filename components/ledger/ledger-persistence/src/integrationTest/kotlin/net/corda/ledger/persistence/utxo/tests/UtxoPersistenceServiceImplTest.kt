@@ -1126,7 +1126,7 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
-    fun `persist verified signed transaction when a filtered transaction exists for the same id and a subsequent transaction has already been persisted`() {
+    fun `persist verified signed transaction consuming a filtered transaction when a filtered transaction for the same id exists for the same id updates states as consumed`() {
         val signatures = createSignatures(Instant.now())
         val signedTransaction = createSignedTransaction(outputStates = defaultVisibleTransactionOutputs, signatures = signatures)
         val filteredTransaction = createFilteredTransaction(signedTransaction, indexes = listOf(0, 1))
@@ -1227,7 +1227,7 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
-    fun `persist verified signed transaction consuming a filtered transaction that exists as an unverified signed transaction in DB`() {
+    fun `persist verified signed transaction consuming a filtered transaction when an unverified signed transaction exists for the same id updates states as consumed`() {
         val signatures = createSignatures(Instant.now())
         val txAIndexes = listOf(0, 1)
         val txASignedTransaction = createSignedTransaction(

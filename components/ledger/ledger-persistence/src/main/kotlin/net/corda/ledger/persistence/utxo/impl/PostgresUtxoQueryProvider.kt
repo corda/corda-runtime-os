@@ -28,8 +28,6 @@ class PostgresUtxoQueryProvider @Activate constructor(
             """
             .trimIndent()
 
-    // add an update query for VERIFIED + is_filtered = false
-
     override val persistUnverifiedTransaction: String
         get() = """
             INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)

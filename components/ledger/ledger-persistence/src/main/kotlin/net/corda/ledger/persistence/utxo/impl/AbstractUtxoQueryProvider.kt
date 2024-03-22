@@ -198,7 +198,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
         get() = """
             SELECT utxo_transaction_sources.source_state_idx from {h-schema}utxo_transaction_sources 
             WHERE source_state_transaction_id = :transactionId 
-            AND group_idx = 6
+            AND group_idx = ${UtxoComponentGroup.INPUTS.ordinal}
             AND source_state_idx in :inputStateIndexes
         """.trimIndent()
 

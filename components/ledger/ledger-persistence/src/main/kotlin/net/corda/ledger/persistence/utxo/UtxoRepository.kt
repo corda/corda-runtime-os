@@ -204,6 +204,8 @@ interface UtxoRepository {
         ids: List<String>
     ): Map<String, UtxoFilteredTransactionDto>
 
+    fun findConsumedTransactionSourcesForTransaction(entityManager: EntityManager, transactionId: String, indexes: List<Int>): List<Int>
+
     data class TransactionComponent(val transactionId: String, val groupIndex: Int, val leafIndex: Int, val leafData: ByteArray)
 
     data class VisibleTransactionOutput(
@@ -226,6 +228,4 @@ interface UtxoRepository {
     )
 
     data class TransactionMerkleProofLeaf(val merkleProofId: String, val leafIndex: Int)
-
-    fun findConsumedTransactionSourcesForTransaction(entityManager: EntityManager, transactionId: String, indexes: List<Int>): List<Int>
 }

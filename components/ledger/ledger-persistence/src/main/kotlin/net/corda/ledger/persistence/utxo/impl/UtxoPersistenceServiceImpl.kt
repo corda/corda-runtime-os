@@ -335,18 +335,18 @@ class UtxoPersistenceServiceImpl(
                         transaction.status,
                         metadataHash,
                     )
-            } else {
-                // ignore if incoming transaction is an unverified stx
-                repository.persistUnverifiedTransaction(
-                    em,
-                    transactionIdString,
-                    transaction.privacySalt.bytes,
-                    transaction.account,
-                    nowUtc,
-                    metadataHash
-                )
-                null
-            }
+                } else {
+                    // ignore if the incoming transaction is an unverified stx
+                    repository.persistUnverifiedTransaction(
+                        em,
+                        transactionIdString,
+                        transaction.privacySalt.bytes,
+                        transaction.account,
+                        nowUtc,
+                        metadataHash
+                    )
+                    null
+                }
 
             repository.persistTransactionComponents(
                 em,
