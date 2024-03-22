@@ -3,6 +3,7 @@ package net.corda.messaging.mediator.processor
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.statemanager.api.State
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorInputService
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
@@ -177,6 +178,30 @@ class EventProcessorTest {
         assertEquals(emptyList<MediatorMessage<Any>>(), output?.asyncOutputs)
         assertThat(output?.stateChangeAndOperation?.outputState).isEqualTo(mockedState)
         assertThat(output?.stateChangeAndOperation).isInstanceOf(StateChangeAndOperation.Create::class.java)
+    }
+
+    @Test
+    fun `when sync processing fails with a transient error, a transient state change signal is sent`() {
+        val mockedState = mock<State>()
+        val input = mapOf("key" to EventProcessingInput("key", getStringRecords(1, "key"), null))
+
+        whenever(client.send(any())).thenThrow(CordaMessageAPIIntermittentException("baz"))
+        whenever(stateAndEventProcessor.onNext(anyOrNull(), any())).thenAnswer {
+            Response<State>(
+                null,
+                listOf(
+                    Record("", "key", syncMessage)
+                )
+            )
+        }
+        whenever(stateManagerHelper.failStateProcessing(any(), eq(null), any())).thenReturn(mockedState)
+
+        val outputMap = eventProcessor.processEvents(input)
+
+        val output = outputMap["key"]
+        assertEquals(emptyList<MediatorMessage<Any>>(), output?.asyncOutputs)
+        assertThat(output?.stateChangeAndOperation?.outputState).isEqualTo(null)
+        assertThat(output?.stateChangeAndOperation).isInstanceOf(StateChangeAndOperation.Transient::class.java)
     }
 
     private fun buildTestConfig() = EventMediatorConfig(
