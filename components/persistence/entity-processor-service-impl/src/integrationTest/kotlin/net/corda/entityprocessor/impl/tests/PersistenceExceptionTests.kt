@@ -27,7 +27,6 @@ import net.corda.entityprocessor.impl.tests.helpers.assertEventResponseWithError
 import net.corda.entityprocessor.impl.tests.helpers.assertEventResponseWithoutError
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.flow.utils.toKeyValuePairList
-import net.corda.messaging.api.exception.CordaHTTPServerErrorException
 import net.corda.messaging.api.exception.CordaHTTPServerTransientException
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.EntitySandboxServiceFactory
