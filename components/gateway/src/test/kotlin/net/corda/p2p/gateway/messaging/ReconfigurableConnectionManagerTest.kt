@@ -84,7 +84,7 @@ class ReconfigurableConnectionManagerTest {
 
         connectionManager
             .acquire(
-                info
+                info,
             )
 
         verify(manager).acquire(info)

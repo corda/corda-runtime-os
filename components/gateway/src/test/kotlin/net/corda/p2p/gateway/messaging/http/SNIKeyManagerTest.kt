@@ -60,7 +60,7 @@ class SNIKeyManagerTest {
         whenever(keyManager.getServerAliases(keyType, null)).doReturn(
             arrayOf(
                 aliasC4,
-            )
+            ),
         )
         val alias = manager.chooseServerAlias(keyType, arrayOf(issuer), socket)
 
@@ -72,7 +72,7 @@ class SNIKeyManagerTest {
         whenever(keyManager.getServerAliases(keyType, arrayOf(issuer))).doReturn(
             arrayOf(
                 aliasNop,
-            )
+            ),
         )
         val alias = manager.chooseServerAlias(keyType, arrayOf(issuer), socket)
 
@@ -86,7 +86,7 @@ class SNIKeyManagerTest {
                 aliasNop,
                 aliasNop,
                 aliasC4,
-            )
+            ),
         )
         val alias = manager.chooseServerAlias(keyType, arrayOf(issuer), socket)
 
