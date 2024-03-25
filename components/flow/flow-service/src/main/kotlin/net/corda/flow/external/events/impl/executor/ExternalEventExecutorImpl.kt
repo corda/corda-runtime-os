@@ -34,7 +34,7 @@ class ExternalEventExecutorImpl @Activate constructor(
             suspend(
                 FlowIORequest.ExternalEvent(
                     //`requestId` is a deterministic ID per event which allows us to achieve idempotency by de-duplicating events processing
-                    //A deterministic ID is required so that events replayed from the flow engine won't be reprocessed on the consumer-side.
+                    //A deterministic ID is required so that events replayed from the flow engine won't be reprocessed on the consumer-side
                     generateRequestId(this, parameters),
                     factoryClass,
                     parameters,
