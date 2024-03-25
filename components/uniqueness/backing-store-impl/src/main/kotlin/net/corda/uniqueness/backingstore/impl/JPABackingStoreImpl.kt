@@ -18,7 +18,6 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
-import net.corda.utilities.debug
 import net.corda.v5.application.uniqueness.model.UniquenessCheckError
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
@@ -151,7 +150,7 @@ open class JPABackingStoreImpl @Activate constructor(
                                 //  won't be necessary
                                 if (entityManager.transaction.isActive) {
                                     entityManager.transaction.rollback()
-                                    log.debug { "Rolled back transaction" }
+                                    log.warn("Rolled back transaction")
                                 }
 
                                 CordaMetrics.Metric.UniquenessBackingStoreTransactionErrorCount
@@ -186,7 +185,7 @@ open class JPABackingStoreImpl @Activate constructor(
                                 // triggered.
                                 if (entityManager.transaction.isActive) {
                                     entityManager.transaction.rollback()
-                                    log.debug { "Rolled back transaction" }
+                                    log.warn("Rolled back transaction")
                                 }
 
                                 CordaMetrics.Metric.UniquenessBackingStoreTransactionErrorCount

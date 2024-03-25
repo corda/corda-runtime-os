@@ -191,8 +191,8 @@ class UtxoRepositoryImpl(
         timestamp: Instant,
         status: TransactionStatus,
         metadataHash: String,
-    ) {
-        entityManager.createNativeQuery(queryProvider.persistTransaction)
+    ): Boolean {
+        return entityManager.createNativeQuery(queryProvider.persistTransaction)
             .setParameter("id", id)
             .setParameter("privacySalt", privacySalt)
             .setParameter("accountId", account)
@@ -200,8 +200,7 @@ class UtxoRepositoryImpl(
             .setParameter("status", status.value)
             .setParameter("updatedAt", timestamp)
             .setParameter("metadataHash", metadataHash)
-            .executeUpdate()
-            .logResult("transaction [$id]")
+            .executeUpdate() != 0
     }
 
     override fun persistUnverifiedTransaction(
@@ -242,6 +241,13 @@ class UtxoRepositoryImpl(
             .logResult("transaction [$id]")
     }
 
+    override fun updateTransactionToVerified(entityManager: EntityManager, id: String, timestamp: Instant) {
+        entityManager.createNativeQuery(queryProvider.updateTransactionToVerified)
+            .setParameter("transactionId", id)
+            .setParameter("updatedAt", timestamp)
+            .executeUpdate()
+    }
+
     override fun persistTransactionMetadata(
         entityManager: EntityManager,
         hash: String,
@@ -269,11 +275,11 @@ class UtxoRepositoryImpl(
                 queryProvider.persistTransactionSources,
                 transactionSources
             ) { statement, parameterIndex, transactionSource ->
-                statement.setString(parameterIndex.next(), transactionId)
-                statement.setInt(parameterIndex.next(), transactionSource.group.ordinal)
-                statement.setInt(parameterIndex.next(), transactionSource.index)
-                statement.setString(parameterIndex.next(), transactionSource.sourceTransactionId)
-                statement.setInt(parameterIndex.next(), transactionSource.sourceIndex)
+                statement.setString(parameterIndex.next(), transactionId) // new transaction id
+                statement.setInt(parameterIndex.next(), transactionSource.group.ordinal) // refs or inputs
+                statement.setInt(parameterIndex.next(), transactionSource.index) // index in refs or inputs
+                statement.setString(parameterIndex.next(), transactionSource.sourceTransactionId) // tx state came from
+                statement.setInt(parameterIndex.next(), transactionSource.sourceIndex) // index from tx it came from
             }
         }
     }
@@ -567,6 +573,19 @@ class UtxoRepositoryImpl(
                 signatures = transactionSignatures
             )
         }
+    }
+
+    // select from transaction sources where input states of "previous" transaction are seen as sourceTransactionIds + indexes
+    override fun findConsumedTransactionSourcesForTransaction(
+        entityManager: EntityManager,
+        transactionId: String,
+        indexes: List<Int>
+    ): List<Int> {
+        return entityManager.createNativeQuery(queryProvider.findConsumedTransactionSourcesForTransaction)
+            .setParameter("transactionId", transactionId)
+            .setParameter("inputStateIndexes", indexes)
+            .resultList
+            .map { it as Int }
     }
 
     private fun <T> EntityManager.connection(block: (connection: Connection) -> T) {

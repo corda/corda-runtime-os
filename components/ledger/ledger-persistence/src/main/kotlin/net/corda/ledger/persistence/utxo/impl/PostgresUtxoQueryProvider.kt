@@ -18,15 +18,13 @@ class PostgresUtxoQueryProvider @Activate constructor(
         LoggerFactory.getLogger(this::class.java).debug { "Activated for ${databaseTypeProvider.databaseType}" }
     }
 
-    // the additional logic will allow repeated filtered transaction inserts to keep updating the table
     override val persistTransaction: String
         get() = """
             INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
                 VALUES (:id, :privacySalt, :accountId, :createdAt, :status, :updatedAt, :metadataHash, FALSE)
             ON CONFLICT(id) DO
             UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated, is_filtered = FALSE
-            WHERE utxo_transaction.status in ('$UNVERIFIED', '$DRAFT')
-                OR (utxo_transaction.status = '$VERIFIED' AND utxo_transaction.is_filtered = TRUE)
+            WHERE utxo_transaction.status in ('$UNVERIFIED', '$DRAFT') AND utxo_transaction.is_filtered = FALSE
             """
             .trimIndent()
 

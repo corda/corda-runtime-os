@@ -75,7 +75,7 @@ interface UtxoRepository {
         timestamp: Instant,
         status: TransactionStatus,
         metadataHash: String
-    )
+    ): Boolean
 
     /** Persists unverified transaction (operation is idempotent) */
     @Suppress("LongParameterList")
@@ -98,6 +98,9 @@ interface UtxoRepository {
         timestamp: Instant,
         metadataHash: String,
     )
+
+    /** Updates an existing verified transaction */
+    fun updateTransactionToVerified(entityManager: EntityManager, id: String, timestamp: Instant)
 
     /** Persists transaction metadata (operation is idempotent) */
     fun persistTransactionMetadata(
@@ -200,6 +203,8 @@ interface UtxoRepository {
         entityManager: EntityManager,
         ids: List<String>
     ): Map<String, UtxoFilteredTransactionDto>
+
+    fun findConsumedTransactionSourcesForTransaction(entityManager: EntityManager, transactionId: String, indexes: List<Int>): List<Int>
 
     data class TransactionComponent(val transactionId: String, val groupIndex: Int, val leafIndex: Int, val leafData: ByteArray)
 
