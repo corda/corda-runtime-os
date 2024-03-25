@@ -1,7 +1,6 @@
 package net.corda.p2p.linkmanager.sessions.lookup
 
 import net.corda.p2p.linkmanager.sessions.SessionManager
-import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl
 
 internal interface SessionLookup {
     /**
@@ -17,5 +16,5 @@ internal interface SessionLookup {
     /**
      * Get sthe outbound session based
      */
-    fun <T> getOutboundSessions(keysAndMessages: Map<String?, List<StatefulSessionManagerImpl.OutboundMessageContext<T>>>)
+    fun <T> getOutboundSessions(keysAndMessages: Map<String?, List<SessionLookupImpl.OutboundMessageContext<T>>>)
 }
