@@ -188,5 +188,4 @@ class ProcessorService {
             block(entityManager)
         }
     }
-
 }
