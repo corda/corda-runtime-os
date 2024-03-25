@@ -32,6 +32,9 @@ class PersistenceServiceImpl @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService
 ) : PersistenceService, UsedByFlow, SingletonSerializeAsToken {
+    companion object {
+        private const val MAX_DEDUPLICATION_ID_LENGTH = 128
+    }
 
     @Suspendable
     override fun <R : Any> find(entityClass: Class<R>, primaryKey: Any): R? {
@@ -90,27 +93,25 @@ class PersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun persist(deduplicationId: String, entity: Any) {
+        validateDeduplicationId(deduplicationId)
+
         wrapWithPersistenceException {
             externalEventExecutor.execute(
                 PersistExternalEventFactory::class.java,
-                PersistParameters(
-                    deduplicationId,
-                    listOf(serialize(entity))
-                )
+                PersistParameters(deduplicationId, listOf(serialize(entity)))
             )
         }
     }
 
     @Suspendable
     override fun persist(deduplicationId: String,entities: List<*>) {
+        validateDeduplicationId(deduplicationId)
+
         if (entities.isNotEmpty()) {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     PersistExternalEventFactory::class.java,
-                    PersistParameters(
-                        deduplicationId,
-                        entities.filterNotNull().map(::serialize)
-                    )
+                    PersistParameters(deduplicationId, entities.filterNotNull().map(::serialize))
                 )
             }
         }
@@ -148,5 +149,14 @@ class PersistenceServiceImpl @Activate constructor(
 
     private fun serialize(payload: Any): ByteArray {
         return serializationService.serialize(payload).bytes
+    }
+
+    private fun validateDeduplicationId(deduplicationId: String) {
+        if (deduplicationId.isEmpty() || deduplicationId.length > MAX_DEDUPLICATION_ID_LENGTH) {
+            throw IllegalArgumentException(
+                "deduplicationId must not be empty and must not exceed $MAX_DEDUPLICATION_ID_LENGTH characters. " +
+                "Provided length: ${deduplicationId.length}."
+            )
+        }
     }
 }
