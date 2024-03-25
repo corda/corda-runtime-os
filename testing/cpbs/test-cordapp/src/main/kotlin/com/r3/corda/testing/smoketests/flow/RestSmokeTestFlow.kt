@@ -120,16 +120,20 @@ class RestSmokeTestFlow : ClientStartableFlow {
 
     @Suspendable
     private fun persistencePersistDog(input: RestSmokeTestInput): String {
+        val deduplicationId = UUID.randomUUID().toString()
         val dogId = getDogId(input)
+
         val dog = Dog(dogId, "dog", Instant.now(), "none")
-        persistenceService.persist("persistDog1", dog)
+        persistenceService.persist(deduplicationId, dog)
         return "dog '${dogId}' saved"
     }
 
     @Suspendable
     private fun persistencePersistDogs(input: RestSmokeTestInput): String {
+        val deduplicationId = UUID.randomUUID().toString()
+
         val dogs = getDogIds(input).map { id -> Dog(id, "dog-$id", Instant.now(), "none") }
-        persistenceService.persist("persistDogs1", dogs)
+        persistenceService.persist(deduplicationId, dogs)
         return "dogs ${dogs.map { it.id }} saved"
     }
 
