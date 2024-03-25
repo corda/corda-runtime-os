@@ -1,8 +1,7 @@
 package com.r3.corda.notary.plugin.nonvalidating.server
 
-import com.r3.corda.notary.plugin.common.NotaryTransactionDetails
 import com.r3.corda.notary.plugin.common.NotarizationResponse
-import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
+import com.r3.corda.notary.plugin.common.NotaryTransactionDetails
 import com.r3.corda.notary.plugin.common.toNotarizationResponse
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPayload
 import net.corda.v5.application.flows.CordaInject
@@ -10,11 +9,14 @@ import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
+import net.corda.v5.ledger.notary.plugin.api.NotarizationType
+import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionGeneral
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
@@ -77,33 +79,26 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     override fun call(session: FlowSession) {
         try {
             val requestPayload = session.receive(NonValidatingNotarizationPayload::class.java)
+            val notarizationType = requestPayload.notarizationType
 
             val txDetails = validateRequest(requestPayload)
 
             validateTransactionNotaryAgainstCurrentNotary(txDetails)
 
             if (logger.isTraceEnabled) {
-                logger.trace("Received notarization request for transaction {}", txDetails.id)
+                logger.trace("Received notarization request ($notarizationType) for transaction {}", txDetails.id)
             }
 
             verifyTransaction(requestPayload)
 
             if (logger.isTraceEnabled) {
-                logger.trace("Requesting uniqueness check for transaction {}", txDetails.id)
+                logger.trace("Requesting uniqueness check ($notarizationType) for transaction {}", txDetails.id)
             }
 
-            val uniquenessResult = clientService.requestUniquenessCheck(
-                txDetails.id.toString(),
-                session.counterparty.toString(),
-                txDetails.inputs.map { it.toString() },
-                txDetails.references.map { it.toString() },
-                txDetails.numOutputs,
-                txDetails.timeWindow.from,
-                txDetails.timeWindow.until
-            )
+            val uniquenessResult = checkUniqueness(txDetails, session, requestPayload.notarizationType)
 
             if (logger.isDebugEnabled) {
-                logger.debug("Uniqueness check completed for transaction {}, result is: {}. Sending response to {}",
+                logger.debug("Uniqueness check ($notarizationType) completed for transaction {}, result is: {}. Sending response to {}",
                     txDetails.id, uniquenessResult, session.counterparty)
             }
 
@@ -123,7 +118,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             session.send(
                 NotarizationResponse(
                     emptyList(),
-                    NotaryExceptionGeneral(genericMessage + additionalMessage)
+                    NotaryExceptionGeneral("General error: ${genericMessage + additionalMessage}", null)
                 )
             )
         }
@@ -237,6 +232,32 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
                 "Error while validating transaction ${(requestPayload.transaction as UtxoFilteredTransaction).id}",
                 e
             )
+        }
+    }
+
+    @Suspendable
+    private fun checkUniqueness(
+        txDetails: NotaryTransactionDetails,
+        session: FlowSession,
+        notarizationType: NotarizationType
+    ): UniquenessCheckResult {
+        return when (notarizationType) {
+            NotarizationType.WRITE -> clientService.requestUniquenessCheckWrite(
+                txDetails.id.toString(),
+                session.counterparty.toString(),
+                txDetails.inputs.map { it.toString() },
+                txDetails.references.map { it.toString() },
+                txDetails.numOutputs,
+                txDetails.timeWindow.from,
+                txDetails.timeWindow.until
+            )
+            NotarizationType.READ -> clientService.requestUniquenessCheckRead(
+                txDetails.id.toString(),
+                session.counterparty.toString(),
+                txDetails.timeWindow.from,
+                txDetails.timeWindow.until
+            )
+            else -> throw IllegalArgumentException("Received invalid notarization type $notarizationType")
         }
     }
 

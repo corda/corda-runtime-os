@@ -33,8 +33,8 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun requestUniquenessCheck(
-        txId: String,
+    override fun requestUniquenessCheckWrite(
+        transactionId: String,
         originatorX500Name: String,
         inputStates: List<String>,
         referenceStates: List<String>,
@@ -42,20 +42,59 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
         timeWindowLowerBound: Instant?,
         timeWindowUpperBound: Instant
     ): UniquenessCheckResult {
-        log.debug { "Received request with id: $txId, sending it to Uniqueness Checker" }
+        log.debug { "Received write request with id: $transactionId, sending it to Uniqueness Checker" }
 
         val startTime = System.nanoTime()
 
         return externalEventExecutor.execute(
             UniquenessCheckExternalEventFactory::class.java,
             UniquenessCheckExternalEventParams(
-                txId,
+                transactionId,
                 originatorX500Name,
                 inputStates,
                 referenceStates,
                 numOutputStates,
                 timeWindowLowerBound,
-                timeWindowUpperBound
+                timeWindowUpperBound,
+                UniquenessCheckType.WRITE
+            )
+        ).also {
+            CordaMetrics.Metric.Ledger.UniquenessClientRunTime
+                .builder()
+                .withTag(
+                    CordaMetrics.Tag.ResultType,
+                    if (UniquenessCheckResultFailure::class.java.isAssignableFrom(it.javaClass)) {
+                        (it as UniquenessCheckResultFailure).error.javaClass.simpleName
+                    } else {
+                        it.javaClass.simpleName
+                    })
+                .build()
+                .record(Duration.ofNanos(System.nanoTime() - startTime))
+        }
+    }
+
+    @Suspendable
+    override fun requestUniquenessCheckRead(
+        transactionId: String,
+        originatorX500Name: String,
+        timeWindowLowerBound: Instant?,
+        timeWindowUpperBound: Instant
+    ): UniquenessCheckResult {
+        log.debug { "Received read request with id: $transactionId, sending it to Uniqueness Checker" }
+
+        val startTime = System.nanoTime()
+
+        return externalEventExecutor.execute(
+            UniquenessCheckExternalEventFactory::class.java,
+            UniquenessCheckExternalEventParams(
+                transactionId,
+                originatorX500Name,
+                emptyList(),
+                emptyList(),
+                0,
+                timeWindowLowerBound,
+                timeWindowUpperBound,
+                UniquenessCheckType.READ
             )
         ).also {
             CordaMetrics.Metric.Ledger.UniquenessClientRunTime

@@ -9,6 +9,7 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.ledger.notary.plugin.api.NotarizationType
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -21,7 +22,8 @@ import org.slf4j.LoggerFactory
 @InitiatingFlow(protocol = "com.r3.corda.notary.plugin.nonvalidating", version = [1])
 class NonValidatingNotaryClientFlowImpl(
     private val stx: UtxoSignedTransaction,
-    private val notaryRepresentative: MemberX500Name
+    private val notaryRepresentative: MemberX500Name,
+    private val notarizationType: NotarizationType
 ) : PluggableNotaryClientFlow {
 
     private companion object {
@@ -41,9 +43,10 @@ class NonValidatingNotaryClientFlowImpl(
     internal constructor(
         stx: UtxoSignedTransaction,
         notary: MemberX500Name,
+        notarizationType: NotarizationType,
         flowMessaging: FlowMessaging,
         utxoLedgerService: UtxoLedgerService
-    ): this(stx, notary) {
+    ): this(stx, notary, notarizationType) {
         this.flowMessaging = flowMessaging
         this.utxoLedgerService = utxoLedgerService
     }
@@ -108,6 +111,6 @@ class NonValidatingNotaryClientFlowImpl(
             .withTimeWindow()
             .build()
 
-        return NonValidatingNotarizationPayload(filteredTx, stx.notaryKey)
+        return NonValidatingNotarizationPayload(filteredTx, stx.notaryKey, notarizationType)
     }
 }

@@ -9,7 +9,7 @@ import net.corda.v5.ledger.utxo.TimeWindow
 import java.security.PublicKey
 
 /**
- * A representation of a transaction (non-validating). It is easier to perform operations on this representation than
+ * A representation of a transaction. It is easier to perform operations on this representation than
  * on the actual transaction object (e.g. FilteredTransaction).
  */
 data class NotaryTransactionDetails(

@@ -89,6 +89,23 @@ class NotaryExceptionTimeWindowOutOfBounds(
 )
 
 /**
+ * Occurs when checking for an existing notarized transaction and the check occurs before the transaction's time window's lower bound.
+ *
+ * @property evaluationTimestamp Specifies the timestamp when the transaction was checked
+ * @property timeWindowUpperBound Specifies the lower bound of the transaction's time window
+ */
+@CordaSerializable
+class NotaryExceptionTimeWindowBeforeLowerBound(
+    val evaluationTimestamp: Instant,
+    val timeWindowLowerBound: Instant,
+    txId: SecureHash? = null
+) : NotaryExceptionUnknown(
+    "Time window lower bound is after the evaluated time. " +
+        "Evaluated at $evaluationTimestamp, lower bound: $timeWindowLowerBound",
+    txId
+)
+
+/**
  * Occurs when data in the received request is considered invalid by the uniqueness checker.
  *
  * @property errorText The error text produced by the uniqueness checker
@@ -131,15 +148,10 @@ class NotaryExceptionTransactionVerificationFailure(
 )
 
 /**
- * Error type used for scenarios that were unexpected, or couldn't be mapped.
- *
- * @property errorText Any additional details regarding the error
+ * Occurs when checking for an existing notarized transaction that has not yet been seen by the notary.
  */
 @CordaSerializable
-class NotaryExceptionGeneral(
-    val errorText: String?,
-    txId: SecureHash? = null
-) : NotaryExceptionUnknown(
-    "General Error: $errorText",
+class NotaryExceptionNotPreviouslySeenTransaction(txId: SecureHash? = null) : NotaryExceptionUnknown(
+    "Not previously seen",
     txId
 )

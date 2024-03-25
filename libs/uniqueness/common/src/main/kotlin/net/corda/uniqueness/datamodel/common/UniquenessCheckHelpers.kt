@@ -1,20 +1,25 @@
 package net.corda.uniqueness.datamodel.common
 
 import net.corda.crypto.core.parseSecureHash
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.data.uniqueness.UniquenessCheckResultInputStateConflictAvro
 import net.corda.data.uniqueness.UniquenessCheckResultInputStateUnknownAvro
 import net.corda.data.uniqueness.UniquenessCheckResultMalformedRequestAvro
+import net.corda.data.uniqueness.UniquenessCheckResultNotPreviouslySeenTransactionAvro
 import net.corda.data.uniqueness.UniquenessCheckResultReferenceStateConflictAvro
 import net.corda.data.uniqueness.UniquenessCheckResultReferenceStateUnknownAvro
 import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
+import net.corda.data.uniqueness.UniquenessCheckResultTimeWindowBeforeLowerBoundAvro
 import net.corda.data.uniqueness.UniquenessCheckResultTimeWindowOutOfBoundsAvro
 import net.corda.data.uniqueness.UniquenessCheckResultUnhandledExceptionAvro
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateConflictImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateUnknownImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorNotPreviouslySeenTransactionImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateConflictImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorTimeWindowBeforeLowerBoundImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorTimeWindowOutOfBoundsImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorUnhandledExceptionImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
@@ -23,9 +28,12 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateConflict
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateUnknown
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorNotPreviouslySeenTransaction
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateConflict
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateUnknown
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowBeforeLowerBound
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowOutOfBounds
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorUnhandledException
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
@@ -83,6 +91,15 @@ fun UniquenessCheckResponseAvro.toUniquenessResult(): UniquenessCheckResult {
                 )
             )
         }
+        is UniquenessCheckResultTimeWindowBeforeLowerBoundAvro -> {
+            UniquenessCheckResultFailureImpl(
+                Instant.now(),
+                UniquenessCheckErrorTimeWindowBeforeLowerBoundImpl(
+                    avroResult.evaluationTimestamp,
+                    avroResult.timeWindowLowerBound,
+                )
+            )
+        }
         is UniquenessCheckResultMalformedRequestAvro -> {
             UniquenessCheckResultFailureImpl(
                 Instant.now(),
@@ -100,12 +117,19 @@ fun UniquenessCheckResponseAvro.toUniquenessResult(): UniquenessCheckResult {
                 )
             )
         }
+        is UniquenessCheckResultNotPreviouslySeenTransactionAvro -> {
+            UniquenessCheckResultFailureImpl(
+                Instant.now(),
+                UniquenessCheckErrorNotPreviouslySeenTransactionImpl
+            )
+        }
         is UniquenessCheckResultSuccessAvro -> {
             UniquenessCheckResultSuccessImpl(avroResult.commitTimestamp)
         }
         else -> {
             throw IllegalArgumentException(
-                "Unable to convert Avro type \"${avroResult.javaClass.typeName}\" to result")
+                "Unable to convert Avro type \"${avroResult.javaClass.typeName}\" to result"
+            )
         }
     }
 }
@@ -120,33 +144,50 @@ fun UniquenessCheckResult.toAvro(): SpecificRecord {
         }
         is UniquenessCheckResultFailure -> {
             when (val uniquenessError = this.error) {
-                is UniquenessCheckErrorInputStateConflict ->
+                is UniquenessCheckErrorInputStateConflict -> {
                     UniquenessCheckResultInputStateConflictAvro(
                         uniquenessError.conflictingStates.map { it.stateRef.toString() }
                     )
-
-                is UniquenessCheckErrorInputStateUnknown ->
+                }
+                is UniquenessCheckErrorInputStateUnknown -> {
                     UniquenessCheckResultInputStateUnknownAvro(
                         uniquenessError.unknownStates.map { it.toString() }
                     )
-
-                is UniquenessCheckErrorReferenceStateConflict ->
+                }
+                is UniquenessCheckErrorReferenceStateConflict -> {
                     UniquenessCheckResultReferenceStateConflictAvro(
                         uniquenessError.conflictingStates.map { it.stateRef.toString() }
                     )
-
-                is UniquenessCheckErrorReferenceStateUnknown ->
+                }
+                is UniquenessCheckErrorReferenceStateUnknown -> {
                     UniquenessCheckResultReferenceStateUnknownAvro(
                         uniquenessError.unknownStates.map { it.toString() }
                     )
-
-                is UniquenessCheckErrorTimeWindowOutOfBounds ->
+                }
+                is UniquenessCheckErrorTimeWindowOutOfBounds -> {
                     UniquenessCheckResultTimeWindowOutOfBoundsAvro(
                         uniquenessError.evaluationTimestamp,
                         uniquenessError.timeWindowLowerBound,
                         uniquenessError.timeWindowUpperBound
                     )
-
+                }
+                is UniquenessCheckErrorTimeWindowBeforeLowerBound -> {
+                    UniquenessCheckResultTimeWindowBeforeLowerBoundAvro(
+                        uniquenessError.evaluationTimestamp,
+                        uniquenessError.timeWindowLowerBound
+                    )
+                }
+                is UniquenessCheckErrorNotPreviouslySeenTransaction -> {
+                    UniquenessCheckResultNotPreviouslySeenTransactionAvro()
+                }
+                is UniquenessCheckErrorUnhandledException -> {
+                    UniquenessCheckResultUnhandledExceptionAvro(
+                        ExceptionEnvelope(
+                            uniquenessError.unhandledExceptionType,
+                            uniquenessError.unhandledExceptionMessage
+                        )
+                    )
+                }
                 else -> {
                     throw IllegalArgumentException(
                         "Unable to convert result type \"${uniquenessError.javaClass.typeName}\" to Avro"
@@ -154,11 +195,7 @@ fun UniquenessCheckResult.toAvro(): SpecificRecord {
                 }
             }
         }
-        else -> {
-            throw IllegalStateException(
-                "Unknown result type: ${this.javaClass.typeName}"
-            )
-        }
+        else -> throw IllegalStateException("Unknown result type: ${this.javaClass.typeName}")
     }
 }
 
@@ -168,7 +205,7 @@ fun UniquenessCheckResult.toCharacterRepresentation() = if (this is UniquenessCh
     UniquenessConstants.RESULT_REJECTED_REPRESENTATION
 }
 
-fun String.toStateRef() : UniquenessCheckStateRef {
+fun String.toStateRef(): UniquenessCheckStateRef {
     return UniquenessCheckStateRefImpl(
         parseSecureHash(substringBeforeLast(":")),
         substringAfterLast(":").toInt()
