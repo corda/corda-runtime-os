@@ -79,7 +79,7 @@ class FlowFiberCacheImpl @Activate constructor(
     override fun get(key: FlowKey, suspendCount: Int, sandboxGroupId: UUID): FlowFiber? {
         checkIfThreadInterrupted("Interrupted thread prevented from getting from flow fiber cache for key $key suspendCount $suspendCount")
 
-        val fiberCacheEntry = cache.getIfPresent(key)
+        val fiberCacheEntry = cache.asMap().remove(key)
         return if (null == fiberCacheEntry) {
             logger.info("Fiber not found in cache: ${key.id}")
             null
@@ -96,7 +96,6 @@ class FlowFiberCacheImpl @Activate constructor(
                 // fiber we are going to need another one bound to the new sandbox instead.
                 logger.info("Fiber found in cache but for wrong sandbox group id")
             }
-            cache.invalidate(key)
             null
         }
     }
