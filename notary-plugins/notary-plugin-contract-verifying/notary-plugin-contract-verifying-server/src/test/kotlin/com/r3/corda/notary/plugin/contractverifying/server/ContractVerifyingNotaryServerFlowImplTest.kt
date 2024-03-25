@@ -1,7 +1,6 @@
 package com.r3.corda.notary.plugin.contractverifying.server
 
 import com.r3.corda.notary.plugin.common.NotarizationResponse
-import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
 import com.r3.corda.notary.plugin.common.NotaryExceptionInvalidSignature
 import com.r3.corda.notary.plugin.common.NotaryExceptionReferenceStateUnknown
 import com.r3.corda.notary.plugin.common.NotaryExceptionTimeWindowOutOfBounds
@@ -28,6 +27,8 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
+import net.corda.v5.ledger.notary.plugin.api.NotarizationType
+import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionGeneral
 import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -42,11 +43,14 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.v5.membership.NotaryInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.reset
 import org.mockito.kotlin.whenever
@@ -55,6 +59,7 @@ import java.time.Clock
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
+@Suppress("MaxLineLength")
 @TestInstance(PER_CLASS)
 class ContractVerifyingNotaryServerFlowImplTest {
 
@@ -188,14 +193,14 @@ class ContractVerifyingNotaryServerFlowImplTest {
         whenever(signedTransaction.notaryName).thenReturn(notaryServiceName)
         whenever(signedTransaction.notaryKey).thenReturn(notaryServiceCompositeKey)
         whenever(signedTransaction.metadata).thenReturn(transactionMetadata)
-        whenever(signedTransaction.verifySignatorySignatures()).thenAnswer {  }
+        whenever(signedTransaction.verifySignatorySignatures()).thenAnswer { }
 
         // Filtered transaction
         whenever(filteredTransaction.id).thenReturn(FILTERED_TX_ID)
         whenever(filteredTransaction.outputStateAndRefs).thenReturn(mockOutputStateRefUtxoFilteredData)
         whenever(filteredTransaction.notaryName).thenReturn(notaryServiceName)
         whenever(filteredTransaction.timeWindow).thenReturn(mockTimeWindow)
-        whenever(filteredTransaction.verify()).thenAnswer {  }
+        whenever(filteredTransaction.verify()).thenAnswer { }
 
         whenever(
             mockTransactionSignatureService.getIdOfPublicKey(
@@ -204,7 +209,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
             )
         ).thenReturn(notarySignatureAlice.by)
 
-        whenever(mockNotarySignatureVerificationService.verifyNotarySignatures(any(), any(), any(), any())).doAnswer {  }
+        whenever(mockNotarySignatureVerificationService.verifyNotarySignatures(any(), any(), any(), any())).doAnswer { }
 
         // Get current notary and parse its data
         whenever(mockMemberLookup.myInfo()).thenReturn(notaryMemberInfo)
@@ -219,8 +224,6 @@ class ContractVerifyingNotaryServerFlowImplTest {
         whenever(notaryInfo.publicKey).thenReturn(notaryVNodeAliceKey)
 
         // Session
-        whenever(session.receive(ContractVerifyingNotarizationPayload::class.java))
-            .thenReturn(ContractVerifyingNotarizationPayload(signedTransaction, filteredTxsAndSignatures))
         whenever(session.send(any())).thenAnswer {
             responseFromServer.add(it.arguments.first() as NotarizationResponse)
             Unit
@@ -228,25 +231,30 @@ class ContractVerifyingNotaryServerFlowImplTest {
         whenever(session.counterparty).thenReturn(memberCharlieName)
     }
 
-    @Test
-    fun `Contract verifying notary should respond with error if no keys found for signing`() {
+    @ParameterizedTest
+    @EnumSource(NotarizationType::class)
+    fun `Contract verifying notary should respond with error if no keys found for signing`(notarizationType: NotarizationType) {
         // We sign with a key that is not part of the notary composite key
         whenever(mockTransactionSignatureService.signBatch(any(), any())).thenThrow(
             TransactionNoAvailableKeysException("The publicKeys do not have any private counterparts available.", null)
         )
-        callServer(mockSuccessfulUniquenessClientService())
+        whenever(session.receive(ContractVerifyingNotarizationPayload::class.java))
+            .thenReturn(ContractVerifyingNotarizationPayload(signedTransaction, filteredTxsAndSignatures, notarizationType))
+
+        callServer(mockSuccessfulUniquenessClientService(notarizationType))
         assertThat(responseFromServer).hasSize(1)
 
         val responseError = responseFromServer.first().error
         assertThat(responseError).isNotNull
         assertThat(responseFromServer.first().signatures).isEmpty()
         assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-        assertThat((responseError as NotaryExceptionGeneral).errorText)
+        assertThat((responseError as NotaryExceptionGeneral).message)
             .contains("The publicKeys do not have any private counterparts available.")
     }
 
-    @Test
-    fun `Contract verifying notary plugin server should respond with error if request signature is invalid`() {
+    @ParameterizedTest
+    @EnumSource(NotarizationType::class)
+    fun `Contract verifying notary plugin server should respond with error if request signature is invalid`(notarizationType: NotarizationType) {
         whenever(mockTransactionSignatureService.signBatch(any(), any())).thenReturn(
             listOf(listOf(notarySignatureAlice))
         )
@@ -258,29 +266,35 @@ class ContractVerifyingNotaryServerFlowImplTest {
         whenever(session.receive(ContractVerifyingNotarizationPayload::class.java)).thenReturn(
             ContractVerifyingNotarizationPayload(
                 signedTransaction,
-                listOf(filteredTransactionSignatures)
+                listOf(filteredTransactionSignatures),
+                notarizationType
             )
         )
         whenever(mockNotarySignatureVerificationService.verifyNotarySignatures(any(), any(), any(), any()))
             .thenThrow(IllegalArgumentException("DUMMY ERROR"))
 
-        callServer(mockSuccessfulUniquenessClientService())
+        callServer(mockSuccessfulUniquenessClientService(notarizationType))
         assertThat(responseFromServer).hasSize(1)
 
         val responseError = responseFromServer.first().error
         assertThat(responseError).isNotNull
         assertThat(responseError).isInstanceOf(NotaryExceptionInvalidSignature::class.java)
-        assertThat((responseError as NotaryExceptionInvalidSignature).errorText)
+        assertThat((responseError as NotaryExceptionInvalidSignature).message)
             .contains("A valid notary signature is not found with error message: DUMMY ERROR")
     }
 
-    @Test
-    fun `Contract verifying notary plugin server should respond with error if the uniqueness check fails`() {
+    @ParameterizedTest
+    @EnumSource(NotarizationType::class)
+    fun `Contract verifying notary plugin server should respond with error if the uniqueness check fails`(notarizationType: NotarizationType) {
         val unknownStateRef = UniquenessCheckStateRefImpl(SecureHashUtils.randomSecureHash(), 0)
+
+        whenever(session.receive(ContractVerifyingNotarizationPayload::class.java))
+            .thenReturn(ContractVerifyingNotarizationPayload(signedTransaction, filteredTxsAndSignatures, notarizationType))
 
         callServer(
             mockErrorUniquenessClientService(
-                UniquenessCheckErrorReferenceStateUnknownImpl(listOf(unknownStateRef))
+                UniquenessCheckErrorReferenceStateUnknownImpl(listOf(unknownStateRef)),
+                notarizationType
             )
         )
 
@@ -294,25 +308,32 @@ class ContractVerifyingNotaryServerFlowImplTest {
         )
     }
 
-    @Test
-    fun `Contract verifying notary plugin server should respond with error if an error encountered during uniqueness check`() {
-        callServer(mockThrowErrorUniquenessCheckClientService())
+    @ParameterizedTest
+    @EnumSource(NotarizationType::class)
+    fun `Contract verifying notary plugin server should respond with error if an error encountered during uniqueness check`(notarizationType: NotarizationType) {
+        whenever(session.receive(ContractVerifyingNotarizationPayload::class.java))
+            .thenReturn(ContractVerifyingNotarizationPayload(signedTransaction, filteredTxsAndSignatures, notarizationType))
+
+        callServer(mockThrowErrorUniquenessCheckClientService(notarizationType))
         assertThat(responseFromServer).hasSize(1)
 
         val responseError = responseFromServer.first().error
         assertThat(responseError).isNotNull
         assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-        assertThat((responseError as NotaryExceptionGeneral).errorText)
+        assertThat((responseError as NotaryExceptionGeneral).message)
             .contains("Error during notarization. Cause: Uniqueness checker cannot be reached")
     }
 
-    @Test
-    fun `Contract verifying notary plugin server should respond with signatures if alice key is in composite key`() {
+    @ParameterizedTest
+    @EnumSource(NotarizationType::class)
+    fun `Contract verifying notary plugin server should respond with signatures if alice key is in composite key`(notarizationType: NotarizationType) {
         whenever(mockTransactionSignatureService.signBatch(any(), any())).thenReturn(
             listOf(listOf(notarySignatureAlice))
         )
+        whenever(session.receive(ContractVerifyingNotarizationPayload::class.java))
+            .thenReturn(ContractVerifyingNotarizationPayload(signedTransaction, filteredTxsAndSignatures, notarizationType))
 
-        callServer(mockSuccessfulUniquenessClientService())
+        callServer(mockSuccessfulUniquenessClientService(notarizationType))
         assertThat(responseFromServer).hasSize(1)
 
         val response = responseFromServer.first()
@@ -321,13 +342,16 @@ class ContractVerifyingNotaryServerFlowImplTest {
         assertThat(response.signatures.first().by).isEqualTo(notaryVNodeAliceKey.fullIdHash())
     }
 
-    @Test
-    fun `Contract verifying notary plugin server should respond with signatures if bob key is in composite key`() {
+    @ParameterizedTest
+    @EnumSource(NotarizationType::class)
+    fun `Contract verifying notary plugin server should respond with signatures if bob key is in composite key`(notarizationType: NotarizationType) {
         whenever(mockTransactionSignatureService.signBatch(any(), any())).thenReturn(
             listOf(listOf(notarySignatureBob))
         )
+        whenever(session.receive(ContractVerifyingNotarizationPayload::class.java))
+            .thenReturn(ContractVerifyingNotarizationPayload(signedTransaction, filteredTxsAndSignatures, notarizationType))
 
-        callServer(mockSuccessfulUniquenessClientService())
+        callServer(mockSuccessfulUniquenessClientService(notarizationType))
         assertThat(responseFromServer).hasSize(1)
 
         val response = responseFromServer.first()
@@ -336,15 +360,20 @@ class ContractVerifyingNotaryServerFlowImplTest {
         assertThat(response.signatures.first().by).isEqualTo(notaryVNodeBobKey.fullIdHash())
     }
 
-    @Test
-    fun `Contract verifying notary plugin server should respond with error if time window is not valid`() {
+    @ParameterizedTest
+    @EnumSource(NotarizationType::class)
+    fun `Contract verifying notary plugin server should respond with error if time window is not valid`(notarizationType: NotarizationType) {
+        whenever(session.receive(ContractVerifyingNotarizationPayload::class.java))
+            .thenReturn(ContractVerifyingNotarizationPayload(signedTransaction, filteredTxsAndSignatures, notarizationType))
+
         callServer(
             mockErrorUniquenessClientService(
                 UniquenessCheckErrorTimeWindowOutOfBoundsImpl(
                     Clock.systemUTC().instant(),
                     Instant.now().plus(10, ChronoUnit.DAYS),
                     Instant.now().plus(5, ChronoUnit.DAYS)
-                )
+                ),
+                notarizationType
             )
         )
         assertThat(responseFromServer).hasSize(1)
@@ -357,8 +386,11 @@ class ContractVerifyingNotaryServerFlowImplTest {
         )
     }
 
-    @Test
-    fun `Contract verifying notary plugin server should respond with error if output states are not audit type in the filtered tx`() {
+    @ParameterizedTest
+    @EnumSource(NotarizationType::class)
+    fun `Contract verifying notary plugin server should respond with error if output states are not audit type in the filtered tx`(
+        notarizationType: NotarizationType
+    ) {
         @Suppress("unchecked_cast")
         val mockOutputStateProof = mock<UtxoFilteredData.SizeOnly<StateRef>>() as UtxoFilteredData<StateAndRef<*>>
         whenever(filteredTransaction.outputStateAndRefs).thenReturn(mockOutputStateProof)
@@ -368,22 +400,25 @@ class ContractVerifyingNotaryServerFlowImplTest {
         )
 
         whenever(session.receive(ContractVerifyingNotarizationPayload::class.java)).thenReturn(
-            ContractVerifyingNotarizationPayload(signedTransaction, listOf(filteredTransactionsAndSignatures))
+            ContractVerifyingNotarizationPayload(signedTransaction, listOf(filteredTransactionsAndSignatures), notarizationType)
         )
 
-        callServer(mockSuccessfulUniquenessClientService())
+        callServer(mockSuccessfulUniquenessClientService(notarizationType))
         assertThat(responseFromServer).hasSize(1)
 
         val responseError = responseFromServer.first().error
         assertThat(responseError).isNotNull
         assertThat(responseError).isInstanceOf(NotaryExceptionTransactionVerificationFailure::class.java)
-        assertThat((responseError as NotaryExceptionTransactionVerificationFailure).errorText).contains(
+        assertThat((responseError as NotaryExceptionTransactionVerificationFailure).message).contains(
             "Transaction failed to verify"
         )
     }
 
-    @Test
-    fun `Contract verifying notary plugin server should respond with error if Merkle proof verification of dependencies fails`() {
+    @ParameterizedTest
+    @EnumSource(NotarizationType::class)
+    fun `Contract verifying notary plugin server should respond with error if Merkle proof verification of dependencies fails`(
+        notarizationType: NotarizationType
+    ) {
         whenever(filteredTransaction.verify()).thenThrow(IllegalArgumentException("DUMMY ERROR"))
         val filteredTransactionsAndSignatures = UtxoFilteredTransactionAndSignaturesImpl(
             filteredTransaction,
@@ -391,27 +426,32 @@ class ContractVerifyingNotaryServerFlowImplTest {
         )
 
         whenever(session.receive(ContractVerifyingNotarizationPayload::class.java)).thenReturn(
-            ContractVerifyingNotarizationPayload(signedTransaction, listOf(filteredTransactionsAndSignatures))
+            ContractVerifyingNotarizationPayload(signedTransaction, listOf(filteredTransactionsAndSignatures), notarizationType)
         )
 
-        callServer(mockSuccessfulUniquenessClientService())
+        callServer(mockSuccessfulUniquenessClientService(notarizationType))
         assertThat(responseFromServer).hasSize(1)
 
         val responseError = responseFromServer.first().error
         assertThat(responseError).isNotNull
         assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-        assertThat((responseError as NotaryExceptionGeneral).errorText)
+        assertThat((responseError as NotaryExceptionGeneral).message)
             .contains("Error during notarization. Cause: DUMMY ERROR")
     }
 
-    @Test
-    fun `Contract verifying notary plugin server should throw general error when unhandled exception in uniqueness checker`() {
+    @ParameterizedTest
+    @EnumSource(NotarizationType::class)
+    fun `Contract verifying notary plugin server should throw general error when unhandled exception in uniqueness checker`(notarizationType: NotarizationType) {
+        whenever(session.receive(ContractVerifyingNotarizationPayload::class.java))
+            .thenReturn(ContractVerifyingNotarizationPayload(signedTransaction, filteredTxsAndSignatures, notarizationType))
+
         callServer(
             mockErrorUniquenessClientService(
                 UniquenessCheckErrorUnhandledExceptionImpl(
                     IllegalArgumentException::class.java.name,
                     "Unhandled error!"
-                )
+                ),
+                notarizationType
             )
         )
         assertThat(responseFromServer).hasSize(1)
@@ -419,35 +459,37 @@ class ContractVerifyingNotaryServerFlowImplTest {
         val responseError = responseFromServer.first().error
         assertThat(responseError).isNotNull
         assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-        assertThat((responseError as NotaryExceptionGeneral).errorText)
+        assertThat((responseError as NotaryExceptionGeneral).message)
             .contains(
                 "Unhandled exception of type java.lang.IllegalArgumentException encountered during " +
-                        "uniqueness checking with message: Unhandled error!"
+                    "uniqueness checking with message: Unhandled error!"
             )
     }
 
-    @Test
-    fun `Contract verifying notary plugin server should respond with error if notary identity invalid`() {
+    @ParameterizedTest
+    @EnumSource(NotarizationType::class)
+    fun `Contract verifying notary plugin server should respond with error if notary identity invalid`(notarizationType: NotarizationType) {
         whenever(signedTransaction.notaryName).thenReturn(MemberX500Name.parse("C=GB,L=London,O=Bob"))
         whenever(session.receive(ContractVerifyingNotarizationPayload::class.java)).thenReturn(
-            ContractVerifyingNotarizationPayload(signedTransaction, listOf(filteredTxAndSignature))
+            ContractVerifyingNotarizationPayload(signedTransaction, listOf(filteredTxAndSignature), notarizationType)
         )
 
-        callServer(mockSuccessfulUniquenessClientService())
+        callServer(mockSuccessfulUniquenessClientService(notarizationType))
         assertThat(responseFromServer).hasSize(1)
 
         val responseError = responseFromServer.first().error
         assertThat(responseError).isNotNull
         assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-        assertThat((responseError as NotaryExceptionGeneral).errorText)
+        assertThat((responseError as NotaryExceptionGeneral).message)
             .contains("does not match the notary service represented by this notary virtual node")
     }
 
-    @Test
-    fun `Contract verifying notary should respond with error if dependency input is missing`() {
-         val filteredTxOutputData = mapOf(0 to mockDependencyOutputStateAndRef1)
-         val mockOutputStateRefUtxoFilteredData = mock<UtxoFilteredData.Audit<StateAndRef<*>>>().also {
-             whenever(it.values).thenReturn(filteredTxOutputData)
+    @ParameterizedTest
+    @EnumSource(NotarizationType::class)
+    fun `Contract verifying notary should respond with error if dependency input is missing`(notarizationType: NotarizationType) {
+        val filteredTxOutputData = mapOf(0 to mockDependencyOutputStateAndRef1)
+        val mockOutputStateRefUtxoFilteredData = mock<UtxoFilteredData.Audit<StateAndRef<*>>>().also {
+            whenever(it.values).thenReturn(filteredTxOutputData)
         }
 
         whenever(filteredTransaction.outputStateAndRefs).thenReturn(mockOutputStateRefUtxoFilteredData)
@@ -458,20 +500,21 @@ class ContractVerifyingNotaryServerFlowImplTest {
         )
 
         whenever(session.receive(ContractVerifyingNotarizationPayload::class.java)).thenReturn(
-            ContractVerifyingNotarizationPayload(signedTransaction, listOf(filteredTransactionsAndSignatures))
+            ContractVerifyingNotarizationPayload(signedTransaction, listOf(filteredTransactionsAndSignatures), notarizationType)
         )
 
-        callServer(mockSuccessfulUniquenessClientService())
+        callServer(mockSuccessfulUniquenessClientService(notarizationType))
 
         val responseError = responseFromServer.first().error
         assertThat(responseError).isNotNull
         assertThat(responseError).isInstanceOf(NotaryExceptionTransactionVerificationFailure::class.java)
-        assertThat((responseError as NotaryExceptionTransactionVerificationFailure).errorText)
+        assertThat((responseError as NotaryExceptionTransactionVerificationFailure).message)
             .contains("Missing input state and ref from the filtered transaction")
     }
 
-    @Test
-    fun `Contract verifying notary should respond with error if dependency reference is missing`() {
+    @ParameterizedTest
+    @EnumSource(NotarizationType::class)
+    fun `Contract verifying notary should respond with error if dependency reference is missing`(notarizationType: NotarizationType) {
         val filteredTxOutputData = mapOf(
             0 to mockDependencyOutputStateAndRef1,
             1 to mockDependencyOutputStateAndRef2,
@@ -489,20 +532,21 @@ class ContractVerifyingNotaryServerFlowImplTest {
         )
 
         whenever(session.receive(ContractVerifyingNotarizationPayload::class.java)).thenReturn(
-            ContractVerifyingNotarizationPayload(signedTransaction, listOf(filteredTransactionsAndSignatures))
+            ContractVerifyingNotarizationPayload(signedTransaction, listOf(filteredTransactionsAndSignatures), notarizationType)
         )
 
-        callServer(mockSuccessfulUniquenessClientService())
+        callServer(mockSuccessfulUniquenessClientService(notarizationType))
 
         val responseError = responseFromServer.first().error
         assertThat(responseError).isNotNull
         assertThat(responseError).isInstanceOf(NotaryExceptionTransactionVerificationFailure::class.java)
-        assertThat((responseError as NotaryExceptionTransactionVerificationFailure).errorText)
+        assertThat((responseError as NotaryExceptionTransactionVerificationFailure).message)
             .contains("Missing reference state and ref from the filtered transaction")
     }
 
-    @Test
-    fun `Contract verifying notary should respond with error if dependency is invalid`() {
+    @ParameterizedTest
+    @EnumSource(NotarizationType::class)
+    fun `Contract verifying notary should respond with error if dependency is invalid`(notarizationType: NotarizationType) {
         val filteredTxOutputData = mapOf(
             0 to mockDependencyOutputStateAndRef1,
             1 to mockDependencyOutputStateAndRef2,
@@ -521,23 +565,24 @@ class ContractVerifyingNotaryServerFlowImplTest {
         )
 
         whenever(session.receive(ContractVerifyingNotarizationPayload::class.java)).thenReturn(
-            ContractVerifyingNotarizationPayload(signedTransaction, listOf(filteredTransactionsAndSignatures))
+            ContractVerifyingNotarizationPayload(signedTransaction, listOf(filteredTransactionsAndSignatures), notarizationType)
         )
 
-        callServer(mockSuccessfulUniquenessClientService(),)
+        callServer(mockSuccessfulUniquenessClientService(notarizationType))
 
         val responseError = responseFromServer.first().error
         assertThat(responseError).isNotNull
         assertThat(responseError).isInstanceOf(NotaryExceptionTransactionVerificationFailure::class.java)
-        assertThat((responseError as NotaryExceptionTransactionVerificationFailure).errorText)
+        assertThat((responseError as NotaryExceptionTransactionVerificationFailure).message)
             .contains("Missing reference state and ref from the filtered transaction")
     }
 
-    @Test
-    fun `Contract verifying notary should respond with error if a signed transaction failed to verify signatory signature`() {
-        whenever(signedTransaction.verifySignatorySignatures()).thenThrow(NotaryExceptionGeneral("Signature failed error"))
+    @ParameterizedTest
+    @EnumSource(NotarizationType::class)
+    fun `Contract verifying notary should respond with error if a signed transaction failed to verify signatory signature`(notarizationType: NotarizationType) {
+        whenever(signedTransaction.verifySignatorySignatures()).thenThrow(NotaryExceptionGeneral("Signature failed error", null))
 
-        callServer(mockSuccessfulUniquenessClientService())
+        callServer(mockSuccessfulUniquenessClientService(notarizationType))
 
         val responseError = responseFromServer.first().error
         assertThat(responseError).isNotNull
@@ -546,8 +591,9 @@ class ContractVerifyingNotaryServerFlowImplTest {
             .contains("Signature failed error")
     }
 
-    @Test
-    fun `Contract verifying notary should respond with error if contract verification failed`() {
+    @ParameterizedTest
+    @EnumSource(NotarizationType::class)
+    fun `Contract verifying notary should respond with error if contract verification failed`(notarizationType: NotarizationType) {
         whenever(
             mockLedgerService.verify(
                 signedTransaction.toLedgerTransaction(
@@ -557,7 +603,10 @@ class ContractVerifyingNotaryServerFlowImplTest {
             )
         ).thenThrow(NotaryExceptionTransactionVerificationFailure("contract verification failed"))
 
-        callServer(mockSuccessfulUniquenessClientService())
+        whenever(session.receive(ContractVerifyingNotarizationPayload::class.java))
+            .thenReturn(ContractVerifyingNotarizationPayload(signedTransaction, filteredTxsAndSignatures, notarizationType))
+
+        callServer(mockSuccessfulUniquenessClientService(notarizationType))
 
         val responseError = responseFromServer.first().error
         assertThat(responseError).isNotNull
@@ -566,17 +615,21 @@ class ContractVerifyingNotaryServerFlowImplTest {
             .contains("Transaction failed to verify with error message", "contract verification failed")
     }
 
-    @Test
-    fun `Contract verifying notary should successfully notarise if a signed tx verifies signatory signatures`() {
+    @ParameterizedTest
+    @EnumSource(NotarizationType::class)
+    fun `Contract verifying notary should successfully notarise if a signed tx verifies signatory signatures`(notarizationType: NotarizationType) {
         whenever(mockTransactionSignatureService.signBatch(any(), any())).thenReturn(
             listOf(listOf(signatorySignatureCharlie))
         )
 
-        whenever(mockLedgerService.verify(any())).thenAnswer {  }
+        whenever(mockLedgerService.verify(any())).thenAnswer { }
 
-        whenever(signedTransaction.verifySignatorySignatures()).thenAnswer {  }
+        whenever(signedTransaction.verifySignatorySignatures()).thenAnswer { }
 
-        callServer(mockSuccessfulUniquenessClientService())
+        whenever(session.receive(ContractVerifyingNotarizationPayload::class.java))
+            .thenReturn(ContractVerifyingNotarizationPayload(signedTransaction, filteredTxsAndSignatures, notarizationType))
+
+        callServer(mockSuccessfulUniquenessClientService(notarizationType))
         val response = responseFromServer.first()
         assertThat(response.error).isNull()
     }
@@ -594,29 +647,54 @@ class ContractVerifyingNotaryServerFlowImplTest {
         server.call(session)
     }
 
-    private fun mockSuccessfulUniquenessClientService(): LedgerUniquenessCheckerClientService {
-        return mockUniquenessClientService(UniquenessCheckResultSuccessImpl(Instant.now()))
+    private fun mockSuccessfulUniquenessClientService(notarizationType: NotarizationType): LedgerUniquenessCheckerClientService {
+        return mockUniquenessClientService(UniquenessCheckResultSuccessImpl(Instant.now()), notarizationType)
     }
 
     private fun mockErrorUniquenessClientService(
-        errorType: UniquenessCheckError
+        errorType: UniquenessCheckError,
+        notarizationType: NotarizationType
     ): LedgerUniquenessCheckerClientService {
         return mockUniquenessClientService(
             UniquenessCheckResultFailureImpl(
                 Instant.now(),
                 errorType
-            )
+            ),
+            notarizationType
         )
     }
 
-    private fun mockThrowErrorUniquenessCheckClientService() = mock<LedgerUniquenessCheckerClientService>().also {
-        whenever(it.requestUniquenessCheck(any(), any(), any(), any(), any(), any(), any())).thenThrow(
-            IllegalArgumentException("Uniqueness checker cannot be reached")
-        )
-    }
+    private fun mockThrowErrorUniquenessCheckClientService(notarizationType: NotarizationType) =
+        mock<LedgerUniquenessCheckerClientService> {
+            when (notarizationType) {
+                NotarizationType.WRITE -> {
+                    on { requestUniquenessCheckWrite(any(), any(), any(), any(), any(), any(), any()) } doThrow
+                        IllegalArgumentException("Uniqueness checker cannot be reached")
+                    on { requestUniquenessCheckRead(any(), any(), any(), any()) } doThrow
+                        RuntimeException("Wrong uniqueness check type method called")
+                }
+                NotarizationType.READ -> {
+                    on { requestUniquenessCheckWrite(any(), any(), any(), any(), any(), any(), any()) } doThrow
+                        RuntimeException("Wrong uniqueness check type method called")
+                    on { requestUniquenessCheckRead(any(), any(), any(), any()) } doThrow
+                        IllegalArgumentException("Uniqueness checker cannot be reached")
+                }
+            }
+        }
 
-    private fun mockUniquenessClientService(response: UniquenessCheckResult) =
-        mock<LedgerUniquenessCheckerClientService>().also {
-            whenever(it.requestUniquenessCheck(any(), any(), any(), any(), any(), any(), any())).thenReturn(response)
+    private fun mockUniquenessClientService(response: UniquenessCheckResult, notarizationType: NotarizationType) =
+        mock<LedgerUniquenessCheckerClientService> {
+            when (notarizationType) {
+                NotarizationType.WRITE -> {
+                    on { requestUniquenessCheckWrite(any(), any(), any(), any(), any(), any(), any()) } doReturn response
+                    on { requestUniquenessCheckRead(any(), any(), any(), any()) } doThrow
+                        AssertionError("Wrong uniqueness check type method called")
+                }
+                NotarizationType.READ -> {
+                    on { requestUniquenessCheckWrite(any(), any(), any(), any(), any(), any(), any()) } doThrow
+                        AssertionError("Wrong uniqueness check type method called")
+                    on { requestUniquenessCheckRead(any(), any(), any(), any()) } doReturn response
+                }
+            }
         }
 }

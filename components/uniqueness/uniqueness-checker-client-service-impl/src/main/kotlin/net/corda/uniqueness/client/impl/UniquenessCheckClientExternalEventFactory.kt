@@ -12,6 +12,7 @@ import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Component
 import java.time.Instant
+import net.corda.data.uniqueness.UniquenessCheckType as UniquenessCheckTypeAvro
 
 @Component(service = [ExternalEventFactory::class])
 class UniquenessCheckExternalEventFactory :
@@ -33,19 +34,22 @@ class UniquenessCheckExternalEventFactory :
         return response.toUniquenessResult()
     }
 
-    private fun createRequest(params: UniquenessCheckExternalEventParams,
-                              context: ExternalEventContext,
-                              checkpoint: FlowCheckpoint) = UniquenessCheckRequestAvro(
-        checkpoint.holdingIdentity.toAvro(),
-        context,
-        params.txId,
-        params.originatorX500Name,
-        params.inputStates,
-        params.referenceStates,
-        params.numOutputStates,
-        params.timeWindowLowerBound,
-        params.timeWindowUpperBound
-    )
+    private fun createRequest(
+        params: UniquenessCheckExternalEventParams,
+        context: ExternalEventContext,
+        checkpoint: FlowCheckpoint
+    ) = UniquenessCheckRequestAvro.newBuilder()
+        .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())
+        .setFlowExternalEventContext(context)
+        .setTxId(params.txId)
+        .setOriginatorX500Name(params.originatorX500Name)
+        .setInputStates(params.inputStates)
+        .setReferenceStates(params.referenceStates)
+        .setNumOutputStates(params.numOutputStates)
+        .setTimeWindowLowerBound(params.timeWindowLowerBound)
+        .setTimeWindowUpperBound(params.timeWindowUpperBound)
+        .setUniquenessCheckType(params.uniquenessCheckType.toAvro())
+        .build()
 }
 
 @CordaSerializable
@@ -56,5 +60,18 @@ data class UniquenessCheckExternalEventParams(
     val referenceStates: List<String>,
     val numOutputStates: Int,
     val timeWindowLowerBound: Instant?,
-    val timeWindowUpperBound: Instant
+    val timeWindowUpperBound: Instant,
+    val uniquenessCheckType: UniquenessCheckType
 )
+
+@CordaSerializable
+enum class UniquenessCheckType {
+    WRITE, READ;
+
+    fun toAvro(): UniquenessCheckTypeAvro {
+        return when (this) {
+            WRITE -> UniquenessCheckTypeAvro.WRITE
+            READ -> UniquenessCheckTypeAvro.READ
+        }
+    }
+}

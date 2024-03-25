@@ -33,7 +33,7 @@ class LedgerUniquenessCheckerClientServiceImplTest {
     fun `Signing is successful when uniqueness check was successful`() {
         val response = createClientService(
             uniquenessCheckResult = UniquenessCheckResultSuccessImpl(Instant.now())
-        ).requestUniquenessCheck(
+        ).requestUniquenessCheckWrite(
             dummyTxId.toString(),
             originatorX500Name,
             emptyList(),
@@ -53,7 +53,7 @@ class LedgerUniquenessCheckerClientServiceImplTest {
                 Instant.now(),
                 UniquenessCheckErrorMalformedRequestImpl("Malformed")
             )
-        ).requestUniquenessCheck(
+        ).requestUniquenessCheckWrite(
             dummyTxId.toString(),
             originatorX500Name,
             emptyList(),
