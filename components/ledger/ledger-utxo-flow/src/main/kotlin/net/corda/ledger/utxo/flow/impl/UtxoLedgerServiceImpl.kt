@@ -198,7 +198,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     ): FinalizationResult {
         /*
          * Called by flows in user corDapps that wish to participate in finality, to perform their own checks and
-         * then counter sign them. Works by starting a new receive finality flow to do the work.
+         * potentially then counter sign them. Works by starting a new receive finality flow to do the work.
          *
          * Once the flow gets a signed transaction, the first test is to verify the signatures match the public keys.
          *
