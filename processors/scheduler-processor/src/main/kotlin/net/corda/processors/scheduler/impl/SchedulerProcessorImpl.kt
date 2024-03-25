@@ -50,7 +50,7 @@ class SchedulerProcessorImpl @Activate constructor(
     }
 
     private companion object {
-        private const val LEDGER_REPAIR_SCHEDULE_PERIOD_ENV_VARIABLE =  "LEDGER_REPAIR_SCHEDULE_PERIOD"
+        private const val LEDGER_REPAIR_SCHEDULE_PERIOD_ENV_VARIABLE =  "CORDA_LEDGER_REPAIR_SCHEDULE_PERIOD"
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
