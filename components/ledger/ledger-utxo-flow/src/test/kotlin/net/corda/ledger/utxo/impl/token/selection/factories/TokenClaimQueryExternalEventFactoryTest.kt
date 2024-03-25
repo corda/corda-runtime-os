@@ -11,6 +11,7 @@ import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.token.query.TokenClaimCriteriaParameters
 import net.corda.ledger.utxo.impl.token.selection.factories.TokenClaimFactory
 import net.corda.ledger.utxo.impl.token.selection.factories.TokenClaimQueryExternalEventFactory
 import net.corda.ledger.utxo.impl.token.selection.impl.ALICE_X500_HOLDING_ID
@@ -52,6 +53,7 @@ class TokenClaimQueryExternalEventFactoryTest {
     fun `createExternalEvent should return claim query event record`() {
         val ownerHash = "owner".toSecureHash()
         val tagRegex = "tag"
+        val dedupeId = "dedupeId"
         val amount = BigDecimal(10)
         val tokenAmount = TokenAmount(
             amount.scale(),
@@ -59,10 +61,11 @@ class TokenClaimQueryExternalEventFactoryTest {
         )
         val flowExternalEventContext = ExternalEventContext("r1", "f1", KeyValuePairList())
 
-        val parameters = TokenClaimCriteria(tokenType, issuerHash, notaryX500Name, symbol, amount).apply {
+        val parameters = TokenClaimCriteriaParameters(dedupeId, TokenClaimCriteria(tokenType, issuerHash, notaryX500Name, symbol, amount)
+            .apply {
             this.tagRegex = tagRegex
             this.ownerHash = ownerHash
-        }
+        })
 
         val expectedClaimQuery = TokenClaimQuery().apply {
             this.poolKey = key
