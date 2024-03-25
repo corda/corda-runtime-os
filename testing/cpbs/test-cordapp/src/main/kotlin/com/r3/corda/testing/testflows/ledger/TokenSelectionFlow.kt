@@ -14,7 +14,6 @@ import net.corda.v5.ledger.utxo.token.selection.TokenClaimCriteria
 import net.corda.v5.ledger.utxo.token.selection.TokenSelection
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
-import java.util.UUID
 
 class TokenSelectionFlow : ClientStartableFlow {
 
@@ -40,7 +39,7 @@ class TokenSelectionFlow : ClientStartableFlow {
             val queryCriteria = getCriteriaFromRequest(inputs)
 
             log.info("Querying for tokens with: ${jsonMarshallingService.format(queryCriteria)}")
-            val claimResult = tokenSelection.tryClaim(UUID.randomUUID().toString(), queryCriteria)
+            val claimResult = tokenSelection.tryClaim("claim1", queryCriteria)
 
 
             val response = if (claimResult == null) {

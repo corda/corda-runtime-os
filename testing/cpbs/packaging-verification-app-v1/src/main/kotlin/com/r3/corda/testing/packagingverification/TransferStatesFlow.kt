@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.time.Duration
 import java.time.Instant
-import java.util.UUID
 
 @InitiatingFlow(protocol = "com.r3.corda.testing.packagingverification.TransferStatesFlow")
 class TransferStatesFlow : ClientStartableFlow {
@@ -79,7 +78,7 @@ class TransferStatesFlow : ClientStartableFlow {
 
         try {
             log.info("Making token claim")
-            val tokenClaim = tokenSelection.tryClaim(UUID.randomUUID().toString(), selectionCriteria)
+            val tokenClaim = tokenSelection.tryClaim("claim1", selectionCriteria)
                 ?: throw CordaRuntimeException("Cannot claim tokens.")
             log.info("Got token claim, ${tokenClaim.claimedTokens.size} tokens")
 

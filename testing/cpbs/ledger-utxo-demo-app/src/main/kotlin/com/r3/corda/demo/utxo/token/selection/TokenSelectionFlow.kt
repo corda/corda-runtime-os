@@ -14,7 +14,6 @@ import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.token.selection.TokenClaimCriteria
 import net.corda.v5.ledger.utxo.token.selection.TokenSelection
 import org.slf4j.LoggerFactory
-import java.util.UUID
 
 class TokenSelectionFlow : ClientStartableFlow {
 
@@ -45,7 +44,7 @@ class TokenSelectionFlow : ClientStartableFlow {
                 TOKEN_AMOUNT,
             )
 
-            val claimResult = tokenSelection.tryClaim(UUID.randomUUID().toString(), queryCriteria)
+            val claimResult = tokenSelection.tryClaim("claim1", queryCriteria)
 
             val response = if (claimResult == null) {
                 log.info("Token Selection result: 'None found' ")
