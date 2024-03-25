@@ -26,6 +26,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.time.Duration
+import java.time.temporal.ChronoUnit
 
 @Component(service = [SchedulerProcessor::class])
 class SchedulerProcessorImpl @Activate constructor(
@@ -80,10 +82,11 @@ class SchedulerProcessorImpl @Activate constructor(
             ScheduledTask.SCHEDULE_TASK_NAME_FLOW_STATUS_CLEANUP,
             60, ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_STATUS_PROCESSOR
         ),
-        // TODO CORE-16331 Add configuration with a default of 2 minutes under the ledger.repair configuration section
+        // TODO CORE-16331 Add configuration with a default of 10 minutes under the ledger.repair configuration section
         Schedule(
             ScheduledTask.SCHEDULE_TASK_NAME_LEDGER_REPAIR,
-            (System.getenv()[LEDGER_REPAIR_SCHEDULE_PERIOD_ENV_VARIABLE])?.toLongOrNull() ?: 120,
+            (System.getenv()[LEDGER_REPAIR_SCHEDULE_PERIOD_ENV_VARIABLE])?.toLongOrNull()
+                ?: Duration.of(10, ChronoUnit.MINUTES).toSeconds(),
             ScheduledTask.SCHEDULE_TASK_TOPIC_LEDGER_REPAIR_PROCESSOR
         )
     )

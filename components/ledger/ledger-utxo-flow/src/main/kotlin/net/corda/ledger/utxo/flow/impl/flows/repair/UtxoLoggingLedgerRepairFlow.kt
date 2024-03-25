@@ -53,7 +53,11 @@ class UtxoLoggingLedgerRepairFlow private constructor(
 
     @Suspendable
     override fun call(): Int {
-        log.info("Starting ledger repair of missing notarized transactions. Repairing transactions that occurred between $from to $until")
+        if (log.isDebugEnabled) {
+            log.debug(
+                "Starting ledger repair of missing notarized transactions. Repairing transactions that occurred between $from to $until"
+            )
+        }
 
         val startTime = System.currentTimeMillis()
         val endTime = Instant.ofEpochMilli(startTime).plus(duration)
@@ -67,6 +71,8 @@ class UtxoLoggingLedgerRepairFlow private constructor(
             numberOfInvalidTransactions,
             numberOfSkippedTransactions
         ) = flowEngine.subFlow(UtxoLedgerRepairFlow(from, until, endTime, maxDurationWithoutSuspending, clock))
+
+        val repairedAnyTransactions = numberOfNotarizedTransactions > 0 || numberOfInvalidTransactions > 0
 
         when {
             exceededDuration -> {
@@ -86,6 +92,16 @@ class UtxoLoggingLedgerRepairFlow private constructor(
                         "${Duration.ofMillis(System.currentTimeMillis() - startTime)}. Exceeded the duration of " +
                         "$maxDurationWithoutSuspending between notarizing transactions. There may be more transactions to repair."
                 )
+            }
+            !repairedAnyTransactions -> {
+                if (log.isDebugEnabled) {
+                    log.debug(
+                        "Ledger repair result: $numberOfNotarizedTransactions/$numberOfNotNotarizedTransactions/" +
+                            "$numberOfInvalidTransactions/$numberOfSkippedTransactions (Notarized/Not-notarized/Invalidated/Skipped). " +
+                            "Parameters: $from - $until, $duration. Time taken: " +
+                            "${Duration.ofMillis(System.currentTimeMillis() - startTime)}."
+                    )
+                }
             }
             else -> {
                 log.info(

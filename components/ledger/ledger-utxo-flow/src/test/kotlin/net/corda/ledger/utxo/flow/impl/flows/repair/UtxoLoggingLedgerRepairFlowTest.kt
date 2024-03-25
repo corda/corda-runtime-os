@@ -15,6 +15,8 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.slf4j.Logger
 import java.time.Duration
@@ -44,6 +46,8 @@ class UtxoLoggingLedgerRepairFlowTest {
     @BeforeEach
     fun beforeEach() {
         doNothing().whenever(log).info(captor.capture())
+        doNothing().whenever(log).debug(captor.capture())
+        whenever(log.isDebugEnabled).thenReturn(true)
         whenever(flowConfigService.getConfig(MESSAGING_CONFIG)).thenReturn(config)
         whenever(config.getLong(MEDIATOR_PROCESSING_PROCESSOR_TIMEOUT)).thenReturn(2.minutes.toMillis())
     }
@@ -62,10 +66,12 @@ class UtxoLoggingLedgerRepairFlowTest {
                 )
             )
         utxoLoggingLedgerRepairFlow.call()
-        assertThat(captor.secondValue)
+        assertThat(captor.lastValue)
             .contains("1/2/3/4")
             .contains("Exceeded the duration")
             .doesNotContain("between notarizing transactions")
+        verify(log, times(1)).debug(any())
+        verify(log, times(1)).info(any())
     }
 
     @Test
@@ -82,10 +88,12 @@ class UtxoLoggingLedgerRepairFlowTest {
                 )
             )
         utxoLoggingLedgerRepairFlow.call()
-        assertThat(captor.secondValue)
+        assertThat(captor.lastValue)
             .contains("1/2/3/4")
             .contains("Exceeded the duration")
             .contains("between notarizing transactions")
+        verify(log, times(1)).debug(any())
+        verify(log, times(1)).info(any())
     }
 
     @Test
@@ -102,10 +110,33 @@ class UtxoLoggingLedgerRepairFlowTest {
                 )
             )
         utxoLoggingLedgerRepairFlow.call()
-        assertThat(captor.secondValue)
+        assertThat(captor.lastValue)
             .contains("1/2/3/4")
             .doesNotContain("Exceeded the duration")
             .doesNotContain("without notarizing a transaction")
+        verify(log, times(1)).debug(any())
+        verify(log, times(1)).info(any())
+    }
+
+    @Test
+    fun `no transactions notarized or invalid logs at debug`() {
+        whenever(flowEngine.subFlow(any<SubFlow<UtxoLedgerRepairFlow.Result>>()))
+            .thenReturn(
+                UtxoLedgerRepairFlow.Result(
+                    exceededDuration = false,
+                    exceededLastNotarizationTime = false,
+                    numberOfNotarizedTransactions = 0,
+                    numberOfNotNotarizedTransactions = 2,
+                    numberOfInvalidTransactions = 0,
+                    numberOfSkippedTransactions = 4
+                )
+            )
+        utxoLoggingLedgerRepairFlow.call()
+        assertThat(captor.lastValue)
+            .contains("0/2/0/4")
+            .doesNotContain("Exceeded the duration")
+            .doesNotContain("without notarizing a transaction")
+        verify(log, times(2)).debug(any())
     }
 
     @Test
