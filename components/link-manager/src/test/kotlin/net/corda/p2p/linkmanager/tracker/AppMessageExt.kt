@@ -13,10 +13,13 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 
 class AppMessageExt {
+    private companion object {
+        const val ID = "ID"
+    }
     @Test
     fun `id return the correct ID for AuthenticatedMessage`() {
         val messageHeader = mock<AuthenticatedMessageHeader> {
-            on { messageId } doReturn "ID"
+            on { messageId } doReturn ID
         }
         val authenticatedMessage = mock<AuthenticatedMessage> {
             on { header } doReturn messageHeader
@@ -25,13 +28,13 @@ class AppMessageExt {
             on { message } doReturn authenticatedMessage
         }
 
-        assertThat(appMessage.id).isEqualTo("ID")
+        assertThat(appMessage.id).isEqualTo(ID)
     }
 
     @Test
     fun `id return the correct ID for OutboundUnauthenticatedMessage`() {
         val messageHeader = mock<OutboundUnauthenticatedMessageHeader> {
-            on { messageId } doReturn "ID"
+            on { messageId } doReturn ID
         }
         val outboundUnauthenticatedMessage = mock<OutboundUnauthenticatedMessage> {
             on { header } doReturn messageHeader
@@ -40,13 +43,13 @@ class AppMessageExt {
             on { message } doReturn outboundUnauthenticatedMessage
         }
 
-        assertThat(appMessage.id).isEqualTo("ID")
+        assertThat(appMessage.id).isEqualTo(ID)
     }
 
     @Test
     fun `id return the correct ID for InboundUnauthenticatedMessage`() {
         val messageHeader = mock<InboundUnauthenticatedMessageHeader> {
-            on { messageId } doReturn "ID"
+            on { messageId } doReturn ID
         }
         val inboundUnauthenticatedMessageHeader = mock<InboundUnauthenticatedMessage> {
             on { header } doReturn messageHeader
@@ -55,7 +58,7 @@ class AppMessageExt {
             on { message } doReturn inboundUnauthenticatedMessageHeader
         }
 
-        assertThat(appMessage.id).isEqualTo("ID")
+        assertThat(appMessage.id).isEqualTo(ID)
     }
 
     @Test

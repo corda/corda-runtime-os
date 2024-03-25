@@ -8,6 +8,7 @@ import net.corda.libs.statemanager.api.StateManager
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.assertj.core.api.AssertionsForClassTypes.assertThatCode
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -39,8 +40,8 @@ class DataMessageStoreTest {
     private val authenticatedMessage = mock<AuthenticatedMessage> {
         on { header } doReturn messageHeader
     }
-    private val appMessageOne = mock<AppMessage>()
-    private val appMessageTwo = mock<AppMessage> {
+    private val appMessageWithoutId = mock<AppMessage>()
+    private val appMessageWithId = mock<AppMessage> {
         on { message } doReturn authenticatedMessage
     }
     private val schemaRegistry = mock<AvroSchemaRegistry> {
@@ -50,16 +51,16 @@ class DataMessageStoreTest {
                 AppMessage::class.java,
                 null,
             )
-        } doReturn appMessageOne
+        } doReturn appMessageWithoutId
         on {
             deserialize(
                 ByteBuffer.wrap(ids[1].toByteArray()),
                 AppMessage::class.java,
                 null,
             )
-        } doReturn appMessageTwo
-        on { serialize(appMessageOne) } doReturn ByteBuffer.wrap(ids[0].toByteArray())
-        on { serialize(appMessageTwo) } doReturn ByteBuffer.wrap(ids[1].toByteArray())
+        } doReturn appMessageWithId
+        on { serialize(appMessageWithoutId) } doReturn ByteBuffer.wrap(ids[0].toByteArray())
+        on { serialize(appMessageWithId) } doReturn ByteBuffer.wrap(ids[1].toByteArray())
     }
 
     private val store = DataMessageStore(
@@ -77,7 +78,7 @@ class DataMessageStoreTest {
         }
 
         @Test
-        fun `read with empty list return empty list`() {
+        fun `read with empty list returns empty list`() {
             val ret = store.read(emptyList())
 
             assertThat(ret).isEmpty()
@@ -87,7 +88,7 @@ class DataMessageStoreTest {
         fun `read returns the correct data`() {
             val ret = store.read(ids)
 
-            assertThat(ret).containsExactlyInAnyOrder(appMessageOne, appMessageTwo)
+            assertThat(ret).containsExactlyInAnyOrder(appMessageWithoutId, appMessageWithId)
         }
     }
 
@@ -102,7 +103,7 @@ class DataMessageStoreTest {
 
         @Test
         fun `write will write the correct values`() {
-            store.write(listOf(appMessageOne, appMessageTwo))
+            store.write(listOf(appMessageWithoutId, appMessageWithId))
 
             val createdStates = createdStates.allValues.flatten()
             assertThat(createdStates)
@@ -118,7 +119,7 @@ class DataMessageStoreTest {
 
         @Test
         fun `write will not write messages without ID`() {
-            store.write(listOf(appMessageOne, appMessageTwo))
+            store.write(listOf(appMessageWithoutId, appMessageWithId))
 
             val statesKeys = createdStates.allValues.flatten().map {
                 it.key
@@ -127,12 +128,12 @@ class DataMessageStoreTest {
         }
 
         @Test
-        fun `write will throw an exception if it there was an unexpected error`() {
+        fun `write will not throw an exception if it there was an unexpected error`() {
             whenever(stateManager.create(any())).doReturn(setOf("id1"))
 
-            assertThatThrownBy {
-                store.write(listOf(appMessageOne, appMessageTwo))
-            }.isExactlyInstanceOf(DataMessageStoreException::class.java)
+            assertThatCode {
+                store.write(listOf(appMessageWithoutId, appMessageWithId))
+            }.doesNotThrowAnyException()
         }
     }
 

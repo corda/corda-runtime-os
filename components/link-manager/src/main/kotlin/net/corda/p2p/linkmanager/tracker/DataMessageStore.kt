@@ -5,12 +5,16 @@ import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 
 internal class DataMessageStore(
     private val stateManager: StateManager,
     private val schemaRegistry: AvroSchemaRegistry,
 ) {
+    private companion object {
+        val logger = LoggerFactory.getLogger(DataMessageStore::class.java)
+    }
     fun read(ids: Collection<String>): Collection<AppMessage> {
         if (ids.isEmpty()) {
             return emptyList()
@@ -40,9 +44,7 @@ internal class DataMessageStore(
         val failedToCreate = stateManager.create(states.values)
 
         if (failedToCreate.isNotEmpty()) {
-            throw DataMessageStoreException(
-                "Failed to write messages $failedToCreate",
-            )
+            logger.warn("Failed to write messages $failedToCreate")
         }
     }
 
