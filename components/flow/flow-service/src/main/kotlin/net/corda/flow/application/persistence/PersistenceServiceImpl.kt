@@ -105,7 +105,7 @@ class PersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun persist(deduplicationId: String,entities: List<*>) {
+    override fun persist(deduplicationId: String, entities: List<*>) {
         validateDeduplicationId(deduplicationId)
 
         if (entities.isNotEmpty()) {
@@ -156,7 +156,7 @@ class PersistenceServiceImpl @Activate constructor(
         if (deduplicationId.isEmpty() || deduplicationId.length > MAX_DEDUPLICATION_ID_LENGTH) {
             throw IllegalArgumentException(
                 "deduplicationId must not be empty and must not exceed $MAX_DEDUPLICATION_ID_LENGTH characters. " +
-                "Provided length: ${deduplicationId.length}."
+                "Provided deduplicationId: $deduplicationId, length: ${deduplicationId.length} characters."
             )
         }
     }
