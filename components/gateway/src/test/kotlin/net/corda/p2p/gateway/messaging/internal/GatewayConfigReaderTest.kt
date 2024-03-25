@@ -36,11 +36,18 @@ class GatewayConfigReaderTest {
         val gatewayConfigReader = GatewayConfigReader(coordinatorFactory, configReadService)
         val connectionConfig = ConnectionConfiguration().copy(maxClientConnections = 1)
         val sslConfiguration = mock<SslConfiguration>()
-        val gatewayConfig = GatewayConfiguration(listOf(
-            GatewayServerConfiguration(
-                "", 1, "/"
-            )
-        ), sslConfiguration, 1000, connectionConfig)
+        val gatewayConfig = GatewayConfiguration(
+            listOf(
+                GatewayServerConfiguration(
+                    "",
+                    1,
+                    "/",
+                ),
+            ),
+            sslConfiguration,
+            1000,
+            connectionConfig,
+        )
 
         val future = configChangeHandler!!.applyNewConfiguration(gatewayConfig, null, mock())
         assertThat(future.isDone).isTrue
@@ -60,13 +67,14 @@ class GatewayConfigReaderTest {
         val gatewayConfigReader = GatewayConfigReader(coordinatorFactory, configReadService)
         val gatewayConfig = GatewayConfiguration(
             listOf(
-                GatewayServerConfiguration("", 1, "/")
+                GatewayServerConfiguration("", 1, "/"),
             ),
-            mock(), 1000, gatewayConfigReader.connectionConfig
+            mock(),
+            1000,
+            gatewayConfigReader.connectionConfig,
         )
 
         val future = configChangeHandler!!.applyNewConfiguration(gatewayConfig, null, mock())
         assertThat(future.isDone).isTrue
     }
-
 }

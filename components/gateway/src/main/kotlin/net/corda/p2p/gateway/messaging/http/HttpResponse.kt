@@ -8,7 +8,7 @@ class HttpResponse(
     val statusCode: HttpResponseStatus,
     val payload: ByteArray,
     val source: SocketAddress,
-    val destination: SocketAddress
+    val destination: SocketAddress,
 ) {
 
     override fun toString(): String {

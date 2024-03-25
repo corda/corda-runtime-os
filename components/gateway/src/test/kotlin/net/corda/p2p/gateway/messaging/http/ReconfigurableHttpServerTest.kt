@@ -62,11 +62,11 @@ class ReconfigurableHttpServerTest {
         ),
         sslConfig = SslConfiguration(
             revocationCheck = RevocationConfig(
-                RevocationConfigMode.OFF
+                RevocationConfigMode.OFF,
             ),
             TlsType.ONE_WAY,
         ),
-        maxRequestSize = 1000
+        maxRequestSize = 1000,
     )
     private val badConfigurationException = RuntimeException("Bad Config")
     private val badServerConfiguration = mock<GatewayServerConfiguration> {
@@ -185,7 +185,7 @@ class ReconfigurableHttpServerTest {
             configHandler.applyNewConfiguration(
                 configuration.copy(serversConfiguration = emptyList()),
                 null,
-                resourcesHolder
+                resourcesHolder,
             )
 
         assertThat(future).isCompletedExceptionally
@@ -195,13 +195,13 @@ class ReconfigurableHttpServerTest {
     fun `applyNewConfiguration if there is more than one server that is using the same host and port will merge the configurations`() {
         configHandler.applyNewConfiguration(
             configuration.copy(
-                serversConfiguration = configuration.serversConfiguration
-                    + configuration.serversConfiguration.first().copy(urlPaths = setOf("/test"))
-                    + configuration.serversConfiguration.first().copy(hostAddress = "0.0.0.0")
-                    + configuration.serversConfiguration.first().copy(hostPort = 1000)
+                serversConfiguration = configuration.serversConfiguration +
+                    configuration.serversConfiguration.first().copy(urlPaths = setOf("/test")) +
+                    configuration.serversConfiguration.first().copy(hostAddress = "0.0.0.0") +
+                    configuration.serversConfiguration.first().copy(hostPort = 1000),
             ),
             null,
-            resourcesHolder
+            resourcesHolder,
         )
 
         assertThat(serverMock.constructed()).hasSize(3)
@@ -217,10 +217,10 @@ class ReconfigurableHttpServerTest {
         }
         configHandler.applyNewConfiguration(
             configuration.copy(
-                serversConfiguration = configs
+                serversConfiguration = configs,
             ),
             null,
-            resourcesHolder
+            resourcesHolder,
         )
 
         assertThat(calledConfigurations.firstOrNull()?.urlPaths).containsExactlyElementsOf(paths)
@@ -255,7 +255,7 @@ class ReconfigurableHttpServerTest {
                     ),
                 ),
                 null,
-                resourcesHolder
+                resourcesHolder,
             )
 
         assertThat(future).isCompletedWithValue(Unit)

@@ -16,13 +16,13 @@ internal class ReconfigurableConnectionManager(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     val configurationReaderService: ConfigurationReadService,
     private val managerFactory: (sslConfig: SslConfiguration, connectionConfig: ConnectionConfiguration) -> ConnectionManager =
-        { sslConfig, connectionConfig -> ConnectionManager(sslConfig, connectionConfig) }
+        { sslConfig, connectionConfig -> ConnectionManager(sslConfig, connectionConfig) },
 ) : LifecycleWithDominoTile {
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
-        configurationChangeHandler = ConnectionManagerConfigChangeHandler()
+        configurationChangeHandler = ConnectionManagerConfigChangeHandler(),
     )
 
     @Volatile
@@ -44,7 +44,7 @@ internal class ReconfigurableConnectionManager(
     inner class ConnectionManagerConfigChangeHandler : ConfigurationChangeHandler<GatewayConfiguration>(
         configurationReaderService,
         ConfigKeys.P2P_GATEWAY_CONFIG,
-        { it.toGatewayConfiguration() }
+        { it.toGatewayConfiguration() },
     ) {
         override fun applyNewConfiguration(
             newConfiguration: GatewayConfiguration,

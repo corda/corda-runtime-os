@@ -28,7 +28,7 @@ fun createClientSslHandler(
     target: URI,
     targetX500Name: X500Name?,
     trustManagerFactory: TrustManagerFactory,
-    clientCertificatesKeyStore: KeyStoreWithPassword?
+    clientCertificatesKeyStore: KeyStoreWithPassword?,
 ): SslHandler {
     val keyManagers = clientCertificatesKeyStore?.let { keyStore ->
         KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()).also {
@@ -41,7 +41,7 @@ fun createClientSslHandler(
     val sslContext = SSLContext.getInstance("TLS")
     val trustManagers = trustManagerFactory.trustManagers.filterIsInstance(X509ExtendedTrustManager::class.java)
         .map { IdentityCheckingTrustManager(it, targetX500Name) }.toTypedArray()
-    sslContext.init(keyManagers, trustManagers, SecureRandom()) //May need to use secure random from crypto-api module
+    sslContext.init(keyManagers, trustManagers, SecureRandom()) // May need to use secure random from crypto-api module
 
     val sslEngine = sslContext.createSSLEngine(target.host, target.port).also {
         it.useClientMode = true
@@ -73,6 +73,7 @@ fun createServerSslHandler(keyStore: KeyStoreWithPassword, serverTrustManager: X
     val trustManagers = serverTrustManager?.let {
         arrayOf(it)
     }
+
     /**
      * As per the JavaDoc of SSLContext:
      * Only the first instance of a particular key and/or trust manager implementation type in the array is used.
@@ -104,8 +105,10 @@ fun Certificate.x509(): X509Certificate = requireNotNull(this as? X509Certificat
  * Wrapper which adds useful logging about certificates being checked and does client side identity check of presented
  * certificate
  */
-class IdentityCheckingTrustManager(private val wrapped: X509ExtendedTrustManager,
-                                   private val expectedX500Name: X500Name?) : X509ExtendedTrustManager() {
+class IdentityCheckingTrustManager(
+    private val wrapped: X509ExtendedTrustManager,
+    private val expectedX500Name: X500Name?,
+) : X509ExtendedTrustManager() {
 
     companion object {
         val logger: Logger = LoggerFactory.getLogger(IdentityCheckingTrustManager::class.java)
@@ -188,6 +191,5 @@ class IdentityCheckingTrustManager(private val wrapped: X509ExtendedTrustManager
         if (expectedX500Name != receivedX500Name) {
             throw (CertificateException("Certificate name doesn't match. Expected $expectedX500Name but received $receivedX500Name"))
         }
-
     }
 }

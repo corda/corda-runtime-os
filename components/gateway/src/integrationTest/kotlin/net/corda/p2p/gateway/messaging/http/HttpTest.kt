@@ -118,7 +118,7 @@ internal class HttpTest : TestBase() {
         ).use { server ->
             server.startAndWaitForStarted()
             var connectionClosings = 0
-            val connectionListener = object: HttpConnectionListener {
+            val connectionListener = object : HttpConnectionListener {
                 override fun onClose(event: HttpConnectionEvent) {
                     connectionClosings++
                 }
@@ -285,7 +285,6 @@ internal class HttpTest : TestBase() {
                     assertThat(response.statusCode).isEqualTo(HttpResponseStatus.OK)
                 }
             }
-
         }
     }
 
@@ -391,7 +390,6 @@ internal class HttpTest : TestBase() {
     @Test
     @Timeout(30)
     fun `tls handshake fails - requested SNI is not recognized`() {
-
         HttpServer(
             object : RequestListener {
                 override fun onRequest(httpWriter: HttpWriter, request: HttpRequest) {
@@ -428,7 +426,7 @@ internal class HttpTest : TestBase() {
         eventually {
             loggingInterceptor.assertMessageExists(
                 "Could not find a certificate matching the requested SNI value [hostname = ${bobSNI[0]}",
-                Level.WARN
+                Level.WARN,
             )
         }
     }
@@ -451,7 +449,7 @@ internal class HttpTest : TestBase() {
                         httpWriter.write(
                             HttpResponseStatus.OK,
                             request.source,
-                            serverResponseContent.toByteArray(Charsets.UTF_8)
+                            serverResponseContent.toByteArray(Charsets.UTF_8),
                         )
                     }
                 },
@@ -485,8 +483,8 @@ internal class HttpTest : TestBase() {
             eventually {
                 loggingInterceptor.assertMessageExists(
                     "Bad certificate identity or path. PKIX path validation failed: " +
-                            "java.security.cert.CertPathValidatorException: Certificate has been revoked",
-                    Level.ERROR
+                        "java.security.cert.CertPathValidatorException: Certificate has been revoked",
+                    Level.ERROR,
                 )
             }
         }
