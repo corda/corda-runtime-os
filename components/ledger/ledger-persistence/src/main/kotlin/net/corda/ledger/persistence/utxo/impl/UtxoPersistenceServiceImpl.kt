@@ -55,6 +55,7 @@ import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
@@ -317,43 +318,30 @@ class UtxoPersistenceServiceImpl(
                 requireNotNull(metadata.getCpiMetadata()) { "Metadata without CPI metadata" }.fileChecksum
             )
 
-            val inserted =
-                if (transaction.status != TransactionStatus.UNVERIFIED) {
-                    /**
-                     * Insert the Transaction
-                     * The record will only be inserted when:
-                     * - there is no record exists given txId
-                     * - there is record which is UNVERIFIED stx
-                     * - there is record which is DRAFT stx
-                     * */
-                    repository.persistTransaction(
-                        em,
-                        transactionIdString,
-                        transaction.privacySalt.bytes,
-                        transaction.account,
-                        nowUtc,
-                        transaction.status,
-                        metadataHash,
-                    )
-                } else {
-                    // ignore if the incoming transaction is an unverified stx
-                    repository.persistUnverifiedTransaction(
-                        em,
-                        transactionIdString,
-                        transaction.privacySalt.bytes,
-                        transaction.account,
-                        nowUtc,
-                        metadataHash
-                    )
-                    null
-                }
-
-            repository.persistTransactionComponents(
-                em,
-                transactionIdString,
-                transaction.rawGroupLists,
-                this::hash
-            )
+            when (transaction.status) {
+                TransactionStatus.VERIFIED -> persistVerifiedTransaction(
+                    em,
+                    transaction,
+                    transactionIdString,
+                    visibleTransactionOutputs,
+                    metadataHash,
+                    nowUtc
+                )
+                TransactionStatus.UNVERIFIED -> persistUnverifiedTransaction(
+                    em,
+                    transaction,
+                    transactionIdString,
+                    metadataHash,
+                    nowUtc
+                )
+                TransactionStatus.DRAFT, TransactionStatus.INVALID -> persistDraftOrInvalidTransaction(
+                    em,
+                    transaction,
+                    transactionIdString,
+                    metadataHash,
+                    nowUtc
+                )
+            }
 
             val consumedTransactionSources = transaction.getConsumedStateRefs().mapIndexed { index, input ->
                 UtxoRepository.TransactionSource(UtxoComponentGroup.INPUTS, index, input.transactionId.toString(), input.index)
@@ -364,55 +352,6 @@ class UtxoPersistenceServiceImpl(
             }
 
             repository.persistTransactionSources(em, transactionIdString, consumedTransactionSources + referenceTransactionSources)
-
-            // rectify data from U -> V
-            if (inserted != null && !inserted) {
-                // inserted != null means the incoming tx is not UNVERIFIED (incoming U is always stx)
-                // tx not being inserted implies that tx of the same ID exists in the table, and need to be rectified
-
-                val indexes = repository.findConsumedTransactionSourcesForTransaction(
-                    em,
-                    transactionIdString,
-                    visibleTransactionOutputs.map { output -> output.stateIndex }
-                )
-
-                // insert outputs to be able to mark spent outputs as consumed
-                repository.persistVisibleTransactionOutputs(
-                    em,
-                    transactionIdString,
-                    nowUtc,
-                    visibleTransactionOutputs
-                )
-
-                if (indexes.isNotEmpty()) {
-                    repository.markTransactionVisibleStatesConsumed(
-                        em,
-                        indexes.map { index -> StateRef(transaction.id, index) },
-                        nowUtc
-                    )
-                }
-                repository.updateTransactionToVerified(em, transactionIdString, nowUtc)
-            } else {
-                // outputs of stx UNVERIFIED would be empty
-                repository.persistVisibleTransactionOutputs(
-                    em,
-                    transactionIdString,
-                    nowUtc,
-                    visibleTransactionOutputs
-                )
-            }
-
-            // Mark inputs as consumed
-            if (transaction.status == TransactionStatus.VERIFIED) {
-                val inputStateRefs = transaction.getConsumedStateRefs()
-                if (inputStateRefs.isNotEmpty()) {
-                    repository.markTransactionVisibleStatesConsumed(
-                        em,
-                        inputStateRefs,
-                        nowUtc
-                    )
-                }
-            }
 
             // Insert the Transactions signatures
             repository.persistTransactionSignatures(
@@ -425,6 +364,113 @@ class UtxoPersistenceServiceImpl(
 
         return emptyList()
     }
+
+    private fun persistVerifiedTransaction(
+        em: EntityManager,
+        transaction: UtxoTransactionReader,
+        transactionIdString: String,
+        visibleTransactionOutputs: List<UtxoRepository.VisibleTransactionOutput>,
+        metadataHash: String,
+        nowUtc: Instant
+    ) {
+        val inserted = repository.persistTransaction(
+            em,
+            transactionIdString,
+            transaction.privacySalt.bytes,
+            transaction.account,
+            nowUtc,
+            transaction.status,
+            metadataHash,
+        )
+        repository.persistTransactionComponents(
+            em,
+            transactionIdString,
+            transaction.rawGroupLists,
+            this::hash
+        )
+        repository.persistVisibleTransactionOutputs(
+            em,
+            transactionIdString,
+            nowUtc,
+            visibleTransactionOutputs
+        )
+        if (!inserted) {
+            // Find the states output from the verified transaction that are already consumed by subsequent transactions (as the verified
+            // transaction might have been received out of order) and mark them as consumed.
+            val indexes = repository.findConsumedTransactionSourcesForTransaction(
+                em,
+                transactionIdString,
+                visibleTransactionOutputs.map { output -> output.stateIndex }
+            )
+            if (indexes.isNotEmpty()) {
+                repository.markTransactionVisibleStatesConsumed(
+                    em,
+                    indexes.map { index -> StateRef(transaction.id, index) },
+                    nowUtc
+                )
+            }
+            repository.updateTransactionToVerified(em, transactionIdString, nowUtc)
+        }
+        val inputStateRefs = transaction.getConsumedStateRefs()
+
+        // Mark inputs consumed by verified transaction as consumed
+        if (inputStateRefs.isNotEmpty()) {
+            repository.markTransactionVisibleStatesConsumed(
+                em,
+                inputStateRefs,
+                nowUtc
+            )
+        }
+    }
+
+    private fun persistUnverifiedTransaction(
+        em: EntityManager,
+        transaction: UtxoTransactionReader,
+        transactionIdString: String,
+        metadataHash: String,
+        nowUtc: Instant
+    ) {
+        repository.persistUnverifiedTransaction(
+            em,
+            transactionIdString,
+            transaction.privacySalt.bytes,
+            transaction.account,
+            nowUtc,
+            metadataHash
+        )
+        repository.persistTransactionComponents(
+            em,
+            transactionIdString,
+            transaction.rawGroupLists,
+            this::hash
+        )
+    }
+
+    private fun persistDraftOrInvalidTransaction(
+        em: EntityManager,
+        transaction: UtxoTransactionReader,
+        transactionIdString: String,
+        metadataHash: String,
+        nowUtc: Instant
+    ) {
+        repository.persistTransaction(
+            em,
+            transactionIdString,
+            transaction.privacySalt.bytes,
+            transaction.account,
+            nowUtc,
+            transaction.status,
+            metadataHash,
+        )
+        repository.persistTransactionComponents(
+            em,
+            transactionIdString,
+            transaction.rawGroupLists,
+            this::hash
+        )
+    }
+
+
 
     override fun persistTransactionSignatures(id: String, signatures: List<ByteArray>, startingIndex: Int) {
         val transactionSignatures = signatures.mapIndexed { index, bytes ->
