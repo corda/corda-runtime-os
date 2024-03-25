@@ -110,19 +110,15 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
             session.send(uniquenessResult.toNotarizationResponse(txDetails.id, signature))
         } catch (e: Exception) {
-            logger.warn("Error while processing request from client. Cause: $e ${e.stackTraceToString()}")
+            logger.warn("Error while processing request from client", e)
             val genericMessage = "Error while processing request from client"
             val notaryException = when (e) {
                 is NotaryException -> e
+                // [IllegalArgumentException]s are thrown if a transaction does not pass our correctness checks.
                 is IllegalArgumentException -> NotaryExceptionTransactionVerificationFailure("$genericMessage. Cause: ${e.message}")
                 else -> NotaryExceptionGeneral("$genericMessage. Please contact notary operator for further details.")
             }
-            session.send(
-                NotarizationResponse(
-                    emptyList(),
-                    notaryException
-                )
-            )
+            session.send(NotarizationResponse(emptyList(), notaryException))
         }
     }
 

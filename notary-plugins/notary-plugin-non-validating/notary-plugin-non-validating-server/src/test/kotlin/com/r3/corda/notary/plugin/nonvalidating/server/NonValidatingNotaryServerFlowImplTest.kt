@@ -2,6 +2,7 @@ package com.r3.corda.notary.plugin.nonvalidating.server
 
 import com.r3.corda.notary.plugin.common.NotarizationResponse
 import com.r3.corda.notary.plugin.common.NotaryExceptionReferenceStateUnknown
+import com.r3.corda.notary.plugin.common.NotaryExceptionTransactionVerificationFailure
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPayload
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
@@ -333,8 +334,8 @@ class NonValidatingNotaryServerFlowImplTest {
 
             val responseError = responseFromServer.first().error
             assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-            assertThat((responseError as NotaryExceptionGeneral).message)
+            assertThat(responseError).isInstanceOf(NotaryExceptionTransactionVerificationFailure::class.java)
+            assertThat((responseError as NotaryExceptionTransactionVerificationFailure).message)
                 .contains("Error while processing request from client")
         }
     }
@@ -476,7 +477,7 @@ class NonValidatingNotaryServerFlowImplTest {
             when (notarizationType) {
                 NotarizationType.WRITE -> {
                     on { requestUniquenessCheckWrite(any(), any(), any(), any(), any(), any(), any()) } doThrow
-                        IllegalArgumentException("Uniqueness checker cannot be reached")
+                        RuntimeException("Uniqueness checker cannot be reached")
                     on { requestUniquenessCheckRead(any(), any(), any(), any()) } doThrow
                         RuntimeException("Wrong uniqueness check type method called")
                 }
@@ -484,7 +485,7 @@ class NonValidatingNotaryServerFlowImplTest {
                     on { requestUniquenessCheckWrite(any(), any(), any(), any(), any(), any(), any()) } doThrow
                         RuntimeException("Wrong uniqueness check type method called")
                     on { requestUniquenessCheckRead(any(), any(), any(), any()) } doThrow
-                        IllegalArgumentException("Uniqueness checker cannot be reached")
+                        RuntimeException("Uniqueness checker cannot be reached")
                 }
             }
         }
