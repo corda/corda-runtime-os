@@ -13,7 +13,9 @@ import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken
+import java.time.Instant
 
+@Suppress("TooManyFunctions")
 interface UtxoPersistenceService {
 
     /**
@@ -93,4 +95,13 @@ interface UtxoPersistenceService {
     fun findFilteredTransactionsAndSignatures(
         stateRefs: List<StateRef>
     ): Map<SecureHash, Pair<FilteredTransaction?, List<DigitalSignatureAndMetadata>>>
+
+    fun findTransactionsWithStatusCreatedBetweenTime(
+        status: TransactionStatus,
+        from: Instant,
+        until: Instant,
+        limit: Int,
+    ): List<SecureHash>
+
+    fun incrementTransactionRepairAttemptCount(id: String)
 }

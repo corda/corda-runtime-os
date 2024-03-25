@@ -206,6 +206,14 @@ interface UtxoRepository {
 
     fun findConsumedTransactionSourcesForTransaction(entityManager: EntityManager, transactionId: String, indexes: List<Int>): List<Int>
 
+    fun findTransactionsWithStatusCreatedBetweenTime(
+        entityManager: EntityManager,
+        status: TransactionStatus,
+        from: Instant,
+        until: Instant,
+        limit: Int,
+    ): List<String>
+
     data class TransactionComponent(val transactionId: String, val groupIndex: Int, val leafIndex: Int, val leafData: ByteArray)
 
     data class VisibleTransactionOutput(
@@ -228,4 +236,6 @@ interface UtxoRepository {
     )
 
     data class TransactionMerkleProofLeaf(val merkleProofId: String, val leafIndex: Int)
+
+    fun incrementTransactionRepairAttemptCount(entityManager: EntityManager, id: String)
 }

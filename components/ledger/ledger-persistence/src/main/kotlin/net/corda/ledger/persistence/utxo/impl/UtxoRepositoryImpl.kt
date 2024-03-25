@@ -588,6 +588,31 @@ class UtxoRepositoryImpl(
             .map { it as Int }
     }
 
+    override fun findTransactionsWithStatusCreatedBetweenTime(
+        entityManager: EntityManager,
+        status: TransactionStatus,
+        from: Instant,
+        until: Instant,
+        limit: Int,
+    ): List<String> {
+        @Suppress("UNCHECKED_CAST")
+        return entityManager.createNativeQuery(queryProvider.findTransactionsWithStatusCreatedBetweenTime)
+            .setParameter("status", status.value)
+            .setParameter("from", from)
+            .setParameter("until", until)
+            .setMaxResults(limit)
+            .resultList as List<String>
+    }
+
+    override fun incrementTransactionRepairAttemptCount(
+        entityManager: EntityManager,
+        id: String
+    ) {
+        entityManager.createNativeQuery(queryProvider.incrementRepairAttemptCount)
+            .setParameter("transactionId", id)
+            .executeUpdate()
+    }
+
     private fun <T> EntityManager.connection(block: (connection: Connection) -> T) {
         val hibernateSession = unwrap(Session::class.java)
         hibernateSession.doWork { connection ->

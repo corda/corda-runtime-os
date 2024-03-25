@@ -3,8 +3,10 @@ package net.corda.uniqueness.datamodel.impl
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateConflict
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateUnknown
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRequest
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorNotPreviouslySeenTransaction
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateConflict
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateUnknown
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowBeforeLowerBound
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowOutOfBounds
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorUnhandledException
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
@@ -53,6 +55,14 @@ data class UniquenessCheckErrorTimeWindowOutOfBoundsImpl(
     override fun getTimeWindowUpperBound() = timeWindowUpperBound
 }
 
+data class UniquenessCheckErrorTimeWindowBeforeLowerBoundImpl(
+    private val evaluationTimestamp: Instant,
+    private val timeWindowLowerBound: Instant,
+) : UniquenessCheckErrorTimeWindowBeforeLowerBound {
+    override fun getEvaluationTimestamp() = evaluationTimestamp
+    override fun getTimeWindowLowerBound() = timeWindowLowerBound
+}
+
 data class UniquenessCheckErrorMalformedRequestImpl(
     private val errorText: String
 ) : UniquenessCheckErrorMalformedRequest {
@@ -66,3 +76,5 @@ data class UniquenessCheckErrorUnhandledExceptionImpl(
     override fun getUnhandledExceptionType(): String = unhandledExceptionType
     override fun getUnhandledExceptionMessage(): String = unhandledExceptionMessage
 }
+
+object UniquenessCheckErrorNotPreviouslySeenTransactionImpl: UniquenessCheckErrorNotPreviouslySeenTransaction

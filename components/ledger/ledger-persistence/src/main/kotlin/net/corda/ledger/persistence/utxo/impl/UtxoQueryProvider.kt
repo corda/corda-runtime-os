@@ -121,6 +121,12 @@ interface UtxoQueryProvider {
      * @property findMerkleProofs SQL text for [UtxoRepositoryImpl.findMerkleProofs].
      */
     val findMerkleProofs: String
+
     val findConsumedTransactionSourcesForTransaction: String
+
     val updateTransactionToVerified: String
+
+    val findTransactionsWithStatusCreatedBetweenTime: String
+
+    val incrementRepairAttemptCount: String
 }

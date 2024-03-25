@@ -13,6 +13,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndSignatures
 import java.security.PublicKey
+import java.time.Instant
 
 /**
  * [UtxoLedgerPersistenceService] allows to insert and find UTXO signed transactions in the persistent store provided
@@ -156,4 +157,15 @@ interface UtxoLedgerPersistenceService {
     fun persistFilteredTransactionsAndSignatures(
         filteredTransactionsAndSignatures: List<UtxoFilteredTransactionAndSignatures>
     )
+
+    @Suspendable
+    fun findTransactionsWithStatusCreatedBetweenTime(
+        status: TransactionStatus,
+        from: Instant,
+        until: Instant,
+        limit: Int,
+    ): List<SecureHash>
+
+    @Suspendable
+    fun incrementTransactionRepairAttemptCount(id: SecureHash)
 }

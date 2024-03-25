@@ -55,6 +55,7 @@ import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
@@ -765,7 +766,25 @@ class UtxoPersistenceServiceImpl(
             }.filterNotNull().toMap()
     }
 
-    fun createTransactionMerkleProof(
+    override fun findTransactionsWithStatusCreatedBetweenTime(
+        status: TransactionStatus,
+        from: Instant,
+        until: Instant,
+        limit: Int,
+    ): List<SecureHash> {
+        return entityManagerFactory.transaction { em ->
+            repository.findTransactionsWithStatusCreatedBetweenTime(em, status, from, until, limit)
+                .map { id -> digestService.parseSecureHash(id) }
+        }
+    }
+
+    override fun incrementTransactionRepairAttemptCount(id: String) {
+        entityManagerFactory.transaction { em ->
+            repository.incrementTransactionRepairAttemptCount(em, id)
+        }
+    }
+
+    private fun createTransactionMerkleProof(
         transactionId: String,
         groupIndex: Int,
         treeSize: Int,

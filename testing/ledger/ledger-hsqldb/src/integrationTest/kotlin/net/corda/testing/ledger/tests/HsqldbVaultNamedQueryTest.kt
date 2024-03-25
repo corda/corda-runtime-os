@@ -113,7 +113,8 @@ class HsqldbVaultNamedQueryTest {
                 created = timestamp,
                 status = TransactionStatus.VERIFIED.value,
                 updated = timestamp,
-                metadata = metadata
+                metadata = metadata,
+                repairAttemptCount = 0
             )
 
             val visibleStates = mutableListOf<UtxoVisibleTransactionOutputEntity>()

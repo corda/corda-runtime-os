@@ -11,10 +11,10 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.common.testkit.publicKeyExample
-import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
-import net.corda.ledger.utxo.flow.impl.PluggableNotaryDetails
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
+import net.corda.ledger.utxo.flow.impl.notary.PluggableNotaryDetails
+import net.corda.ledger.utxo.flow.impl.notary.PluggableNotaryService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.TransactionVerificationException
@@ -39,6 +39,7 @@ import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
+import net.corda.v5.ledger.notary.plugin.api.NotarizationType
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.core.NotaryException
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
@@ -60,7 +61,6 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doNothing
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -104,7 +104,7 @@ class UtxoFinalityFlowV1Test {
         whenever(it.flowContextProperties).thenReturn(flowContextProperties)
     }
     private val flowMessaging = mock<FlowMessaging>()
-    private val virtualNodeSelectorService = mock<NotaryVirtualNodeSelectorService>()
+    private val pluggableNotaryService = mock<PluggableNotaryService>()
     private val visibilityChecker = mock<VisibilityChecker>()
 
     private val sessionAlice = mock<FlowSession>()
@@ -210,6 +210,7 @@ class UtxoFinalityFlowV1Test {
         whenever(transactionState.contractType).thenReturn(TestContact::class.java)
         whenever(transactionState.contractState).thenReturn(testState)
 
+        whenever(pluggableNotaryService.create(any(), any(), eq(NotarizationType.WRITE))).thenReturn(pluggableNotaryClientFlow)
         whenever(pluggableNotaryDetails.flowClass).thenReturn(pluggableNotaryClientFlow.javaClass)
     }
 
@@ -1468,15 +1469,13 @@ class UtxoFinalityFlowV1Test {
             )
         )
 
-        doReturn(pluggableNotaryClientFlow).whenever(flow).newPluggableNotaryClientFlowInstance(any())
-
         flow.notaryLookup = notaryLookup
         flow.memberLookup = memberLookup
         flow.flowEngine = flowEngine
         flow.flowMessaging = flowMessaging
         flow.persistenceService = persistenceService
         flow.transactionVerificationService = transactionVerificationService
-        flow.virtualNodeSelectorService = virtualNodeSelectorService
+        flow.pluggableNotaryService = pluggableNotaryService
         flow.visibilityChecker = visibilityChecker
         flow.utxoLedgerService = utxoLedgerService
         flow.call()

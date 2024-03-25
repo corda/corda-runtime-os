@@ -26,6 +26,10 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransacti
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionIdsAndStatusesExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionIdsAndStatusesParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionParameters
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionsWithStatusCreatedBetweenTimeExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionsWithStatusCreatedBetweenTimeParameters
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.IncrementTransactionRepairAttemptCountExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.IncrementTransactionRepairAttemptCountParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistFilteredTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistFilteredTransactionsExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
@@ -65,6 +69,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.PublicKey
+import java.time.Instant
 
 @Suppress("LongParameterList", "TooManyFunctions")
 @Component(
@@ -311,6 +316,39 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                 externalEventExecutor.execute(
                     PersistFilteredTransactionsExternalEventFactory::class.java,
                     PersistFilteredTransactionParameters(serialize(filteredTransactionAndSignatureMap))
+                )
+            }
+        }
+    }
+
+    @Suspendable
+    override fun findTransactionsWithStatusCreatedBetweenTime(
+        status: TransactionStatus,
+        from: Instant,
+        until: Instant,
+        limit: Int
+    ): List<SecureHash> {
+        return recordSuspendable(
+            { ledgerPersistenceFlowTimer(LedgerPersistenceMetricOperationName.FindTransactionsWithStatusCreatedBetweenTime) }
+        ) @Suspendable {
+            wrapWithPersistenceException {
+                externalEventExecutor.execute(
+                    FindTransactionsWithStatusCreatedBetweenTimeExternalEventFactory::class.java,
+                    FindTransactionsWithStatusCreatedBetweenTimeParameters(status, from, until, limit)
+                )
+            }
+        }.map { serializationService.deserialize(it.array()) }
+    }
+
+    @Suspendable
+    override fun incrementTransactionRepairAttemptCount(id: SecureHash) {
+        return recordSuspendable(
+            { ledgerPersistenceFlowTimer(LedgerPersistenceMetricOperationName.IncrementTransactionRepairAttemptCount) }
+        ) @Suspendable {
+            wrapWithPersistenceException {
+                externalEventExecutor.execute(
+                    IncrementTransactionRepairAttemptCountExternalEventFactory::class.java,
+                    IncrementTransactionRepairAttemptCountParameters(id)
                 )
             }
         }
