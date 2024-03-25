@@ -33,6 +33,7 @@ class PersistenceServiceImpl @Activate constructor(
     private val serializationService: SerializationService
 ) : PersistenceService, UsedByFlow, SingletonSerializeAsToken {
     companion object {
+        // We should ensure this aligns with the documentation in [PersistenceService]
         private const val MAX_DEDUPLICATION_ID_LENGTH = 128
     }
 
