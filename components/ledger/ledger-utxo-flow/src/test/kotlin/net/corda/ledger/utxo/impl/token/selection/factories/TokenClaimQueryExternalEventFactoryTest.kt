@@ -61,11 +61,14 @@ class TokenClaimQueryExternalEventFactoryTest {
         )
         val flowExternalEventContext = ExternalEventContext("r1", "f1", KeyValuePairList())
 
-        val parameters = TokenClaimCriteriaParameters(dedupeId, TokenClaimCriteria(tokenType, issuerHash, notaryX500Name, symbol, amount)
-            .apply {
-            this.tagRegex = tagRegex
-            this.ownerHash = ownerHash
-        })
+        val parameters = TokenClaimCriteriaParameters(
+            dedupeId,
+            TokenClaimCriteria(tokenType, issuerHash, notaryX500Name, symbol, amount)
+                .apply {
+                    this.tagRegex = tagRegex
+                    this.ownerHash = ownerHash
+                }
+        )
 
         val expectedClaimQuery = TokenClaimQuery().apply {
             this.poolKey = key
