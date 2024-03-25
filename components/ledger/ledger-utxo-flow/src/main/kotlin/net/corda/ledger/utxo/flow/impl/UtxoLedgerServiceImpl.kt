@@ -75,14 +75,13 @@ class UtxoLedgerServiceImpl @Activate constructor(
     private val transactionVerificationService: UtxoLedgerTransactionVerificationService,
     @Reference(service = FlowCheckpointService::class) private val flowCheckpointService: FlowCheckpointService,
 ) : UtxoLedgerService, UsedByFlow, SingletonSerializeAsToken {
-    /* A service class which is typically injected in to any cordApp which wishes to interact with the UTXO ledger.
-     * Therefore the methods of this class are typically running from within flow sandboxes, and are subject
-     * to the limitations of flows. In particular since flows use Quasar every method that can be block must be annotated
-     * @Suspendable, and since it is not possible to annotate lambdas they sometimes cannot be used.
-     *
-     * (This comment is here rather than the UtxoLedgerService interface javadoc since UtxoLedgerService is public API
-     * and this comments concerns implementation details).
-     */
+    // A service implementation class which is typically injected in to any cordApp which wishes to interact with
+    // the UTXO ledger.
+    //
+    // Therefore the methods of this class are typically running from within flow sandboxes, and are subject
+    // to the limitations of flows. In particular since flows use Quasar every method that can block must be annotated.
+    // @Suspendable  and since it is not possible to annotate lambdas they sometimes cannot be used.
+
     private companion object {
         const val FIND_UNCONSUMED_STATES_BY_EXACT_TYPE = "CORDA_FIND_UNCONSUMED_STATES_BY_EXACT_TYPE"
         val clock = UTCClock()
@@ -166,14 +165,16 @@ class UtxoLedgerServiceImpl @Activate constructor(
         // Called from user flows when it is time to verify, sign and distribute a transaction.
         //
         // `signedTransaction` has various bits of data for the transaction. It is self-signed by the originator
-        // at this point, and includes a list of the public keys of other parties that should be used to sign the transaction.
+        // at this point, and includes a list of the public keys of other parties that should be used to sign \
+        // the transaction.
         //
         // `sessions` has one entry for each other virtual node that should receive the transaction,
         // and potentially sign it; they will hopefully call in via `receiveFinality`. It is also possible that
         // the other vnodes running `receiveFinality` will simply see observe the transaction.
         //
         // Need [doPrivileged] due to [contextLogger] being used in the flow's constructor.
-        // Creating the executing the SubFlow must be independent otherwise the security manager causes issues with Quasar.
+        // Creating the executing the SubFlow must be independent otherwise the security manager causes issues
+        // with Quasar.
         val utxoFinalityFlow = try {
             @Suppress("deprecation", "removal")
             java.security.AccessController.doPrivileged(
