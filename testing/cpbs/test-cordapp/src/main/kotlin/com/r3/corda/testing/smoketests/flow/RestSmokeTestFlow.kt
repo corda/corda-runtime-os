@@ -122,14 +122,14 @@ class RestSmokeTestFlow : ClientStartableFlow {
     private fun persistencePersistDog(input: RestSmokeTestInput): String {
         val dogId = getDogId(input)
         val dog = Dog(dogId, "dog", Instant.now(), "none")
-        persistenceService.persist(dog)
+        persistenceService.persist("persistDog1", dog)
         return "dog '${dogId}' saved"
     }
 
     @Suspendable
     private fun persistencePersistDogs(input: RestSmokeTestInput): String {
         val dogs = getDogIds(input).map { id -> Dog(id, "dog-$id", Instant.now(), "none") }
-        persistenceService.persist(dogs)
+        persistenceService.persist("persistDogs1", dogs)
         return "dogs ${dogs.map { it.id }} saved"
     }
 

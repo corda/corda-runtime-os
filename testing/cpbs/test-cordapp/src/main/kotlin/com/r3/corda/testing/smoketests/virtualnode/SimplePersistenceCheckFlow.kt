@@ -1,13 +1,13 @@
 package com.r3.corda.testing.smoketests.virtualnode
 
+import com.r3.corda.testing.bundles.dogs.Dog
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.annotations.Suspendable
-import com.r3.corda.testing.bundles.dogs.Dog
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.UUID
@@ -30,7 +30,7 @@ class SimplePersistenceCheckFlow : ClientStartableFlow {
         val id = UUID.randomUUID()
         val dog = Dog(id, "Penny", Instant.now(), "Alice")
         try {
-            persistenceService.persist(dog)
+            persistenceService.persist("persistPenny", dog)
         } catch (ex: CordaPersistenceException) {
             log.error("exception $ex")
             return "Could not persist dog"
