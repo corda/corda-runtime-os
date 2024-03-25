@@ -105,7 +105,7 @@ class PersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun persist(deduplicationId: String,entities: List<*>) {
+    override fun persist(deduplicationId: String, entities: List<*>) {
         validateDeduplicationId(deduplicationId)
 
         if (entities.isNotEmpty()) {
