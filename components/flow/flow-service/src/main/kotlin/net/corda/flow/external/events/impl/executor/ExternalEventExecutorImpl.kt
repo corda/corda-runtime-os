@@ -8,6 +8,7 @@ import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.token.query.TokenClaimCriteriaParameters
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.EncodingUtils.toBase64
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -32,8 +33,8 @@ class ExternalEventExecutorImpl @Activate constructor(
         return with(flowFiberService.getExecutingFiber()) {
             suspend(
                 FlowIORequest.ExternalEvent(
-                    // `requestId` is a deterministic ID per event which allows us to achieve idempotency by de-duplicating events processing;
-                    //  A deterministic ID is required so that events replayed from the flow engine won't be reprocessed on the consumer-side.
+                    //`requestId` is a deterministic ID per event which allows us to achieve idempotency by de-duplicating events processing
+                    //A deterministic ID is required so that events replayed from the flow engine won't be reprocessed on the consumer-side.
                     generateRequestId(this, parameters),
                     factoryClass,
                     parameters,
@@ -55,6 +56,7 @@ class ExternalEventExecutorImpl @Activate constructor(
         with(flowFiber.getExecutionContext().flowCheckpoint) {
             when (parameters) {
                 is PersistParameters -> "$flowId-${parameters.deduplicationId}"
+                is TokenClaimCriteriaParameters -> "$flowId-${parameters.deduplicationId}"
                 else -> "$flowId-${deterministicBytesID(parameters)}-$suspendCount"
             }
         }
