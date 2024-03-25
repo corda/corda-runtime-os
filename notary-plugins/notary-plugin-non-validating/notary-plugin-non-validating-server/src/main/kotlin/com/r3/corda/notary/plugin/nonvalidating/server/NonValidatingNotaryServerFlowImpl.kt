@@ -2,6 +2,7 @@ package com.r3.corda.notary.plugin.nonvalidating.server
 
 import com.r3.corda.notary.plugin.common.NotarizationResponse
 import com.r3.corda.notary.plugin.common.NotaryTransactionDetails
+import com.r3.corda.notary.plugin.common.NotaryExceptionTransactionVerificationFailure
 import com.r3.corda.notary.plugin.common.toNotarizationResponse
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPayload
 import net.corda.v5.application.flows.CordaInject
@@ -24,6 +25,7 @@ import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.lang.IllegalArgumentException
 
 /**
  * The server-side implementation of the non-validating notary logic.
@@ -109,16 +111,16 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             session.send(uniquenessResult.toNotarizationResponse(txDetails.id, signature))
         } catch (e: Exception) {
             logger.warn("Error while processing request from client. Cause: $e ${e.stackTraceToString()}")
-            val genericMessage = "Error while processing request from client. "
-            val additionalMessage =
-                when (e) {
-                    is InvalidBackchainFlagException -> "Cause: ${e.message}"
-                    else -> "Please contact notary operator for further details."
-                }
+            val genericMessage = "Error while processing request from client"
+            val notaryException = when (e) {
+                is NotaryException -> e
+                is IllegalArgumentException -> NotaryExceptionTransactionVerificationFailure("$genericMessage. Cause: ${e.message}")
+                else -> NotaryExceptionGeneral("$genericMessage. Please contact notary operator for further details.")
+            }
             session.send(
                 NotarizationResponse(
                     emptyList(),
-                    NotaryExceptionGeneral("General error: ${genericMessage + additionalMessage}", null)
+                    notaryException
                 )
             )
         }
