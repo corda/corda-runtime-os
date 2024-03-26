@@ -5,6 +5,6 @@ import static com.r3.build.BuildControl.cancelQueuedJobByName
 cancelQueuedJobByName(env.JOB_NAME)
 
 githubCommentBuildTests(
-    branch: 'PR-532',
+    branch: 'release/5.2',
     chartVersion: '^5.2.0-alpha',
 )
