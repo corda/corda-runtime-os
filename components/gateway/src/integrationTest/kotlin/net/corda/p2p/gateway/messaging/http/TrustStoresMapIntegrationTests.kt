@@ -1,10 +1,10 @@
 package net.corda.p2p.gateway.messaging.http
 
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.p2p.GatewayTruststore
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
-import net.corda.data.p2p.GatewayTruststore
 import net.corda.messaging.emulation.EmulatorFactory
 import net.corda.p2p.gateway.TestBase
 import net.corda.schema.Schemas
@@ -34,7 +34,7 @@ internal class TrustStoresMapIntegrationTests : TestBase() {
         val map = TrustStoresMap(
             lifecycleCoordinatorFactory,
             subscriptionFactory,
-            messagingConfig
+            messagingConfig,
         )
         publisherFactory.createPublisher(PublisherConfig("client.ID", false), messagingConfig).use {
             it.publish(
@@ -42,9 +42,9 @@ internal class TrustStoresMapIntegrationTests : TestBase() {
                     Record(
                         Schemas.P2P.GATEWAY_TLS_TRUSTSTORES,
                         "$ALICE_NAME-$GROUP_ID",
-                        GatewayTruststore(HoldingIdentity(ALICE_NAME, GROUP_ID), listOf(expectedCertificatePem))
-                    )
-                )
+                        GatewayTruststore(HoldingIdentity(ALICE_NAME, GROUP_ID), listOf(expectedCertificatePem)),
+                    ),
+                ),
             ).forEach {
                 it.join()
             }

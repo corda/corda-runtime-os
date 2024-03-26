@@ -11,8 +11,10 @@ import io.netty.handler.codec.http.LastHttpContent
 import org.slf4j.Logger
 import java.lang.IndexOutOfBoundsException
 
-class HttpClientChannelHandler(private val clientListener: HttpClientListener,
-                               private val logger: Logger): BaseHttpChannelHandler(clientListener, logger, HandlerType.CLIENT) {
+class HttpClientChannelHandler(
+    private val clientListener: HttpClientListener,
+    private val logger: Logger,
+) : BaseHttpChannelHandler(clientListener, logger, HandlerType.CLIENT) {
 
     private var responseCode: HttpResponseStatus? = null
 
@@ -52,5 +54,4 @@ class HttpClientChannelHandler(private val clientListener: HttpClientListener,
             responseCode = null
         }
     }
-
 }

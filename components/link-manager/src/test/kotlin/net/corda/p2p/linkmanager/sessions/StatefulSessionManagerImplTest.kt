@@ -147,7 +147,7 @@ class StatefulSessionManagerImplTest {
                     "expiry" to 20000000L,
                 ),
             )
-            on { key } doReturn "stateKey"
+            on { key } doReturn id
         }
         val serialisableSessionData = mock<AuthenticatedSession> {
             on { sessionId } doReturn id
@@ -448,7 +448,7 @@ class StatefulSessionManagerImplTest {
             }
 
             assertSoftly {
-                assertThat(statesUpdates.firstValue.firstOrNull()?.key).isEqualTo("stateKey")
+                assertThat(statesUpdates.firstValue.firstOrNull()?.key).isEqualTo(sessionIdentity)
                 assertThat(statesUpdates.firstValue.firstOrNull()?.value).isEqualTo(sessionIdentity.toByteArray())
                 assertThat(statesUpdates.firstValue.firstOrNull()?.version).isEqualTo(0)
                 assertThat(statesUpdates.firstValue.firstOrNull()?.metadata).containsEntry(

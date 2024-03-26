@@ -4,22 +4,22 @@ import io.micrometer.core.instrument.Timer
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.p2p.LinkInMessage
+import net.corda.data.p2p.LinkOutMessage
+import net.corda.data.p2p.NetworkType
 import net.corda.data.p2p.gateway.GatewayMessage
+import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.PubSubProcessor
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.data.p2p.LinkOutMessage
-import net.corda.data.p2p.NetworkType
-import net.corda.data.p2p.gateway.GatewayResponse
-import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
-import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.metrics.CordaMetrics
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.TlsType
@@ -67,7 +67,7 @@ internal class OutboundMessageHandler(
 
     private val connectionManager = ReconfigurableConnectionManager(
         lifecycleCoordinatorFactory,
-        configurationReaderService
+        configurationReaderService,
     )
 
     private val subscriptionConfig = SubscriptionConfig("outbound-message-handler", LINK_OUT_TOPIC)
@@ -83,7 +83,7 @@ internal class OutboundMessageHandler(
         outboundSubscription,
         subscriptionConfig,
         setOf(connectionManager.dominoTile.coordinatorName, gatewayConfigReader.dominoTile.coordinatorName),
-        setOf(connectionManager.dominoTile.toNamedLifecycle(), gatewayConfigReader.dominoTile.toNamedLifecycle())
+        setOf(connectionManager.dominoTile.toNamedLifecycle(), gatewayConfigReader.dominoTile.toNamedLifecycle()),
     )
     private var p2pInPublisher = PublisherWithDominoLogic(
         publisherFactory,
@@ -134,7 +134,7 @@ internal class OutboundMessageHandler(
             val uri = URI.create(peerMessage.header.address)
             val trustStore = commonComponents.trustStoresMap.getTrustStore(
                 MemberX500Name.parse(peerMessage.header.sourceIdentity.x500Name),
-                peerMessage.header.destinationIdentity.groupId
+                peerMessage.header.destinationIdentity.groupId,
             )
             val sni = when (peerMessage.header.destinationNetworkType) {
                 NetworkType.CORDA_4 -> {
@@ -157,7 +157,6 @@ internal class OutboundMessageHandler(
             return CompletableFuture.completedFuture(Unit)
         }
 
-
         val messageId = UUID.randomUUID().toString()
         val gatewayMessage = GatewayMessage(messageId, peerMessage.payload)
         val expectedX500Name = if (NetworkType.CORDA_4 == peerMessage.header.destinationNetworkType) {
@@ -167,13 +166,13 @@ internal class OutboundMessageHandler(
         }
         val clientCertificateKeyStore = if (gatewayConfigReader.sslConfiguration?.tlsType == TlsType.MUTUAL) {
             val keyStore = commonComponents.dynamicKeyStore.getClientKeyStore(
-                peerMessage.header.sourceIdentity
+                peerMessage.header.sourceIdentity,
             )
             if (keyStore == null) {
                 logger.warn(
                     "Can't send message to destination ${peerMessage.header.address}. " +
                         "Can not find client certificates for ${peerMessage.header.sourceIdentity} " +
-                        "while Mutual TLS is enabled."
+                        "while Mutual TLS is enabled.",
                 )
                 return CompletableFuture.completedFuture(Unit)
             }
@@ -196,8 +195,7 @@ internal class OutboundMessageHandler(
             val requestLatency = Duration.ofNanos(System.nanoTime() - startTime)
             getRequestTimer(peerMessage, response).record(requestLatency)
             handleResponse(PendingRequest(gatewayMessage, destinationInfo, responseFuture), response, error, MAX_RETRIES)
-        }, retryThreadPool).thenApply {  }
-
+        }, retryThreadPool).thenApply { }
     }
 
     private fun scheduleMessageReplay(destinationInfo: DestinationInfo, gatewayMessage: GatewayMessage, remainingAttempts: Int) {
@@ -224,7 +222,7 @@ internal class OutboundMessageHandler(
                 if (shouldRetry(response.statusCode) && remainingAttempts > 0) {
                     logger.warn(
                         "Request (${pendingRequest.gatewayMessage.id}) failed with status code ${response.statusCode}, " +
-                            "it will be retried later."
+                            "it will be retried later.",
                     )
                     scheduleMessageReplay(pendingRequest.destinationInfo, pendingRequest.gatewayMessage, remainingAttempts)
                 } else {
@@ -255,7 +253,7 @@ internal class OutboundMessageHandler(
                             payload,
                         ),
                     ),
-                )
+                ),
             ).forEach {
                 it.join()
             }
@@ -273,7 +271,7 @@ internal class OutboundMessageHandler(
 
     private fun getRequestTimer(
         peerMessage: LinkOutMessage,
-        response: HttpResponse?
+        response: HttpResponse?,
     ): Timer {
         val builder = CordaMetrics.Metric.OutboundGatewayRequestLatency.builder()
         builder.withTag(CordaMetrics.Tag.DestinationEndpoint, peerMessage.header.address)
@@ -292,6 +290,6 @@ internal class OutboundMessageHandler(
     private data class PendingRequest(
         val gatewayMessage: GatewayMessage,
         val destinationInfo: DestinationInfo,
-        val future: CompletableFuture<HttpResponse>
+        val future: CompletableFuture<HttpResponse>,
     )
 }
