@@ -15,6 +15,7 @@ import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
@@ -57,6 +58,13 @@ class PersistenceServiceImplTest {
 
         verify(serializationService).serialize(any<TestObject>())
         assertThat(argumentCaptor.firstValue).isEqualTo(PersistExternalEventFactory::class.java)
+    }
+
+    @Test
+    fun `persist with a large id fails`() {
+        assertThrows<IllegalArgumentException> {
+            persistenceService.persist(dedupeId.repeat(100), TestObject())
+        }
     }
 
     @Test

@@ -44,7 +44,7 @@ class TokenSelectionFlow : ClientStartableFlow {
                 TOKEN_AMOUNT,
             )
 
-            val claimResult = tokenSelection.tryClaim(queryCriteria)
+            val claimResult = tokenSelection.tryClaim("claim1", queryCriteria)
 
             val response = if (claimResult == null) {
                 log.info("Token Selection result: 'None found' ")
