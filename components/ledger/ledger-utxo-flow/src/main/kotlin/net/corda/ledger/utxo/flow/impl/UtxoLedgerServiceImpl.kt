@@ -59,7 +59,6 @@ import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
 import java.time.Instant
 
-
 /**
  * A service implementation class which is typically injected in to any cordApp which wishes to interact with
  * the UTXO ledger.
@@ -68,7 +67,6 @@ import java.time.Instant
  * to the limitations of flows. In particular since flows use Quasar every method that can block must be annotated.
  * @Suspendable and since it is not possible to annotate lambdas they sometimes cannot be used.
  */
-
 
 @Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [UtxoLedgerService::class, UsedByFlow::class], scope = PROTOTYPE)
