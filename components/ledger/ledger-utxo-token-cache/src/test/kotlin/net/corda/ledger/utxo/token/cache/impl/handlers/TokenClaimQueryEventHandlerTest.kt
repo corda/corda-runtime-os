@@ -181,7 +181,7 @@ class TokenClaimQueryEventHandlerTest {
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, mock())
         val claimQuery = createClaimQuery(110)
         whenever(recordFactory.getSuccessfulClaimResponse(any(), any(), any(), any())).thenReturn(claimQueryResult)
-        whenever(availableTokenService.findAvailTokens(any(), any(), any(), any(),any()))
+        whenever(availableTokenService.findAvailTokens(any(), any(), any(), any(), any()))
             .thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
         whenever(poolCacheState.isTokenClaimed(token100Ref)).thenReturn(true)
         cachedTokens += token99

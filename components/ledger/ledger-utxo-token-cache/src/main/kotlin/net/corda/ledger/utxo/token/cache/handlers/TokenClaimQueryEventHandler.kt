@@ -52,8 +52,11 @@ class TokenClaimQueryEventHandler(
             // from the query results
             val maxTokens = serviceConfiguration.cachedTokenPageSize + state.claimedTokens().size
             val findResult = availableTokenService.findAvailTokens(
-                event.poolKey, event.ownerHash, event.tagRegex,
-                maxTokens, event.strategy
+                event.poolKey,
+                event.ownerHash,
+                event.tagRegex,
+                maxTokens,
+                event.strategy
             )
 
             // Remove the claimed tokens from the query results

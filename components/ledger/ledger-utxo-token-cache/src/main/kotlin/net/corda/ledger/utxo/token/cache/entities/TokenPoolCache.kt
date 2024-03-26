@@ -1,7 +1,5 @@
 package net.corda.ledger.utxo.token.cache.entities
 
-import net.corda.v5.ledger.utxo.token.selection.Strategy
-
 /**
  * In order to improve performance, tokens are cached in memory. This avoids the need of always going to
  * the database to fetch new tokens. The `TokenPoolCache` class contains a cache for
