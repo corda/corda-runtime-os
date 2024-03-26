@@ -26,7 +26,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.lang.Long
 import java.time.Duration
 import java.time.temporal.ChronoUnit
 
@@ -87,7 +86,7 @@ class SchedulerProcessorImpl @Activate constructor(
         // TODO CORE-16331 Add configuration with a default of 10 minutes under the ledger.repair configuration section
         Schedule(
             ScheduledTask.SCHEDULE_TASK_NAME_LEDGER_REPAIR,
-            Long.getLong(LEDGER_REPAIR_SCHEDULE_PERIOD_SYSTEM_PROPERTY, defaultLedgerRepairSchedulePeriod),
+            java.lang.Long.getLong(LEDGER_REPAIR_SCHEDULE_PERIOD_SYSTEM_PROPERTY, defaultLedgerRepairSchedulePeriod),
             ScheduledTask.SCHEDULE_TASK_TOPIC_LEDGER_REPAIR_PROCESSOR
         )
     )
