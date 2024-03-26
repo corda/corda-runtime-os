@@ -1,9 +1,8 @@
-package net.corda.cli.plugins.cpi
+package net.corda.cli.plugins.cpiupload
 
 import net.corda.cli.api.AbstractCordaCliVersionProvider
 import net.corda.cli.api.CordaCliPlugin
-import net.corda.cli.plugins.cpi.commands.CPIList
-import net.corda.cli.plugins.cpi.commands.CPIUpload
+import net.corda.cli.plugins.cpiupload.commands.CPIUpload
 import org.pf4j.Extension
 import org.pf4j.Plugin
 import org.slf4j.Logger
@@ -13,7 +12,7 @@ import picocli.CommandLine
 class VersionProvider : AbstractCordaCliVersionProvider()
 
 @Suppress("unused")
-class CPICliPlugin : Plugin() {
+class CPIUploadCliPlugin : Plugin() {
 
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java)
@@ -30,9 +29,9 @@ class CPICliPlugin : Plugin() {
     @Extension
     @CommandLine.Command(
         name = "cpi",
-        subcommands = [CPIUpload::class, CPIList::class],
+        subcommands = [CPIUpload::class],
         mixinStandardHelpOptions = true,
-        description = ["CPI(Corda Package Installer) related operations"],
+        description = ["Manages a cpi upload"],
         versionProvider = VersionProvider::class
     )
     class PluginEntryPoint : CordaCliPlugin
