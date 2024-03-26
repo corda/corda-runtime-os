@@ -13,7 +13,7 @@ import kotlin.time.Duration.Companion.seconds
 @Command(
     name = "list",
     description = [
-        "Get the list of cpi's uploaded on cluster"
+        "Get the list of CPIs (Corda Package Installers) uploaded on the cluster"
     ],
     mixinStandardHelpOptions = true
 )
