@@ -249,7 +249,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
         assertThat(responseFromServer.first().signatures).isEmpty()
         assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
         assertThat((responseError as NotaryExceptionGeneral).message)
-            .contains("The publicKeys do not have any private counterparts available.")
+            .contains("Error while processing request from client. Please contact notary operator for further details")
     }
 
     @ParameterizedTest
@@ -321,7 +321,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
         assertThat(responseError).isNotNull
         assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
         assertThat((responseError as NotaryExceptionGeneral).message)
-            .contains("Error during notarization. Cause: Uniqueness checker cannot be reached")
+            .contains("Error while processing request from client. Please contact notary operator for further details")
     }
 
     @ParameterizedTest
@@ -434,9 +434,9 @@ class ContractVerifyingNotaryServerFlowImplTest {
 
         val responseError = responseFromServer.first().error
         assertThat(responseError).isNotNull
-        assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-        assertThat((responseError as NotaryExceptionGeneral).message)
-            .contains("Error during notarization. Cause: DUMMY ERROR")
+        assertThat(responseError).isInstanceOf(NotaryExceptionTransactionVerificationFailure::class.java)
+        assertThat((responseError as NotaryExceptionTransactionVerificationFailure).message)
+            .contains("Error while processing request from client. Cause: DUMMY ERROR")
     }
 
     @ParameterizedTest
@@ -479,8 +479,8 @@ class ContractVerifyingNotaryServerFlowImplTest {
 
         val responseError = responseFromServer.first().error
         assertThat(responseError).isNotNull
-        assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-        assertThat((responseError as NotaryExceptionGeneral).message)
+        assertThat(responseError).isInstanceOf(NotaryExceptionTransactionVerificationFailure::class.java)
+        assertThat((responseError as NotaryExceptionTransactionVerificationFailure).message)
             .contains("does not match the notary service represented by this notary virtual node")
     }
 
@@ -669,7 +669,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
             when (notarizationType) {
                 NotarizationType.WRITE -> {
                     on { requestUniquenessCheckWrite(any(), any(), any(), any(), any(), any(), any()) } doThrow
-                        IllegalArgumentException("Uniqueness checker cannot be reached")
+                        RuntimeException("Uniqueness checker cannot be reached")
                     on { requestUniquenessCheckRead(any(), any(), any(), any()) } doThrow
                         RuntimeException("Wrong uniqueness check type method called")
                 }
@@ -677,7 +677,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
                     on { requestUniquenessCheckWrite(any(), any(), any(), any(), any(), any(), any()) } doThrow
                         RuntimeException("Wrong uniqueness check type method called")
                     on { requestUniquenessCheckRead(any(), any(), any(), any()) } doThrow
-                        IllegalArgumentException("Uniqueness checker cannot be reached")
+                        RuntimeException("Uniqueness checker cannot be reached")
                 }
             }
         }

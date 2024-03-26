@@ -1,6 +1,7 @@
 package com.r3.corda.notary.plugin.nonvalidating.server
 
 import com.r3.corda.notary.plugin.common.NotarizationResponse
+import com.r3.corda.notary.plugin.common.NotaryExceptionTransactionVerificationFailure
 import com.r3.corda.notary.plugin.common.NotaryTransactionDetails
 import com.r3.corda.notary.plugin.common.toNotarizationResponse
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPayload
@@ -16,6 +17,7 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.notary.plugin.api.NotarizationType
+import net.corda.v5.ledger.notary.plugin.core.NotaryException
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionGeneral
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -108,19 +110,15 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
             session.send(uniquenessResult.toNotarizationResponse(txDetails.id, signature))
         } catch (e: Exception) {
-            logger.warn("Error while processing request from client. Cause: $e ${e.stackTraceToString()}")
-            val genericMessage = "Error while processing request from client. "
-            val additionalMessage =
-                when (e) {
-                    is InvalidBackchainFlagException -> "Cause: ${e.message}"
-                    else -> "Please contact notary operator for further details."
-                }
-            session.send(
-                NotarizationResponse(
-                    emptyList(),
-                    NotaryExceptionGeneral("General error: ${genericMessage + additionalMessage}", null)
-                )
-            )
+            logger.warn("Error while processing request from client", e)
+            val genericMessage = "Error while processing request from client"
+            val notaryException = when (e) {
+                is NotaryException -> e
+                // [IllegalArgumentException]s are thrown if a transaction does not pass our correctness checks.
+                is IllegalArgumentException -> NotaryExceptionTransactionVerificationFailure("$genericMessage. Cause: ${e.message}")
+                else -> NotaryExceptionGeneral("$genericMessage. Please contact notary operator for further details.", null)
+            }
+            session.send(NotarizationResponse(emptyList(), notaryException))
         }
     }
 
