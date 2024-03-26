@@ -428,7 +428,7 @@ class CryptoProcessorTests {
             Arguments.of(CryptoConsts.Categories.LEDGER, vnodeId),
             Arguments.of(CryptoConsts.Categories.TLS, vnodeId),
             Arguments.of(CryptoConsts.Categories.SESSION_INIT, vnodeId),
-            Arguments.of(CryptoConsts.Categories.JWT_KEY, CryptoTenants.REST),
+            Arguments.of(CryptoConsts.Categories.JWT, CryptoTenants.REST),
             Arguments.of(CryptoConsts.Categories.TLS, CryptoTenants.P2P)
         )
 
