@@ -2,10 +2,7 @@ package net.corda.processors.persistence
 
 import net.corda.libs.configuration.SmartConfig
 
-/** The processor for a `PersistenceWorker`. All this processor classes actually does is set up the
- * database connection manager once Corda configuration is available.
- *
- * The entry point to the persistence processor is actually [LedgerPersistenceRequestProcessor]
+/** The processor for a `PersistenceWorker`.
  *
  * This interface is an OSGi dependency of the [PersistenceWorker] and [CombinedWorker], which
  * call start and stop as the worker process that contains an PersistenceProcessor object starts

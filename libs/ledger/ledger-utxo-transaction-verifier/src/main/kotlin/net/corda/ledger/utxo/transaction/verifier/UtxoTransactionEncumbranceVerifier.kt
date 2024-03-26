@@ -34,8 +34,8 @@ private fun checkEncumbranceGroup(
 ): List<ContractVerificationFailure> {
     // Check that no input states have been duplicated to fool our counting
     // This check duplicates net.corda.ledger.utxo.transaction.verifier.UtxoTransactionVerifier
-    //  verifyNoDuplicateInputsOrReferences, other than, if we hadn't already stopped earlier at this
-    // point.
+    //  verifyNoDuplicateInputsOrReferences.
+
     val duplicationFailures = stateInfos
         .groupBy { it.stateIndex }
         .filter { it.value.size > 1 }

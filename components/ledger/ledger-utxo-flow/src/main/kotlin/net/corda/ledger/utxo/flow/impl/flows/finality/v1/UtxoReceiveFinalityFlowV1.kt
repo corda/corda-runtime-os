@@ -38,6 +38,12 @@ import org.slf4j.LoggerFactory
  * V1 changed slightly between 5.0 and 5.1.
  * (5.1's initial payload contains the number of parties to let bypass steps later not needed for two parties cases)
  * This change is not managed through flow versioning since flow interoperability is not supported between these versions.
+ *
+ * Runs on the other vnodes in a UTXO transaction when one vnode initiates a finality flow.
+ * Checks signatures, contracts (verification) and runs `validator` which is a user-supplied callback
+ * which can accept or reject the transaction. This flow will persist the transaction as unverified before it
+ * is notarized, and then persist it as verified after successful notarization.
+ *
  */
 
 @CordaSystemFlow
@@ -45,11 +51,6 @@ class UtxoReceiveFinalityFlowV1(
     private val session: FlowSession,
     private val validator: UtxoTransactionValidator
 ) : UtxoFinalityBaseV1() {
-    // Runs on the other vnodes in a UTXO transaction when one vnode initiates a finality flow.
-    // Checks signatures, contracts (verification) and runs `validator` which is a user supplied callback
-    // which can accept or reject the transaction. Should all that work the transaction is persisted and
-    // we check centrally that the transaction wins the race of consuming states at most once, using a notary,
-    // then persist that we notarized the approved transaction.
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(UtxoReceiveFinalityFlowV1::class.java)
     }

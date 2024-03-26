@@ -24,9 +24,9 @@ abstract class UtxoTransactionVerifier {
     }
 
     protected fun verifyNoDuplicateInputsOrReferences(inputStateRefs: List<StateRef>, referenceStateRefs: List<StateRef>) {
-        // The input states part of this check is later repeated in
+        // The input states part of this check may be repeated later in
         //   net.corda.ledger.utxo.transaction.verifier.UtxoTransactionEncumbranceVerifierKt
-        // checkEncumbranceGroup.
+        // checkEncumbranceGroup if there is state encumbrance on this transaction.
         val duplicateInputs = inputStateRefs.groupingBy { it }.eachCount().filter { it.value > 1 }
 
         check(duplicateInputs.isEmpty()) { "Duplicate input states detected: ${duplicateInputs.keys}" }

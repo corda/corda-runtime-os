@@ -31,9 +31,6 @@ import java.time.Duration
  *   - making JSON values for state
  *   - token creation
  * Therefore, we need to set up sandboxes for user-supplied code.
- *
- * Takes care of maintaining the managed diagnostic context with the external event ID and request ID
- * so that flow operations can be traced. Tracks the time taken to handle the request.
  */
 @Suppress("LongParameterList")
 class LedgerPersistenceRequestProcessor(
