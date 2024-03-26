@@ -13,7 +13,7 @@ import kotlin.time.Duration.Companion.seconds
 @Command(
     name = "list",
     description = [
-        "get the list of cpi's uploaded in cluster"
+        "Get the list of cpi's uploaded on cluster"
     ],
     mixinStandardHelpOptions = true
 )
@@ -47,7 +47,7 @@ class CPIList : RestCommand(), Runnable {
         }
 
         if (result.cpis.isEmpty()) {
-            sysOut.info("No cpi is uploaded to the cluster")
+            sysOut.info("No, cpi is uploaded on the cluster")
         } else {
             sysOut.info("List of cpi's : ${result.cpis}")
         }
