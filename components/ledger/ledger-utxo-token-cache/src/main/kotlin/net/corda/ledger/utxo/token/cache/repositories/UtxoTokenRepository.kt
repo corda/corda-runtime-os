@@ -11,6 +11,7 @@ interface UtxoTokenRepository {
     /**
      * Retrieves a set of tokens
      */
+    @Suppress("unused", "LongParameterList")
     fun findTokens(
         entityManager: EntityManager,
         poolKey: TokenPoolKey,
