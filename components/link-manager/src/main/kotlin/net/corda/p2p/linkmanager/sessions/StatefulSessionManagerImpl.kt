@@ -9,7 +9,9 @@ import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.ReEstablishSessionMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.data.p2p.event.SessionCreated
 import net.corda.data.p2p.event.SessionDirection
+import net.corda.data.p2p.event.SessionEvent
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.Operation
@@ -20,6 +22,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
@@ -48,6 +51,7 @@ import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
 import net.corda.p2p.linkmanager.state.SessionState
 import net.corda.p2p.messaging.P2pRecordsFactory
 import net.corda.p2p.messaging.Subsystem
+import net.corda.schema.Schemas
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.time.Clock
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -78,7 +82,7 @@ internal class StatefulSessionManagerImpl(
     private val deadSessionMonitor: DeadSessionMonitor,
     private val schemaRegistry: AvroSchemaRegistry,
     private val sessionCache: SessionCache,
-    private val sessionEventPublisher: StatefulSessionEventPublisher,
+    sessionEventPublisher: StatefulSessionEventPublisher,
     private val p2pRecordsFactory: P2pRecordsFactory,
 ) : SessionManager {
     companion object {
@@ -343,7 +347,14 @@ internal class StatefulSessionManagerImpl(
                             sessionToCache,
                         )
                         sessionCache.putInboundSession(session)
-                        sessionEventPublisher.recordsForSessionCreated(sessionToCache.sessionId, SessionDirection.INBOUND)
+                        val key = sessionToCache.sessionId
+                        listOf(
+                            Record(
+                                Schemas.P2P.SESSION_EVENTS,
+                                key,
+                                SessionEvent(SessionCreated(SessionDirection.INBOUND, key))
+                            )
+                        )
                     } ?: emptyList()
                 }
                 is AvroInitiatorHelloMessage, is AvroInitiatorHandshakeMessage, null -> {
@@ -354,7 +365,13 @@ internal class StatefulSessionManagerImpl(
                             sessionToCache,
                         )
                         sessionCache.putOutboundSession(key, outboundSession)
-                        sessionEventPublisher.recordsForSessionCreated(key, SessionDirection.OUTBOUND)
+                        listOf(
+                            Record(
+                                Schemas.P2P.SESSION_EVENTS,
+                                key,
+                                SessionEvent(SessionCreated(SessionDirection.OUTBOUND, key))
+                            )
+                        )
                     } ?: emptyList()
                 }
                 else -> emptyList()
