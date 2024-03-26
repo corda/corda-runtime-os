@@ -25,7 +25,7 @@ CODEOWNERS         @corda/blt @corda/corda5-team-leads
 /tools/plugins/initial-rbac/                    @corda/rest
 /tools/plugins/plugins-rest/                    @corda/rest
 /tools/plugins/virtual-node/                    @corda/rest
-/tools/plugins/cpi-upload/                      @corda/rest
+/tools/plugins/cpi/                             @corda/rest
 
 # Helm charts for BLT team
 /charts/                                @corda/blt
