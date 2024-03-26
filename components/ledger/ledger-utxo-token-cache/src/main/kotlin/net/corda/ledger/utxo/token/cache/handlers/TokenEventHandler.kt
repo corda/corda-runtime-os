@@ -14,7 +14,7 @@ interface TokenEventHandler<E : TokenEvent> {
     /**
      * Handles the received event
      *
-     * @param TokenCache An instance of the current [TokenCache]
+     * @param tokenCache An instance of the current [TokenCache]
      * @param state An instance of the [PoolCacheState] linked to this event
      * @param event The received event.
      */
