@@ -20,6 +20,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicReference
 
 @Suppress("unused")
 @Component(service = [FlowFiberCache::class])
@@ -41,7 +42,7 @@ class FlowFiberCacheImpl @Activate constructor(
 
     private data class FiberCacheValue(val fiber: FlowFiber, val suspendCount: Int)
 
-    private val cache: Cache<FlowKey, FiberCacheValue> = CacheFactoryImpl().build(
+    private val cache: Cache<FlowKey, AtomicReference<FiberCacheValue>> = CacheFactoryImpl().build(
         "flow-fiber-cache",
         Caffeine.newBuilder()
             .maximumSize(maximumSize)
@@ -73,13 +74,13 @@ class FlowFiberCacheImpl @Activate constructor(
     override fun put(key: FlowKey, suspendCount: Int, fiber: FlowFiber) {
         checkIfThreadInterrupted("Interrupted thread prevented from writing into flow fiber cache with flow key $key")
 
-        cache.put(key, FiberCacheValue(fiber, suspendCount))
+        cache.put(key, AtomicReference(FiberCacheValue(fiber, suspendCount)))
     }
 
     override fun get(key: FlowKey, suspendCount: Int, sandboxGroupId: UUID): FlowFiber? {
         checkIfThreadInterrupted("Interrupted thread prevented from getting from flow fiber cache for key $key suspendCount $suspendCount")
 
-        val fiberCacheEntry = cache.asMap().remove(key)
+        val fiberCacheEntry = cache.getIfPresent(key)?.getAndSet(null)
         return if (null == fiberCacheEntry) {
             logger.info("Fiber not found in cache: ${key.id}")
             null
@@ -123,7 +124,7 @@ class FlowFiberCacheImpl @Activate constructor(
     // Yuk ... adding this to support the existing integration test.
     //  I don't think we should have integration tests knowing about the internals of the cache.
     internal fun findInCache(holdingId: HoldingIdentity, flowId: String): FlowFiber? {
-        return cache.getIfPresent(FlowKey(flowId, holdingId))?.fiber
+        return cache.getIfPresent(FlowKey(flowId, holdingId))?.get()?.fiber
     }
 
     private fun checkIfThreadInterrupted(msg: String) {
