@@ -47,11 +47,9 @@ class CPIList : RestCommand(), Runnable {
         }
 
         if (result.cpis.isEmpty()) {
-            sysOut.info("No cpi is uploaded in the cluster")
-            exitProcess(2)
+            sysOut.info("No cpi is uploaded to the cluster")
         } else {
             sysOut.info("List of cpi's : ${result.cpis}")
-            exitProcess(3)
         }
     }
 }
