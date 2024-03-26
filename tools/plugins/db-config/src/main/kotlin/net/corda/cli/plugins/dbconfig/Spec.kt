@@ -7,8 +7,8 @@ import liquibase.database.OfflineConnection
 import liquibase.database.core.PostgresDatabase
 import liquibase.database.jvm.JdbcConnection
 import liquibase.resource.ClassLoaderResourceAccessor
-import net.corda.db.admin.LiquibaseManager
-import net.corda.db.admin.impl.LiquibaseManagerImpl
+import net.corda.db.admin.LiquibaseSchemaUpdater
+import net.corda.db.admin.impl.LiquibaseSchemaUpdaterImpl
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
@@ -28,7 +28,7 @@ import java.sql.DriverManager
 )
 class Spec(
     private val config: SpecConfig = SpecConfig(),
-    private val liquibaseManager: LiquibaseManager = LiquibaseManagerImpl()
+    private val liquibaseSchemaUpdater: LiquibaseSchemaUpdater = LiquibaseSchemaUpdaterImpl()
 ) : Runnable {
     @CommandLine.Option(
         names = ["--change-log"],
@@ -205,7 +205,7 @@ class Spec(
             }
 
             val lb = config.liquibaseFactory(filename, database)
-            liquibaseManager.update(lb, outputFile)
+            liquibaseSchemaUpdater.update(lb, outputFile)
         }
     }
 

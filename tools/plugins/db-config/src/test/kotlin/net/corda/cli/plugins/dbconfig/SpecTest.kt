@@ -4,7 +4,7 @@ import liquibase.Liquibase
 import liquibase.command.CommandArgumentDefinition
 import liquibase.command.CommandScope
 import liquibase.database.Database
-import net.corda.db.admin.impl.LiquibaseManagerImpl
+import net.corda.db.admin.impl.LiquibaseSchemaUpdaterImpl
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers
 import org.mockito.kotlin.any
@@ -46,7 +46,7 @@ class SpecTest {
     private val commandScopeFactory = mock<(commandNames: Array<String>) -> CommandScope> {
         on { invoke(any()) } doReturn (commandScope)
     }
-    private val liquibaseManager = LiquibaseManagerImpl(commandScopeFactory)
+    private val liquibaseSchemaUpdater = LiquibaseSchemaUpdaterImpl(commandScopeFactory)
 
     private val specConfig = Spec.SpecConfig(
         writerFactory = mockWriterFactory,
@@ -69,7 +69,7 @@ class SpecTest {
 
     @Test
     fun `Verify we run offline update and write the result to disk where no filter is specified`() {
-        val spec = Spec(specConfig, liquibaseManager)
+        val spec = Spec(specConfig, liquibaseSchemaUpdater)
 
         spec.run()
 
@@ -82,7 +82,7 @@ class SpecTest {
 
     @Test
     fun `Verify we run offline update and write the result to disk only once with a filter`() {
-        val spec = Spec(specConfig, liquibaseManager)
+        val spec = Spec(specConfig, liquibaseSchemaUpdater)
 
         spec.schemasToGenerate = listOf("messagebus")
 
@@ -97,7 +97,7 @@ class SpecTest {
 
     @Test
     fun `Verify we delete the changelog file if clear is specified`() {
-        val spec = Spec(specConfig, liquibaseManager)
+        val spec = Spec(specConfig, liquibaseSchemaUpdater)
 
         spec.clearChangeLog = true
 
@@ -108,7 +108,7 @@ class SpecTest {
 
     @Test
     fun `Verify we delete the changelog file at a custom location if clear is specified`() {
-        val spec = Spec(specConfig, liquibaseManager)
+        val spec = Spec(specConfig, liquibaseSchemaUpdater)
 
         spec.clearChangeLog = true
         spec.databaseChangeLogFile = Path.of(CUSTOM_PATH)
@@ -120,7 +120,7 @@ class SpecTest {
 
     @Test
     fun `Verify specifying jdbc url attempts to connect to a live database`() {
-        val spec = Spec(specConfig, liquibaseManager)
+        val spec = Spec(specConfig, liquibaseSchemaUpdater)
 
         spec.jdbcUrl = JDBC_URL
         spec.user = USER
@@ -138,7 +138,7 @@ class SpecTest {
 
     @Test
     fun `Verify specifying statemanager schema will generate only statemanager sql`() {
-        val spec = Spec(specConfig, liquibaseManager)
+        val spec = Spec(specConfig, liquibaseSchemaUpdater)
 
         spec.jdbcUrl = JDBC_URL
         spec.user = USER

@@ -16,15 +16,15 @@ import liquibase.command.core.helpers.DatabaseChangelogCommandStep
 import liquibase.command.core.helpers.DbUrlConnectionArgumentsCommandStep
 import liquibase.command.core.helpers.ShowSummaryArgument
 import liquibase.io.WriterOutputStream
-import net.corda.db.admin.LiquibaseManager
+import net.corda.db.admin.LiquibaseSchemaUpdater
 import java.io.Writer
 
-class LiquibaseManagerImpl(
+class LiquibaseSchemaUpdaterImpl(
     private val commandScopeFactory: (commandNames: Array<String>) -> CommandScope = { commandNames ->
         @Suppress("SpreadOperator")
         CommandScope(*commandNames)
     }
-): LiquibaseManager {
+): LiquibaseSchemaUpdater {
     override fun update(
         lb: Liquibase,
         sql: Writer?,
