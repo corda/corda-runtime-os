@@ -10,7 +10,7 @@ import liquibase.database.OfflineConnection
 import liquibase.database.jvm.JdbcConnection
 import liquibase.resource.ResourceAccessor
 import net.corda.db.admin.DbChange
-import net.corda.db.admin.LiquibaseManager
+import net.corda.db.admin.LiquibaseSchemaUpdater
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
@@ -40,7 +40,7 @@ class LiquibaseSchemaMigratorImpl(
                 .getInstance()
                 .findCorrectDatabaseImplementation(OfflineConnection(url, resourceAccessor))
         },
-    private val liquibaseManager: LiquibaseManager = LiquibaseManagerImpl()
+    private val liquibaseSchemaUpdater: LiquibaseSchemaUpdater = LiquibaseSchemaUpdaterImpl()
 ) : LiquibaseSchemaMigrator {
     companion object {
         // default schema
@@ -133,7 +133,7 @@ class LiquibaseSchemaMigratorImpl(
                         "DB Schema for ${database.connection.catalog}"
             )
 
-            liquibaseManager.update(lb, sql, tag)
+            liquibaseSchemaUpdater.update(lb, sql, tag)
             log.info("${database.connection.catalog} DB schema update complete")
         }
     }
@@ -155,7 +155,7 @@ class LiquibaseSchemaMigratorImpl(
             )
 
             log.info("Retrieving ${database.databaseProductName} DB Schema")
-            liquibaseManager.update(lb, sql)
+            liquibaseSchemaUpdater.update(lb, sql)
             File(offlineChangeLogFileName).delete()
         }
     }

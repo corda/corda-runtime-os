@@ -4,9 +4,9 @@ import liquibase.Liquibase
 import java.io.Writer
 
 /**
- * Liquibase management helpers
+ * Class to handle updating of liquibase schemas
  */
-interface LiquibaseManager {
+interface LiquibaseSchemaUpdater {
     /**
      * Update Liquibase database with optional output file and tag
      *
