@@ -7,16 +7,19 @@ import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.toStatus
 import net.corda.membership.lib.registration.RegistrationStatusExt.canMoveToStatus
 import net.corda.virtualnode.toCorda
+import java.util.UUID
 import javax.persistence.LockModeType
 
 internal class PersistRegistrationRequestHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<PersistRegistrationRequest, Unit>(persistenceHandlerServices) {
     override val operation = PersistRegistrationRequest::class.java
+    private val id = Exception(UUID.randomUUID().toString())
     override fun invoke(context: MembershipRequestContext, request: PersistRegistrationRequest) {
         val registrationId = request.registrationRequest.registrationId
+        val run = Exception("${Thread.currentThread().id} - ${UUID.randomUUID()}", id)
         logger.info("Persisting registration request with ID [$registrationId] to status ${request.status}.")
-        logger.info("QQQ Persisting registration request with ID [$registrationId] to status ${request.status}.")
+        logger.info("QQQ Persisting registration request with ID [$registrationId] to status ${request.status}.", run)
         transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val currentRegistrationRequest = em.find(
                 RegistrationRequestEntity::class.java,
@@ -47,7 +50,8 @@ internal class PersistRegistrationRequestHandler(
                     return@transaction
                 }
             }
-            logger.info("QQQ for [$registrationId] going 2.")
+            val e = Exception("Gooing to merge ${Thread.currentThread().id}", run)
+            logger.info("QQQ for [$registrationId] going 2.", e)
             em.merge(createEntityBasedOnRequest(request))
         }
     }
