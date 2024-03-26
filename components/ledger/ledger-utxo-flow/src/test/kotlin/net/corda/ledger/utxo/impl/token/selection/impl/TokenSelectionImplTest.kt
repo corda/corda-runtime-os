@@ -9,6 +9,7 @@ import net.corda.v5.ledger.utxo.token.selection.TokenClaim
 import net.corda.v5.ledger.utxo.token.selection.TokenClaimCriteria
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.math.BigDecimal
@@ -39,5 +40,12 @@ class TokenSelectionImplTest {
 
         Assertions.assertThat(TokenSelectionImpl(externalEventExecutor).tryClaim(uniqueID, criteria))
             .isEqualTo(tokenClaim)
+    }
+
+    @Test
+    fun `try claim with a large id fails`() {
+        assertThrows<IllegalArgumentException> {
+            TokenSelectionImpl(externalEventExecutor).tryClaim("uniqueID".repeat(100), mock())
+        }
     }
 }
