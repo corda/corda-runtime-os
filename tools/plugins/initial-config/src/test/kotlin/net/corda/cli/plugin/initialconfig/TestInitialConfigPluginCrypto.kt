@@ -171,6 +171,25 @@ class TestInitialConfigPluginCrypto {
         }
     }
 
+    @Test
+    fun `Should fail to create vault initial crypto configuration with insufficient keys specified`() {
+        val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
+        val app = InitialConfigPlugin.PluginEntryPoint()
+        val outText = SystemLambda.tapSystemErrNormalized {
+            CommandLine(
+                app
+            ).setColorScheme(colorScheme).execute(
+                "create-crypto-config",
+                "-t", "VAULT",
+                "--vault-path", "cryptosecrets",
+                "--key-salt", "salt",
+                "--key-passphrase", "passphrase",
+                "--number-of-unmanaged-root-wrapping-keys", "2"
+            )
+        }
+        assertThat(outText).contains("Not enough vault wrapping key salt keys passed in")
+    }
+
     private fun assertGeneratedJson(json: String, wrappingKeyAssert: (ConfigList, SmartConfigFactory) -> Unit) {
         val smartConfigFactory = SmartConfigFactory.createWith(
             ConfigFactory.parseString(
