@@ -28,7 +28,6 @@ import net.corda.libs.statemanager.api.StateManager
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import java.time.Duration
 
 @Suppress("LongParameterList")
 class TokenCacheEventProcessorFactoryImpl(
@@ -48,7 +47,10 @@ class TokenCacheEventProcessorFactoryImpl(
     ): TokenSelectionSyncRPCProcessor {
         val tokenSelectionMetrics = TokenSelectionMetricsImpl()
         // For now the duration will be zero so the cache never expires.
-        val tokenPoolCacheManager = TokenPoolCacheManager(TokenPoolCacheImpl(serviceConfiguration.tokenCacheExpiryPeriodMilliseconds), createEventHandlerMap(tokenSelectionMetrics))
+        val tokenPoolCacheManager = TokenPoolCacheManager(
+            TokenPoolCacheImpl(serviceConfiguration.tokenCacheExpiryPeriodMilliseconds),
+            createEventHandlerMap(tokenSelectionMetrics)
+        )
         val claimStateStoreFactory = ClaimStateStoreFactoryImpl(stateManager, serialization, tokenPoolCacheManager, clock)
 
         return TokenSelectionSyncRPCProcessor(
