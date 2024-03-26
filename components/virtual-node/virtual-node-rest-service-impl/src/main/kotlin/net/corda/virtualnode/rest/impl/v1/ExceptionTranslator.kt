@@ -27,7 +27,7 @@ class ExceptionTranslator {
                 IllegalArgumentException::class.java.name,
                 CpiNotFoundException::class.java.name
                 -> BadRequestException(
-                    title = CpiNotFoundException::class.java.simpleName,
+                    title = BadRequestException::class.java.simpleName,
                     exceptionDetails = ExceptionDetails(exception.errorType, exception.errorMessage)
                 )
 
