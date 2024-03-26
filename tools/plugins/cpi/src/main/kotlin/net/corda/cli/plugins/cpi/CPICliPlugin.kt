@@ -32,7 +32,7 @@ class CPICliPlugin : Plugin() {
         name = "cpi",
         subcommands = [CPIUpload::class, CPIList::class],
         mixinStandardHelpOptions = true,
-        description = ["Manages a cpi"],
+        description = ["CPI(Corda Package Installer) related operations"],
         versionProvider = VersionProvider::class
     )
     class PluginEntryPoint : CordaCliPlugin
