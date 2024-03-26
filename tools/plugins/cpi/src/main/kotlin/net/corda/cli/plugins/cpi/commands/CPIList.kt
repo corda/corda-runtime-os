@@ -20,7 +20,7 @@ import kotlin.time.Duration.Companion.seconds
 class CPIList : RestCommand(), Runnable {
 
     private companion object {
-        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val sysOut: Logger = LoggerFactory.getLogger("SystemOut")
         val sysErr: Logger = LoggerFactory.getLogger("SystemErr")
     }
