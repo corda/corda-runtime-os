@@ -16,6 +16,7 @@ internal class PersistRegistrationRequestHandler(
     override fun invoke(context: MembershipRequestContext, request: PersistRegistrationRequest) {
         val registrationId = request.registrationRequest.registrationId
         logger.info("Persisting registration request with ID [$registrationId] to status ${request.status}.")
+        logger.info("QQQ Persisting registration request with ID [$registrationId] to status ${request.status}.")
         transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val currentRegistrationRequest = em.find(
                 RegistrationRequestEntity::class.java,
@@ -39,12 +40,14 @@ internal class PersistRegistrationRequestHandler(
                     // gets persisted. All other existing data of the request will remain the same.
                     if (request.status == RegistrationStatus.SENT_TO_MGM && currentRegistrationRequest.serial == null) {
                         logger.info("Updating request [$registrationId] serial to ${currentRegistrationRequest.serial}")
+                        logger.info("QQQ for [$registrationId] going 1.")
                         em.merge(createEntityBasedOnPreviousEntity(currentRegistrationRequest, request.registrationRequest.serial))
                         return@transaction
                     }
                     return@transaction
                 }
             }
+            logger.info("QQQ for [$registrationId] going 2.")
             em.merge(createEntityBasedOnRequest(request))
         }
     }

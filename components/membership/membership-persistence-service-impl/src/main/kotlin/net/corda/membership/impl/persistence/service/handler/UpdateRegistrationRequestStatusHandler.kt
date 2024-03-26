@@ -34,6 +34,7 @@ internal class UpdateRegistrationRequestStatusHandler(
                     "Updating registration request ${request.registrationId} status from $currentStatus" +
                         " to ${request.registrationStatus}",
                 )
+                println("QQQ UpdateRegistrationRequestStatusHandler ${registrationRequest.registrationId}")
                 registrationRequest.status = request.registrationStatus.name
                 registrationRequest.lastModified = clock.instant()
                 registrationRequest.reason = request.reason
