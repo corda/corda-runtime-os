@@ -46,7 +46,6 @@ class TokenCacheEventProcessorFactoryImpl(
         stateManager: StateManager
     ): TokenSelectionSyncRPCProcessor {
         val tokenSelectionMetrics = TokenSelectionMetricsImpl()
-        // For now the duration will be zero so the cache never expires.
         val tokenPoolCacheManager = TokenPoolCacheManager(
             TokenPoolCacheImpl(serviceConfiguration.tokenCacheExpiryPeriodMilliseconds),
             createEventHandlerMap(tokenSelectionMetrics)
