@@ -152,9 +152,10 @@ class PersistenceServiceImpl @Activate constructor(
         return serializationService.serialize(payload).bytes
     }
 
-    private fun validateDeduplicationId(deduplicationId: String) =
+    private fun validateDeduplicationId(deduplicationId: String) {
         require(deduplicationId.isNotEmpty() && deduplicationId.length <= MAX_DEDUPLICATION_ID_LENGTH) {
             "deduplicationId must not be empty and must not exceed $MAX_DEDUPLICATION_ID_LENGTH characters. " +
                     "Provided deduplicationId: $deduplicationId, length: ${deduplicationId.length} characters."
         }
+    }
 }
