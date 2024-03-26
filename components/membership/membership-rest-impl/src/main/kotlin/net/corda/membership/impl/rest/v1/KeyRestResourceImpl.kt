@@ -101,7 +101,8 @@ class KeyRestResourceImpl @Activate constructor(
             throw ResourceNotFoundException(
                 title = e::class.java.simpleName,
                 exceptionDetails = ExceptionDetails(
-                    e::class.java.name, "Invalid order by: $orderBy, must be one of: ${
+                    e::class.java.name,
+                    "Invalid order by: $orderBy, must be one of: ${
                         CryptoKeyOrderBy.values().joinToString()
                     }"
                 )
