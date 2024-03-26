@@ -22,6 +22,7 @@ class CPIList : RestCommand(), Runnable {
     private companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java)
         val sysOut: Logger = LoggerFactory.getLogger("SystemOut")
+        val sysErr: Logger = LoggerFactory.getLogger("SystemErr")
     }
 
     override fun run() {
@@ -39,9 +40,8 @@ class CPIList : RestCommand(), Runnable {
                 restClient = restClient,
                 wait = waitDurationSeconds.seconds
             )
-        }
-        catch (e: Exception) {
-            sysOut.info(e.message)
+        } catch (e: Exception) {
+            sysErr.error(e.message, e)
             logger.error("Unexpected error during fetching the list of CPI's", e)
             exitProcess(1)
         }
