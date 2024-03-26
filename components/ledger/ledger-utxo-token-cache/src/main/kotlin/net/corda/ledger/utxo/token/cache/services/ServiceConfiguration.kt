@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.token.cache.services
 
 import net.corda.libs.configuration.SmartConfig
-import kotlin.time.Duration
+import java.time.Duration
 
 interface ServiceConfiguration {
     fun init(config: SmartConfig)
