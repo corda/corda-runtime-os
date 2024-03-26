@@ -120,7 +120,7 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
                 is NotaryException -> e
                 // [IllegalArgumentException]s are thrown if a transaction does not pass our correctness checks.
                 is IllegalArgumentException -> NotaryExceptionTransactionVerificationFailure("$genericMessage. Cause: ${e.message}")
-                else -> NotaryExceptionGeneral("$genericMessage. Please contact notary operator for further details.")
+                else -> NotaryExceptionGeneral("$genericMessage. Please contact notary operator for further details.", null)
             }
             session.send(NotarizationResponse(emptyList(), notaryException))
         }
