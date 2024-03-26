@@ -8,6 +8,7 @@ import net.corda.data.membership.db.response.command.PersistGroupParametersRespo
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.impl.persistence.service.RecoverableException
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
+import net.corda.membership.lib.exceptions.ConflictPersistenceException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
 import net.corda.virtualnode.toCorda
@@ -44,7 +45,7 @@ internal class PersistGroupParametersHandler(
             if (currentEntity != null) {
                 val currentParameters = deserializer.deserializeKeyValuePairList(currentEntity.parameters).toMap()
                 if (groupParameters.toMap() != currentParameters) {
-                    throw MembershipPersistenceException(
+                    throw ConflictPersistenceException(
                         "Group parameters with epoch=$epochFromRequest already exist with different parameters."
                     )
                 }

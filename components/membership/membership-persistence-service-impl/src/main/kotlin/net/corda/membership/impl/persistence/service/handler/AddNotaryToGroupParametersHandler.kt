@@ -16,6 +16,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTI
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.exceptions.NotFoundEntityPersistenceException
 import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
 import net.corda.v5.membership.MemberInfo
@@ -101,7 +102,7 @@ internal class AddNotaryToGroupParametersHandler(
             .setLockMode(LockModeType.PESSIMISTIC_WRITE)
             .setMaxResults(1)
         if (previous.resultList.isEmpty()) {
-            throw MembershipPersistenceException(
+            throw NotFoundEntityPersistenceException(
                 "Cannot add notary to group parameters, no group parameters found."
             )
         }
@@ -109,7 +110,7 @@ internal class AddNotaryToGroupParametersHandler(
         val parametersMap = deserializer.deserializeKeyValuePairList(previous.singleResult.parameters).toMap()
         val notaryInfo = memberInfoFactory.createMemberInfo(notaryMemberInfo)
         val notary = notaryInfo.notaryDetails
-            ?: throw MembershipPersistenceException(
+            ?: throw NotFoundEntityPersistenceException(
                 "Cannot add notary to group parameters - notary details not found."
             )
         val notaryServiceName = notary.serviceName.toString()

@@ -26,7 +26,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.exceptions.ConflictPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.TestRandom
 import net.corda.test.util.time.TestClock
@@ -252,7 +252,7 @@ class PersistMemberInfoHandlerTest {
         mockMgmContext()
         mockExistingMemberInfo(requestContext.holdingIdentity)
 
-        assertThrows<MembershipPersistenceException> {
+        assertThrows<ConflictPersistenceException> {
             persistMemberInfoHandler.invoke(requestContext, PersistMemberInfo(null, listOf(memberInfo)))
         }
 
@@ -268,7 +268,7 @@ class PersistMemberInfoHandlerTest {
         mockMgmContext(KeyValuePairList(mutableListOf(KeyValuePair("100", "b"))))
         mockExistingMemberInfo(requestContext.holdingIdentity)
 
-        assertThrows<MembershipPersistenceException> {
+        assertThrows<ConflictPersistenceException> {
             persistMemberInfoHandler.invoke(requestContext, PersistMemberInfo(null, listOf(memberInfo)))
         }
 
