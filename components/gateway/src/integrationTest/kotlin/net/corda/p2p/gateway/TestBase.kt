@@ -6,6 +6,8 @@ import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.configuration.read.impl.ConfigurationReadServiceImpl
+import net.corda.crypto.test.certificates.generation.CertificateAuthority
+import net.corda.crypto.test.certificates.generation.PrivateKeyWithCertificateChain
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfigFactory
@@ -65,19 +67,11 @@ internal open class TestBase {
         Certificates.truststoreCertificatePem.readText()
     }
 
-    protected val truststoreWithRevocationCertificatePem by lazy {
-        Certificates.truststoreCertificateWithRevocationPem.readText()
-    }
-
     private val c4TruststoreCertificatePem by lazy {
         Certificates.c4TruststoreCertificatePem.readText()
     }
     internal val truststoreKeyStore by lazy {
         TrustStoresMap.TrustedCertificates(listOf(truststoreCertificatePem))
-    }
-
-    internal val truststoreKeyStoreWithRevocation by lazy {
-        TrustStoresMap.TrustedCertificates(listOf(truststoreWithRevocationCertificatePem))
     }
 
     internal val c4TruststoreKeyStore by lazy {
@@ -97,9 +91,9 @@ internal open class TestBase {
     }
     protected val clientMessageContent = "PING"
     protected val serverResponseContent = "PONG"
-    protected val keystorePass = "password"
+    private val keystorePass = "password"
 
-    protected val keystorePassC4 = "cordacadevpass"
+    private val keystorePassC4 = "cordacadevpass"
     protected val aliceSNI = listOf("alice.net", "www.alice.net")
     protected val bobSNI = listOf("bob.net", "www.bob.net")
     protected val partyAx500Name = X500Name("O=PartyA, L=London, C=GB")
@@ -110,7 +104,6 @@ internal open class TestBase {
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF),
         tlsType = TlsType.ONE_WAY,
     )
-    protected val bobKeyStore = readKeyStore(Certificates.bobKeyStoreFile)
     protected val bobSslConfig = SslConfiguration(
         revocationCheck = RevocationConfig(RevocationConfigMode.OFF),
         tlsType = TlsType.ONE_WAY,
@@ -132,7 +125,7 @@ internal open class TestBase {
     protected val lifecycleCoordinatorFactory =
         LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
 
-    protected inner class ConfigPublisher(private var coordinatorFactory: LifecycleCoordinatorFactory? = null): Resource {
+    protected inner class ConfigPublisher(private var coordinatorFactory: LifecycleCoordinatorFactory? = null) : Resource {
         init {
             coordinatorFactory = coordinatorFactory ?: lifecycleCoordinatorFactory
         }
@@ -160,11 +153,15 @@ internal open class TestBase {
 
         private fun Publisher.publishGatewayConfig(config: Config) {
             val configSource = config.root().render(ConfigRenderOptions.concise())
-            this.publish(listOf(Record(
-                CONFIG_TOPIC,
-                ConfigKeys.P2P_GATEWAY_CONFIG,
-                Configuration(configSource, configSource, 0, ConfigurationSchemaVersion(1, 0))
-            ))).forEach { it.get() }
+            this.publish(
+                listOf(
+                    Record(
+                        CONFIG_TOPIC,
+                        ConfigKeys.P2P_GATEWAY_CONFIG,
+                        Configuration(configSource, configSource, 0, ConfigurationSchemaVersion(1, 0)),
+                    ),
+                ),
+            ).forEach { it.get() }
         }
 
         fun publishConfig(configuration: GatewayConfiguration) {
@@ -175,31 +172,53 @@ internal open class TestBase {
                         "hostPort" to it.hostPort,
                         "urlPath" to it.urlPaths.first(),
                     )
-                }
+                },
             )
             val publishConfig = ConfigFactory.empty()
-                .withValue("serversConfiguration",
-                    servers)
-                .withValue("maxRequestSize",
-                    ConfigValueFactory.fromAnyRef(configuration.maxRequestSize))
-                .withValue("sslConfig.revocationCheck.mode",
-                    ConfigValueFactory.fromAnyRef(configuration.sslConfig.revocationCheck.mode.toString()))
-                .withValue("sslConfig.tlsType",
-                    ConfigValueFactory.fromAnyRef(configuration.sslConfig.tlsType.toString()))
-                .withValue("connectionConfig.connectionIdleTimeout",
-                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.connectionIdleTimeout))
-                .withValue("connectionConfig.maxClientConnections",
-                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxClientConnections))
-                .withValue("connectionConfig.acquireTimeout",
-                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.acquireTimeout))
-                .withValue("connectionConfig.responseTimeout",
-                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.responseTimeout))
-                .withValue("connectionConfig.retryDelay",
-                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.retryDelay))
-                .withValue("connectionConfig.initialReconnectionDelay",
-                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.initialReconnectionDelay))
-                .withValue("connectionConfig.maxReconnectionDelay",
-                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxReconnectionDelay))
+                .withValue(
+                    "serversConfiguration",
+                    servers,
+                )
+                .withValue(
+                    "maxRequestSize",
+                    ConfigValueFactory.fromAnyRef(configuration.maxRequestSize),
+                )
+                .withValue(
+                    "sslConfig.revocationCheck.mode",
+                    ConfigValueFactory.fromAnyRef(configuration.sslConfig.revocationCheck.mode.toString()),
+                )
+                .withValue(
+                    "sslConfig.tlsType",
+                    ConfigValueFactory.fromAnyRef(configuration.sslConfig.tlsType.toString()),
+                )
+                .withValue(
+                    "connectionConfig.connectionIdleTimeout",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.connectionIdleTimeout),
+                )
+                .withValue(
+                    "connectionConfig.maxClientConnections",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxClientConnections),
+                )
+                .withValue(
+                    "connectionConfig.acquireTimeout",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.acquireTimeout),
+                )
+                .withValue(
+                    "connectionConfig.responseTimeout",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.responseTimeout),
+                )
+                .withValue(
+                    "connectionConfig.retryDelay",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.retryDelay),
+                )
+                .withValue(
+                    "connectionConfig.initialReconnectionDelay",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.initialReconnectionDelay),
+                )
+                .withValue(
+                    "connectionConfig.maxReconnectionDelay",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxReconnectionDelay),
+                )
             emulator.publisherFactory
                 .createPublisher(PublisherConfig(configPublisherClientId, false), messagingConfig)
                 .use { publisher ->
@@ -223,7 +242,8 @@ internal open class TestBase {
 
     protected fun createConfigurationServiceFor(
         configuration: GatewayConfiguration,
-        coordinatorFactory: LifecycleCoordinatorFactory? = null) : ConfigurationReadService {
+        coordinatorFactory: LifecycleCoordinatorFactory? = null,
+    ): ConfigurationReadService {
         val publisher = ConfigPublisher(coordinatorFactory)
         keep(publisher)
         publisher.publishConfig(configuration)
@@ -254,5 +274,12 @@ internal open class TestBase {
         eventually(duration = 20.seconds) {
             assertThat(this.isRunning).isTrue
         }
+    }
+
+    fun PrivateKeyWithCertificateChain.toKeyStoreAndPassword(): KeyStoreWithPassword {
+        return KeyStoreWithPassword(
+            this.toKeyStore(),
+            CertificateAuthority.PASSWORD,
+        )
     }
 }

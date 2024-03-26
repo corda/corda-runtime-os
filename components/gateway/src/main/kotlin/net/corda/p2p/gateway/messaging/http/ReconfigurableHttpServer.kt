@@ -74,14 +74,14 @@ internal class ReconfigurableHttpServer(
                         GatewayServerConfiguration(
                             hostAddress = key.hostAddress,
                             hostPort = key.hostPort,
-                            urlPaths = emptySet()
+                            urlPaths = emptySet(),
                         )
                     },
                     operation = { _, soFar, config ->
                         config.copy(
-                            urlPaths = soFar.urlPaths + config.urlPaths
+                            urlPaths = soFar.urlPaths + config.urlPaths,
                         )
-                    }
+                    },
                 )
                 if (newServersConfiguration.isEmpty()) {
                     throw IllegalArgumentException("No servers defined!")
@@ -102,7 +102,7 @@ internal class ReconfigurableHttpServer(
                             serverConfiguration.urlPaths.forEach { urlPath ->
                                 logger.info(
                                     "New server configuration, ${dominoTile.coordinatorName} will be connected to " +
-                                            "${serverConfiguration.hostAddress}:${serverConfiguration.hostPort}$urlPath",
+                                        "${serverConfiguration.hostAddress}:${serverConfiguration.hostPort}$urlPath",
                                 )
                             }
                             HttpServer(
@@ -117,9 +117,10 @@ internal class ReconfigurableHttpServer(
                                 } catch (e: BindException) {
                                     throw CordaRuntimeException(
                                         "Failed to connect on " +
-                                                "'${serverConfiguration.hostAddress}:${serverConfiguration.hostPort}' " +
-                                                "address. Please make sure the required address is not in use " +
-                                                "and could be accessed.", e
+                                            "'${serverConfiguration.hostAddress}:${serverConfiguration.hostPort}' " +
+                                            "address. Please make sure the required address is not in use " +
+                                            "and could be accessed.",
+                                        e,
                                     )
                                 }
                             }

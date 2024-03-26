@@ -364,6 +364,10 @@ class ComplexDominoTile(
         configReady = false
     }
 
+    fun setError(e: Throwable) {
+        coordinator.postEvent(ErrorEvent(e))
+    }
+
     override fun close() {
         registrationToChildMap.keys.forEach {
             it.close()
