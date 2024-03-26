@@ -49,7 +49,7 @@ class CPIList : RestCommand(), Runnable {
         if (result.cpis.isEmpty()) {
             sysOut.info("No CPIs were uploaded on the cluster.")
         } else {
-            sysOut.info("List of cpi's : ${result.cpis}")
+            sysOut.info("List of CPIs : ${result.cpis}")
         }
     }
 }
