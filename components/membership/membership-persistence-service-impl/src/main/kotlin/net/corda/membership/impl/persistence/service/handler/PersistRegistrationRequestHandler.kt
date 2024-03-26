@@ -7,7 +7,6 @@ import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.toStatus
 import net.corda.membership.lib.registration.RegistrationStatusExt.canMoveToStatus
 import net.corda.virtualnode.toCorda
-import java.util.UUID
 import javax.persistence.LockModeType
 
 internal class PersistRegistrationRequestHandler(
@@ -39,7 +38,7 @@ internal class PersistRegistrationRequestHandler(
                                     " is already persisted. Persistence request was discarded."
                         )
                     }
-                    if (!status.canMoveToStatus(request.status)) {
+                    else if (!status.canMoveToStatus(request.status)) {
                         logger.info(
                             "Registration request [$registrationId] has status: ${currentRegistrationRequest.status}" +
                                     " can not move it to status ${request.status}"
