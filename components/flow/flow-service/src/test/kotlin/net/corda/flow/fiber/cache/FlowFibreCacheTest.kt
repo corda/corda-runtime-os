@@ -28,23 +28,21 @@ class FlowFibreCacheTest {
     private val value2 = mock<FlowFiber>()
     private val sandboxGroupId1 = UUID.randomUUID()
     private val sandboxGroupId2 = UUID.randomUUID()
+    private val cache = FlowFiberCacheImpl(cacheEviction)
 
     @BeforeAll
     fun setup() {
         whenever(value1.getSandboxGroupId()).thenReturn(sandboxGroupId1)
         whenever(value2.getSandboxGroupId()).thenReturn(sandboxGroupId2)
     }
-
     @Test
     fun `when get and no entry return null`() {
-        val cache = FlowFiberCacheImpl(cacheEviction)
         val entry = cache.get(mock(), 123, sandboxGroupId1)
         assertThat(entry).isNull()
     }
 
     @Test
     fun `when get and entry wrong version return null and entry evicted`() {
-        val cache = FlowFiberCacheImpl(cacheEviction)
         cache.put(key1, 1, value1)
         val entry = cache.get(key1, 123, sandboxGroupId1)
         assertThat(entry).isNull()
@@ -53,7 +51,6 @@ class FlowFibreCacheTest {
 
     @Test
     fun `when get and entry wrong sandbox group ID return null and entry evicted`() {
-        val cache = FlowFiberCacheImpl(cacheEviction)
         cache.put(key1, 1, value1)
         val entry = cache.get(key1, 1, UUID.randomUUID())
         assertThat(entry).isNull()
@@ -62,7 +59,6 @@ class FlowFibreCacheTest {
 
     @Test
     fun `interrupted thread prevented from writing to cache`() {
-        val cache = FlowFiberCacheImpl(cacheEviction)
         Thread.currentThread().interrupt()
 
         assertThrows<InterruptedException> {
@@ -72,7 +68,6 @@ class FlowFibreCacheTest {
 
     @Test
     fun `interrupted thread prevented from getting from cache`() {
-        val cache = FlowFiberCacheImpl(cacheEviction)
         Thread.currentThread().interrupt()
 
         assertThrows<InterruptedException> {
@@ -82,7 +77,6 @@ class FlowFibreCacheTest {
 
     @Test
     fun `interrupted thread prevented from removing from cache`() {
-        val cache = FlowFiberCacheImpl(cacheEviction)
         Thread.currentThread().interrupt()
 
         assertThrows<InterruptedException> {
@@ -92,15 +86,23 @@ class FlowFibreCacheTest {
 
     @Test
     fun `when get and entry and version exist and matches sandbox group ID return`() {
-        val cache = FlowFiberCacheImpl(cacheEviction)
         cache.put(key1, 1, value1)
         val entry = cache.get(key1, 1, sandboxGroupId1)
         assertThat(entry).isSameAs(value1)
     }
 
     @Test
+    fun `get from cache also removes entry`() {
+        cache.put(key1, 1, value1)
+        val firstRetrieval = cache.get(key1, 1, sandboxGroupId1)
+        val secondRetrieval = cache.get(key1, 1, sandboxGroupId1)
+
+        assertThat(firstRetrieval).isEqualTo(value1)
+        assertThat(secondRetrieval).isNull()
+    }
+
+    @Test
     fun `when remove and entry does not exist do no throw`() {
-        val cache = FlowFiberCacheImpl(cacheEviction)
         assertDoesNotThrow {
             cache.remove(key1)
         }
@@ -108,7 +110,6 @@ class FlowFibreCacheTest {
 
     @Test
     fun `removeAll when data exists`() {
-        val cache = FlowFiberCacheImpl(cacheEviction)
         val key1 = mock<FlowKey>()
         val key2 = mock<FlowKey>()
         whenever(value1.getSandboxGroupId()).thenReturn(sandboxGroupId1)
@@ -123,7 +124,6 @@ class FlowFibreCacheTest {
 
     @Test
     fun `removeAll does not throw when no data exists`() {
-        val cache = FlowFiberCacheImpl(cacheEviction)
         assertDoesNotThrow {
             cache.removeAll()
         }
@@ -131,7 +131,6 @@ class FlowFibreCacheTest {
 
     @Test
     fun `removeAll clears cache when data exists`() {
-        val cache = FlowFiberCacheImpl(cacheEviction)
         cache.put(key1, 1, value1)
         cache.put(key2, 1, value2)
         assertThat(cache.get(key1, 1, sandboxGroupId1)).isNotNull()
@@ -151,7 +150,6 @@ class FlowFibreCacheTest {
         val vnodeContext = mock< VirtualNodeContext> {
             on { holdingIdentity } doReturn (id)
         }
-        val cache = FlowFiberCacheImpl(cacheEviction)
         val key1 = mock<FlowKey> {
             on { identity } doReturn (avroId)
         }

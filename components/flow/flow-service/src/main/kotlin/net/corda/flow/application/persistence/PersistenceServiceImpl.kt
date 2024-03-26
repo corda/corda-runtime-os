@@ -153,11 +153,9 @@ class PersistenceServiceImpl @Activate constructor(
     }
 
     private fun validateDeduplicationId(deduplicationId: String) {
-        if (deduplicationId.isEmpty() || deduplicationId.length > MAX_DEDUPLICATION_ID_LENGTH) {
-            throw IllegalArgumentException(
-                "deduplicationId must not be empty and must not exceed $MAX_DEDUPLICATION_ID_LENGTH characters. " +
-                "Provided deduplicationId: $deduplicationId, length: ${deduplicationId.length} characters."
-            )
+        require(deduplicationId.isNotEmpty() && deduplicationId.length <= MAX_DEDUPLICATION_ID_LENGTH) {
+            "deduplicationId must not be empty and must not exceed $MAX_DEDUPLICATION_ID_LENGTH characters. " +
+                    "Provided deduplicationId: $deduplicationId, length: ${deduplicationId.length} characters."
         }
     }
 }
