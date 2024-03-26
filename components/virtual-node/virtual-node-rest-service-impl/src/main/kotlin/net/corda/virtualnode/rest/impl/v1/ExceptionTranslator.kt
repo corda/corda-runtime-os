@@ -26,12 +26,17 @@ class ExceptionTranslator {
             return when (exception.errorType) {
                 IllegalArgumentException::class.java.name,
                 CpiNotFoundException::class.java.name
-                -> BadRequestException(exception.errorMessage)
+                -> BadRequestException(
+                    title = CpiNotFoundException::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(exception.errorType, exception.errorMessage)
+                )
+
                 VirtualNodeAlreadyExistsException::class.java.name
                 -> ResourceAlreadyExistsException(
-                    VirtualNodeAlreadyExistsException::class.java.simpleName,
-                    ExceptionDetails(exception.errorType, exception.errorMessage)
+                    title = VirtualNodeAlreadyExistsException::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(exception.errorType, exception.errorMessage)
                 )
+
                 else
                 -> InternalServerException(
                     exceptionDetails = ExceptionDetails(

@@ -596,7 +596,10 @@ internal class VirtualNodeRestResourceImpl(
             VirtualNodeOperationNotFoundException::class.java.name -> ResourceNotFoundException(exception.errorMessage)
             VirtualNodeOperationBadRequestException::class.java.name,
             LiquibaseDiffCheckFailedException::class.java.name,
-            javax.persistence.RollbackException::class.java.name -> BadRequestException(exception.errorMessage)
+            javax.persistence.RollbackException::class.java.name -> BadRequestException(
+                title = javax.persistence.RollbackException::class.java.simpleName,
+                exceptionDetails = ExceptionDetails(exception.errorType, exception.errorMessage)
+            )
             else -> InternalServerException(
                 exceptionDetails = ExceptionDetails(
                     exception.errorType,

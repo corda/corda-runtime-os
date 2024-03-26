@@ -288,7 +288,11 @@ class FlowRestResourceImpl @Activate constructor(
                 FlowStates.valueOf(it)
             } catch (e: IllegalArgumentException) {
                 throw BadRequestException(
-                    "Status to filter by is not found in list of valid statuses: ${FlowStates.values()}"
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(
+                        e::class.java.name,
+                        "Status to filter by is not found in list of valid statuses: ${FlowStates.values()}"
+                    )
                 )
             }
             flowStatuses.filter { statusFilter -> statusFilter.flowStatus == flowState }

@@ -58,7 +58,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.*
+import java.util.UUID
 import java.util.regex.PatternSyntaxException
 import javax.persistence.PessimisticLockException
 import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
@@ -537,7 +537,10 @@ class MGMRestResourceImpl internal constructor(
                     )
                 }.toHttpType()
             } catch (e: MembershipPersistenceException) {
-                throw BadRequestException("${e.message}")
+                throw BadRequestException(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
+                )
             }
         }
 
@@ -604,7 +607,10 @@ class MGMRestResourceImpl internal constructor(
                     )
                 }
             } catch (e: IllegalArgumentException) {
-                throw BadRequestException("${e.message}")
+                throw BadRequestException(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
+                )
             } catch (e: ContextDeserializationException) {
                 throw InternalServerException(
                     title = e::class.java.simpleName,
@@ -629,7 +635,10 @@ class MGMRestResourceImpl internal constructor(
                     )
                 }
             } catch (e: IllegalArgumentException) {
-                throw BadRequestException("${e.message}")
+                throw BadRequestException(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
+                )
             }
         }
 
@@ -645,7 +654,10 @@ class MGMRestResourceImpl internal constructor(
                     )
                 }
             } catch (e: IllegalArgumentException) {
-                throw BadRequestException("${e.message}")
+                throw BadRequestException(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
+                )
             } catch (e: NoSuchElementException) {
                 throw ResourceNotFoundException("${e.message}")
             } catch (e: PessimisticLockException) {
@@ -666,7 +678,10 @@ class MGMRestResourceImpl internal constructor(
                     )
                 }
             } catch (e: IllegalArgumentException) {
-                throw BadRequestException("${e.message}")
+                throw BadRequestException(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
+                )
             } catch (e: NoSuchElementException) {
                 throw ResourceNotFoundException("${e.message}")
             } catch (e: PessimisticLockException) {
@@ -800,7 +815,13 @@ class MGMRestResourceImpl internal constructor(
             try {
                 expression.toRegex()
             } catch (e: PatternSyntaxException) {
-                throw BadRequestException("The regular expression's syntax is invalid.\n${e.message}")
+                throw BadRequestException(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(
+                        e::class.java.name,
+                        "The regular expression's syntax is invalid.\n${e.message}"
+                    )
+                )
             }
         }
 

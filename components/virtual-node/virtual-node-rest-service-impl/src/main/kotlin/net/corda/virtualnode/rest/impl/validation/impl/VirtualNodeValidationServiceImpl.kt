@@ -179,7 +179,13 @@ internal class VirtualNodeValidationServiceImpl(
         return try {
             ShortHash.parse(virtualNodeShortId)
         } catch (e: ShortHashException) {
-            throw BadRequestException("Invalid holding identity short hash${e.message?.let { ": $it" }}")
+            throw BadRequestException(
+                title = e::class.java.simpleName,
+                exceptionDetails = ExceptionDetails(
+                    e::class.java.name,
+                    "Invalid holding identity short hash${e.message?.let { ": $it" }}"
+                )
+            )
         }
     }
 }

@@ -102,8 +102,17 @@ class CpiUploadRestResourceImpl @Activate constructor(
         // DuplicateCpiUploadException only contains the "resource" in the error message,
         // i.e. "name version (groupId)"
         when (ex.errorType) {
-            ValidationException::class.java.name -> throw BadRequestException(ex.errorMessage, details)
-            ConfigurationValidationException::class.java.name -> throw BadRequestException(ex.errorMessage, details)
+            ValidationException::class.java.name -> throw BadRequestException(
+                ValidationException::class.java.simpleName,
+                details,
+                ExceptionDetails(ex.errorType, ex.errorMessage)
+            )
+
+            ConfigurationValidationException::class.java.name -> throw BadRequestException(
+                ConfigurationValidationException::class.java.simpleName,
+                details,
+                ExceptionDetails(ex.errorType, ex.errorMessage)
+            )
             DuplicateCpiUploadException::class.java.name -> throw ResourceAlreadyExistsException(
                 DuplicateCpiUploadException::class.java.simpleName,
                 ExceptionDetails(ex.errorType, ex.errorMessage)
