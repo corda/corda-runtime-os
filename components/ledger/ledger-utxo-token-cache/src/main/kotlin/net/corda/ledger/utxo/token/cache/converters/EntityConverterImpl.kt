@@ -21,6 +21,7 @@ import net.corda.ledger.utxo.token.cache.entities.internal.CachedTokenImpl
 import net.corda.ledger.utxo.token.cache.entities.internal.PoolCacheStateImpl
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
 import net.corda.utilities.time.Clock
+import net.corda.v5.ledger.utxo.token.selection.Strategy
 import java.math.BigDecimal
 import java.math.BigInteger
 
@@ -43,7 +44,8 @@ class EntityConverterImpl(
             amountToBigDecimal(tokenClaimQuery.targetAmount),
             tokenClaimQuery.tagRegex,
             tokenClaimQuery.ownerHash,
-            toTokenPoolKey(avroPoolKey)
+            toTokenPoolKey(avroPoolKey),
+            Strategy.RANDOM // RANDOM for now to preserve the current behaviour. This will be updated in follow-up ticket
         )
     }
 

@@ -3,7 +3,7 @@ package net.corda.ledger.utxo.token.cache.handlers
 import net.corda.data.flow.event.FlowEvent
 import net.corda.ledger.utxo.token.cache.entities.ForceClaimRelease
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
-import net.corda.ledger.utxo.token.cache.entities.TokenPoolCache
+import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.messaging.api.records.Record
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
@@ -15,7 +15,7 @@ class TokenForceClaimReleaseEventHandler : TokenEventHandler<ForceClaimRelease> 
     }
 
     override fun handle(
-        tokenPoolCache: TokenPoolCache,
+        tokenCache: TokenCache,
         state: PoolCacheState,
         event: ForceClaimRelease
     ): Record<String, FlowEvent>? {

@@ -3,7 +3,7 @@ package net.corda.ledger.utxo.token.cache.handlers
 import net.corda.data.flow.event.FlowEvent
 import net.corda.ledger.utxo.token.cache.entities.ClaimRelease
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
-import net.corda.ledger.utxo.token.cache.entities.TokenPoolCache
+import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.messaging.api.records.Record
 import net.corda.utilities.debug
@@ -18,7 +18,7 @@ class TokenClaimReleaseEventHandler(
     }
 
     override fun handle(
-        tokenPoolCache: TokenPoolCache,
+        tokenCache: TokenCache,
         state: PoolCacheState,
         event: ClaimRelease
     ): Record<String, FlowEvent>? {
@@ -27,7 +27,7 @@ class TokenClaimReleaseEventHandler(
         if (!state.claimExists(event.claimId)) {
             log.warn("Couldn't find existing claim for claimId='${event.claimId}'")
         } else {
-            tokenPoolCache.get(event.poolKey).removeAll(event.usedTokens)
+            tokenCache.removeAll(event.usedTokens)
             state.removeClaim(event.claimId)
         }
 

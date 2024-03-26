@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.token.cache.queries.impl
 
 import net.corda.ledger.utxo.token.cache.queries.SqlQueryProvider
+import net.corda.v5.ledger.utxo.token.selection.Strategy
 import org.osgi.service.component.annotations.Component
 
 @Component(service = [SqlQueryProvider::class])
@@ -41,7 +42,7 @@ class SqlQueryProviderTokens : SqlQueryProvider {
         """.trimIndent()
     }
 
-    override fun getPagedSelectQuery(limit: Int, includeTagFilter: Boolean, includeOwnerFilter: Boolean): String {
+    override fun getPagedSelectQuery(limit: Int, includeTagFilter: Boolean, includeOwnerFilter: Boolean, strategy: Strategy): String {
         val tagFilter = if (includeTagFilter) {
             "AND token_tag ~ :$SQL_PARAMETER_TAG_FILTER"
         } else {
@@ -51,6 +52,14 @@ class SqlQueryProviderTokens : SqlQueryProvider {
             "AND token_owner_hash = :$SQL_PARAMETER_OWNER_HASH"
         } else {
             ""
+        }
+
+        val orderBy = if (strategy == Strategy.PRIORITY) {
+            // Uncomment after getting the table updated
+            // "ORDER BY t_output.PRIORITY, t_output.transaction_id"
+            "ORDER BY t_output.transaction_id"
+        } else {
+            "ORDER BY t_output.transaction_id"
         }
 
         // The query orders by transaction_id to create some randomness in the tokens that are selected
@@ -69,7 +78,7 @@ class SqlQueryProviderTokens : SqlQueryProvider {
                 AND   t_output.token_notary_x500_name = :$SQL_PARAMETER_TOKEN_NOTARY_X500_NAME
                 $tagFilter
                 $ownerFilter
-                ORDER BY t_output.transaction_id
+                $orderBy
                 LIMIT $limit
         """.trimIndent()
     }

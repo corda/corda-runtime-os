@@ -5,8 +5,6 @@ import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.ClaimQuery
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
-import net.corda.ledger.utxo.token.cache.entities.TokenPoolCache
-import net.corda.ledger.utxo.token.cache.entities.internal.TokenCacheImpl
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
@@ -27,7 +25,7 @@ class TokenClaimQueryEventHandler(
     }
 
     override fun handle(
-        tokenPoolCache: TokenPoolCache,
+        tokenCache: TokenCache,
         state: PoolCacheState,
         event: ClaimQuery
     ): Record<String, FlowEvent> {
@@ -44,8 +42,6 @@ class TokenClaimQueryEventHandler(
             )
         }
 
-        var tokenCache = tokenPoolCache.get(event.poolKey)
-
         // Attempt to select the tokens from the current cache
         var selectionResult = selectTokens(tokenCache, state, event)
 
@@ -55,16 +51,16 @@ class TokenClaimQueryEventHandler(
             // This way the cache size will be equal to the configured size once the claimed tokens are removed
             // from the query results
             val maxTokens = serviceConfiguration.cachedTokenPageSize + state.claimedTokens().size
-            val findResult = availableTokenService.findAvailTokens(event.poolKey, event.ownerHash, event.tagRegex, maxTokens)
+            val findResult = availableTokenService.findAvailTokens(
+                event.poolKey, event.ownerHash, event.tagRegex,
+                maxTokens, event.strategy
+            )
 
             // Remove the claimed tokens from the query results
             val tokens = findResult.tokens.filterNot { state.isTokenClaimed(it.stateRef) }
 
             // Replace the tokens in the cache with the ones from the query result that have not been claimed
-            tokenCache = TokenCacheImpl().apply { add(tokens) }
-
-            // Update the token pool cache
-            tokenPoolCache.put(event.poolKey, tokenCache)
+            tokenCache.add(tokens, event.strategy)
 
             selectionResult = selectTokens(tokenCache, state, event)
         }
@@ -95,7 +91,7 @@ class TokenClaimQueryEventHandler(
         val selectedTokens = mutableListOf<CachedToken>()
         var selectedAmount = BigDecimal.ZERO
 
-        for (token in filterStrategy.filterTokens(tokenCache, event)) {
+        for (token in filterStrategy.filterTokens(tokenCache.get(event.strategy), event)) {
             if (selectedAmount >= event.targetAmount) {
                 break
             }

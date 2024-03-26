@@ -18,9 +18,6 @@ import org.mockito.kotlin.whenever
 class TokenLedgerChangeEventHandlerTest {
 
     private val tokenCache = mock<TokenCache>()
-    private val tokenPoolCache: TokenPoolCache = mock {
-        whenever(it.get(any())).thenReturn(tokenCache)
-    }
     private val poolCacheState = mock<PoolCacheState>()
 
     @Test
@@ -30,11 +27,11 @@ class TokenLedgerChangeEventHandlerTest {
         val ledgerChange = LedgerChange(POOL_KEY, "", "", "", listOf(), listOf(token1))
 
         val target = TokenLedgerChangeEventHandler()
-        val result = target.handle(tokenPoolCache, poolCacheState, ledgerChange)
+        val result = target.handle(tokenCache, poolCacheState, ledgerChange)
 
         assertThat(result).isNull()
 
-        verify(tokenCache, never()).add(any())
+        verify(tokenCache, never()).add(any(), any())
     }
 
     @Test
@@ -45,7 +42,7 @@ class TokenLedgerChangeEventHandlerTest {
         val ledgerChange = LedgerChange(POOL_KEY, "", "", "", listOf(token1, token2), listOf())
 
         val target = TokenLedgerChangeEventHandler()
-        val result = target.handle(tokenPoolCache, poolCacheState, ledgerChange)
+        val result = target.handle(tokenCache, poolCacheState, ledgerChange)
 
         assertThat(result).isNull()
 
