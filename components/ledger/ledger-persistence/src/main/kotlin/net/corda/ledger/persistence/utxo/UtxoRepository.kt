@@ -214,6 +214,7 @@ interface UtxoRepository {
         val customRepresentation: CustomRepresentation,
         val token: UtxoToken?,
         val notaryName: String,
+        val consumed: Instant? = null
     )
 
     data class TransactionSignature(val index: Int, val signatureBytes: ByteArray, val publicKeyHash: SecureHash)
