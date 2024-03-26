@@ -50,7 +50,6 @@ import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
 import net.corda.p2p.linkmanager.sessions.metadata.toCounterparties
 import net.corda.p2p.linkmanager.state.SessionState
 import net.corda.p2p.messaging.P2pRecordsFactory
-import net.corda.p2p.messaging.Subsystem
 import net.corda.schema.Schemas
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.time.Clock
@@ -339,14 +338,7 @@ internal class StatefulSessionManagerImpl(
                             sessionToCache,
                         )
                         sessionCache.putInboundSession(session)
-                        val key = sessionToCache.sessionId
-                        listOf(
-                            Record(
-                                Schemas.P2P.SESSION_EVENTS,
-                                key,
-                                SessionEvent(SessionCreated(SessionDirection.INBOUND, key))
-                            )
-                        )
+                        recordsForSessionCreated(sessionToCache.sessionId, SessionDirection.INBOUND)
                     } ?: emptyList()
                 }
                 is AvroInitiatorHelloMessage, is AvroInitiatorHandshakeMessage, null -> {
@@ -357,13 +349,7 @@ internal class StatefulSessionManagerImpl(
                             sessionToCache,
                         )
                         sessionCache.putOutboundSession(key, outboundSession)
-                        listOf(
-                            Record(
-                                Schemas.P2P.SESSION_EVENTS,
-                                key,
-                                SessionEvent(SessionCreated(SessionDirection.OUTBOUND, key))
-                            )
-                        )
+                        recordsForSessionCreated(key, SessionDirection.OUTBOUND)
                     } ?: emptyList()
                 }
                 else -> emptyList()
@@ -1115,6 +1101,10 @@ internal class StatefulSessionManagerImpl(
             metadata.serial,
             metadata.communicationWithMgm,
         )
+    }
+
+    private fun recordsForSessionCreated(key: String, direction: SessionDirection): List<Record<String, SessionEvent>> {
+        return listOf(Record(Schemas.P2P.SESSION_EVENTS, key, SessionEvent(SessionCreated(direction, key))))
     }
 
     private val sessionEventListener = StatefulSessionEventProcessor(
