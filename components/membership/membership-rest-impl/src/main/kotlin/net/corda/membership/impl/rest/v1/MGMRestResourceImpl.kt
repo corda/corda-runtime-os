@@ -509,7 +509,10 @@ class MGMRestResourceImpl internal constructor(
                     ).fromAvro()
                 }
             } catch (e: MembershipPersistenceException) {
-                throw ResourceNotFoundException("${e.message}")
+                throw ResourceNotFoundException(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
+                )
             }
         }
 
@@ -659,11 +662,20 @@ class MGMRestResourceImpl internal constructor(
                     exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
                 )
             } catch (e: NoSuchElementException) {
-                throw ResourceNotFoundException("${e.message}")
+                throw ResourceNotFoundException(
+                    e::class.java.simpleName,
+                    ExceptionDetails(e::class.java.name, "${e.message}")
+                )
             } catch (e: PessimisticLockException) {
-                throw InvalidStateChangeException(e::class.java.simpleName, ExceptionDetails(e::class.java.name, "${e.message}"))
+                throw InvalidStateChangeException(
+                    e::class.java.simpleName,
+                    ExceptionDetails(e::class.java.name, "${e.message}")
+                )
             } catch (e: InvalidEntityUpdateException) {
-                throw InvalidStateChangeException(e::class.java.simpleName, ExceptionDetails(e::class.java.name, "${e.message}"))
+                throw InvalidStateChangeException(
+                    e::class.java.simpleName,
+                    ExceptionDetails(e::class.java.name, "${e.message}")
+                )
             }
         }
         override fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters) {
@@ -683,7 +695,10 @@ class MGMRestResourceImpl internal constructor(
                     exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
                 )
             } catch (e: NoSuchElementException) {
-                throw ResourceNotFoundException("${e.message}")
+                throw ResourceNotFoundException(
+                    e::class.java.simpleName,
+                    ExceptionDetails(e::class.java.name, "${e.message}")
+                )
             } catch (e: PessimisticLockException) {
                 throw InvalidStateChangeException(
                     e::class.java.simpleName,
@@ -760,7 +775,10 @@ class MGMRestResourceImpl internal constructor(
                 mgmResourceClient.deleteApprovalRule(it, ruleId, ruleType)
             }
         } catch (e: MembershipPersistenceException) {
-            throw ResourceNotFoundException("${e.message}")
+            throw ResourceNotFoundException(
+                e::class.java.simpleName,
+                ExceptionDetails(e::class.java.name, "${e.message}")
+            )
         }
 
         private fun notAnMgmError(holdingIdentityShortHash: String): Nothing =
@@ -846,7 +864,11 @@ class MGMRestResourceImpl internal constructor(
             return try {
                 func.invoke(ShortHash.parseOrThrow(holdingIdentityShortHash))
             } catch (e: CouldNotFindEntityException) {
-                throw ResourceNotFoundException(e.entity, holdingIdentityShortHash)
+                throw ResourceNotFoundException(
+                    e.entity,
+                    holdingIdentityShortHash,
+                    ExceptionDetails(e::class.java.name, "${e.message}")
+                )
             } catch (e: MemberNotAnMgmException) {
                 notAnMgmError(holdingIdentityShortHash)
             } catch (e: CordaRPCAPIPartitionException) {

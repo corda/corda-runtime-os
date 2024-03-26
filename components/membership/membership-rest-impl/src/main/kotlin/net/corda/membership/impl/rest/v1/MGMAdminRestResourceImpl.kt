@@ -101,7 +101,11 @@ class MGMAdminRestResourceImpl @Activate constructor(
                     parseRegistrationRequestId(requestId)
                 )
             } catch (e: CouldNotFindEntityException) {
-                throw ResourceNotFoundException(e.entity, holdingIdentityShortHash)
+                throw ResourceNotFoundException(
+                    e.entity,
+                    holdingIdentityShortHash,
+                    ExceptionDetails(e::class.java.name, "${e.message}")
+                )
             } catch (e: MemberNotAnMgmException) {
                 throw InvalidInputDataException(
                     details = mapOf("holdingIdentityShortHash" to holdingIdentityShortHash),
@@ -109,8 +113,8 @@ class MGMAdminRestResourceImpl @Activate constructor(
                 )
             } catch (e: CordaRPCAPIPartitionException) {
                 throw ServiceUnavailableException(
-                    e::class.java.simpleName,
-                    ExceptionDetails(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(
                         e::class.java.name,
                         "Could not perform operation for $holdingIdentityShortHash: Repartition Event!"
                     )

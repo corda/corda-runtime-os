@@ -70,7 +70,10 @@ class NetworkRestResourceImpl @Activate constructor(
                 alternativeSessionKeys.map { it.toSessionKey() },
             )
         } catch (e: CertificatesResourceNotFoundException) {
-            throw ResourceNotFoundException(e.message)
+            throw ResourceNotFoundException(
+                e::class.java.simpleName,
+                ExceptionDetails(e::class.java.name, e.message)
+            )
         } catch (e: BadRequestException) {
             logger.warn("Could not $operation", e)
             throw e

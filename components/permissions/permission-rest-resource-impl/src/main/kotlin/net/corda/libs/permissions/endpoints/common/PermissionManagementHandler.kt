@@ -39,7 +39,10 @@ fun <T : Any?> withPermissionManager(
     } catch (e: RemotePermissionManagementException) {
         logger.warn("Remote permission management error: ${e.exceptionType}: ${e.message}")
         when (e.exceptionType) {
-            EntityNotFoundException::class.java.name -> throw ResourceNotFoundException(e.message!!)
+            EntityNotFoundException::class.java.name -> throw ResourceNotFoundException(
+                e::class.java.simpleName,
+                ExceptionDetails(e::class.java.name, e.message!!)
+            )
             EntityAssociationDoesNotExistException::class.java.name -> throw InvalidInputDataException(e.message!!)
             EntityAssociationAlreadyExistsException::class.java.name -> throw ResourceAlreadyExistsException(
                 EntityAssociationAlreadyExistsException::class.java.simpleName,

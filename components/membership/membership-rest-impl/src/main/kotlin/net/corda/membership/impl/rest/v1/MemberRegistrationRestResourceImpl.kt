@@ -139,6 +139,7 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
                 throw ResourceNotFoundException(
                     e.entity,
                     holdingIdentityShortHash,
+                    ExceptionDetails(e::class.java.name, "${e.message}")
                 )
             } catch (e: CordaRPCAPIPartitionException) {
                 throw ServiceUnavailableException(
@@ -157,7 +158,10 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
                     ShortHash.parseOrThrow(holdingIdentityShortHash)
                 ).map { it.fromDto() }
             } catch (e: CouldNotFindEntityException) {
-                throw ResourceNotFoundException(e.message!!)
+                throw ResourceNotFoundException(
+                    e::class.java.simpleName,
+                    ExceptionDetails(e::class.java.name, e.message!!)
+                )
             } catch (e: ContextDeserializationException) {
                 throw InternalServerException(
                     title = e::class.java.simpleName,
@@ -189,9 +193,15 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
                     registrationRequestId
                 ).fromDto()
             } catch (e: RegistrationProgressNotFoundException) {
-                throw ResourceNotFoundException(e.message!!)
+                throw ResourceNotFoundException(
+                    e::class.java.simpleName,
+                    ExceptionDetails(e::class.java.name, e.message!!)
+                )
             } catch (e: CouldNotFindEntityException) {
-                throw ResourceNotFoundException(e.message!!)
+                throw ResourceNotFoundException(
+                    e::class.java.simpleName,
+                    ExceptionDetails(e::class.java.name, e.message!!)
+                )
             } catch (e: ContextDeserializationException) {
                 throw InternalServerException(
                     title = e::class.java.simpleName,

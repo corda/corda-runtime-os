@@ -593,11 +593,14 @@ internal class VirtualNodeRestResourceImpl(
             "Remote request failed with exception of type ${exception.errorType}: ${exception.errorMessage}"
         )
         return when (exception.errorType) {
-            VirtualNodeOperationNotFoundException::class.java.name -> ResourceNotFoundException(exception.errorMessage)
+            VirtualNodeOperationNotFoundException::class.java.name -> ResourceNotFoundException(
+                title = VirtualNodeOperationNotFoundException::class.java.simpleName,
+                exceptionDetails = ExceptionDetails(exception.errorType, exception.errorMessage)
+            )
             VirtualNodeOperationBadRequestException::class.java.name,
             LiquibaseDiffCheckFailedException::class.java.name,
             javax.persistence.RollbackException::class.java.name -> BadRequestException(
-                title = javax.persistence.RollbackException::class.java.simpleName,
+                title = BadRequestException::class.java.simpleName,
                 exceptionDetails = ExceptionDetails(exception.errorType, exception.errorMessage)
             )
             else -> InternalServerException(

@@ -99,9 +99,12 @@ class KeyRestResourceImpl @Activate constructor(
             CryptoKeyOrderBy.valueOf(orderBy.uppercase())
         } catch (e: IllegalArgumentException) {
             throw ResourceNotFoundException(
-                "Invalid order by: $orderBy, must be one of: ${
-                    CryptoKeyOrderBy.values().joinToString()
-                }"
+                title = e::class.java.simpleName,
+                exceptionDetails = ExceptionDetails(
+                    e::class.java.name, "Invalid order by: $orderBy, must be one of: ${
+                        CryptoKeyOrderBy.values().joinToString()
+                    }"
+                )
             )
         }
         val filterMap = emptyMap<String, String>().let {
@@ -133,7 +136,13 @@ class KeyRestResourceImpl @Activate constructor(
                 try {
                     Instant.parse(createdBefore)
                 } catch (e: DateTimeParseException) {
-                    throw ResourceNotFoundException("Invalid created before time ($createdBefore)")
+                    throw ResourceNotFoundException(
+                        title = e::class.java.simpleName,
+                        exceptionDetails = ExceptionDetails(
+                            e::class.java.name,
+                            "Invalid created before time ($createdBefore)"
+                        )
+                    )
                 }
                 it + mapOf(CREATED_BEFORE_FILTER to createdBefore.toString())
             } else {
@@ -144,7 +153,13 @@ class KeyRestResourceImpl @Activate constructor(
                 try {
                     Instant.parse(createdAfter)
                 } catch (e: DateTimeParseException) {
-                    throw ResourceNotFoundException("Invalid created after time ($createdAfter)")
+                    throw ResourceNotFoundException(
+                        title = e::class.java.simpleName,
+                        exceptionDetails = ExceptionDetails(
+                            e::class.java.name,
+                            "Invalid created after time ($createdAfter)"
+                        )
+                    )
                 }
                 it + mapOf(CREATED_AFTER_FILTER to createdAfter.toString())
             } else {

@@ -28,6 +28,7 @@ import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.authorization.AuthorizationProvider
 import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.response.ResponseEntity
@@ -149,7 +150,10 @@ class UserEndpointImpl @Activate constructor(
             try {
                 changeUserPasswordSelf(ChangeUserPasswordDto(principal, principal.lowercase(), password))
             } catch (e: NoSuchElementException) {
-                throw ResourceNotFoundException(e.message ?: "No resource found for this request.")
+                throw ResourceNotFoundException(
+                    e::class.java.simpleName,
+                    ExceptionDetails(e::class.java.name, e.message ?: "No resource found for this request.")
+                )
             } catch (e: IllegalArgumentException) {
                 throw InvalidInputDataException(e.message ?: "Invalid argument in request.")
             }
@@ -165,7 +169,10 @@ class UserEndpointImpl @Activate constructor(
             try {
                 changeUserPasswordOther(ChangeUserPasswordDto(principal, username.lowercase(), password))
             } catch (e: NoSuchElementException) {
-                throw ResourceNotFoundException(e.message ?: "No resource found for this request.")
+                throw ResourceNotFoundException(
+                    e::class.java.simpleName,
+                    ExceptionDetails(e::class.java.name, e.message ?: "No resource found for this request.")
+                )
             } catch (e: IllegalArgumentException) {
                 throw InvalidInputDataException(e.message ?: "Invalid argument in request.")
             }
