@@ -26,18 +26,23 @@ internal class PersistRegistrationRequestHandler(
                 registrationId,
                 LockModeType.PESSIMISTIC_WRITE,
             )
-            currentRegistrationRequest?.status?.toStatus()?.let {
-                if (it == request.status) {
+            val status = currentRegistrationRequest?.status?.toStatus()
+            if (status == null) {
+                val e = Exception("Gooing to merge ${Thread.currentThread().id}", run)
+                logger.info("QQQ for [$registrationId] going 2.", e)
+                em.persist(createEntityBasedOnRequest(request))
+            } else {
+                if (status == request.status) {
                     logger.info(
                         "Registration request [$registrationId] with status: ${currentRegistrationRequest.status}" +
-                            " is already persisted. Persistence request was discarded."
+                                " is already persisted. Persistence request was discarded."
                     )
                     return@transaction
                 }
-                if (!it.canMoveToStatus(request.status)) {
+                if (!status.canMoveToStatus(request.status)) {
                     logger.info(
                         "Registration request [$registrationId] has status: ${currentRegistrationRequest.status}" +
-                            " can not move it to status ${request.status}"
+                                " can not move it to status ${request.status}"
                     )
                     // In case of processing persistence requests in an unordered manner we need to make sure the serial
                     // gets persisted. All other existing data of the request will remain the same.
@@ -47,12 +52,8 @@ internal class PersistRegistrationRequestHandler(
                         em.merge(createEntityBasedOnPreviousEntity(currentRegistrationRequest, request.registrationRequest.serial))
                         return@transaction
                     }
-                    return@transaction
                 }
             }
-            val e = Exception("Gooing to merge ${Thread.currentThread().id}", run)
-            logger.info("QQQ for [$registrationId] going 2.", e)
-            em.merge(createEntityBasedOnRequest(request))
         }
     }
 
