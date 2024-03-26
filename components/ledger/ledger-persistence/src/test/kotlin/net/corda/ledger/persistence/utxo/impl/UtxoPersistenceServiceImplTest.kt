@@ -326,7 +326,7 @@ class UtxoPersistenceServiceImplTest {
             on { getConsumedStateRefs() } doReturn emptyList()
             on { rawGroupLists } doReturn listOf(listOf("{}".toByteArray()))
             on { visibleStatesIndexes } doReturn listOf(0)
-            on { status } doReturn TransactionStatus.UNVERIFIED
+            on { status } doReturn TransactionStatus.VERIFIED
             on { signatures } doReturn emptyList()
             on { id } doReturn randomSecureHash()
             on { privacySalt } doReturn mockPrivacySalt
