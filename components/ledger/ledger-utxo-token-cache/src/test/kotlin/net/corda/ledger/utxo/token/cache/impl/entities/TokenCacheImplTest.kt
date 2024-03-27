@@ -17,6 +17,9 @@ import java.time.Duration
 class TokenCacheImplTest {
 
     private lateinit var target: TokenCache
+    private val cachedToken1 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s1") }
+    private val cachedToken2 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s2") }
+    private val cachedToken3 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s3") }
 
     @BeforeEach
     fun setup() {
@@ -37,24 +40,20 @@ class TokenCacheImplTest {
     fun `replace a token`(strategy: Strategy) {
         val cachedToken1 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s1") }
         val cachedToken2 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s1") }
-        target.add(listOf(cachedToken1), strategy)
 
+        target.add(listOf(cachedToken1), strategy)
         assertThat(target.get(strategy).toList()).containsOnly(cachedToken1)
 
         target.add(listOf(cachedToken2), strategy)
-
         assertThat(target.get(strategy).toList()).containsOnly(cachedToken2)
     }
 
     @ParameterizedTest
     @EnumSource(Strategy::class)
     fun `removing a token`(strategy: Strategy) {
-        val cachedToken1 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s1") }
-        val cachedToken2 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s2") }
-        val cachedToken3 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s3") }
         target.add(listOf(cachedToken1, cachedToken2, cachedToken3), strategy)
-
         assertThat(target.get(strategy).toList()).containsOnly(cachedToken1, cachedToken2, cachedToken3)
+
         target.removeAll(setOf("s1", "s3"))
         assertThat(target.get(strategy).toList()).containsOnly(cachedToken2)
     }
@@ -62,12 +61,9 @@ class TokenCacheImplTest {
     @ParameterizedTest
     @EnumSource(Strategy::class)
     fun `remove all`(strategy: Strategy) {
-        val cachedToken1 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s1") }
-        val cachedToken2 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s2") }
-        val cachedToken3 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s3") }
         target.add(listOf(cachedToken1, cachedToken2, cachedToken3), strategy)
-
         assertThat(target.get(strategy).toList()).containsOnly(cachedToken1, cachedToken2, cachedToken3)
+
         target.removeAll()
         assertThat(target.get(strategy).toList()).isEmpty()
     }
@@ -75,19 +71,12 @@ class TokenCacheImplTest {
     @ParameterizedTest
     @EnumSource(Strategy::class)
     fun `iterating the cache`(strategy: Strategy) {
-        val cachedToken1 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s1") }
-        val cachedToken2 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s2") }
-        val cachedToken3 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s3") }
         target.add(listOf(cachedToken1, cachedToken2, cachedToken3), strategy)
-
         assertThat(target.get(strategy).toList()).containsOnly(cachedToken1, cachedToken2, cachedToken3)
     }
 
     @Test
     fun `no tokens are returned if different strategy is used`() {
-        val cachedToken1 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s1") }
-        val cachedToken2 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s2") }
-        val cachedToken3 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s3") }
         target.add(listOf(cachedToken1, cachedToken2, cachedToken3), Strategy.RANDOM)
 
         assertThat(target.get(Strategy.RANDOM).toList()).containsOnly(cachedToken1, cachedToken2, cachedToken3)
@@ -100,9 +89,6 @@ class TokenCacheImplTest {
         val strategy = Strategy.PRIORITY
 
         val target = TokenCacheImpl(Duration.ofMillis(expiryPeriodInMillis))
-        val cachedToken1 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s1") }
-        val cachedToken2 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s2") }
-        val cachedToken3 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s3") }
         target.add(listOf(cachedToken1, cachedToken2, cachedToken3), strategy)
         assertThat(target.get(strategy).toList()).containsOnly(cachedToken1, cachedToken2, cachedToken3)
 
@@ -116,9 +102,6 @@ class TokenCacheImplTest {
         val strategy = Strategy.RANDOM
 
         val target = TokenCacheImpl(Duration.ofMillis(expiryPeriodInMillis))
-        val cachedToken1 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s1") }
-        val cachedToken2 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s2") }
-        val cachedToken3 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s3") }
         target.add(listOf(cachedToken1, cachedToken2, cachedToken3), strategy)
         assertThat(target.get(strategy).toList()).containsOnly(cachedToken1, cachedToken2, cachedToken3)
         sleep(expiryPeriodInMillis)
@@ -131,9 +114,6 @@ class TokenCacheImplTest {
         val strategy = Strategy.PRIORITY
 
         val target = TokenCacheImpl(Duration.ofMillis(expiryPeriodInMillis))
-        val cachedToken1 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s1") }
-        val cachedToken2 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s2") }
-        val cachedToken3 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s3") }
         target.add(listOf(cachedToken1, cachedToken2, cachedToken3), strategy)
         assertThat(target.get(strategy).toList()).containsOnly(cachedToken1, cachedToken2, cachedToken3)
         sleep(expiryPeriodInMillis/2)
