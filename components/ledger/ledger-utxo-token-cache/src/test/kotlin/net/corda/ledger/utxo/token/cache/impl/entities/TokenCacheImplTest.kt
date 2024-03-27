@@ -26,7 +26,6 @@ class TokenCacheImplTest {
         target = TokenCacheImpl(Duration.ofSeconds(10))
     }
 
-
     @ParameterizedTest
     @EnumSource(Strategy::class)
     fun `adding a token`(strategy: Strategy) {
@@ -116,9 +115,9 @@ class TokenCacheImplTest {
         val target = TokenCacheImpl(Duration.ofMillis(expiryPeriodInMillis))
         target.add(listOf(cachedToken1, cachedToken2, cachedToken3), strategy)
         assertThat(target.get(strategy).toList()).containsOnly(cachedToken1, cachedToken2, cachedToken3)
-        sleep(expiryPeriodInMillis/2)
+        sleep(expiryPeriodInMillis / 2)
         target.add(listOf(cachedToken1, cachedToken2, cachedToken3), strategy)
-        sleep(expiryPeriodInMillis/2)
+        sleep(expiryPeriodInMillis / 2)
         assertThat(target.get(strategy).toList()).containsOnly(cachedToken1, cachedToken2, cachedToken3)
         sleep(expiryPeriodInMillis)
         assertThat(target.get(strategy).toList()).isEmpty()
