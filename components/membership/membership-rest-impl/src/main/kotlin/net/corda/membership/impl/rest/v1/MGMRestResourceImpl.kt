@@ -677,6 +677,7 @@ class MGMRestResourceImpl internal constructor(
             }
         }
 
+        @Suppress("ThrowsCount")
         private fun suspendActivateMemberExceptions(e: Exception) {
             when (e) {
                 is IllegalArgumentException ->
