@@ -657,29 +657,10 @@ class MGMRestResourceImpl internal constructor(
                     )
                 }
             } catch (e: Exception) {
-                when (e) {
-                    is IllegalArgumentException ->
-                        throw BadRequestException(
-                            title = e::class.java.simpleName,
-                            exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
-                        )
-
-                    is NoSuchElementException ->
-                        throw ResourceNotFoundException(
-                            e::class.java.simpleName,
-                            ExceptionDetails(e::class.java.name, "${e.message}")
-                        )
-
-                    is PessimisticLockException, is InvalidEntityUpdateException ->
-                        throw InvalidStateChangeException(
-                            e::class.java.simpleName,
-                            ExceptionDetails(e::class.java.name, "${e.message}")
-                        )
-
-                    else -> throw e
-                }
+                suspendActivateMemberExceptions(e)
             }
         }
+
         override fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters) {
             val memberName = parseX500Name("activationParams.x500Name", activationParams.x500Name)
             try {
@@ -692,27 +673,31 @@ class MGMRestResourceImpl internal constructor(
                     )
                 }
             } catch (e: Exception) {
-                when (e) {
-                    is IllegalArgumentException ->
-                        throw BadRequestException(
-                            title = e::class.java.simpleName,
-                            exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
-                        )
+                suspendActivateMemberExceptions(e)
+            }
+        }
 
-                    is NoSuchElementException ->
-                        throw ResourceNotFoundException(
-                            e::class.java.simpleName,
-                            ExceptionDetails(e::class.java.name, "${e.message}")
-                        )
+        private fun suspendActivateMemberExceptions(e: Exception) {
+            when (e) {
+                is IllegalArgumentException ->
+                    throw BadRequestException(
+                        title = e::class.java.simpleName,
+                        exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
+                    )
 
-                    is PessimisticLockException, is InvalidEntityUpdateException ->
-                        throw InvalidStateChangeException(
-                            e::class.java.simpleName,
-                            ExceptionDetails(e::class.java.name, "${e.message}")
-                        )
+                is NoSuchElementException ->
+                    throw ResourceNotFoundException(
+                        e::class.java.simpleName,
+                        ExceptionDetails(e::class.java.name, "${e.message}")
+                    )
 
-                    else -> throw e
-                }
+                is PessimisticLockException, is InvalidEntityUpdateException ->
+                    throw InvalidStateChangeException(
+                        e::class.java.simpleName,
+                        ExceptionDetails(e::class.java.name, "${e.message}")
+                    )
+
+                else -> throw e
             }
         }
 
