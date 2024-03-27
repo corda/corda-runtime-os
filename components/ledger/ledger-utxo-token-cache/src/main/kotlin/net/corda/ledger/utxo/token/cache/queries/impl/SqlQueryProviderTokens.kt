@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.token.cache.queries.impl
 
 import net.corda.ledger.utxo.token.cache.queries.SqlQueryProvider
-import net.corda.v5.ledger.utxo.token.selection.Strategy
 import org.osgi.service.component.annotations.Component
 
 @Component(service = [SqlQueryProvider::class])
@@ -70,7 +69,7 @@ class SqlQueryProviderTokens : SqlQueryProvider {
                 AND   t_output.token_notary_x500_name = :$SQL_PARAMETER_TOKEN_NOTARY_X500_NAME
                 $tagFilter
                 $ownerFilter
-                "ORDER BY t_output.transaction_id"
+                ORDER BY t_output.transaction_id
                 LIMIT $limit
         """.trimIndent()
     }
