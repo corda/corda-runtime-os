@@ -16,8 +16,10 @@ import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.e2etest.utilities.startRestFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
+import org.junit.jupiter.api.assertAll
 import java.math.BigDecimal
 import java.util.UUID
 
@@ -163,8 +165,8 @@ class TokenSelectionTests {
         assertThat(tokenSelectionResult2.flowResult).isEqualTo("SUCCESS")
     }
 
-    @Test
-    fun `Test priority selection strategy`(testInfo: TestInfo){
+    @RepeatedTest(3) // Random strategy will sometimes look like Priority strategy
+    fun `Test priority selection strategy`(testInfo: TestInfo) {
         val idGenerator = TestRequestIdGenerator(testInfo)
         // Create a simple UTXO transaction
         val input = "token test input"
@@ -180,21 +182,11 @@ class TokenSelectionTests {
             requestId = idGenerator.nextId
         )
         val tokenSelectionResult1 = awaitRestFlowFinished(aliceHoldingId, tokenSelectionFlowId1)
-        assertThat(tokenSelectionResult1.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
-        assertThat(tokenSelectionResult1.flowError).isNull()
-        assertThat(tokenSelectionResult1.flowResult).isEqualTo("SUCCESS")
-
-        // Attempt to select the token created by the transaction
-        val tokenSelectionFlowId2 = startRestFlow(
-            aliceHoldingId,
-            mapOf(),
-            "com.r3.corda.demo.utxo.token.selection.PriortyTokenSelectionFlow",
-            requestId = idGenerator.nextId
+        assertAll(
+            { assertThat(tokenSelectionResult1.flowError).isNull() },
+            { assertThat(tokenSelectionResult1.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS) },
+            { assertThat(tokenSelectionResult1.flowResult).isEqualTo("[1]") },
         )
-        val tokenSelectionResult2 = awaitRestFlowFinished(aliceHoldingId, tokenSelectionFlowId2)
-        assertThat(tokenSelectionResult2.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
-        assertThat(tokenSelectionResult2.flowError).isNull()
-        assertThat(tokenSelectionResult2.flowResult).isEqualTo("SUCCESS")
     }
 
     private fun issueTokenWithPriority(input: String, idGenerator: TestRequestIdGenerator, priority: Long?) {
@@ -205,8 +197,10 @@ class TokenSelectionTests {
             requestId = idGenerator.nextId
         )
         val utxoFlowResult = awaitRestFlowFinished(bobHoldingId, utxoFlowRequestId)
-        assertThat(utxoFlowResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
-        assertThat(utxoFlowResult.flowError).isNull()
+        assertAll(
+            { assertThat(utxoFlowResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS) },
+            { assertThat(utxoFlowResult.flowError).isNull() },
+        )
     }
 
     private data class TokenBalanceQueryResponseMsg(
