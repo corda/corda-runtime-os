@@ -12,8 +12,7 @@ interface AvailableTokenService {
         poolKey: TokenPoolKey,
         ownerHash: String?,
         tagRegex: String?,
-        maxTokens: Int,
-        strategy: Strategy
+        maxTokens: Int
     ): AvailTokenQueryResult
 
     fun queryBalance(

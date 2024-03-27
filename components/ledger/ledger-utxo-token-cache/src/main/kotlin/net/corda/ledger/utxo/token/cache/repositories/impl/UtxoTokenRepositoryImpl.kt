@@ -27,14 +27,12 @@ class UtxoTokenRepositoryImpl(
         poolKey: TokenPoolKey,
         ownerHash: String?,
         regexTag: String?,
-        maxTokens: Int,
-        strategy: Strategy
+        maxTokens: Int
     ): AvailTokenQueryResult {
         val sqlQuery = sqlQueryProvider.getPagedSelectQuery(
             maxTokens,
             regexTag != null,
-            ownerHash != null,
-            strategy
+            ownerHash != null
         )
 
         val query = entityManager.createNativeQuery(sqlQuery, Tuple::class.java)

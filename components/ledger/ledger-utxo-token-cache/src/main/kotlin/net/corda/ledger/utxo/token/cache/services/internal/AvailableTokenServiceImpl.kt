@@ -30,8 +30,7 @@ class AvailableTokenServiceImpl(
         poolKey: TokenPoolKey,
         ownerHash: String?,
         tagRegex: String?,
-        maxTokens: Int,
-        strategy: Strategy
+        maxTokens: Int
     ): AvailTokenQueryResult {
         val virtualNode = getVirtualNodeInfo(poolKey)
 
@@ -42,8 +41,7 @@ class AvailableTokenServiceImpl(
                 poolKey,
                 ownerHash,
                 tagRegex,
-                maxTokens,
-                strategy
+                maxTokens
             )
         }
     }
