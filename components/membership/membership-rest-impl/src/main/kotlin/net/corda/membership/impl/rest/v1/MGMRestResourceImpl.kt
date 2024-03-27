@@ -61,7 +61,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.*
+import java.util.UUID
 import java.util.regex.PatternSyntaxException
 import javax.persistence.PessimisticLockException
 import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
@@ -322,7 +322,7 @@ class MGMRestResourceImpl internal constructor(
     private object InactiveImpl : InnerMGMRestResource {
 
         private val NOT_RUNNING_ERROR = "${MGMRestResourceImpl::class.java.simpleName} is not running. " +
-                "Operation cannot be fulfilled."
+            "Operation cannot be fulfilled."
 
         override fun generateGroupPolicy(
             holdingIdentityShortHash: String
