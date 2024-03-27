@@ -111,7 +111,6 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
                     "Registration request ${request.registrationId} has status ${registrationRequest.status} and can not be approved"
                 )
             }
-            println("QQQ UpdateMemberAndRegistrationRequestToApprovedHandler ${registrationRequest.registrationId}")
             registrationRequest.status = RegistrationStatus.APPROVED.name
             registrationRequest.lastModified = now
 

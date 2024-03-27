@@ -31,6 +31,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -168,7 +169,7 @@ class PersistRegistrationRequestHandlerTest {
     @Test
     fun `invoke with registration request`() {
         val mergedEntity = argumentCaptor<Any>()
-        whenever(entityManager.merge(mergedEntity.capture())).doReturn(null)
+        whenever(entityManager.persist(mergedEntity.capture())).doAnswer { }
 
         val result = persistRegistrationRequestHandler.invoke(
             getMemberRequestContext(),
@@ -326,6 +327,6 @@ class PersistRegistrationRequestHandlerTest {
             getPersistRegistrationRequest()
         )
 
-        verify(entityManager).merge(any<RegistrationRequestEntity>())
+        verify(entityManager).persist(any<RegistrationRequestEntity>())
     }
 }
