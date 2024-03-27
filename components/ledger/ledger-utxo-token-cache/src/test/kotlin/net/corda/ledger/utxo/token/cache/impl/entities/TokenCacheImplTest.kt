@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.token.cache.impl.entities
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.entities.internal.TokenCacheImpl
+import net.corda.utilities.time.UTCClock
 import net.corda.v5.ledger.utxo.token.selection.Strategy
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -23,7 +24,7 @@ class TokenCacheImplTest {
 
     @BeforeEach
     fun setup() {
-        target = TokenCacheImpl(Duration.ofSeconds(10))
+        target = TokenCacheImpl(Duration.ofSeconds(10), UTCClock())
     }
 
     @ParameterizedTest
@@ -87,7 +88,7 @@ class TokenCacheImplTest {
         val expiryPeriodInMillis = 1000L
         val strategy = Strategy.PRIORITY
 
-        val target = TokenCacheImpl(Duration.ofMillis(expiryPeriodInMillis))
+        val target = TokenCacheImpl(Duration.ofMillis(expiryPeriodInMillis), UTCClock())
         target.add(listOf(cachedToken1, cachedToken2, cachedToken3), strategy)
         assertThat(target.get(strategy).toList()).containsOnly(cachedToken1, cachedToken2, cachedToken3)
 
@@ -100,7 +101,7 @@ class TokenCacheImplTest {
         val expiryPeriodInMillis = 5L
         val strategy = Strategy.RANDOM
 
-        val target = TokenCacheImpl(Duration.ofMillis(expiryPeriodInMillis))
+        val target = TokenCacheImpl(Duration.ofMillis(expiryPeriodInMillis), UTCClock())
         target.add(listOf(cachedToken1, cachedToken2, cachedToken3), strategy)
         assertThat(target.get(strategy).toList()).containsOnly(cachedToken1, cachedToken2, cachedToken3)
         sleep(expiryPeriodInMillis)
@@ -112,7 +113,7 @@ class TokenCacheImplTest {
         val expiryPeriodInMillis = 1000L
         val strategy = Strategy.PRIORITY
 
-        val target = TokenCacheImpl(Duration.ofMillis(expiryPeriodInMillis))
+        val target = TokenCacheImpl(Duration.ofMillis(expiryPeriodInMillis), UTCClock())
         target.add(listOf(cachedToken1, cachedToken2, cachedToken3), strategy)
         assertThat(target.get(strategy).toList()).containsOnly(cachedToken1, cachedToken2, cachedToken3)
         sleep(expiryPeriodInMillis / 2)

@@ -10,6 +10,7 @@ import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
 import net.corda.ledger.utxo.token.cache.services.TokenFilterStrategy
 import net.corda.messaging.api.records.Record
+import net.corda.v5.ledger.utxo.token.selection.Strategy
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 
@@ -56,7 +57,7 @@ class TokenClaimQueryEventHandler(
                 event.ownerHash,
                 event.tagRegex,
                 maxTokens,
-                event.strategy
+                event.strategy ?: Strategy.RANDOM
             )
 
             // Remove the claimed tokens from the query results
@@ -64,7 +65,7 @@ class TokenClaimQueryEventHandler(
 
             // Replace the tokens in the cache with the ones from the query result that have not been claimed
             tokenCache.removeAll()
-            tokenCache.add(tokens, event.strategy)
+            tokenCache.add(tokens, event.strategy ?: Strategy.RANDOM)
 
             selectionResult = selectTokens(tokenCache, state, event)
         }
@@ -95,7 +96,7 @@ class TokenClaimQueryEventHandler(
         val selectedTokens = mutableListOf<CachedToken>()
         var selectedAmount = BigDecimal.ZERO
 
-        for (token in filterStrategy.filterTokens(tokenCache.get(event.strategy), event)) {
+        for (token in filterStrategy.filterTokens(tokenCache.get(event.strategy ?: Strategy.RANDOM), event)) {
             if (selectedAmount >= event.targetAmount) {
                 break
             }

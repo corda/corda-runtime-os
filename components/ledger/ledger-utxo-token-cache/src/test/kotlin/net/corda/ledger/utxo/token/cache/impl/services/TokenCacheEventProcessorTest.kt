@@ -9,6 +9,7 @@ import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
 import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
 import net.corda.ledger.utxo.token.cache.services.TokenPoolCacheManager
 import net.corda.messaging.api.records.Record
+import net.corda.utilities.time.UTCClock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -24,7 +25,7 @@ class TokenCacheEventProcessorTest {
     private val mockHandler = mock<TokenEventHandler<FakeTokenEvent>>()
     private val tokenCacheEventHandlerMap = mutableMapOf<Class<*>, TokenEventHandler<in TokenEvent>>()
     private val event = FakeTokenEvent()
-    private val tokenPoolCache = TokenPoolCacheImpl(Duration.ZERO)
+    private val tokenPoolCache = TokenPoolCacheImpl(Duration.ZERO, UTCClock())
     private val cachePoolState = mock<PoolCacheState>()
 
     @BeforeEach

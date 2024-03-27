@@ -45,7 +45,7 @@ class EntityConverterImpl(
             tokenClaimQuery.tagRegex,
             tokenClaimQuery.ownerHash,
             toTokenPoolKey(avroPoolKey),
-            Strategy.RANDOM // RANDOM for now to preserve the current behaviour. This will be updated by a follow-up ticket
+            null
         )
     }
 

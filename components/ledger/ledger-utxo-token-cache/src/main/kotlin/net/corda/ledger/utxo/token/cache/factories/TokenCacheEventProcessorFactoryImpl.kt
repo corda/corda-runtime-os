@@ -27,6 +27,7 @@ import net.corda.ledger.utxo.token.cache.services.internal.AvailableTokenService
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.utilities.time.Clock
+import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
 @Suppress("LongParameterList")
@@ -47,7 +48,7 @@ class TokenCacheEventProcessorFactoryImpl(
     ): TokenSelectionSyncRPCProcessor {
         val tokenSelectionMetrics = TokenSelectionMetricsImpl()
         val tokenPoolCacheManager = TokenPoolCacheManager(
-            TokenPoolCacheImpl(serviceConfiguration.tokenCacheExpiryPeriodMilliseconds),
+            TokenPoolCacheImpl(serviceConfiguration.tokenCacheExpiryPeriodMilliseconds, UTCClock()),
             createEventHandlerMap(tokenSelectionMetrics)
         )
         val claimStateStoreFactory = ClaimStateStoreFactoryImpl(stateManager, serialization, tokenPoolCacheManager, clock)
