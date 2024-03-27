@@ -35,8 +35,8 @@ dependencies {
 }
 
 cliPlugin {
-    cliPluginClass = 'net.corda.cli.plugins.cpiupload.CPIUploadCliPlugin'
-    cliPluginDescription = 'A CLI plug-in for operations on uploading cpi'
+    cliPluginClass = 'net.corda.cli.plugins.cpi.CPICliPlugin'
+    cliPluginDescription = 'A CLI plug-in for operations on cpis'
 }
 
 tasks.named("installDist") {
