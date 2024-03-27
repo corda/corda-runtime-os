@@ -157,29 +157,37 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
                 memberResourceClient.checkRegistrationProgress(
                     ShortHash.parseOrThrow(holdingIdentityShortHash)
                 ).map { it.fromDto() }
-            } catch (e: CouldNotFindEntityException) {
-                throw ResourceNotFoundException(
-                    e::class.java.simpleName,
-                    ExceptionDetails(e::class.java.name, e.message!!)
-                )
-            } catch (e: ContextDeserializationException) {
-                throw InternalServerException(
-                    title = e::class.java.simpleName,
-                    exceptionDetails = ExceptionDetails(e::class.java.name, e.message!!)
-                )
-            } catch (e: ServiceNotReadyException) {
-                throw ServiceUnavailableException(
-                    e::class.java.simpleName,
-                    ExceptionDetails(e::class.java.name, e.message!!)
-                )
-            } catch (e: CordaRPCAPIPartitionException) {
-                throw ServiceUnavailableException(
-                    e::class.java.simpleName,
-                    ExceptionDetails(
-                        e::class.java.name,
-                        "Could not perform check registration operation: Repartition Event!"
-                    )
-                )
+            } catch (e: Exception) {
+                when (e) {
+                    is CouldNotFindEntityException ->
+                        throw ResourceNotFoundException(
+                            e::class.java.simpleName,
+                            ExceptionDetails(e::class.java.name, e.message!!)
+                        )
+
+                    is ContextDeserializationException ->
+                        throw InternalServerException(
+                            title = e::class.java.simpleName,
+                            exceptionDetails = ExceptionDetails(e::class.java.name, e.message!!)
+                        )
+
+                    is ServiceNotReadyException ->
+                        throw ServiceUnavailableException(
+                            e::class.java.simpleName,
+                            ExceptionDetails(e::class.java.name, e.message!!)
+                        )
+
+                    is CordaRPCAPIPartitionException ->
+                        throw ServiceUnavailableException(
+                            e::class.java.simpleName,
+                            ExceptionDetails(
+                                e::class.java.name,
+                                "Could not perform check registration operation: Repartition Event!"
+                            )
+                        )
+
+                    else -> throw e
+                }
             }
         }
 
@@ -192,34 +200,37 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
                     ShortHash.parseOrThrow(holdingIdentityShortHash),
                     registrationRequestId
                 ).fromDto()
-            } catch (e: RegistrationProgressNotFoundException) {
-                throw ResourceNotFoundException(
-                    e::class.java.simpleName,
-                    ExceptionDetails(e::class.java.name, e.message!!)
-                )
-            } catch (e: CouldNotFindEntityException) {
-                throw ResourceNotFoundException(
-                    e::class.java.simpleName,
-                    ExceptionDetails(e::class.java.name, e.message!!)
-                )
-            } catch (e: ContextDeserializationException) {
-                throw InternalServerException(
-                    title = e::class.java.simpleName,
-                    exceptionDetails = ExceptionDetails(e::class.java.name, e.message!!)
-                )
-            } catch (e: ServiceNotReadyException) {
-                throw ServiceUnavailableException(
-                    e::class.java.simpleName,
-                    ExceptionDetails(e::class.java.name, e.message!!)
-                )
-            } catch (e: CordaRPCAPIPartitionException) {
-                throw ServiceUnavailableException(
-                    e::class.java.simpleName,
-                    ExceptionDetails(
-                        e::class.java.name,
-                        "Could not perform check specific registration operation: Repartition Event!"
-                    )
-                )
+            } catch (e: Exception) {
+                when (e) {
+                    is RegistrationProgressNotFoundException, is CouldNotFindEntityException ->
+                        throw ResourceNotFoundException(
+                            e::class.java.simpleName,
+                            ExceptionDetails(e::class.java.name, e.message!!)
+                        )
+
+                    is ContextDeserializationException ->
+                        throw InternalServerException(
+                            title = e::class.java.simpleName,
+                            exceptionDetails = ExceptionDetails(e::class.java.name, e.message!!)
+                        )
+
+                    is ServiceNotReadyException ->
+                        throw ServiceUnavailableException(
+                            e::class.java.simpleName,
+                            ExceptionDetails(e::class.java.name, e.message!!)
+                        )
+
+                    is CordaRPCAPIPartitionException ->
+                        throw ServiceUnavailableException(
+                            e::class.java.simpleName,
+                            ExceptionDetails(
+                                e::class.java.name,
+                                "Could not perform check specific registration operation: Repartition Event!"
+                            )
+                        )
+
+                    else -> throw e
+                }
             }
         }
     }
