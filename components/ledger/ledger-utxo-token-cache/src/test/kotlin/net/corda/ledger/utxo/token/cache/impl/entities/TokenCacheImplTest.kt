@@ -20,7 +20,7 @@ class TokenCacheImplTest {
 
     @BeforeEach
     fun setup() {
-        target = TokenCacheImpl(Duration.ZERO)
+        target = TokenCacheImpl(Duration.ofSeconds(10))
     }
 
 
