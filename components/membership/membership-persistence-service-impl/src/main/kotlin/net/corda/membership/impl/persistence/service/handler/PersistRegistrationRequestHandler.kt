@@ -17,7 +17,7 @@ internal class PersistRegistrationRequestHandler(
     override fun invoke(context: MembershipRequestContext, request: PersistRegistrationRequest) {
         val registrationId = request.registrationRequest.registrationId
         val id = UUID.randomUUID()
-        logger.info("QQQ 1 for $registrationId with $id")
+        logger.info("QQQ 1 for $registrationId with $id requestId: ${context.requestId}")
         logger.info("Persisting registration request with ID [$registrationId] to status ${request.status}.")
         try {
             transaction(context.holdingIdentity.toCorda().shortHash) { em ->
