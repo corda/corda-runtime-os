@@ -197,6 +197,7 @@ class KeyRestResourceImpl @Activate constructor(
                 throw InvalidInputDataException(
                     "Could not create a session init key with a cluster tenant ID.",
                     details = mapOf("tenantId" to "Invalid tenantId"),
+                    exceptionDetails = ExceptionDetails(e::class.java.name, e.message!!)
                 )
             }
         }
@@ -224,7 +225,10 @@ class KeyRestResourceImpl @Activate constructor(
                 ExceptionDetails(e::class.java.name, e.message!!)
             )
         } catch (e: InvalidParamsException) {
-            throw InvalidInputDataException(e.message!!)
+            throw InvalidInputDataException(
+                title = e::class.java.simpleName,
+                exceptionDetails = ExceptionDetails(e::class.java.name, e.message!!)
+            )
         }
     }
 

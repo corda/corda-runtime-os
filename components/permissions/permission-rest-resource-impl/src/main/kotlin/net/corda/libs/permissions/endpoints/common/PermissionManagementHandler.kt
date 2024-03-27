@@ -38,18 +38,22 @@ fun <T : Any?> withPermissionManager(
         )
     } catch (e: RemotePermissionManagementException) {
         logger.warn("Remote permission management error: ${e.exceptionType}: ${e.message}")
+        val exceptionSimpleName = e::class.java.simpleName
         when (e.exceptionType) {
             EntityNotFoundException::class.java.name -> throw ResourceNotFoundException(
-                e::class.java.simpleName,
-                ExceptionDetails(e::class.java.name, e.message!!)
+                exceptionSimpleName,
+                ExceptionDetails(e.exceptionType, e.message!!)
             )
-            EntityAssociationDoesNotExistException::class.java.name -> throw InvalidInputDataException(e.message!!)
+            EntityAssociationDoesNotExistException::class.java.name -> throw InvalidInputDataException(
+                title = exceptionSimpleName,
+                exceptionDetails = ExceptionDetails(e.exceptionType, e.message!!)
+            )
             EntityAssociationAlreadyExistsException::class.java.name -> throw ResourceAlreadyExistsException(
-                EntityAssociationAlreadyExistsException::class.java.simpleName,
+                exceptionSimpleName,
                 ExceptionDetails(e.exceptionType, e.message!!)
             )
             EntityAlreadyExistsException::class.java.name -> throw ResourceAlreadyExistsException(
-                EntityAlreadyExistsException::class.java.simpleName,
+                exceptionSimpleName,
                 ExceptionDetails(e.exceptionType, e.message!!)
             )
             else -> throw InternalServerException(

@@ -115,7 +115,10 @@ class UserEndpointImpl @Activate constructor(
                 createUser(createUserType.convertToDto(principal))
             }
         } catch (e: IllegalArgumentException) {
-            throw InvalidInputDataException(e.message ?: "Invalid argument in request.")
+            throw InvalidInputDataException(
+                title = e::class.java.simpleName,
+                exceptionDetails = ExceptionDetails(e::class.java.name, e.message ?: "Invalid argument in request.")
+            )
         }
 
         return ResponseEntity.created(createUserResult.convertToEndpointType())
@@ -155,7 +158,10 @@ class UserEndpointImpl @Activate constructor(
                     ExceptionDetails(e::class.java.name, e.message ?: "No resource found for this request.")
                 )
             } catch (e: IllegalArgumentException) {
-                throw InvalidInputDataException(e.message ?: "Invalid argument in request.")
+                throw InvalidInputDataException(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(e::class.java.name, e.message ?: "Invalid argument in request.")
+                )
             }
         }
 
@@ -174,7 +180,10 @@ class UserEndpointImpl @Activate constructor(
                     ExceptionDetails(e::class.java.name, e.message ?: "No resource found for this request.")
                 )
             } catch (e: IllegalArgumentException) {
-                throw InvalidInputDataException(e.message ?: "Invalid argument in request.")
+                throw InvalidInputDataException(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(e::class.java.name, e.message ?: "Invalid argument in request.")
+                )
             }
         }
 

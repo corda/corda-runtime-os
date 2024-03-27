@@ -108,8 +108,9 @@ class MGMAdminRestResourceImpl @Activate constructor(
                 )
             } catch (e: MemberNotAnMgmException) {
                 throw InvalidInputDataException(
-                    details = mapOf("holdingIdentityShortHash" to holdingIdentityShortHash),
                     title = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
+                    details = mapOf("holdingIdentityShortHash" to holdingIdentityShortHash),
+                    exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
                 )
             } catch (e: CordaRPCAPIPartitionException) {
                 throw ServiceUnavailableException(

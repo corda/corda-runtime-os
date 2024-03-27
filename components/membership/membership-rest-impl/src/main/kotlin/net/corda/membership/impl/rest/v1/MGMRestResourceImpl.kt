@@ -783,8 +783,8 @@ class MGMRestResourceImpl internal constructor(
 
         private fun notAnMgmError(holdingIdentityShortHash: String): Nothing =
             throw InvalidInputDataException(
-                details = mapOf("holdingIdentityShortHash" to holdingIdentityShortHash),
                 title = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
+                details = mapOf("holdingIdentityShortHash" to holdingIdentityShortHash),
             )
 
         private fun parsePreAuthTokenId(preAuthTokenId: String): UUID {
@@ -792,8 +792,9 @@ class MGMRestResourceImpl internal constructor(
                 UUID.fromString(preAuthTokenId)
             } catch (e: IllegalArgumentException) {
                 throw InvalidInputDataException(
+                    title = "tokenId is not a valid pre auth token.",
                     details = mapOf("preAuthTokenId" to preAuthTokenId),
-                    title = "tokenId is not a valid pre auth token."
+                    exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
                 )
             }
         }
@@ -803,8 +804,9 @@ class MGMRestResourceImpl internal constructor(
                 MemberX500Name.parse(x500Name)
             } catch (e: IllegalArgumentException) {
                 throw InvalidInputDataException(
+                    title = "$keyName is not a valid X500 name",
                     details = mapOf(keyName to x500Name),
-                    title = "$keyName is not a valid X500 name: ${e.message}",
+                    exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
                 )
             }
         }

@@ -124,7 +124,8 @@ internal class VirtualNodeValidationServiceImpl(
                     MemberX500Name.parse(request.x500Name)
                 } catch (e: Exception) {
                     throw InvalidInputDataException(
-                        "X500 name \"${request.x500Name}\" could not be parsed. Cause: ${e.message}"
+                        title = "X500 name \"${request.x500Name}\" could not be parsed.",
+                        exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
                     )
                 }
 

@@ -19,6 +19,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.permissions.management.PermissionManagementService
 import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.response.ResponseEntity
@@ -94,9 +95,12 @@ class PermissionEndpointImpl @Activate constructor(
             PermissionType.valueOf(permissionType)
         } catch (ex: Exception) {
             throw InvalidInputDataException(
-                "permissionType: $permissionType is invalid. Supported values are: ${
-                    PermissionType.values().map { it.name }
-                }"
+                title = ex::class.java.simpleName,
+                exceptionDetails = ExceptionDetails(ex::class.java.name,
+                    "permissionType: $permissionType is invalid. Supported values are: ${
+                        PermissionType.values().map { it.name }
+                    }"
+                )
             )
         }
 

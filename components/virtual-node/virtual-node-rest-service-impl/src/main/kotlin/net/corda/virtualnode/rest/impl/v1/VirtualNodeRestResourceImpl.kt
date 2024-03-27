@@ -570,7 +570,10 @@ internal class VirtualNodeRestResourceImpl(
         val state = try {
             VirtualNodeStateTransitions.valueOf(newState.uppercase())
         } catch (e: IllegalArgumentException) {
-            throw InvalidInputDataException(details = mapOf("newState" to "must be one of ACTIVE, MAINTENANCE"))
+            throw InvalidInputDataException(
+                details = mapOf("newState" to "must be one of ACTIVE, MAINTENANCE"),
+                exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
+            )
         }
         val virtualNode = getVirtualNode(virtualNodeShortId)
 
