@@ -28,7 +28,6 @@ import net.corda.membership.rest.v1.KeysRestResource
 import net.corda.membership.rest.v1.types.response.KeyMetaData
 import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 import net.corda.rest.PluggableRestResource
-import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceAlreadyExistsException
 import net.corda.rest.exception.ResourceNotFoundException
@@ -113,13 +112,9 @@ class KeysRestResourceImpl @Activate constructor(
             CryptoKeyOrderBy.valueOf(orderBy.uppercase())
         } catch (e: IllegalArgumentException) {
             throw ResourceNotFoundException(
-                e::class.java.simpleName,
-                ExceptionDetails(
-                    e::class.java.name,
-                    "Invalid order by: $orderBy, must be one of: ${
-                        CryptoKeyOrderBy.values().joinToString()
-                    }"
-                )
+                "Invalid order by: $orderBy, must be one of: ${
+                    CryptoKeyOrderBy.values().joinToString()
+                }"
             )
         }
         val filterMap = emptyMap<String, String>().let {
@@ -151,10 +146,7 @@ class KeysRestResourceImpl @Activate constructor(
                 try {
                     Instant.parse(createdBefore)
                 } catch (e: DateTimeParseException) {
-                    throw ResourceNotFoundException(
-                        title = e::class.java.simpleName,
-                        ExceptionDetails(e::class.java.name, "Invalid created before time ($createdBefore)")
-                    )
+                    throw ResourceNotFoundException("Invalid created before time ($createdBefore)")
                 }
                 it + mapOf(CREATED_BEFORE_FILTER to createdBefore.toString())
             } else {
@@ -165,10 +157,7 @@ class KeysRestResourceImpl @Activate constructor(
                 try {
                     Instant.parse(createdAfter)
                 } catch (e: DateTimeParseException) {
-                    throw ResourceNotFoundException(
-                        title = e::class.java.simpleName,
-                        ExceptionDetails(e::class.java.name, "Invalid created after time ($createdAfter)")
-                    )
+                    throw ResourceNotFoundException("Invalid created after time ($createdAfter)")
                 }
                 it + mapOf(CREATED_AFTER_FILTER to createdAfter.toString())
             } else {

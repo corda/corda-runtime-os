@@ -96,7 +96,8 @@ class PermissionEndpointImpl @Activate constructor(
         } catch (ex: Exception) {
             throw InvalidInputDataException(
                 title = ex::class.java.simpleName,
-                exceptionDetails = ExceptionDetails(ex::class.java.name,
+                exceptionDetails = ExceptionDetails(
+                    ex::class.java.name,
                     "permissionType: $permissionType is invalid. Supported values are: ${
                         PermissionType.values().map { it.name }
                     }"
