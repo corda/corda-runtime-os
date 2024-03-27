@@ -23,25 +23,15 @@ internal class PersistRegistrationRequestHandler(
                     registrationId,
                     LockModeType.PESSIMISTIC_WRITE,
                 )
+                val now = clock.instant()
                 if (currentRegistrationRequest != null) {
-                    logger.info(
-                        "QQQ for $registrationId got $currentRegistrationRequest " +
-                            "with ${currentRegistrationRequest.registrationId} and" +
-                            " ${currentRegistrationRequest.status}"
-                    )
-                } else {
-                    logger.info("QQQ for $registrationId got nulls")
-                }
-
-                currentRegistrationRequest?.status?.toStatus()?.let {
-                    if (it == request.status) {
+                    val status = currentRegistrationRequest.status.toStatus()
+                    if (request.status == status) {
                         logger.info(
                             "Registration request [$registrationId] with status: ${currentRegistrationRequest.status}" +
                                 " is already persisted. Persistence request was discarded."
                         )
-                        return@transaction
-                    }
-                    if (!it.canMoveToStatus(request.status)) {
+                    } else if (!status.canMoveToStatus(request.status)) {
                         logger.info(
                             "Registration request [$registrationId] has status: ${currentRegistrationRequest.status}" +
                                 " can not move it to status ${request.status}"
@@ -49,64 +39,40 @@ internal class PersistRegistrationRequestHandler(
                         // In case of processing persistence requests in an unordered manner we need to make sure the serial
                         // gets persisted. All other existing data of the request will remain the same.
                         if (request.status == RegistrationStatus.SENT_TO_MGM && currentRegistrationRequest.serial == null) {
-                            logger.info("Updating request [$registrationId] serial to ${currentRegistrationRequest.serial}")
-                            em.merge(createEntityBasedOnPreviousEntity(currentRegistrationRequest, request.registrationRequest.serial))
-                            return@transaction
+                            logger.info("Updating request [$registrationId] serial to ${request.registrationRequest.serial}")
+                            currentRegistrationRequest.serial = request.registrationRequest.serial
+                            currentRegistrationRequest.lastModified = now
+                            em.merge(currentRegistrationRequest)
                         }
-                        return@transaction
+                    } else {
+                        currentRegistrationRequest.status = request.status.toString()
+                        currentRegistrationRequest.memberContext =
+                            request.registrationRequest.memberContext.data.array()
+                        currentRegistrationRequest.memberContextSignatureKey =
+                            request.registrationRequest.memberContext.signature.publicKey.array()
+                        currentRegistrationRequest.memberContextSignatureContent =
+                            request.registrationRequest.memberContext.signature.bytes.array()
+                        currentRegistrationRequest.memberContextSignatureSpec =
+                            request.registrationRequest.memberContext.signatureSpec.signatureName
+                        currentRegistrationRequest.registrationContext =
+                            request.registrationRequest.registrationContext.data.array()
+                        currentRegistrationRequest.registrationContextSignatureKey =
+                            request.registrationRequest.registrationContext.signature.publicKey.array()
+                        currentRegistrationRequest.registrationContextSignatureContent =
+                            request.registrationRequest.registrationContext.signature.bytes.array()
+                        currentRegistrationRequest.registrationContextSignatureSpec =
+                            request.registrationRequest.registrationContext.signatureSpec.signatureName
+                        currentRegistrationRequest.serial = request.registrationRequest.serial
+                        currentRegistrationRequest.lastModified = now
+                        em.merge(currentRegistrationRequest)
                     }
-                }
-                logger.info(
-                    "QQQ going to persist " +
-                        "${request.registrationRequest.registrationId} in thread ${Thread.currentThread().id}..."
-                )
-                if (currentRegistrationRequest == null) {
-                    em.persist(createEntityBasedOnRequest(request))
                 } else {
-                    logger.info("QQQ Updating...")
-                    currentRegistrationRequest.status = request.status.toString()
-                    currentRegistrationRequest.lastModified = clock.instant()
-                    currentRegistrationRequest.memberContext = request.registrationRequest.memberContext.data.array()
-                    currentRegistrationRequest.memberContextSignatureKey =
-                        request.registrationRequest.memberContext.signature.publicKey.array()
-                    currentRegistrationRequest.memberContextSignatureSpec =
-                        request.registrationRequest.memberContext.signatureSpec.signatureName
-                    currentRegistrationRequest.registrationContext =
-                        request.registrationRequest.registrationContext.data.array()
-                    currentRegistrationRequest.registrationContextSignatureKey =
-                        request.registrationRequest.registrationContext.signature.publicKey.array()
-                    currentRegistrationRequest.registrationContextSignatureContent =
-                        request.registrationRequest.registrationContext.signature.bytes.array()
-                    currentRegistrationRequest.registrationContextSignatureSpec =
-                        request.registrationRequest.registrationContext.signatureSpec.signatureName
-                    currentRegistrationRequest.serial = request.registrationRequest.serial
+                    em.merge(createEntityBasedOnRequest(request))
                 }
                 logger.info("QQQ persisted ${request.registrationRequest.registrationId} in thread ${Thread.currentThread().id}")
             }
         } catch (e: Throwable) {
             logger.info("QQQ for $registrationId got error: $e", e)
-        }
-    }
-
-    private fun createEntityBasedOnPreviousEntity(previousEntity: RegistrationRequestEntity, newSerial: Long): RegistrationRequestEntity {
-        val now = clock.instant()
-        with(previousEntity) {
-            return RegistrationRequestEntity(
-                registrationId = registrationId,
-                holdingIdentityShortHash = holdingIdentityShortHash,
-                status = status,
-                created = created,
-                lastModified = now,
-                memberContext = memberContext,
-                memberContextSignatureKey = memberContextSignatureKey,
-                memberContextSignatureContent = memberContextSignatureContent,
-                memberContextSignatureSpec = memberContextSignatureSpec,
-                registrationContext = registrationContext,
-                registrationContextSignatureKey = registrationContextSignatureKey,
-                registrationContextSignatureContent = registrationContextSignatureContent,
-                registrationContextSignatureSpec = registrationContextSignatureSpec,
-                serial = newSerial,
-            )
         }
     }
 
