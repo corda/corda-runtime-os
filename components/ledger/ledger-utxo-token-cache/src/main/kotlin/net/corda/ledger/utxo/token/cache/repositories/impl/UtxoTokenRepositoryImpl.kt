@@ -12,7 +12,6 @@ import net.corda.ledger.utxo.token.cache.queries.impl.SqlQueryProviderTokens.Com
 import net.corda.ledger.utxo.token.cache.repositories.UtxoTokenRepository
 import net.corda.ledger.utxo.token.cache.services.UtxoTokenMapper
 import net.corda.ledger.utxo.token.cache.services.mapToToken
-import net.corda.v5.ledger.utxo.token.selection.Strategy
 import java.math.BigDecimal
 import javax.persistence.EntityManager
 import javax.persistence.Query
