@@ -48,10 +48,7 @@ fun <T : Any?> withPermissionManager(
                 title = exceptionSimpleName,
                 exceptionDetails = ExceptionDetails(e.exceptionType, e.message!!)
             )
-            EntityAssociationAlreadyExistsException::class.java.name -> throw ResourceAlreadyExistsException(
-                exceptionSimpleName,
-                ExceptionDetails(e.exceptionType, e.message!!)
-            )
+            EntityAssociationAlreadyExistsException::class.java.name,
             EntityAlreadyExistsException::class.java.name -> throw ResourceAlreadyExistsException(
                 exceptionSimpleName,
                 ExceptionDetails(e.exceptionType, e.message!!)

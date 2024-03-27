@@ -82,6 +82,8 @@ class UserEndpointImpl @Activate constructor(
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
+        private const val INVALID_ARGUMENT_MESSAGE = "Invalid argument in request."
+
         @Suppress("ThrowsCount")
         private fun PermissionManager.checkProtectedRole(loginName: String, roleId: String, principal: String) {
             val role = getRole(GetRoleRequestDto(principal, roleId))
@@ -117,7 +119,7 @@ class UserEndpointImpl @Activate constructor(
         } catch (e: IllegalArgumentException) {
             throw InvalidInputDataException(
                 title = e::class.java.simpleName,
-                exceptionDetails = ExceptionDetails(e::class.java.name, e.message ?: "Invalid argument in request.")
+                exceptionDetails = ExceptionDetails(e::class.java.name, e.message ?: INVALID_ARGUMENT_MESSAGE)
             )
         }
 
@@ -160,7 +162,7 @@ class UserEndpointImpl @Activate constructor(
             } catch (e: IllegalArgumentException) {
                 throw InvalidInputDataException(
                     title = e::class.java.simpleName,
-                    exceptionDetails = ExceptionDetails(e::class.java.name, e.message ?: "Invalid argument in request.")
+                    exceptionDetails = ExceptionDetails(e::class.java.name, e.message ?: INVALID_ARGUMENT_MESSAGE)
                 )
             }
         }
@@ -182,7 +184,7 @@ class UserEndpointImpl @Activate constructor(
             } catch (e: IllegalArgumentException) {
                 throw InvalidInputDataException(
                     title = e::class.java.simpleName,
-                    exceptionDetails = ExceptionDetails(e::class.java.name, e.message ?: "Invalid argument in request.")
+                    exceptionDetails = ExceptionDetails(e::class.java.name, e.message ?: INVALID_ARGUMENT_MESSAGE)
                 )
             }
         }
