@@ -72,7 +72,7 @@ class TokenClaimQueryEventHandlerTest {
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, mock())
         val claimQuery = createClaimQuery(100)
         whenever(recordFactory.getFailedClaimResponse(any(), any(), any())).thenReturn(claimQueryResult)
-        whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any(), any()))
+        whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any()))
             .thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
 
         val result = target.handle(tokenCache, poolCacheState, claimQuery)
@@ -86,7 +86,7 @@ class TokenClaimQueryEventHandlerTest {
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, mock())
         val claimQuery = createClaimQuery(100)
         whenever(recordFactory.getFailedClaimResponse(any(), any(), any())).thenReturn(claimQueryResult)
-        whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any(), any()))
+        whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any()))
             .thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
 
         val result = target.handle(tokenCache, poolCacheState, claimQuery)
@@ -100,7 +100,7 @@ class TokenClaimQueryEventHandlerTest {
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, mock())
         val claimQuery = createClaimQuery(100)
         whenever(recordFactory.getSuccessfulClaimResponse(any(), any(), any(), any())).thenReturn(claimQueryResult)
-        whenever(availableTokenService.findAvailTokens(any(), any(), any(), any(), any()))
+        whenever(availableTokenService.findAvailTokens(any(), any(), any(), any()))
             .thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
         cachedTokens += token101
 
@@ -115,7 +115,7 @@ class TokenClaimQueryEventHandlerTest {
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, mock())
         val claimQuery = createClaimQuery(100)
         whenever(recordFactory.getFailedClaimResponse(any(), any(), any())).thenReturn(claimQueryResult)
-        whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any(), any()))
+        whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any()))
             .thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
         cachedTokens += token99
 
@@ -130,7 +130,7 @@ class TokenClaimQueryEventHandlerTest {
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, mock())
         val claimQuery = createClaimQuery(100)
         whenever(recordFactory.getSuccessfulClaimResponse(any(), any(), any(), any())).thenReturn(claimQueryResult)
-        whenever(availableTokenService.findAvailTokens(any(), any(), any(), any(), any()))
+        whenever(availableTokenService.findAvailTokens(any(), any(), any(), any()))
             .thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
         cachedTokens += token100
 
@@ -145,7 +145,7 @@ class TokenClaimQueryEventHandlerTest {
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, mock())
         val claimQuery = createClaimQuery(110)
         whenever(recordFactory.getSuccessfulClaimResponse(any(), any(), any(), any())).thenReturn(claimQueryResult)
-        whenever(availableTokenService.findAvailTokens(any(), any(), any(), any(), any()))
+        whenever(availableTokenService.findAvailTokens(any(), any(), any(), any()))
             .thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
         cachedTokens += token99
         cachedTokens += token100
@@ -162,7 +162,7 @@ class TokenClaimQueryEventHandlerTest {
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, mock())
         val claimQuery = createClaimQuery(100)
         whenever(recordFactory.getFailedClaimResponse(any(), any(), any())).thenReturn(claimQueryResult)
-        whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any(), any()))
+        whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any()))
             .thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
         whenever(poolCacheState.isTokenClaimed(token100Ref)).thenReturn(true)
         whenever(poolCacheState.isTokenClaimed(token101Ref)).thenReturn(true)
@@ -181,7 +181,7 @@ class TokenClaimQueryEventHandlerTest {
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, mock())
         val claimQuery = createClaimQuery(110)
         whenever(recordFactory.getSuccessfulClaimResponse(any(), any(), any(), any())).thenReturn(claimQueryResult)
-        whenever(availableTokenService.findAvailTokens(any(), any(), any(), any(), any()))
+        whenever(availableTokenService.findAvailTokens(any(), any(), any(), any()))
             .thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
         whenever(poolCacheState.isTokenClaimed(token100Ref)).thenReturn(true)
         cachedTokens += token99
