@@ -120,7 +120,7 @@ internal class ConfigRestResourceImpl @Activate constructor(
                     when (event.status) {
                         LifecycleStatus.ERROR -> {
                             coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
-                            coordinator.postEvent(StopEvent(errored = true))
+                            coordinator.postEvent(StopEvent(errored = true, reason = "Coordinator stopped. RegistrationStatusChangeEvent with status ERROR received in ConfigRestResourceImpl."))
                         }
                         LifecycleStatus.UP -> {
                             // Receive updates to the RPC and Messaging config

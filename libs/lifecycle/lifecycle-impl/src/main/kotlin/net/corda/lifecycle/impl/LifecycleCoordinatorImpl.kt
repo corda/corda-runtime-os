@@ -271,7 +271,7 @@ class LifecycleCoordinatorImpl(
     override fun close() {
         if (_isClosed.compareAndSet(false, true)) {
             logger.trace { "$name: Closing coordinator" }
-            postInternalEvent(StopEvent())
+            postInternalEvent(StopEvent(reason = "Coordinator closed."))
             postInternalEvent(CloseCoordinator())
         }
     }

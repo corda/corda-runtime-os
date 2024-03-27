@@ -38,7 +38,7 @@ open class PublisherWithDominoLogicBase<T: AutoCloseable>(
         override val managedChildren: Collection<NamedLifecycle> = emptySet()
 
         override fun close() {
-            coordinator.postEvent(StopEvent())
+            coordinator.postEvent(StopEvent(reason = "Coordinator stopped. Domino tile closed."))
             coordinator.close()
         }
 

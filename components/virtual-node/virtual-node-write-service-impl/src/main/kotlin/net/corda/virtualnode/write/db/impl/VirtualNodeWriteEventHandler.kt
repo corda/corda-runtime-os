@@ -102,7 +102,7 @@ internal class VirtualNodeWriteEventHandler(
                             )
                         )
                 }
-                ERROR -> coordinator.postEvent(StopEvent(errored = true))
+                ERROR -> coordinator.postEvent(StopEvent(errored = true, reason = "Coordinator stopped. Registering for config updates failed."))
                 else -> Unit
             }
         }

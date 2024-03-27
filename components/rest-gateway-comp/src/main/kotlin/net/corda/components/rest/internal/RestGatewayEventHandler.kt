@@ -134,7 +134,7 @@ internal class RestGatewayEventHandler(
                     }
                     LifecycleStatus.ERROR -> {
                         log.info("Registration received ERROR status. Stopping the REST Gateway.")
-                        coordinator.postEvent(StopEvent(true))
+                        coordinator.postEvent(StopEvent(errored = true, reason = "Coordinator stopped. RegistrationStatusChangeEvent with status ERROR received."))
                     }
                 }
             }

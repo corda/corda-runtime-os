@@ -181,6 +181,14 @@ class LifecycleProcessorTest {
     }
 
     @Test
+    fun `stop event posted with a set reason`() {
+        val state = LifecycleStateManager(5)
+        val processor = LifecycleProcessor(NAME, state, mock(), mock()) { _, _ -> }
+        state.postEvent(StopEvent(errored = false, "Coordinator stopped."))
+        process(processor)
+    }
+
+    @Test
     fun `batching delivers the right number of events to the processor`() {
         val state = LifecycleStateManager(2)
         state.isRunning = true

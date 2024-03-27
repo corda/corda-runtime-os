@@ -164,11 +164,17 @@ internal class LifecycleProcessor(
         logger.debug { "Processing stop event for ${coordinator.name}" }
         if (state.isRunning) {
             state.isRunning = false
-            val (newStatus, reason) = if (event.errored) {
-                Pair(LifecycleStatus.ERROR, ERRORED_REASON)
+            // use stop event reason if present instead of default
+            val newStatus = if (event.errored) {
+                LifecycleStatus.ERROR
             } else {
-                Pair(LifecycleStatus.DOWN, STOPPED_REASON)
+                LifecycleStatus.DOWN
             }
+
+            val reason = event.reason.ifEmpty {
+                STOPPED_REASON
+            }
+
             try {
                 updateStatus(coordinator, newStatus, reason)
             } catch (e: LifecycleRegistryException) {

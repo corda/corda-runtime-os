@@ -40,8 +40,10 @@ class StartEvent : LifecycleEvent
  *
  * @param errored Flag indicating if this stop event happened due to an error occurring. Used internally to set the
  *                coordinator status correctly.
+ *
+ * @param reason The reason why the coordinator was stopped.
  */
-data class StopEvent(val errored: Boolean = false) : LifecycleEvent
+data class StopEvent(val errored: Boolean = false, val reason: String = "") : LifecycleEvent
 
 /**
  * An event delivered after a scheduled timer has fired.
