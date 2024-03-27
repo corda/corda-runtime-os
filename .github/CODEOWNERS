@@ -1,16 +1,16 @@
 # Build scripts should be audited by BLT
 
-Jenkinsfile        @corda/blt
-.ci/**             @corda/blt
+Jenkinsfile        @corda/infrastructure-release
+.ci/**             @corda/infrastructure-release
 
-*.gradle           @corda/blt
-gradle/wrapper     @corda/blt
+*.gradle           @corda/infrastructure-release
+gradle/wrapper     @corda/infrastructure-release
 gradle.properties  @corda/corda5-team-leads
-/gradle/wrapper/   @corda/blt
+/gradle/wrapper/   @corda/infrastructure-release
 *.toml             @corda/corda5-team-leads
 
-.github/**         @corda/blt
-CODEOWNERS         @corda/blt @corda/corda5-team-leads
+.github/**         @corda/infrastructure-release
+CODEOWNERS         @corda/infrastructure-release @corda/corda5-team-leads
 
 # Modules to be audited by REST team
 /applications/workers/release/rest-worker/      @corda/rest
@@ -28,7 +28,7 @@ CODEOWNERS         @corda/blt @corda/corda5-team-leads
 /tools/plugins/cpi-upload/                      @corda/rest
 
 # Helm charts for BLT team
-/charts/                                @corda/blt
+/charts/                                @corda/infrastructure-release
 
 # Modules to be audited by the Network team
 /applications/workers/release/p2p-gateway-worker/               @corda/corda-platform-network-team
