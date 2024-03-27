@@ -1,0 +1,5 @@
+package net.corda.p2p.linkmanager.tracker
+
+import net.corda.v5.base.exceptions.CordaRuntimeException
+
+class DataMessageStoreException(msg: String) : CordaRuntimeException(msg)

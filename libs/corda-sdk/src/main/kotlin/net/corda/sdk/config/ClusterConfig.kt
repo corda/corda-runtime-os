@@ -7,6 +7,7 @@ import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
 import net.corda.libs.configuration.exception.WrongConfigVersionException
 import net.corda.rest.ResponseCode
 import net.corda.rest.client.RestClient
+import net.corda.schema.configuration.ConfigKeys.RootConfigKey
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -22,7 +23,7 @@ class ClusterConfig {
      */
     fun getCurrentConfig(
         restClient: RestClient<ConfigRestResource>,
-        configSection: String,
+        configSection: RootConfigKey,
         wait: Duration = 10.seconds
     ): GetConfigResponse {
         return restClient.use { client ->
@@ -31,7 +32,7 @@ class ClusterConfig {
                 operationName = "Get current config $configSection"
             ) {
                 val resource = client.start().proxy
-                resource.get(configSection)
+                resource.get(configSection.value)
             }
         }
     }

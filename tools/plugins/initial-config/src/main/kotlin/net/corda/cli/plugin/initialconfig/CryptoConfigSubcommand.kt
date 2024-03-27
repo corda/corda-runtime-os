@@ -65,9 +65,9 @@ class CryptoConfigSubcommand : Runnable {
 
     @CommandLine.Option(
         names = ["-n", "--number-of-unmanaged-root-wrapping-keys"],
-        description = ["Number of unmanaged root wrapping keys. There must be at least 1, default is 2."]
+        description = ["Number of unmanaged root wrapping keys. There must be at least 1, default is 1."]
     )
-    var numberOfUnmanagedWrappingKeys: Int = 2
+    var numberOfUnmanagedWrappingKeys: Int = 1
 
     @CommandLine.Option(
         names = ["-l", "--location"],
