@@ -123,14 +123,13 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     final Property<Boolean> useDaemon =
             getObjects().property(Boolean).convention(true)
 
-
     @Input
     final Property<String> baseImageName =
             getObjects().property(String).convention('azul/zulu-openjdk')
 
     @Input
     final Property<String> baseImageTag =
-            getObjects().property(String).convention('17.0.9-17.46.19')
+            getObjects().property(String).convention('17.0.10-17.48')
 
     @Input
     final Property<String> subDir =
