@@ -12,7 +12,6 @@ import net.corda.ledger.utxo.token.cache.repositories.UtxoTokenRepository
 import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
 import net.corda.ledger.utxo.token.cache.services.TokenSelectionMetrics
 import net.corda.orm.JpaEntitiesRegistry
-import net.corda.v5.ledger.utxo.token.selection.Strategy
 import net.corda.v5.ledger.utxo.token.selection.TokenBalance
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.VirtualNodeInfo
