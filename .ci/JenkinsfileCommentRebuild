@@ -5,6 +5,6 @@ import static com.r3.build.BuildControl.cancelQueuedJobByName
 cancelQueuedJobByName(env.JOB_NAME)
 
 githubCommentBuildTests(
-    branch: 'CORE-2225/revert-api',
+    branch: 'CORE-2225-revert-api',
     chartVersion: '^5.2.0-alpha',
 )
