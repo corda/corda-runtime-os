@@ -656,26 +656,28 @@ class MGMRestResourceImpl internal constructor(
                         suspensionParams.reason,
                     )
                 }
-            } catch (e: IllegalArgumentException) {
-                throw BadRequestException(
-                    title = e::class.java.simpleName,
-                    exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
-                )
-            } catch (e: NoSuchElementException) {
-                throw ResourceNotFoundException(
-                    e::class.java.simpleName,
-                    ExceptionDetails(e::class.java.name, "${e.message}")
-                )
-            } catch (e: PessimisticLockException) {
-                throw InvalidStateChangeException(
-                    e::class.java.simpleName,
-                    ExceptionDetails(e::class.java.name, "${e.message}")
-                )
-            } catch (e: InvalidEntityUpdateException) {
-                throw InvalidStateChangeException(
-                    e::class.java.simpleName,
-                    ExceptionDetails(e::class.java.name, "${e.message}")
-                )
+            } catch (e: Exception) {
+                when (e) {
+                    is IllegalArgumentException ->
+                        throw BadRequestException(
+                            title = e::class.java.simpleName,
+                            exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
+                        )
+
+                    is NoSuchElementException ->
+                        throw ResourceNotFoundException(
+                            e::class.java.simpleName,
+                            ExceptionDetails(e::class.java.name, "${e.message}")
+                        )
+
+                    is PessimisticLockException, is InvalidEntityUpdateException ->
+                        throw InvalidStateChangeException(
+                            e::class.java.simpleName,
+                            ExceptionDetails(e::class.java.name, "${e.message}")
+                        )
+
+                    else -> throw e
+                }
             }
         }
         override fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters) {
@@ -689,26 +691,28 @@ class MGMRestResourceImpl internal constructor(
                         activationParams.reason,
                     )
                 }
-            } catch (e: IllegalArgumentException) {
-                throw BadRequestException(
-                    title = e::class.java.simpleName,
-                    exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
-                )
-            } catch (e: NoSuchElementException) {
-                throw ResourceNotFoundException(
-                    e::class.java.simpleName,
-                    ExceptionDetails(e::class.java.name, "${e.message}")
-                )
-            } catch (e: PessimisticLockException) {
-                throw InvalidStateChangeException(
-                    e::class.java.simpleName,
-                    ExceptionDetails(e::class.java.name, "${e.message}")
-                )
-            } catch (e: InvalidEntityUpdateException) {
-                throw InvalidStateChangeException(
-                    e::class.java.simpleName,
-                    ExceptionDetails(e::class.java.name, "${e.message}")
-                )
+            } catch (e: Exception) {
+                when (e) {
+                    is IllegalArgumentException ->
+                        throw BadRequestException(
+                            title = e::class.java.simpleName,
+                            exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
+                        )
+
+                    is NoSuchElementException ->
+                        throw ResourceNotFoundException(
+                            e::class.java.simpleName,
+                            ExceptionDetails(e::class.java.name, "${e.message}")
+                        )
+
+                    is PessimisticLockException, is InvalidEntityUpdateException ->
+                        throw InvalidStateChangeException(
+                            e::class.java.simpleName,
+                            ExceptionDetails(e::class.java.name, "${e.message}")
+                        )
+
+                    else -> throw e
+                }
             }
         }
 
