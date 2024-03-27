@@ -9,7 +9,9 @@ import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.ReEstablishSessionMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.data.p2p.event.SessionCreated
 import net.corda.data.p2p.event.SessionDirection
+import net.corda.data.p2p.event.SessionEvent
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.Operation
@@ -20,6 +22,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
@@ -47,6 +50,7 @@ import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
 import net.corda.p2p.linkmanager.sessions.metadata.toCounterparties
 import net.corda.p2p.linkmanager.state.SessionState
 import net.corda.p2p.messaging.P2pRecordsFactory
+import net.corda.schema.Schemas
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.time.Clock
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -76,7 +80,7 @@ internal class StatefulSessionManagerImpl(
     private val deadSessionMonitor: DeadSessionMonitor,
     private val schemaRegistry: AvroSchemaRegistry,
     private val sessionCache: SessionCache,
-    private val sessionEventPublisher: StatefulSessionEventPublisher,
+    sessionEventPublisher: StatefulSessionEventPublisher,
     p2pRecordsFactory: P2pRecordsFactory,
 ) : SessionManager {
     companion object {
@@ -311,7 +315,7 @@ internal class StatefulSessionManagerImpl(
     override fun <T> processSessionMessages(
         wrappedMessages: Collection<T>,
         getMessage: (T) -> LinkInMessage,
-    ): Collection<Pair<T, LinkOutMessage?>> {
+    ): Collection<Pair<T, SessionManager.ProcessSessionMessagesResult>> {
         val messages = wrappedMessages.map { it to getMessage(it) }
         val results = processInboundSessionMessages(messages) + processOutboundSessionMessages(messages)
 
@@ -324,8 +328,9 @@ internal class StatefulSessionManagerImpl(
             } else {
                 result
             }
-        }.onEach { result ->
-            when (result.result?.message?.payload) {
+        }.map { result ->
+            val linkOutMessage = result.result?.message
+            val sessionCreationRecords = when (linkOutMessage?.payload) {
                 is AvroResponderHelloMessage, is AvroResponderHandshakeMessage -> {
                     result.result.sessionToCache?.let { sessionToCache ->
                         val session = SessionManager.SessionDirection.Inbound(
@@ -333,8 +338,8 @@ internal class StatefulSessionManagerImpl(
                             sessionToCache,
                         )
                         sessionCache.putInboundSession(session)
-                        sessionEventPublisher.sessionCreated(sessionToCache.sessionId, SessionDirection.INBOUND)
-                    }
+                        recordsForSessionCreated(sessionToCache.sessionId, SessionDirection.INBOUND)
+                    } ?: emptyList()
                 }
                 is AvroInitiatorHelloMessage, is AvroInitiatorHandshakeMessage, null -> {
                     result.result?.sessionToCache?.let { sessionToCache ->
@@ -344,12 +349,12 @@ internal class StatefulSessionManagerImpl(
                             sessionToCache,
                         )
                         sessionCache.putOutboundSession(key, outboundSession)
-                        sessionEventPublisher.sessionCreated(key, SessionDirection.OUTBOUND)
-                    }
+                        recordsForSessionCreated(key, SessionDirection.OUTBOUND)
+                    } ?: emptyList()
                 }
+                else -> emptyList()
             }
-        }.map { result ->
-            result.traceable to result.result?.message
+            result.traceable to SessionManager.ProcessSessionMessagesResult(linkOutMessage, sessionCreationRecords)
         }
     }
 
@@ -1096,6 +1101,10 @@ internal class StatefulSessionManagerImpl(
             metadata.serial,
             metadata.communicationWithMgm,
         )
+    }
+
+    private fun recordsForSessionCreated(key: String, direction: SessionDirection): List<Record<String, SessionEvent>> {
+        return listOf(Record(Schemas.P2P.SESSION_EVENTS, key, SessionEvent(SessionCreated(direction, key))))
     }
 
     private val sessionEventListener = StatefulSessionEventProcessor(
