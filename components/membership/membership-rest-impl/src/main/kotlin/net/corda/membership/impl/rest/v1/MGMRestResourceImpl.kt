@@ -322,7 +322,7 @@ class MGMRestResourceImpl internal constructor(
     private object InactiveImpl : InnerMGMRestResource {
 
         private val NOT_RUNNING_ERROR = "${MGMRestResourceImpl::class.java.simpleName} is not running. " +
-            "Operation cannot be fulfilled."
+                "Operation cannot be fulfilled."
 
         override fun generateGroupPolicy(
             holdingIdentityShortHash: String
