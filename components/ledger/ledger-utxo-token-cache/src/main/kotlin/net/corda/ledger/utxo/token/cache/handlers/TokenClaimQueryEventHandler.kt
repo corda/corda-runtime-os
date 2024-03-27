@@ -63,6 +63,7 @@ class TokenClaimQueryEventHandler(
             val tokens = findResult.tokens.filterNot { state.isTokenClaimed(it.stateRef) }
 
             // Replace the tokens in the cache with the ones from the query result that have not been claimed
+            tokenCache.removeAll()
             tokenCache.add(tokens, event.strategy)
 
             selectionResult = selectTokens(tokenCache, state, event)
