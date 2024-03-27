@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.impl.token.selection.impl
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.token.query.TokenClaimCriteriaParameters
 import net.corda.ledger.utxo.impl.token.selection.factories.TokenBalanceQueryExternalEventFactory
 import net.corda.ledger.utxo.impl.token.selection.factories.TokenClaimQueryExternalEventFactory
 import net.corda.sandbox.type.UsedByFlow
@@ -23,17 +22,11 @@ class TokenSelectionImpl @Activate constructor(
     private val externalEventExecutor: ExternalEventExecutor
 ) : TokenSelection, UsedByFlow, SingletonSerializeAsToken {
 
-    companion object {
-        // We should ensure this aligns with the documentation in [TokenSelection]
-        private const val MAX_DEDUPLICATION_ID_LENGTH = 128
-    }
-
     @Suspendable
-    override fun tryClaim(deduplicationId: String, criteria: TokenClaimCriteria): TokenClaim? {
-        validateDeduplicationId(deduplicationId)
+    override fun tryClaim(criteria: TokenClaimCriteria): TokenClaim? {
         return externalEventExecutor.execute(
             TokenClaimQueryExternalEventFactory::class.java,
-            TokenClaimCriteriaParameters(deduplicationId, criteria)
+            criteria
         )
     }
 
@@ -43,14 +36,5 @@ class TokenSelectionImpl @Activate constructor(
             TokenBalanceQueryExternalEventFactory::class.java,
             criteria
         )
-    }
-
-    private fun validateDeduplicationId(deduplicationId: String) {
-        if (deduplicationId.isEmpty() || deduplicationId.length > MAX_DEDUPLICATION_ID_LENGTH) {
-            throw IllegalArgumentException(
-                "deduplicationId must not be empty and must not exceed $MAX_DEDUPLICATION_ID_LENGTH characters. " +
-                    "Provided deduplicationId: $deduplicationId, length: ${deduplicationId.length} characters."
-            )
-        }
     }
 }
