@@ -28,7 +28,7 @@ import java.time.Instant
 
 @InitiatingFlow(protocol = "utxo-priorty-flow-protocol")
 class TokenPriorityUtxoDemoFlow : ClientStartableFlow {
-    data class InputMessage(val input: String, val members: List<String>, val notary: String?)
+    data class InputMessage(val input: String, val members: List<String>, val notary: String?, val priority: Long? = null)
 
     private companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -51,7 +51,7 @@ class TokenPriorityUtxoDemoFlow : ClientStartableFlow {
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
-        log.info("Utxo flow demo starting...")
+        log.info("TokenPriorityUtxoDemoFlow starting...")
         try {
             val request = requestBody.getRequestBodyAs(jsonMarshallingService, InputMessage::class.java)
             val myInfo = memberLookup.myInfo()
@@ -63,7 +63,8 @@ class TokenPriorityUtxoDemoFlow : ClientStartableFlow {
             val testUtxoState = TestUtxoState(
                 request.input,
                 members.map { it.ledgerKeys.first() } + myInfo.ledgerKeys.first(),
-                request.members + listOf(myInfo.name.toString())
+                request.members + listOf(myInfo.name.toString()),
+                request.priority
             )
 
             val notary = if (request.notary == null) {
