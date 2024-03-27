@@ -134,7 +134,7 @@ internal class SuspendMemberHandler(
             .setMaxResults(1)
         if (previous.resultList.isEmpty()) {
             throw NotFoundEntityPersistenceException(
-                "Cannot add notary to group parameters, no group parameters found."
+                "Cannot add notary to group parameters for member '${memberInfo.viewOwningMember.x500Name}', no group parameters found."
             )
         }
 
@@ -143,7 +143,7 @@ internal class SuspendMemberHandler(
         val notaryInfo = memberInfoFactory.createMemberInfo(memberInfo)
         val notary = notaryInfo.notaryDetails
             ?: throw NotFoundEntityPersistenceException(
-                "Cannot add notary to group parameters - notary details not found."
+                "Cannot add notary to group parameters for member '${memberInfo.viewOwningMember.x500Name}' - notary details not found."
             )
         val notaryServiceName = notary.serviceName.toString()
         val notaryServiceNumber = parametersMap.entries.firstOrNull { it.value == notaryServiceName }?.run {

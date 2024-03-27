@@ -26,8 +26,10 @@ internal class PersistApprovalRuleHandler(
                     )
                 )
             if (em.createQuery(query).resultList.isNotEmpty()) {
-                logger.warn("Approval rule not added as an identical rule already exists.")
-                throw ConflictPersistenceException("Approval rule not added as an identical rule already exists.")
+                throw ConflictPersistenceException(
+                    "Approval rule not added " +
+                        "as an identical rule (${request.rule}) typed ${request.ruleType} already exists."
+                )
             }
             val entity = ApprovalRulesEntity(
                 request.ruleId,

@@ -103,7 +103,8 @@ internal class AddNotaryToGroupParametersHandler(
             .setMaxResults(1)
         if (previous.resultList.isEmpty()) {
             throw NotFoundEntityPersistenceException(
-                "Cannot add notary to group parameters, no group parameters found."
+                "Cannot add notary to group parameters, no group parameters " +
+                    "found for member '${notaryMemberInfo.viewOwningMember.x500Name}'."
             )
         }
 
@@ -111,7 +112,8 @@ internal class AddNotaryToGroupParametersHandler(
         val notaryInfo = memberInfoFactory.createMemberInfo(notaryMemberInfo)
         val notary = notaryInfo.notaryDetails
             ?: throw NotFoundEntityPersistenceException(
-                "Cannot add notary to group parameters - notary details not found."
+                "Cannot add notary to group parameters - notary details " +
+                    "not found for member '${notaryMemberInfo.viewOwningMember.x500Name}'."
             )
         val notaryServiceName = notary.serviceName.toString()
         val notaryServiceNumber = parametersMap.entries.firstOrNull { it.value == notaryServiceName }?.run {

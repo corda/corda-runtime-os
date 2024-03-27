@@ -62,7 +62,7 @@ internal class PersistMemberInfoHandler(
                         if (currentMemberContext.items != updatedMemberContext.items) {
                             throw ConflictPersistenceException(
                                 "Cannot update member info with same serial number " +
-                                    "(${newMemberInfo.serial}): member context differs from original."
+                                    "(${newMemberInfo.serial}) for member: '${newMemberInfo.name}': member context differs from original."
                             )
                         }
                         if (currentMgmContext.toMap().removeTime() != updatedMGMContext.toMap()
@@ -70,7 +70,7 @@ internal class PersistMemberInfoHandler(
                         ) {
                             throw ConflictPersistenceException(
                                 "Cannot update member info with same serial number " +
-                                    "(${newMemberInfo.serial}): mgm context differs from original."
+                                    "(${newMemberInfo.serial}) for member: '${newMemberInfo.name}': mgm context differs from original."
                             )
                         }
                         return@forEach

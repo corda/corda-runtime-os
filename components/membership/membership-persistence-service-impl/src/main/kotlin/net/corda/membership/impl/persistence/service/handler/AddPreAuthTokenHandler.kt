@@ -26,7 +26,7 @@ internal class AddPreAuthTokenHandler(persistenceHandlerServices: PersistenceHan
                 )
             }
         } catch (_: EntityExistsException) {
-            throw ConflictPersistenceException("Token with ID: ${request.tokenId} already exists.")
+            throw ConflictPersistenceException("Token with ID: '${request.tokenId}' already exists.")
         }
     }
 }
