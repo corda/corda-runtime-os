@@ -1,6 +1,5 @@
 package net.corda.ledger.utxo.token.cache.converters
 
-import net.corda.data.ledger.utxo.token.selection.data.Strategy as StrategyAvro
 import net.corda.data.ledger.utxo.token.selection.data.Token
 import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.data.ledger.utxo.token.selection.data.TokenBalanceQuery
@@ -25,6 +24,7 @@ import net.corda.utilities.time.Clock
 import net.corda.v5.ledger.utxo.token.selection.Strategy
 import java.math.BigDecimal
 import java.math.BigInteger
+import net.corda.data.ledger.utxo.token.selection.data.Strategy as StrategyAvro
 
 class EntityConverterImpl(
     private val serviceConfiguration: ServiceConfiguration,
