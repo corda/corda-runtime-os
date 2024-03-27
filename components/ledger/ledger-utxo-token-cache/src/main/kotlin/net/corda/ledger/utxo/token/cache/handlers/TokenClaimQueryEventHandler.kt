@@ -64,7 +64,7 @@ class TokenClaimQueryEventHandler(
 
             // Replace the tokens in the cache with the ones from the query result that have not been claimed
             tokenCache.removeAll()
-            tokenCache.add(tokens, event.strategy ?: Strategy.RANDOM)
+            tokenCache.add(tokens, event.getStrategyOrDefault())
 
             selectionResult = selectTokens(tokenCache, state, event)
         }
@@ -95,7 +95,7 @@ class TokenClaimQueryEventHandler(
         val selectedTokens = mutableListOf<CachedToken>()
         var selectedAmount = BigDecimal.ZERO
 
-        for (token in filterStrategy.filterTokens(tokenCache.get(event.strategy ?: Strategy.RANDOM), event)) {
+        for (token in filterStrategy.filterTokens(tokenCache.get(event.getStrategyOrDefault()), event)) {
             if (selectedAmount >= event.targetAmount) {
                 break
             }
@@ -110,4 +110,7 @@ class TokenClaimQueryEventHandler(
 
         return selectedAmount to selectedTokens
     }
+
+    private fun ClaimQuery.getStrategyOrDefault() =
+        strategy ?: Strategy.RANDOM
 }
