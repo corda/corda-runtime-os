@@ -142,12 +142,9 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
                     ExceptionDetails(e::class.java.name, "${e.message}")
                 )
             } catch (e: CordaRPCAPIPartitionException) {
-                throw ServiceUnavailableException(
-                    e::class.java.simpleName,
-                    ExceptionDetails(
-                        e::class.java.name,
-                        "Could not perform start registration operation: Repartition Event!"
-                    )
+                throw throwServiceUnavailableException(
+                    e,
+                    "Could not perform start registration operation: Repartition Event!"
                 )
             }
         }
@@ -172,18 +169,12 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
                         )
 
                     is ServiceNotReadyException ->
-                        throw ServiceUnavailableException(
-                            e::class.java.simpleName,
-                            ExceptionDetails(e::class.java.name, e.message!!)
-                        )
+                        throw throwServiceUnavailableException(e)
 
                     is CordaRPCAPIPartitionException ->
-                        throw ServiceUnavailableException(
-                            e::class.java.simpleName,
-                            ExceptionDetails(
-                                e::class.java.name,
-                                "Could not perform check registration operation: Repartition Event!"
-                            )
+                        throw throwServiceUnavailableException(
+                            e,
+                            "Could not perform check registration operation: Repartition Event!"
                         )
 
                     else -> throw e
@@ -215,23 +206,24 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
                         )
 
                     is ServiceNotReadyException ->
-                        throw ServiceUnavailableException(
-                            e::class.java.simpleName,
-                            ExceptionDetails(e::class.java.name, e.message!!)
-                        )
+                        throw throwServiceUnavailableException(e)
 
                     is CordaRPCAPIPartitionException ->
-                        throw ServiceUnavailableException(
-                            e::class.java.simpleName,
-                            ExceptionDetails(
-                                e::class.java.name,
-                                "Could not perform check specific registration operation: Repartition Event!"
-                            )
+                        throw throwServiceUnavailableException(
+                            e,
+                            "Could not perform check specific registration operation: Repartition Event!"
                         )
 
                     else -> throw e
                 }
             }
+        }
+
+        private fun throwServiceUnavailableException(e: Exception, reason: String = e.message!!): Throwable {
+            throw ServiceUnavailableException(
+                e::class.java.simpleName,
+                ExceptionDetails(e::class.java.name, reason)
+            )
         }
     }
 }
