@@ -168,15 +168,9 @@ class TokenSelectionTests {
         val idGenerator = TestRequestIdGenerator(testInfo)
         // Create a simple UTXO transaction
         val input = "token test input"
-        val utxoFlowRequestId = startRestFlow(
-            bobHoldingId,
-            mapOf("input" to input, "members" to listOf(aliceX500), "notary" to NOTARY_SERVICE_X500),
-            "com.r3.corda.demo.utxo.TokenPriorityUtxoDemoFlow",
-            requestId = idGenerator.nextId
-        )
-        val utxoFlowResult = awaitRestFlowFinished(bobHoldingId, utxoFlowRequestId)
-        assertThat(utxoFlowResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
-        assertThat(utxoFlowResult.flowError).isNull()
+        issueTokenWithPriority(input, idGenerator, 2)
+        issueTokenWithPriority(input, idGenerator, 1)
+        issueTokenWithPriority(input, idGenerator, 2)
 
         // Attempt to select the token created by the transaction
         val tokenSelectionFlowId1 = startRestFlow(
@@ -201,6 +195,18 @@ class TokenSelectionTests {
         assertThat(tokenSelectionResult2.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
         assertThat(tokenSelectionResult2.flowError).isNull()
         assertThat(tokenSelectionResult2.flowResult).isEqualTo("SUCCESS")
+    }
+
+    private fun issueTokenWithPriority(input: String, idGenerator: TestRequestIdGenerator, priority: Long?) {
+        val utxoFlowRequestId = startRestFlow(
+            bobHoldingId,
+            mapOf("input" to input, "members" to listOf(aliceX500), "notary" to NOTARY_SERVICE_X500, "priority" to priority),
+            "com.r3.corda.demo.utxo.TokenPriorityUtxoDemoFlow",
+            requestId = idGenerator.nextId
+        )
+        val utxoFlowResult = awaitRestFlowFinished(bobHoldingId, utxoFlowRequestId)
+        assertThat(utxoFlowResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
+        assertThat(utxoFlowResult.flowError).isNull()
     }
 
     private data class TokenBalanceQueryResponseMsg(
