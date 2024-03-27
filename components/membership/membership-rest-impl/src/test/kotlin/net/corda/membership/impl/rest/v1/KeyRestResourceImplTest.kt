@@ -441,7 +441,7 @@ class KeyRestResourceImplTest {
             val ex = assertThrows<InvalidInputDataException> {
                 keysOps.generateKeyPair(TENANT_ID, ALIAS, CATEGORY, SCHEME)
             }
-            assertThat(ex.message).contains(EXCEPTION_MSG)
+            assertThat(ex.exceptionDetails!!.reason).contains(EXCEPTION_MSG)
         }
     }
 
