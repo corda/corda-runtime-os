@@ -24,10 +24,8 @@ import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
 import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.deserializeContext
-import net.corda.membership.lib.exceptions.ConflictPersistenceException
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
-import net.corda.membership.lib.exceptions.NotFoundEntityPersistenceException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.verifiers.GroupParametersUpdateVerifier
 import net.corda.membership.rest.v1.MGMRestResource
@@ -45,10 +43,10 @@ import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.InvalidStateChangeException
-import net.corda.rest.exception.ResourceAlreadyExistsException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.utilities.time.Clock
@@ -502,12 +500,16 @@ class MGMRestResourceImpl internal constructor(
             remarks: String?
         ): PreAuthToken {
             val tokenId = parsePreAuthTokenId(preAuthTokenId)
-            return handleCommonErrors(holdingIdentityShortHash) {
-                mgmResourceClient.revokePreAuthToken(
-                    it,
-                    tokenId,
-                    remarks
-                ).fromAvro()
+            return try {
+                handleCommonErrors(holdingIdentityShortHash) {
+                    mgmResourceClient.revokePreAuthToken(
+                        it,
+                        tokenId,
+                        remarks
+                    ).fromAvro()
+                }
+            } catch (e: MembershipPersistenceException) {
+                throw ResourceNotFoundException("${e.message}")
             }
         }
 
@@ -527,12 +529,16 @@ class MGMRestResourceImpl internal constructor(
             ruleType: ApprovalRuleType
         ): ApprovalRuleInfo {
             validateRegex(ruleInfo.ruleRegex)
-            return handleCommonErrors(holdingIdentityShortHash) {
-                mgmResourceClient.addApprovalRule(
-                    it,
-                    ApprovalRuleParams(ruleInfo.ruleRegex, ruleType, ruleInfo.ruleLabel)
-                )
-            }.toHttpType()
+            return try {
+                handleCommonErrors(holdingIdentityShortHash) {
+                    mgmResourceClient.addApprovalRule(
+                        it,
+                        ApprovalRuleParams(ruleInfo.ruleRegex, ruleType, ruleInfo.ruleLabel)
+                    )
+                }.toHttpType()
+            } catch (e: MembershipPersistenceException) {
+                throw BadRequestException("${e.message}")
+            }
         }
 
         override fun getGroupApprovalRules(
@@ -594,6 +600,8 @@ class MGMRestResourceImpl internal constructor(
                         true
                     )
                 }
+            } catch (e: IllegalArgumentException) {
+                throw BadRequestException("${e.message}")
             } catch (e: ContextDeserializationException) {
                 throw InternalServerException("${e.message}")
             }
@@ -605,13 +613,17 @@ class MGMRestResourceImpl internal constructor(
             reason: ManualDeclinationReason
         ) {
             val registrationId = parseRegistrationRequestId(requestId)
-            handleCommonErrors(holdingIdentityShortHash) {
-                mgmResourceClient.reviewRegistrationRequest(
-                    it,
-                    registrationId,
-                    false,
-                    reason
-                )
+            try {
+                handleCommonErrors(holdingIdentityShortHash) {
+                    mgmResourceClient.reviewRegistrationRequest(
+                        it,
+                        registrationId,
+                        false,
+                        reason
+                    )
+                }
+            } catch (e: IllegalArgumentException) {
+                throw BadRequestException("${e.message}")
             }
         }
 
@@ -626,8 +638,14 @@ class MGMRestResourceImpl internal constructor(
                         suspensionParams.reason,
                     )
                 }
+            } catch (e: IllegalArgumentException) {
+                throw BadRequestException("${e.message}")
+            } catch (e: NoSuchElementException) {
+                throw ResourceNotFoundException("${e.message}")
             } catch (e: PessimisticLockException) {
-                throw InvalidStateChangeException("${e.message}")
+                throw InvalidStateChangeException("Pessimistic Lock Exception", ExceptionDetails(e::class.java.name, "${e.message}"))
+            } catch (e: InvalidEntityUpdateException) {
+                throw InvalidStateChangeException("Invalid Entity Update Exception", ExceptionDetails(e::class.java.name, "${e.message}"))
             }
         }
         override fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters) {
@@ -641,8 +659,20 @@ class MGMRestResourceImpl internal constructor(
                         activationParams.reason,
                     )
                 }
+            } catch (e: IllegalArgumentException) {
+                throw BadRequestException("${e.message}")
+            } catch (e: NoSuchElementException) {
+                throw ResourceNotFoundException("${e.message}")
             } catch (e: PessimisticLockException) {
-                throw InvalidStateChangeException("${e.message}")
+                throw InvalidStateChangeException(
+                    "Pessimistic Lock Exception",
+                    ExceptionDetails(e::class.java.name, "${e.message}")
+                )
+            } catch (e: InvalidEntityUpdateException) {
+                throw InvalidStateChangeException(
+                    "Invalid Entity Update Exception",
+                    ExceptionDetails(e::class.java.name, "${e.message}")
+                )
             }
         }
 
@@ -657,7 +687,10 @@ class MGMRestResourceImpl internal constructor(
                     RestGroupParameters(mgmResourceClient.updateGroupParameters(it, newParametersMap).toMap())
                 }
             } catch (e: PessimisticLockException) {
-                throw InvalidStateChangeException("${e.message}")
+                throw InvalidStateChangeException(
+                    "Pessimistic Lock Exception",
+                    ExceptionDetails(e.javaClass.name, "${e.message}")
+                )
             }
         }
 
@@ -701,8 +734,12 @@ class MGMRestResourceImpl internal constructor(
             holdingIdentityShortHash: String,
             ruleId: String,
             ruleType: ApprovalRuleType
-        ) = handleCommonErrors(holdingIdentityShortHash) {
-            mgmResourceClient.deleteApprovalRule(it, ruleId, ruleType)
+        ) = try {
+            handleCommonErrors(holdingIdentityShortHash) {
+                mgmResourceClient.deleteApprovalRule(it, ruleId, ruleType)
+            }
+        } catch (e: MembershipPersistenceException) {
+            throw ResourceNotFoundException("${e.message}")
         }
 
         private fun notAnMgmError(holdingIdentityShortHash: String): Nothing =
@@ -785,22 +822,10 @@ class MGMRestResourceImpl internal constructor(
                 throw ResourceNotFoundException(e.entity, holdingIdentityShortHash)
             } catch (e: MemberNotAnMgmException) {
                 notAnMgmError(holdingIdentityShortHash)
-            } catch (e: NotFoundEntityPersistenceException) {
-                throw ResourceNotFoundException("${e.message}")
-            } catch (e: ConflictPersistenceException) {
-                throw ResourceAlreadyExistsException("${e.message}")
             } catch (e: CordaRPCAPIPartitionException) {
                 throw ServiceUnavailableException("Could not perform operation for $holdingIdentityShortHash: Repartition Event!")
-            } catch (e: NoSuchElementException) {
-                throw ResourceNotFoundException("${e.message}")
-            } catch (e: IllegalArgumentException) {
-                throw BadRequestException("${e.message}")
-            } catch (e: InvalidEntityUpdateException) {
-                throw InvalidStateChangeException("${e.message}")
             } catch (e: ServiceNotReadyException) {
                 throw ServiceUnavailableException("Could not perform operation for $holdingIdentityShortHash. Service not ready.")
-            } catch (e: MembershipPersistenceException) {
-                throw InternalServerException("${e.message}")
             }
         }
     }
