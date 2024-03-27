@@ -7,6 +7,7 @@ import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.membership.datamodel.PreAuthTokenEntity
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.exceptions.NotFoundEntityPersistenceException
 import net.corda.virtualnode.toCorda
 import javax.persistence.LockModeType
 
@@ -33,7 +34,7 @@ internal class RevokePreAuthTokenHandler(persistenceHandlerServices: Persistence
                 request.tokenId,
                 LockModeType.PESSIMISTIC_WRITE
             )
-                ?: throw MembershipPersistenceException("Pre Auth Token with ID '${request.tokenId}' does not exist.")
+                ?: throw NotFoundEntityPersistenceException("Pre Auth Token with ID '${request.tokenId}' does not exist.")
             if (token.status != PreAuthTokenStatus.AVAILABLE.toString()) {
                 throw MembershipPersistenceException(
                     "Pre Auth Token with ID '${request.tokenId}' cannot be revoked because it has status ${token.status}."
