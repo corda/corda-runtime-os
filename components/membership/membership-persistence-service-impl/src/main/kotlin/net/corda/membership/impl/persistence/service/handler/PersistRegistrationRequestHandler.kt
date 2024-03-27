@@ -75,7 +75,7 @@ internal class PersistRegistrationRequestHandler(
                     }
                 } else {
                     logger.info("QQQ 10 for $registrationId with $id")
-                    em.merge(createEntityBasedOnRequest(request))
+                    em.persist(createEntityBasedOnRequest(request))
                 }
                 logger.info("QQQ 11 for $registrationId with $id")
                 logger.info("QQQ persisted ${request.registrationRequest.registrationId} in thread ${Thread.currentThread().id}")
