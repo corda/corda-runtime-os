@@ -1,5 +1,6 @@
 package net.corda.flow.application.persistence
 
+import java.nio.ByteBuffer
 import net.corda.flow.application.persistence.external.events.AbstractPersistenceExternalEventFactory
 import net.corda.flow.application.persistence.external.events.FindExternalEventFactory
 import net.corda.flow.application.persistence.external.events.MergeExternalEventFactory
@@ -21,7 +22,6 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
 
 class PersistenceServiceImplTest {
 
@@ -33,7 +33,7 @@ class PersistenceServiceImplTest {
     private lateinit var persistenceService: PersistenceService
 
     private val byteBuffer = ByteBuffer.wrap("bytes".toByteArray())
-    private val dedupeId = "dedupeId"
+
     private val argumentCaptor = argumentCaptor<Class<out AbstractPersistenceExternalEventFactory<Any>>>()
 
     @BeforeEach
@@ -53,7 +53,7 @@ class PersistenceServiceImplTest {
 
     @Test
     fun `persist executes successfully`() {
-        persistenceService.persist(dedupeId, TestObject())
+        persistenceService.persist(TestObject())
 
         verify(serializationService).serialize(any<TestObject>())
         assertThat(argumentCaptor.firstValue).isEqualTo(PersistExternalEventFactory::class.java)
@@ -61,14 +61,14 @@ class PersistenceServiceImplTest {
 
     @Test
     fun `bulk persist executes successfully`() {
-        persistenceService.persist(dedupeId, listOf(TestObject(), TestObject()))
+        persistenceService.persist(listOf(TestObject(), TestObject()))
         verify(serializationService, times(2)).serialize(any<TestObject>())
         assertThat(argumentCaptor.firstValue).isEqualTo(PersistExternalEventFactory::class.java)
     }
 
     @Test
     fun `bulk persist with no input entities does nothing`() {
-        persistenceService.persist(dedupeId, emptyList<Any>())
+        persistenceService.persist(emptyList<Any>())
         verify(externalEventExecutor, never()).execute(any<Class<ExternalEventFactory<Any, Any, Any>>>(), any())
         verify(serializationService, never()).deserialize<TestObject>(any<ByteArray>(), any())
         verify(serializationService, never()).serialize<TestObject>(any())

@@ -1,5 +1,6 @@
 package net.corda.entityprocessor.impl.internal
 
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.core.parseSecureHash
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
@@ -12,6 +13,7 @@ import net.corda.data.persistence.FindEntities
 import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.data.persistence.MergeEntities
 import net.corda.data.persistence.PersistEntities
+import net.corda.flow.utils.RequestIDGenerator
 import net.corda.flow.utils.toMap
 import net.corda.libs.virtualnode.datamodel.repository.RequestsIdsRepository
 import net.corda.messaging.api.records.Record
@@ -29,6 +31,7 @@ import net.corda.utilities.translateFlowContextToMDC
 import net.corda.utilities.withMDC
 import net.corda.v5.application.flows.FlowContextPropertyKeys
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.util.EncodingUtils.toBase64
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import java.time.Duration
@@ -103,11 +106,38 @@ class ProcessorService {
 
         return when (val entityRequest = request.request) {
             is PersistEntities -> {
-                val requestId = request.flowExternalEventContext.requestId
+                val entities = entityRequest.entities
+                    .map { serializationService.deserialize(it.array(), Any::class.java) }
+
+                // originalRequestId is set client side based on a combination of entity parameters and suspend count
+                // in order that we can filter out duplicate requests in case this external command was received as the result
+                // of a retry when a previous attempt already succeeded.
+                val originalRequestId = request.flowExternalEventContext.requestId
+
+                // If there is a nondeterministic argument, for example a timestamp, originalRequestId would be different
+                // for retries and not be flagged as duplicate to filter out. To accommodate this we try to modify the request
+                // id hash component to be the hash of the entity id, if there is one, rather than the request parameters.
+                // Any entity ID must be unique, being bound to the primary key of the db table.
+                val requestId = entities
+                    .mapNotNull { entityManagerFactory.persistenceUnitUtil.getIdentifier(it) }
+                    .takeIf { it.isNotEmpty() }?.let { entityPks ->
+                        RequestIDGenerator.replaceRequestIdHash(
+                            originalRequestId,
+                            entityPks,
+                            serializationService
+                        ) { toBase64(it.sha256Bytes()) }
+                        // Where there are no ids to use as a basis for a replacement hash, we fall back to the originalRequestId set
+                        // by the client.
+                    } ?: originalRequestId
+
+                // Note if the user code tried to write the same entity twice (as opposed to a retry scenario) the user code should
+                // get an error returned, it shouldn't be filtered as a duplicate. This will work because the suspend count
+                // is written into the request ID and so the request ID would always be different.
+
                 val entityResponse = withDeduplicationCheck(requestId, entityManager, onDuplication = {
                     EntityResponse(emptyList(), KeyValuePairList(emptyList()), null)
                 }, requestsIdsRepository) {
-                    persistenceServiceInternal.persist(serializationService, it, entityRequest)
+                    persistenceServiceInternal.persist(it, entities)
                 }
 
                 responseFactory.successResponse(
@@ -180,8 +210,8 @@ class ProcessorService {
                 requestsIdsRepository.persist(requestId, it)
                 it.flush()
             } catch (e: PersistenceException) {
-                // A persistence exception thrown in the de-duplication check means we have already performed the operation and
-                // can therefore treat the request as successful
+                // A persistence exception thrown in the de-duplication check means we have already
+                // performed the operation and can therefore treat the request as successful
                 it.transaction.setRollbackOnly()
                 return@transaction onDuplication()
             }

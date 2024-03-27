@@ -20,13 +20,13 @@ class PersistExternalEventFactoryTest {
     fun `creates a record containing an EntityRequest with a PersistEntities payload`() {
         val checkpoint = mock<FlowCheckpoint>()
         val externalEventContext = ExternalEventContext("request id", "flow id", KeyValuePairList(emptyList()))
-        val dedupeId = "dedupeId"
+
         whenever(checkpoint.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
 
         val externalEventRecord = PersistExternalEventFactory().createExternalEvent(
             checkpoint,
             externalEventContext,
-            PersistParameters(dedupeId, listOf(byteArrayOf(1)))
+            PersistParameters(listOf(byteArrayOf(1)))
         )
         assertNull(externalEventRecord.key)
         assertEquals(

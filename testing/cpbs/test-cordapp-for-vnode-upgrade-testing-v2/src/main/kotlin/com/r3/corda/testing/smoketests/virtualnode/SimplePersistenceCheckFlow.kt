@@ -1,8 +1,8 @@
 package com.r3.corda.testing.smoketests.virtualnode
 
+import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
-import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.application.persistence.PersistenceService
@@ -21,11 +21,10 @@ class SimplePersistenceCheckFlow : ClientStartableFlow {
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
-        val deduplicationId = UUID.randomUUID().toString()
         val dog = Dog(UUID.randomUUID(), "Rex", Instant.now(), "none")
 
         try {
-            persistenceService.persist(deduplicationId, dog)
+            persistenceService.persist(dog)
         } catch (ex: CordaPersistenceException) {
             return "Could not persist dog"
         }
