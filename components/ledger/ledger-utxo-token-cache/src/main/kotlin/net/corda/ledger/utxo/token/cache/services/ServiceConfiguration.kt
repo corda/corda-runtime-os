@@ -10,5 +10,5 @@ interface ServiceConfiguration {
 
     val claimTimeoutSeconds: Int
 
-    val tokenCacheExpiryPeriodMilliseconds: Duration
+    val tokenCacheExpiryPeriod: Duration
 }

@@ -23,7 +23,7 @@ class ServiceConfigurationImpl : ServiceConfiguration {
     override val claimTimeoutSeconds: Int
         get() = getIntValue(UTXO_TOKEN_CLAIM_TIMEOUT_SECONDS)
 
-    override val tokenCacheExpiryPeriodMilliseconds: Duration
+    override val tokenCacheExpiryPeriod: Duration
         get() = Duration.ofMillis(getLongValue(UTXO_TOKEN_CACHE_REFRESH_PERIOD_MILLISECONDS))
 
     private fun getIntValue(name: String): Int {
