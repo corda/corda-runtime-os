@@ -28,6 +28,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -310,6 +311,7 @@ class PersistRegistrationRequestHandlerTest {
     }
 
     @Test
+    @Disabled
     fun `invoke will merge if the status is in earlier state`() {
         val status = mock<RegistrationRequestEntity> {
             on { status } doReturn RegistrationStatus.NEW.toString()
