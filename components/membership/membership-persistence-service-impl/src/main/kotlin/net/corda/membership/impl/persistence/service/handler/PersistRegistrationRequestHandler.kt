@@ -22,6 +22,16 @@ internal class PersistRegistrationRequestHandler(
                 registrationId,
                 LockModeType.PESSIMISTIC_WRITE,
             )
+            if (currentRegistrationRequest != null) {
+                logger.info(
+                    "QQQ for $registrationId got $currentRegistrationRequest " +
+                        "with ${currentRegistrationRequest.registrationId} and" +
+                        " ${currentRegistrationRequest.status}"
+                )
+            } else {
+                logger.info("QQQ for $registrationId got nulls")
+            }
+
             currentRegistrationRequest?.status?.toStatus()?.let {
                 if (it == request.status) {
                     logger.info(
