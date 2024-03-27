@@ -8,6 +8,11 @@ import net.corda.v5.ledger.utxo.token.selection.Strategy
  */
 interface TokenCache {
 
+    /**
+     * Returns the tokens present in the cache based on the strategy.
+     *
+     * @param strategy The strategy that should have been used to retrieve the tokens from the persistence layer.
+     */
     fun get(strategy: Strategy): Iterable<CachedToken>
 
     /**
