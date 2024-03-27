@@ -81,7 +81,8 @@ internal class PersistRegistrationRequestHandler(
                 logger.info("QQQ persisted ${request.registrationRequest.registrationId} in thread ${Thread.currentThread().id}")
             }
         } catch (e: Throwable) {
-            logger.info("QQQ for $registrationId with $id got error: $e", e)
+            //logger.info("QQQ for $registrationId with $id got error: $e", e)
+            throw e
         }
     }
 
