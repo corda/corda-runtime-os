@@ -20,10 +20,11 @@ class SimplePersistenceCheckFlow : ClientStartableFlow {
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
+        val deduplicationId = UUID.randomUUID().toString()
         val fish = Fish(UUID.randomUUID(), "Floaty", "Black", Owner(UUID.randomUUID(), "alice", 22))
 
         try {
-            persistenceService.persist("fish1", fish)
+            persistenceService.persist(deduplicationId, fish)
         } catch (ex: CordaPersistenceException) {
             return "Could not persist fish"
         }

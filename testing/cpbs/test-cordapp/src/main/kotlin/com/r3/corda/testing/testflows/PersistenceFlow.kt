@@ -33,24 +33,25 @@ class PersistenceFlow : ClientStartableFlow {
     override fun call(requestBody: ClientRequestBody): String {
         log.info("Starting Test Flow...")
         try {
+            val deduplicationIds = List(4) { UUID.randomUUID().toString() }
             val inputs = requestBody.getRequestBodyAs(jsonMarshallingService, TestFlowInput::class.java)
 
-            persistenceService.persist("entity1", 123)
+            persistenceService.persist(deduplicationIds[0], 123)
             persistenceService.remove(123)
 
             val id = UUID.randomUUID()
             val dog = Dog(id, "Penny", Instant.now(), "Alice")
-            persistenceService.persist("entity2", dog)
+            persistenceService.persist(deduplicationIds[1], dog)
             log.info("Persisted Dog: $dog")
 
             val id2 = UUID.randomUUID()
             val dog2 = Dog(id2, "Lenard", Instant.now(), "Alice")
-            persistenceService.persist("entity3", listOf(dog2))
+            persistenceService.persist(deduplicationIds[2], listOf(dog2))
             log.info("Persisted Dog (bulk): $dog2")
 
             if (inputs.throwException) {
                 try {
-                    persistenceService.persist("entity4", dog)
+                    persistenceService.persist(deduplicationIds[3], dog)
                     log.error("Persisted second Dog incorrectly: $dog")
 
                 } catch (e: CordaPersistenceException) {
