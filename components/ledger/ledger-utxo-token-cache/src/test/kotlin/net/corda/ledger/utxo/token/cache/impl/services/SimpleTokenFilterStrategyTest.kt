@@ -5,12 +5,14 @@ import net.corda.ledger.utxo.token.cache.entities.ClaimQuery
 import net.corda.ledger.utxo.token.cache.entities.internal.TokenCacheImpl
 import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
 import net.corda.ledger.utxo.token.cache.services.SimpleTokenFilterStrategy
+import net.corda.utilities.time.UTCClock
 import net.corda.v5.ledger.utxo.token.selection.Strategy
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.math.BigDecimal
+import java.time.Clock
 import java.time.Duration
 
 class SimpleTokenFilterStrategyTest {
@@ -27,7 +29,7 @@ class SimpleTokenFilterStrategyTest {
      */
     @Test
     fun `null tag and owner criteria should match all`() {
-        val tc = TokenCacheImpl(Duration.ZERO).get(Strategy.RANDOM)
+        val tc = TokenCacheImpl(Duration.ZERO, UTCClock()).get(Strategy.RANDOM)
         val query = ClaimQuery("r1", "f1", BigDecimal(1), null, null, POOL_KEY, Strategy.RANDOM)
 
         val result = target.filterTokens(tc, query).toList()
