@@ -164,9 +164,9 @@ class OnboardMember : Runnable, BaseOnboard() {
         assignSoftHsmAndGenerateKey("NOTARY")
     }
 
-    override val registrationContext by lazy {
+    override val memberRegistrationRequest by lazy {
         if (roles.contains(MemberRole.NOTARY)) {
-            RegistrationContext().createNotaryRegistrationContext(
+            RegistrationContext().createNotaryRegistrationRequest(
                 preAuthToken = preAuthToken,
                 roles = roles,
                 customProperties = customProperties,
@@ -205,7 +205,7 @@ class OnboardMember : Runnable, BaseOnboard() {
             setupNetwork()
 
             println("Provided registration context: ")
-            println(registrationContext)
+            println(memberRegistrationRequest)
 
             register(waitForFinalStatus)
 

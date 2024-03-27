@@ -94,8 +94,8 @@ class OnboardMgm : Runnable, BaseOnboard() {
         ca.caCertificate.toPem()
     }
 
-    override val registrationContext by lazy {
-        RegistrationContext().createMgmRegistrationContext(
+    override val memberRegistrationRequest by lazy {
+        RegistrationContext().createMgmRegistrationRequest(
             mtls = mtls,
             p2pGatewayUrls = p2pGatewayUrls,
             sessionKey = sessionKeyId,

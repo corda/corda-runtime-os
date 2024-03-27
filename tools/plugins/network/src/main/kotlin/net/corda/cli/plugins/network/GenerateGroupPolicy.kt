@@ -7,7 +7,10 @@ import net.corda.cli.plugins.network.output.ConsoleOutput
 import net.corda.cli.plugins.network.output.Output
 import net.corda.cli.plugins.network.utils.PrintUtils.printJsonOutput
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
+import net.corda.cli.plugins.typeconverter.X500NameConverter
+import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.sdk.network.GenerateStaticGroupPolicy
+import net.corda.v5.base.types.MemberX500Name
 import org.yaml.snakeyaml.Yaml
 import picocli.CommandLine
 import java.nio.file.Path
@@ -40,8 +43,9 @@ class GenerateGroupPolicy(private val output: Output = ConsoleOutput()) : Runnab
     @CommandLine.Option(
         names = ["--name"],
         description = ["Member's X.500 name"],
+        converter = [X500NameConverter::class],
     )
-    var names: List<String>? = null
+    var names: List<MemberX500Name>? = null
 
     @CommandLine.Option(
         names = ["--file", "-f"],
@@ -76,7 +80,7 @@ class GenerateGroupPolicy(private val output: Output = ConsoleOutput()) : Runnab
      *
      * @throws IllegalArgumentException If both file input and string parameters are provided.
      */
-    private fun memberListFromInput(): List<Map<String, Any>>? {
+    private fun memberListFromInput(): List<MemberRegistrationRequest>? {
         if (filePath != null) {
             require(endpoint == null) { "Endpoint may not be specified when '--file' is set." }
             require(endpointProtocol == null) { "Endpoint protocol may not be specified when '--file' is set." }
@@ -92,40 +96,43 @@ class GenerateGroupPolicy(private val output: Output = ConsoleOutput()) : Runnab
      * @return Member list or null if no file was provided.
      */
     @Suppress("ComplexMethod", "ThrowsCount")
-    private fun membersFromFile(): List<Map<String, Any>>? {
+    private fun membersFromFile(): List<MemberRegistrationRequest>? {
         val content = readAndValidateFile() ?: return null
-        val members = mutableListOf<Map<String, Any>>()
+        val members = mutableListOf<MemberRegistrationRequest>()
         content["memberNames"]?.let {
             (it as List<*>)
             it.forEach { name ->
                 members.add(
-                    mapOf(
-                        "name" to name!!,
-                        "memberStatus" to MEMBER_STATUS_ACTIVE,
-                        "endpointUrl-1" to content["endpoint"]!!,
-                        "endpointProtocol-1" to content["endpointProtocol"]!!,
-                    ),
+                    MemberRegistrationRequest(
+                        context = mapOf(
+                            "name" to name.asString(),
+                            "memberStatus" to MEMBER_STATUS_ACTIVE,
+                            "endpointUrl-1" to content["endpoint"].asString(),
+                            "endpointProtocol-1" to content["endpointProtocol"].asString(),
+                        ),
+                    )
                 )
             }
         }
-        content["members"]?.let {
-            (it as List<*>)
-            it.forEach { member ->
+        content["members"]?.let { contentMembers ->
+            (contentMembers as List<*>)
+            contentMembers.forEach { member ->
                 (member as Map<*, *>)
                 val x500 = member["name"]?.toString() ?: throw IllegalArgumentException("No member name specified.")
                 members.add(
-                    mapOf(
-                        "name" to x500,
-                        "memberStatus" to (member["status"] ?: MEMBER_STATUS_ACTIVE),
-                        "endpointUrl-1" to (
-                            member["endpoint"] ?: content["endpoint"]
-                                ?: throw IllegalArgumentException("No endpoint specified.")
-                            ),
-                        "endpointProtocol-1" to (
-                            member["endpointProtocol"] ?: content["endpointProtocol"]
-                                ?: throw IllegalArgumentException("No endpoint protocol specified.")
-                            ),
-                    ),
+                    MemberRegistrationRequest(
+                        context = mapOf(
+                            "name" to x500,
+                            "memberStatus" to eitherOrThrow(member["status"], MEMBER_STATUS_ACTIVE),
+                            "endpointUrl-1" to
+                                eitherOrThrow(member["endpoint"], content["endpoint"]) { "No endpoint specified." },
+                            "endpointProtocol-1" to (
+                                eitherOrThrow(member["endpointProtocol"], content["endpointProtocol"]) {
+                                    "No endpoint protocol specified."
+                                }
+                                ),
+                        ),
+                    )
                 )
             }
         }
@@ -137,13 +144,13 @@ class GenerateGroupPolicy(private val output: Output = ConsoleOutput()) : Runnab
      *
      * @return Member list or null if no parameters were provided.
      */
-    private fun membersFromStringParameters(): List<Map<String, Any>>? {
+    private fun membersFromStringParameters(): List<MemberRegistrationRequest>? {
         validateStringParameters()
         if (endpoint == null && endpointProtocol == null && names == null) {
             return null
         }
         return names?.let {
-            GenerateStaticGroupPolicy().createMembersListFromListOfX500Strings(it, endpoint!!, endpointProtocol!!)
+            GenerateStaticGroupPolicy().createMembersListFromListOfX500Names(it, endpoint!!, endpointProtocol!!)
         } ?: listOf()
     }
 
@@ -199,6 +206,22 @@ class GenerateGroupPolicy(private val output: Output = ConsoleOutput()) : Runnab
                     require(parsed["endpointProtocol"] != null) { "Endpoint protocol must be specified." }
                 }
             }
+        }
+    }
+
+    private fun eitherOrThrow(a: Any?, b: Any?, error: (() -> String)? = null): String {
+        error?.let {
+            require(a != null || b != null) { error() }
+        } ?: require(a != null || b != null)
+        return (a ?: b).asString()
+    }
+
+    private fun Any?.asString(): String {
+        requireNotNull(this) { "Expected a value, but got null for value: $this" }
+        return when (this) {
+            is String -> this
+            is Number -> this.toString()
+            else -> this.toString()
         }
     }
 }

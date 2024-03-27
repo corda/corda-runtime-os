@@ -1,5 +1,6 @@
 package net.corda.sdk.network
 
+import net.corda.crypto.core.ShortHash
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.JsonCreateVirtualNodeRequest
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
@@ -42,13 +43,17 @@ class VirtualNode {
      * @param holdingId the holding identity of the node
      * @param wait Duration before timing out, default 30 seconds
      */
-    fun waitForVirtualNodeToBeActive(restClient: RestClient<VirtualNodeRestResource>, holdingId: String, wait: Duration = 30.seconds) {
+    fun waitForVirtualNodeToBeActive(
+        restClient: RestClient<VirtualNodeRestResource>,
+        holdingId: ShortHash,
+        wait: Duration = 30.seconds
+    ) {
         restClient.use { client ->
             executeWithRetry(
                 waitDuration = wait,
                 operationName = "Wait for Virtual Node $holdingId to be active"
             ) {
-                val resource = client.start().proxy.getVirtualNode(holdingId)
+                val resource = client.start().proxy.getVirtualNode(holdingId.value)
                 resource.flowP2pOperationalStatus == OperationalStatus.ACTIVE
             }
         }
@@ -64,8 +69,10 @@ class VirtualNode {
         restClient: RestClient<VirtualNodeRestResource>,
         request: JsonCreateVirtualNodeRequest,
         wait: Duration = 30.seconds
-    ): String {
-        val requestId = create(restClient, request, wait).responseBody.requestId
+    ): ShortHash {
+        val requestId = with(create(restClient, request, wait)) {
+            ShortHash.of(responseBody.requestId)
+        }
         waitForVirtualNodeToBeActive(restClient, requestId, wait)
         return requestId
     }
@@ -76,13 +83,17 @@ class VirtualNode {
      * @param holdingId the holding identity of the node
      * @param wait Duration before timing out, default 10 seconds
      */
-    fun resyncVault(restClient: RestClient<VirtualNodeMaintenanceRestResource>, holdingId: String, wait: Duration = 10.seconds) {
+    fun resyncVault(
+        restClient: RestClient<VirtualNodeMaintenanceRestResource>,
+        holdingId: ShortHash,
+        wait: Duration = 10.seconds
+    ) {
         restClient.use { client ->
             executeWithRetry(
                 waitDuration = wait,
                 operationName = "Resync vault"
             ) {
-                client.start().proxy.resyncVirtualNodeDb(holdingId)
+                client.start().proxy.resyncVirtualNodeDb(holdingId.value)
             }
         }
     }

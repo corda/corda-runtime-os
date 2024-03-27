@@ -2,6 +2,8 @@ package net.corda.cli.plugins.network
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.cli.plugins.common.RestCommand
+import net.corda.cli.plugins.typeconverter.ShortHashConverter
+import net.corda.crypto.core.ShortHash
 import net.corda.membership.rest.v1.MGMRestResource
 import net.corda.sdk.network.ExportGroupPolicyFromMgm
 import net.corda.sdk.rest.RestClientUtils.createRestClient
@@ -26,15 +28,15 @@ class ExportGroupPolicy : Runnable, RestCommand() {
         names = ["-h", "--holding-identity-short-hash"],
         arity = "1",
         description = ["The holding identity short hash of the MGM."],
+        converter = [ShortHashConverter::class],
     )
-    var holdingIdentityShortHash: String? = null
+    var holdingIdentityShortHash: ShortHash? = null
 
     override fun run() {
         exportGroupPolicy()
     }
 
     private fun exportGroupPolicy() {
-        val holdingId: String = holdingIdentityShortHash ?: throw IllegalArgumentException("A holding Id must be specified for the MGM.")
         val restClient = createRestClient(
             MGMRestResource::class,
             insecure = insecure,
@@ -43,9 +45,10 @@ class ExportGroupPolicy : Runnable, RestCommand() {
             password = password,
             targetUrl = targetUrl
         )
+        requireNotNull(holdingIdentityShortHash) { "A holding identity short hash must be specified." }
         val groupPolicyResponse = ExportGroupPolicyFromMgm().exportPolicy(
             restClient,
-            holdingId,
+            holdingIdentityShortHash!!,
             wait = waitDurationSeconds.seconds
         )
         saveLocation.parentFile.mkdirs()

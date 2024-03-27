@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.github.stefanbirkner.systemlambda.SystemLambda.tapSystemErrAndOutNormalized
+import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -59,19 +60,19 @@ class GenerateStaticGroupPolicyTest {
     @Test
     fun `when member name is specified, endpoint information is required`() {
         tapSystemErrAndOutNormalized {
-            CommandLine(GenerateGroupPolicy()).execute("--name=XYZ")
+            CommandLine(GenerateGroupPolicy()).execute("--name=C=GB,L=London,O=Alice")
         }.apply {
             assertTrue(this.contains("Endpoint must be specified using '--endpoint'."))
         }
 
         tapSystemErrAndOutNormalized {
-            CommandLine(GenerateGroupPolicy()).execute("--name=XYZ", "--endpoint=dummy")
+            CommandLine(GenerateGroupPolicy()).execute("--name=C=GB,L=London,O=Alice", "--endpoint=dummy")
         }.apply {
             assertTrue(this.contains("Endpoint protocol must be specified using '--endpoint-protocol'."))
         }
 
         tapSystemErrAndOutNormalized {
-            CommandLine(GenerateGroupPolicy()).execute("--name=XYZ", "--endpoint-protocol=5")
+            CommandLine(GenerateGroupPolicy()).execute("--name=C=GB,L=London,O=Alice", "--endpoint-protocol=5")
         }.apply {
             assertTrue(this.contains("Endpoint must be specified using '--endpoint'."))
         }
@@ -97,16 +98,18 @@ class GenerateStaticGroupPolicyTest {
     fun `string parameters are correctly parsed to generate group policy with specified names and endpoint information`() {
         val app = GenerateGroupPolicy()
 
+        val member1 = MemberX500Name.parse("C=GB, L=London, O=Member1")
+        val member2 = MemberX500Name.parse("C=GB, L=London, O=Member2")
         tapSystemErrAndOutNormalized {
             CommandLine(app).execute(
-                "--name=C=GB, L=London, O=Member1",
-                "--name=C=GB, L=London, O=Member2",
+                "--name=$member1",
+                "--name=$member2",
                 "--endpoint=http://dummy-url",
                 "--endpoint-protocol=5",
             )
         }.apply {
             memberList(this).forEach {
-                assertTrue(it["name"].asText().contains("C=GB, L=London, O=Member"))
+                assertTrue(it["name"].asText() in listOf(member1.toString(), member2.toString()))
                 assertEquals("ACTIVE", it["memberStatus"].asText())
                 assertEquals("http://dummy-url", it["endpointUrl-1"].asText())
                 assertEquals("5", it["endpointProtocol-1"].asText())
@@ -119,9 +122,20 @@ class GenerateStaticGroupPolicyTest {
         val app = GenerateGroupPolicy()
 
         tapSystemErrAndOutNormalized {
-            CommandLine(app).execute("--name=XYZ", "--file=app/build/libs/src.json")
+            CommandLine(app).execute("--name=C=GB,L=London, O=Member1", "--file=app/build/libs/src.json")
         }.apply {
             assertTrue(this.contains("Member name(s) may not be specified when '--file' is set."))
+        }
+    }
+
+    @Test
+    fun `incorrect x500 name input cannot be parsed and throws exception`() {
+        val app = GenerateGroupPolicy()
+
+        tapSystemErrAndOutNormalized {
+            CommandLine(app).execute("--name=XYZ")
+        }.apply {
+            assertTrue(this.contains("Invalid value for option '--name' (<names>): cannot convert 'XYZ' to MemberX500Name"))
         }
     }
 
@@ -162,7 +176,9 @@ class GenerateStaticGroupPolicyTest {
         }.apply {
             memberList(this).forEach {
                 assertTrue(it["name"].asText().contains("C=GB, L=London, O=Member"))
-                assertTrue(it["memberStatus"].asText().contains("PENDING") || it["memberStatus"].asText().contains("ACTIVE"))
+                assertTrue(
+                    it["memberStatus"].asText().contains("PENDING") || it["memberStatus"].asText().contains("ACTIVE")
+                )
                 assertEquals("http://dummy-url", it["endpointUrl-1"].asText())
             }
         }
@@ -172,17 +188,20 @@ class GenerateStaticGroupPolicyTest {
     fun `YAML file with 'memberNames' is correctly parsed to generate group policy with specified member information`() {
         val app = GenerateGroupPolicy()
         val filePath = Files.createFile(tempDir.resolve("src.yaml"))
+
+        val member1 = MemberX500Name.parse("C=GB, L=London, O=Member1")
+        val member2 = MemberX500Name.parse("C=GB, L=London, O=Member2")
         filePath.toFile().writeText(
             "endpoint: \"http://dummy-url\"\n" +
                 "endpointProtocol: 5\n" +
-                "memberNames: [\"C=GB, L=London, O=Member1\", \"C=GB, L=London, O=Member2\"]\n",
+                "memberNames: [\"$member1\", \"$member2\"]\n",
         )
 
         tapSystemErrAndOutNormalized {
             CommandLine(app).execute("--file=$filePath")
         }.apply {
             memberList(this).forEach {
-                assertTrue(it["name"].asText().contains("C=GB, L=London, O=Member"))
+                assertTrue(it["name"].asText() in listOf(member1.toString(), member2.toString()))
                 assertEquals("ACTIVE", it["memberStatus"].asText())
                 assertEquals("http://dummy-url", it["endpointUrl-1"].asText())
                 assertEquals("5", it["endpointProtocol-1"].asText())

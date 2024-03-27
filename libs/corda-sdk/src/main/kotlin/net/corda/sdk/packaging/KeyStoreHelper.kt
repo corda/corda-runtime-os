@@ -1,6 +1,7 @@
 package net.corda.sdk.packaging
 
 import net.corda.crypto.cipher.suite.SignatureSpecs
+import net.corda.v5.base.types.MemberX500Name
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
@@ -33,7 +34,7 @@ class KeyStoreHelper {
         keyStoreFile: File,
         alias: String,
         password: String,
-        x500Name: String = "CN=Default Signing Key, O=R3, L=London, c=GB"
+        x500Name: MemberX500Name = MemberX500Name.parse("CN=Default Signing Key, O=R3, L=London, c=GB")
     ) {
         val keyPair = KeyPairGenerator.getInstance("RSA").genKeyPair()
         val sigAlgId = DefaultSignatureAlgorithmIdentifierFinder().find(
@@ -44,11 +45,11 @@ class KeyStoreHelper {
         val sigGen = BcRSAContentSignerBuilder(sigAlgId, digAlgId).build(parameter)
         val now = System.currentTimeMillis()
         val startDate = Date(now)
-        val dnName = X500Name(x500Name)
         val certSerialNumber = BigInteger.TEN
         val endDate = Date(now + 100L * 60 * 60 * 24 * 1000)
+        val boucyCastleX500Name = x500Name.toBouncyCastleX500Name()
         val certificateBuilder =
-            JcaX509v3CertificateBuilder(dnName, certSerialNumber, startDate, endDate, dnName, keyPair.public)
+            JcaX509v3CertificateBuilder(boucyCastleX500Name, certSerialNumber, startDate, endDate, boucyCastleX500Name, keyPair.public)
         val certificate = JcaX509CertificateConverter().getCertificate(
             certificateBuilder.build(sigGen),
         )
@@ -98,5 +99,9 @@ class KeyStoreHelper {
      */
     fun getDefaultGradleCertificateStream(): InputStream {
         return this::class.java.getResourceAsStream("/network/certificates/gradle-plugin-default-key.pem")!!
+    }
+
+    private fun MemberX500Name.toBouncyCastleX500Name(): X500Name {
+        return X500Name(this.toString())
     }
 }

@@ -1,0 +1,18 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'corda.common-library'
+}
+
+ext {
+    releasable = false
+}
+
+ext.cordaEnableFormatting = true
+
+group 'net.corda.cli.plugins.data'
+
+dependencies {
+    implementation libs.kotlin.stdlib
+    implementation "info.picocli:picocli:$picocliVersion"
+    implementation project(':libs:crypto:crypto-core')
+}
