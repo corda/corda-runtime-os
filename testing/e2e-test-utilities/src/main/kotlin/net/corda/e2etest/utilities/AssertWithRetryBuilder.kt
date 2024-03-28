@@ -9,7 +9,7 @@ class AssertWithRetryArgs {
     var timeout: Duration = Duration.ofSeconds(10)
     var interval: Duration = Duration.ofMillis(500)
     var startDelay: Duration = Duration.ofMillis(10)
-    var command: (() -> SimpleResponse) = { throw IllegalArgumentException("Command not specified in AssertWithRetryArgs") }
+    lateinit var command: (() -> SimpleResponse)
     var condition: ((SimpleResponse) -> Boolean) = { it.code in 200..299 }
     var immediateFailCondition: ((SimpleResponse) -> Boolean) = { false }
     var failMessage: String = ""
