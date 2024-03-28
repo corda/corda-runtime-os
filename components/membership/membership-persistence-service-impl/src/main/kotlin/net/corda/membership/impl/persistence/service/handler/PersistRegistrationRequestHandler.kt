@@ -32,6 +32,7 @@ internal class PersistRegistrationRequestHandler(
                 }
             } else {
                 val now = clock.instant()
+                /*
                 val sql = """
                     INSERT INTO {h-schema}${DbSchema.VNODE_GROUP_REGISTRATION_TABLE}(
                         registration_id,
@@ -70,6 +71,41 @@ internal class PersistRegistrationRequestHandler(
                             status = EXCLUDED.status,
                             last_modified = EXCLUDED.last_modified,
                             serial = EXCLUDED.serial
+                        """
+                 */
+                val sql = """
+                    INSERT INTO {h-schema}${DbSchema.VNODE_GROUP_REGISTRATION_TABLE}(
+                        registration_id,
+                        holding_identity_id,
+                        status,
+                        created,
+                        last_modified,
+                        member_context,
+                        member_context_signature_key,
+                        member_context_signature_content,
+                        member_context_signature_spec,
+                        registration_context,
+                        registration_context_signature_key,
+                        registration_context_signature_content,
+                        registration_context_signature_spec,
+                        serial,
+                        reason)
+                    VALUES (
+                        :registration_id,
+                        :holding_identity_id,
+                        :status,
+                        :created,
+                        :last_modified,
+                        :member_context,
+                        :member_context_signature_key,
+                        :member_context_signature_content,
+                        :member_context_signature_spec,
+                        :registration_context,
+                        :registration_context_signature_key,
+                        :registration_context_signature_content,
+                        :registration_context_signature_spec,
+                        :serial,
+                        :reason)
                         """
                 em.createNativeQuery(sql)
                     .setParameter("registration_id", registrationId)
