@@ -187,6 +187,7 @@ class CryptoProcessorImpl @Activate constructor(
         lifecycleCoordinator.stop()
     }
 
+    @Suppress("NestedBlockDepth")
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.trace("Crypto processor received event $event.")
         when (event) {
@@ -220,39 +221,49 @@ class CryptoProcessorImpl @Activate constructor(
             }
 
             is ConfigChangedEvent -> {
-                val tenantInfoService = createTenantInfoService()
-                val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
-                val stateManagerConfig = event.config.getConfig(STATE_MANAGER_CONFIG)
-                val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+                try {
+                    val tenantInfoService = createTenantInfoService()
+                    val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
+                    val stateManagerConfig = event.config.getConfig(STATE_MANAGER_CONFIG)
+                    val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
 
-                val cryptoService = startCryptoService(cryptoConfig, tenantInfoService)
+                    val cryptoService = startCryptoService(cryptoConfig, tenantInfoService)
 
-                stateManager?.stop()
-                val stateManager =
-                    stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION)
-                        .also { it.start() }
-                this.stateManager = stateManager
+                    stateManager?.stop()
+                    val stateManager =
+                        stateManagerFactory.create(stateManagerConfig, StateManagerConfig.StateType.KEY_ROTATION)
+                            .also { it.start() }
+                    this.stateManager = stateManager
 
-                (CryptoConsts.Categories.all - ENCRYPTION_SECRET).forEach { category ->
-                    CryptoTenants.allClusterTenants.forEach { tenantId ->
-                        tenantInfoService.populate(tenantId, category, cryptoService)
-                        logger.trace("Assigned SOFT HSM for $tenantId:$category")
+                    (CryptoConsts.Categories.all - ENCRYPTION_SECRET).forEach { category ->
+                        CryptoTenants.allClusterTenants.forEach { tenantId ->
+                            tenantInfoService.populate(tenantId, category, cryptoService)
+                            logger.trace("Assigned SOFT HSM for $tenantId:$category")
+                        }
                     }
+
+                    tenantInfoService.populate(CryptoTenants.P2P, ENCRYPTION_SECRET, cryptoService)
+                    logger.trace("Assigned SOFT HSM for ${CryptoTenants.P2P}:$ENCRYPTION_SECRET")
+
+                    startProcessors(
+                        cryptoConfig,
+                        messagingConfig,
+                        coordinator,
+                        stateManager,
+                        cordaAvroSerializationFactory,
+                        cryptoService,
+                        tenantInfoService
+                    )
+                    setStatus(LifecycleStatus.UP, coordinator)
+                } catch (e: Exception) {
+                    // In case of wrong crypto config, bring Crypto worker to DOWN and close all managed resources
+                    // so Crypto worker does not accept incoming requests.
+                    // Previous behaviour brought Crypto worker to ERROR, which cause it to be restarted multiple times for no real use
+                    val errorMsg = "Error updating crypto worker from config change, ${e.message}"
+                    logger.warn(errorMsg)
+                    coordinator.updateStatus(LifecycleStatus.DOWN, errorMsg)
+                    coordinator.closeManagedResources()
                 }
-
-                tenantInfoService.populate(CryptoTenants.P2P, ENCRYPTION_SECRET, cryptoService)
-                logger.trace("Assigned SOFT HSM for ${CryptoTenants.P2P}:$ENCRYPTION_SECRET")
-
-                startProcessors(
-                    cryptoConfig,
-                    messagingConfig,
-                    coordinator,
-                    stateManager,
-                    cordaAvroSerializationFactory,
-                    cryptoService,
-                    tenantInfoService
-                )
-                setStatus(LifecycleStatus.UP, coordinator)
             }
         }
     }
