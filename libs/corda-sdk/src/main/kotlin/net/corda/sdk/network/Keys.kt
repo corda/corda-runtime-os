@@ -3,8 +3,8 @@
 
 package net.corda.sdk.network
 
-import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.CryptoConsts.Categories.KeyCategory
+import net.corda.crypto.core.ShortHash
 import net.corda.membership.rest.v1.HsmRestResource
 import net.corda.membership.rest.v1.KeysRestResource
 import net.corda.membership.rest.v1.types.response.KeyPairIdentifier

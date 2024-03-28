@@ -8,8 +8,8 @@ import net.corda.cli.plugins.common.RestCommand
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.cli.plugins.typeconverter.X500NameConverter
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
-import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.CryptoConsts.Categories.KeyCategory
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
