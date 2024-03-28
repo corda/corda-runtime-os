@@ -73,7 +73,6 @@ class MgmRegistrationRequestHandlerTest {
             mgmRegistrationRequestHandler.persistRegistrationRequest(
                 registrationId,
                 holdingIdentity,
-                memberContext,
             )
         }
 
@@ -112,7 +111,6 @@ class MgmRegistrationRequestHandlerTest {
             mgmRegistrationRequestHandler.persistRegistrationRequest(
                 registrationId,
                 holdingIdentity,
-                memberContext,
             )
         }
     }
@@ -125,7 +123,6 @@ class MgmRegistrationRequestHandlerTest {
             mgmRegistrationRequestHandler.persistRegistrationRequest(
                 registrationId,
                 holdingIdentity,
-                memberContext,
             )
         }
     }
@@ -150,7 +147,6 @@ class MgmRegistrationRequestHandlerTest {
             mgmRegistrationRequestHandler.persistRegistrationRequest(
                 registrationId,
                 holdingIdentity,
-                memberContext,
                 serial,
             )
         }

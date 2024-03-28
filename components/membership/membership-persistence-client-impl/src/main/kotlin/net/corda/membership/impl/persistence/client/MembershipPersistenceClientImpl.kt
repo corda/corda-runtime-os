@@ -267,6 +267,7 @@ class MembershipPersistenceClientImpl(
         registrationId: String,
         registrationRequestStatus: RegistrationStatus,
         reason: String?,
+        serialNumber: Long?,
     ): MembershipPersistenceOperation<Unit> {
         logger.info(
             "Updating the status of a registration request with" +
@@ -274,7 +275,7 @@ class MembershipPersistenceClientImpl(
         )
         val request = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            UpdateRegistrationRequestStatus(registrationId, registrationRequestStatus, reason)
+            UpdateRegistrationRequestStatus(registrationId, registrationRequestStatus, serialNumber, reason)
         )
         return request.operation(::nullToUnitConvertor)
     }

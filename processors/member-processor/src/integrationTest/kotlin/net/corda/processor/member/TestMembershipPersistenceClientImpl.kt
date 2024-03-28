@@ -94,6 +94,7 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         registrationId: String,
         registrationRequestStatus: RegistrationStatus,
         reason: String?,
+        serialNumber: Long?,
     ): MembershipPersistenceOperation<Unit> = Operation(MembershipPersistenceResult.success())
 
     override fun mutualTlsAddCertificateToAllowedList(

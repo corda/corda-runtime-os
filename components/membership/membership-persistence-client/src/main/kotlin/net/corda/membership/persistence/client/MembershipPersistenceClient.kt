@@ -159,6 +159,7 @@ interface MembershipPersistenceClient : Lifecycle {
         registrationId: String,
         registrationRequestStatus: RegistrationStatus,
         reason: String? = null,
+        serialNumber: Long? = null,
     ): MembershipPersistenceOperation<Unit>
 
     /**

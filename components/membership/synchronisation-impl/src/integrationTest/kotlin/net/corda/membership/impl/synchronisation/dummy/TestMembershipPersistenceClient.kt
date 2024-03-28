@@ -26,7 +26,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 import org.slf4j.LoggerFactory
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 
 /**
  * Created for mocking and simplifying membership persistence client functionalities used by the membership services.
@@ -136,6 +136,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         registrationId: String,
         registrationRequestStatus: RegistrationStatus,
         reason: String?,
+        serialNumber: Long?,
     ): MembershipPersistenceOperation<Unit> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)

@@ -295,12 +295,14 @@ class MembershipPersistenceTest {
                 registrationId: String,
                 registrationRequestStatus: RegistrationStatus,
                 reason: String?,
+                serialNumber: Long?,
             ) = safeCall {
                 membershipPersistenceClient.setRegistrationRequestStatus(
                     viewOwningIdentity,
                     registrationId,
                     registrationRequestStatus,
-                    reason
+                    reason,
+                    serialNumber,
                 )
             }
 
