@@ -354,6 +354,65 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
+    fun `find unconsumed visible transaction states when some have been persisted consumed`() {
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        val transaction1 = createSignedTransaction()
+        val transaction2 = createSignedTransaction()
+        entityManagerFactory.transaction { em ->
+
+            em.createNativeQuery("DELETE FROM {h-schema}utxo_visible_transaction_output").executeUpdate()
+
+            createTransactionEntity(entityFactory, transaction1, status = VERIFIED).also { em.persist(it) }
+            createTransactionEntity(entityFactory, transaction2, status = VERIFIED).also { em.persist(it) }
+
+            em.flush()
+
+            val outputs = listOf(
+                UtxoRepository.VisibleTransactionOutput(
+                    1,
+                    ContractState::class.java.name,
+                    CustomRepresentation("{}"),
+                    null,
+                    notaryX500Name.toString()
+                )
+            )
+
+            val outputs2 = listOf(
+                UtxoRepository.VisibleTransactionOutput(
+                    0,
+                    ContractState::class.java.name,
+                    CustomRepresentation("{}"),
+                    null,
+                    notaryX500Name.toString()
+                ),
+                UtxoRepository.VisibleTransactionOutput(
+                    1,
+                    ContractState::class.java.name,
+                    CustomRepresentation("{}"),
+                    null,
+                    notaryX500Name.toString(),
+                    consumed = Instant.now()
+                )
+            )
+
+            repository.persistVisibleTransactionOutputs(em, transaction1.id.toString(), Instant.now(), outputs)
+            repository.persistVisibleTransactionOutputs(em, transaction2.id.toString(), Instant.now(), outputs2)
+        }
+
+        val stateClass = TestContractState2::class.java
+        val unconsumedStates = persistenceService.findUnconsumedVisibleStatesByType(stateClass)
+        assertThat(unconsumedStates).isNotNull
+        assertThat(unconsumedStates.size).isEqualTo(1)
+        val visibleTransactionOutput = unconsumedStates.first()
+        assertThat(visibleTransactionOutput.transactionId).isEqualTo(transaction1.id.toString())
+        assertThat(visibleTransactionOutput.leafIndex).isEqualTo(1)
+        assertThat(visibleTransactionOutput.info)
+            .isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal][1])
+        assertThat(visibleTransactionOutput.data)
+            .isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][1])
+    }
+
+    @Test
     fun `resolve staterefs`() {
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transactions = listOf(

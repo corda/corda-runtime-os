@@ -375,7 +375,11 @@ class UtxoRepositoryImpl(
                 }
 
                 statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp))
-                statement.setNull(parameterIndex.next(), Types.TIMESTAMP)
+                if (visibleTransactionOutput.consumed == null) {
+                    statement.setNull(parameterIndex.next(), Types.TIMESTAMP)
+                } else {
+                    statement.setTimestamp(parameterIndex.next(), Timestamp.from(visibleTransactionOutput.consumed))
+                }
                 statement.setString(parameterIndex.next(), visibleTransactionOutput.customRepresentation.json)
             }
         }

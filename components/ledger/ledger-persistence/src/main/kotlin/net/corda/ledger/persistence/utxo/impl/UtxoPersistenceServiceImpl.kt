@@ -59,7 +59,7 @@ import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
-@Suppress("LongParameterList", "TooManyFunctions")
+@Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
 class UtxoPersistenceServiceImpl(
     private val entityManagerFactory: EntityManagerFactory,
     private val repository: UtxoRepository,
@@ -120,16 +120,18 @@ class UtxoPersistenceServiceImpl(
 
         // create payload map and make values null by default, if the value of certain filtered tx is null at the end,
         // it means it's not found. The error will be handled in flow side.
-        val txIdToFilteredTxAndSignature: MutableMap<SecureHash, Pair<FilteredTransaction?, List<DigitalSignatureAndMetadata>>> = stateRefs
-            .groupBy { it.transactionId }
-            .mapValues { (_, _) -> null to emptyList<DigitalSignatureAndMetadata>() }.toMutableMap()
+        val txIdToFilteredTxAndSignature: MutableMap<SecureHash, Pair<FilteredTransaction?, List<DigitalSignatureAndMetadata>>> =
+            stateRefs
+                .groupBy { it.transactionId }
+                .mapValues { (_, _) -> null to emptyList<DigitalSignatureAndMetadata>() }.toMutableMap()
 
         return entityManagerFactory.transaction { em ->
             txIdToIndexesMap.keys.forEach { transactionId ->
 
                 require(txIdToFilteredTxAndSignature.containsKey(transactionId)) { "transaction Id $transactionId is not found." }
 
-                val signedTransactionContainer = findSignedTransaction(transactionId.toString(), TransactionStatus.VERIFIED, em).first
+                val signedTransactionContainer =
+                    findSignedTransaction(transactionId.toString(), TransactionStatus.VERIFIED, em).first
                 val wireTransaction = signedTransactionContainer?.wireTransaction
                 val signatures = signedTransactionContainer?.signatures ?: emptyList()
                 val indexesOfTxId = requireNotNull(txIdToIndexesMap[transactionId])
@@ -230,7 +232,12 @@ class UtxoPersistenceServiceImpl(
                         ?: throw CordaRuntimeException("Could not find reference StateRef $it when finding transaction $id")
                 }
 
-                SignedLedgerTransactionContainer(transaction.wireTransaction, inputStateAndRefs, referenceStateAndRefs, signatures)
+                SignedLedgerTransactionContainer(
+                    transaction.wireTransaction,
+                    inputStateAndRefs,
+                    referenceStateAndRefs,
+                    signatures
+                )
             } else {
                 null
             } to status
@@ -254,7 +261,10 @@ class UtxoPersistenceServiceImpl(
 
     private fun hash(data: ByteArray) = sandboxDigestService.hash(data, DigestAlgorithmName.SHA2_256).toString()
 
-    override fun persistTransaction(transaction: UtxoTransactionReader, utxoTokenMap: Map<StateRef, UtxoToken>): List<CordaPackageSummary> {
+    override fun persistTransaction(
+        transaction: UtxoTransactionReader,
+        utxoTokenMap: Map<StateRef, UtxoToken>
+    ): List<CordaPackageSummary> {
         return persistTransaction(transaction, utxoTokenMap) { block ->
             entityManagerFactory.transaction { em -> block(em) }
         }
@@ -290,16 +300,6 @@ class UtxoPersistenceServiceImpl(
 
         val metadata = transaction.metadata
 
-        val visibleTransactionOutputs = transaction.getVisibleStates().entries.map { (stateIndex, stateAndRef) ->
-            UtxoRepository.VisibleTransactionOutput(
-                stateIndex,
-                stateAndRef.state.contractState::class.java.canonicalName,
-                CustomRepresentation(extractJsonDataFromState(stateAndRef)),
-                utxoTokenMap[stateAndRef.ref],
-                stateAndRef.state.notaryName.toString()
-            )
-        }
-
         val transactionSignatures = transaction.signatures.mapIndexed { index, signature ->
             UtxoRepository.TransactionSignature(
                 index,
@@ -318,102 +318,56 @@ class UtxoPersistenceServiceImpl(
                 requireNotNull(metadata.getCpiMetadata()) { "Metadata without CPI metadata" }.fileChecksum
             )
 
-            val inserted =
-                if (transaction.status != TransactionStatus.UNVERIFIED) {
-                    /**
-                     * Insert the Transaction
-                     * The record will only be inserted when:
-                     * - there is no record exists given txId
-                     * - there is record which is UNVERIFIED stx
-                     * - there is record which is DRAFT stx
-                     * */
-                    repository.persistTransaction(
-                        em,
-                        transactionIdString,
-                        transaction.privacySalt.bytes,
-                        transaction.account,
-                        nowUtc,
-                        transaction.status,
-                        metadataHash,
-                    )
-                } else {
-                    // ignore if the incoming transaction is an unverified stx
-                    repository.persistUnverifiedTransaction(
-                        em,
-                        transactionIdString,
-                        transaction.privacySalt.bytes,
-                        transaction.account,
-                        nowUtc,
-                        metadataHash
-                    )
-                    null
-                }
+            when (transaction.status) {
+                TransactionStatus.VERIFIED -> persistVerifiedTransaction(
+                    em,
+                    transaction,
+                    transactionIdString,
+                    utxoTokenMap,
+                    metadataHash,
+                    nowUtc
+                )
 
-            repository.persistTransactionComponents(
-                em,
-                transactionIdString,
-                transaction.rawGroupLists,
-                this::hash
-            )
+                TransactionStatus.UNVERIFIED -> persistUnverifiedTransaction(
+                    em,
+                    transaction,
+                    transactionIdString,
+                    metadataHash,
+                    nowUtc
+                )
+
+                TransactionStatus.DRAFT, TransactionStatus.INVALID -> persistDraftOrInvalidTransaction(
+                    em,
+                    transaction,
+                    transactionIdString,
+                    metadataHash,
+                    nowUtc
+                )
+            }
 
             val consumedTransactionSources = transaction.getConsumedStateRefs().mapIndexed { index, input ->
-                UtxoRepository.TransactionSource(UtxoComponentGroup.INPUTS, index, input.transactionId.toString(), input.index)
+                UtxoRepository.TransactionSource(
+                    UtxoComponentGroup.INPUTS,
+                    index,
+                    input.transactionId.toString(),
+                    input.index
+                )
             }
 
             val referenceTransactionSources = transaction.getReferenceStateRefs().mapIndexed { index, input ->
-                UtxoRepository.TransactionSource(UtxoComponentGroup.REFERENCES, index, input.transactionId.toString(), input.index)
-            }
-
-            repository.persistTransactionSources(em, transactionIdString, consumedTransactionSources + referenceTransactionSources)
-
-            // rectify data from U -> V
-            if (inserted != null && !inserted) {
-                // inserted != null means the incoming tx is not UNVERIFIED (incoming U is always stx)
-                // tx not being inserted implies that tx of the same ID exists in the table, and need to be rectified
-
-                val indexes = repository.findConsumedTransactionSourcesForTransaction(
-                    em,
-                    transactionIdString,
-                    visibleTransactionOutputs.map { output -> output.stateIndex }
-                )
-
-                // insert outputs to be able to mark spent outputs as consumed
-                repository.persistVisibleTransactionOutputs(
-                    em,
-                    transactionIdString,
-                    nowUtc,
-                    visibleTransactionOutputs
-                )
-
-                if (indexes.isNotEmpty()) {
-                    repository.markTransactionVisibleStatesConsumed(
-                        em,
-                        indexes.map { index -> StateRef(transaction.id, index) },
-                        nowUtc
-                    )
-                }
-                repository.updateTransactionToVerified(em, transactionIdString, nowUtc)
-            } else {
-                // outputs of stx UNVERIFIED would be empty
-                repository.persistVisibleTransactionOutputs(
-                    em,
-                    transactionIdString,
-                    nowUtc,
-                    visibleTransactionOutputs
+                UtxoRepository.TransactionSource(
+                    UtxoComponentGroup.REFERENCES,
+                    index,
+                    input.transactionId.toString(),
+                    input.index
                 )
             }
 
-            // Mark inputs as consumed
-            if (transaction.status == TransactionStatus.VERIFIED) {
-                val inputStateRefs = transaction.getConsumedStateRefs()
-                if (inputStateRefs.isNotEmpty()) {
-                    repository.markTransactionVisibleStatesConsumed(
-                        em,
-                        inputStateRefs,
-                        nowUtc
-                    )
-                }
-            }
+            repository.persistTransactionSources(
+                em,
+                transactionIdString,
+                consumedTransactionSources + referenceTransactionSources
+            )
 
             // Insert the Transactions signatures
             repository.persistTransactionSignatures(
@@ -425,6 +379,128 @@ class UtxoPersistenceServiceImpl(
         }
 
         return emptyList()
+    }
+
+    private fun persistVerifiedTransaction(
+        em: EntityManager,
+        transaction: UtxoTransactionReader,
+        transactionIdString: String,
+        utxoTokenMap: Map<StateRef, UtxoToken>,
+        metadataHash: String,
+        nowUtc: Instant
+    ) {
+        val inserted = repository.persistTransaction(
+            em,
+            transactionIdString,
+            transaction.privacySalt.bytes,
+            transaction.account,
+            nowUtc,
+            transaction.status,
+            metadataHash,
+        )
+        repository.persistTransactionComponents(
+            em,
+            transactionIdString,
+            transaction.rawGroupLists,
+            this::hash
+        )
+        val visibleTransactionOutputs =
+            transaction.getVisibleStates().entries.map { (stateIndex, stateAndRef) ->
+                UtxoRepository.VisibleTransactionOutput(
+                    stateIndex,
+                    stateAndRef.state.contractState::class.java.canonicalName,
+                    CustomRepresentation(extractJsonDataFromState(stateAndRef)),
+                    utxoTokenMap[stateAndRef.ref],
+                    stateAndRef.state.notaryName.toString()
+                )
+            }.let { vTxOs ->
+                if (!inserted) {
+                    // Find the states output from the verified transaction that are already consumed by subsequent transactions (as the
+                    // verified transaction might have been received out of order) and mark them as consumed.
+                    val indexes = repository.findConsumedTransactionSourcesForTransaction(
+                        em,
+                        transactionIdString,
+                        vTxOs.map { output -> output.stateIndex }
+                    )
+
+                    vTxOs.map { output ->
+                        if (output.stateIndex in indexes) {
+                            output.copy(consumed = nowUtc)
+                        } else {
+                            output
+                        }
+                    }
+                } else {
+                    vTxOs
+                }
+            }
+
+        repository.persistVisibleTransactionOutputs(
+            em,
+            transactionIdString,
+            nowUtc,
+            visibleTransactionOutputs
+        )
+
+        repository.updateTransactionToVerified(em, transactionIdString, nowUtc)
+
+        val inputStateRefs = transaction.getConsumedStateRefs()
+
+        // Mark inputs consumed by verified transaction as consumed
+        if (inputStateRefs.isNotEmpty()) {
+            repository.markTransactionVisibleStatesConsumed(
+                em,
+                inputStateRefs,
+                nowUtc
+            )
+        }
+    }
+
+    private fun persistUnverifiedTransaction(
+        em: EntityManager,
+        transaction: UtxoTransactionReader,
+        transactionIdString: String,
+        metadataHash: String,
+        nowUtc: Instant
+    ) {
+        repository.persistUnverifiedTransaction(
+            em,
+            transactionIdString,
+            transaction.privacySalt.bytes,
+            transaction.account,
+            nowUtc,
+            metadataHash
+        )
+        repository.persistTransactionComponents(
+            em,
+            transactionIdString,
+            transaction.rawGroupLists,
+            this::hash
+        )
+    }
+
+    private fun persistDraftOrInvalidTransaction(
+        em: EntityManager,
+        transaction: UtxoTransactionReader,
+        transactionIdString: String,
+        metadataHash: String,
+        nowUtc: Instant
+    ) {
+        repository.persistTransaction(
+            em,
+            transactionIdString,
+            transaction.privacySalt.bytes,
+            transaction.account,
+            nowUtc,
+            transaction.status,
+            metadataHash,
+        )
+        repository.persistTransactionComponents(
+            em,
+            transactionIdString,
+            transaction.rawGroupLists,
+            this::hash
+        )
     }
 
     override fun persistTransactionSignatures(id: String, signatures: List<ByteArray>, startingIndex: Int) {
@@ -485,7 +561,10 @@ class UtxoPersistenceServiceImpl(
                 Any::class.java
             )
         } catch (e: Exception) {
-            log.warn("Error while processing factory for class: ${ContractState::class.java.name}. Defaulting to empty JSON.", e)
+            log.warn(
+                "Error while processing factory for class: ${ContractState::class.java.name}. Defaulting to empty JSON.",
+                e
+            )
             jsonMarshallingService.parse("{}", Any::class.java)
         }
 
@@ -591,30 +670,31 @@ class UtxoPersistenceServiceImpl(
                     filteredTransaction.topLevelMerkleProof.hashes.map { it.toString() }
                 )
 
-                val componentGroupTransactionMerkleProofs = filteredTransaction.filteredComponentGroups.map { (groupIndex, groupData) ->
-                    val proof = createTransactionMerkleProof(
-                        filteredTransaction.id.toString(),
-                        groupIndex,
-                        groupData.merkleProof.treeSize,
-                        groupData.merkleProof.leaves.map { it.index },
-                        groupData.merkleProof.hashes.map { it.toString() }
-                    )
-                    val leaves = groupData.merkleProof.leaves.map { leaf ->
-                        UtxoRepository.TransactionMerkleProofLeaf(
-                            proof.merkleProofId,
-                            leaf.index
-                        )
-                    }
-                    val components = groupData.merkleProof.leaves.map { leaf ->
-                        UtxoRepository.TransactionComponent(
+                val componentGroupTransactionMerkleProofs =
+                    filteredTransaction.filteredComponentGroups.map { (groupIndex, groupData) ->
+                        val proof = createTransactionMerkleProof(
                             filteredTransaction.id.toString(),
                             groupIndex,
-                            leaf.index,
-                            leaf.leafData
+                            groupData.merkleProof.treeSize,
+                            groupData.merkleProof.leaves.map { it.index },
+                            groupData.merkleProof.hashes.map { it.toString() }
                         )
+                        val leaves = groupData.merkleProof.leaves.map { leaf ->
+                            UtxoRepository.TransactionMerkleProofLeaf(
+                                proof.merkleProofId,
+                                leaf.index
+                            )
+                        }
+                        val components = groupData.merkleProof.leaves.map { leaf ->
+                            UtxoRepository.TransactionComponent(
+                                filteredTransaction.id.toString(),
+                                groupIndex,
+                                leaf.index,
+                                leaf.leafData
+                            )
+                        }
+                        TransactionMerkleProofToPersist(proof, leaves, components)
                     }
-                    TransactionMerkleProofToPersist(proof, leaves, components)
-                }
 
                 // 6. Persist the top level and component group merkle proofs
                 // No need to persist the leaf data for the top level merkle proof as we can reconstruct that
@@ -624,7 +704,10 @@ class UtxoPersistenceServiceImpl(
                 )
 
                 // 7. Persist the leaf data for each component group
-                repository.persistMerkleProofLeaves(em, componentGroupTransactionMerkleProofs.map { it.leaves }.flatten())
+                repository.persistMerkleProofLeaves(
+                    em,
+                    componentGroupTransactionMerkleProofs.map { it.leaves }.flatten()
+                )
                 repository.persistTransactionComponents(
                     em,
                     componentGroupTransactionMerkleProofs.map { it.components }.flatten(),
@@ -679,35 +762,37 @@ class UtxoPersistenceServiceImpl(
                 // 2. Merge the Merkle proofs for each component group
                 val componentDigestProviders = mutableMapOf<Int, MerkleTreeHashDigestProvider>()
 
-                val mergedMerkleProofs = ftxDto.componentMerkleProofMap.mapValues { (componentGroupIndex, merkleProofDtoList) ->
-                    val componentGroupHashDigestProvider = filteredTransactionMetadata.getComponentGroupMerkleTreeDigestProvider(
-                        ftxDto.privacySalt!!,
-                        componentGroupIndex,
-                        merkleTreeProvider,
-                        digestService
-                    )
-                    componentDigestProviders[componentGroupIndex] = componentGroupHashDigestProvider
-                    merkleProofDtoList.map { merkleProofDto ->
-                        // Transform the MerkleProofDto objects to MerkleProof objects
-                        // If the merkle proof is metadata, we need to add the bytes because it's not part of the component table
-                        val merkleProofDtoOverride = if (merkleProofDto.groupIndex == 0) {
-                            merkleProofDto.copy(leavesWithData = mapOf(0 to ftxDto.metadataBytes!!))
-                        } else {
-                            merkleProofDto
-                        }
+                val mergedMerkleProofs =
+                    ftxDto.componentMerkleProofMap.mapValues { (componentGroupIndex, merkleProofDtoList) ->
+                        val componentGroupHashDigestProvider =
+                            filteredTransactionMetadata.getComponentGroupMerkleTreeDigestProvider(
+                                ftxDto.privacySalt!!,
+                                componentGroupIndex,
+                                merkleTreeProvider,
+                                digestService
+                            )
+                        componentDigestProviders[componentGroupIndex] = componentGroupHashDigestProvider
+                        merkleProofDtoList.map { merkleProofDto ->
+                            // Transform the MerkleProofDto objects to MerkleProof objects
+                            // If the merkle proof is metadata, we need to add the bytes because it's not part of the component table
+                            val merkleProofDtoOverride = if (merkleProofDto.groupIndex == 0) {
+                                merkleProofDto.copy(leavesWithData = mapOf(0 to ftxDto.metadataBytes!!))
+                            } else {
+                                merkleProofDto
+                            }
 
-                        merkleProofDtoOverride.toMerkleProof(
-                            merkleProofFactory,
-                            componentGroupHashDigestProvider
-                        )
-                    }.reduce { accumulator, merkleProof ->
-                        // Then  keep merging the elements into each other
-                        (accumulator as MerkleProofInternal).merge(
-                            merkleProof,
-                            componentGroupHashDigestProvider
-                        )
+                            merkleProofDtoOverride.toMerkleProof(
+                                merkleProofFactory,
+                                componentGroupHashDigestProvider
+                            )
+                        }.reduce { accumulator, merkleProof ->
+                            // Then  keep merging the elements into each other
+                            (accumulator as MerkleProofInternal).merge(
+                                merkleProof,
+                                componentGroupHashDigestProvider
+                            )
+                        }
                     }
-                }
 
                 // 3. Calculate the root hash of each component group merkle proof
                 val calculatedComponentGroupRootsHashes = mergedMerkleProofs.map { (componentGroupIndex, merkleProof) ->
@@ -731,7 +816,8 @@ class UtxoPersistenceServiceImpl(
                         it.visibleLeaves.associateWith { componentGroupIndex ->
 
                             // Use the already calculated component group root
-                            val componentGroupRootBytes = calculatedComponentGroupRootsHashes[componentGroupIndex]?.bytes
+                            val componentGroupRootBytes =
+                                calculatedComponentGroupRootsHashes[componentGroupIndex]?.bytes
 
                             // At this point we should have this available
                             requireNotNull(componentGroupRootBytes) {
