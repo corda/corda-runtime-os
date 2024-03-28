@@ -87,7 +87,7 @@ class RBACSecurityManagerService @Activate constructor(
                         downTransition()
                     }
                     LifecycleStatus.ERROR -> {
-                        coordinator.postEvent(StopEvent(true))
+                        coordinator.postEvent(StopEvent(errored = true, reason = "Coordinator stopped. RegistrationStatusChangeEvent with status ERROR received."))
                     }
                 }
             }

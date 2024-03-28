@@ -166,7 +166,7 @@ internal class VirtualNodeRestResourceImpl(
                 when (event.status) {
                     LifecycleStatus.ERROR -> {
                         coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
-                        coordinator.postEvent(StopEvent(errored = true))
+                        coordinator.postEvent(StopEvent(errored = true, reason = "Coordinator stopped. RegistrationStatusChangeEvent with status ERROR received."))
                     }
 
                     LifecycleStatus.UP -> {

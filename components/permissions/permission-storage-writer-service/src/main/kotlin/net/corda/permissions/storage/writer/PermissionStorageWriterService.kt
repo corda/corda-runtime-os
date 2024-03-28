@@ -58,6 +58,6 @@ class PermissionStorageWriterService @Activate constructor(
     }
 
     override fun stop() {
-        coordinator.postEvent(StopEvent())
+        coordinator.postEvent(StopEvent(reason = "Coordinator stopped in PermissionStorageWriterService."))
     }
 }
