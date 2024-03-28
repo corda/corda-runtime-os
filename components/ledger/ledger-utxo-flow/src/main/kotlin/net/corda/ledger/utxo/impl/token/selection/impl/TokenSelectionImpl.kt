@@ -59,7 +59,7 @@ class TokenSelectionImpl @Activate constructor(
 /**
  * Map a corda-api [TokenClaimCriteria] to am External Event framework model object.
  */
-fun TokenClaimCriteria.toRequest() : TokenClaimCriteriaRequest {
+fun TokenClaimCriteria.toRequest(): TokenClaimCriteriaRequest {
     return TokenClaimCriteriaRequest(
         tokenType,
         issuerHash,
