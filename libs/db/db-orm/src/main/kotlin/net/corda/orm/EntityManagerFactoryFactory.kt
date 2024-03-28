@@ -12,12 +12,14 @@ interface EntityManagerFactoryFactory {
      * @param persistenceUnitName
      * @param entities to be managed by the [EntityManagerFactory]
      * @param configuration for the target data source
+     * @param defaultSchema optional default schema to use
      * @return [EntityManagerFactory]
      */
     fun create(
         persistenceUnitName: String,
         entities: List<Class<*>>,
-        configuration: EntityManagerConfiguration
+        configuration: EntityManagerConfiguration,
+        defaultSchema: String? = null
     ): EntityManagerFactory
 
     /**
@@ -27,12 +29,14 @@ interface EntityManagerFactoryFactory {
      * @param classLoaders
      * @param entities
      * @param configuration
+     * @param defaultSchema optional default schema to use
      * @return
      */
     fun create(
         persistenceUnitName: String,
         entities: List<String>,
         classLoaders: List<ClassLoader>,
-        configuration: EntityManagerConfiguration
+        configuration: EntityManagerConfiguration,
+        defaultSchema: String? = null
     ): EntityManagerFactory
 }
