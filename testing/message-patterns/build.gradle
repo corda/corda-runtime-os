@@ -30,6 +30,7 @@ dependencies {
     integrationTestImplementation project(":libs:configuration:configuration-core")
     integrationTestImplementation project(":libs:lifecycle:lifecycle")
     integrationTestImplementation project(":libs:messaging:messaging")
+    integrationTestImplementation project(":libs:messaging:message-bus")
     integrationTestImplementation project(":libs:messaging:messaging-impl")
     integrationTestImplementation project(":libs:messaging:topic-admin")
     integrationTestImplementation project(":libs:schema-registry:schema-registry")

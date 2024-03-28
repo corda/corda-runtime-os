@@ -21,62 +21,93 @@ import java.util.UUID
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class FlowFibreCacheTest {
     private val cacheEviction = mock<CacheEviction>()
-    private val key = mock<FlowKey>()
-    private val value = mock<FlowFiber>()
-    private val sandboxGroupId = UUID.randomUUID()
+    private val key1 = mock<FlowKey>()
+    private val key2 = mock<FlowKey>()
+    private val value1 = mock<FlowFiber>()
+    private val value2 = mock<FlowFiber>()
+    private val sandboxGroupId1 = UUID.randomUUID()
+    private val sandboxGroupId2 = UUID.randomUUID()
 
     @BeforeAll
     fun setup() {
-        whenever(value.getSandboxGroupId()).thenReturn(sandboxGroupId)
+        whenever(value1.getSandboxGroupId()).thenReturn(sandboxGroupId1)
+        whenever(value2.getSandboxGroupId()).thenReturn(sandboxGroupId2)
     }
 
     @Test
     fun `when get and no entry return null`() {
         val cache = FlowFiberCacheImpl(cacheEviction)
-        val entry = cache.get(mock(), 123, sandboxGroupId)
+        val entry = cache.get(mock(), 123, sandboxGroupId1)
         assertThat(entry).isNull()
     }
 
     @Test
     fun `when get and entry wrong version return null and entry evicted`() {
         val cache = FlowFiberCacheImpl(cacheEviction)
-        cache.put(key, 1, value)
-        val entry = cache.get(key, 123, sandboxGroupId)
+        cache.put(key1, 1, value1)
+        val entry = cache.get(key1, 123, sandboxGroupId1)
         assertThat(entry).isNull()
-        assertThat(cache.get(key, 1, sandboxGroupId)).isNull()
+        assertThat(cache.get(key1, 1, sandboxGroupId1)).isNull()
     }
 
     @Test
     fun `when get and entry wrong sandbox group ID return null and entry evicted`() {
         val cache = FlowFiberCacheImpl(cacheEviction)
-        cache.put(key, 1, value)
-        val entry = cache.get(key, 1, UUID.randomUUID())
+        cache.put(key1, 1, value1)
+        val entry = cache.get(key1, 1, UUID.randomUUID())
         assertThat(entry).isNull()
-        assertThat(cache.get(key, 1, sandboxGroupId)).isNull()
+        assertThat(cache.get(key1, 1, sandboxGroupId1)).isNull()
     }
 
     @Test
     fun `when get and entry and version exist and matches sandbox group ID return`() {
         val cache = FlowFiberCacheImpl(cacheEviction)
-        cache.put(key, 1, value)
-        val entry = cache.get(key, 1, sandboxGroupId)
-        assertThat(entry).isSameAs(value)
+        cache.put(key1, 1, value1)
+        val entry = cache.get(key1, 1, sandboxGroupId1)
+        assertThat(entry).isSameAs(value1)
     }
 
     @Test
     fun `when remove and entry does not exist do no throw`() {
         val cache = FlowFiberCacheImpl(cacheEviction)
         assertDoesNotThrow {
-            cache.remove(key)
+            cache.remove(key1)
         }
     }
 
     @Test
-    fun `when remove and exists`() {
+    fun `removeAll when data exists`() {
         val cache = FlowFiberCacheImpl(cacheEviction)
-        cache.put(key, 1, value)
-        cache.remove(key)
-        assertThat(cache.get(key, 1, sandboxGroupId)).isNull()
+        val key1 = mock<FlowKey>()
+        val key2 = mock<FlowKey>()
+        whenever(value1.getSandboxGroupId()).thenReturn(sandboxGroupId1)
+        whenever(value2.getSandboxGroupId()).thenReturn(sandboxGroupId2)
+
+        cache.put(key1, 1, value1)
+        cache.put(key2, 3, value2)
+        cache.removeAll()
+        assertThat(cache.get(this.key1, 1, sandboxGroupId1)).isNull()
+        assertThat(cache.get(this.key2, 3, sandboxGroupId2)).isNull()
+    }
+
+    @Test
+    fun `removeAll does not throw when no data exists`() {
+        val cache = FlowFiberCacheImpl(cacheEviction)
+        assertDoesNotThrow {
+            cache.removeAll()
+        }
+    }
+
+    @Test
+    fun `removeAll clears cache when data exists`() {
+        val cache = FlowFiberCacheImpl(cacheEviction)
+        cache.put(key1, 1, value1)
+        cache.put(key2, 1, value2)
+        assertThat(cache.get(key1, 1, sandboxGroupId1)).isNotNull()
+        assertThat(cache.get(key2, 1, sandboxGroupId2)).isNotNull()
+        cache.removeAll()
+        assertThat(cache.get(key1, 1, sandboxGroupId1)).isNull()
+        assertThat(cache.get(key2, 1, sandboxGroupId2)).isNull()
     }
 
     @Test
@@ -99,7 +130,7 @@ class FlowFibreCacheTest {
         cache.put(key1, 1, mock())
         cache.put(key2, 1, mock())
         cache.remove(vnodeContext)
-        assertThat(cache.get(key1, 1, sandboxGroupId)).isNull()
-        assertThat(cache.get(key2, 1, sandboxGroupId)).isNull()
+        assertThat(cache.get(key1, 1, sandboxGroupId1)).isNull()
+        assertThat(cache.get(key2, 1, sandboxGroupId1)).isNull()
     }
 }
