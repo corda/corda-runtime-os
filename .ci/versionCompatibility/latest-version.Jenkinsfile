@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@7da656c037f66ff34e602b99f400679ce1d470fa') _
+@Library('corda-shared-build-pipeline-steps@5.2') _
 
 // This build forces using the "very latest" version of the dependencies, regardless of which revision was chosen
 //  This is useful as it gives early indication of a downstream change that may introduce a breaking change

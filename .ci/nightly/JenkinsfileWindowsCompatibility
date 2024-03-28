@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@7da656c037f66ff34e602b99f400679ce1d470fa') _
+@Library('corda-shared-build-pipeline-steps@5.2') _
 
 windowsCompatibility(
     runIntegrationTests: true,
