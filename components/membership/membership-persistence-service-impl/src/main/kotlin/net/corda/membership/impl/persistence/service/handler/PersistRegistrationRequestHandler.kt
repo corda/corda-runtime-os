@@ -15,59 +15,34 @@ internal class PersistRegistrationRequestHandler(
     override val operation = PersistRegistrationRequest::class.java
     override fun invoke(context: MembershipRequestContext, request: PersistRegistrationRequest) {
         val registrationId = request.registrationRequest.registrationId
-        //val id = UUID.randomUUID()
-        //logger.info("QQQ 1 for $registrationId with $id requestId: ${context.requestId}")
+        // val id = UUID.randomUUID()
+        // logger.info("QQQ 1 for $registrationId with $id requestId: ${context.requestId}")
         logger.info("Persisting registration request with ID [$registrationId] to status ${request.status}.")
         transaction(context.holdingIdentity.toCorda().shortHash) { em ->
-            //logger.info("QQQ 2 for $registrationId with $id")
+            // logger.info("QQQ 2 for $registrationId with $id")
             val currentRegistrationRequest = em.find(
                 RegistrationRequestEntity::class.java,
                 registrationId,
                 LockModeType.PESSIMISTIC_WRITE,
             )
-            val now = clock.instant()
-            //logger.info("QQQ 3 for $registrationId with $id")
-            if (currentRegistrationRequest != null) {
-                val status = currentRegistrationRequest.status.toStatus()
-                //logger.info("QQQ 4 for $registrationId with $id $status")
-                if (request.status == status) {
-                    //logger.info("QQQ 5 for $registrationId")
-                    logger.info(
-                        "Registration request [$registrationId] with status: ${currentRegistrationRequest.status}" +
-                                " is already persisted. Persistence request was discarded."
-                    )
-                } else if (!status.canMoveToStatus(request.status)) {
-                    // In case of processing persistence requests in an unordered manner we need to make sure the serial
-                    // gets persisted. All other existing data of the request will remain the same.
-                    if (request.status == RegistrationStatus.SENT_TO_MGM && currentRegistrationRequest.serial == null) {
-                        //logger.info("QQQ 7 for $registrationId with $id")
-                        logger.info("Updating request [$registrationId] serial to ${request.registrationRequest.serial}")
-                        currentRegistrationRequest.serial = request.registrationRequest.serial
-                        currentRegistrationRequest.lastModified = now
-                        em.merge(currentRegistrationRequest)
-                    } else {
-                        //logger.info("QQQ 6 for $registrationId with $id")
-                        logger.info(
-                            "Registration request [$registrationId] has status: ${currentRegistrationRequest.status}" +
-                                    " can not move it to status ${request.status}"
-                        )
-                    }
-                } else {
-                    currentRegistrationRequest.status = request.status.toString()
-                    currentRegistrationRequest.serial = request.registrationRequest.serial
-                    currentRegistrationRequest.lastModified = now
-                    //logger.info("QQQ 9 for $registrationId with $id")
-                    em.merge(currentRegistrationRequest)
-                }
-            } else {
-                //logger.info("QQQ 10 for $registrationId with $id")
-                em.merge(createEntityBasedOnRequest(request))
+            val toMerge = getOrCreateEntity(currentRegistrationRequest, request)
+            if (toMerge != null) {
+                em.merge(toMerge)
             }
-            //logger.info("QQQ 11 for $registrationId with $id")
-            //logger.info("QQQ persisted ${request.registrationRequest.registrationId} in thread ${Thread.currentThread().id}")
         }
     }
 
+    private fun getOrCreateEntity(
+        currentEntity: RegistrationRequestEntity?,
+        request: PersistRegistrationRequest,
+    ): RegistrationRequestEntity? {
+        return if (currentEntity != null) {
+            getEntityToMerge(currentEntity, request)
+        } else {
+            // logger.info("QQQ 10 for $registrationId with $id")
+            createEntityBasedOnRequest(request)
+        }
+    }
     private fun createEntityBasedOnRequest(request: PersistRegistrationRequest): RegistrationRequestEntity {
         val now = clock.instant()
         with(request.registrationRequest) {
@@ -87,6 +62,46 @@ internal class PersistRegistrationRequestHandler(
                 registrationContextSignatureSpec = registrationContext.signatureSpec.signatureName,
                 serial = serial,
             )
+        }
+    }
+
+    private fun getEntityToMerge(
+        currentEntity: RegistrationRequestEntity,
+        request: PersistRegistrationRequest,
+    ): RegistrationRequestEntity? {
+        val now = clock.instant()
+        val registrationId = request.registrationRequest.registrationId
+        val status = currentEntity.status.toStatus()
+        return if (request.status == status) {
+            // logger.info("QQQ 5 for $registrationId")
+            logger.info(
+                "Registration request [$registrationId] with status: $status" +
+                    " is already persisted. Persistence request was discarded."
+            )
+            null
+        } else if (!status.canMoveToStatus(request.status)) {
+            // In case of processing persistence requests in an unordered manner we need to make sure the serial
+            // gets persisted. All other existing data of the request will remain the same.
+            if (request.status == RegistrationStatus.SENT_TO_MGM && currentEntity.serial == null) {
+                // logger.info("QQQ 7 for $registrationId with $id")
+                logger.info("Updating request [$registrationId] serial to ${request.registrationRequest.serial}")
+                currentEntity.serial = request.registrationRequest.serial
+                currentEntity.lastModified = now
+                currentEntity
+            } else {
+                // logger.info("QQQ 6 for $registrationId with $id")
+                logger.info(
+                    "Registration request [$registrationId] has status: ${currentEntity.status}" +
+                        " can not move it to status ${request.status}"
+                )
+                null
+            }
+        } else {
+            currentEntity.status = request.status.toString()
+            currentEntity.serial = request.registrationRequest.serial
+            currentEntity.lastModified = now
+            // logger.info("QQQ 9 for $registrationId with $id")
+            currentEntity
         }
     }
 }
