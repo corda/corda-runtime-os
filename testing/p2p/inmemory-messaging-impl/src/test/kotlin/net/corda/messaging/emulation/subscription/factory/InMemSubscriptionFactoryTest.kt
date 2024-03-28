@@ -51,6 +51,7 @@ class InMemSubscriptionFactoryTest {
                 subscriptionConfig,
                 mock<EventSourceProcessor<String, Long>>(),
                 mock(),
+                mock(),
                 mock()
             )
         ).isInstanceOf(EventSourceSubscription::class.java)
