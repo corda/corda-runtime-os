@@ -238,7 +238,13 @@ class MembershipPersistenceClientImpl(
                     )
                 )
             }
-        )
+        ).also {
+            logger.info(
+                "QQQ persistRegistrationRequest for " +
+                    "${registrationRequest.registrationId} with ${registrationRequest.status} context: ${it.context.requestId}",
+                Exception("QQQ ${registrationRequest.registrationId}")
+            )
+        }
         return request.operation(::nullToUnitConvertor)
     }
 
