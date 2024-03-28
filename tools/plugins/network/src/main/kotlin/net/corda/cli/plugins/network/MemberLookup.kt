@@ -6,6 +6,7 @@ import net.corda.cli.plugins.network.output.Output
 import net.corda.cli.plugins.network.utils.HoldingIdentityUtils.getHoldingIdentity
 import net.corda.cli.plugins.network.utils.PrintUtils.printJsonOutput
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
+import net.corda.cli.plugins.typeconverter.ShortHashConverter
 import net.corda.cli.plugins.typeconverter.X500NameConverter
 import net.corda.crypto.core.ShortHash
 import net.corda.membership.rest.v1.MemberLookupRestResource
@@ -27,7 +28,7 @@ class MemberLookup(private val output: Output = ConsoleOutput()) : RestCommand()
         names = ["-h", "--holding-identity-short-hash"],
         arity = "1",
         description = ["Short hash of the holding identity performing the lookup."],
-        converter = [X500NameConverter::class],
+        converter = [ShortHashConverter::class],
     )
     var holdingIdentityShortHash: ShortHash? = null
 

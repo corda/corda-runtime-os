@@ -2,7 +2,7 @@ package net.corda.sdk.network
 
 import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.v5.base.types.MemberX500Name
-import java.util.*
+import java.util.UUID
 
 class GenerateStaticGroupPolicy {
     companion object {
@@ -12,35 +12,29 @@ class GenerateStaticGroupPolicy {
         private const val MEMBER_ENDPOINT_URL_1_KEY = "endpointUrl-1"
         private const val MEMBER_ENDPOINT_PROTOCOL_1_KEY = "endpointProtocol-1"
 
-        val defaultMembers: List<MemberRegistrationRequest> by lazy {
+        val defaultMembers by lazy {
             listOf(
-                MemberRegistrationRequest(
-                    context = mapOf(
-                        NAME_KEY to "C=GB, L=London, O=Alice",
-                        MEMBER_STATUS_KEY to MEMBER_STATUS_ACTIVE,
-                        MEMBER_ENDPOINT_URL_1_KEY to "https://alice.corda5.r3.com:10000",
-                        MEMBER_ENDPOINT_PROTOCOL_1_KEY to "1",
-                    )
+                mapOf(
+                    NAME_KEY to "C=GB, L=London, O=Alice",
+                    MEMBER_STATUS_KEY to MEMBER_STATUS_ACTIVE,
+                    MEMBER_ENDPOINT_URL_1_KEY to "https://alice.corda5.r3.com:10000",
+                    MEMBER_ENDPOINT_PROTOCOL_1_KEY to "1",
                 ),
-                MemberRegistrationRequest(
-                    context = mapOf(
-                        NAME_KEY to "C=GB, L=London, O=Bob",
-                        MEMBER_STATUS_KEY to MEMBER_STATUS_ACTIVE,
-                        MEMBER_ENDPOINT_URL_1_KEY to "https://bob.corda5.r3.com:10000",
-                        MEMBER_ENDPOINT_PROTOCOL_1_KEY to "1",
-                    )
+                mapOf(
+                    NAME_KEY to "C=GB, L=London, O=Bob",
+                    MEMBER_STATUS_KEY to MEMBER_STATUS_ACTIVE,
+                    MEMBER_ENDPOINT_URL_1_KEY to "https://bob.corda5.r3.com:10000",
+                    MEMBER_ENDPOINT_PROTOCOL_1_KEY to "1",
                 ),
-                MemberRegistrationRequest(
-                    context = mapOf(
-                        NAME_KEY to "C=GB, L=London, O=Charlie",
-                        MEMBER_STATUS_KEY to "SUSPENDED",
-                        MEMBER_ENDPOINT_URL_1_KEY to "https://charlie.corda5.r3.com:10000",
-                        MEMBER_ENDPOINT_PROTOCOL_1_KEY to "1",
-                        "endpointUrl-2" to "https://charlie-dr.corda5.r3.com:10001",
-                        "endpointProtocol-2" to "1",
-                    )
+                mapOf(
+                    NAME_KEY to "C=GB, L=London, O=Charlie",
+                    MEMBER_STATUS_KEY to "SUSPENDED",
+                    MEMBER_ENDPOINT_URL_1_KEY to "https://charlie.corda5.r3.com:10000",
+                    MEMBER_ENDPOINT_PROTOCOL_1_KEY to "1",
+                    "endpointUrl-2" to "https://charlie-dr.corda5.r3.com:10001",
+                    "endpointProtocol-2" to "1",
                 ),
-            )
+            ).map { MemberRegistrationRequest(context = it) }
         }
     }
 

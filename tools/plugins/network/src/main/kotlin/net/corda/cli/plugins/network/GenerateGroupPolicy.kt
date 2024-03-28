@@ -105,10 +105,10 @@ class GenerateGroupPolicy(private val output: Output = ConsoleOutput()) : Runnab
                 members.add(
                     MemberRegistrationRequest(
                         context = mapOf(
-                            "name" to name.asString(),
+                            "name" to name.toString(),
                             "memberStatus" to MEMBER_STATUS_ACTIVE,
-                            "endpointUrl-1" to content["endpoint"].asString(),
-                            "endpointProtocol-1" to content["endpointProtocol"].asString(),
+                            "endpointUrl-1" to content["endpoint"].toString(),
+                            "endpointProtocol-1" to content["endpointProtocol"].toString(),
                         ),
                     )
                 )
@@ -213,15 +213,6 @@ class GenerateGroupPolicy(private val output: Output = ConsoleOutput()) : Runnab
         error?.let {
             require(a != null || b != null) { error() }
         } ?: require(a != null || b != null)
-        return (a ?: b).asString()
-    }
-
-    private fun Any?.asString(): String {
-        requireNotNull(this) { "Expected a value, but got null for value: $this" }
-        return when (this) {
-            is String -> this
-            is Number -> this.toString()
-            else -> this.toString()
-        }
+        return (a ?: b).toString()
     }
 }

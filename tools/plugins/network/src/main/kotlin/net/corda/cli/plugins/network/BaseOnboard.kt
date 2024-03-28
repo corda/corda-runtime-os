@@ -199,12 +199,12 @@ abstract class BaseOnboard : Runnable, RestCommand() {
 
     private val p2pHosts = extractHostsFromUrls(p2pGatewayUrls)
 
-    private fun extractHostsFromUrls(urls: List<String>): List<MemberX500Name> {
+    private fun extractHostsFromUrls(urls: List<String>): List<String> {
         return urls.map { extractHostFromUrl(it) }.distinct()
     }
 
-    private fun extractHostFromUrl(url: String): MemberX500Name {
-        return URI.create(url).host?.let { MemberX500Name.parse(it) } ?: throw IllegalArgumentException("Invalid URL: $url")
+    private fun extractHostFromUrl(url: String): String {
+        return URI.create(url).host ?: throw IllegalArgumentException("Invalid URL: $url")
     }
 
     protected val ca by lazy {

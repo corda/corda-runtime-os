@@ -4,7 +4,7 @@ import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 
-class RegistrationContext {
+class RegistrationRequests {
 
     /**
      * Create an object containing the necessary registration context for an MGM
@@ -13,7 +13,7 @@ class RegistrationContext {
      * @param sessionKey key ID for the generated session
      * @param ecdhKey key ID for the generated ecdh key
      * @param tlsTrustRoot value of certificate from Certificate Authority
-     * @return registration context information as a Map
+     * @return [MemberRegistrationRequest]
      */
     fun createMgmRegistrationRequest(
         mtls: Boolean,

@@ -47,9 +47,9 @@ class KeyStoreHelper {
         val startDate = Date(now)
         val certSerialNumber = BigInteger.TEN
         val endDate = Date(now + 100L * 60 * 60 * 24 * 1000)
-        val boucyCastleX500Name = x500Name.toBouncyCastleX500Name()
+        val bouncyCastleX500Name = x500Name.toBouncyCastleX500Name()
         val certificateBuilder =
-            JcaX509v3CertificateBuilder(boucyCastleX500Name, certSerialNumber, startDate, endDate, boucyCastleX500Name, keyPair.public)
+            JcaX509v3CertificateBuilder(bouncyCastleX500Name, certSerialNumber, startDate, endDate, bouncyCastleX500Name, keyPair.public)
         val certificate = JcaX509CertificateConverter().getCertificate(
             certificateBuilder.build(sigGen),
         )

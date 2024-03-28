@@ -30,7 +30,7 @@ class ExportGroupPolicy : Runnable, RestCommand() {
         description = ["The holding identity short hash of the MGM."],
         converter = [ShortHashConverter::class],
     )
-    var holdingIdentityShortHash: ShortHash? = null
+    lateinit var holdingIdentityShortHash: ShortHash
 
     override fun run() {
         exportGroupPolicy()
@@ -45,10 +45,9 @@ class ExportGroupPolicy : Runnable, RestCommand() {
             password = password,
             targetUrl = targetUrl
         )
-        requireNotNull(holdingIdentityShortHash) { "A holding identity short hash must be specified." }
         val groupPolicyResponse = ExportGroupPolicyFromMgm().exportPolicy(
             restClient,
-            holdingIdentityShortHash!!,
+            holdingIdentityShortHash,
             wait = waitDurationSeconds.seconds
         )
         saveLocation.parentFile.mkdirs()

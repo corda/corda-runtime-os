@@ -94,7 +94,7 @@ class RegistrationsLookup {
     /**
      * Combination method to submit the registration and wait for it to be approved
      * @param restClient of type RestClient<MemberRegistrationRestResource>
-     * @param registrationContext the payload to be used in the request, see [RegistrationContext]
+     * @param registrationContext the payload to be used in the request, see [RegistrationRequests]
      * @param holdingId the holding identity ID of the node
      * @param wait Duration before timing out, default 60 seconds
      * @return ID of the registration request

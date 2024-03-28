@@ -2,6 +2,7 @@ package net.corda.cli.plugins.network
 
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
+import net.corda.cli.plugins.typeconverter.ShortHashConverter
 import net.corda.cli.plugins.typeconverter.X500NameConverter
 import net.corda.crypto.core.ShortHash
 import net.corda.membership.rest.v1.MGMRestResource
@@ -24,8 +25,9 @@ class AllowClientCertificate : Runnable, RestCommand() {
         description = ["The MGM holding identity short hash"],
         paramLabel = "MGM_HASH",
         index = "0",
+        converter = [ShortHashConverter::class],
     )
-    var mgmShortHash: ShortHash? = null
+    lateinit var mgmShortHash: ShortHash
 
     @Parameters(
         description = ["The certificate subject to allow"],
@@ -58,10 +60,9 @@ class AllowClientCertificate : Runnable, RestCommand() {
         val clientCertificates = ClientCertificates()
 
         println("Allowing certificates...")
-        requireNotNull(mgmShortHash) { "A holding identity short hash must be specified." }
-        clientCertificates.allowMutualTlsForSubjects(restClient, mgmShortHash!!, subjects, waitDurationSeconds.seconds)
+        clientCertificates.allowMutualTlsForSubjects(restClient, mgmShortHash, subjects, waitDurationSeconds.seconds)
         println("Success!")
-        clientCertificates.listMutualTlsClientCertificates(restClient, mgmShortHash!!, waitDurationSeconds.seconds).forEach { subject ->
+        clientCertificates.listMutualTlsClientCertificates(restClient, mgmShortHash, waitDurationSeconds.seconds).forEach { subject ->
             println("Certificate with subject $subject is allowed")
         }
     }

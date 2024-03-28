@@ -86,7 +86,7 @@ class ClientCertificates {
         restClient: RestClient<CertificatesRestResource>,
         tlsKey: KeyPairIdentifier,
         subjectX500Name: MemberX500Name,
-        p2pHostNames: Collection<MemberX500Name>,
+        p2pHostNames: Collection<String>,
         wait: Duration = 10.seconds
     ): PKCS10CertificationRequest {
         val csr = restClient.use { client ->

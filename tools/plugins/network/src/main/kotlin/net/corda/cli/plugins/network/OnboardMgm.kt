@@ -5,7 +5,7 @@ import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.membership.rest.v1.MGMRestResource
 import net.corda.sdk.network.ExportGroupPolicyFromMgm
-import net.corda.sdk.network.RegistrationContext
+import net.corda.sdk.network.RegistrationRequests
 import net.corda.sdk.packaging.CpiAttributes
 import net.corda.sdk.packaging.CpiUploader
 import net.corda.sdk.packaging.CpiV2Creator
@@ -95,7 +95,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
     }
 
     override val memberRegistrationRequest by lazy {
-        RegistrationContext().createMgmRegistrationRequest(
+        RegistrationRequests().createMgmRegistrationRequest(
             mtls = mtls,
             p2pGatewayUrls = p2pGatewayUrls,
             sessionKey = sessionKeyId,
