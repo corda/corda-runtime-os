@@ -3,6 +3,7 @@ package net.corda.membership.impl.persistence.service.handler
 import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
+import net.corda.db.schema.DbSchema
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.toStatus
 import net.corda.membership.lib.registration.RegistrationStatusExt.canMoveToStatus
@@ -25,43 +26,90 @@ internal class PersistRegistrationRequestHandler(
                 registrationId,
                 LockModeType.PESSIMISTIC_WRITE,
             )
-            val toMerge = getOrCreateEntity(currentRegistrationRequest, request)
-            if (toMerge != null) {
-                em.merge(toMerge)
+            if (currentRegistrationRequest != null) {
+                getEntityToMerge(currentRegistrationRequest, request)?.also { toMerge ->
+                    em.merge(toMerge)
+                }
+            } else {
+                val now = clock.instant()
+                val sql = """
+                    INSERT INTO {h-schema}${DbSchema.VNODE_GROUP_REGISTRATION_TABLE}(
+                        registration_id,
+                        holding_identity_id,
+                        status,
+                        created,
+                        last_modified,
+                        member_context,
+                        member_context_signature_key,
+                        member_context_signature_content,
+                        member_context_signature_spec,
+                        registration_context,
+                        registration_context_signature_key,
+                        registration_context_signature_content,
+                        registration_context_signature_spec,
+                        serial,
+                        reason)
+                    VALUES (
+                        :registration_id,
+                        :holding_identity_id,
+                        :status,
+                        :created,
+                        :last_modified,
+                        :member_context,
+                        :member_context_signature_key,
+                        :member_context_signature_content,
+                        :member_context_signature_spec,
+                        :registration_context,
+                        :registration_context_signature_key,
+                        :registration_context_signature_content,
+                        :registration_context_signature_spec,
+                        :serial,
+                        :reason)
+                    ON CONFLICT(registration_id) DO UPDATE
+                        SET 
+                            status = EXCLUDED.status,
+                            last_modified = EXCLUDED.last_modified,
+                            serial = EXCLUDED.serial
+                        """
+                em.createNativeQuery(sql)
+                    .setParameter("registration_id", registrationId)
+                    .setParameter("holding_identity_id", request.registeringHoldingIdentity.toCorda().shortHash.value)
+                    .setParameter("status", request.status.toString())
+                    .setParameter("created", now)
+                    .setParameter("last_modified", now)
+                    .setParameter("member_context", request.registrationRequest.memberContext.data.array())
+                    .setParameter(
+                        "member_context_signature_key",
+                        request.registrationRequest.memberContext.signature.publicKey.array()
+                    )
+                    .setParameter(
+                        "member_context_signature_content",
+                        request.registrationRequest.memberContext.signature.bytes.array()
+                    )
+                    .setParameter(
+                        "member_context_signature_spec",
+                        request.registrationRequest.memberContext.signatureSpec.signatureName
+                    )
+                    .setParameter(
+                        "registration_context",
+                        request.registrationRequest.registrationContext.data.array()
+                    )
+                    .setParameter(
+                        "registration_context_signature_key",
+                        request.registrationRequest.registrationContext.signature.publicKey.array()
+                    )
+                    .setParameter(
+                        "registration_context_signature_content",
+                        request.registrationRequest.registrationContext.signature.bytes.array()
+                    )
+                    .setParameter(
+                        "registration_context_signature_spec",
+                        request.registrationRequest.registrationContext.signatureSpec.signatureName
+                    )
+                    .setParameter("serial", request.registrationRequest.serial)
+                    .setParameter("reason", "")
+                    .executeUpdate()
             }
-        }
-    }
-
-    private fun getOrCreateEntity(
-        currentEntity: RegistrationRequestEntity?,
-        request: PersistRegistrationRequest,
-    ): RegistrationRequestEntity? {
-        return if (currentEntity != null) {
-            getEntityToMerge(currentEntity, request)
-        } else {
-            // logger.info("QQQ 10 for $registrationId with $id")
-            createEntityBasedOnRequest(request)
-        }
-    }
-    private fun createEntityBasedOnRequest(request: PersistRegistrationRequest): RegistrationRequestEntity {
-        val now = clock.instant()
-        with(request.registrationRequest) {
-            return RegistrationRequestEntity(
-                registrationId = registrationId,
-                holdingIdentityShortHash = request.registeringHoldingIdentity.toCorda().shortHash.value,
-                status = request.status.toString(),
-                created = now,
-                lastModified = now,
-                memberContext = memberContext.data.array(),
-                memberContextSignatureKey = memberContext.signature.publicKey.array(),
-                memberContextSignatureContent = memberContext.signature.bytes.array(),
-                memberContextSignatureSpec = memberContext.signatureSpec.signatureName,
-                registrationContext = registrationContext.data.array(),
-                registrationContextSignatureKey = registrationContext.signature.publicKey.array(),
-                registrationContextSignatureContent = registrationContext.signature.bytes.array(),
-                registrationContextSignatureSpec = registrationContext.signatureSpec.signatureName,
-                serial = serial,
-            )
         }
     }
 
