@@ -62,8 +62,9 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         description = ["The X500 name of the virtual node."],
         arity = "1",
         index = "0",
+        converter = [X500NameConverter::class]
     )
-    lateinit var name: String
+    lateinit var name: MemberX500Name
 
     @Option(
         names = ["--mutual-tls", "-m"],
@@ -145,7 +146,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             targetUrl = targetUrl
         )
         val request = JsonCreateVirtualNodeRequest(
-            x500Name = name,
+            x500Name = name.toString(),
             cpiFileChecksum = cpiFileChecksum,
             vaultDdlConnection = null,
             vaultDmlConnection = null,
