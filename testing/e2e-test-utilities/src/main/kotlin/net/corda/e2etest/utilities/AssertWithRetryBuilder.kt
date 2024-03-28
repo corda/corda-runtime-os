@@ -11,7 +11,7 @@ class AssertWithRetryArgs {
     var startDelay: Duration = Duration.ofMillis(10)
     var command: (() -> SimpleResponse)? = null
     var condition: ((SimpleResponse) -> Boolean) = { it.code in 200..299 }
-    var immediateFailCondition: ((SimpleResponse) -> Boolean)? = null
+    var immediateFailCondition: ((SimpleResponse) -> Boolean) = { false }
     var failMessage: String = ""
 
     fun validate() {
@@ -92,7 +92,7 @@ fun assertWithRetry(initialize: AssertWithRetryBuilder.() -> Unit): SimpleRespon
                     println(response.url)
                 }
                 unbufferedPrint('.')
-                if (null != args.immediateFailCondition && args.immediateFailCondition!!.invoke(response)) {
+                if (args.immediateFailCondition(response)) {
                     fail("Failed without retry with status code = ${response.code} and body =\n${response.body}")
                 }
                 if (args.condition.invoke(response)) break
@@ -161,7 +161,7 @@ fun assertWithRetryIgnoringExceptions(initialize: AssertWithRetryBuilder.() -> U
                         if (result is Exception) result.stackTraceToString() else result.toString()))
 
                 if (result is SimpleResponse) {
-                    if (null != args.immediateFailCondition && args.immediateFailCondition!!.invoke(result)) {
+                    if (args.immediateFailCondition(result)) {
                         fail("Failed without retry with status code = ${result.code} and body =\n${result.body}")
                     }
                     if (args.condition.invoke(result)) break
