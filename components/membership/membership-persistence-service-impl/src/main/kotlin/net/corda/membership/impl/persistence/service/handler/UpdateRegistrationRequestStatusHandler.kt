@@ -25,10 +25,15 @@ internal class UpdateRegistrationRequestStatusHandler(
                 throw RecoverableException("Could not find registration request: ${request.registrationId}")
             val currentStatus = registrationRequest.status.toStatus()
             if (!currentStatus.canMoveToStatus(request.registrationStatus)) {
-                logger.info(
-                    "Could not update status of registration ${request.registrationId} from $currentStatus to " +
-                        "${request.registrationStatus}, will ignore the update"
-                )
+                if ((request.serial != null) && (registrationRequest.serial == null)) {
+                    registrationRequest.serial = request.serial
+                    em.merge(registrationRequest)
+                } else {
+                    logger.info(
+                        "Could not update status of registration ${request.registrationId} from $currentStatus to " +
+                            "${request.registrationStatus}, will ignore the update"
+                    )
+                }
             } else {
                 logger.info(
                     "Updating registration request ${request.registrationId} status from $currentStatus" +
@@ -37,6 +42,9 @@ internal class UpdateRegistrationRequestStatusHandler(
                 registrationRequest.status = request.registrationStatus.name
                 registrationRequest.lastModified = clock.instant()
                 registrationRequest.reason = request.reason
+                if (request.serial != null) {
+                    registrationRequest.serial = request.serial
+                }
                 em.merge(registrationRequest)
             }
         }

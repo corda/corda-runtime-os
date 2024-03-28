@@ -130,7 +130,7 @@ class UpdateRegistrationRequestStatusHandlerTest {
             )
         ).doReturn(null)
         val context = MembershipRequestContext(clock.instant(), "ID", ourHoldingIdentity.toAvro())
-        val statusUpdate = UpdateRegistrationRequestStatus(registrationId, RegistrationStatus.PENDING_AUTO_APPROVAL, REASON)
+        val statusUpdate = UpdateRegistrationRequestStatus(registrationId, RegistrationStatus.PENDING_AUTO_APPROVAL, null, REASON)
         assertThrows<RecoverableException> {
             updateRegistrationRequestStatusHandler.invoke(context, statusUpdate)
         }
@@ -150,7 +150,7 @@ class UpdateRegistrationRequestStatusHandlerTest {
             )
         ).doReturn(registrationRequestEntity)
         val context = MembershipRequestContext(clock.instant(), "ID", ourHoldingIdentity.toAvro())
-        val statusUpdate = UpdateRegistrationRequestStatus(registrationId, RegistrationStatus.PENDING_AUTO_APPROVAL, REASON)
+        val statusUpdate = UpdateRegistrationRequestStatus(registrationId, RegistrationStatus.PENDING_AUTO_APPROVAL, null, REASON)
         clock.setTime(Instant.ofEpochMilli(500))
         updateRegistrationRequestStatusHandler.invoke(context, statusUpdate)
 
@@ -174,7 +174,7 @@ class UpdateRegistrationRequestStatusHandlerTest {
             )
         ).doReturn(registrationRequestEntity)
         val context = MembershipRequestContext(clock.instant(), "ID", ourHoldingIdentity.toAvro())
-        val statusUpdate = UpdateRegistrationRequestStatus(registrationId, RegistrationStatus.PENDING_AUTO_APPROVAL, REASON)
+        val statusUpdate = UpdateRegistrationRequestStatus(registrationId, RegistrationStatus.PENDING_AUTO_APPROVAL, null, REASON)
         clock.setTime(Instant.ofEpochMilli(500))
 
         updateRegistrationRequestStatusHandler.invoke(context, statusUpdate)

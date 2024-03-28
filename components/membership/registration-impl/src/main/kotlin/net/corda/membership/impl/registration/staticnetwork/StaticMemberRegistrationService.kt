@@ -13,7 +13,6 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.SignedData
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.p2p.HostedIdentityEntry
@@ -62,7 +61,6 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.InvalidGroupParametersUpdateException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy
-import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -293,9 +291,7 @@ class StaticMemberRegistrationService(
 
             persistGroupParameters(memberInfo, staticMemberList, membershipGroupReader)
 
-            persistRegistrationRequest(registrationId, memberInfo)
-
-            return emptyList()
+            return persistRegistrationRequest(registrationId, memberInfo)
         } catch (e: InvalidMembershipRegistrationException) {
             registrationLogger.warn("Registration failed. Reason:", e)
             throw e
@@ -355,34 +351,13 @@ class StaticMemberRegistrationService(
         }
     }
 
-    private fun persistRegistrationRequest(registrationId: UUID, memberInfo: MemberInfo) {
-        val memberContext = serialize(memberInfo.memberProvidedContext.toAvro())
-        val registrationContext = serialize(KeyValuePairList(emptyList()))
-        persistenceClient.persistRegistrationRequest(
+    private fun persistRegistrationRequest(registrationId: UUID, memberInfo: MemberInfo): Collection<Record<*, *>> {
+        return persistenceClient.setRegistrationRequestStatus(
             viewOwningIdentity = memberInfo.holdingIdentity,
-            registrationRequest = RegistrationRequest(
-                status = RegistrationStatus.APPROVED,
-                registrationId = registrationId.toString(),
-                requester = memberInfo.holdingIdentity,
-                memberContext = SignedData(
-                    ByteBuffer.wrap(memberContext),
-                    CryptoSignatureWithKey(
-                        ByteBuffer.wrap(byteArrayOf()),
-                        ByteBuffer.wrap(byteArrayOf())
-                    ),
-                    CryptoSignatureSpec("", null, null)
-                ),
-                registrationContext = SignedData(
-                    ByteBuffer.wrap(registrationContext),
-                    CryptoSignatureWithKey(
-                        ByteBuffer.wrap(byteArrayOf()),
-                        ByteBuffer.wrap(byteArrayOf())
-                    ),
-                    CryptoSignatureSpec("", null, null)
-                ),
-                serial = 0L,
-            )
-        ).getOrThrow()
+            registrationId = registrationId.toString(),
+            registrationRequestStatus = RegistrationStatus.APPROVED,
+            serialNumber = 0L,
+        ).createAsyncCommands()
     }
 
     private fun validateNotaryDetails(

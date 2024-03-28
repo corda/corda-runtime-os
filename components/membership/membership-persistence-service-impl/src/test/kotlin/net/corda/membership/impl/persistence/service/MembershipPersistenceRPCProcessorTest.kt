@@ -601,7 +601,8 @@ class MembershipPersistenceRPCProcessorTest {
             UpdateRegistrationRequestStatus(
                 ourRegistrationId,
                 RegistrationStatus.APPROVED,
-                "test reason"
+                null,
+                "test reason",
             )
         )
 

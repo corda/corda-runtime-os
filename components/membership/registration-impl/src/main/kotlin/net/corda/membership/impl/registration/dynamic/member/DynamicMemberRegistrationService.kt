@@ -76,7 +76,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
-import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.lib.toMap
@@ -319,16 +318,6 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val signedPlatformTransformedMemberContext = sign(memberId, publicKey, signatureSpec, platformTransformedMemberContext)
                 // This is the context used during registration process, e.g. pre-auth tokens will be placed here.
                 val signedRegistrationContext = sign(memberId, publicKey, signatureSpec, registrationContext)
-                // This is the user provided part of registration context in its original form without any
-                // transformations.
-                val signedUserProvidedMemberContext = sign(
-                    memberId,
-                    publicKey,
-                    signatureSpec,
-                    context.filterNot {
-                        it.key == SERIAL || REGISTRATION_CONTEXT_FIELDS.contains(it.key)
-                    }.toWire()
-                )
 
                 // The group reader might not know about the MGM yet.
                 val mgm = groupReader.lookup().firstOrNull { it.isMgm }
@@ -338,7 +327,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     ?: previousInfo?.serial
                     ?: 0
 
-                verifyReRegistrationIsEnabled(serialInfo, previousInfo?.serial, mgm.platformVersion,)
+                verifyReRegistrationIsEnabled(serialInfo, previousInfo?.serial, mgm.platformVersion)
 
                 val message = MembershipRegistrationRequest(
                     registrationId.toString(),
@@ -385,20 +374,11 @@ class DynamicMemberRegistrationService @Activate constructor(
                     memberId.value
                 )
 
-                // This call will update the serial information only, if the request got persisted before,
-                // in this scenario all the existing data in the persistence will remain the same, except the serial.
-                // If the request wasn't persisted before successfully, we will persist the whole here.
-                // We will persist here the platform transformed data in 5.2 as part of CORE-18001
-                val commands = membershipPersistenceClient.persistRegistrationRequest(
+                val commands = membershipPersistenceClient.setRegistrationRequestStatus(
                     viewOwningIdentity = member,
-                    registrationRequest = RegistrationRequest(
-                        status = RegistrationStatus.SENT_TO_MGM,
-                        registrationId = registrationId.toString(),
-                        requester = member,
-                        memberContext = signedUserProvidedMemberContext,
-                        registrationContext = signedRegistrationContext,
-                        serial = serialInfo,
-                    )
+                    registrationId = registrationId.toString(),
+                    registrationRequestStatus = RegistrationStatus.SENT_TO_MGM,
+                    serialNumber = serialInfo,
                 ).createAsyncCommands()
 
                 listOf(record) + commands
