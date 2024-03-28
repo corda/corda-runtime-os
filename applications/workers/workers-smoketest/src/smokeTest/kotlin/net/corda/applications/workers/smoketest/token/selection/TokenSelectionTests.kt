@@ -203,7 +203,7 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         val utxoFlowRequestId = startRestFlow(
             bobHoldingId,
             mapOf("input" to input, "members" to listOf(aliceX500), "notary" to NOTARY_SERVICE_X500, "priority" to priority),
-            "com.r3.corda.demo.utxo.TokenPriorityUtxoDemoFlow",
+            "com.r3.corda.demo.utxo.UtxoDemoFlow",
             requestId = idGenerator.nextId
         )
         val utxoFlowResult = awaitRestFlowFinished(bobHoldingId, utxoFlowRequestId)
