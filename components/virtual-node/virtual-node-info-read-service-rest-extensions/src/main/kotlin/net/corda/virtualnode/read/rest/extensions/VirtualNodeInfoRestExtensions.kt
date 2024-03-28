@@ -4,6 +4,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHash.Companion.LENGTH
 import net.corda.crypto.core.ShortHashException
 import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.VirtualNodeInfo
@@ -112,7 +113,13 @@ fun ShortHash.Companion.ofOrThrow(holdingIdentityShortHash: String): ShortHash {
     return try {
         of(holdingIdentityShortHash)
     } catch (e: ShortHashException) {
-        throw BadRequestException("Invalid holding identity short hash${e.message?.let { ": $it" }}")
+        throw BadRequestException(
+            title = e::class.java.simpleName,
+            exceptionDetails = ExceptionDetails(
+                e::class.java.name,
+                "Invalid holding identity short hash${e.message?.let { ": $it" }}"
+            )
+        )
     }
 }
 
@@ -130,7 +137,13 @@ fun ShortHash.Companion.parseOrThrow(holdingIdentityShortHash: String): ShortHas
     return try {
         parse(holdingIdentityShortHash)
     } catch (e: ShortHashException) {
-        throw BadRequestException("Invalid holding identity short hash${e.message?.let { ": $it" }}")
+        throw BadRequestException(
+            title = e::class.java.simpleName,
+            exceptionDetails = ExceptionDetails(
+                e::class.java.name,
+                "Invalid holding identity short hash${e.message?.let { ": $it" }}"
+            )
+        )
     }
 }
 
@@ -142,6 +155,9 @@ fun createKeyIdOrHttpThrow(keyIdHexString: String): ShortHash {
     try {
         return ShortHash.of(keyIdHexString)
     } catch (e: ShortHashException) {
-        throw BadRequestException("Invalid key id hex string: ${e.message}")
+        throw BadRequestException(
+            title = e::class.java.simpleName,
+            exceptionDetails = ExceptionDetails(e::class.java.name, "Invalid key id hex string: ${e.message}")
+        )
     }
 }

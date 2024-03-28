@@ -12,12 +12,6 @@ import net.corda.configuration.rest.impl.exception.ConfigVersionConflictExceptio
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.data.config.ConfigurationSchemaVersion
-import net.corda.rest.PluggableRestResource
-import net.corda.rest.exception.BadRequestException
-import net.corda.rest.exception.InternalServerException
-import net.corda.rest.exception.ResourceNotFoundException
-import net.corda.rest.response.ResponseEntity
-import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
@@ -44,6 +38,13 @@ import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ExceptionDetails
+import net.corda.rest.exception.InternalServerException
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.response.ResponseEntity
+import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.schema.Schemas.Config.CONFIG_MGMT_REQUEST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.VisibleForTesting
@@ -239,10 +240,13 @@ internal class ConfigRestResourceImpl @Activate constructor(
         )
         logger.debug { "UpdatedConfig: $updatedConfig" }
     } catch (e: Exception) {
-        val message =
+        val title =
             "Configuration \"${request.config.escapedJson}\" could not be validated. " +
-                    "Valid JSON or HOCON expected. Cause: ${e.message}"
-        throw BadRequestException(message)
+                    "Valid JSON or HOCON expected."
+        throw BadRequestException(
+            title = title,
+            exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
+        )
     }
 
     /**

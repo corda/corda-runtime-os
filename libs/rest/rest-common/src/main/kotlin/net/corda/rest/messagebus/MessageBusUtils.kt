@@ -1,6 +1,7 @@
 package net.corda.rest.messagebus
 
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
+import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.HttpApiException
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.ServiceUnavailableException
@@ -41,12 +42,18 @@ object MessageBusUtils {
 
                 ex is CordaRPCAPIPartitionException -> {
                     logger.warn("Could not $operation", ex)
-                    throw ServiceUnavailableException("Could not $operation: Repartition Event!")
+                    throw ServiceUnavailableException(
+                        ex::class.java.simpleName,
+                        ExceptionDetails(ex::class.java.name, "Could not $operation: Repartition Event!")
+                    )
                 }
 
                 else -> {
                     logger.warn("Could not $operation", ex)
-                    throw InternalServerException("Could not $operation: ${ex.message}")
+                    throw InternalServerException(
+                        title = ex::class.java.simpleName,
+                        exceptionDetails = ExceptionDetails(ex::class.java.name, "Could not $operation: ${ex.message}")
+                    )
                 }
             }
         }

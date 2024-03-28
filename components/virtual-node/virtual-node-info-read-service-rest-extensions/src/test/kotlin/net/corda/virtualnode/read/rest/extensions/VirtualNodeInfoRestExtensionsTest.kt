@@ -17,7 +17,7 @@ import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.UUID
 
-class VirtualNodeInfoRPCExtensionsTest {
+class VirtualNodeInfoRestExtensionsTest {
 
     private companion object {
         const val INVALID_SHORT_HASH = "invalid"
