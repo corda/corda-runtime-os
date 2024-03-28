@@ -18,10 +18,13 @@ import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.e2etest.utilities.startRestFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
+import org.junit.jupiter.api.assertAll
 import java.math.BigDecimal
 import java.time.Duration
 import java.util.UUID
@@ -169,6 +172,45 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         assertThat(tokenSelectionResult2.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
         assertThat(tokenSelectionResult2.flowError).isNull()
         assertThat(tokenSelectionResult2.flowResult).isEqualTo("SUCCESS")
+    }
+
+    @Disabled("Test switched off until priority strategy implementation (CORE-18979) is complete")
+    @RepeatedTest(3) // Random strategy will sometimes look like Priority strategy
+    fun `Test priority selection strategy`(testInfo: TestInfo) {
+        val idGenerator = TestRequestIdGenerator(testInfo)
+        // Create 3 simple UTXO transactions
+        val input = "token test input"
+        issueTokenWithPriority(input, idGenerator, 2)
+        issueTokenWithPriority(input, idGenerator, 1)
+        issueTokenWithPriority(input, idGenerator, 2)
+
+        // Attempt to select the highest priority token created by the transaction
+        val tokenSelectionFlowId = startRestFlow(
+            aliceHoldingId,
+            mapOf(),
+            "com.r3.corda.demo.utxo.token.selection.PriortyTokenSelectionFlow",
+            requestId = idGenerator.nextId
+        )
+        val tokenSelectionResult = awaitRestFlowFinished(aliceHoldingId, tokenSelectionFlowId)
+        assertAll(
+            { assertThat(tokenSelectionResult.flowError).isNull() },
+            { assertThat(tokenSelectionResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS) },
+            { assertThat(tokenSelectionResult.flowResult).isEqualTo("[1]") },
+        )
+    }
+
+    private fun issueTokenWithPriority(input: String, idGenerator: TestRequestIdGenerator, priority: Long?) {
+        val utxoFlowRequestId = startRestFlow(
+            bobHoldingId,
+            mapOf("input" to input, "members" to listOf(aliceX500), "notary" to NOTARY_SERVICE_X500, "priority" to priority),
+            "com.r3.corda.demo.utxo.UtxoDemoFlow",
+            requestId = idGenerator.nextId
+        )
+        val utxoFlowResult = awaitRestFlowFinished(bobHoldingId, utxoFlowRequestId)
+        assertAll(
+            { assertThat(utxoFlowResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS) },
+            { assertThat(utxoFlowResult.flowError).isNull() },
+        )
     }
 }
 
