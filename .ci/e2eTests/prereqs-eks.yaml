@@ -49,10 +49,10 @@ postgresql:
       cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
     resources:
       requests:
-        memory: 128Mi
+        memory: 256Mi
         cpu: 250m
       limits:
-        memory: 128Mi
+        memory: 256Mi
   metrics:
     resources:
       requests:
