@@ -16,36 +16,90 @@ internal class PersistRegistrationRequestHandler(
     override fun invoke(context: MembershipRequestContext, request: PersistRegistrationRequest) {
         val registrationId = request.registrationRequest.registrationId
         logger.info("Persisting registration request with ID [$registrationId] to status ${request.status}.")
-        transaction(context.holdingIdentity.toCorda().shortHash) { em ->
-            val currentRegistrationRequest = em.find(
-                RegistrationRequestEntity::class.java,
-                registrationId,
-                LockModeType.PESSIMISTIC_WRITE,
-            )
-            currentRegistrationRequest?.status?.toStatus()?.let {
-                if (it == request.status) {
+        logger.info(
+            "QQQ PersistRegistrationRequestHandler with" +
+                " $registrationId and ${request.status}, context: ${context.requestId} 1"
+        )
+        try {
+            transaction(context.holdingIdentity.toCorda().shortHash) { em ->
+                val currentRegistrationRequest = em.find(
+                    RegistrationRequestEntity::class.java,
+                    registrationId,
+                    LockModeType.PESSIMISTIC_WRITE,
+                )
+                logger.info(
+                    "QQQ PersistRegistrationRequestHandler with" +
+                        " $registrationId and ${request.status}, context: ${context.requestId} 2"
+                )
+                currentRegistrationRequest?.status?.toStatus()?.let {
                     logger.info(
-                        "Registration request [$registrationId] with status: ${currentRegistrationRequest.status}" +
-                            " is already persisted. Persistence request was discarded."
+                        "QQQ PersistRegistrationRequestHandler with" +
+                            " $registrationId and ${request.status}, context: ${context.requestId} 3"
                     )
-                    return@transaction
-                }
-                if (!it.canMoveToStatus(request.status)) {
-                    logger.info(
-                        "Registration request [$registrationId] has status: ${currentRegistrationRequest.status}" +
-                            " can not move it to status ${request.status}"
-                    )
-                    // In case of processing persistence requests in an unordered manner we need to make sure the serial
-                    // gets persisted. All other existing data of the request will remain the same.
-                    if (request.status == RegistrationStatus.SENT_TO_MGM && currentRegistrationRequest.serial == null) {
-                        logger.info("Updating request [$registrationId] serial to ${currentRegistrationRequest.serial}")
-                        em.merge(createEntityBasedOnPreviousEntity(currentRegistrationRequest, request.registrationRequest.serial))
+                    if (it == request.status) {
+                        logger.info(
+                            "Registration request [$registrationId] with status: ${currentRegistrationRequest.status}" +
+                                " is already persisted. Persistence request was discarded."
+                        )
+                        logger.info(
+                            "QQQ PersistRegistrationRequestHandler with" +
+                                " $registrationId and ${request.status}, context: ${context.requestId} 4"
+                        )
                         return@transaction
                     }
-                    return@transaction
+                    if (!it.canMoveToStatus(request.status)) {
+                        logger.info(
+                            "Registration request [$registrationId] has status: ${currentRegistrationRequest.status}" +
+                                " can not move it to status ${request.status}"
+                        )
+                        // In case of processing persistence requests in an unordered manner we need to make sure the serial
+                        // gets persisted. All other existing data of the request will remain the same.
+                        logger.info(
+                            "QQQ PersistRegistrationRequestHandler with" +
+                                " $registrationId and ${request.status}, context: ${context.requestId} 5"
+                        )
+                        if (request.status == RegistrationStatus.SENT_TO_MGM && currentRegistrationRequest.serial == null) {
+                            logger.info("Updating request [$registrationId] serial to ${currentRegistrationRequest.serial}")
+                            em.merge(
+                                createEntityBasedOnPreviousEntity(
+                                    currentRegistrationRequest,
+                                    request.registrationRequest.serial
+                                )
+                            )
+                            logger.info(
+                                "QQQ PersistRegistrationRequestHandler with" +
+                                    " $registrationId and ${request.status}, context: ${context.requestId} 6"
+                            )
+                            return@transaction
+                        }
+                        logger.info(
+                            "QQQ PersistRegistrationRequestHandler with" +
+                                " $registrationId and ${request.status}, context: ${context.requestId} 7"
+                        )
+                        return@transaction
+                    }
+                    logger.info(
+                        "QQQ PersistRegistrationRequestHandler with" +
+                            " $registrationId and ${request.status}, context: ${context.requestId} 8"
+                    )
                 }
+                logger.info(
+                    "QQQ PersistRegistrationRequestHandler with" +
+                        " $registrationId and ${request.status}, context: ${context.requestId} 9"
+                )
+                em.merge(createEntityBasedOnRequest(request))
+                logger.info(
+                    "QQQ PersistRegistrationRequestHandler with" +
+                        " $registrationId and ${request.status}, context: ${context.requestId} 10"
+                )
             }
-            em.merge(createEntityBasedOnRequest(request))
+        } catch (e: Exception) {
+            logger.info(
+                "QQQ PersistRegistrationRequestHandler with" +
+                    " $registrationId and ${request.status}, context: ${context.requestId} 11",
+                e
+            )
+            throw e
         }
     }
 
