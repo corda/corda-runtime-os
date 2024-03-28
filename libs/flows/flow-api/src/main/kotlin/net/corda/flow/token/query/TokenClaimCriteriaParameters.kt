@@ -8,7 +8,9 @@ import java.math.BigDecimal
 @CordaSerializable
 data class TokenClaimCriteriaParameters(val deduplicationId: String, val tokenClaimCriteria: TokenClaimCriteriaRequest)
 
-
+/**
+ * Object used to store the details of a TokenClaimCriteria to be passed to the Flow External Event framework
+ */
 data class TokenClaimCriteriaRequest(
     val tokenType: String,
     val issuerHash: SecureHash,
