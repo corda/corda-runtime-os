@@ -185,6 +185,14 @@ class ThreadLooper(
             var isFirstPoll = true
             while (_isRunning) {
                 loopFunction()
+
+                // If the thread looper was marked as error externally
+                // polling should stop.
+                if (lifecycleCoordinator.status == LifecycleStatus.ERROR) {
+                    _isRunning = false
+                    break
+                }
+
                 if (isFirstPoll) {
                     lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
                     isFirstPoll = false

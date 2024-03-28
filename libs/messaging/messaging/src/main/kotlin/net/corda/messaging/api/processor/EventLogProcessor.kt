@@ -4,11 +4,11 @@ import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 
 /**
- * This interface defines a processor of events from a [EventSourceSubscription] on a feed with keys of type [K],
+ * This interface defines a processor of events from a [EventLogSubscription] on a feed with keys of type [K],
  * values of type [V].
  * Represents a processor of records from a (partitioned) event log.
  *
- * If you want to receive updates from an [EventSourceSubscription] you should implement this interface.
+ * If you want to receive updates from an [EventLogSubscription] you should implement this interface.
  *
  * NOTE: Any exception thrown by the processor which isn't [CordaIntermittentException] will result in a
  * [CordaFatalException] and will cause the subscription to close

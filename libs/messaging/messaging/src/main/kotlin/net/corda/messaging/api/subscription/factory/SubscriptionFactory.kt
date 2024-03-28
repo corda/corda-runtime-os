@@ -16,6 +16,7 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.listener.ConsumerOffsetProvider
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 
@@ -138,12 +139,14 @@ interface SubscriptionFactory {
      * @param messagingConfig Map of properties to override the default settings for the connection to the source of
      * events
      * @param partitionAssignmentListener a listener that reacts to partition assignment and revocations.
+     * @param consumerOffsetProvider a provider of starting offsets for topics and partitions.
      */
     fun <K : Any, V : Any> createEventSourceSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: EventSourceProcessor<K, V>,
         messagingConfig: SmartConfig,
-        partitionAssignmentListener: PartitionAssignmentListener?
+        partitionAssignmentListener: PartitionAssignmentListener?,
+        consumerOffsetProvider: ConsumerOffsetProvider?
     ): Subscription<K, V>
 
     /**

@@ -23,6 +23,7 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.messaging.api.subscription.listener.ConsumerOffsetProvider
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.config.MessagingConfigResolver
@@ -48,7 +49,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -177,7 +178,8 @@ class CordaSubscriptionFactory @Activate constructor(
         subscriptionConfig: SubscriptionConfig,
         processor: EventSourceProcessor<K, V>,
         messagingConfig: SmartConfig,
-        partitionAssignmentListener: PartitionAssignmentListener?
+        partitionAssignmentListener: PartitionAssignmentListener?,
+        consumerOffsetProvider: ConsumerOffsetProvider?
     ): Subscription<K, V> {
 
         val config = getConfig(SubscriptionType.EVENT_LOG, subscriptionConfig, messagingConfig)
@@ -190,6 +192,7 @@ class CordaSubscriptionFactory @Activate constructor(
             processor.valueClass,
             config.messageBusConfig,
             partitionAssignmentListener,
+            consumerOffsetProvider,
             cordaConsumerBuilder,
             LoggerFactory.getLogger("${EventSourceCordaConsumerFactory<K, V>::javaClass.name}-${config.clientId}")
         )

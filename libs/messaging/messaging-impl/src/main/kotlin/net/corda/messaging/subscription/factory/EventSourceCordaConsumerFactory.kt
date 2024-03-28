@@ -5,9 +5,9 @@ import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.constants.ConsumerRoles
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
+import net.corda.messaging.api.subscription.listener.ConsumerOffsetProvider
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
-import net.corda.messaging.subscription.consumer.listener.ForwardingRebalanceListener
-import net.corda.messaging.subscription.consumer.listener.LoggingConsumerRebalanceListener
+import net.corda.messaging.subscription.consumer.listener.OffsetProviderListener
 import org.slf4j.Logger
 
 /**
@@ -22,27 +22,31 @@ class EventSourceCordaConsumerFactory<K : Any, V : Any>(
     private val valueClass: Class<V>,
     private val messageBusConfig: SmartConfig,
     private val partitionAssignmentListener: PartitionAssignmentListener?,
+    private val consumerOffsetProvider: ConsumerOffsetProvider?,
     private val cordaConsumerBuilder: CordaConsumerBuilder,
     private val log: Logger
 ) {
     fun create(): CordaConsumer<K, V> {
         val consumerConfig = ConsumerConfig(group, clientId, ConsumerRoles.EVENT_SOURCE)
 
-        val rebalanceListener = if (partitionAssignmentListener == null) {
-            LoggingConsumerRebalanceListener(clientId)
-        } else {
-            ForwardingRebalanceListener(topic, clientId, partitionAssignmentListener)
-        }
-
         return cordaConsumerBuilder.createConsumer<K, V>(
             consumerConfig,
             messageBusConfig,
             keyClass,
             valueClass,
-            { _ ->
+            onSerializationError = { _ ->
                 log.error("Failed to deserialize record for topic=$topic")
-            },
-            rebalanceListener
-        ).apply { subscribe(topic) }
+            }
+        ).apply {
+            setDefaultRebalanceListener(
+                OffsetProviderListener(
+                    clientId,
+                    partitionAssignmentListener,
+                    consumerOffsetProvider,
+                    this
+                )
+            )
+            subscribe(topic)
+        }
     }
 }
