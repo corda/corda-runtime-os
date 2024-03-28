@@ -136,7 +136,7 @@ internal class InMemSubscriptionFactory @Activate constructor(
         processor: EventSourceProcessor<K, V>,
         messagingConfig: SmartConfig,
         partitionAssignmentListener: PartitionAssignmentListener?,
-        offsetProvider: ConsumerOffsetProvider?
+        consumerOffsetProvider: ConsumerOffsetProvider?
     ): Subscription<K, V> {
         return EventSourceSubscription(
             subscriptionConfig,
