@@ -143,21 +143,24 @@ internal class InboundMessageProcessor(
             message.item
         }
         return responses.map { (traceableMessage, response) ->
-            if (response != null) {
-                recordOutboundSessionMessagesMetric(response.header.sourceIdentity)
-                ItemWithSource(
-                    item = InboundResponse(
-                        listOf(
-                            Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response),
-                        )
-                    ),
-                    source = traceableMessage.source
-                )
-            } else {
-                ItemWithSource(
-                    InboundResponse(emptyList()),
-                    traceableMessage.source,
-                )
+            when (response.message?.payload) {
+                null -> {
+                    ItemWithSource(
+                        InboundResponse(response.sessionCreationRecords),
+                        traceableMessage.source,
+                    )
+                }
+
+                else -> {
+                    recordOutboundSessionMessagesMetric(response.message.header.sourceIdentity)
+                    ItemWithSource(
+                        item = InboundResponse(
+                            listOf(
+                                Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response.message),
+                            ) + response.sessionCreationRecords
+                        ), source = traceableMessage.source
+                    )
+                }
             }
         }
     }

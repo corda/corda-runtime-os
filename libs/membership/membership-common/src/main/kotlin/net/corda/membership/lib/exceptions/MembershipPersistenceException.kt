@@ -12,3 +12,13 @@ open class MembershipPersistenceException(err: String, cause: Throwable? = null)
  * membership persistence operation.
  */
 class InvalidEntityUpdateException(err: String) : MembershipPersistenceException(err)
+
+/**
+ * Thrown to indicate a persistence failure that happened because an entity was not found .
+ */
+class NotFoundEntityPersistenceException(err: String) : MembershipPersistenceException(err)
+
+/**
+ * Thrown to indicate a persistence failure that happened because a conflict.
+ */
+class ConflictPersistenceException(err: String) : MembershipPersistenceException(err)

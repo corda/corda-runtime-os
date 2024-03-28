@@ -14,6 +14,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.exceptions.NotFoundEntityPersistenceException
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
@@ -114,7 +115,7 @@ class SuspensionActivationEntityOperationsTest {
             em.find(eq(MemberInfoEntity::class.java), eq(primaryKey), eq(LockModeType.PESSIMISTIC_WRITE))
         ).doReturn(null)
 
-        assertThrows<MembershipPersistenceException> {
+        assertThrows<NotFoundEntityPersistenceException> {
             handler.findMember(em, knownX500Name.toString(), knownGroupId, null, "")
         }.apply {
             assertThat(this.message).contains("does not exist")

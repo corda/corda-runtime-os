@@ -10,7 +10,7 @@ import net.corda.data.membership.db.response.command.PersistGroupParametersRespo
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
-import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.exceptions.ConflictPersistenceException
 import net.corda.membership.lib.toMap
 import net.corda.virtualnode.toCorda
 import javax.persistence.LockModeType
@@ -56,7 +56,7 @@ internal class PersistGroupParametersInitialSnapshotHandler(
                 val currentParameters =
                     deserializer.deserializeKeyValuePairList(currentGroupParameters.parameters).toMap()
                 if (currentParameters.removeTime() != groupParameters.toMap().removeTime()) {
-                    throw MembershipPersistenceException(
+                    throw ConflictPersistenceException(
                         "Group parameters initial snapshot already exist with different parameters."
                     )
                 } else {

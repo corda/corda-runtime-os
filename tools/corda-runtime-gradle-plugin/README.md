@@ -7,6 +7,7 @@ Add the following extension properties
 
 ```groovy
     cordaRuntimeGradlePlugin {
+        runtimeVersion = "5.2.0.0"
         notaryVersion = "5.2.0.0"
         notaryCpiName = "NotaryServer"
         corDappCpiName = "MyCorDapp"
@@ -68,7 +69,7 @@ services:
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
 
   kafka-create-topics:
-    image: corda-os-docker.software.r3.com/corda-os-plugins:5.2.0.0
+    image: corda-os-docker.software.r3.com/corda-os-plugins:${CORDA_RUNTIME_VERSION}
     depends_on:
       - kafka
     command: [
@@ -79,7 +80,7 @@ services:
     ]
 
   corda:
-    image: corda-os-docker.software.r3.com/corda-os-combined-worker-kafka:5.2.0.0
+    image: corda-os-docker.software.r3.com/corda-os-combined-worker-kafka:${CORDA_RUNTIME_VERSION}
     depends_on:
       - postgresql
       - kafka
@@ -124,7 +125,7 @@ services:
       - 5432:5432
 
   corda:
-    image: corda-os-docker.software.r3.com/corda-os-combined-worker:5.2.0.0
+    image: corda-os-docker.software.r3.com/corda-os-combined-worker:${CORDA_RUNTIME_VERSION}
     depends_on:
       - postgresql
     environment:

@@ -30,6 +30,9 @@ open class PluginConfiguration @Inject constructor(objects: ObjectFactory) {
     val notaryVersion: Property<String> = objects.property(String::class.java).convention("5.2.0.0")
 
     @get:Input
+    val runtimeVersion: Property<String> = objects.property(String::class.java).convention("5.2.0.0")
+
+    @get:Input
     val cordaBinDir: Property<String> = objects.property(String::class.java)
         .convention(System.getenv("CORDA_BIN") ?: "${System.getProperty("user.home")}/.corda/corda5")
 
