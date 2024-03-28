@@ -1,5 +1,6 @@
 package net.corda.sdk.network
 
+import net.corda.crypto.core.ShortHash
 import net.corda.membership.rest.v1.MGMRestResource
 import net.corda.rest.client.RestClient
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
@@ -15,14 +16,18 @@ class ExportGroupPolicyFromMgm {
      * @param wait Duration before timing out, default 10 seconds
      * @return policy as a String
      */
-    fun exportPolicy(restClient: RestClient<MGMRestResource>, holdingIdentityShortHash: String, wait: Duration = 10.seconds): String {
+    fun exportPolicy(
+        restClient: RestClient<MGMRestResource>,
+        holdingIdentityShortHash: ShortHash,
+        wait: Duration = 10.seconds
+    ): String {
         return restClient.use { client ->
             executeWithRetry(
                 waitDuration = wait,
                 operationName = "Export group policy"
             ) {
                 val resource = client.start().proxy
-                resource.generateGroupPolicy(holdingIdentityShortHash)
+                resource.generateGroupPolicy(holdingIdentityShortHash.value)
             }
         }
     }

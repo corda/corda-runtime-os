@@ -2,6 +2,7 @@ package net.corda.cli.plugins.network
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.cli.plugins.network.utils.HoldingIdentityUtils
+import net.corda.crypto.core.ShortHash
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.sdk.packaging.CpiUploader
@@ -25,9 +26,9 @@ class OnboardMgmTest {
         private val password = "--password=${DEFAULT_CLUSTER.rest.password}"
         private const val INSECURE = "--insecure=true"
 
-        private fun mgmName() = MemberX500Name.parse("O=MGM-${UUID.randomUUID()}, L=London, C=GB").toString()
+        private fun mgmName() = MemberX500Name.parse("O=MGM-${UUID.randomUUID()}, L=London, C=GB")
 
-        private lateinit var holdingIdentity: String
+        private lateinit var holdingIdentity: ShortHash
     }
 
     @BeforeEach
@@ -39,7 +40,7 @@ class OnboardMgmTest {
     fun `onboarding MGM with default options succeeds`() {
         val mgm = mgmName()
         CommandLine(OnboardMgm()).execute(
-            mgm,
+            mgm.toString(),
             targetUrl,
             user,
             password,
@@ -55,7 +56,7 @@ class OnboardMgmTest {
         val command = OnboardMgm()
 
         CommandLine(command).execute(
-            mgmName(),
+            mgmName().toString(),
             targetUrl,
             user,
             password,
@@ -65,7 +66,7 @@ class OnboardMgmTest {
 
         val mgm = mgmName()
         CommandLine(OnboardMgm()).execute(
-            mgm,
+            mgm.toString(),
             "--cpi-hash=$cpiHash",
             targetUrl,
             user,
@@ -81,7 +82,7 @@ class OnboardMgmTest {
     fun `onboarding MGM saves group policy to file`() {
         val groupPolicyLocation = "${System.getProperty("user.home")}/.corda/gp/test.json"
         CommandLine(OnboardMgm()).execute(
-            mgmName(),
+            mgmName().toString(),
             "-s=$groupPolicyLocation",
             targetUrl,
             user,
@@ -100,7 +101,7 @@ class OnboardMgmTest {
     @Test
     fun `onboarding MGM saves group ID to file`() {
         CommandLine(OnboardMgm()).execute(
-            mgmName(),
+            mgmName().toString(),
             targetUrl,
             user,
             password,
@@ -118,7 +119,7 @@ class OnboardMgmTest {
     @Test
     fun `onboarding MGM with mutual TLS sets correct TLS type in group policy`() {
         CommandLine(OnboardMgm()).execute(
-            mgmName(),
+            mgmName().toString(),
             "--mutual-tls",
             targetUrl,
             user,
@@ -140,7 +141,7 @@ class OnboardMgmTest {
         val gatewayUrl0 = "https://localhost:8080"
         val gatewayUrl1 = "https://localhost:8081"
         CommandLine(OnboardMgm()).execute(
-            mgm,
+            mgm.toString(),
             "--p2p-gateway-url=$gatewayUrl0",
             "--p2p-gateway-url=$gatewayUrl1",
             targetUrl,
@@ -171,7 +172,7 @@ class OnboardMgmTest {
             .cpiFileChecksum
     }
 
-    private fun OutputStub.lookup(mgmName: String) {
+    private fun OutputStub.lookup(mgmName: MemberX500Name) {
         holdingIdentity = HoldingIdentityUtils.getHoldingIdentity(
             null,
             mgmName,

@@ -1,5 +1,6 @@
 package net.corda.sdk.network
 
+import net.corda.crypto.core.ShortHash
 import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.response.RestMemberInfoList
 import net.corda.rest.client.RestClient
@@ -26,7 +27,7 @@ class MemberLookup {
     @Suppress("LongParameterList")
     fun lookupMember(
         restClient: RestClient<MemberLookupRestResource>,
-        holdingIdentityShortHash: String,
+        holdingIdentityShortHash: ShortHash,
         commonName: String?,
         organization: String?,
         organizationUnit: String?,
@@ -43,7 +44,7 @@ class MemberLookup {
             ) {
                 val resource = client.start().proxy
                 resource.lookupV51(
-                    holdingIdentityShortHash,
+                    holdingIdentityShortHash.value,
                     commonName,
                     organization,
                     organizationUnit,

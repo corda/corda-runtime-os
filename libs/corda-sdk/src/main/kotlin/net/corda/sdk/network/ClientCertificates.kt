@@ -3,6 +3,7 @@
 
 package net.corda.sdk.network
 
+import net.corda.crypto.core.ShortHash
 import net.corda.data.certificates.CertificateUsage
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
 import net.corda.membership.rest.v1.CertificatesRestResource
@@ -12,6 +13,7 @@ import net.corda.rest.HttpFileUpload
 import net.corda.rest.client.RestClient
 import net.corda.sdk.network.Keys.Companion.P2P_TLS_CERTIFICATE_ALIAS
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
+import net.corda.v5.base.types.MemberX500Name
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import java.io.InputStream
@@ -30,8 +32,8 @@ class ClientCertificates {
      */
     fun allowMutualTlsForSubjects(
         restClient: RestClient<MGMRestResource>,
-        holdingIdentityShortHash: String,
-        subjects: Collection<String>,
+        holdingIdentityShortHash: ShortHash,
+        subjects: Collection<MemberX500Name>,
         wait: Duration = 10.seconds
     ) {
         restClient.use { client ->
@@ -41,7 +43,7 @@ class ClientCertificates {
             ) {
                 val resource = client.start().proxy
                 subjects.forEach { subject ->
-                    resource.mutualTlsAllowClientCertificate(holdingIdentityShortHash, subject)
+                    resource.mutualTlsAllowClientCertificate(holdingIdentityShortHash.value, subject.toString())
                 }
             }
         }
@@ -56,7 +58,7 @@ class ClientCertificates {
      */
     fun listMutualTlsClientCertificates(
         restClient: RestClient<MGMRestResource>,
-        holdingIdentityShortHash: String,
+        holdingIdentityShortHash: ShortHash,
         wait: Duration = 10.seconds
     ): Collection<String> {
         return restClient.use { client ->
@@ -65,7 +67,7 @@ class ClientCertificates {
                 operationName = "List mutual TLS certificates"
             ) {
                 val resource = client.start().proxy
-                resource.mutualTlsListClientCertificate(holdingIdentityShortHash)
+                resource.mutualTlsListClientCertificate(holdingIdentityShortHash.value)
             }
         }
     }
@@ -83,7 +85,7 @@ class ClientCertificates {
     fun generateP2pCsr(
         restClient: RestClient<CertificatesRestResource>,
         tlsKey: KeyPairIdentifier,
-        subjectX500Name: String,
+        subjectX500Name: MemberX500Name,
         p2pHostNames: Collection<String>,
         wait: Duration = 10.seconds
     ): PKCS10CertificationRequest {
@@ -96,8 +98,8 @@ class ClientCertificates {
                 resource.generateCsr(
                     tenantId = "p2p",
                     keyId = tlsKey.id,
-                    x500Name = subjectX500Name,
-                    subjectAlternativeNames = p2pHostNames.toList(),
+                    x500Name = subjectX500Name.toString(),
+                    subjectAlternativeNames = p2pHostNames.map { it.toString() },
                     contextMap = null,
                 )
             }

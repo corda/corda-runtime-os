@@ -1,6 +1,8 @@
 package net.corda.sdk.network
 
+import net.corda.crypto.core.ShortHash
 import net.corda.membership.rest.v1.MemberRegistrationRestResource
+import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.rest.v1.types.response.RegistrationStatus
 import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.rest.client.RestClient
@@ -19,7 +21,7 @@ class RegistrationsLookup {
      */
     fun checkRegistrations(
         restClient: RestClient<MemberRegistrationRestResource>,
-        holdingIdentityShortHash: String,
+        holdingIdentityShortHash: ShortHash,
         wait: Duration = 10.seconds
     ): List<RestRegistrationRequestStatus> {
         return restClient.use { client ->
@@ -28,7 +30,7 @@ class RegistrationsLookup {
                 operationName = "Lookup registrations"
             ) {
                 val resource = client.start().proxy
-                resource.checkRegistrationProgress(holdingIdentityShortHash)
+                resource.checkRegistrationProgress(holdingIdentityShortHash.value)
             }
         }
     }
@@ -43,7 +45,7 @@ class RegistrationsLookup {
      */
     fun checkRegistration(
         restClient: RestClient<MemberRegistrationRestResource>,
-        holdingIdentityShortHash: String,
+        holdingIdentityShortHash: ShortHash,
         requestId: String,
         wait: Duration = 10.seconds
     ): RestRegistrationRequestStatus {
@@ -53,7 +55,7 @@ class RegistrationsLookup {
                 operationName = "Lookup registration $requestId"
             ) {
                 val resource = client.start().proxy
-                resource.checkSpecificRegistrationProgress(holdingIdentityShortHash, requestId)
+                resource.checkSpecificRegistrationProgress(holdingIdentityShortHash.value, requestId)
             }
         }
     }
@@ -68,7 +70,7 @@ class RegistrationsLookup {
     fun waitForRegistrationApproval(
         restClient: RestClient<MemberRegistrationRestResource>,
         registrationId: String,
-        holdingId: String,
+        holdingId: ShortHash,
         wait: Duration = 60.seconds
     ) {
         restClient.use {
@@ -92,18 +94,18 @@ class RegistrationsLookup {
     /**
      * Combination method to submit the registration and wait for it to be approved
      * @param restClient of type RestClient<MemberRegistrationRestResource>
-     * @param registrationContext the payload to be used in the request, see [RegistrationContext]
+     * @param registrationContext the payload to be used in the request, see [RegistrationRequests]
      * @param holdingId the holding identity ID of the node
      * @param wait Duration before timing out, default 60 seconds
      * @return ID of the registration request
      */
     fun registerAndWaitForApproval(
         restClient: RestClient<MemberRegistrationRestResource>,
-        registrationContext: Map<String, String>,
-        holdingId: String,
+        memberRegistrationRequest: MemberRegistrationRequest,
+        holdingId: ShortHash,
         wait: Duration = 60.seconds
     ) {
-        val response = RegistrationRequester().requestRegistration(restClient, registrationContext, holdingId, wait)
+        val response = RegistrationRequester().requestRegistration(restClient, memberRegistrationRequest, holdingId, wait)
         waitForRegistrationApproval(restClient, response.registrationId, holdingId, wait)
     }
 }

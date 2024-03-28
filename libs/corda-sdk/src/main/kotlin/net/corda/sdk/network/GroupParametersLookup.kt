@@ -1,5 +1,6 @@
 package net.corda.sdk.network
 
+import net.corda.crypto.core.ShortHash
 import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.RestGroupParameters
 import net.corda.rest.client.RestClient
@@ -17,7 +18,7 @@ class GroupParametersLookup {
      */
     fun lookupGroupParameters(
         restClient: RestClient<MemberLookupRestResource>,
-        holdingIdentityShortHash: String,
+        holdingIdentityShortHash: ShortHash,
         wait: Duration = 10.seconds
     ): RestGroupParameters {
         return restClient.use { client ->
@@ -26,7 +27,7 @@ class GroupParametersLookup {
                 operationName = "Lookup group parameters"
             ) {
                 val resource = client.start().proxy
-                resource.viewGroupParameters(holdingIdentityShortHash)
+                resource.viewGroupParameters(holdingIdentityShortHash.value)
             }
         }
     }

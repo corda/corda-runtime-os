@@ -49,9 +49,9 @@ class GetRegistrationsTest {
 
     @Test
     fun `get registrations with holding identity returns correct result`() {
-        val member = memberName().toString()
+        val member = memberName()
         CommandLine(OnboardMember()).execute(
-            member,
+            member.toString(),
             "--cpb-file=$cpbLocation",
             targetUrl,
             user,

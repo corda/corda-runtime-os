@@ -18,12 +18,14 @@ dependencies {
 
     implementation project(":libs:virtual-node:virtual-node-endpoints-maintenance")
     implementation project(":libs:virtual-node:cpi-upload-endpoints")
+    implementation project(':libs:crypto:crypto-core')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-db-schema'
 
     implementation project(':libs:corda-sdk')
     implementation project(":tools:plugins:plugins-rest")
+    implementation project(":tools:plugins:common-utils")
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
     compileOnly libs.pf4j
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"

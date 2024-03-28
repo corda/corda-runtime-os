@@ -1,6 +1,8 @@
 package net.corda.cli.plugins.vnode.commands
 
 import net.corda.cli.plugins.common.RestCommand
+import net.corda.cli.plugins.typeconverter.ShortHashConverter
+import net.corda.crypto.core.ShortHash
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
 import net.corda.sdk.network.VirtualNode
@@ -45,9 +47,10 @@ class ResetCommand : RestCommand(), Runnable {
     @Option(
         names = ["-r", "--resync"],
         required = false,
-        description = ["A list of virtual node shortIds for the vaults to be resynchronised"]
+        description = ["A list of virtual node shortIds for the vaults to be resynchronised"],
+        converter = [ShortHashConverter::class]
     )
-    var resync: List<String> = emptyList()
+    var resync: List<ShortHash> = emptyList()
 
     override fun run() {
         if (resync.isNotEmpty() && !wait) {
@@ -105,7 +108,7 @@ class ResetCommand : RestCommand(), Runnable {
         println("CPI Successfully Uploaded and applied. ")
     }
 
-    private fun resyncVaults(virtualNodeShortIds: List<String>) {
+    private fun resyncVaults(virtualNodeShortIds: List<ShortHash>) {
         val restClient = createRestClient(
             VirtualNodeMaintenanceRestResource::class,
             insecure = insecure,

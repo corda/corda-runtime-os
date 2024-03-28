@@ -5,7 +5,7 @@ import net.corda.cli.plugins.network.utils.inferCpiName
 import net.corda.crypto.core.CryptoConsts.Categories.KeyCategory
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.sdk.network.MemberRole
-import net.corda.sdk.network.RegistrationContext
+import net.corda.sdk.network.RegistrationRequests
 import net.corda.sdk.packaging.CpiAttributes
 import net.corda.sdk.packaging.CpiUploader
 import net.corda.sdk.packaging.CpiV2Creator
@@ -165,9 +165,9 @@ class OnboardMember : Runnable, BaseOnboard() {
         assignSoftHsmAndGenerateKey(KeyCategory.NOTARY_KEY)
     }
 
-    override val registrationContext by lazy {
+    override val memberRegistrationRequest by lazy {
         if (roles.contains(MemberRole.NOTARY)) {
-            RegistrationContext().createNotaryRegistrationContext(
+            RegistrationRequests().createNotaryRegistrationRequest(
                 preAuthToken = preAuthToken,
                 roles = roles,
                 customProperties = customProperties,
@@ -176,7 +176,7 @@ class OnboardMember : Runnable, BaseOnboard() {
                 notaryKey = notaryKeyId
             )
         } else {
-            RegistrationContext().createMemberRegistrationContext(
+            RegistrationRequests().createMemberRegistrationContext(
                 preAuthToken = preAuthToken,
                 roles = roles,
                 customProperties = customProperties,
@@ -206,7 +206,7 @@ class OnboardMember : Runnable, BaseOnboard() {
             setupNetwork()
 
             println("Provided registration context: ")
-            println(registrationContext)
+            println(memberRegistrationRequest)
 
             register(waitForFinalStatus)
 

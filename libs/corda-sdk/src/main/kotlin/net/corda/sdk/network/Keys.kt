@@ -4,6 +4,7 @@
 package net.corda.sdk.network
 
 import net.corda.crypto.core.CryptoConsts.Categories.KeyCategory
+import net.corda.crypto.core.ShortHash
 import net.corda.membership.rest.v1.HsmRestResource
 import net.corda.membership.rest.v1.KeysRestResource
 import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
@@ -34,7 +35,7 @@ class Keys {
     fun assignSoftHsmAndGenerateKey(
         hsmRestClient: RestClient<HsmRestResource>,
         keysRestClient: RestClient<KeysRestResource>,
-        holdingIdentityShortHash: String,
+        holdingIdentityShortHash: ShortHash,
         category: KeyCategory,
         scheme: String = ECDSA_SECP256R1_CODE_NAME,
         wait: Duration = 10.seconds
@@ -44,13 +45,13 @@ class Keys {
                 waitDuration = wait,
                 operationName = "Assign Soft HSM operation for ${category.value}"
             ) {
-                hsmClient.start().proxy.assignSoftHsm(holdingIdentityShortHash, category.value)
+                hsmClient.start().proxy.assignSoftHsm(holdingIdentityShortHash.value, category.value)
             }
         }
 
         return generateKeyPair(
             keysRestClient = keysRestClient,
-            tenantId = holdingIdentityShortHash,
+            tenantId = holdingIdentityShortHash.value,
             alias = "$holdingIdentityShortHash-$category",
             category = category,
             scheme = scheme,
