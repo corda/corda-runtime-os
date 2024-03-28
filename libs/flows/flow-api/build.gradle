@@ -15,7 +15,6 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
 
     api project(":libs:tracing")
-    api 'net.corda:corda-ledger-utxo'
 
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:membership:membership-common")
