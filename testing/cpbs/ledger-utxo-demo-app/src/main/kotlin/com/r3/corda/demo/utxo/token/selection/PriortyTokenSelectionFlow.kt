@@ -57,14 +57,14 @@ class PriortyTokenSelectionFlow : ClientStartableFlow {
 
             // Lookup the states that match the returned tokens
             val stateRefList = tokenClaim.claimedTokens.map { it.stateRef }
-            val states = utxoLedgerService
+            val priorities = utxoLedgerService
                 .resolve<TestUtxoState>(stateRefList)
                 .map { it.state.contractState.priority }
 
             // Now we just exit and let the postprocessing handler clean up for us
             // If we run this flow again we expect to get the same results as we never used
             // the claimed token and the flow completing should have freed the claim.
-            return jsonMarshallingService.format(states)
+            return jsonMarshallingService.format(priorities)
 
         } catch (e: Exception) {
             log.error("Unexpected error while processing the flow", e)
