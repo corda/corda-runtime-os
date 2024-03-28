@@ -91,59 +91,59 @@ internal class PersistRegistrationRequestHandler(
                         serial,
                         reason)
                     VALUES (
-                        :registration_id,
-                        :holding_identity_id,
-                        :status,
-                        :created,
-                        :last_modified,
-                        :member_context,
-                        :member_context_signature_key,
-                        :member_context_signature_content,
-                        :member_context_signature_spec,
-                        :registration_context,
-                        :registration_context_signature_key,
-                        :registration_context_signature_content,
-                        :registration_context_signature_spec,
-                        :serial,
-                        :reason)
+                        :REGISTRATION_ID,
+                        :HOLDING_IDENTITY_ID,
+                        :STATUS,
+                        :CREATED,
+                        :LAST_MODIFIED,
+                        :MEMBER_CONTEXT,
+                        :MEMBER_CONTEXT_SIGNATURE_KEY,
+                        :MEMBER_CONTEXT_SIGNATURE_CONTENT,
+                        :MEMBER_CONTEXT_SIGNATURE_SPEC,
+                        :REGISTRATION_CONTEXT,
+                        :REGISTRATION_CONTEXT_SIGNATURE_KEY,
+                        :REGISTRATION_CONTEXT_SIGNATURE_CONTENT,
+                        :REGISTRATION_CONTEXT_SIGNATURE_SPEC,
+                        :SERIAL,
+                        :REASON)
                         """
                 em.createNativeQuery(sql)
-                    .setParameter("registration_id", registrationId)
-                    .setParameter("holding_identity_id", request.registeringHoldingIdentity.toCorda().shortHash.value)
-                    .setParameter("status", request.status.toString())
-                    .setParameter("created", now)
-                    .setParameter("last_modified", now)
-                    .setParameter("member_context", request.registrationRequest.memberContext.data.array())
+                    .setParameter("REGISTRATION_ID", registrationId)
+                    .setParameter("HOLDING_IDENTITY_ID", request.registeringHoldingIdentity.toCorda().shortHash.value)
+                    .setParameter("STATUS", request.status.toString())
+                    .setParameter("CREATED", now)
+                    .setParameter("LAST_MODIFIED", now)
+                    .setParameter("MEMBER_CONTEXT", request.registrationRequest.memberContext.data.array())
                     .setParameter(
-                        "member_context_signature_key",
+                        "MEMBER_CONTEXT_SIGNATURE_KEY",
                         request.registrationRequest.memberContext.signature.publicKey.array()
                     )
                     .setParameter(
-                        "member_context_signature_content",
+                        "MEMBER_CONTEXT_SIGNATURE_CONTENT",
                         request.registrationRequest.memberContext.signature.bytes.array()
                     )
                     .setParameter(
-                        "member_context_signature_spec",
+                        "MEMBER_CONTEXT_SIGNATURE_SPEC",
                         request.registrationRequest.memberContext.signatureSpec.signatureName
                     )
                     .setParameter(
-                        "registration_context",
+                        "REGISTRATION_CONTEXT",
                         request.registrationRequest.registrationContext.data.array()
                     )
                     .setParameter(
-                        "registration_context_signature_key",
+                        "REGISTRATION_CONTEXT_SIGNATURE_KEY",
                         request.registrationRequest.registrationContext.signature.publicKey.array()
                     )
                     .setParameter(
-                        "registration_context_signature_content",
+                        "REGISTRATION_CONTEXT_SIGNATURE_CONTENT",
                         request.registrationRequest.registrationContext.signature.bytes.array()
                     )
                     .setParameter(
-                        "registration_context_signature_spec",
+                        "REGISTRATION_CONTEXT_SIGNATURE_SPEC",
                         request.registrationRequest.registrationContext.signatureSpec.signatureName
                     )
-                    .setParameter("serial", request.registrationRequest.serial)
-                    .setParameter("reason", "")
+                    .setParameter("SERIAL", request.registrationRequest.serial)
+                    .setParameter("REASON", "")
                     .executeUpdate()
             }
         }
