@@ -31,6 +31,12 @@ internal class PersistRegistrationRequestHandler(
                     "QQQ PersistRegistrationRequestHandler with" +
                         " $registrationId and ${request.status}, context: ${context.requestId} 2"
                 )
+                if (currentRegistrationRequest == null) {
+                    logger.info(
+                        "QQQ PPP22 I don't know about this one with" +
+                                " $registrationId and ${request.status}, context: ${context.requestId} 2"
+                    )
+                }
                 currentRegistrationRequest?.status?.toStatus()?.let {
                     logger.info(
                         "QQQ PersistRegistrationRequestHandler with" +
