@@ -10,6 +10,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
+import net.corda.messaging.api.processor.EventSourceProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -22,6 +23,7 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.messaging.api.subscription.listener.ConsumerOffsetProvider
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.config.MessagingConfigResolver
@@ -30,18 +32,24 @@ import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.subscription.CompactedSubscriptionImpl
 import net.corda.messaging.subscription.DurableSubscriptionImpl
 import net.corda.messaging.subscription.EventLogSubscriptionImpl
+import net.corda.messaging.subscription.EventSourceConsumer
+import net.corda.messaging.subscription.EventSourceRecordConsumer
+import net.corda.messaging.subscription.EventSourceSubscriptionImpl
 import net.corda.messaging.subscription.PubSubSubscriptionImpl
 import net.corda.messaging.subscription.RPCSubscriptionImpl
 import net.corda.messaging.subscription.StateAndEventSubscriptionImpl
 import net.corda.messaging.subscription.SyncRPCSubscriptionImpl
+import net.corda.messaging.subscription.ThreadLooper
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
+import net.corda.messaging.utils.toEventLogRecord
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.web.api.WebServer
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.UUID
+import org.slf4j.LoggerFactory
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -166,6 +174,62 @@ class CordaSubscriptionFactory @Activate constructor(
         )
     }
 
+    override fun <K : Any, V : Any> createEventSourceSubscription(
+        subscriptionConfig: SubscriptionConfig,
+        processor: EventSourceProcessor<K, V>,
+        messagingConfig: SmartConfig,
+        partitionAssignmentListener: PartitionAssignmentListener?,
+        consumerOffsetProvider: ConsumerOffsetProvider?
+    ): Subscription<K, V> {
+
+        val config = getConfig(SubscriptionType.EVENT_LOG, subscriptionConfig, messagingConfig)
+
+        val consumerFactory = EventSourceCordaConsumerFactory(
+            config.group,
+            config.clientId,
+            config.topic,
+            processor.keyClass,
+            processor.valueClass,
+            config.messageBusConfig,
+            partitionAssignmentListener,
+            consumerOffsetProvider,
+            cordaConsumerBuilder,
+            LoggerFactory.getLogger("${EventSourceCordaConsumerFactory<K, V>::javaClass.name}-${config.clientId}")
+        )
+
+        val eventSourceRecordConsumer = EventSourceRecordConsumer(
+            config.group,
+            config.clientId,
+            config.topic,
+            config.pollTimeout,
+            config.processorRetries,
+            processor,
+            { record -> record.toEventLogRecord() },
+            LoggerFactory.getLogger("${EventSourceRecordConsumer<K, V>::javaClass.name}-${config.clientId}")
+        )
+
+        val eventSourceConsumer = EventSourceConsumer(
+            config.group,
+            config.topic,
+            consumerFactory,
+            eventSourceRecordConsumer,
+            LoggerFactory.getLogger("${EventSourceConsumer<K, V>::javaClass.name}-${config.clientId}")
+        )
+
+        val logger = LoggerFactory.getLogger(
+            "${EventSourceSubscriptionImpl<K, V>::javaClass.name}-${config.clientId}"
+        )
+
+        return EventSourceSubscriptionImpl(
+            config,
+            eventSourceConsumer,
+            { name, callback ->
+                ThreadLooper(logger, config, lifecycleCoordinatorFactory, name, callback, callUntilStopped = true)
+            },
+            logger
+        )
+    }
+
     override fun <REQUEST : Any, RESPONSE : Any> createRPCSubscription(
         rpcConfig: RPCConfig<REQUEST, RESPONSE>,
         messagingConfig: SmartConfig,
@@ -194,8 +258,10 @@ class CordaSubscriptionFactory @Activate constructor(
         val cordaAvroSerializer = cordaAvroSerializationFactory.createAvroSerializer<RESPONSE> { }
         val cordaAvroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({ }, processor.requestClass)
 
-        return SyncRPCSubscriptionImpl(rpcConfig, processor,
-            lifecycleCoordinatorFactory, webServer, cordaAvroSerializer, cordaAvroDeserializer)
+        return SyncRPCSubscriptionImpl(
+            rpcConfig, processor,
+            lifecycleCoordinatorFactory, webServer, cordaAvroSerializer, cordaAvroDeserializer
+        )
     }
 
 

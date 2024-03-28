@@ -20,6 +20,11 @@ enum class SubscriptionType {
     EVENT_LOG,
 
     /**
+     * Event log subscription
+     */
+    EVENT_SOURCE,
+
+    /**
      * Publisher-Subscriber subscription
      */
     PUB_SUB,
