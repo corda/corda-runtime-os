@@ -13,7 +13,6 @@ class TokenPoolCacheManager(
 ) {
     fun processEvent(
         state: PoolCacheState,
-        poolKey: TokenPoolKey,
         tokenEvent: TokenEvent
     ): ResponseAndState {
         // Cleanup
@@ -26,7 +25,7 @@ class TokenPoolCacheManager(
         }
 
         // Ask the respective handler to process the event
-        val tokenCache = tokenPoolCache.get(poolKey)
+        val tokenCache = tokenPoolCache.get(tokenEvent.poolKey)
         val result = handler.handle(tokenCache, state, tokenEvent)
 
         return ResponseAndState(result?.value, state)

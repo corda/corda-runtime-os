@@ -10,6 +10,7 @@ import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
 import net.corda.ledger.utxo.token.cache.services.TokenFilterStrategy
 import net.corda.messaging.api.records.Record
+import net.corda.v5.ledger.utxo.token.selection.Strategy
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 
@@ -51,13 +52,20 @@ class TokenClaimQueryEventHandler(
             // This way the cache size will be equal to the configured size once the claimed tokens are removed
             // from the query results
             val maxTokens = serviceConfiguration.cachedTokenPageSize + state.claimedTokens().size
-            val findResult = availableTokenService.findAvailTokens(event.poolKey, event.ownerHash, event.tagRegex, maxTokens)
+            val findResult = availableTokenService.findAvailTokens(
+                event.poolKey,
+                event.ownerHash,
+                event.tagRegex,
+                maxTokens
+            )
 
             // Remove the claimed tokens from the query results
             val tokens = findResult.tokens.filterNot { state.isTokenClaimed(it.stateRef) }
 
             // Replace the tokens in the cache with the ones from the query result that have not been claimed
-            tokenCache.add(tokens)
+            tokenCache.removeAll()
+            tokenCache.add(tokens, event.getStrategyOrDefault())
+
             selectionResult = selectTokens(tokenCache, state, event)
         }
 
@@ -87,7 +95,7 @@ class TokenClaimQueryEventHandler(
         val selectedTokens = mutableListOf<CachedToken>()
         var selectedAmount = BigDecimal.ZERO
 
-        for (token in filterStrategy.filterTokens(tokenCache, event)) {
+        for (token in filterStrategy.filterTokens(tokenCache.get(event.getStrategyOrDefault()), event)) {
             if (selectedAmount >= event.targetAmount) {
                 break
             }
@@ -102,4 +110,7 @@ class TokenClaimQueryEventHandler(
 
         return selectedAmount to selectedTokens
     }
+
+    private fun ClaimQuery.getStrategyOrDefault() =
+        strategy ?: Strategy.RANDOM
 }
