@@ -12,6 +12,7 @@ import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.token.query.TokenClaimCriteriaParameters
+import net.corda.flow.token.query.TokenClaimCriteriaRequest
 import net.corda.ledger.utxo.impl.token.selection.factories.TokenClaimFactory
 import net.corda.ledger.utxo.impl.token.selection.factories.TokenClaimQueryExternalEventFactory
 import net.corda.ledger.utxo.impl.token.selection.impl.ALICE_X500_HOLDING_ID
@@ -21,7 +22,6 @@ import net.corda.ledger.utxo.impl.token.selection.services.TokenClaimCheckpointS
 import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
 import net.corda.v5.ledger.utxo.token.selection.ClaimedToken
 import net.corda.v5.ledger.utxo.token.selection.TokenClaim
-import net.corda.v5.ledger.utxo.token.selection.TokenClaimCriteria
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -63,11 +63,7 @@ class TokenClaimQueryExternalEventFactoryTest {
 
         val parameters = TokenClaimCriteriaParameters(
             dedupeId,
-            TokenClaimCriteria(tokenType, issuerHash, notaryX500Name, symbol, amount)
-                .apply {
-                    this.tagRegex = tagRegex
-                    this.ownerHash = ownerHash
-                }
+            TokenClaimCriteriaRequest(tokenType, issuerHash, notaryX500Name, symbol, amount, tagRegex, ownerHash)
         )
 
         val expectedClaimQuery = TokenClaimQuery().apply {

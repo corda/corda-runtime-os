@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.impl.token.selection.impl
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.token.query.TokenClaimCriteriaParameters
+import net.corda.flow.token.query.TokenClaimCriteriaRequest
 import net.corda.ledger.utxo.impl.token.selection.factories.TokenBalanceQueryExternalEventFactory
 import net.corda.ledger.utxo.impl.token.selection.factories.TokenClaimQueryExternalEventFactory
 import net.corda.sandbox.type.UsedByFlow
@@ -33,7 +34,7 @@ class TokenSelectionImpl @Activate constructor(
         validateDeduplicationId(deduplicationId)
         return externalEventExecutor.execute(
             TokenClaimQueryExternalEventFactory::class.java,
-            TokenClaimCriteriaParameters(deduplicationId, criteria)
+            TokenClaimCriteriaParameters(deduplicationId, criteria.toRequest())
         )
     }
 
@@ -53,4 +54,19 @@ class TokenSelectionImpl @Activate constructor(
             )
         }
     }
+}
+
+/**
+ * Map a corda-api [TokenClaimCriteria] to am External Event framework model object.
+ */
+fun TokenClaimCriteria.toRequest(): TokenClaimCriteriaRequest {
+    return TokenClaimCriteriaRequest(
+        tokenType,
+        issuerHash,
+        notaryX500Name,
+        symbol,
+        targetAmount,
+        tagRegex,
+        ownerHash
+    )
 }
