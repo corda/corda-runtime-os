@@ -35,10 +35,15 @@ In order to use the vNodesSetup functionality, you will have to provide the foll
    a. For Kafka-enabled combined worker
 
 ```yaml
-version: '2'
+version: '2.1'
 services:
   postgresql:
     image: postgres:14.10
+    healthcheck:
+       test: pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
+       interval: 10s
+       timeout: 5s
+       retries: 10
     restart: unless-stopped
     tty: true
     environment:
@@ -50,6 +55,11 @@ services:
 
   kafka:
     image: confluentinc/cp-kafka:7.6.0
+    healthcheck:
+       test: kafka-topics --bootstrap-server kafka:29092 --list
+       interval: 30s
+       timeout: 10s
+       retries: 3
     ports:
       - 9092:9092
     environment:
@@ -71,7 +81,8 @@ services:
   kafka-create-topics:
     image: corda-os-docker.software.r3.com/corda-os-plugins:${CORDA_RUNTIME_VERSION}
     depends_on:
-      - kafka
+       kafka:
+          condition: service_healthy
     command: [
       "topic",
       "-b=kafka:29092",
@@ -82,9 +93,12 @@ services:
   corda:
     image: corda-os-docker.software.r3.com/corda-os-combined-worker-kafka:${CORDA_RUNTIME_VERSION}
     depends_on:
-      - postgresql
-      - kafka
-      - kafka-create-topics
+       postgresql:
+          condition: service_healthy
+       kafka:
+          condition: service_healthy
+       kafka-create-topics:
+          condition: service_completed_successfully
     environment:
       JAVA_TOOL_OPTIONS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
     command: [
@@ -111,10 +125,15 @@ NOTE: The above docker compose yaml file:
    b. For Database-only combined worker
 
 ```yaml
-version: '2'
+version: '2.1'
 services:
   postgresql:
     image: postgres:14.10
+    healthcheck:
+       test: pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
+       interval: 10s
+       timeout: 5s
+       retries: 10
     restart: unless-stopped
     tty: true
     environment:
@@ -127,7 +146,8 @@ services:
   corda:
     image: corda-os-docker.software.r3.com/corda-os-combined-worker:${CORDA_RUNTIME_VERSION}
     depends_on:
-      - postgresql
+       postgresql:
+          condition: service_healthy
     environment:
       JAVA_TOOL_OPTIONS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
     command: [
