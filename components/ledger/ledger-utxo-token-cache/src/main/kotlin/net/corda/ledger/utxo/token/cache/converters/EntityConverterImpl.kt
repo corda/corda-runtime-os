@@ -1,6 +1,6 @@
 package net.corda.ledger.utxo.token.cache.converters
 
-import net.corda.data.ledger.utxo.token.selection.data.StrategyAvro
+import net.corda.data.ledger.utxo.token.selection.data.Strategy as StrategyAvro
 import net.corda.data.ledger.utxo.token.selection.data.Token
 import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.data.ledger.utxo.token.selection.data.TokenBalanceQuery
