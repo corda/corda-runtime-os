@@ -18,19 +18,15 @@ import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.e2etest.utilities.startRestFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.MethodOrderer
-import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
-import org.junit.jupiter.api.TestMethodOrder
 import java.math.BigDecimal
 import java.time.Duration
 import java.util.UUID
 
 @TestInstance(PER_CLASS)
-@TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
 
     private companion object {
@@ -124,7 +120,6 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
     }
 
     @Test
-    @Order(1)
     fun `ensure it is possible to send a balance query request and receive a response`(testInfo: TestInfo) {
         val idGenerator = TestRequestIdGenerator(testInfo)
 
@@ -137,7 +132,6 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
     }
 
     @Test
-    @Order(2)
     fun `Claim a token in a flow and let the flow finish to validate the token claim is automatically released`(testInfo: TestInfo){
         val idGenerator = TestRequestIdGenerator(testInfo)
         // Create a simple UTXO transaction
