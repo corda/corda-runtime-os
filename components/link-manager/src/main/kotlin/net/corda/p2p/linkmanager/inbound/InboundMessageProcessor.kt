@@ -143,21 +143,24 @@ internal class InboundMessageProcessor(
             message.item
         }
         return responses.map { (traceableMessage, response) ->
-            if (response != null) {
-                recordOutboundSessionMessagesMetric(response.header.sourceIdentity)
-                ItemWithSource(
-                    item = InboundResponse(
-                        listOf(
-                            Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response),
-                        )
-                    ),
-                    source = traceableMessage.source
-                )
-            } else {
-                ItemWithSource(
-                    InboundResponse(emptyList()),
-                    traceableMessage.source,
-                )
+            when (response.message?.payload) {
+                null -> {
+                    ItemWithSource(
+                        InboundResponse(response.sessionCreationRecords),
+                        traceableMessage.source,
+                    )
+                }
+
+                else -> {
+                    recordOutboundSessionMessagesMetric(response.message.header.sourceIdentity)
+                    ItemWithSource(
+                        item = InboundResponse(
+                            listOf(
+                                Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response.message),
+                            ) + response.sessionCreationRecords
+                        ), source = traceableMessage.source
+                    )
+                }
             }
         }
     }
@@ -202,11 +205,6 @@ internal class InboundMessageProcessor(
         sessionIdAndMessage: SessionIdAndMessage<T>,
         sessionDirection: SessionManager.SessionDirection.Inbound
     ): InboundResponse? {
-        sessionManager.dataMessageReceived(
-            sessionIdAndMessage.sessionId,
-            sessionDirection.counterparties.counterpartyId,
-            sessionDirection.counterparties.ourId
-        )
         return if (isCommunicationAllowed(sessionDirection.counterparties)) {
             processLinkManagerPayload(
                 sessionDirection.counterparties,
@@ -265,9 +263,7 @@ internal class InboundMessageProcessor(
             }
             makeAckMessageForFlowMessage(innerMessage.message, session)?.plus(
                 Record(Schemas.P2P.P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message))
-            )?.also {
-                sessionManager.inboundSessionEstablished(session.sessionId)
-            }
+            )
         } else if (sessionSource != messageSource.toCorda()) {
             logger.warn(
                 "The identity in the message's source header ($messageSource)" +

@@ -9,9 +9,11 @@ import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.cli.plugins.typeconverter.X500NameConverter
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.CryptoConsts.Categories.KeyCategory
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
+import net.corda.data.certificates.CertificateUsage
 import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
@@ -28,6 +30,7 @@ import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 import net.corda.rest.json.serialization.JsonObjectAsString
+import net.corda.schema.configuration.ConfigKeys.RootConfigKey
 import net.corda.sdk.config.ClusterConfig
 import net.corda.sdk.network.ClientCertificates
 import net.corda.sdk.network.Keys
@@ -157,7 +160,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         shortHashId
     }
 
-    protected fun assignSoftHsmAndGenerateKey(category: String): KeyPairIdentifier {
+    protected fun assignSoftHsmAndGenerateKey(category: KeyCategory): KeyPairIdentifier {
         val hsmRestClient = createRestClient(
             HsmRestResource::class,
             insecure = insecure,
@@ -184,10 +187,10 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     }
 
     protected val sessionKeyId by lazy {
-        assignSoftHsmAndGenerateKey("SESSION_INIT")
+        assignSoftHsmAndGenerateKey(KeyCategory.SESSION_INIT_KEY)
     }
     protected val ecdhKeyId by lazy {
-        assignSoftHsmAndGenerateKey("PRE_AUTH")
+        assignSoftHsmAndGenerateKey(KeyCategory.PRE_AUTH_KEY)
     }
     protected val certificateSubject by lazy {
         tlsCertificateSubject ?: MemberX500Name.parse("O=P2P Certificate, OU=$p2pHosts, L=London, C=GB")
@@ -323,7 +326,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             targetUrl = targetUrl
         )
         val clusterConfig = ClusterConfig()
-        val currentConfig = clusterConfig.getCurrentConfig(restClient, "corda.p2p.gateway", waitDurationSeconds.seconds)
+        val currentConfig = clusterConfig.getCurrentConfig(restClient, RootConfigKey.P2P_GATEWAY, waitDurationSeconds.seconds)
         val rawConfig = currentConfig.configWithDefaults
         val rawConfigJson = json.readTree(rawConfig)
         val sslConfig = rawConfigJson["sslConfig"]
@@ -407,7 +410,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                 ClientCertificates().uploadCertificate(
                     restClient = restClient,
                     certificate = certificate,
-                    usage = "code-signer",
+                    usage = CertificateUsage.CODE_SIGNER,
                     alias = GRADLE_PLUGIN_DEFAULT_KEY_ALIAS,
                     wait = waitDurationSeconds.seconds
                 )
@@ -419,7 +422,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                 ClientCertificates().uploadCertificate(
                     restClient = restClient,
                     certificate = certificate,
-                    usage = "code-signer",
+                    usage = CertificateUsage.CODE_SIGNER,
                     alias = "signingkey1-2022",
                     wait = waitDurationSeconds.seconds
                 )

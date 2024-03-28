@@ -33,6 +33,7 @@ dependencies {
     implementation project(':libs:crypto:crypto-core')
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
+    implementation project(':libs:p2p-messaging')
     implementation project(':libs:utilities')
     implementation project(':libs:serialization:serialization-avro')
 

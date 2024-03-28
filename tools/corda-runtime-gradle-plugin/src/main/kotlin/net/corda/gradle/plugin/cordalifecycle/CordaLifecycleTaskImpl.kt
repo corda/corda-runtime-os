@@ -30,7 +30,8 @@ class CordaLifecycleTaskImpl(var pc: ProjectContext) {
         val cordaProcess = cordaLifecycleHelper.startCombinedWorkerWithDockerCompose(
             pc.cordaPidCache,
             "${pc.project.rootDir}/${pc.composeFilePath}",
-            pc.composeNetworkName
+            pc.composeNetworkName,
+            pc.runtimeVersion
         )
         cordaProcess.waitFor()
         if (cordaProcess.exitValue() != 0) {

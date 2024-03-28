@@ -4,6 +4,8 @@
 package net.corda.sdk.network
 
 import net.corda.crypto.core.ShortHash
+import net.corda.data.certificates.CertificateUsage
+import net.corda.membership.certificates.CertificateUsageUtils.publicName
 import net.corda.membership.rest.v1.CertificatesRestResource
 import net.corda.membership.rest.v1.MGMRestResource
 import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
@@ -123,14 +125,14 @@ class ClientCertificates {
         alias: String = P2P_TLS_CERTIFICATE_ALIAS,
         wait: Duration = 10.seconds
     ) {
-        uploadCertificate(restClient, certificate, "p2p-tls", alias, wait)
+        uploadCertificate(restClient, certificate, CertificateUsage.P2P_TLS, alias, wait)
     }
 
     /**
      * Upload a given certificate
      * @param restClient of type RestClient<CertificatesRestResource>
      * @param certificate value of the given certificate
-     * @param usage the certificate usage such as p2p-tls or code-signer etc.
+     * @param usage the certificate usage such as p2p-tls or code-signer etc. Underscores are repleaced with hyphens
      * @param alias the unique alias under which the certificate chain will be stored
      * @param wait Duration before timing out, default 10 seconds
      */
@@ -138,7 +140,7 @@ class ClientCertificates {
     fun uploadCertificate(
         restClient: RestClient<CertificatesRestResource>,
         certificate: InputStream,
-        usage: String,
+        usage: CertificateUsage,
         alias: String,
         wait: Duration = 10.seconds
     ) {
@@ -149,7 +151,7 @@ class ClientCertificates {
             ) {
                 val resource = client.start().proxy
                 resource.importCertificateChain(
-                    usage = usage,
+                    usage = usage.publicName,
                     alias = alias,
                     certificates = listOf(
                         HttpFileUpload(

@@ -97,7 +97,7 @@ class SslHelperTest {
                     size == 1 && first() is SNIKeyManager
                 },
                 anyOrNull(),
-                any()
+                any(),
             )
         }
 
@@ -168,7 +168,7 @@ class SslHelperTest {
                 trustManagerFactory,
                 KeyStoreWithPassword(
                     keyStore,
-                    "test"
+                    "test",
                 ),
             )
 
@@ -186,7 +186,7 @@ class SslHelperTest {
                 trustManagerFactory,
                 KeyStoreWithPassword(
                     keyStore,
-                    "test"
+                    "test",
                 ),
             )
 
@@ -202,7 +202,7 @@ class SslHelperTest {
                 mock<TrustManager>()
             }
             whenever(trustManagerFactory.trustManagers).doReturn(
-                (x509TrustManagers + otherTrustManagers).toTypedArray()
+                (x509TrustManagers + otherTrustManagers).toTypedArray(),
             )
             createClientSslHandler(
                 "www.r3.com",
@@ -220,7 +220,7 @@ class SslHelperTest {
                             it is IdentityCheckingTrustManager
                         }
                 },
-                any()
+                any(),
             )
         }
 

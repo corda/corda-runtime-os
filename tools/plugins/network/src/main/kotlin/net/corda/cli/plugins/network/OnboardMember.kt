@@ -2,6 +2,7 @@ package net.corda.cli.plugins.network
 
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.cli.plugins.network.utils.inferCpiName
+import net.corda.crypto.core.CryptoConsts.Categories.KeyCategory
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.sdk.network.MemberRole
 import net.corda.sdk.network.RegistrationContext
@@ -157,11 +158,11 @@ class OnboardMember : Runnable, BaseOnboard() {
     }
 
     private val ledgerKeyId by lazy {
-        assignSoftHsmAndGenerateKey("LEDGER")
+        assignSoftHsmAndGenerateKey(KeyCategory.LEDGER_KEY)
     }
 
     private val notaryKeyId by lazy {
-        assignSoftHsmAndGenerateKey("NOTARY")
+        assignSoftHsmAndGenerateKey(KeyCategory.NOTARY_KEY)
     }
 
     override val memberRegistrationRequest by lazy {

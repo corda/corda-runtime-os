@@ -4,6 +4,7 @@
 package net.corda.sdk.network
 
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.CryptoConsts.Categories.KeyCategory
 import net.corda.membership.rest.v1.HsmRestResource
 import net.corda.membership.rest.v1.KeysRestResource
 import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
@@ -35,16 +36,16 @@ class Keys {
         hsmRestClient: RestClient<HsmRestResource>,
         keysRestClient: RestClient<KeysRestResource>,
         holdingIdentityShortHash: ShortHash,
-        category: String,
+        category: KeyCategory,
         scheme: String = ECDSA_SECP256R1_CODE_NAME,
         wait: Duration = 10.seconds
     ): KeyPairIdentifier {
         hsmRestClient.use { hsmClient ->
             executeWithRetry(
                 waitDuration = wait,
-                operationName = "Assign Soft HSM operation for $category"
+                operationName = "Assign Soft HSM operation for ${category.value}"
             ) {
-                hsmClient.start().proxy.assignSoftHsm(holdingIdentityShortHash.value, category)
+                hsmClient.start().proxy.assignSoftHsm(holdingIdentityShortHash.value, category.value)
             }
         }
 
@@ -73,19 +74,19 @@ class Keys {
         keysRestClient: RestClient<KeysRestResource>,
         tenantId: String,
         alias: String,
-        category: String,
+        category: KeyCategory,
         scheme: String = ECDSA_SECP256R1_CODE_NAME,
         wait: Duration = 10.seconds
     ): KeyPairIdentifier {
         return keysRestClient.use { keyClient ->
             executeWithRetry(
                 waitDuration = wait,
-                operationName = "Generate key $category"
+                operationName = "Generate key ${category.value}"
             ) {
                 keyClient.start().proxy.generateKeyPair(
                     tenantId,
                     alias,
-                    category,
+                    category.value,
                     scheme,
                 )
             }
@@ -115,7 +116,7 @@ class Keys {
                     skip = 0,
                     take = 20,
                     orderBy = "NONE",
-                    category = "TLS",
+                    category = KeyCategory.TLS_KEY.value,
                     schemeCodeName = null,
                     alias = alias,
                     masterKeyAlias = null,
@@ -144,7 +145,7 @@ class Keys {
             keysRestClient = restClient,
             tenantId = "p2p",
             alias = alias,
-            category = "TLS",
+            category = KeyCategory.TLS_KEY,
             scheme = ECDSA_SECP256R1_CODE_NAME,
             wait = wait
         )

@@ -22,8 +22,10 @@ import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.approval.ApprovalRuleParams
+import net.corda.membership.lib.exceptions.ConflictPersistenceException
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.exceptions.NotFoundEntityPersistenceException
 import net.corda.membership.rest.v1.types.RestGroupParameters
 import net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams
 import net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
@@ -35,6 +37,7 @@ import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.InvalidStateChangeException
+import net.corda.rest.exception.ResourceAlreadyExistsException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
@@ -42,6 +45,7 @@ import net.corda.test.util.time.MockTimeFacilitiesProvider
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -116,7 +120,7 @@ class MGMRestResourceTest {
     private val manualDeclinationReason = REASON
     private val suspensionActivationParameters = SuspensionActivationParameters(subject, 1, REASON)
     private val deprecatedSuspensionActivationParameters =
-        net.corda.membership.rest.v1.types.request.SuspensionActivationParameters(subject, 1, REASON)
+        SuspensionActivationParameters(subject, 1, REASON)
     private val deserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
@@ -283,11 +287,11 @@ class MGMRestResourceTest {
         }
 
         @Test
-        fun `addGroupApprovalRule throws bad request for duplicate rule`() {
+        fun `addGroupApprovalRule throws resource already exists for duplicate rule`() {
             startService()
-            whenever(mgmResourceClient.addApprovalRule(any(), any())).doThrow(mock<MembershipPersistenceException>())
+            whenever(mgmResourceClient.addApprovalRule(any(), any())).doThrow(mock<ConflictPersistenceException>())
 
-            assertThrows<BadRequestException> {
+            assertThrows<ResourceAlreadyExistsException> {
                 mgmRestResource.addGroupApprovalRule(HOLDING_IDENTITY_ID, ApprovalRuleRequestParams(RULE_REGEX, RULE_LABEL))
             }
 
@@ -338,7 +342,7 @@ class MGMRestResourceTest {
             startService()
             whenever(mgmResourceClient.deleteApprovalRule(any(), any(), eq(STANDARD))).doThrow(mock<MembershipPersistenceException>())
 
-            assertThrows<ResourceNotFoundException> {
+            assertThrows<InternalServerException> {
                 mgmRestResource.deleteGroupApprovalRule(HOLDING_IDENTITY_ID, RULE_ID)
             }
 
@@ -364,6 +368,18 @@ class MGMRestResourceTest {
             assertThrows<BadRequestException> {
                 mgmRestResource.deleteGroupApprovalRule(INVALID_SHORT_HASH, RULE_ID)
             }
+
+            stopService()
+        }
+
+        @Test
+        fun `deleteGroupApprovalRule throws not found if the rule ID can not be found`() {
+            startService()
+            whenever(mgmResourceClient.deleteApprovalRule(any(), any(), any())).doThrow(mock<NotFoundEntityPersistenceException>())
+
+            assertThatThrownBy {
+                mgmRestResource.deleteGroupApprovalRule(HOLDING_IDENTITY_ID, RULE_ID)
+            }.isInstanceOf(ResourceNotFoundException::class.java)
 
             stopService()
         }
@@ -913,7 +929,7 @@ class MGMRestResourceTest {
         fun `it throws bad request for duplicate rule`() {
             onCallingClientService().doThrow(mock<MembershipPersistenceException>())
 
-            assertThrows<BadRequestException> {
+            assertThrows<InternalServerException> {
                 callFunctionUnderTest(
                     HOLDING_IDENTITY_ID,
                     ApprovalRuleRequestParams(RULE_REGEX, RULE_LABEL)
@@ -1070,7 +1086,7 @@ class MGMRestResourceTest {
         fun `deleteGroupApprovalRule throws resource not found for non-existent rule`() {
             whenCallingClientService().doThrow(mock<MembershipPersistenceException>())
 
-            assertThrows<ResourceNotFoundException> {
+            assertThrows<InternalServerException> {
                 callFunctionUnderTest(HOLDING_IDENTITY_ID, RULE_ID)
             }
         }

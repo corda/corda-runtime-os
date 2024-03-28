@@ -8,6 +8,7 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.PreAuthTokenEntity
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.exceptions.NotFoundEntityPersistenceException
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
@@ -92,7 +93,7 @@ class RevokePreAuthTokenHandlerTest {
         val mergedEntityCapture = argumentCaptor<PreAuthTokenEntity>()
         whenever(entityManager.merge(mergedEntityCapture.capture())).thenReturn(mock())
 
-        assertThrows<MembershipPersistenceException> { handler.invoke(context, RevokePreAuthToken(TOKEN_ID, removalRemark)) }
+        assertThrows<NotFoundEntityPersistenceException> { handler.invoke(context, RevokePreAuthToken(TOKEN_ID, removalRemark)) }
     }
 
     @Test

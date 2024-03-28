@@ -7,11 +7,11 @@ import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.ReEstablishSessionMessage
-import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
-import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.data.p2p.event.SessionCreated
 import net.corda.data.p2p.event.SessionDirection
+import net.corda.data.p2p.event.SessionEvent
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.Operation
@@ -41,29 +41,27 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.noSessionWarnin
 import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventProcessor
 import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata
-import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata.Companion.toCommonMetadata
 import net.corda.p2p.linkmanager.sessions.metadata.InboundSessionMetadata
 import net.corda.p2p.linkmanager.sessions.metadata.InboundSessionMetadata.Companion.toInbound
 import net.corda.p2p.linkmanager.sessions.metadata.InboundSessionStatus
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.toOutbound
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
+import net.corda.p2p.linkmanager.sessions.metadata.toCounterparties
 import net.corda.p2p.linkmanager.state.SessionState
-import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
+import net.corda.p2p.messaging.P2pRecordsFactory
+import net.corda.schema.Schemas
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.time.Clock
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.time.Duration
 import java.util.Base64
-import java.util.UUID
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage as AvroInitiatorHandshakeMessage
 import net.corda.data.p2p.crypto.InitiatorHelloMessage as AvroInitiatorHelloMessage
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage as AvroResponderHandshakeMessage
@@ -82,7 +80,8 @@ internal class StatefulSessionManagerImpl(
     private val deadSessionMonitor: DeadSessionMonitor,
     private val schemaRegistry: AvroSchemaRegistry,
     private val sessionCache: SessionCache,
-    private val sessionEventPublisher: StatefulSessionEventPublisher,
+    sessionEventPublisher: StatefulSessionEventPublisher,
+    p2pRecordsFactory: P2pRecordsFactory,
 ) : SessionManager {
     companion object {
         const val LINK_MANAGER_SUBSYSTEM = "link-manager"
@@ -166,7 +165,7 @@ internal class StatefulSessionManagerImpl(
             ?: return state.toResults(
                 CannotEstablishSession,
             )
-        val metadata = state.state?.metadata?.toOutbound()
+        val metadata = state.stateManagerSessionState?.managerState?.metadata?.toOutbound()
         return if (metadata?.lastSendExpired(clock) == false) {
             when (metadata.status) {
                 OutboundSessionStatus.SentInitiatorHello, OutboundSessionStatus.SentInitiatorHandshake -> {
@@ -176,10 +175,13 @@ internal class StatefulSessionManagerImpl(
                 }
 
                 OutboundSessionStatus.SessionReady -> {
-                    state.state.retrieveEstablishedSession(counterparties)?.let { establishedState ->
+                    state.stateManagerSessionState.sessionState.retrieveEstablishedSession(counterparties)?.let { establishedState ->
                         sessionCache.putOutboundSession(
                             state.key,
-                            SessionManager.SessionDirection.Outbound(state.state.toCounterparties(), establishedState.session),
+                            SessionManager.SessionDirection.Outbound(
+                                state.stateManagerSessionState.toCounterparties(),
+                                establishedState.session,
+                            ),
                         )
                         state.toResults(establishedState)
                     } ?: state.toResults(CannotEstablishSession)
@@ -203,7 +205,10 @@ internal class StatefulSessionManagerImpl(
                 }
 
                 OutboundSessionStatus.SentInitiatorHello, OutboundSessionStatus.SentInitiatorHandshake -> {
-                    state.state.replaySessionMessage(state.first.message.message.header.statusFilter)?.let { (needed, newState) ->
+                    state.stateManagerSessionState
+                        .replaySessionMessage(
+                            state.first.message.message.header.statusFilter
+                        )?.let { (needed, newState) ->
                         state.toResultsFirstAndOther(
                             action = UpdateAction(newState, true),
                             firstState = needed,
@@ -215,11 +220,11 @@ internal class StatefulSessionManagerImpl(
                 }
 
                 OutboundSessionStatus.SessionReady -> {
-                    state.state.retrieveEstablishedSession(counterparties)?.let { established ->
+                    state.stateManagerSessionState.sessionState.retrieveEstablishedSession(counterparties)?.let { established ->
                         sessionCache.putOutboundSession(
                             state.key,
                             SessionManager.SessionDirection.Outbound(
-                                state.state.toCounterparties(),
+                                state.stateManagerSessionState.toCounterparties(),
                                 established.session,
                             ),
                         )
@@ -254,16 +259,7 @@ internal class StatefulSessionManagerImpl(
             stateManager.get(sessionIdsNotInCache.keys)
                 .entries
                 .mapNotNull { (sessionId, state) ->
-                    val session =
-                        stateConvertor.toCordaSessionState(
-                            state,
-                            sessionManagerImpl.revocationCheckerClient::checkRevocation,
-                        )?.sessionData as? Session
-                    if (session == null) {
-                        val counterparties = state.toCounterparties()
-                        sendSessionReEstablishmentMessage(counterparties.ourId, counterparties.counterpartyId, sessionId)
-                        return@mapNotNull null
-                    }
+                    val session = state.sessionState.sessionData as? Session ?: return@mapNotNull null
                     sessionIdsNotInCache[sessionId]?.let { traceables ->
                         val inboundSession =
                             SessionManager.SessionDirection.Inbound(
@@ -285,12 +281,8 @@ internal class StatefulSessionManagerImpl(
             )
                 .entries
                 .mapNotNull { (key, state) ->
-                    val session =
-                        stateConvertor.toCordaSessionState(
-                            state,
-                            sessionManagerImpl.revocationCheckerClient::checkRevocation,
-                        )?.sessionData as? Session ?: return@mapNotNull null
-                    val sessionId = state.metadata.toOutbound().sessionId
+                    val session = state.sessionState.sessionData as? Session ?: return@mapNotNull null
+                    val sessionId = state.managerState.metadata.toOutbound().sessionId
                     sessionIdsNotInCache[sessionId]?.let {
                         val outboundSession =
                             SessionManager.SessionDirection.Outbound(
@@ -323,7 +315,7 @@ internal class StatefulSessionManagerImpl(
     override fun <T> processSessionMessages(
         wrappedMessages: Collection<T>,
         getMessage: (T) -> LinkInMessage,
-    ): Collection<Pair<T, LinkOutMessage?>> {
+    ): Collection<Pair<T, SessionManager.ProcessSessionMessagesResult>> {
         val messages = wrappedMessages.map { it to getMessage(it) }
         val results = processInboundSessionMessages(messages) + processOutboundSessionMessages(messages)
 
@@ -336,8 +328,9 @@ internal class StatefulSessionManagerImpl(
             } else {
                 result
             }
-        }.onEach { result ->
-            when (result.result?.message?.payload) {
+        }.map { result ->
+            val linkOutMessage = result.result?.message
+            val sessionCreationRecords = when (linkOutMessage?.payload) {
                 is AvroResponderHelloMessage, is AvroResponderHandshakeMessage -> {
                     result.result.sessionToCache?.let { sessionToCache ->
                         val session = SessionManager.SessionDirection.Inbound(
@@ -345,8 +338,8 @@ internal class StatefulSessionManagerImpl(
                             sessionToCache,
                         )
                         sessionCache.putInboundSession(session)
-                        sessionEventPublisher.sessionCreated(sessionToCache.sessionId, SessionDirection.INBOUND)
-                    }
+                        recordsForSessionCreated(sessionToCache.sessionId, SessionDirection.INBOUND)
+                    } ?: emptyList()
                 }
                 is AvroInitiatorHelloMessage, is AvroInitiatorHandshakeMessage, null -> {
                     result.result?.sessionToCache?.let { sessionToCache ->
@@ -356,31 +349,17 @@ internal class StatefulSessionManagerImpl(
                             sessionToCache,
                         )
                         sessionCache.putOutboundSession(key, outboundSession)
-                        sessionEventPublisher.sessionCreated(key, SessionDirection.OUTBOUND)
-                    }
+                        recordsForSessionCreated(key, SessionDirection.OUTBOUND)
+                    } ?: emptyList()
                 }
+                else -> emptyList()
             }
-        }.map { result ->
-            result.traceable to result.result?.message
+            result.traceable to SessionManager.ProcessSessionMessagesResult(linkOutMessage, sessionCreationRecords)
         }
     }
 
     override fun messageAcknowledged(sessionId: String) {
         deadSessionMonitor.ackReceived(sessionId)
-    }
-
-    override fun inboundSessionEstablished(sessionId: String) {
-        // Not needed by the Stateful Session Manager
-        return
-    }
-
-    override fun dataMessageReceived(
-        sessionId: String,
-        source: HoldingIdentity,
-        destination: HoldingIdentity,
-    ) {
-        // Not needed by the Stateful Session Manager
-        return
     }
 
     override fun dataMessageSent(session: Session) {
@@ -439,7 +418,7 @@ internal class StatefulSessionManagerImpl(
 
     private data class OutboundMessageState<T>(
         val key: String?,
-        val state: State?,
+        val stateManagerSessionState: StateManagerWrapper.StateManagerSessionState?,
         val messages: Collection<OutboundMessageContext<T>>,
     ) {
         val first by lazy {
@@ -600,23 +579,10 @@ internal class StatefulSessionManagerImpl(
         }.toMap()
     }
 
-    private fun State.toCounterparties(): SessionManager.Counterparties {
-        val common = this.metadata.toCommonMetadata()
-        return SessionManager.Counterparties(
-            ourId = common.source,
-            counterpartyId = common.destination,
-        )
-    }
-
-    private fun State.retrieveEstablishedSession(
+    private fun SessionState.retrieveEstablishedSession(
         counterParties: SessionManager.SessionCounterparties,
     ): SessionEstablished? {
-        val sessionData =
-            stateConvertor.toCordaSessionState(
-                this,
-                sessionManagerImpl.revocationCheckerClient::checkRevocation,
-            )?.sessionData
-        return when (sessionData) {
+        return when (val sessionData = this.sessionData) {
             is AuthenticatedSession, is AuthenticatedEncryptionSession ->
                 SessionEstablished(sessionData as Session, counterParties)
 
@@ -666,14 +632,12 @@ internal class StatefulSessionManagerImpl(
         return NewSessionsNeeded(listOf(message), counterParties) to newState
     }
 
-    private fun State.replaySessionMessage(statusFilter: MembershipStatusFilter): Pair<NewSessionsNeeded, State>? {
-        val previousSessionMessage =
-            stateConvertor.toCordaSessionState(
-                this,
-                sessionManagerImpl.revocationCheckerClient::checkRevocation,
-            )?.message ?: return null
+    private fun StateManagerWrapper.StateManagerSessionState.replaySessionMessage(
+        statusFilter: MembershipStatusFilter,
+    ): Pair<NewSessionsNeeded, State>? {
+        val previousSessionMessage = this.sessionState.message ?: return null
         val previousHeader = previousSessionMessage.header
-        val outboundMetadata = metadata.toOutbound()
+        val outboundMetadata = this.managerState.metadata.toOutbound()
         val linkOutMessage = membershipGroupReaderProvider.lookup(
             previousHeader.sourceIdentity.toCorda(),
             previousHeader.destinationIdentity.toCorda(),
@@ -701,9 +665,9 @@ internal class StatefulSessionManagerImpl(
         )
         val updatedState =
             State(
-                key,
-                value,
-                version = version,
+                this.managerState.key,
+                this.managerState.value,
+                version = this.managerState.version,
                 metadata = updatedMetadata.toMetadata(),
             )
         return NewSessionsNeeded(
@@ -729,7 +693,11 @@ internal class StatefulSessionManagerImpl(
                             SessionAlreadyPending(it)
                         } ?: CannotEstablishSession
                     OutboundSessionStatus.SessionReady -> resultState.messages.first().sessionCounterparties()?.let {
-                        savedState.retrieveEstablishedSession(it)
+                        val session = stateConvertor.toCordaSessionState(
+                            savedState,
+                            sessionManagerImpl.revocationCheckerClient::checkRevocation,
+                        )
+                        session?.retrieveEstablishedSession(it)
                     } ?: CannotEstablishSession
                     null -> CannotEstablishSession
                 }
@@ -788,7 +756,7 @@ internal class StatefulSessionManagerImpl(
             stateManager
                 .findStatesMatchingAny(messageContexts.keys.map { getSessionIdFilter(it) })
                 .values.associateBy { state ->
-                    state.metadata.toOutbound().sessionId
+                    state.managerState.metadata.toOutbound().sessionId
                 }
         return messageContexts.flatMap { (sessionId, contexts) ->
             val state = states[sessionId]
@@ -818,10 +786,10 @@ internal class StatefulSessionManagerImpl(
      * messages.
      */
     private fun processInitiatorHello(
-        state: State?,
+        state: StateManagerWrapper.StateManagerSessionState?,
         message: InboundSessionMessage.InitiatorHelloMessage,
     ): Result? {
-        val metadata = state?.metadata?.toInbound()
+        val metadata = state?.managerState?.metadata?.toInbound()
         return when (metadata?.status) {
             null -> {
                 sessionManagerImpl.processInitiatorHello(message.initiatorHelloMessage)?.let {
@@ -855,16 +823,13 @@ internal class StatefulSessionManagerImpl(
                             lastSendTimestamp = timestamp,
                         ),
                     )
-                    val sessionState = stateConvertor.toCordaSessionState(
-                        state,
-                        sessionManagerImpl.revocationCheckerClient::checkRevocation,
-                    )
-                    val responderHelloToResend = sessionState?.message ?: return null
+                    val sessionState = state.sessionState
+                    val responderHelloToResend = sessionState.message
                     val newState =
                         State(
-                            key = state.key,
-                            value = state.value,
-                            version = state.version,
+                            key = state.managerState.key,
+                            value = state.managerState.value,
+                            version = state.managerState.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
                     Result(responderHelloToResend, UpdateAction(newState, true), null)
@@ -879,18 +844,14 @@ internal class StatefulSessionManagerImpl(
     }
 
     private fun processResponderHello(
-        state: State?,
+        state: StateManagerWrapper.StateManagerSessionState?,
         message: OutboundSessionMessage.ResponderHelloMessage,
     ): Result? {
-        val metadata = state?.metadata?.toOutbound()
+        val metadata = state?.managerState?.metadata?.toOutbound()
         return when (metadata?.status) {
             OutboundSessionStatus.SentInitiatorHello -> {
-                val sessionState =
-                    stateConvertor.toCordaSessionState(
-                        state,
-                        sessionManagerImpl.revocationCheckerClient::checkRevocation,
-                    )?.sessionData as? AuthenticationProtocolInitiator ?: return null
-                val counterparties = state.getSessionCounterparties()
+                val sessionState = state.sessionState.sessionData as? AuthenticationProtocolInitiator ?: return null
+                val counterparties = state.managerState.getSessionCounterparties()
 
                 sessionManagerImpl.processResponderHello(
                     counterparties,
@@ -915,7 +876,7 @@ internal class StatefulSessionManagerImpl(
                                 counterparties.serial,
                             ),
                             stateConvertor.toStateByteArray(SessionState(responseMessage, authenticationProtocol)),
-                            version = state.version,
+                            version = state.managerState.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
                     Result(responseMessage, UpdateAction(newState, false), null)
@@ -929,16 +890,12 @@ internal class StatefulSessionManagerImpl(
                             lastSendTimestamp = clock.instant(),
                         ),
                     )
-                    val initiatorHandshakeToResend =
-                        stateConvertor.toCordaSessionState(
-                            state,
-                            sessionManagerImpl.revocationCheckerClient::checkRevocation,
-                        )?.message ?: return null
+                    val initiatorHandshakeToResend = state.sessionState.message ?: return null
                     val newState =
                         State(
-                            key = state.key,
-                            value = state.value,
-                            version = state.version,
+                            key = state.managerState.key,
+                            value = state.managerState.value,
+                            version = state.managerState.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
                     Result(initiatorHandshakeToResend, UpdateAction(newState, true), null)
@@ -963,23 +920,19 @@ internal class StatefulSessionManagerImpl(
     }
 
     private fun processInitiatorHandshake(
-        state: State?,
+        state: StateManagerWrapper.StateManagerSessionState?,
         message: InboundSessionMessage.InitiatorHandshakeMessage,
     ): Result? {
-        val metadata = state?.metadata?.toInbound()
+        val metadata = state?.managerState?.metadata?.toInbound()
         return when (metadata?.status) {
             null -> {
                 null
             }
             InboundSessionStatus.SentResponderHello -> {
-                val sessionData =
-                    stateConvertor.toCordaSessionState(
-                        state,
-                        sessionManagerImpl.revocationCheckerClient::checkRevocation,
-                    )?.sessionData as? AuthenticationProtocolResponder
+                val sessionData = state.sessionState.sessionData as? AuthenticationProtocolResponder
                 if (sessionData == null) {
                     logger.warn(
-                        "Session ${state.key} has status SentResponderHello by the saved data is" +
+                        "Session ${state.managerState.key} has status SentResponderHello by the saved data is" +
                             " not AuthenticationProtocolResponder.",
                     )
                     return null
@@ -1001,7 +954,7 @@ internal class StatefulSessionManagerImpl(
                         State(
                             message.initiatorHandshakeMessage.header.sessionId,
                             stateConvertor.toStateByteArray(SessionState(responseMessage, session)),
-                            version = state.version,
+                            version = state.managerState.version,
                             metadata = newMetadata.toMetadata(),
                         )
                     Result(responseMessage, UpdateAction(newState, false), session)
@@ -1015,16 +968,12 @@ internal class StatefulSessionManagerImpl(
                             lastSendTimestamp = timestamp,
                         ),
                     )
-                    val responderHandshakeToResend =
-                        stateConvertor.toCordaSessionState(
-                            state,
-                            sessionManagerImpl.revocationCheckerClient::checkRevocation,
-                        )?.message ?: return null
+                    val responderHandshakeToResend = state.sessionState.message
                     val newState =
                         State(
-                            key = state.key,
-                            value = state.value,
-                            version = state.version,
+                            key = state.managerState.key,
+                            value = state.managerState.value,
+                            version = state.managerState.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
                     Result(responderHandshakeToResend, UpdateAction(newState, true), null)
@@ -1036,18 +985,14 @@ internal class StatefulSessionManagerImpl(
     }
 
     private fun processResponderHandshake(
-        state: State?,
+        state: StateManagerWrapper.StateManagerSessionState?,
         message: OutboundSessionMessage.ResponderHandshakeMessage,
     ): Result? {
-        val metadata = state?.metadata?.toOutbound()
+        val metadata = state?.managerState?.metadata?.toOutbound()
         return when (metadata?.status) {
             OutboundSessionStatus.SentInitiatorHandshake -> {
-                val sessionState =
-                    stateConvertor.toCordaSessionState(
-                        state,
-                        sessionManagerImpl.revocationCheckerClient::checkRevocation,
-                    )?.sessionData as? AuthenticationProtocolInitiator ?: return null
-                val counterparties = state.getSessionCounterparties()
+                val sessionState = state.sessionState.sessionData as? AuthenticationProtocolInitiator ?: return null
+                val counterparties = state.managerState.getSessionCounterparties()
 
                 sessionManagerImpl.processResponderHandshake(
                     message.responderHandshakeMessage,
@@ -1069,7 +1014,7 @@ internal class StatefulSessionManagerImpl(
                                 counterparties.serial,
                             ),
                             stateConvertor.toStateByteArray(SessionState(null, session)),
-                            version = state.version,
+                            version = state.managerState.version,
                             metadata = updatedMetadata.toMetadata(),
                         )
                     Result(null, UpdateAction(newState, false), session)
@@ -1158,44 +1103,8 @@ internal class StatefulSessionManagerImpl(
         )
     }
 
-    private fun sendSessionReEstablishmentMessage(
-        source: HoldingIdentity,
-        destination: HoldingIdentity,
-        sessionId: String,
-    ) {
-        val messageBytes = schemaRegistry.serialize(
-            ReEstablishSessionMessage(sessionId),
-        ).array()
-        val record = createAuthenticatedMessageRecord(source, destination, messageBytes)
-        logger.info("Sending '{}' to session initiator '{}'.", ReEstablishSessionMessage::class.simpleName, destination)
-        sessionManagerImpl.publisher.publish(listOf(record))
-    }
-
-    private fun createAuthenticatedMessageRecord(
-        source: HoldingIdentity,
-        destination: HoldingIdentity,
-        payload: ByteArray,
-    ): Record<String, AppMessage> {
-        val header = AuthenticatedMessageHeader.newBuilder()
-            .setDestination(destination.toAvro())
-            .setSource(source.toAvro())
-            .setMessageId(UUID.randomUUID().toString())
-            .setSubsystem(LINK_MANAGER_SUBSYSTEM)
-            .setStatusFilter(MembershipStatusFilter.ACTIVE)
-            .setTtl(null)
-            .setTraceId(null)
-            .build()
-        val message = AuthenticatedMessage.newBuilder()
-            .setHeader(header)
-            .setPayload(ByteBuffer.wrap(payload))
-            .build()
-        val appMessage = AppMessage(message)
-
-        return Record(
-            P2P_OUT_TOPIC,
-            UUID.randomUUID().toString(),
-            appMessage,
-        )
+    private fun recordsForSessionCreated(key: String, direction: SessionDirection): List<Record<String, SessionEvent>> {
+        return listOf(Record(Schemas.P2P.SESSION_EVENTS, key, SessionEvent(SessionCreated(direction, key))))
     }
 
     private val sessionEventListener = StatefulSessionEventProcessor(
@@ -1207,9 +1116,16 @@ internal class StatefulSessionManagerImpl(
         sessionCache,
         sessionManagerImpl,
     )
+    private val reEstablishmentMessageSender = ReEstablishmentMessageSender(
+        p2pRecordsFactory,
+        sessionManagerImpl,
+    )
     private val stateManager = StateManagerWrapper(
         stateManager,
         sessionCache,
+        stateConvertor,
+        sessionManagerImpl.revocationCheckerClient::checkRevocation,
+        reEstablishmentMessageSender,
     )
 
     override val dominoTile =

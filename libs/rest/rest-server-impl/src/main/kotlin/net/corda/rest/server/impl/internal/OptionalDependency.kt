@@ -12,7 +12,7 @@ enum class OptionalDependency(
     /**
      * Note: [version] must be aligned with `swaggeruiVersion` in Gradle properties
      */
-    SWAGGERUI("Swagger UI", "org.webjars", "swagger-ui", "5.11.8");
+    SWAGGERUI("Swagger UI", "org.webjars", "swagger-ui", "5.12.2");
 
     val symbolicName: String = "$groupId.$artifactId"
 }

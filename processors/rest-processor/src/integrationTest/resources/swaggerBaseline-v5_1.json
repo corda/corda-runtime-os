@@ -12,64 +12,64 @@
     "basicAuth" : [ ]
   } ],
   "tags" : [ {
-    "name" : "CPI API",
+    "name" : "CPI",
     "description" : "The CPI API consists of a number of endpoints used to manage Corda Package Installer (CPI) files in the Corda cluster."
   }, {
-    "name" : "Certificate API",
+    "name" : "Certificate",
     "description" : "The Certificates API consists of endpoints used to work with certificates and related operations. The API allows you to import a certificate chain, and generate a certificate signing request (CSR) to be submitted to a certificate authority (CA)."
   }, {
-    "name" : "Configuration API",
+    "name" : "Configuration",
     "description" : "The Configuration API consists of a number of endpoints used to manage the configuration of Corda clusters."
   }, {
-    "name" : "Flow Info API",
+    "name" : "Flow Info",
     "description" : "The Flow Info API consists of a number of endpoints used to find out which flows can be invoked using the Flow Management API for a given identity."
   }, {
-    "name" : "Flow Management API",
+    "name" : "Flow Management",
     "description" : "The Flow Management API consists of a number of endpoints used to interact with flows."
   }, {
-    "name" : "HSM API",
+    "name" : "HSM",
     "description" : "The HSM API consists of endpoints used to work with Hardware Security Modules (HSM) for securely storing keys."
   }, {
-    "name" : "Hello Rest API",
+    "name" : "Hello Rest",
     "description" : "The Hello Rest API is used to test interactions via the Rest API. It verifies that a call to Rest can be made, and that the identity of the user making the call can be recognized. RBAC permissions are checked and the call is successfully processed by the HTTP-Rest worker."
   }, {
-    "name" : "Key Management API",
+    "name" : "Key Management",
     "description" : "The Keys Management API consists of endpoints used to manage public and private key pairs. The API allows you to list scheme codes which are supported by the associated HSM integration, retrieve information about key pairs owned by a tenant, generate a key pair for a tenant, and retrieve a tenant's public key in PEM format."
   }, {
-    "name" : "MGM API",
+    "name" : "MGM",
     "description" : "The MGM API consists of a number of endpoints used to manage membership groups. A membership group is a logical grouping of a number of Corda Identities to communicate and transact with one another with a specific set of CorDapps. The API allows you to generate the group policy for a membership group, required for new members to join the group."
   }, {
-    "name" : "MGM Admin API",
+    "name" : "MGM Admin",
     "description" : "The MGM Admin API consists of endpoints used to carry out administrative tasks on membership groups. A membership group is a logical grouping of a number of Corda Identities to communicate and transact with one another with a specific set of CorDapps. The API allows the MGM to perform actions such as force decline registration requests which may be displaying unexpected behaviour. This API should only be used by the MGM under exceptional circumstances."
   }, {
-    "name" : "Member Lookup API",
+    "name" : "Member Lookup",
     "description" : "The Member Lookup API consists of endpoints used to look up information related to membership groups."
   }, {
-    "name" : "Member Registration API",
+    "name" : "Member Registration",
     "description" : "The Member Registration API consists of a number of endpoints which manage holding identities' participation in membership groups. To participate in a membership group, the holding identity is required to make a registration request that needs to be approved by the MGM for that group. This API allows you to start the registration process for a holding identity, and check the status of a previously created registration request."
   }, {
-    "name" : "Network API",
+    "name" : "Network",
     "description" : "The Network API consists of endpoints which manage the setup of holding identities in P2P networks."
   }, {
-    "name" : "RBAC Permission API",
+    "name" : "RBAC Permission",
     "description" : "The RBAC Permission API consists of a number of endpoints enabling permissions management in the RBAC (role-based access control) permission system. You can get details of specified permissions and create new permissions."
   }, {
-    "name" : "RBAC Role API",
+    "name" : "RBAC Role",
     "description" : "The RBAC Role API consists of a number of endpoints enabling role management in the RBAC (role-based access control) permission system. You can get all roles in the system, create new roles and add and delete permissions from roles."
   }, {
-    "name" : "RBAC User API",
+    "name" : "RBAC User",
     "description" : "The RBAC User API consists of a number of endpoints enabling user management in the RBAC (role-based access control) permission system. You can get details of specified users, create new users, assign roles to users and remove roles from users."
   }, {
-    "name" : "Virtual Node API",
+    "name" : "Virtual Node",
     "description" : "The Virtual Nodes API consists of a number of endpoints to manage virtual nodes."
   }, {
-    "name" : "Virtual Node Maintenance API",
+    "name" : "Virtual Node Maintenance",
     "description" : "The Virtual Node Maintenance API consists of a series of endpoints used for virtual node management.Warning: Using these endpoints could be highly disruptive, so great care should be taken when using them."
   } ],
   "paths" : {
     "/certificate/cluster/{usage}" : {
       "get" : {
-        "tags" : [ "Certificate API" ],
+        "tags" : [ "Certificate" ],
         "description" : "This method gets the certificate chain aliases for a cluster.",
         "operationId" : "get_certificate_cluster__usage_",
         "parameters" : [ {
@@ -110,7 +110,7 @@
         }
       },
       "put" : {
-        "tags" : [ "Certificate API" ],
+        "tags" : [ "Certificate" ],
         "description" : "This method imports a certificate chain for a cluster.",
         "operationId" : "put_certificate_cluster__usage_",
         "parameters" : [ {
@@ -170,7 +170,7 @@
     },
     "/certificate/cluster/{usage}/{alias}" : {
       "get" : {
-        "tags" : [ "Certificate API" ],
+        "tags" : [ "Certificate" ],
         "description" : "This method gets the certificate chain in PEM format for a cluster.",
         "operationId" : "get_certificate_cluster__usage___alias_",
         "parameters" : [ {
@@ -220,7 +220,7 @@
     },
     "/certificate/getprotocolversion" : {
       "get" : {
-        "tags" : [ "Certificate API" ],
+        "tags" : [ "Certificate" ],
         "description" : "",
         "operationId" : "get_certificate_getprotocolversion",
         "parameters" : [ ],
@@ -249,7 +249,7 @@
     },
     "/certificate/vnode/{holdingidentityid}/{usage}" : {
       "get" : {
-        "tags" : [ "Certificate API" ],
+        "tags" : [ "Certificate" ],
         "description" : "This method gets the certificate chain aliases for a virtual node.",
         "operationId" : "get_certificate_vnode__holdingidentityid___usage_",
         "parameters" : [ {
@@ -301,7 +301,7 @@
         }
       },
       "put" : {
-        "tags" : [ "Certificate API" ],
+        "tags" : [ "Certificate" ],
         "description" : "This method imports a certificate chain for a virtual node.",
         "operationId" : "put_certificate_vnode__holdingidentityid___usage_",
         "parameters" : [ {
@@ -372,7 +372,7 @@
     },
     "/certificate/vnode/{holdingidentityid}/{usage}/{alias}" : {
       "get" : {
-        "tags" : [ "Certificate API" ],
+        "tags" : [ "Certificate" ],
         "description" : "This method gets the certificate chain in PEM format for a virtual node.",
         "operationId" : "get_certificate_vnode__holdingidentityid___usage___alias_",
         "parameters" : [ {
@@ -433,7 +433,7 @@
     },
     "/certificate/{tenantid}/{keyid}" : {
       "post" : {
-        "tags" : [ "Certificate API" ],
+        "tags" : [ "Certificate" ],
         "description" : "This method enables you to generate a certificate signing request (CSR) for a tenant.",
         "operationId" : "post_certificate__tenantid___keyid_",
         "parameters" : [ {
@@ -494,7 +494,7 @@
     },
     "/config" : {
       "put" : {
-        "tags" : [ "Configuration API" ],
+        "tags" : [ "Configuration" ],
         "description" : "This method updates a section of the cluster configuration.",
         "operationId" : "put_config",
         "parameters" : [ ],
@@ -531,7 +531,7 @@
     },
     "/config/getprotocolversion" : {
       "get" : {
-        "tags" : [ "Configuration API" ],
+        "tags" : [ "Configuration" ],
         "description" : "",
         "operationId" : "get_config_getprotocolversion",
         "parameters" : [ ],
@@ -560,7 +560,7 @@
     },
     "/config/{section}" : {
       "get" : {
-        "tags" : [ "Configuration API" ],
+        "tags" : [ "Configuration" ],
         "description" : "This method returns the 'active' configuration for the given section, in both the 'raw' format and with defaults applied.",
         "operationId" : "get_config__section_",
         "parameters" : [ {
@@ -597,7 +597,7 @@
     },
     "/cpi" : {
       "get" : {
-        "tags" : [ "CPI API" ],
+        "tags" : [ "CPI" ],
         "description" : "The GET method returns a list of all CPIs uploaded to the cluster.",
         "operationId" : "get_cpi",
         "parameters" : [ ],
@@ -621,7 +621,7 @@
         }
       },
       "post" : {
-        "tags" : [ "CPI API" ],
+        "tags" : [ "CPI" ],
         "description" : "This method uses the POST method to upload a Corda Package Installer (CPI) file to the Corda cluster.",
         "operationId" : "post_cpi",
         "parameters" : [ ],
@@ -667,7 +667,7 @@
     },
     "/cpi/getprotocolversion" : {
       "get" : {
-        "tags" : [ "CPI API" ],
+        "tags" : [ "CPI" ],
         "description" : "",
         "operationId" : "get_cpi_getprotocolversion",
         "parameters" : [ ],
@@ -696,7 +696,7 @@
     },
     "/cpi/status/{id}" : {
       "get" : {
-        "tags" : [ "CPI API" ],
+        "tags" : [ "CPI" ],
         "description" : "The status endpoint uses the GET method to return status information for the CPI upload with the given request ID.",
         "operationId" : "get_cpi_status__id_",
         "parameters" : [ {
@@ -733,7 +733,7 @@
     },
     "/flow/getprotocolversion" : {
       "get" : {
-        "tags" : [ "Flow Management API" ],
+        "tags" : [ "Flow Management" ],
         "description" : "",
         "operationId" : "get_flow_getprotocolversion",
         "parameters" : [ ],
@@ -762,7 +762,7 @@
     },
     "/flow/{holdingidentityshorthash}" : {
       "get" : {
-        "tags" : [ "Flow Management API" ],
+        "tags" : [ "Flow Management" ],
         "description" : "This method returns an array containing the statuses of all flows running for a specified holding identity. An empty array is returned if there are no flows running.",
         "operationId" : "get_flow__holdingidentityshorthash_",
         "parameters" : [ {
@@ -797,7 +797,7 @@
         }
       },
       "post" : {
-        "tags" : [ "Flow Management API" ],
+        "tags" : [ "Flow Management" ],
         "description" : "This method starts a new instance for the specified flow for the specified holding identity.",
         "operationId" : "post_flow__holdingidentityshorthash_",
         "parameters" : [ {
@@ -845,7 +845,7 @@
     },
     "/flow/{holdingidentityshorthash}/{clientrequestid}" : {
       "get" : {
-        "tags" : [ "Flow Management API" ],
+        "tags" : [ "Flow Management" ],
         "description" : "This method gets the current status of the specified flow instance.",
         "operationId" : "get_flow__holdingidentityshorthash___clientrequestid_",
         "parameters" : [ {
@@ -893,7 +893,7 @@
     },
     "/flow/{holdingidentityshorthash}/{clientrequestid}/result" : {
       "get" : {
-        "tags" : [ "Flow Management API" ],
+        "tags" : [ "Flow Management" ],
         "description" : "This method gets the result of the specified flow instance execution.",
         "operationId" : "get_flow__holdingidentityshorthash___clientrequestid__result",
         "parameters" : [ {
@@ -941,7 +941,7 @@
     },
     "/flowclass/getprotocolversion" : {
       "get" : {
-        "tags" : [ "Flow Info API" ],
+        "tags" : [ "Flow Info" ],
         "description" : "",
         "operationId" : "get_flowclass_getprotocolversion",
         "parameters" : [ ],
@@ -970,7 +970,7 @@
     },
     "/flowclass/{holdingidentityshorthash}" : {
       "get" : {
-        "tags" : [ "Flow Info API" ],
+        "tags" : [ "Flow Info" ],
         "description" : "This method gets all flows that can be used by the specified holding identity.",
         "operationId" : "get_flowclass__holdingidentityshorthash_",
         "parameters" : [ {
@@ -1007,7 +1007,7 @@
     },
     "/hello" : {
       "post" : {
-        "tags" : [ "Hello Rest API" ],
+        "tags" : [ "Hello Rest" ],
         "description" : "This method produces a greeting phrase for the addressee.",
         "operationId" : "post_hello",
         "parameters" : [ {
@@ -1046,7 +1046,7 @@
     },
     "/hello/getprotocolversion" : {
       "get" : {
-        "tags" : [ "Hello Rest API" ],
+        "tags" : [ "Hello Rest" ],
         "description" : "",
         "operationId" : "get_hello_getprotocolversion",
         "parameters" : [ ],
@@ -1075,7 +1075,7 @@
     },
     "/hsm/getprotocolversion" : {
       "get" : {
-        "tags" : [ "HSM API" ],
+        "tags" : [ "HSM" ],
         "description" : "",
         "operationId" : "get_hsm_getprotocolversion",
         "parameters" : [ ],
@@ -1104,7 +1104,7 @@
     },
     "/hsm/soft/{tenantid}/{category}" : {
       "post" : {
-        "tags" : [ "HSM API" ],
+        "tags" : [ "HSM" ],
         "description" : "This method enables you to assign a soft HSM to the tenant for the specified category.",
         "operationId" : "post_hsm_soft__tenantid___category_",
         "parameters" : [ {
@@ -1152,7 +1152,7 @@
     },
     "/hsm/{tenantid}/{category}" : {
       "get" : {
-        "tags" : [ "HSM API" ],
+        "tags" : [ "HSM" ],
         "description" : "This method retrieves information on the HSM of the specified category assigned to the tenant.",
         "operationId" : "get_hsm__tenantid___category_",
         "parameters" : [ {
@@ -1200,7 +1200,7 @@
     },
     "/key/getprotocolversion" : {
       "get" : {
-        "tags" : [ "Key Management API" ],
+        "tags" : [ "Key Management" ],
         "description" : "",
         "operationId" : "get_key_getprotocolversion",
         "parameters" : [ ],
@@ -1229,7 +1229,7 @@
     },
     "/key/{tenantid}" : {
       "get" : {
-        "tags" : [ "Key Management API" ],
+        "tags" : [ "Key Management" ],
         "description" : "This method retrieves information about a list of key pairs belonging to a tenant.",
         "operationId" : "get_key__tenantid_",
         "parameters" : [ {
@@ -1386,7 +1386,7 @@
     },
     "/key/{tenantid}/alias/{alias}/category/{hsmcategory}/scheme/{scheme}" : {
       "post" : {
-        "tags" : [ "Key Management API" ],
+        "tags" : [ "Key Management" ],
         "description" : "This method generates a new key pair for a tenant.",
         "operationId" : "post_key__tenantid__alias__alias__category__hsmcategory__scheme__scheme_",
         "parameters" : [ {
@@ -1456,7 +1456,7 @@
     },
     "/key/{tenantid}/schemes/{hsmcategory}" : {
       "get" : {
-        "tags" : [ "Key Management API" ],
+        "tags" : [ "Key Management" ],
         "description" : "This method retrieves a list of supported key schemes for a specified tenant and HSM category.",
         "operationId" : "get_key__tenantid__schemes__hsmcategory_",
         "parameters" : [ {
@@ -1510,7 +1510,7 @@
     },
     "/key/{tenantid}/{keyid}" : {
       "get" : {
-        "tags" : [ "Key Management API" ],
+        "tags" : [ "Key Management" ],
         "description" : "This method retrieves a tenant's public key in PEM format.",
         "operationId" : "get_key__tenantid___keyid_",
         "parameters" : [ {
@@ -1560,7 +1560,7 @@
     },
     "/maintenance/virtualnode/forcecpiupload" : {
       "post" : {
-        "tags" : [ "Virtual Node Maintenance API" ],
+        "tags" : [ "Virtual Node Maintenance" ],
         "description" : "Even if CPI with the same metadata has already been uploaded, this endpoint will overwrite the previously stored CPI record. This operation also purges any sandboxes running an overwritten version of a CPI. This action can take some time to process, therefore it is performed asynchronously.",
         "operationId" : "post_maintenance_virtualnode_forcecpiupload",
         "parameters" : [ ],
@@ -1606,7 +1606,7 @@
     },
     "/maintenance/virtualnode/getprotocolversion" : {
       "get" : {
-        "tags" : [ "Virtual Node Maintenance API" ],
+        "tags" : [ "Virtual Node Maintenance" ],
         "description" : "",
         "operationId" : "get_maintenance_virtualnode_getprotocolversion",
         "parameters" : [ ],
@@ -1635,7 +1635,7 @@
     },
     "/maintenance/virtualnode/{virtualnodeshortid}/vault-schema/force-resync" : {
       "post" : {
-        "tags" : [ "Virtual Node Maintenance API" ],
+        "tags" : [ "Virtual Node Maintenance" ],
         "description" : "Rollback the virtual node database for the given virtual node short ID. Then apply current CPI migrations. This operation is destructive and will result in user vault data being deleted, but will not have any effect on system tables.",
         "operationId" : "post_maintenance_virtualnode__virtualnodeshortid__vault_schema_force_resync",
         "parameters" : [ {
@@ -1665,7 +1665,7 @@
     },
     "/members/getprotocolversion" : {
       "get" : {
-        "tags" : [ "Member Lookup API" ],
+        "tags" : [ "Member Lookup" ],
         "description" : "",
         "operationId" : "get_members_getprotocolversion",
         "parameters" : [ ],
@@ -1694,7 +1694,7 @@
     },
     "/members/{holdingidentityshorthash}" : {
       "get" : {
-        "tags" : [ "Member Lookup API" ],
+        "tags" : [ "Member Lookup" ],
         "description" : "This method retrieves a list of all active and pending members in the membership group.",
         "operationId" : "get_members__holdingidentityshorthash_",
         "parameters" : [ {
@@ -1811,7 +1811,7 @@
     },
     "/members/{holdingidentityshorthash}/group-parameters" : {
       "get" : {
-        "tags" : [ "Member Lookup API" ],
+        "tags" : [ "Member Lookup" ],
         "description" : "This method retrieves the group parameters of the membership group.",
         "operationId" : "get_members__holdingidentityshorthash__group_parameters",
         "parameters" : [ {
@@ -1848,7 +1848,7 @@
     },
     "/membership/getprotocolversion" : {
       "get" : {
-        "tags" : [ "Member Registration API" ],
+        "tags" : [ "Member Registration" ],
         "description" : "",
         "operationId" : "get_membership_getprotocolversion",
         "parameters" : [ ],
@@ -1877,7 +1877,7 @@
     },
     "/membership/{holdingidentityshorthash}" : {
       "get" : {
-        "tags" : [ "Member Registration API" ],
+        "tags" : [ "Member Registration" ],
         "description" : "This method checks the statuses of all registration requests for a specified holding identity.",
         "operationId" : "get_membership__holdingidentityshorthash_",
         "parameters" : [ {
@@ -1917,7 +1917,7 @@
         }
       },
       "post" : {
-        "tags" : [ "Member Registration API" ],
+        "tags" : [ "Member Registration" ],
         "description" : "This method starts the registration process for a holding identity.",
         "operationId" : "post_membership__holdingidentityshorthash_",
         "parameters" : [ {
@@ -1965,7 +1965,7 @@
     },
     "/membership/{holdingidentityshorthash}/{registrationrequestid}" : {
       "get" : {
-        "tags" : [ "Member Registration API" ],
+        "tags" : [ "Member Registration" ],
         "description" : "This method checks the status of the specified registration request for a holding identity.",
         "operationId" : "get_membership__holdingidentityshorthash___registrationrequestid_",
         "parameters" : [ {
@@ -2013,7 +2013,7 @@
     },
     "/mgm/getprotocolversion" : {
       "get" : {
-        "tags" : [ "MGM API" ],
+        "tags" : [ "MGM" ],
         "description" : "",
         "operationId" : "get_mgm_getprotocolversion",
         "parameters" : [ ],
@@ -2042,7 +2042,7 @@
     },
     "/mgm/{holdingidentityshorthash}/activate" : {
       "post" : {
-        "tags" : [ "MGM API" ],
+        "tags" : [ "MGM" ],
         "description" : "This endpoint enables you to activate a previously suspended member.",
         "operationId" : "post_mgm__holdingidentityshorthash__activate",
         "parameters" : [ {
@@ -2083,7 +2083,7 @@
     },
     "/mgm/{holdingidentityshorthash}/approval/rules" : {
       "get" : {
-        "tags" : [ "MGM API" ],
+        "tags" : [ "MGM" ],
         "description" : "This API retrieves the set of rules the group is currently configured with",
         "operationId" : "get_mgm__holdingidentityshorthash__approval_rules",
         "parameters" : [ {
@@ -2123,7 +2123,7 @@
         }
       },
       "post" : {
-        "tags" : [ "MGM API" ],
+        "tags" : [ "MGM" ],
         "description" : "This API adds a rule to the set of group approval rules.",
         "operationId" : "post_mgm__holdingidentityshorthash__approval_rules",
         "parameters" : [ {
@@ -2171,7 +2171,7 @@
     },
     "/mgm/{holdingidentityshorthash}/approval/rules/preauth" : {
       "get" : {
-        "tags" : [ "MGM API" ],
+        "tags" : [ "MGM" ],
         "description" : "This API retrieves the set of rules the group is currently configured with for registration request with a pre-auth token.",
         "operationId" : "get_mgm__holdingidentityshorthash__approval_rules_preauth",
         "parameters" : [ {
@@ -2211,7 +2211,7 @@
         }
       },
       "post" : {
-        "tags" : [ "MGM API" ],
+        "tags" : [ "MGM" ],
         "description" : "This API adds a rule to the set of group approval rules for registrations including a pre-auth token.",
         "operationId" : "post_mgm__holdingidentityshorthash__approval_rules_preauth",
         "parameters" : [ {
@@ -2259,7 +2259,7 @@
     },
     "/mgm/{holdingidentityshorthash}/approval/rules/preauth/{ruleid}" : {
       "delete" : {
-        "tags" : [ "MGM API" ],
+        "tags" : [ "MGM" ],
         "description" : "This API deletes a group approval rule for registrations including a pre-auth token.",
         "operationId" : "delete_mgm__holdingidentityshorthash__approval_rules_preauth__ruleid_",
         "parameters" : [ {
@@ -2300,7 +2300,7 @@
     },
     "/mgm/{holdingidentityshorthash}/approval/rules/{ruleid}" : {
       "delete" : {
-        "tags" : [ "MGM API" ],
+        "tags" : [ "MGM" ],
         "description" : "This API deletes a previously added group approval rule.",
         "operationId" : "delete_mgm__holdingidentityshorthash__approval_rules__ruleid_",
         "parameters" : [ {
@@ -2341,7 +2341,7 @@
     },
     "/mgm/{holdingidentityshorthash}/approve/{requestid}" : {
       "post" : {
-        "tags" : [ "MGM API" ],
+        "tags" : [ "MGM" ],
         "description" : "",
         "operationId" : "post_mgm__holdingidentityshorthash__approve__requestid_",
         "parameters" : [ {
@@ -2382,7 +2382,7 @@
     },
     "/mgm/{holdingidentityshorthash}/decline/{requestid}" : {
       "post" : {
-        "tags" : [ "MGM API" ],
+        "tags" : [ "MGM" ],
         "description" : "",
         "operationId" : "post_mgm__holdingidentityshorthash__decline__requestid_",
         "parameters" : [ {
@@ -2443,7 +2443,7 @@
     },
     "/mgm/{holdingidentityshorthash}/group-parameters" : {
       "post" : {
-        "tags" : [ "MGM API" ],
+        "tags" : [ "MGM" ],
         "description" : "This API allows you to make changes to the group parameters by submitting an updated version of the group parameters.",
         "operationId" : "post_mgm__holdingidentityshorthash__group_parameters",
         "parameters" : [ {
@@ -2491,7 +2491,7 @@
     },
     "/mgm/{holdingidentityshorthash}/info" : {
       "get" : {
-        "tags" : [ "MGM API" ],
+        "tags" : [ "MGM" ],
         "description" : "This API retrieves the group policy from the MGM required to join the membership group.",
         "operationId" : "get_mgm__holdingidentityshorthash__info",
         "parameters" : [ {
@@ -2530,7 +2530,7 @@
     },
     "/mgm/{holdingidentityshorthash}/mutual-tls/allowed-client-certificate-subjects" : {
       "get" : {
-        "tags" : [ "MGM API" ],
+        "tags" : [ "MGM" ],
         "description" : "This API list the allowed  client certificates subjects to be used in mutual TLS connections.",
         "operationId" : "get_mgm__holdingidentityshorthash__mutual_tls_allowed_client_certificate_subjects",
         "parameters" : [ {
@@ -2573,7 +2573,7 @@
     },
     "/mgm/{holdingidentityshorthash}/mutual-tls/allowed-client-certificate-subjects/{subject}" : {
       "put" : {
-        "tags" : [ "MGM API" ],
+        "tags" : [ "MGM" ],
         "description" : "This API allows a client certificate with a given subject to be used in mutual TLS connections.",
         "operationId" : "put_mgm__holdingidentityshorthash__mutual_tls_allowed_client_certificate_subjects__subject_",
         "parameters" : [ {
@@ -2612,7 +2612,7 @@
         }
       },
       "delete" : {
-        "tags" : [ "MGM API" ],
+        "tags" : [ "MGM" ],
         "description" : "This API disallows a client certificate with a given subject to be used in mutual TLS connections.",
         "operationId" : "delete_mgm__holdingidentityshorthash__mutual_tls_allowed_client_certificate_subjects__subject_",
         "parameters" : [ {
@@ -2653,7 +2653,7 @@
     },
     "/mgm/{holdingidentityshorthash}/preauthtoken" : {
       "get" : {
-        "tags" : [ "MGM API" ],
+        "tags" : [ "MGM" ],
         "description" : "",
         "operationId" : "get_mgm__holdingidentityshorthash__preauthtoken",
         "parameters" : [ {
@@ -2722,7 +2722,7 @@
         }
       },
       "post" : {
-        "tags" : [ "MGM API" ],
+        "tags" : [ "MGM" ],
         "description" : "",
         "operationId" : "post_mgm__holdingidentityshorthash__preauthtoken",
         "parameters" : [ {
@@ -2769,7 +2769,7 @@
     },
     "/mgm/{holdingidentityshorthash}/preauthtoken/revoke/{preauthtokenid}" : {
       "put" : {
-        "tags" : [ "MGM API" ],
+        "tags" : [ "MGM" ],
         "description" : "",
         "operationId" : "put_mgm__holdingidentityshorthash__preauthtoken_revoke__preauthtokenid_",
         "parameters" : [ {
@@ -2833,7 +2833,7 @@
     },
     "/mgm/{holdingidentityshorthash}/registrations" : {
       "get" : {
-        "tags" : [ "MGM API" ],
+        "tags" : [ "MGM" ],
         "description" : "",
         "operationId" : "get_mgm__holdingidentityshorthash__registrations",
         "parameters" : [ {
@@ -2897,7 +2897,7 @@
     },
     "/mgm/{holdingidentityshorthash}/suspend" : {
       "post" : {
-        "tags" : [ "MGM API" ],
+        "tags" : [ "MGM" ],
         "description" : "The suspend endpoint enables you to suspend a member.",
         "operationId" : "post_mgm__holdingidentityshorthash__suspend",
         "parameters" : [ {
@@ -2938,7 +2938,7 @@
     },
     "/mgmadmin/getprotocolversion" : {
       "get" : {
-        "tags" : [ "MGM Admin API" ],
+        "tags" : [ "MGM Admin" ],
         "description" : "",
         "operationId" : "get_mgmadmin_getprotocolversion",
         "parameters" : [ ],
@@ -2967,7 +2967,7 @@
     },
     "/mgmadmin/{holdingidentityshorthash}/force-decline/{requestid}" : {
       "post" : {
-        "tags" : [ "MGM Admin API" ],
+        "tags" : [ "MGM Admin" ],
         "description" : "This method enables you to force decline an in-progress registration request that may be stuck or displaying some other unexpected behaviour.",
         "operationId" : "post_mgmadmin__holdingidentityshorthash__force_decline__requestid_",
         "parameters" : [ {
@@ -3008,7 +3008,7 @@
     },
     "/network/getprotocolversion" : {
       "get" : {
-        "tags" : [ "Network API" ],
+        "tags" : [ "Network" ],
         "description" : "",
         "operationId" : "get_network_getprotocolversion",
         "parameters" : [ ],
@@ -3037,7 +3037,7 @@
     },
     "/network/setup/{holdingidentityshorthash}" : {
       "put" : {
-        "tags" : [ "Network API" ],
+        "tags" : [ "Network" ],
         "description" : "This method configures a holding identity as a network participant by setting properties required for P2P messaging.",
         "operationId" : "put_network_setup__holdingidentityshorthash_",
         "parameters" : [ {
@@ -3078,7 +3078,7 @@
     },
     "/permission" : {
       "get" : {
-        "tags" : [ "RBAC Permission API" ],
+        "tags" : [ "RBAC Permission" ],
         "description" : "This method returns permissions which satisfy supplied query criteria.",
         "operationId" : "get_permission",
         "parameters" : [ {
@@ -3163,7 +3163,7 @@
         }
       },
       "post" : {
-        "tags" : [ "RBAC Permission API" ],
+        "tags" : [ "RBAC Permission" ],
         "description" : "This method creates a new permission.",
         "operationId" : "post_permission",
         "parameters" : [ ],
@@ -3200,7 +3200,7 @@
     },
     "/permission/bulk" : {
       "post" : {
-        "tags" : [ "RBAC Permission API" ],
+        "tags" : [ "RBAC Permission" ],
         "description" : "This method creates a set of permissions and optionally assigns them to the existing roles.",
         "operationId" : "post_permission_bulk",
         "parameters" : [ ],
@@ -3237,7 +3237,7 @@
     },
     "/permission/getprotocolversion" : {
       "get" : {
-        "tags" : [ "RBAC Permission API" ],
+        "tags" : [ "RBAC Permission" ],
         "description" : "",
         "operationId" : "get_permission_getprotocolversion",
         "parameters" : [ ],
@@ -3266,7 +3266,7 @@
     },
     "/permission/{id}" : {
       "get" : {
-        "tags" : [ "RBAC Permission API" ],
+        "tags" : [ "RBAC Permission" ],
         "description" : "This method returns the permission associated with the specified ID.",
         "operationId" : "get_permission__id_",
         "parameters" : [ {
@@ -3303,7 +3303,7 @@
     },
     "/role" : {
       "get" : {
-        "tags" : [ "RBAC Role API" ],
+        "tags" : [ "RBAC Role" ],
         "description" : "This method returns an array with information about all roles in the permission system.",
         "operationId" : "get_role",
         "parameters" : [ ],
@@ -3332,7 +3332,7 @@
         }
       },
       "post" : {
-        "tags" : [ "RBAC Role API" ],
+        "tags" : [ "RBAC Role" ],
         "description" : "The method creates a new role in the RBAC permission system.",
         "operationId" : "post_role",
         "parameters" : [ ],
@@ -3369,7 +3369,7 @@
     },
     "/role/getprotocolversion" : {
       "get" : {
-        "tags" : [ "RBAC Role API" ],
+        "tags" : [ "RBAC Role" ],
         "description" : "",
         "operationId" : "get_role_getprotocolversion",
         "parameters" : [ ],
@@ -3398,7 +3398,7 @@
     },
     "/role/{id}" : {
       "get" : {
-        "tags" : [ "RBAC Role API" ],
+        "tags" : [ "RBAC Role" ],
         "description" : "This method gets the details of a role specified by its ID.",
         "operationId" : "get_role__id_",
         "parameters" : [ {
@@ -3435,7 +3435,7 @@
     },
     "/role/{roleid}/permission/{permissionid}" : {
       "put" : {
-        "tags" : [ "RBAC Role API" ],
+        "tags" : [ "RBAC Role" ],
         "description" : "This method adds the specified permission to the specified role.",
         "operationId" : "put_role__roleid__permission__permissionid_",
         "parameters" : [ {
@@ -3481,7 +3481,7 @@
         }
       },
       "delete" : {
-        "tags" : [ "RBAC Role API" ],
+        "tags" : [ "RBAC Role" ],
         "description" : "This method removes the specified permission from the specified role.",
         "operationId" : "delete_role__roleid__permission__permissionid_",
         "parameters" : [ {
@@ -3529,7 +3529,7 @@
     },
     "/user" : {
       "post" : {
-        "tags" : [ "RBAC User API" ],
+        "tags" : [ "RBAC User" ],
         "description" : "This method creates a new user.",
         "operationId" : "post_user",
         "parameters" : [ ],
@@ -3566,7 +3566,7 @@
     },
     "/user/getprotocolversion" : {
       "get" : {
-        "tags" : [ "RBAC User API" ],
+        "tags" : [ "RBAC User" ],
         "description" : "",
         "operationId" : "get_user_getprotocolversion",
         "parameters" : [ ],
@@ -3595,7 +3595,7 @@
     },
     "/user/{loginname}" : {
       "get" : {
-        "tags" : [ "RBAC User API" ],
+        "tags" : [ "RBAC User" ],
         "description" : "This method returns a user based on the specified login name.",
         "operationId" : "get_user__loginname_",
         "parameters" : [ {
@@ -3632,7 +3632,7 @@
     },
     "/user/{loginname}/permissionsummary" : {
       "get" : {
-        "tags" : [ "RBAC User API" ],
+        "tags" : [ "RBAC User" ],
         "description" : "This method returns a summary of the user's permissions.",
         "operationId" : "get_user__loginname__permissionsummary",
         "parameters" : [ {
@@ -3669,7 +3669,7 @@
     },
     "/user/{loginname}/role/{roleid}" : {
       "put" : {
-        "tags" : [ "RBAC User API" ],
+        "tags" : [ "RBAC User" ],
         "description" : "This method assigns a specified role to a specified user.",
         "operationId" : "put_user__loginname__role__roleid_",
         "parameters" : [ {
@@ -3715,7 +3715,7 @@
         }
       },
       "delete" : {
-        "tags" : [ "RBAC User API" ],
+        "tags" : [ "RBAC User" ],
         "description" : "This method removes the specified role from the specified user.",
         "operationId" : "delete_user__loginname__role__roleid_",
         "parameters" : [ {
@@ -3763,7 +3763,7 @@
     },
     "/virtualnode" : {
       "get" : {
-        "tags" : [ "Virtual Node API" ],
+        "tags" : [ "Virtual Node" ],
         "description" : "This method lists all virtual nodes in the cluster.",
         "operationId" : "get_virtualnode",
         "parameters" : [ ],
@@ -3787,7 +3787,7 @@
         }
       },
       "post" : {
-        "tags" : [ "Virtual Node API" ],
+        "tags" : [ "Virtual Node" ],
         "description" : "This method creates a new virtual node.",
         "operationId" : "post_virtualnode",
         "parameters" : [ ],
@@ -3824,7 +3824,7 @@
     },
     "/virtualnode/getprotocolversion" : {
       "get" : {
-        "tags" : [ "Virtual Node API" ],
+        "tags" : [ "Virtual Node" ],
         "description" : "",
         "operationId" : "get_virtualnode_getprotocolversion",
         "parameters" : [ ],
@@ -3853,7 +3853,7 @@
     },
     "/virtualnode/status/{requestid}" : {
       "get" : {
-        "tags" : [ "Virtual Node API" ],
+        "tags" : [ "Virtual Node" ],
         "description" : "This method returns the VirtualNodeOperationStatus for a given operation request id.",
         "operationId" : "get_virtualnode_status__requestid_",
         "parameters" : [ {
@@ -3890,7 +3890,7 @@
     },
     "/virtualnode/{holdingidentityshorthash}" : {
       "get" : {
-        "tags" : [ "Virtual Node API" ],
+        "tags" : [ "Virtual Node" ],
         "description" : "This method returns the VirtualNodeInfo for a given Holding Identity ShortHash.",
         "operationId" : "get_virtualnode__holdingidentityshorthash_",
         "parameters" : [ {
@@ -3927,7 +3927,7 @@
     },
     "/virtualnode/{virtualnodeshortid}/cpi/{targetcpifilechecksum}" : {
       "put" : {
-        "tags" : [ "Virtual Node API" ],
+        "tags" : [ "Virtual Node" ],
         "description" : "This method upgrades a virtual node's CPI.",
         "operationId" : "put_virtualnode__virtualnodeshortid__cpi__targetcpifilechecksum_",
         "parameters" : [ {
@@ -3986,7 +3986,7 @@
     },
     "/virtualnode/{virtualnodeshortid}/state/{newstate}" : {
       "put" : {
-        "tags" : [ "Virtual Node API" ],
+        "tags" : [ "Virtual Node" ],
         "description" : "This method updates the state of a new virtual node to one of the pre-defined values.",
         "operationId" : "put_virtualnode__virtualnodeshortid__state__newstate_",
         "parameters" : [ {
@@ -4109,7 +4109,6 @@
             "example" : "string"
           },
           "status" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "IN_PROGRESS",
             "enum" : [ "ACCEPTED", "IN_PROGRESS", "SUCCEEDED", "FAILED", "ABORTED" ]
@@ -4389,7 +4388,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -4629,7 +4627,6 @@
       },
       "GenerateCsrWrapperRequest" : {
         "required" : [ "x500Name" ],
-        "type" : "object",
         "properties" : {
           "contextMap" : {
             "type" : "object",
@@ -4924,7 +4921,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -4968,7 +4964,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -5005,7 +5000,6 @@
             "example" : "string"
           },
           "status" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "REVOKED",
             "enum" : [ "AVAILABLE", "REVOKED", "CONSUMED", "AUTO_INVALIDATED" ]
@@ -5174,7 +5168,6 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "registrationStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "SENT_TO_MGM",
             "enum" : [ "NEW", "SENT_TO_MGM", "RECEIVED_BY_MGM", "STARTED_PROCESSING_BY_MGM", "PENDING_MEMBER_VERIFICATION", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "INVALID", "FAILED", "APPROVED" ]
@@ -5271,7 +5264,6 @@
             "example" : "string"
           },
           "inactiveResponseType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "IGNORE",
             "enum" : [ "ERROR", "IGNORE" ]
@@ -5576,19 +5568,16 @@
             "$ref" : "#/components/schemas/RouteConfiguration"
           },
           "flowOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowP2pOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowStartOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
@@ -5617,7 +5606,6 @@
             "example" : "string"
           },
           "vaultDbOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]

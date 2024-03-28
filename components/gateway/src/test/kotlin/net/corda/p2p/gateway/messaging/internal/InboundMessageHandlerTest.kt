@@ -2,19 +2,6 @@ package net.corda.p2p.gateway.messaging.internal
 
 import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.p2p.gateway.GatewayMessage
-import net.corda.data.p2p.gateway.GatewayResponse
-import net.corda.libs.configuration.SmartConfigImpl
-import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.LifecycleEvent
-import net.corda.lifecycle.LifecycleEventHandler
-import net.corda.lifecycle.domino.logic.ComplexDominoTile
-import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
-import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.app.InboundUnauthenticatedMessage
 import net.corda.data.p2p.app.InboundUnauthenticatedMessageHeader
@@ -27,8 +14,21 @@ import net.corda.data.p2p.crypto.MessageType
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage
 import net.corda.data.p2p.crypto.ResponderHelloMessage
 import net.corda.data.p2p.crypto.internal.InitiatorHandshakeIdentity
+import net.corda.data.p2p.gateway.GatewayMessage
+import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.data.p2p.linkmanager.LinkManagerResponse
+import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.publisher.HttpRpcClient
+import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpWriter
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
@@ -98,7 +98,7 @@ class InboundMessageHandlerTest {
     private val avroSchemaRegistry = mock<AvroSchemaRegistry> {
         on { serialize(any<GatewayResponse>()) } doReturn ByteBuffer.wrap(serialisedResponse)
         on { deserialize<GatewayMessage>(ByteBuffer.wrap(serialisedMessage)) } doReturn
-                GatewayMessage(requestId, authenticatedP2PDataMessage(""))
+            GatewayMessage(requestId, authenticatedP2PDataMessage(""))
     }
     private val features = mock<Features> {
         on { enableP2PGatewayToLinkManagerOverHttp } doReturn false
@@ -133,7 +133,7 @@ class InboundMessageHandlerTest {
                 source = InetSocketAddress("www.r3.com", 1231),
                 payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
-            )
+            ),
 
         )
 
@@ -155,7 +155,7 @@ class InboundMessageHandlerTest {
                 source = InetSocketAddress("www.r3.com", 1231),
                 payload = invalidMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
-            )
+            ),
         )
 
         verify(writer)
@@ -177,7 +177,7 @@ class InboundMessageHandlerTest {
                 source = InetSocketAddress("www.r3.com", 1231),
                 payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
-            )
+            ),
 
         )
 
@@ -185,7 +185,7 @@ class InboundMessageHandlerTest {
             .write(
                 HttpResponseStatus.OK,
                 InetSocketAddress("www.r3.com", 1231),
-                serialisedResponse
+                serialisedResponse,
             )
     }
 
@@ -202,7 +202,7 @@ class InboundMessageHandlerTest {
                 source = InetSocketAddress("www.r3.com", 1231),
                 payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
-            )
+            ),
 
         )
 
@@ -210,7 +210,7 @@ class InboundMessageHandlerTest {
             .write(
                 HttpResponseStatus.OK,
                 InetSocketAddress("www.r3.com", 1231),
-                serialisedResponse
+                serialisedResponse,
             )
     }
 
@@ -230,7 +230,7 @@ class InboundMessageHandlerTest {
                 source = InetSocketAddress("www.r3.com", 1231),
                 payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
-            )
+            ),
 
         )
 
@@ -257,7 +257,7 @@ class InboundMessageHandlerTest {
                 source = InetSocketAddress("www.r3.com", 1231),
                 payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
-            )
+            ),
 
         )
 
@@ -290,14 +290,14 @@ class InboundMessageHandlerTest {
                     source = InetSocketAddress("www.r3.com", 1231),
                     payload = serialisedMessage,
                     destination = InetSocketAddress("www.r3.com", 344),
-                )
+                ),
             )
 
             verify(writer)
                 .write(
                     HttpResponseStatus.INTERNAL_SERVER_ERROR,
                     InetSocketAddress("www.r3.com", 1231),
-                    serialisedResponse
+                    serialisedResponse,
                 )
         }
     }
@@ -323,13 +323,13 @@ class InboundMessageHandlerTest {
                 source = InetSocketAddress("www.r3.com", 1231),
                 payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
-            )
+            ),
         )
 
         assertThat(published.firstValue).hasSize(1)
             .anyMatch {
                 (it.topic == LINK_IN_TOPIC) &&
-                        (it.key == sessionId)
+                    (it.key == sessionId)
             }
     }
 
@@ -354,7 +354,7 @@ class InboundMessageHandlerTest {
                 source = InetSocketAddress("www.r3.com", 1231),
                 payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
-            )
+            ),
         )
 
         assertThat(published.firstValue)
@@ -385,7 +385,7 @@ class InboundMessageHandlerTest {
                 source = InetSocketAddress("www.r3.com", 1231),
                 payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
-            )
+            ),
         )
 
         assertThat(published.firstValue)
@@ -415,7 +415,7 @@ class InboundMessageHandlerTest {
                 source = InetSocketAddress("www.r3.com", 1231),
                 payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
-            )
+            ),
         )
 
         assertThat(published.firstValue)
@@ -446,7 +446,7 @@ class InboundMessageHandlerTest {
                 source = InetSocketAddress("www.r3.com", 1231),
                 payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
-            )
+            ),
         )
 
         assertThat(published.firstValue)
@@ -497,7 +497,7 @@ class InboundMessageHandlerTest {
                 source = InetSocketAddress("www.r3.com", 1231),
                 payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
-            )
+            ),
 
         )
 
@@ -519,7 +519,7 @@ class InboundMessageHandlerTest {
                 source = InetSocketAddress("www.r3.com", 1231),
                 payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
-            )
+            ),
 
         )
 
@@ -541,7 +541,7 @@ class InboundMessageHandlerTest {
                 source = InetSocketAddress("www.r3.com", 1231),
                 payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
-            )
+            ),
 
         )
 
@@ -564,7 +564,7 @@ class InboundMessageHandlerTest {
                 source = InetSocketAddress("www.r3.com", 1231),
                 payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
-            )
+            ),
 
         )
 
@@ -592,11 +592,11 @@ class InboundMessageHandlerTest {
                 any(),
                 eq(LinkInMessage(p2pMessage)),
                 eq(LinkManagerResponse::class.java),
-            )
+            ),
         ).doReturn(
             LinkManagerResponse(
                 payload,
-            )
+            ),
         )
 
         handler.onRequest(
@@ -605,7 +605,7 @@ class InboundMessageHandlerTest {
                 source = InetSocketAddress("www.r3.com", 1231),
                 payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
-            )
+            ),
 
         )
 
@@ -613,7 +613,7 @@ class InboundMessageHandlerTest {
             GatewayResponse(
                 msgId,
                 payload,
-            )
+            ),
         )
     }
 
@@ -632,11 +632,11 @@ class InboundMessageHandlerTest {
                 any(),
                 eq(LinkInMessage(p2pMessage)),
                 eq(LinkManagerResponse::class.java),
-            )
+            ),
         ).doReturn(
             LinkManagerResponse(
                 null,
-            )
+            ),
         )
 
         handler.onRequest(
@@ -645,7 +645,7 @@ class InboundMessageHandlerTest {
                 source = InetSocketAddress("www.r3.com", 1231),
                 payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
-            )
+            ),
 
         )
 
@@ -653,7 +653,7 @@ class InboundMessageHandlerTest {
             GatewayResponse(
                 msgId,
                 null,
-            )
+            ),
         )
     }
 
@@ -670,7 +670,7 @@ class InboundMessageHandlerTest {
                 source = InetSocketAddress("www.r3.com", 1231),
                 payload = serialisedMessage,
                 destination = InetSocketAddress("www.r3.com", 344),
-            )
+            ),
 
         )
 

@@ -28,7 +28,7 @@ internal class CommonComponents(
     val trustStoresMap = TrustStoresMap(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
-        messagingConfiguration
+        messagingConfiguration,
     )
     private val children: Collection<DominoTile> =
         listOf(
@@ -40,6 +40,6 @@ internal class CommonComponents(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         dependentChildren = children.map { it.coordinatorName },
-        managedChildren = children.map { it.toNamedLifecycle() }
+        managedChildren = children.map { it.toNamedLifecycle() },
     )
 }

@@ -18,20 +18,22 @@ object CryptoConsts {
         const val PRE_AUTH = "PRE_AUTH"
         const val SESSION_INIT = "SESSION_INIT"
         const val TLS = "TLS"
-        const val JWT_KEY = "JWT_KEY"
+        const val JWT = "JWT_KEY"
         const val ENCRYPTION_SECRET = "ENCRYPTION_SECRET"
 
-        val all: Set<String> = setOf(
-            ACCOUNTS,
-            CI,
-            LEDGER,
-            NOTARY,
-            PRE_AUTH,
-            SESSION_INIT,
-            TLS,
-            JWT_KEY,
-            ENCRYPTION_SECRET,
-        )
+        enum class KeyCategory(val value: String) {
+            ACCOUNTS_KEY(ACCOUNTS),
+            CI_KEY(CI),
+            LEDGER_KEY(LEDGER),
+            NOTARY_KEY(NOTARY),
+            PRE_AUTH_KEY(PRE_AUTH),
+            SESSION_INIT_KEY(SESSION_INIT),
+            TLS_KEY(TLS),
+            JWT_KEY(JWT),
+            ENCRYPTION_SECRET_KEY(ENCRYPTION_SECRET)
+        }
+
+        val all: Set<String> = CryptoConsts.Categories.KeyCategory.values().map { it.value }.toSet()
     }
 
     /**

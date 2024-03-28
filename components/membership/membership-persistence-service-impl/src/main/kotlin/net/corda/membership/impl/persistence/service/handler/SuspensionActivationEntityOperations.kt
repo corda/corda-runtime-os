@@ -13,6 +13,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.exceptions.NotFoundEntityPersistenceException
 import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.utilities.time.Clock
 import javax.persistence.EntityManager
@@ -37,7 +38,7 @@ internal class SuspensionActivationEntityOperations(
                 MemberInfoEntity::class.java,
                 MemberInfoEntityPrimaryKey(groupId, memberName, false),
                 LockModeType.PESSIMISTIC_WRITE,
-            ) ?: throw MembershipPersistenceException("Member '$memberName' does not exist.")
+            ) ?: throw NotFoundEntityPersistenceException("Member '$memberName' does not exist.")
         } catch (e: PessimisticLockException) {
             throw InvalidEntityUpdateException(
                 "Could not update member '$memberName' with serial number: $expectedSerial: ${e.message}",

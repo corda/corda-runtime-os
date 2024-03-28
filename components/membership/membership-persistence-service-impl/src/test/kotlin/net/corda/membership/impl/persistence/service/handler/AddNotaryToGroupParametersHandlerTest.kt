@@ -32,6 +32,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.exceptions.NotFoundEntityPersistenceException
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.notary.MemberNotaryKey
 import net.corda.orm.JpaEntitiesRegistry
@@ -407,7 +408,7 @@ class AddNotaryToGroupParametersHandlerTest {
     fun `exception is thrown when there is no group parameters data in the database`() {
         whenever(previousEntry.resultList).doReturn(emptyList())
 
-        val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }
+        val ex = assertFailsWith<NotFoundEntityPersistenceException> { handler.invoke(requestContext, request) }
         assertThat(ex.message).contains("no group parameters found")
     }
 
@@ -415,7 +416,7 @@ class AddNotaryToGroupParametersHandlerTest {
     fun `exception is thrown when no notary details were provided`() {
         whenever(notaryInRequest.notaryDetails).doReturn(null)
 
-        val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }
+        val ex = assertFailsWith<NotFoundEntityPersistenceException> { handler.invoke(requestContext, request) }
         assertThat(ex.message).contains("notary details not found")
     }
 }

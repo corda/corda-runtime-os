@@ -13,6 +13,8 @@ import net.corda.virtualnode.HoldingIdentity
  *
  * @param transactionFactory factory used for checks that require a new instance of [UtxoLedgerTransaction]
  * @param transaction transaction used for checks that can reuse the same instance of [UtxoLedgerTransaction]
+ * @param holdingIdentity the virtual node holding identity to verify against
+ * @param injectService: a callback that sets up a contract for testing.
  */
 fun verifyContracts(
     transactionFactory: () -> UtxoLedgerTransaction,

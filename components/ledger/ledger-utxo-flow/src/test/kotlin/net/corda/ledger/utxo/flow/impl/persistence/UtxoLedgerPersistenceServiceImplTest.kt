@@ -4,7 +4,9 @@ import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.core.parseSecureHash
+import net.corda.flow.application.services.FlowCheckpointService
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.flow.state.FlowCheckpoint
 import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
@@ -15,6 +17,7 @@ import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInter
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionAndSignaturesImpl
+import net.corda.ledger.utxo.data.transaction.UtxoLedgerLastPersistedTimestamp
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
@@ -52,6 +55,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.ArgumentMatchers.eq
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -68,6 +73,21 @@ class UtxoLedgerPersistenceServiceImplTest {
     private companion object {
         private val byteBuffer = ByteBuffer.wrap("bytes".toByteArray())
         private val serializedBytes = SerializedBytesImpl<Any>(byteBuffer.array())
+
+        private val now = Instant.ofEpochSecond(3600)
+        private val past = now.minusSeconds(1)
+        private val future = now.plusSeconds(1)
+
+        @JvmStatic
+        private fun provideTimeArguments(): Array<TimeArguments> {
+            return arrayOf(
+                TimeArguments(null, now),
+                TimeArguments(past, now),
+                TimeArguments(future, null),
+                TimeArguments(now, null)
+
+            )
+        }
     }
 
     private val externalEventExecutor = mock<ExternalEventExecutor>()
@@ -81,6 +101,8 @@ class UtxoLedgerPersistenceServiceImplTest {
     private val virtualNodeContext = mock<VirtualNodeContext>()
     private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
     private val stateAndRefCache = mock<StateAndRefCache>()
+    private val flowCheckpointService = mock<FlowCheckpointService>()
+    private val flowCheckpoint = mock<FlowCheckpoint>()
 
     private val notaryServiceKey = mock<CompositeKey>()
     private val publicKeyNotaryVNode1 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x01)) }
@@ -103,7 +125,8 @@ class UtxoLedgerPersistenceServiceImplTest {
             utxoSignedTransactionFactory,
             utxoFilteredTransactionFactory,
             notarySignatureVerificationService,
-            stateAndRefCache
+            stateAndRefCache,
+            flowCheckpointService
         )
 
         whenever(serializationService.serialize(any<Any>())).thenReturn(serializedBytes)
@@ -119,19 +142,27 @@ class UtxoLedgerPersistenceServiceImplTest {
         whenever(currentSandboxGroupContext.get()).thenReturn(sandbox)
         whenever(stateAndRefCache.putAll(any())).doAnswer {}
 
+        whenever(flowCheckpointService.getCheckpoint()).thenReturn(flowCheckpoint)
+
         // Composite key containing both of the notary VNode keys
         whenever(notaryServiceKey.leafKeys).thenReturn(setOf(publicKeyNotaryVNode1, publicKeyNotaryVNode2))
         whenever(notaryServiceKey.isFulfilledBy(publicKeyNotaryVNode1)).thenReturn(true)
         whenever(notaryServiceKey.isFulfilledBy(publicKeyNotaryVNode2)).thenReturn(true)
     }
 
-    @Test
-    fun `persist executes successfully`() {
-        val expectedObj = mock<Instant>()
+    data class TimeArguments(val previousPersist: Instant?, val verifyPutWith: Instant?)
+
+    @ParameterizedTest
+    @MethodSource("provideTimeArguments")
+    fun `persist executes successfully and updates timestamp in flow checkpoing when required`(args: TimeArguments) {
+        val expectedObj = now
         whenever(serializationService.deserialize<Instant>(any<ByteArray>(), any())).thenReturn(expectedObj)
         val transaction = mock<UtxoSignedTransactionInternal>()
         whenever(transaction.wireTransaction).thenReturn(mock())
         whenever(transaction.signatures).thenReturn(mock())
+
+        whenever(flowCheckpoint.readCustomState(UtxoLedgerLastPersistedTimestamp::class.java))
+            .then { args.previousPersist?.let { UtxoLedgerLastPersistedTimestamp(it) } }
 
         assertThat(
             utxoLedgerPersistenceService.persist(
@@ -143,6 +174,9 @@ class UtxoLedgerPersistenceServiceImplTest {
         verify(serializationService).serialize(any<Any>())
         verify(serializationService).deserialize<Instant>(any<ByteArray>(), any())
         assertThat(argumentCaptor.firstValue).isEqualTo(PersistTransactionExternalEventFactory::class.java)
+        args.verifyPutWith?.let {
+            verify(flowCheckpoint).writeCustomState(UtxoLedgerLastPersistedTimestamp(it))
+        }
     }
 
     @Test

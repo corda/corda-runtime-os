@@ -11,9 +11,9 @@ import net.corda.data.p2p.NetworkType
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
-import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.InboundUnauthenticatedMessage
 import net.corda.data.p2p.app.InboundUnauthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.data.p2p.crypto.CommonHeader
@@ -22,32 +22,42 @@ import net.corda.data.p2p.crypto.InitiatorHelloMessage
 import net.corda.data.p2p.crypto.MessageType
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage
 import net.corda.data.p2p.crypto.ResponderHelloMessage
+import net.corda.data.p2p.event.SessionCreated
+import net.corda.data.p2p.event.SessionDirection
+import net.corda.data.p2p.event.SessionEvent
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.messaging.api.records.EventLogRecord
+import net.corda.messaging.api.records.Record
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationResult
 import net.corda.p2p.crypto.protocol.api.EncryptionResult
+import net.corda.p2p.linkmanager.TraceableItem
 import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.p2p.linkmanager.sessions.SessionManager
+import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl.Companion.LINK_MANAGER_SUBSYSTEM
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.mockMembersAndGroups
 import net.corda.schema.Schemas.P2P.LINK_IN_TOPIC
 import net.corda.schema.Schemas.P2P.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_MARKERS
+import net.corda.schema.Schemas.P2P.SESSION_EVENTS
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.MockTimeFacilitiesProvider
 import net.corda.utilities.Either
+import net.corda.utilities.flags.Features
 import net.corda.utilities.seconds
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -55,18 +65,13 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
-import net.corda.p2p.linkmanager.TraceableItem
-import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl.Companion.LINK_MANAGER_SUBSYSTEM
-import net.corda.utilities.flags.Features
-import org.assertj.core.api.SoftAssertions.assertSoftly
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doAnswer
 
 class InboundMessageProcessorTest {
     companion object {
         private const val SESSION_ID = "Session"
         private const val MESSAGE_ID = "MessageId"
     }
+
     private val sessionManager = mock<SessionManager>()
     private val myIdentity = createTestHoldingIdentity("CN=PartyA, O=Corp, L=LDN, C=GB", "Group")
     private val remoteIdentity = createTestHoldingIdentity("CN=PartyC, O=Corp, L=LDN, C=GB", "Group")
@@ -191,9 +196,9 @@ class InboundMessageProcessorTest {
             assertThat(records).hasSize(2).anyMatch {
                 val value = it.value
                 it.topic == P2P_IN_TOPIC &&
-                    it.key == "key" &&
-                    value is AppMessage &&
-                    value.message == authenticatedMsg
+                        it.key == "key" &&
+                        value is AppMessage &&
+                        value.message == authenticatedMsg
             }.anyMatch { record ->
                 val value = record.value
                 if (value is LinkOutMessage) {
@@ -208,7 +213,6 @@ class InboundMessageProcessorTest {
                 }
                 false
             }
-            verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
 
         @Test
@@ -259,7 +263,7 @@ class InboundMessageProcessorTest {
                 commonHeader,
                 messageAndPayload.toByteBuffer(), ByteBuffer.wrap(byteArrayOf())
             )
-            val message = object: InboundMessage {
+            val message = object : InboundMessage {
                 override val message = LinkInMessage(dataMessage)
             }
 
@@ -281,9 +285,6 @@ class InboundMessageProcessorTest {
                 val messageAck = MessageAck.fromByteBuffer(payload?.payload)
                 val ack = messageAck.ack as? AuthenticatedMessageAck
                 softly.assertThat(ack?.messageId).isEqualTo(MESSAGE_ID)
-                softly.assertThatCode {
-                    verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
-                }.doesNotThrowAnyException()
             }
         }
 
@@ -319,10 +320,9 @@ class InboundMessageProcessorTest {
             assertThat(records).hasSize(1).allMatch {
                 val value = it.value
                 it.topic == P2P_OUT_MARKERS && value is AppMessageMarker &&
-                    value.marker is LinkManagerReceivedMarker && value.timestamp == 1000000L
+                        value.marker is LinkManagerReceivedMarker && value.timestamp == 1000000L
             }
             verify(sessionManager).messageAcknowledged(SESSION_ID)
-            verify(sessionManager, never()).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
 
         @Test
@@ -353,7 +353,6 @@ class InboundMessageProcessorTest {
             assertThat(loggingInterceptor.errors).allSatisfy {
                 assertThat(it).matches("Could not deserialize message for session Session.* The message was discarded\\.")
             }
-            verify(sessionManager, never()).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
 
         @Test
@@ -390,7 +389,6 @@ class InboundMessageProcessorTest {
                 .anySatisfy {
                     assertThat(it).matches("Could not deserialize message for session Session\\..* Cannot resolve schema for fingerprint.*")
                 }
-            verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
 
         @Test
@@ -426,7 +424,6 @@ class InboundMessageProcessorTest {
             assertThat(loggingInterceptor.warnings)
                 .hasSize(1)
                 .contains("Received message with SessionId = Session for which there is no active session. The message was discarded.")
-            verify(sessionManager, never()).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
 
         @Test
@@ -453,7 +450,6 @@ class InboundMessageProcessorTest {
 
             assertThat(records).isEmpty()
             verify(networkMessagingValidator).isValidInbound(eq(myIdentity), eq(remoteIdentity))
-            verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
 
         @Test
@@ -481,7 +477,6 @@ class InboundMessageProcessorTest {
             assertThat(records).isEmpty()
             verify(sessionManager, never()).messageAcknowledged(any())
             verify(networkMessagingValidator).isValidInbound(eq(myIdentity), eq(remoteIdentity))
-            verify(sessionManager, never()).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
 
         @Test
@@ -527,7 +522,10 @@ class InboundMessageProcessorTest {
             )
 
 
-            verify(sessionManager).deleteOutboundSession(SessionManager.Counterparties(myIdentity, remoteIdentity), authenticatedMsg)
+            verify(sessionManager).deleteOutboundSession(
+                SessionManager.Counterparties(myIdentity, remoteIdentity),
+                authenticatedMsg
+            )
         }
     }
 
@@ -584,9 +582,9 @@ class InboundMessageProcessorTest {
             assertThat(records).hasSize(2).anyMatch {
                 val value = it.value
                 it.topic == P2P_IN_TOPIC &&
-                    it.key == "key" &&
-                    value is AppMessage &&
-                    value.message == authenticatedMsg
+                        it.key == "key" &&
+                        value is AppMessage &&
+                        value.message == authenticatedMsg
             }.anyMatch { record ->
                 val value = record.value
                 if (value is LinkOutMessage) {
@@ -599,9 +597,8 @@ class InboundMessageProcessorTest {
                 }
                 false
             }
-            verify(sessionManager).inboundSessionEstablished(anyOrNull())
-            verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
+
         @Test
         fun `receiving data message with Inbound session will produce a message on the P2P_IN_TOPIC and a response`() {
             val features = mock<Features> {
@@ -655,7 +652,7 @@ class InboundMessageProcessorTest {
                     session
                 )
             )
-            val message = object: InboundMessage {
+            val message = object : InboundMessage {
                 override val message = LinkInMessage(dataMessage)
             }
 
@@ -675,12 +672,6 @@ class InboundMessageProcessorTest {
                 val payload = replies.firstOrNull()?.item?.httpReply?.payload as? AuthenticatedEncryptedDataMessage
                 softly.assertThat(payload?.header).isEqualTo(commonHeader)
                 softly.assertThat(payload?.encryptedPayload).isEqualTo(messageAndPayload.toByteBuffer())
-                softly.assertThatCode {
-                    verify(sessionManager).inboundSessionEstablished(anyOrNull())
-                }.doesNotThrowAnyException()
-                softly.assertThatCode {
-                    verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
-                }.doesNotThrowAnyException()
             }
         }
 
@@ -738,11 +729,10 @@ class InboundMessageProcessorTest {
                 .anySatisfy {
                     assertThat(it).matches(
                         "The identity in the message's source header.*" +
-                            " does not match the session's source identity.*" +
-                            " which indicates a spoofing attempt! The message was discarded\\."
+                                " does not match the session's source identity.*" +
+                                " which indicates a spoofing attempt! The message was discarded\\."
                     )
                 }
-            verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
 
         @Test
@@ -799,11 +789,10 @@ class InboundMessageProcessorTest {
                 .allSatisfy {
                     assertThat(it).matches(
                         "The identity in the message's destination header.*" +
-                            " does not match the session's destination identity.*" +
-                            " which indicates a spoofing attempt! The message was discarded"
+                                " does not match the session's destination identity.*" +
+                                " which indicates a spoofing attempt! The message was discarded"
                     )
                 }
-            verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
 
         @Test
@@ -830,9 +819,7 @@ class InboundMessageProcessorTest {
             )
 
             assertThat(records).isEmpty()
-            verify(sessionManager, never()).inboundSessionEstablished(anyOrNull())
             verify(networkMessagingValidator).isValidInbound(myIdentity, remoteIdentity)
-            verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
 
         @Test
@@ -859,10 +846,8 @@ class InboundMessageProcessorTest {
             )
 
             assertThat(records).isEmpty()
-            verify(sessionManager, never()).inboundSessionEstablished(anyOrNull())
             verify(sessionManager, never()).messageAcknowledged(any())
             verify(networkMessagingValidator).isValidInbound(myIdentity, remoteIdentity)
-            verify(sessionManager, never()).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
 
         @Test
@@ -914,7 +899,10 @@ class InboundMessageProcessorTest {
             )
 
 
-            verify(sessionManager).deleteOutboundSession(SessionManager.Counterparties(myIdentity, remoteIdentity), authenticatedMsg)
+            verify(sessionManager).deleteOutboundSession(
+                SessionManager.Counterparties(myIdentity, remoteIdentity),
+                authenticatedMsg
+            )
         }
     }
 
@@ -927,11 +915,12 @@ class InboundMessageProcessorTest {
             }
             val responderHelloMessage = mock<ResponderHelloMessage>()
             val message = LinkInMessage(responderHelloMessage)
-            val header = LinkOutHeader(myIdentity.toAvro(), remoteIdentity.toAvro(), NetworkType.CORDA_5, "https://example.com")
+            val header =
+                LinkOutHeader(myIdentity.toAvro(), remoteIdentity.toAvro(), NetworkType.CORDA_5, "https://example.com")
             val response = LinkOutMessage(header, hello)
             val captor = argumentCaptor<List<TraceableItem<LinkInMessage, LinkInMessage>>>()
             whenever(sessionManager.processSessionMessages(captor.capture(), any())).doAnswer {
-                captor.firstValue.map { it to response }
+                captor.firstValue.map { it to SessionManager.ProcessSessionMessagesResult(response, emptyList()) }
             }
 
             processor.onNext(
@@ -942,6 +931,7 @@ class InboundMessageProcessorTest {
 
             assertThat(captor.firstValue.single().item).isEqualTo(message)
         }
+
         @Test
         fun `ResponderHandshakeMessage calls to processSessionMessage`() {
             val hello = mock<InitiatorHelloMessage> {
@@ -949,11 +939,12 @@ class InboundMessageProcessorTest {
             }
             val responderHandshakeMessage = mock<ResponderHandshakeMessage>()
             val message = LinkInMessage(responderHandshakeMessage)
-            val header = LinkOutHeader(myIdentity.toAvro(), remoteIdentity.toAvro(), NetworkType.CORDA_5, "https://example.com")
+            val header =
+                LinkOutHeader(myIdentity.toAvro(), remoteIdentity.toAvro(), NetworkType.CORDA_5, "https://example.com")
             val response = LinkOutMessage(header, hello)
             val captor = argumentCaptor<List<TraceableItem<LinkInMessage, LinkInMessage>>>()
             whenever(sessionManager.processSessionMessages(captor.capture(), any())).doAnswer {
-                captor.firstValue.map { it to response }
+                captor.firstValue.map { it to SessionManager.ProcessSessionMessagesResult(response, emptyList()) }
             }
 
             processor.onNext(
@@ -972,11 +963,12 @@ class InboundMessageProcessorTest {
             }
             val initiatorHandshakeMessage = mock<InitiatorHandshakeMessage>()
             val message = LinkInMessage(initiatorHandshakeMessage)
-            val header = LinkOutHeader(myIdentity.toAvro(), remoteIdentity.toAvro(), NetworkType.CORDA_5, "https://example.com")
+            val header =
+                LinkOutHeader(myIdentity.toAvro(), remoteIdentity.toAvro(), NetworkType.CORDA_5, "https://example.com")
             val response = LinkOutMessage(header, hello)
             val captor = argumentCaptor<List<TraceableItem<LinkInMessage, LinkInMessage>>>()
             whenever(sessionManager.processSessionMessages(captor.capture(), any())).doAnswer {
-                captor.firstValue.map { it to response }
+                captor.firstValue.map { it to SessionManager.ProcessSessionMessagesResult(response, emptyList()) }
             }
 
             processor.onNext(
@@ -995,11 +987,12 @@ class InboundMessageProcessorTest {
             }
             val initiatorHelloMessage = mock<InitiatorHelloMessage>()
             val message = LinkInMessage(initiatorHelloMessage)
-            val header = LinkOutHeader(myIdentity.toAvro(), remoteIdentity.toAvro(), NetworkType.CORDA_5, "https://example.com")
+            val header =
+                LinkOutHeader(myIdentity.toAvro(), remoteIdentity.toAvro(), NetworkType.CORDA_5, "https://example.com")
             val response = LinkOutMessage(header, hello)
             val captor = argumentCaptor<List<TraceableItem<LinkInMessage, LinkInMessage>>>()
             whenever(sessionManager.processSessionMessages(captor.capture(), any())).doAnswer {
-                captor.firstValue.map { it to response }
+                captor.firstValue.map { it to SessionManager.ProcessSessionMessagesResult(response, emptyList()) }
             }
 
             processor.onNext(
@@ -1012,12 +1005,17 @@ class InboundMessageProcessorTest {
         }
 
         @Test
-        fun `null response from sessionManager will produce no records`() {
+        fun `null response from sessionManager will produce session creation records`() {
             val initiatorHelloMessage = mock<InitiatorHelloMessage>()
             val message = LinkInMessage(initiatorHelloMessage)
+            val sessionCreated = SessionEvent(SessionCreated(SessionDirection.OUTBOUND, "test"))
+            val sessionCreationRecord = mock<Record<String, *>> {
+                on { topic } doReturn SESSION_EVENTS
+                on { value } doReturn sessionCreated
+            }
             val captor = argumentCaptor<List<TraceableItem<LinkInMessage, LinkInMessage>>>()
             whenever(sessionManager.processSessionMessages(captor.capture(), any())).doAnswer {
-                captor.firstValue.map { it to null }
+                captor.firstValue.map { it to SessionManager.ProcessSessionMessagesResult(null, listOf(sessionCreationRecord)) }
             }
 
             val records = processor.onNext(
@@ -1026,15 +1024,23 @@ class InboundMessageProcessorTest {
                 )
             )
 
-            assertThat(records).isEmpty()
+            assertThat(records).hasSize(1).allSatisfy {
+                assertThat(it.topic).isEqualTo(SESSION_EVENTS)
+                assertThat(it.value).isSameAs(sessionCreated)
+            }
         }
 
         @Test
-        fun `non null responses from sessionManager will produce link out message`() {
+        fun `non null responses from sessionManager will produce link out message and session creation records`() {
             val handshake = ResponderHandshakeMessage()
             val message = LinkInMessage(handshake)
             val header = LinkOutHeader(myIdentity.toAvro(), remoteIdentity.toAvro(), NetworkType.CORDA_5, "https://example.com")
-            val response = LinkOutMessage(header, handshake)
+            val sessionCreated = SessionEvent(SessionCreated(SessionDirection.OUTBOUND, "test"))
+            val sessionCreationRecord = mock<Record<String, *>> {
+                on { topic } doReturn SESSION_EVENTS
+                on { value } doReturn sessionCreated
+            }
+            val response = SessionManager.ProcessSessionMessagesResult(LinkOutMessage(header, handshake), listOf(sessionCreationRecord))
             val captor = argumentCaptor<List<TraceableItem<LinkInMessage, LinkInMessage>>>()
             whenever(sessionManager.processSessionMessages(captor.capture(), any())).doAnswer {
                 captor.firstValue.map { it to response }
@@ -1046,10 +1052,10 @@ class InboundMessageProcessorTest {
                 )
             )
 
-            assertThat(records).hasSize(1).allSatisfy {
-                assertThat(it.topic).isEqualTo(LINK_OUT_TOPIC)
-                assertThat(it.value).isSameAs(response)
-            }
+            val result = records.associate { it.topic to it.value }
+            assertThat(result).hasSize(2)
+            assertThat(result.keys).containsExactlyInAnyOrder(LINK_OUT_TOPIC, SESSION_EVENTS)
+            assertThat(result.values).containsExactlyInAnyOrder(response.message, sessionCreated)
         }
 
         @Test
@@ -1062,7 +1068,14 @@ class InboundMessageProcessorTest {
             }
             val message = LinkInMessage(hello)
             val header = LinkOutHeader(myIdentity.toAvro(), remoteIdentity.toAvro(), NetworkType.CORDA_5, "https://example.com")
-            val response = LinkOutMessage(header, responderHello)
+            val sessionCreated = SessionEvent(SessionCreated(SessionDirection.OUTBOUND, "test"))
+            val sessionCreationRecord = mock<Record<String, *>> {
+                on { topic } doReturn SESSION_EVENTS
+                on { value } doReturn sessionCreated
+            }
+            val response = SessionManager.ProcessSessionMessagesResult(
+                LinkOutMessage(header, responderHello), listOf(sessionCreationRecord)
+            )
             val captor = argumentCaptor<List<TraceableItem<LinkInMessage, LinkInMessage>>>()
             whenever(sessionManager.processSessionMessages(captor.capture(), any())).doAnswer {
                 captor.firstValue.map { it to response }
@@ -1074,10 +1087,10 @@ class InboundMessageProcessorTest {
                 )
             )
 
-            assertThat(records).hasSize(1).anySatisfy {
-                assertThat(it.topic).isEqualTo(LINK_OUT_TOPIC)
-                assertThat(it.value).isSameAs(response)
-            }
+            val result = records.associate { it.topic to it.value }
+            assertThat(result).hasSize(2)
+            assertThat(result.keys).containsExactlyInAnyOrder(LINK_OUT_TOPIC, SESSION_EVENTS)
+            assertThat(result.values).containsExactlyInAnyOrder(response.message, sessionCreated)
         }
     }
 

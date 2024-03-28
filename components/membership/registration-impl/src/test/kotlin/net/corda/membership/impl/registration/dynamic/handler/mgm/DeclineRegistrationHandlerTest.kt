@@ -15,12 +15,14 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PEND
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.VersionedMessageBuilder
-import net.corda.membership.p2p.helpers.P2pRecordsFactory
+import net.corda.membership.lib.getMembershipRecordKey
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.messaging.P2pRecordsFactory
+import net.corda.p2p.messaging.Subsystem
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.DECLINE_REGISTRATION
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
@@ -88,7 +90,7 @@ class DeclineRegistrationHandlerTest {
 
     private val record = mock<Record<String, AppMessage>>()
     private val config = mock<SmartConfig>()
-    private val p2pRecordsFactory = mock<P2pRecordsFactory> {
+    private val membershipP2PRecordsFactory = mock<P2pRecordsFactory> {
         on {
             createAuthenticatedMessageRecord(
                 eq(mgm),
@@ -100,6 +102,8 @@ class DeclineRegistrationHandlerTest {
                         null
                     )
                 ),
+                eq(Subsystem.MEMBERSHIP),
+                eq(getMembershipRecordKey(mgm, member)),
                 any(),
                 any(),
                 eq(MembershipStatusFilter.PENDING),
@@ -119,7 +123,7 @@ class DeclineRegistrationHandlerTest {
         mock(),
         mock(),
         config,
-        p2pRecordsFactory
+        membershipP2PRecordsFactory
     )
 
     @Test
@@ -167,7 +171,10 @@ class DeclineRegistrationHandlerTest {
         }
 
         val results = handler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
-        verify(p2pRecordsFactory, never()).createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any())
+        verify(
+            membershipP2PRecordsFactory,
+            never()
+        ).createAuthenticatedMessageRecord(any(), any(), any(), any(), any(), anyOrNull(), any(), any())
         assertThat(results.outputStates)
             .hasSize(2)
         results.outputStates.forEach { assertThat(it.value).isNotInstanceOf(AppMessage::class.java) }
@@ -194,7 +201,7 @@ class DeclineRegistrationHandlerTest {
         whenever(membershipQueryClient.queryMemberInfo(any(), any(), any()))
             .thenReturn(MembershipQueryResult.Success(listOf(activeInfo)))
         handler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
-        verify(p2pRecordsFactory, never())
-            .createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any())
+        verify(membershipP2PRecordsFactory, never())
+            .createAuthenticatedMessageRecord(any(), any(), any(), any(), any(), anyOrNull(), any(), any())
     }
 }

@@ -69,7 +69,8 @@ class ThrowableSerializer(
     @Suppress("NestedBlockDepth")
     override fun fromProxy(proxy: ThrowableProxy, context: SerializationContext): Throwable {
         try {
-            val clazz = context.currentSandboxGroup().loadClassFromMainBundles(proxy.exceptionClass)
+            val clazz = context.currentSandboxGroup().loadClassFromPublicBundles(proxy.exceptionClass) ?:
+                context.currentSandboxGroup().loadClassFromMainBundles(proxy.exceptionClass)
 
             // If it is a CordaRuntimeException, we can seek any constructor and then set the properties
             // Otherwise we just make a CordaRuntimeException
