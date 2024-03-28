@@ -3,6 +3,7 @@ package net.corda.e2etest.utilities
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.fail
 import java.time.Duration
+import java.time.Instant
 
 /** "Private args" that are only exposed in here */
 class AssertWithRetryArgs {
@@ -76,7 +77,8 @@ fun assertWithRetry(initialize: AssertWithRetryBuilder.() -> Unit): SimpleRespon
     var response: SimpleResponse?
 
     var retry = 0
-    var timeTried: Long
+    var timeTried: Duration
+    val startTime = Instant.now()
     Thread.sleep(args.startDelay.toMillis())
     do {
         response = args.command()
@@ -89,10 +91,10 @@ fun assertWithRetry(initialize: AssertWithRetryBuilder.() -> Unit): SimpleRespon
         }
         if (args.condition.invoke(response)) break
         retry++
-        timeTried = args.interval.toMillis() * retry
-        addAttempt(Attempt(retry, Duration.ofMillis(timeTried), response.toString()))
+        timeTried = Duration.between(startTime, Instant.now())
+        addAttempt(Attempt(retry, timeTried, response.toString()))
         Thread.sleep(args.interval.toMillis())
-    } while (timeTried < args.timeout.toMillis())
+    } while (timeTried < args.timeout)
     println()
 
     assertThat(args.condition.invoke(response!!))
@@ -126,7 +128,8 @@ fun assertWithRetryIgnoringExceptions(initialize: AssertWithRetryBuilder.() -> U
     AssertWithRetryBuilder(args).apply(initialize)
     var retry = 0
     var result: Any?
-    var timeTried: Long
+    var timeTried: Duration
+    val startTime = Instant.now()
 
     Thread.sleep(args.startDelay.toMillis())
     do {
@@ -142,10 +145,10 @@ fun assertWithRetryIgnoringExceptions(initialize: AssertWithRetryBuilder.() -> U
         unbufferedPrint('.')
 
         retry++
-        timeTried = args.interval.toMillis() * retry
+        timeTried = Duration.between(startTime, Instant.now())
         addAttempt(
             Attempt(
-                retry, Duration.ofMillis(timeTried),
+                retry, timeTried,
                 if (result is Exception) result.stackTraceToString() else result.toString()
             )
         )
@@ -157,7 +160,7 @@ fun assertWithRetryIgnoringExceptions(initialize: AssertWithRetryBuilder.() -> U
             if (args.condition.invoke(result)) break
         }
         Thread.sleep(args.interval.toMillis())
-    } while (timeTried < args.timeout.toMillis())
+    } while (timeTried < args.timeout)
     println()
 
     when (result) {
