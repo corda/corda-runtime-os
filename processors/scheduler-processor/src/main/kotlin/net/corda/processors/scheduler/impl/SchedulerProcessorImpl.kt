@@ -52,9 +52,8 @@ class SchedulerProcessorImpl @Activate constructor(
     }
 
     private companion object {
-        private const val LEDGER_REPAIR_SCHEDULE_PERIOD_SYSTEM_PROPERTY =  "net.corda.ledger.utxo.repair.schedulePeriod"
+        private const val LEDGER_REPAIR_SCHEDULE_PERIOD_ENV_VARIABLE =  "CORDA_LEDGER_REPAIR_SCHEDULE_PERIOD"
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private val defaultLedgerRepairSchedulePeriod = Duration.of(10, ChronoUnit.MINUTES).toSeconds()
     }
 
     private val dependentComponents = DependentComponents.of(
@@ -86,7 +85,8 @@ class SchedulerProcessorImpl @Activate constructor(
         // TODO CORE-16331 Add configuration with a default of 10 minutes under the ledger.repair configuration section
         Schedule(
             ScheduledTask.SCHEDULE_TASK_NAME_LEDGER_REPAIR,
-            java.lang.Long.getLong(LEDGER_REPAIR_SCHEDULE_PERIOD_SYSTEM_PROPERTY, defaultLedgerRepairSchedulePeriod),
+            (System.getenv()[LEDGER_REPAIR_SCHEDULE_PERIOD_ENV_VARIABLE])?.toLongOrNull()
+                ?: Duration.of(10, ChronoUnit.MINUTES).toSeconds(),
             ScheduledTask.SCHEDULE_TASK_TOPIC_LEDGER_REPAIR_PROCESSOR
         )
     )
