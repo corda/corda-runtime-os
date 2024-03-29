@@ -8,7 +8,7 @@ jobs:
     name: Remove stale PRs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/stale@v9
+      - uses: actions/stale@v9.0.0
         with:
           debug-only: false
           exempt-pr-labels: 'DO_NOT_CLOSE'
