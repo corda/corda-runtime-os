@@ -190,13 +190,12 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                     sandboxGroupContext.putObjectByKey(SANDBOX_SINGLETONS, it.first)
                     it.second
                 }
-                logger.info("Registered services for sandbox {} for holding identity={}", sandboxGroup.id, vnc.holdingIdentity)
 
                 // Run the caller's initializer.
                 val initializerAutoCloseable =
                     initializer.initializeSandboxGroupContext(vnc.holdingIdentity, sandboxGroupContext)
 
-                logger.info("Created {} sandbox {} for holding identity={}",
+                logger.debug("Created {} sandbox {} for holding identity={}",
                     vnc.sandboxGroupType, sandboxGroup.id, vnc.holdingIdentity)
 
                 // Wrapped SandboxGroupContext, specifically to set closeable and forward on all other calls.
@@ -213,8 +212,6 @@ class SandboxGroupContextServiceImpl @Activate constructor(
 
                     // And unload the (OSGi) sandbox group
                     sandboxCreationService.unloadSandboxGroup(sandboxGroupContext.sandboxGroup)
-                }.also {
-                    logger.info("End of Sandbox creation method  {} for holding identity={} ", sandboxGroup.id, vnc.holdingIdentity)
                 }
             }!!
         }
