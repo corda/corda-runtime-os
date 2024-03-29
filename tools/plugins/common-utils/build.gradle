@@ -1,6 +1,7 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm'
     id 'corda.common-library'
+    id 'org.jetbrains.kotlin.kapt'
 }
 
 ext {
@@ -12,7 +13,9 @@ ext.cordaEnableFormatting = true
 group 'net.corda.cli.plugins.data'
 
 dependencies {
-    implementation libs.kotlin.stdlib
-    implementation "info.picocli:picocli:$picocliVersion"
-    implementation project(':libs:crypto:crypto-core')
+    compileOnly libs.kotlin.stdlib
+    compileOnly "net.corda.cli.host:api:$pluginHostVersion"
+    kapt "info.picocli:picocli:$picocliVersion"
+    compileOnly "info.picocli:picocli:$picocliVersion"
+    compileOnly project(':libs:crypto:crypto-core')
 }
