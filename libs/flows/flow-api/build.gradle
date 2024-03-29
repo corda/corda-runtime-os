@@ -15,8 +15,6 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
 
     api project(":libs:tracing")
-    api 'net.corda:corda-ledger-utxo'
-
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:membership:membership-common")
     implementation project(":libs:messaging:messaging")
@@ -25,4 +23,4 @@ dependencies {
     implementation project(':libs:virtual-node:virtual-node-info')
 }
 
-description 'Flow API Library'
+description 'Flow External Events Library'

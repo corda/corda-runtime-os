@@ -1,10 +1,5 @@
 package com.r3.corda.testing.packagingverification
 
-import com.r3.corda.testing.packagingverification.contract.STATE_NAME
-import com.r3.corda.testing.packagingverification.contract.STATE_SYMBOL
-import com.r3.corda.testing.packagingverification.contract.SimpleState
-import com.r3.corda.testing.packagingverification.contract.TransferCommand
-import com.r3.corda.testing.packagingverification.contract.toSecureHash
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
@@ -20,7 +15,13 @@ import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.token.selection.TokenClaimCriteria
 import net.corda.v5.ledger.utxo.token.selection.TokenSelection
+import com.r3.corda.testing.packagingverification.contract.STATE_NAME
+import com.r3.corda.testing.packagingverification.contract.STATE_SYMBOL
+import com.r3.corda.testing.packagingverification.contract.SimpleState
+import com.r3.corda.testing.packagingverification.contract.TransferCommand
+import com.r3.corda.testing.packagingverification.contract.toSecureHash
 import org.slf4j.LoggerFactory
+import java.lang.IllegalArgumentException
 import java.math.BigDecimal
 import java.time.Duration
 import java.time.Instant
@@ -78,8 +79,7 @@ class TransferStatesFlow : ClientStartableFlow {
 
         try {
             log.info("Making token claim")
-            val tokenClaim = tokenSelection.tryClaim("claim1", selectionCriteria)
-                ?: throw CordaRuntimeException("Cannot claim tokens.")
+            val tokenClaim = tokenSelection.tryClaim(selectionCriteria) ?: throw CordaRuntimeException("Cannot claim tokens.")
             log.info("Got token claim, ${tokenClaim.claimedTokens.size} tokens")
 
             val myPublicKey = myInfo.ledgerKeys.first()
