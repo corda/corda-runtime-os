@@ -100,37 +100,26 @@ class CheckLimits : Callable<Int>, PluginContext() {
             }
 
             if (requests?.cpu != null || limits?.cpu != null) {
-                logger.info("${name.uppercase()} CPU: \n\t request - ${requests?.cpu ?: "unset"}\n\t limit - ${limits?.cpu ?: "unset"}")
-                val limit: Double? = if (limits?.cpu == null) null else parseCpuString(limits.cpu!!)
-                val request: Double? = if (requests?.cpu == null) null else parseCpuString(requests.cpu!!)
+                if (requests?.cpu == null || limits?.cpu == null) {
+                    report.addEntry(ReportEntry("${name.uppercase()} cpu resources contains both a request and a limit", false))
+                    return
+                }
+                report.addEntry(ReportEntry("${name.uppercase()} cpu resources contains both a request and a limit", true))
+                logger.info("${name.uppercase()} CPU: \n\t request - ${requests.cpu}\n\t limit - ${limits.cpu}")
+                val limit: Double = parseCpuString(limits.cpu!!)
+                val request: Double = parseCpuString(requests.cpu!!)
                 report.addEntry(ReportEntry("Parse \"$name\" cpu resource strings", true))
 
-                if (limit != null && request != null) {
-                    checkRequestsNotGreaterThanLimits(limit, request, name, requests, limits)
+                if (limit >= request) {
+                    report.addEntry(ReportEntry("$name cpu requests do not exceed limits", true))
+                } else {
+                    report.addEntry(ReportEntry("$name cpu requests do not exceed limits", false,
+                        ResourceLimitsExceededException("Request ($requests.cpu!!) is greater than it's limit ($limits.cpu!!)")))
                 }
             }
 
         } catch(e: IllegalArgumentException) {
             report.addEntry(ReportEntry("Parse \"$name\" cpu resource strings", false, e))
-        }
-    }
-
-    private fun checkRequestsNotGreaterThanLimits(
-        limit: Double,
-        request: Double,
-        name: String,
-        requests: ResourceValues?,
-        limits: ResourceValues?
-    ) {
-        if (limit >= request) {
-            report.addEntry(ReportEntry("$name cpu requests do not exceed limits", true))
-        } else {
-            report.addEntry(
-                ReportEntry(
-                    "$name cpu requests do not exceed limits", false,
-                    ResourceLimitsExceededException("Request ($requests.cpu!!) is greater than it's limit ($limits.cpu!!)")
-                )
-            )
         }
     }
 

@@ -13,50 +13,23 @@ kafka:
     allow.everyone.if.no.acl.found=true
     super.users=User:controller_user
   controller:
-    podAnnotations:
-      cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
-    podAntiAffinityPreset: hard
     replicaCount: 7
     startupProbe:
       enabled: true
-    resources:
-      requests:
-        memory: 1536Mi
-        cpu: 1000m
-      limits:
-        memory: 1536Mi
-  metrics:
-    jmx:
-      resources:
-        requests:
-          memory: 128Mi
-          cpu: 150m
-        limits:
-          memory: 128Mi
-    kafka:
-      resources:
-        requests:
-          memory: 32Mi
-          cpu: 100m
-        limits:
-          memory: 32Mi
+  resources:
+    requests:
+      memory: 780Mi
+      cpu: 1000m
+    limits:
+      memory: 1600Mi
+      cpu: 1000m
 
 postgresql:
   primary:
-    extendedConfiguration: |
-      max_connections = 500
-    podAnnotations:
-      cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
     resources:
       requests:
         memory: 256Mi
-        cpu: 250m
+        cpu: 300m
       limits:
-        memory: 256Mi
-  metrics:
-    resources:
-      requests:
-        memory: 32Mi
-        cpu: 100m
-      limits:
-        memory: 64Mi
+        memory: 512Mi
+        cpu: 600m
