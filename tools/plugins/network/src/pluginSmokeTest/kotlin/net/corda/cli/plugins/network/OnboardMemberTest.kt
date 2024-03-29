@@ -86,7 +86,7 @@ class OnboardMemberTest {
         )
 
         outputStub.lookup(member)
-        assertThat(outputStub.getAllPartyNames().contains(member.toString())).isTrue
+        assertThat(outputStub.getAllPartyNames().contains(member)).isTrue
     }
 
     @Test
@@ -114,7 +114,7 @@ class OnboardMemberTest {
         )
 
         outputStub.lookup(member)
-        assertThat(outputStub.getAllPartyNames().contains(member.toString())).isTrue
+        assertThat(outputStub.getAllPartyNames().contains(member)).isTrue
     }
 
     @Test
@@ -160,7 +160,7 @@ class OnboardMemberTest {
         )
 
         outputStub.lookup(member)
-        assertThat(outputStub.getAllPartyNames().contains(member.toString())).isTrue
+        assertThat(outputStub.getAllPartyNames().contains(member)).isTrue
     }
 
     @Test
@@ -180,7 +180,7 @@ class OnboardMemberTest {
         )
 
         outputStub.lookup(member)
-        assertThat(outputStub.getAllPartyNames().contains(member.toString())).isTrue
+        assertThat(outputStub.getAllPartyNames().contains(member)).isTrue
     }
 
     @Test
