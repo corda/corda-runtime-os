@@ -123,14 +123,17 @@ class GenerateGroupPolicy(private val output: Output = ConsoleOutput()) : Runnab
                     MemberRegistrationRequest(
                         context = mapOf(
                             "name" to x500,
-                            "memberStatus" to eitherOrThrow(member["status"], MEMBER_STATUS_ACTIVE),
+                            "memberStatus" to (member["status"]?.toString() ?: MEMBER_STATUS_ACTIVE),
                             "endpointUrl-1" to
-                                eitherOrThrow(member["endpoint"], content["endpoint"]) { "No endpoint specified." },
-                            "endpointProtocol-1" to (
-                                eitherOrThrow(member["endpointProtocol"], content["endpointProtocol"]) {
-                                    "No endpoint protocol specified."
-                                }
-                                ),
+                                (
+                                    member["endpoint"]?.toString() ?: content["endpoint"]?.toString()
+                                        ?: throw IllegalArgumentException("No endpoint specified.")
+                                    ),
+                            "endpointProtocol-1" to
+                                (
+                                    member["endpointProtocol"]?.toString() ?: content["endpointProtocol"]?.toString()
+                                        ?: throw IllegalArgumentException("No endpoint protocol specified.")
+                                    ),
                         ),
                     )
                 )
@@ -207,12 +210,5 @@ class GenerateGroupPolicy(private val output: Output = ConsoleOutput()) : Runnab
                 }
             }
         }
-    }
-
-    private fun eitherOrThrow(a: Any?, b: Any?, error: (() -> String)? = null): String {
-        error?.let {
-            require(a != null || b != null) { error() }
-        } ?: require(a != null || b != null)
-        return (a ?: b).toString()
     }
 }
