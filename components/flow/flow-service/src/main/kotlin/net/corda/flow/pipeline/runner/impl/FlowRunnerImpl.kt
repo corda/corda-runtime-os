@@ -9,6 +9,7 @@ import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowStackItemSession
+import net.corda.data.flow.state.waiting.start.WaitingForStartFlow
 import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowLogicAndArgs
@@ -17,7 +18,6 @@ import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
-import net.corda.data.flow.state.waiting.start.WaitingForStartFlow
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
@@ -32,6 +32,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.time.Duration
 
 @Suppress("LongParameterList")
@@ -50,6 +51,11 @@ class FlowRunnerImpl @Activate constructor(
     @Reference(service = PlatformInfoProvider::class)
     val platformInfoProvider: PlatformInfoProvider,
 ) : FlowRunner {
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
     override fun runFlow(
         context: FlowEventContext<Any>,
         flowContinuation: FlowContinuation
@@ -157,7 +163,9 @@ class FlowRunnerImpl @Activate constructor(
         contextUserProperties: KeyValuePairList,
         contextPlatformProperties: KeyValuePairList
     ): FiberFuture {
+
         val checkpoint = context.checkpoint
+        logger.info("Starting flow runner for ${checkpoint.flowId}")
         val fiberContext = flowFiberExecutionContextFactory.createFiberExecutionContext(context)
         val flow = createFlow(fiberContext.sandboxGroupContext)
         val stackItem = fiberContext.flowStackService.pushWithContext(
@@ -175,6 +183,7 @@ class FlowRunnerImpl @Activate constructor(
         context: FlowEventContext<Any>,
         flowContinuation: FlowContinuation
     ): FiberFuture {
+        logger.info("Resuming flow runner for ${context.checkpoint.flowId}")
         val fiberContext = flowFiberExecutionContextFactory.createFiberExecutionContext(context)
         return flowFiberFactory.createAndResumeFlowFiber(fiberContext, flowContinuation)
     }
