@@ -51,6 +51,7 @@ dependencies {
     testImplementation project(":libs:messaging:kafka-message-bus-impl")
     testImplementation project(":libs:schema-registry:schema-registry")
     testImplementation project(":libs:schema-registry:schema-registry-impl")
+    testImplementation project(":testing:test-utilities")
 
     testRuntimeOnly libs.slf4j.simple
 
