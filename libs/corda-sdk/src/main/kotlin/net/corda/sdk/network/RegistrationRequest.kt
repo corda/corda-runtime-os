@@ -4,7 +4,7 @@ import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 
-class RegistrationRequests {
+class RegistrationRequest {
 
     /**
      * Create an object containing the necessary registration context for an MGM

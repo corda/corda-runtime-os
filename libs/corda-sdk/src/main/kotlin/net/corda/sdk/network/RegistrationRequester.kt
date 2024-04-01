@@ -16,7 +16,7 @@ class RegistrationRequester {
     /**
      * Submit the registration
      * @param restClient of type RestClient<MemberRegistrationRestResource>
-     * @param memberRegistrationRequest [RegistrationRequests]
+     * @param memberRegistrationRequest [RegistrationRequest]
      * @param holdingId the holding identity of the node
      * @param wait Duration before timing out, default 10 seconds
      * @return ID of the registration request
