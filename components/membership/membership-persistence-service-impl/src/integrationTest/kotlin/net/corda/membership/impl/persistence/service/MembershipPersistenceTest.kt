@@ -273,9 +273,10 @@ class MembershipPersistenceTest {
 
             override fun persistRegistrationRequest(
                 viewOwningIdentity: HoldingIdentity,
-                registrationRequest: RegistrationRequest
+                registrationRequest: RegistrationRequest,
+                create: Boolean,
             ) = safeCall {
-                membershipPersistenceClient.persistRegistrationRequest(viewOwningIdentity, registrationRequest)
+                membershipPersistenceClient.persistRegistrationRequest(viewOwningIdentity, registrationRequest, create)
             }
 
             override fun setMemberAndRegistrationRequestAsApproved(
@@ -611,7 +612,8 @@ class MembershipPersistenceTest {
                     CryptoSignatureSpec("", null, null)
                 ),
                 REGISTRATION_SERIAL,
-            )
+            ),
+            true,
         ).execute()
 
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
@@ -683,7 +685,8 @@ class MembershipPersistenceTest {
                     CryptoSignatureSpec("", null, null)
                 ),
                 null,
-            )
+            ),
+            true,
         ).execute()
 
         assertThat(statusPersistence).isInstanceOf(MembershipPersistenceResult.Success::class.java)
@@ -751,7 +754,8 @@ class MembershipPersistenceTest {
                     CryptoSignatureSpec("", null, null)
                 ),
                 2L,
-            )
+            ),
+            true,
         ).execute()
 
         assertThat(serialAndStatusPersistence).isInstanceOf(MembershipPersistenceResult.Success::class.java)
@@ -1390,7 +1394,8 @@ class MembershipPersistenceTest {
                     CryptoSignatureSpec("", null, null),
                 ),
                 REGISTRATION_SERIAL,
-            )
+            ),
+            true,
         ).execute()
 
         assertThat(persistRegRequestResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
@@ -2182,7 +2187,8 @@ class MembershipPersistenceTest {
                     CryptoSignatureSpec("", null, null)
                 ),
                 REGISTRATION_SERIAL,
-            )
+            ),
+            true,
         ).execute()
     }
 

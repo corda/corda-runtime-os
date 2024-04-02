@@ -119,13 +119,15 @@ interface MembershipPersistenceClient : Lifecycle {
      *
      * @param viewOwningIdentity The holding identity of the owner of the view of data.
      * @param registrationRequest The registration request to persist.
+     * @param create If the registration request was not exists, create a new one.
      *
      * @return membership persistence operation.
      *  No payload is returned in the case of success.
      */
     fun persistRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
-        registrationRequest: RegistrationRequest
+        registrationRequest: RegistrationRequest,
+        create: Boolean,
     ): MembershipPersistenceOperation<Unit>
 
     /**

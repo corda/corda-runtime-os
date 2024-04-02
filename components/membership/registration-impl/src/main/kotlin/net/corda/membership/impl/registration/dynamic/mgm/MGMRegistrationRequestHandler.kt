@@ -63,7 +63,8 @@ internal class MGMRegistrationRequestHandler(
                     signatureSpec,
                 ),
                 serial = serial,
-            )
+            ),
+            create = false,
         ).execute()
         if (registrationRequestPersistenceResult is MembershipPersistenceResult.Failure) {
             throw InvalidMembershipRegistrationException(

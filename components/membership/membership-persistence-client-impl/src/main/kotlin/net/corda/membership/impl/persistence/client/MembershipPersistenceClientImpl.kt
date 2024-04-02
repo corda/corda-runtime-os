@@ -221,7 +221,8 @@ class MembershipPersistenceClientImpl(
 
     override fun persistRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
-        registrationRequest: RegistrationRequest
+        registrationRequest: RegistrationRequest,
+        create: Boolean,
     ): MembershipPersistenceOperation<Unit> {
         logger.info("Persisting the member registration request.")
         val request = MembershipPersistenceRequest(
@@ -235,7 +236,8 @@ class MembershipPersistenceClientImpl(
                         memberContext,
                         registrationContext,
                         serial,
-                    )
+                    ),
+                    create,
                 )
             }
         )

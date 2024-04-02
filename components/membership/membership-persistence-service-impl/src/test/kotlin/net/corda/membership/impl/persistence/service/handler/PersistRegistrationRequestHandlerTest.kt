@@ -161,7 +161,8 @@ class PersistRegistrationRequestHandlerTest {
                 memberContext,
                 registrationContext,
                 0L,
-            )
+            ),
+            true,
         )
     }
 
@@ -235,22 +236,22 @@ class PersistRegistrationRequestHandlerTest {
     @Test
     fun `invoke will merge nothing except serial if the status is sent to MGM and serial is null`() {
         val now = clock.instant().minusSeconds(100)
-        val previousEntity = mock<RegistrationRequestEntity> {
-            on { status } doReturn RegistrationStatus.APPROVED.toString()
-            on { serial } doReturn null
-            on { registrationId } doReturn ourRegistrationId
-            on { holdingIdentityShortHash } doReturn ourHoldingIdentity.shortHash.value
-            on { created } doReturn now
-            on { lastModified } doReturn now
-            on { memberContext } doReturn memberContext
-            on { memberContextSignatureKey } doReturn memberContextSignatureKey
-            on { memberContextSignatureContent } doReturn memberContextSignatureContent
-            on { memberContextSignatureSpec } doReturn memberContextSignatureSpec
-            on { registrationContext } doReturn registrationContext
-            on { registrationContextSignatureKey } doReturn registrationContextSignatureKey
-            on { registrationContextSignatureContent } doReturn registrationContextSignatureContent
-            on { registrationContextSignatureSpec } doReturn registrationContextSignatureSpec
-        }
+        val previousEntity = RegistrationRequestEntity(
+            status = RegistrationStatus.APPROVED.toString(),
+            serial = null,
+            registrationId = ourRegistrationId,
+            holdingIdentityShortHash = ourHoldingIdentity.shortHash.value,
+            created = now,
+            lastModified = now,
+            memberContext = memberContext,
+            memberContextSignatureKey = memberContextSignatureKey,
+            memberContextSignatureContent = memberContextSignatureContent,
+            memberContextSignatureSpec = memberContextSignatureSpec,
+            registrationContext = registrationContext,
+            registrationContextSignatureKey = registrationContextSignatureKey,
+            registrationContextSignatureContent = registrationContextSignatureContent,
+            registrationContextSignatureSpec = registrationContextSignatureSpec,
+        )
         whenever(
             entityManager.find(
                 RegistrationRequestEntity::class.java,

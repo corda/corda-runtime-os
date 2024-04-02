@@ -259,7 +259,8 @@ class MembershipPersistenceClientImplTest {
     fun `persist registration request before starting component`() {
         val result = membershipPersistenceClient.persistRegistrationRequest(
             ourHoldingIdentity,
-            ourRegistrationRequest
+            ourRegistrationRequest,
+            true,
         ).execute()
 
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
@@ -426,7 +427,7 @@ class MembershipPersistenceClientImplTest {
         postConfigChangedEvent()
         mockPersistenceResponse()
 
-        membershipPersistenceClient.persistRegistrationRequest(ourHoldingIdentity, ourRegistrationRequest).execute()
+        membershipPersistenceClient.persistRegistrationRequest(ourHoldingIdentity, ourRegistrationRequest, true).execute()
 
         with(argumentCaptor<MembershipPersistenceRequest>()) {
             verify(rpcSender).sendRequest(capture())
@@ -442,6 +443,7 @@ class MembershipPersistenceClientImplTest {
                 assertThat(registrationId)
                     .isEqualTo(this@MembershipPersistenceClientImplTest.registrationId)
             }
+            assertThat((firstValue.request as? PersistRegistrationRequest)?.create).isTrue()
         }
     }
 

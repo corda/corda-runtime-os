@@ -268,7 +268,7 @@ class StaticMemberRegistrationServiceTest {
     }
     private val persistenceClient = mock<MembershipPersistenceClient> {
         on { persistGroupParameters(any(), any()) } doReturn SuccessOperation(mockSignedGroupParameters)
-        on { persistRegistrationRequest(any(), any()) } doReturn persistRegistrationRequestOperation
+        on { persistRegistrationRequest(any(), any(), any()) } doReturn persistRegistrationRequestOperation
         on { updateStaticNetworkInfo(any()) } doAnswer { SuccessOperation(it.getArgument(0)) }
     }
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
@@ -487,7 +487,8 @@ class StaticMemberRegistrationServiceTest {
             whenever(
                 persistenceClient.persistRegistrationRequest(
                     eq(alice),
-                    capturedRequest.capture()
+                    capturedRequest.capture(),
+                    eq(false),
                 )
             ).doReturn(persistRegistrationRequestOperation)
             setUpPublisher()

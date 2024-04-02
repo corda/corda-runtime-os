@@ -233,7 +233,7 @@ class RegistrationProcessorTest {
             on { createAvroSerializer<Any>(any()) }.thenReturn(verificationRequestResponseSerializer)
         }
         membershipPersistenceClient = mock {
-            on { persistRegistrationRequest(any(), any()) } doReturn operation
+            on { persistRegistrationRequest(any(), any(), any()) } doReturn operation
             on { setRegistrationRequestStatus(any(), any(), any(), anyOrNull()) } doReturn operation
             on { persistMemberInfo(any(), any()) } doReturn operation
         }

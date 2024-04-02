@@ -147,7 +147,8 @@ internal class QueueRegistrationHandler(
         registrationLogger.info("MGM queueing registration request.")
         membershipPersistenceClient.persistRegistrationRequest(
             command.mgm.toCorda(),
-            command.toRegistrationRequest()
+            command.toRegistrationRequest(),
+            create = true,
         ).getOrThrow()
         registrationLogger.info(
             "MGM successfully queued the registration request."

@@ -53,7 +53,7 @@ class MgmRegistrationRequestHandlerTest {
     }
     private val membershipPersistenceClient: MembershipPersistenceClient = mock {
         on {
-            persistRegistrationRequest(any(), any())
+            persistRegistrationRequest(any(), any(), any())
         } doReturn operation
     }
     private val membershipQueryClient = mock<MembershipQueryClient>()
@@ -78,7 +78,7 @@ class MgmRegistrationRequestHandlerTest {
         }
 
         val captor = argumentCaptor<RegistrationRequest>()
-        verify(membershipPersistenceClient).persistRegistrationRequest(eq(holdingIdentity), captor.capture())
+        verify(membershipPersistenceClient).persistRegistrationRequest(eq(holdingIdentity), captor.capture(), eq(false))
         assertThat(captor.firstValue.registrationId).isEqualTo(registrationId.toString())
         assertThat(captor.firstValue.memberContext.data).isEqualTo(ByteBuffer.wrap(serializedMemberContext))
         assertThat(captor.firstValue.registrationContext.data).isEqualTo(ByteBuffer.wrap(serialisedPayload))
@@ -155,7 +155,7 @@ class MgmRegistrationRequestHandlerTest {
             )
         }
         val captor = argumentCaptor<RegistrationRequest>()
-        verify(membershipPersistenceClient).persistRegistrationRequest(eq(holdingIdentity), captor.capture())
+        verify(membershipPersistenceClient).persistRegistrationRequest(eq(holdingIdentity), captor.capture(), eq(false))
         assertThat(captor.firstValue.serial).isEqualTo(serial)
     }
 
