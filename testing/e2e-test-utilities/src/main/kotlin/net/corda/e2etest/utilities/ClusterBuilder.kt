@@ -300,18 +300,22 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         isBackchainRequiredNotary: String? = null,
         notaryPlugin: String = "nonvalidating"
     ): String {
-        val isBackchainRequiredBoolean = getIsBackchainRequiredOrDefault(isBackchainRequiredNotary)
-        val context = (mapOf(
+
+        val context = mutableMapOf(
             "corda.key.scheme" to "CORDA.ECDSA.SECP256R1",
             "corda.roles.0" to "notary",
             "corda.notary.service.name" to notaryServiceName,
             "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.$notaryPlugin",
-            "corda.notary.service.flow.protocol.version.0" to "1",
-            "corda.notary.service.backchain.required" to "$isBackchainRequiredBoolean"
-        ) + customMetadata)
-            .map { "\"${it.key}\" : \"${it.value}\"" }
-            .joinToString()
-        return """{ "context": { $context } }""".trimMargin()
+            "corda.notary.service.flow.protocol.version.0" to "1"
+        )
+        if (isBackchainRequiredNotary != null) {
+            val isBackchainRequiredBoolean = getIsBackchainRequiredOrDefault(isBackchainRequiredNotary)
+            context["corda.notary.service.backchain.required"] = "$isBackchainRequiredBoolean"
+        }
+
+        val fullContext = (context + customMetadata).map { "\"${it.key}\" : \"${it.value}\"" }.joinToString()
+
+        return """{ "context": { $fullContext } }""".trimMargin()
     }
 
     private fun createRbacRoleBody(roleName: String, groupVisibility: String?): String {

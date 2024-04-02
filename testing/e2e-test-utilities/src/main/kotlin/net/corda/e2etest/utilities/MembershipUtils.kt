@@ -189,7 +189,7 @@ fun ClusterInfo.onboardNotaryMember(
         val notaryKeyId = createKeyFor(holdingId, "$holdingId$CAT_NOTARY", CAT_NOTARY, DEFAULT_KEY_SCHEME)
         val isBackchainRequiredBoolean = getIsBackchainRequiredOrDefault(isBackchainRequired)
 
-        mapOf(
+        mutableMapOf(
             "corda.roles.0" to "notary",
             "corda.notary.service.name" to MemberX500Name.parse(notaryServiceName).toString(),
             "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.$notaryPlugin",
@@ -198,10 +198,10 @@ fun ClusterInfo.onboardNotaryMember(
             "corda.notary.keys.0.signature.spec" to DEFAULT_SIGNATURE_SPEC
         ) + (getAdditionalContext?.let { it(holdingId) } ?: emptyMap()) + (
                 // Add the optional backchain property if version is >= 5.2
-                if (restApiVersion != RestApiVersion.C5_0 && restApiVersion != RestApiVersion.C5_1)
+                if (restApiVersion != RestApiVersion.C5_0 && restApiVersion != RestApiVersion.C5_1 && isBackchainRequired != null)
                     mapOf("corda.notary.service.backchain.required" to "$isBackchainRequiredBoolean")
                 else emptyMap()
-        )
+                )
     },
     useLedgerKey = false
 )
