@@ -17,6 +17,7 @@ import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.RegistrationRequestEntity
+import net.corda.membership.impl.persistence.service.RecoverableException
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.TestRandom
@@ -27,6 +28,8 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatCode
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -53,7 +56,7 @@ class PersistRegistrationRequestHandlerTest {
         ourX500Name,
         ourGroupId
     )
-    private val ourRegistrationId = UUID.randomUUID().toString()
+    private val ourRegistrationId = UUID(1, 3).toString()
     private val clock = TestClock(Instant.ofEpochSecond(0))
     private val vaultDmlConnectionId = UUID(12, 0)
     private val memberContext = "89".toByteArray()
@@ -135,7 +138,8 @@ class PersistRegistrationRequestHandlerTest {
     )
 
     private fun getPersistRegistrationRequest(
-        status: RegistrationStatus = RegistrationStatus.PENDING_MEMBER_VERIFICATION
+        status: RegistrationStatus = RegistrationStatus.PENDING_MEMBER_VERIFICATION,
+        create: Boolean = true,
     ): PersistRegistrationRequest {
         val memberContext = SignedData(
             ByteBuffer.wrap(memberContext),
@@ -162,7 +166,7 @@ class PersistRegistrationRequestHandlerTest {
                 registrationContext,
                 0L,
             ),
-            true,
+            create,
         )
     }
 
@@ -328,5 +332,62 @@ class PersistRegistrationRequestHandlerTest {
         )
 
         verify(entityManager).merge(any<RegistrationRequestEntity>())
+    }
+
+    @Test
+    fun `invoke will fail if it need to update something that is not there`() {
+        whenever(
+            entityManager.find(
+                RegistrationRequestEntity::class.java,
+                ourRegistrationId,
+                LockModeType.PESSIMISTIC_WRITE,
+            )
+        ).doReturn(null)
+
+        assertThatThrownBy {
+            persistRegistrationRequestHandler.invoke(
+                getMemberRequestContext(),
+                getPersistRegistrationRequest(create = false)
+            )
+        }.isInstanceOf(RecoverableException::class.java)
+    }
+
+    @Test
+    fun `invoke will not fail if it need to create something that is not there`() {
+        whenever(
+            entityManager.find(
+                RegistrationRequestEntity::class.java,
+                ourRegistrationId,
+                LockModeType.PESSIMISTIC_WRITE,
+            )
+        ).doReturn(null)
+
+        assertThatCode {
+            persistRegistrationRequestHandler.invoke(
+                getMemberRequestContext(),
+                getPersistRegistrationRequest(create = true)
+            )
+        }.doesNotThrowAnyException()
+    }
+
+    @Test
+    fun `invoke will not fail if it need to update something is there`() {
+        val status = mock<RegistrationRequestEntity> {
+            on { status } doReturn RegistrationStatus.NEW.toString()
+        }
+        whenever(
+            entityManager.find(
+                RegistrationRequestEntity::class.java,
+                ourRegistrationId,
+                LockModeType.PESSIMISTIC_WRITE,
+            )
+        ).doReturn(status)
+
+        assertThatCode {
+            persistRegistrationRequestHandler.invoke(
+                getMemberRequestContext(),
+                getPersistRegistrationRequest(create = true)
+            )
+        }.doesNotThrowAnyException()
     }
 }
