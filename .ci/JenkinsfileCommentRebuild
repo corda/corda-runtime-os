@@ -1,10 +1,10 @@
-@Library('corda-shared-build-pipeline-steps@5.2') _
+@Library('corda-shared-build-pipeline-steps@ES-2198/Change-CommentRebuildPipeline') _
 
 import static com.r3.build.BuildControl.cancelQueuedJobByName
 
 cancelQueuedJobByName(env.JOB_NAME)
 
 githubCommentBuildTests(
-    branch: 'release/5.2',
+    branch: 'ES-2198/Change-CommentRebuildPipeline',
     chartVersion: '^5.2.0-alpha',
 )
