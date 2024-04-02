@@ -83,6 +83,7 @@ class MemberOpsAsyncProcessorTest {
                 any(),
                 any(),
                 any(),
+                any(),
                 anyOrNull(),
             )
         } doReturn operation
