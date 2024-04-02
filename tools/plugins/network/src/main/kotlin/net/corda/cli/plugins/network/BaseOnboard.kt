@@ -403,7 +403,6 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             ?.byteInputStream()
             ?.use { certificate ->
                 ClientCertificates().uploadCertificate(
-                    restClient = restClient,
                     certificate = certificate,
                     usage = CertificateUsage.CODE_SIGNER,
                     alias = GRADLE_PLUGIN_DEFAULT_KEY_ALIAS,

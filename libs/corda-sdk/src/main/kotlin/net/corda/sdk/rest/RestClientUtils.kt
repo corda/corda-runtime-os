@@ -1,5 +1,9 @@
 package net.corda.sdk.rest
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.supervisorScope
 import net.corda.libs.configuration.exception.WrongConfigVersionException
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.RestApiVersion
@@ -8,15 +12,21 @@ import net.corda.rest.client.RestConnectionListener
 import net.corda.rest.client.config.RestClientConfig
 import net.corda.rest.client.exceptions.ClientSslHandshakeException
 import net.corda.rest.exception.ResourceAlreadyExistsException
+import net.corda.restclient.CordaRestClient
 import net.corda.sdk.network.OnboardFailedException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.MalformedURLException
 import java.net.URL
+import java.util.concurrent.Executors
 import kotlin.reflect.KClass
 import kotlin.system.exitProcess
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+
+val restClient = CordaRestClient.createHttpClient()
+
+val restClientCoroutineScope = CoroutineScope(Executors.newSingleThreadExecutor().asCoroutineDispatcher())
 
 object RestClientUtils {
 
@@ -132,6 +142,49 @@ object RestClientUtils {
                         logger.warn("""Cannot perform operation "$operationName" yet""")
                         val remaining = (endTime - System.currentTimeMillis()).coerceAtLeast(0)
                         Thread.sleep(timeBetweenAttempts.inWholeMilliseconds.coerceAtMost(remaining))
+                    }
+                }
+            }
+        } while (System.currentTimeMillis() <= endTime)
+
+        errOut.error("""Unable to perform operation "$operationName"""", lastException)
+        throw lastException!!
+    }
+
+    /**
+     * Retry a given block of code until we time out
+     * @param waitDuration the overall Duration to wait got before timing out, has default value
+     * @param timeBetweenAttempts the Duration to wait between attempts at executing the block
+     * @param operationName a description to use for logging
+     * @param block the code you want to retry
+     * @return if successful will return whatever the underlying block returns, otherwise will throw exception
+     */
+    @Suppress("ThrowsCount")
+    suspend fun <T> suspendableExecuteWithRetry(
+        waitDuration: Duration = maxWait,
+        timeBetweenAttempts: Duration = cooldownInterval,
+        operationName: String,
+        block: suspend () -> T
+    ): T = supervisorScope {
+        logger.info("""Performing operation "$operationName"""")
+        val endTime = System.currentTimeMillis() + waitDuration.inWholeMilliseconds
+        var lastException: Exception?
+        do {
+            try {
+                return@supervisorScope block()
+            } catch (ex: Exception) {
+                when (ex) {
+                    // Allow an escape without retrying
+                    is ResourceAlreadyExistsException,
+                    is WrongConfigVersionException,
+                    is OnboardFailedException -> throw ex
+                    // All other exceptions, perform retry
+                    else -> {
+                        lastException = ex
+                        logger.warn("""Cannot perform operation "$operationName" yet""")
+                        val remaining = (endTime - System.currentTimeMillis()).coerceAtLeast(0)
+                        Thread.sleep(timeBetweenAttempts.inWholeMilliseconds.coerceAtMost(remaining))
+                        delay(timeBetweenAttempts)
                     }
                 }
             }

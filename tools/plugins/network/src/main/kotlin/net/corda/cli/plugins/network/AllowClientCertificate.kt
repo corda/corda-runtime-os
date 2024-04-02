@@ -54,7 +54,7 @@ class AllowClientCertificate : Runnable, RestCommand() {
         val clientCertificates = ClientCertificates()
 
         println("Allowing certificates...")
-        clientCertificates.allowMutualTlsForSubjects(restClient, mgmShortHash, subjects, waitDurationSeconds.seconds)
+        clientCertificates.allowMutualTlsForSubjects(mgmShortHash, subjects, waitDurationSeconds.seconds)
         println("Success!")
         clientCertificates.listMutualTlsClientCertificates(restClient, mgmShortHash, waitDurationSeconds.seconds).forEach { subject ->
             println("Certificate with subject $subject is allowed")

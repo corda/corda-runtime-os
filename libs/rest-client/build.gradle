@@ -1,0 +1,104 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.common-publishing'
+    id "org.openapi.generator" version "$openApiGeneratorVersion"
+}
+
+ext {
+    cordaEnableFormatting = false
+    releasable = false
+}
+
+sourceSets {
+    generated {
+        kotlin.srcDir 'src/generated/kotlin'
+        resources.srcDir 'src/generated/resources'
+    }
+    main {
+        compileClasspath += sourceSets.generated.output
+        runtimeClasspath += sourceSets.generated.output
+    }
+}
+
+
+openApiGenerate {
+    generatorName = 'kotlin'
+    library = 'jvm-ktor'
+    inputSpec = "${project.projectDir}/src/main/resources/swaggerBaseline-v5_3.json"
+    outputDir = "${project.buildDir}/generated"
+    generateApiDocumentation = false
+    generateModelDocumentation = false
+    packageName = 'net.corda.restclient'
+    skipValidateSpec = true
+    configOptions = [
+            apiPackage    : 'net.corda.restclient.apis',
+            modelPackage  : 'net.corda.restclient.models',
+            generateModels: 'false'
+    ]
+}
+
+dependencies {
+    implementation libs.kotlin.stdlib
+//    implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+    implementation "com.squareup.moshi:moshi-kotlin:1.14.0"
+    implementation "com.squareup.moshi:moshi-adapters:1.14.0"
+    implementation "io.ktor:ktor-client-core:2.2.3"
+    api "io.ktor:ktor-client-core-jvm:2.2.3"
+    implementation "io.ktor:ktor-client-content-negotiation:2.2.3"
+    implementation 'io.ktor:ktor-client-cio-jvm:2.3.9'
+    implementation 'io.ktor:ktor-serialization-jackson:2.3.6'
+    implementation 'io.ktor:ktor-client-auth:2.3.6'
+    implementation 'io.ktor:ktor-client-logging:2.3.6'
+    implementation 'org.slf4j:slf4j-api:2.0.9'
+
+
+
+    generatedImplementation "com.squareup.moshi:moshi-kotlin:1.14.0"
+    generatedImplementation "com.squareup.moshi:moshi-adapters:1.14.0"
+    generatedImplementation "io.ktor:ktor-client-core:2.2.3"
+    generatedImplementation "io.ktor:ktor-client-content-negotiation:2.2.3"
+
+
+}
+
+tasks.register('copyGenerated', Copy) {
+    dependsOn 'openApiGenerate'
+    from "${project.buildDir}/generated/src/main/kotlin"
+    into 'src/generated/kotlin'
+    outputs.upToDateWhen { false }
+}
+
+tasks.register('cleanGenerated', Delete) {
+    delete 'src/generated/kotlin'
+}
+
+tasks.named('sourcesJar') {
+    dependsOn ':libs:rest-client:copyGenerated'
+}
+
+tasks.named('detekt') {
+    dependsOn ':libs:rest-client:copyGenerated'
+    enabled = false
+}
+
+tasks.named('compileKotlin') {
+    dependsOn ':libs:rest-client:copyGenerated'
+}
+
+tasks.named('build') {
+    dependsOn 'copyGenerated'
+}
+
+tasks.named('clean') {
+    dependsOn ':libs:rest-client:cleanGenerated'
+}
+
+tasks.named('compileGeneratedKotlin') {
+    dependsOn ':libs:rest-client:copyGenerated'
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    compilerOptions {
+        allWarningsAsErrors = false
+    }
+}
