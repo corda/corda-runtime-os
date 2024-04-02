@@ -9,14 +9,10 @@ class AssertWithRetryArgs {
     var timeout: Duration = Duration.ofSeconds(10)
     var interval: Duration = Duration.ofMillis(500)
     var startDelay: Duration = Duration.ofMillis(10)
-    var command: (() -> SimpleResponse)? = null
+    lateinit var command: (() -> SimpleResponse)
     var condition: ((SimpleResponse) -> Boolean) = { it.code in 200..299 }
     var immediateFailCondition: ((SimpleResponse) -> Boolean) = { false }
     var failMessage: String = ""
-
-    fun validate() {
-        if (command == null) throw IllegalArgumentException("Command not specified in AssertWithRetryArgs")
-    }
 }
 
 /** The [assertWithRetry] builder class that helps implement the "DSL" */
@@ -78,16 +74,14 @@ fun assertWithRetry(initialize: AssertWithRetryBuilder.() -> Unit): SimpleRespon
     val args = AssertWithRetryArgs()
 
     return trackRetryAttempts { addAttempt ->
-        AssertWithRetryBuilder(args).apply(initialize).also {
-        args.validate()
-    }.run {
+        AssertWithRetryBuilder(args).apply(initialize).run {
             var response: SimpleResponse?
 
             var retry = 0
             var timeTried: Long
             Thread.sleep(args.startDelay.toMillis())
             do {
-                response = args.command!!.invoke()
+                response = args.command()
                 if (retry == 0) {
                     println(response.url)
                 }
@@ -135,9 +129,7 @@ fun assertWithRetryIgnoringExceptions(initialize: AssertWithRetryBuilder.() -> U
     val args = AssertWithRetryArgs()
 
     return trackRetryAttempts { addAttempt ->
-        AssertWithRetryBuilder(args).apply(initialize).also {
-            args.validate()
-        }.run {
+        AssertWithRetryBuilder(args).apply(initialize).run {
             var retry = 0
             var result: Any?
             var timeTried: Long
@@ -145,7 +137,7 @@ fun assertWithRetryIgnoringExceptions(initialize: AssertWithRetryBuilder.() -> U
             Thread.sleep(args.startDelay.toMillis())
             do {
                 result = try {
-                    args.command!!.invoke()
+                    args.command()
                 } catch (exception: Exception) {
                     exception
                 }
