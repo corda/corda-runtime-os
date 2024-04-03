@@ -77,9 +77,6 @@ class TokenCacheEventProcessorFactoryImpl(
             tokenSelectionMetrics
         )
 
-        val dbTokensFetchMinIntervalInMillis = 500L
-        val dbTokensFetchMaxIntervalInMillis = 6000L
-
         return mapOf(
             createHandler(
                 TokenClaimQueryEventHandler(
@@ -87,7 +84,11 @@ class TokenCacheEventProcessorFactoryImpl(
                     recordFactory,
                     availableTokenService,
                     serviceConfiguration,
-                    BackoffManagerImpl(UTCClock(), dbTokensFetchMinIntervalInMillis, dbTokensFetchMaxIntervalInMillis)
+                    BackoffManagerImpl(
+                        UTCClock(),
+                        serviceConfiguration.dbTokensFetchMinPeriod,
+                        serviceConfiguration.dbTokensFetchMaxPeriod
+                    )
                 )
             ),
             createHandler(TokenClaimReleaseEventHandler(recordFactory)),

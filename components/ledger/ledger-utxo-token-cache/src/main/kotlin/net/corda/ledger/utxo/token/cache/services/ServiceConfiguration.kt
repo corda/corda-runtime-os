@@ -11,4 +11,8 @@ interface ServiceConfiguration {
     val claimTimeoutSeconds: Int
 
     val tokenCacheExpiryPeriod: Duration
+
+    val dbTokensFetchMinPeriod: Duration
+
+    val dbTokensFetchMaxPeriod: Duration
 }

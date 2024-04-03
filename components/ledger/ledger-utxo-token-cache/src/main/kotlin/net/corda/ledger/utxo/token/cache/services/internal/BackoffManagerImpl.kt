@@ -13,30 +13,30 @@ import kotlin.math.min
 
 class BackoffManagerImpl(
     private val clock: Clock,
-    private val dbTokensFetchMinIntervalInMillis: Long,
-    private val dbTokensFetchMaxIntervalInMillis: Long
+    private val dbTokensFetchMinInterval: Duration,
+    private val dbTokensFetchMaxInterval: Duration
 ) : BackoffManager {
 
-    inner class AttemptAndBackoffTimePair(val counter: Int, val backoffTime: Instant)
+    inner class AttemptAndBackoffTimePair(val attempt: Int, val backoffTime: Instant)
 
-    private val backoffStrategy = Exponential(base = 2.0, growthFactor = dbTokensFetchMinIntervalInMillis)
+    private val backoffStrategy = Exponential(base = 2.0, growthFactor = dbTokensFetchMinInterval.toMillis())
 
     val cache: Cache<TokenPoolKey, AttemptAndBackoffTimePair> = CacheFactoryImpl().build(
         "token-claim-backoff-map",
-        Caffeine.newBuilder().expireAfterWrite(Duration.ofMillis(dbTokensFetchMaxIntervalInMillis))
+        Caffeine.newBuilder().expireAfterWrite(dbTokensFetchMaxInterval)
     )
 
     override fun update(poolKey: TokenPoolKey) {
-        val counterAndBackoffTimePair = cache.get(poolKey) { AttemptAndBackoffTimePair(-1, clock.instant()) }
-        val attempt = counterAndBackoffTimePair.counter + 1
-        val delayInMillis = min(backoffStrategy.delay(attempt), dbTokensFetchMaxIntervalInMillis)
+        val attemptAndBackoffTimePair = cache.get(poolKey) { AttemptAndBackoffTimePair(-1, clock.instant()) }
+        val attempt = attemptAndBackoffTimePair.attempt + 1
+        val delayInMillis = min(backoffStrategy.delay(attempt), dbTokensFetchMaxInterval.toMillis())
         val backoffTime = clock.instant().plus(Duration.ofMillis(delayInMillis))
 
         cache.put(poolKey, AttemptAndBackoffTimePair(attempt, backoffTime))
     }
 
     override fun backoff(poolKey: TokenPoolKey): Boolean {
-        val counterAndBackoffTimePair = cache.getIfPresent(poolKey) ?: return false
-        return clock.instant() <= counterAndBackoffTimePair.backoffTime
+        val attemptAndBackoffTimePair = cache.getIfPresent(poolKey) ?: return false
+        return clock.instant() <= attemptAndBackoffTimePair.backoffTime
     }
 }
