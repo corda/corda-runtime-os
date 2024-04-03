@@ -7,9 +7,9 @@ import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
+import net.corda.ledger.utxo.token.cache.services.BackoffManager
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
 import net.corda.ledger.utxo.token.cache.services.TokenFilterStrategy
-import net.corda.ledger.utxo.token.cache.services.internal.BackoffManager
 import net.corda.messaging.api.records.Record
 import net.corda.v5.ledger.utxo.token.selection.Strategy
 import org.slf4j.LoggerFactory

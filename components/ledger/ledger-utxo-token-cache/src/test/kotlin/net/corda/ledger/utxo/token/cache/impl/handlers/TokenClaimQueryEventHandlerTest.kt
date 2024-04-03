@@ -13,7 +13,7 @@ import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
 import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
 import net.corda.ledger.utxo.token.cache.services.SimpleTokenFilterStrategy
 import net.corda.ledger.utxo.token.cache.services.TokenFilterStrategy
-import net.corda.ledger.utxo.token.cache.services.internal.BackoffManager
+import net.corda.ledger.utxo.token.cache.services.internal.BackoffManagerImpl
 import net.corda.messaging.api.records.Record
 import net.corda.test.util.time.AutoTickTestClock
 import org.assertj.core.api.Assertions.assertThat
@@ -225,7 +225,7 @@ class TokenClaimQueryEventHandlerTest {
 
     @Test
     fun `ensure the only one request will trigger a db call when there are insufficient tokens`() {
-        val backoffManager = BackoffManager(
+        val backoffManager = BackoffManagerImpl(
             AutoTickTestClock(Instant.EPOCH, Duration.ofSeconds(1)),
             10000L,
             10000L
@@ -244,7 +244,7 @@ class TokenClaimQueryEventHandlerTest {
     @Test
     fun `ensure a db request is triggered after the backoff time expires`() {
         val clock =  AutoTickTestClock(Instant.EPOCH, Duration.ofSeconds(1))
-        val backoffManager = BackoffManager(
+        val backoffManager = BackoffManagerImpl(
             clock,
             1000L,
             10000L

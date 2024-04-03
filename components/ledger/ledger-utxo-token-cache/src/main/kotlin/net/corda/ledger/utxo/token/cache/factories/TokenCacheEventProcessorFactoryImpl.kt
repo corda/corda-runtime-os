@@ -24,10 +24,9 @@ import net.corda.ledger.utxo.token.cache.services.TokenSelectionMetrics
 import net.corda.ledger.utxo.token.cache.services.TokenSelectionMetricsImpl
 import net.corda.ledger.utxo.token.cache.services.TokenSelectionSyncRPCProcessor
 import net.corda.ledger.utxo.token.cache.services.internal.AvailableTokenServiceImpl
-import net.corda.ledger.utxo.token.cache.services.internal.BackoffManager
+import net.corda.ledger.utxo.token.cache.services.internal.BackoffManagerImpl
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.orm.JpaEntitiesRegistry
-import net.corda.utilities.retry.Exponential
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -88,7 +87,7 @@ class TokenCacheEventProcessorFactoryImpl(
                     recordFactory,
                     availableTokenService,
                     serviceConfiguration,
-                    BackoffManager(UTCClock(), dbTokensFetchMinIntervalInMillis, dbTokensFetchMaxIntervalInMillis)
+                    BackoffManagerImpl(UTCClock(), dbTokensFetchMinIntervalInMillis, dbTokensFetchMaxIntervalInMillis)
                 )
             ),
             createHandler(TokenClaimReleaseEventHandler(recordFactory)),
