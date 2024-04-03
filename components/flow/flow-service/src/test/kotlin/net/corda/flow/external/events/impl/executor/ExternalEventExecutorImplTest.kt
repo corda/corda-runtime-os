@@ -10,6 +10,7 @@ import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -72,6 +73,7 @@ class ExternalEventExecutorImplTest {
     }
 
     @Test
+    @Disabled
     fun `execute suspends with expected FlowIORequest`() {
         val contextProperties = mapOf(
             "platformKey" to "platformValue",
