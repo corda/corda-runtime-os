@@ -5,6 +5,7 @@ import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.maintenance.CheckpointCleanupHandler
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
+import net.corda.flow.pipeline.addTerminationKeyToMeta
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
@@ -13,7 +14,6 @@ import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.PLATFORM_ERROR
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
-import net.corda.flow.pipeline.addTerminationKeyToMeta
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
@@ -132,7 +132,6 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
     ): FlowEventContext<*> {
         return withEscalation(context) {
             val checkpoint = context.checkpoint
-
             removeCachedFlowFiber(checkpoint)
             val cleanupRecords = checkpointCleanupHandler.cleanupCheckpoint(checkpoint, context.flowConfig, exception)
             val metaWithTermination = addTerminationKeyToMeta(context.metadata)
