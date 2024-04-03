@@ -1,11 +1,11 @@
 package net.corda.cli.plugins.vnode.commands
 
 import net.corda.cli.plugins.common.RestCommand
-import net.corda.cli.plugins.data.RequestId
 import net.corda.cli.plugins.typeconverter.ShortHashConverter
 import net.corda.crypto.core.ShortHash
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
+import net.corda.sdk.data.RequestId
 import net.corda.sdk.network.VirtualNode
 import net.corda.sdk.packaging.CpiUploader
 import net.corda.sdk.rest.RestClientUtils.createRestClient

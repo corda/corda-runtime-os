@@ -1,4 +1,4 @@
-package net.corda.cli.plugins.data
+package net.corda.sdk.data
 
 @JvmInline
 value class RequestId(val value: String)

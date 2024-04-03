@@ -1,6 +1,6 @@
 package net.corda.cli.plugins.typeconverter
 
-import net.corda.cli.plugins.data.RequestId
+import net.corda.sdk.data.RequestId
 import picocli.CommandLine
 
 class RequestIdConverter : CommandLine.ITypeConverter<RequestId> {

@@ -1,12 +1,12 @@
 package net.corda.sdk.packaging
 
-import net.corda.cli.plugins.data.Checksum
-import net.corda.cli.plugins.data.RequestId
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.cpiupload.endpoints.v1.GetCPIsResponse
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.client.RestClient
+import net.corda.sdk.data.Checksum
+import net.corda.sdk.data.RequestId
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
 import java.io.InputStream
 import kotlin.time.Duration

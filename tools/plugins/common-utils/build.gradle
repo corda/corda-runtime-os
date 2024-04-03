@@ -20,6 +20,7 @@ dependencies {
     kapt "info.picocli:picocli:$picocliVersion"
     compileOnly "info.picocli:picocli:$picocliVersion"
     compileOnly project(':libs:crypto:crypto-core')
+    compileOnly project(':libs:corda-sdk')
 
     testImplementation "info.picocli:picocli:$picocliVersion"
     testImplementation project(':libs:crypto:crypto-core')

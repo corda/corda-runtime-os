@@ -1,7 +1,6 @@
 package net.corda.cli.plugins.network
 
 import net.corda.cli.plugins.common.RestCommand
-import net.corda.cli.plugins.data.RequestId
 import net.corda.cli.plugins.network.output.ConsoleOutput
 import net.corda.cli.plugins.network.output.Output
 import net.corda.cli.plugins.network.utils.HoldingIdentityUtils.getHoldingIdentity
@@ -13,6 +12,7 @@ import net.corda.cli.plugins.typeconverter.X500NameConverter
 import net.corda.crypto.core.ShortHash
 import net.corda.membership.rest.v1.MemberRegistrationRestResource
 import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
+import net.corda.sdk.data.RequestId
 import net.corda.sdk.network.RegistrationsLookup
 import net.corda.sdk.rest.RestClientUtils.createRestClient
 import net.corda.v5.base.types.MemberX500Name

@@ -5,8 +5,7 @@ package net.corda.cli.plugins.network
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import net.corda.cli.plugins.common.RestCommand
-import net.corda.cli.plugins.data.Checksum
-import net.corda.cli.plugins.data.RequestId
+import net.corda.sdk.data.Checksum
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.cli.plugins.typeconverter.X500NameConverter
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
@@ -34,6 +33,7 @@ import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 import net.corda.rest.json.serialization.JsonObjectAsString
 import net.corda.schema.configuration.ConfigKeys.RootConfigKey
 import net.corda.sdk.config.ClusterConfig
+import net.corda.sdk.data.RequestId
 import net.corda.sdk.network.ClientCertificates
 import net.corda.sdk.network.Keys
 import net.corda.sdk.network.RegistrationRequester

@@ -1,6 +1,6 @@
 package net.corda.cli.plugins.network
 
-import net.corda.cli.plugins.data.Checksum
+import net.corda.sdk.data.Checksum
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.cli.plugins.network.utils.inferCpiName
 import net.corda.crypto.core.CryptoConsts.Categories.KeyCategory

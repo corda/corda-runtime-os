@@ -1,6 +1,6 @@
 package net.corda.cli.plugins.network
 
-import net.corda.cli.plugins.data.Checksum
+import net.corda.sdk.data.Checksum
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
