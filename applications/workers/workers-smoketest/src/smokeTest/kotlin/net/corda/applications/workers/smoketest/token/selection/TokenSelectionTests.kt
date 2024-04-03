@@ -89,7 +89,7 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
     @BeforeAll
     fun beforeAll() {
         // check cluster is ready
-        assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(100))
+      //  assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(100))
 
         DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
 

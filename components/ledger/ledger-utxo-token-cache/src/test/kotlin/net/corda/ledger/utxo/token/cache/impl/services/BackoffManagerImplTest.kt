@@ -6,6 +6,7 @@ import net.corda.test.util.time.AutoTickTestClock
 import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import java.time.Duration
 import java.time.Instant
 
 class BackoffManagerImplTest {
@@ -15,7 +16,7 @@ class BackoffManagerImplTest {
 
     @Test
     fun `don't backoff if key is not present`() {
-        val backoffManager = BackoffManagerImpl(AutoTickTestClock(Instant.EPOCH, 1.seconds), 500L, 1L)
+        val backoffManager = BackoffManagerImpl(AutoTickTestClock(Instant.EPOCH, 1.seconds), Duration.ofMillis(500L), Duration.ofMillis(1L))
         assertThat(backoffManager.backoff(tokenPoolKey1)).isFalse()
     }
 
@@ -23,8 +24,8 @@ class BackoffManagerImplTest {
     fun `Backoff if key is present and backoff period has not expired`() {
         val backoffManager = BackoffManagerImpl(
             AutoTickTestClock(Instant.EPOCH, 1.seconds),
-            2000L,
-            2000L
+            Duration.ofMillis(2000L),
+            Duration.ofMillis(2000L)
         )
 
         backoffManager.update(tokenPoolKey1)
@@ -35,8 +36,8 @@ class BackoffManagerImplTest {
     fun `ensure the max interval is respected`() {
         val backoffManager = BackoffManagerImpl(
             AutoTickTestClock(Instant.EPOCH, 1.seconds),
-            1000L,
-            4000L
+            Duration.ofMillis(1000L),
+                Duration.ofMillis(4000L)
         )
 
         backoffManager.update(tokenPoolKey1) // backoff period - 1 second
@@ -55,8 +56,8 @@ class BackoffManagerImplTest {
     fun `ensure entry is removed after max interval is reached`() {
         val backoffManager = BackoffManagerImpl(
             AutoTickTestClock(Instant.EPOCH, 10.seconds),
-            0L,
-            0L // expire immediately
+            Duration.ofMillis(0L),
+            Duration.ofMillis(0L) // expire immediately
         )
 
         backoffManager.update(tokenPoolKey1)
@@ -67,8 +68,8 @@ class BackoffManagerImplTest {
     fun `ensure each token pool key is managed independently`() {
         val backoffManager = BackoffManagerImpl(
             AutoTickTestClock(Instant.EPOCH, 1.seconds),
-            2000L,
-            10000L
+            Duration.ofMillis(2000L),
+            Duration.ofMillis(10000L)
         )
 
         backoffManager.update(tokenPoolKey1)
