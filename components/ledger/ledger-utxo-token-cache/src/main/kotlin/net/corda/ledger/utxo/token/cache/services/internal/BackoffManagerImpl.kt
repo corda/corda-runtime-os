@@ -19,7 +19,7 @@ class BackoffManagerImpl(
 
     inner class AttemptAndBackoffTimePair(val counter: Int, val backoffTime: Instant)
 
-    val backoffStrategy = Exponential(base = 2.0, growthFactor = dbTokensFetchMinIntervalInMillis)
+    private val backoffStrategy = Exponential(base = 2.0, growthFactor = dbTokensFetchMinIntervalInMillis)
 
     val cache: Cache<TokenPoolKey, AttemptAndBackoffTimePair> = CacheFactoryImpl().build(
         "token-claim-backoff-map",
