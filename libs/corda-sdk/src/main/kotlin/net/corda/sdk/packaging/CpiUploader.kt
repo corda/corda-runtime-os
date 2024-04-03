@@ -1,5 +1,7 @@
 package net.corda.sdk.packaging
 
+import net.corda.cli.plugins.data.Checksum
+import net.corda.cli.plugins.data.RequestId
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.cpiupload.endpoints.v1.GetCPIsResponse
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
@@ -50,18 +52,18 @@ class CpiUploader {
      */
     fun cpiChecksum(
         restClient: RestClient<CpiUploadRestResource>,
-        uploadRequestId: String,
+        uploadRequestId: RequestId,
         wait: Duration = 60.seconds
-    ): String {
+    ): Checksum {
         return restClient.use { client ->
             executeWithRetry(
                 waitDuration = wait,
                 operationName = "Wait for CPI to be ingested and return checksum"
             ) {
                 val resource = client.start().proxy
-                val status = resource.status(uploadRequestId)
+                val status = resource.status(uploadRequestId.value)
                 if (status.status == "OK") {
-                    status.cpiFileChecksum
+                    Checksum(status.cpiFileChecksum)
                 } else {
                     throw CpiUploadException("Cpi status is not ok: ${status.status}")
                 }

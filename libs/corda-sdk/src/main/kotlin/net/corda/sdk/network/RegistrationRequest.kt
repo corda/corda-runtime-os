@@ -61,10 +61,10 @@ class RegistrationRequest {
      * @param customProperties Map of custom properties
      * @param sessionKey key ID for the generated session
      * @param ledgerKey ID for the generated ledger key
-     * @return registration context information as a Map
+     * @return [MemberRegistrationRequest]
      */
     @Suppress("LongParameterList")
-    fun createMemberRegistrationContext(
+    fun createMemberRegistrationRequest(
         preAuthToken: String?,
         roles: Set<MemberRole>?,
         customProperties: Map<String, String>?,

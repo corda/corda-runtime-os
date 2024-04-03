@@ -176,7 +176,7 @@ class OnboardMember : Runnable, BaseOnboard() {
                 notaryKey = notaryKeyId
             )
         } else {
-            RegistrationRequest().createMemberRegistrationContext(
+            RegistrationRequest().createMemberRegistrationRequest(
                 preAuthToken = preAuthToken,
                 roles = roles,
                 customProperties = customProperties,

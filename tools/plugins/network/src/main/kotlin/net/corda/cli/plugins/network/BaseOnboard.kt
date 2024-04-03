@@ -5,6 +5,8 @@ package net.corda.cli.plugins.network
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import net.corda.cli.plugins.common.RestCommand
+import net.corda.cli.plugins.data.Checksum
+import net.corda.cli.plugins.data.RequestId
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.cli.plugins.typeconverter.X500NameConverter
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
@@ -96,7 +98,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
 
     internal class OnboardException(message: String) : Exception(message)
 
-    protected fun uploadCpi(cpi: File, cpiName: String): String {
+    protected fun uploadCpi(cpi: File, cpiName: String): Checksum {
         val restClient = createRestClient(
             CpiUploadRestResource::class,
             insecure = insecure,
@@ -108,7 +110,9 @@ abstract class BaseOnboard : Runnable, RestCommand() {
 
         // Cpi upload can take longer than the default 10 seconds, wait for minimum of 30
         val longerWaitValue = getLongerWait()
-        val uploadId = CpiUploader().uploadCPI(restClient, cpi.inputStream(), cpiName, longerWaitValue).id
+        val uploadId = with(CpiUploader().uploadCPI(restClient, cpi.inputStream(), cpiName, longerWaitValue)) {
+            RequestId(this.id)
+        }
         return checkCpiStatus(uploadId)
     }
 
@@ -120,7 +124,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         }
     }
 
-    private fun checkCpiStatus(id: String): String {
+    private fun checkCpiStatus(id: RequestId): Checksum {
         val restClient = createRestClient(
             CpiUploadRestResource::class,
             insecure = insecure,
@@ -296,7 +300,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             memberRegistrationRequest = memberRegistrationRequest,
             holdingId = holdingId
         )
-        val registrationId = response.registrationId
+        val registrationId = RequestId(response.registrationId)
         val submissionStatus = response.registrationStatus
 
         if (submissionStatus != "SUBMITTED") {

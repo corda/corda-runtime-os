@@ -10,6 +10,8 @@ ext {
 
 ext.cordaEnableFormatting = true
 
+description 'Corda CLI plugin common utilities and data classes'
+
 group 'net.corda.cli.plugins.data'
 
 dependencies {
@@ -18,4 +20,7 @@ dependencies {
     kapt "info.picocli:picocli:$picocliVersion"
     compileOnly "info.picocli:picocli:$picocliVersion"
     compileOnly project(':libs:crypto:crypto-core')
+
+    testImplementation "info.picocli:picocli:$picocliVersion"
+    testImplementation project(':libs:crypto:crypto-core')
 }

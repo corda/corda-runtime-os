@@ -1,5 +1,6 @@
 package net.corda.sdk.network
 
+import net.corda.cli.plugins.data.RequestId
 import net.corda.crypto.core.ShortHash
 import net.corda.membership.rest.v1.MemberRegistrationRestResource
 import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
@@ -46,7 +47,7 @@ class RegistrationsLookup {
     fun checkRegistration(
         restClient: RestClient<MemberRegistrationRestResource>,
         holdingIdentityShortHash: ShortHash,
-        requestId: String,
+        requestId: RequestId,
         wait: Duration = 10.seconds
     ): RestRegistrationRequestStatus {
         return restClient.use { client ->
@@ -55,7 +56,7 @@ class RegistrationsLookup {
                 operationName = "Lookup registration $requestId"
             ) {
                 val resource = client.start().proxy
-                resource.checkSpecificRegistrationProgress(holdingIdentityShortHash.value, requestId)
+                resource.checkSpecificRegistrationProgress(holdingIdentityShortHash.value, requestId.value)
             }
         }
     }
@@ -69,7 +70,7 @@ class RegistrationsLookup {
      */
     fun waitForRegistrationApproval(
         restClient: RestClient<MemberRegistrationRestResource>,
-        registrationId: String,
+        registrationId: RequestId,
         holdingId: ShortHash,
         wait: Duration = 60.seconds
     ) {
@@ -106,7 +107,7 @@ class RegistrationsLookup {
         wait: Duration = 60.seconds
     ) {
         val response = RegistrationRequester().requestRegistration(restClient, memberRegistrationRequest, holdingId, wait)
-        waitForRegistrationApproval(restClient, response.registrationId, holdingId, wait)
+        waitForRegistrationApproval(restClient, RequestId(response.registrationId), holdingId, wait)
     }
 }
 
