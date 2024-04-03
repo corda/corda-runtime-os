@@ -17,7 +17,7 @@ const val SMOKE_TEST_CLASS_NAME = "com.r3.corda.testing.smoketests.flow.RestSmok
 const val REST_FLOW_STATUS_SUCCESS = "COMPLETED"
 const val REST_FLOW_STATUS_FAILED = "FAILED"
 
-// @TODO: reduce timeout to 6 minutes following investigation in CORE-20228 into test slowness
+// Reduce timeout to 6 minutes following investigation in CORE-20228 into test slowness
 //private val RETRY_TIMEOUT = 6.minutes
 private val RETRY_TIMEOUT = 12.minutes
 
