@@ -136,7 +136,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         return CpiUploader().cpiChecksum(restClient = restClient, uploadRequestId = id, wait = waitDurationSeconds.seconds)
     }
 
-    protected abstract val cpiFileChecksum: String
+    protected abstract val cpiFileChecksum: Checksum
 
     protected abstract val memberRegistrationRequest: MemberRegistrationRequest
 
@@ -151,7 +151,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         )
         val request = JsonCreateVirtualNodeRequest(
             x500Name = name.toString(),
-            cpiFileChecksum = cpiFileChecksum,
+            cpiFileChecksum = cpiFileChecksum.value,
             vaultDdlConnection = null,
             vaultDmlConnection = null,
             cryptoDdlConnection = null,

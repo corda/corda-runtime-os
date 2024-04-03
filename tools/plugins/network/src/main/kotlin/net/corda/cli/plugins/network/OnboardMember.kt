@@ -1,5 +1,6 @@
 package net.corda.cli.plugins.network
 
+import net.corda.cli.plugins.data.Checksum
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.cli.plugins.network.utils.inferCpiName
 import net.corda.crypto.core.CryptoConsts.Categories.KeyCategory
@@ -84,7 +85,7 @@ class OnboardMember : Runnable, BaseOnboard() {
 
     override val cpiFileChecksum by lazy {
         if (cpiHash != null) {
-            return@lazy cpiHash!!
+            return@lazy Checksum(cpiHash!!)
         }
         if (cpbFile?.canRead() != true) {
             throw OnboardException("Please set either CPB file or CPI hash")
@@ -107,7 +108,7 @@ class OnboardMember : Runnable, BaseOnboard() {
         )
     }
 
-    private fun uploadCpb(cpbFile: File): String {
+    private fun uploadCpb(cpbFile: File): Checksum {
         val cpiName = inferCpiName(cpbFile, groupPolicyFile)
         val cpiFile = File(cpisRoot, "$cpiName.cpi")
         println("Creating and uploading CPI using CPB '${cpbFile.name}'")
@@ -123,7 +124,7 @@ class OnboardMember : Runnable, BaseOnboard() {
         val cpisFromCluster = CpiUploader().getAllCpis(restClient = restClient, wait = waitDurationSeconds.seconds).cpis
         cpisFromCluster.firstOrNull { it.id.cpiName == cpiName && it.id.cpiVersion == CPI_VERSION }?.let {
             println("CPI already exists, using CPI ${it.id}")
-            return it.cpiFileChecksum
+            return Checksum(it.cpiFileChecksum)
         }
         if (!cpiFile.exists()) {
             runCatching { createCpi(cpbFile, cpiFile) }.onFailure { e ->

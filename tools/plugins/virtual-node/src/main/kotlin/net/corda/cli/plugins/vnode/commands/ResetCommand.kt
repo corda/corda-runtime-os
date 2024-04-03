@@ -1,6 +1,7 @@
 package net.corda.cli.plugins.vnode.commands
 
 import net.corda.cli.plugins.common.RestCommand
+import net.corda.cli.plugins.data.RequestId
 import net.corda.cli.plugins.typeconverter.ShortHashConverter
 import net.corda.crypto.core.ShortHash
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
@@ -73,24 +74,24 @@ class ResetCommand : RestCommand(), Runnable {
             targetUrl = targetUrl
         )
         println("Uploading CPI to host: $targetUrl")
-        val responseId = CpiUploader().forceCpiUpload(
+        val requestId = CpiUploader().forceCpiUpload(
             restClient = restClient,
             cpiFile = cpi.inputStream(),
             cpiName = cpi.name,
             wait = waitDurationSeconds.seconds
-        ).id
+        ).let { RequestId(it.id) }
         if (wait) {
-            pollForOKStatus(responseId)
+            pollForOKStatus(requestId)
             if (resync.isNotEmpty()) {
                 resyncVaults(resync)
             }
         } else {
-            println(responseId)
+            println(requestId)
         }
     }
 
     @Suppress("NestedBlockDepth")
-    private fun pollForOKStatus(virtualNodeMaintenanceResult: String) {
+    private fun pollForOKStatus(virtualNodeMaintenanceResult: RequestId) {
         val restClient = createRestClient(
             CpiUploadRestResource::class,
             insecure = insecure,

@@ -1,11 +1,13 @@
 package net.corda.cli.plugins.network
 
 import net.corda.cli.plugins.common.RestCommand
+import net.corda.cli.plugins.data.RequestId
 import net.corda.cli.plugins.network.output.ConsoleOutput
 import net.corda.cli.plugins.network.output.Output
 import net.corda.cli.plugins.network.utils.HoldingIdentityUtils.getHoldingIdentity
 import net.corda.cli.plugins.network.utils.PrintUtils.printJsonOutput
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
+import net.corda.cli.plugins.typeconverter.RequestIdConverter
 import net.corda.cli.plugins.typeconverter.ShortHashConverter
 import net.corda.cli.plugins.typeconverter.X500NameConverter
 import net.corda.crypto.core.ShortHash
@@ -60,8 +62,9 @@ class GetRegistrations(private val output: Output = ConsoleOutput()) :
         names = ["--request-id"],
         arity = "1",
         description = ["ID of the registration request. Returns all visible requests if not specified."],
+        converter = [RequestIdConverter::class],
     )
-    var requestId: String? = null
+    var requestId: RequestId? = null
 
     private fun getRegistrations(): List<RestRegistrationRequestStatus> {
         val holdingIdentity = getHoldingIdentity(holdingIdentityShortHash, name, group)
