@@ -28,6 +28,7 @@ class ExportGroupPolicy : Runnable, RestCommand() {
         names = ["-h", "--holding-identity-short-hash"],
         arity = "1",
         description = ["The holding identity short hash of the MGM."],
+        required = true,
         converter = [ShortHashConverter::class],
     )
     lateinit var holdingIdentityShortHash: ShortHash
