@@ -232,7 +232,9 @@ class TokenClaimQueryEventHandlerTest {
         )
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, mock(), backoffManager)
         val claimQuery = createClaimQuery(100)
-        whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any())).thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
+        whenever(
+            availableTokenService.findAvailTokens(any(), eq(null), eq(null), any())
+        ).thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
 
         target.handle(tokenCache, poolCacheState, claimQuery) // Accesses the db
         target.handle(tokenCache, poolCacheState, claimQuery) // No access to the db
@@ -243,7 +245,7 @@ class TokenClaimQueryEventHandlerTest {
 
     @Test
     fun `ensure a db request is triggered after the backoff time expires`() {
-        val clock =  AutoTickTestClock(Instant.EPOCH, Duration.ofSeconds(1))
+        val clock = AutoTickTestClock(Instant.EPOCH, Duration.ofSeconds(1))
         val backoffManager = BackoffManagerImpl(
             clock,
             1000L,
@@ -251,7 +253,9 @@ class TokenClaimQueryEventHandlerTest {
         )
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, mock(), backoffManager)
         val claimQuery = createClaimQuery(100)
-        whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any())).thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
+        whenever(
+            availableTokenService.findAvailTokens(any(), eq(null), eq(null), any())
+        ).thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
 
         target.handle(tokenCache, poolCacheState, claimQuery) // Accesses the db - Expiry period 1 second
         target.handle(tokenCache, poolCacheState, claimQuery) // No access to the db - Expiry period 2 seconds

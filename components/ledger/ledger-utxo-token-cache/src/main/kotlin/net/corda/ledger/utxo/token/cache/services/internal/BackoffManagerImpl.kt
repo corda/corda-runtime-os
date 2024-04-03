@@ -26,7 +26,7 @@ class BackoffManagerImpl(
         Caffeine.newBuilder().expireAfterWrite(Duration.ofMillis(dbTokensFetchMaxIntervalInMillis))
     )
 
-   override fun update(poolKey: TokenPoolKey) {
+    override fun update(poolKey: TokenPoolKey) {
         val counterAndBackoffTimePair = cache.get(poolKey) { AttemptAndBackoffTimePair(-1, clock.instant()) }
         val attempt = counterAndBackoffTimePair.counter + 1
         val delayInMillis = min(backoffStrategy.delay(attempt), dbTokensFetchMaxIntervalInMillis)

@@ -15,7 +15,6 @@ import net.corda.v5.ledger.utxo.token.selection.Strategy
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 
-
 class TokenClaimQueryEventHandler(
     private val filterStrategy: TokenFilterStrategy,
     private val recordFactory: RecordFactory,
@@ -118,4 +117,3 @@ class TokenClaimQueryEventHandler(
     private fun ClaimQuery.getStrategyOrDefault() =
         strategy ?: Strategy.RANDOM
 }
-

@@ -65,7 +65,6 @@ class BackoffManagerImplTest {
 
     @Test
     fun `ensure each token pool key is managed independently`() {
-
         val backoffManager = BackoffManagerImpl(
             AutoTickTestClock(Instant.EPOCH, 1.seconds),
             2000L,
@@ -76,7 +75,7 @@ class BackoffManagerImplTest {
         assertThat(backoffManager.backoff(tokenPoolKey1)).isTrue() // backoff time has not expired
         backoffManager.update(tokenPoolKey2)
         assertThat(backoffManager.backoff(tokenPoolKey1)).isFalse() // backoff time has expired
-        assertThat(backoffManager.backoff(tokenPoolKey2)).isTrue()  // backoff time has not expired
+        assertThat(backoffManager.backoff(tokenPoolKey2)).isTrue() // backoff time has not expired
         assertThat(backoffManager.backoff(tokenPoolKey2)).isFalse() // backoff time has expired
     }
 }
