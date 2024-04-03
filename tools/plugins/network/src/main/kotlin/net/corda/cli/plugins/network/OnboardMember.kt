@@ -1,10 +1,10 @@
 package net.corda.cli.plugins.network
 
-import net.corda.sdk.data.Checksum
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.cli.plugins.network.utils.inferCpiName
 import net.corda.crypto.core.CryptoConsts.Categories.KeyCategory
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
+import net.corda.sdk.data.Checksum
 import net.corda.sdk.network.MemberRole
 import net.corda.sdk.network.RegistrationRequest
 import net.corda.sdk.packaging.CpiAttributes

@@ -1,9 +1,9 @@
 package net.corda.cli.plugins.cpi.commands
 
 import net.corda.cli.plugins.common.RestCommand
-import net.corda.sdk.data.Checksum
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.rest.client.RestClient
+import net.corda.sdk.data.Checksum
 import net.corda.sdk.data.RequestId
 import net.corda.sdk.packaging.CpiUploader
 import net.corda.sdk.rest.RestClientUtils.createRestClient
