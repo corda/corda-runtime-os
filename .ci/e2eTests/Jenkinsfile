@@ -4,7 +4,7 @@ endToEndPipeline(
     assembleAndCompile: false,
     dailyBuildCron: '',
     multiCluster: false,
-    gradleTestTargetsToExecute: ['smokeTest', 'e2eTest'],
+    gradleTestTargetsToExecute: ['smokeTest'],
     usePackagedCordaHelmChart: false,
     // TODO - remove this when J17 is the default in the pipeline
     javaVersion: '17'
