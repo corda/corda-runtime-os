@@ -1,6 +1,5 @@
 package net.corda.flow.application.persistence
 
-import java.nio.ByteBuffer
 import net.corda.flow.application.persistence.external.events.AbstractPersistenceExternalEventFactory
 import net.corda.flow.application.persistence.external.events.FindExternalEventFactory
 import net.corda.flow.application.persistence.external.events.MergeExternalEventFactory
@@ -23,6 +22,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 
 class PersistenceServiceImplTest {
 
@@ -63,7 +63,7 @@ class PersistenceServiceImplTest {
     @Test
     fun `persist with a large id fails`() {
         assertThrows<IllegalArgumentException> {
-            persistenceService.persist(dedupeId.repeat(100), TestObject())
+            persistenceService.persist(TestObject())
         }
     }
 
