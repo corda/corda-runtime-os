@@ -24,4 +24,5 @@ dependencies {
 
     testImplementation "info.picocli:picocli:$picocliVersion"
     testImplementation project(':libs:crypto:crypto-core')
+    testImplementation project(':libs:corda-sdk')
 }
