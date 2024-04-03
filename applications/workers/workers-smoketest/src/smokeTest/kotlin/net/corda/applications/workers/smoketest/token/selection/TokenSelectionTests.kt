@@ -26,6 +26,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.jupiter.api.TestMethodOrder
 import java.math.BigDecimal
+import java.time.Duration
 import java.util.UUID
 
 @TestInstance(PER_CLASS)
@@ -88,7 +89,7 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
     @BeforeAll
     fun beforeAll() {
         // check cluster is ready
-      //  assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(100))
+        assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(100))
 
         DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
 
