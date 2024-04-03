@@ -224,7 +224,7 @@ class TokenClaimQueryEventHandlerTest {
     }
 
     @Test
-    fun `ensure the only one request will trigger a db call when there are insufficient tokens`() {
+    fun `ensure only one request will trigger a db call when there are insufficient tokens`() {
         val backoffManager = BackoffManagerImpl(
             AutoTickTestClock(Instant.EPOCH, Duration.ofSeconds(1)),
             10000L,
