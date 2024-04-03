@@ -9,20 +9,23 @@ import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
 import net.corda.ledger.utxo.token.cache.services.TokenFilterStrategy
+import net.corda.ledger.utxo.token.cache.services.internal.BackoffManager
 import net.corda.messaging.api.records.Record
 import net.corda.v5.ledger.utxo.token.selection.Strategy
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 
+
 class TokenClaimQueryEventHandler(
     private val filterStrategy: TokenFilterStrategy,
     private val recordFactory: RecordFactory,
     private val availableTokenService: AvailableTokenService,
-    private val serviceConfiguration: ServiceConfiguration
+    private val serviceConfiguration: ServiceConfiguration,
+    private val backoffManager: BackoffManager
 ) : TokenEventHandler<ClaimQuery> {
 
     private companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun handle(
@@ -47,7 +50,7 @@ class TokenClaimQueryEventHandler(
         var selectionResult = selectTokens(tokenCache, state, event)
 
         // if we didn't reach the target amount, reload the cache to ensure it's full and retry
-        if (selectionResult.first < event.targetAmount) {
+        if (selectionResult.first < event.targetAmount && !backoffManager.backoff(event.poolKey)) {
             // The max. number of tokens retrieved should be the configured size plus the number of claimed tokens
             // This way the cache size will be equal to the configured size once the claimed tokens are removed
             // from the query results
@@ -83,6 +86,7 @@ class TokenClaimQueryEventHandler(
                 selectedTokens
             )
         } else {
+            backoffManager.update(event.poolKey)
             recordFactory.getFailedClaimResponse(event.flowId, event.externalEventRequestId, event.poolKey)
         }
     }
@@ -114,3 +118,4 @@ class TokenClaimQueryEventHandler(
     private fun ClaimQuery.getStrategyOrDefault() =
         strategy ?: Strategy.RANDOM
 }
+
