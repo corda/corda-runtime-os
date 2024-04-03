@@ -37,7 +37,7 @@ class BackoffManagerImplTest {
         val backoffManager = BackoffManagerImpl(
             AutoTickTestClock(Instant.EPOCH, 1.seconds),
             Duration.ofMillis(1000L),
-                Duration.ofMillis(4000L)
+            Duration.ofMillis(4000L)
         )
 
         backoffManager.update(tokenPoolKey1) // backoff period - 1 second
