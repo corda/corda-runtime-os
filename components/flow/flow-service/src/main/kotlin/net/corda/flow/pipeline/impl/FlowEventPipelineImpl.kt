@@ -76,14 +76,18 @@ internal class FlowEventPipelineImpl(
             )
 
         if (virtualNode.flowStartOperationalStatus == OperationalStatus.INACTIVE) {
-            throw FlowMarkedForKillException(
-                "flowStartOperationalStatus is INACTIVE, new flows cannot be started for virtual node with " +
-                        "shortHash ${holdingIdentity.shortHash}"
-            )
+            ("flowStartOperationalStatus is INACTIVE, new flows cannot be started for virtual node with " +
+                    "shortHash ${holdingIdentity.shortHash}").let {
+                        log.warn(it + " for flowId=${context.checkpoint.flowId}")
+                        throw FlowMarkedForKillException(it)
+                    }
         }
 
         if (virtualNode.flowOperationalStatus == OperationalStatus.INACTIVE) {
-            throw FlowMarkedForKillException("Flow operational status is ${virtualNode.flowOperationalStatus.name}")
+            "Flow operational status is ${virtualNode.flowOperationalStatus.name}".let {
+                log.warn(it + " for flowId=${context.checkpoint.flowId}")
+                throw FlowMarkedForKillException(it)
+            }
         }
         return this
     }
