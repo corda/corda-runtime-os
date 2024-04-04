@@ -129,7 +129,7 @@ class MemberResourceClientTest {
         on { execute() } doReturn MembershipPersistenceResult.success()
     }
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
-        on { persistRegistrationRequest(any(), any(), any()) } doReturn operation
+        on { persistRegistrationRequest(any(), any()) } doReturn operation
     }
     private val bytes = byteArrayOf(1, 2, 3)
     private val signatureWithKey: CryptoSignatureWithKey = mock()
@@ -644,7 +644,7 @@ class MemberResourceClientTest {
 
         val capturedRequest = argumentCaptor<RegistrationRequest>()
         memberOpsClient.startRegistration(holdingIdentityId, context)
-        verify(membershipPersistenceClient).persistRegistrationRequest(eq(holdingIdentity), capturedRequest.capture(), eq(true))
+        verify(membershipPersistenceClient).persistRegistrationRequest(eq(holdingIdentity), capturedRequest.capture())
         assertThat(capturedRequest.firstValue.serial).isEqualTo(serial)
     }
 
@@ -702,7 +702,6 @@ class MemberResourceClientTest {
                     memberContext.data == ByteBuffer.wrap(serialisedMemberContext) &&
                     registrationContext.data == ByteBuffer.wrap(serialisedRegistrationContext)
             },
-            any(),
         )
     }
 

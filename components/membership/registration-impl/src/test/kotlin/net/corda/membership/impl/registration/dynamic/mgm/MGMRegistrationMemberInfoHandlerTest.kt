@@ -189,7 +189,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         } doReturn Operation(MembershipPersistenceResult.success())
 
         on {
-            persistRegistrationRequest(any(), any(), any())
+            persistRegistrationRequest(any(), any())
         } doReturn operation
     }
 

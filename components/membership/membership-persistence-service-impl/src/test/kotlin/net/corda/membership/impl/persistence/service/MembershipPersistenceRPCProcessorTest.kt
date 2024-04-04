@@ -462,8 +462,7 @@ class MembershipPersistenceRPCProcessorTest {
                     memberContext,
                     registrationContext,
                     SERIAL,
-                ),
-                true,
+                )
             )
         )
 
@@ -583,8 +582,7 @@ class MembershipPersistenceRPCProcessorTest {
                     memberContext,
                     registrationContext,
                     SERIAL,
-                ),
-                true,
+                )
             )
         )
 

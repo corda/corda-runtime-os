@@ -75,7 +75,6 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun persistRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
         registrationRequest: RegistrationRequest,
-        create: Boolean,
     ): MembershipPersistenceOperation<Unit> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.success())
 
     override fun setMemberAndRegistrationRequestAsApproved(

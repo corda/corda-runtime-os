@@ -380,7 +380,6 @@ class StaticMemberRegistrationService(
                 ),
                 serial = 0L,
             ),
-            create = false,
         ).createAsyncCommands()
     }
 

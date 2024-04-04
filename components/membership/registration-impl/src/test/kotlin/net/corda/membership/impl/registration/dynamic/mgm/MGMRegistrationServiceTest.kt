@@ -227,8 +227,7 @@ class MGMRegistrationServiceTest {
         on {
             persistRegistrationRequest(
                 eq(mgm),
-                statusUpdate.capture(),
-                any(),
+                statusUpdate.capture()
             )
         } doReturn persistRegistrationRequestOperation
         on { persistGroupParametersInitialSnapshot(any()) } doReturn Operation(
@@ -994,7 +993,7 @@ class MGMRegistrationServiceTest {
                 .thenReturn(MembershipQueryResult.Success(Pair(groupPolicy.firstValue, 1)))
             val errorMsg = "Persistence failure"
             whenever(
-                membershipPersistenceClient.persistRegistrationRequest(eq(mgm), any(), any())
+                membershipPersistenceClient.persistRegistrationRequest(eq(mgm), any())
             ).thenReturn(Operation(MembershipPersistenceResult.Failure(errorMsg)))
 
             // second registration

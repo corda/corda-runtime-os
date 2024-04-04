@@ -24,9 +24,14 @@ internal class PersistRegistrationRequestHandler(
                 registrationId,
                 LockModeType.PESSIMISTIC_WRITE,
             )
-            if ((currentRegistrationRequest == null) && (!request.create)) {
+            if ((currentRegistrationRequest == null) &&
+                (request.status != RegistrationStatus.NEW) &&
+                (request.status != RegistrationStatus.RECEIVED_BY_MGM)
+            ) {
                 // This request should not create a new one, but we couldn't find one, so let's try again later
-                throw RecoverableException("Could not find registration request: $registrationId")
+                throw RecoverableException(
+                    "Could not find registration request: $registrationId, can't update to status ${request.status}"
+                )
             }
             currentRegistrationRequest?.status?.toStatus()?.let {
                 if (it == request.status) {

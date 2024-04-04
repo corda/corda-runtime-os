@@ -398,8 +398,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                         memberContext = signedUserProvidedMemberContext,
                         registrationContext = signedRegistrationContext,
                         serial = serialInfo,
-                    ),
-                    create = false,
+                    )
                 ).createAsyncCommands()
 
                 listOf(record) + commands

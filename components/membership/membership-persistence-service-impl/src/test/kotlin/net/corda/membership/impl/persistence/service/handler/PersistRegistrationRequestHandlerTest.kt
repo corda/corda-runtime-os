@@ -139,7 +139,6 @@ class PersistRegistrationRequestHandlerTest {
 
     private fun getPersistRegistrationRequest(
         status: RegistrationStatus = RegistrationStatus.PENDING_MEMBER_VERIFICATION,
-        create: Boolean = true,
     ): PersistRegistrationRequest {
         val memberContext = SignedData(
             ByteBuffer.wrap(memberContext),
@@ -166,7 +165,6 @@ class PersistRegistrationRequestHandlerTest {
                 registrationContext,
                 0L,
             ),
-            create,
         )
     }
 
@@ -177,7 +175,7 @@ class PersistRegistrationRequestHandlerTest {
 
         val result = persistRegistrationRequestHandler.invoke(
             getMemberRequestContext(),
-            getPersistRegistrationRequest()
+            getPersistRegistrationRequest(RegistrationStatus.NEW)
         )
 
         assertThat(result).isInstanceOf(Unit::class.java)
@@ -194,7 +192,7 @@ class PersistRegistrationRequestHandlerTest {
             val entity = this as RegistrationRequestEntity
             assertThat(entity.registrationId).isEqualTo(ourRegistrationId)
             assertThat(entity.holdingIdentityShortHash).isEqualTo(ourHoldingIdentity.shortHash.value)
-            assertThat(entity.status).isEqualTo(RegistrationStatus.PENDING_MEMBER_VERIFICATION.toString())
+            assertThat(entity.status).isEqualTo(RegistrationStatus.NEW.toString())
             assertThat(entity.created).isBeforeOrEqualTo(clock.instant())
             assertThat(entity.lastModified).isBeforeOrEqualTo(clock.instant())
             assertThat(entity.memberContext)
@@ -347,7 +345,7 @@ class PersistRegistrationRequestHandlerTest {
         assertThatThrownBy {
             persistRegistrationRequestHandler.invoke(
                 getMemberRequestContext(),
-                getPersistRegistrationRequest(create = false)
+                getPersistRegistrationRequest(status = RegistrationStatus.SENT_TO_MGM)
             )
         }.isInstanceOf(RecoverableException::class.java)
     }
@@ -365,7 +363,7 @@ class PersistRegistrationRequestHandlerTest {
         assertThatCode {
             persistRegistrationRequestHandler.invoke(
                 getMemberRequestContext(),
-                getPersistRegistrationRequest(create = true)
+                getPersistRegistrationRequest(status = RegistrationStatus.NEW)
             )
         }.doesNotThrowAnyException()
     }
@@ -386,7 +384,7 @@ class PersistRegistrationRequestHandlerTest {
         assertThatCode {
             persistRegistrationRequestHandler.invoke(
                 getMemberRequestContext(),
-                getPersistRegistrationRequest(create = true)
+                getPersistRegistrationRequest(status = RegistrationStatus.RECEIVED_BY_MGM)
             )
         }.doesNotThrowAnyException()
     }

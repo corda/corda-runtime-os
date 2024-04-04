@@ -101,8 +101,7 @@ class QueueRegistrationHandlerTest {
                         registrationRequest.registrationContext,
                         registrationRequest.serial,
                     )
-                ),
-                eq(true)
+                )
             )
         } doReturn mockPersistenceOperation
     }
@@ -195,7 +194,7 @@ class QueueRegistrationHandlerTest {
         whenever(mockPersistenceOperation.getOrThrow()).thenThrow(
             MembershipPersistenceResult.PersistenceRequestException(MembershipPersistenceResult.Failure<Unit>("error"))
         )
-        whenever(membershipPersistenceClient.persistRegistrationRequest(any(), any(), any())).thenReturn(mockPersistenceOperation)
+        whenever(membershipPersistenceClient.persistRegistrationRequest(any(), any())).thenReturn(mockPersistenceOperation)
         with(handler.invoke(null, Record(TOPIC, KEY, inputCommand))) {
             assertThat(updatedState).isNull()
             assertThat(outputStates.size).isEqualTo(1)

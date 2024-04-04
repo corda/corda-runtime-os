@@ -342,7 +342,6 @@ class DynamicMemberRegistrationServiceTest {
             persistRegistrationRequest(
                 any(),
                 any(),
-                any(),
             )
         } doReturn persistenceOperation
     }
@@ -566,7 +565,7 @@ class DynamicMemberRegistrationServiceTest {
         fun `registration request contains the signature`() {
             val capturedRequest = argumentCaptor<RegistrationRequest>()
             registrationService.register(registrationResultId, member, context)
-            verify(membershipPersistenceClient).persistRegistrationRequest(eq(member), capturedRequest.capture(), any())
+            verify(membershipPersistenceClient).persistRegistrationRequest(eq(member), capturedRequest.capture())
             assertThat(capturedRequest.firstValue.memberContext.signature).isEqualTo(
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(mockSignature.by)),
@@ -587,7 +586,7 @@ class DynamicMemberRegistrationServiceTest {
             ).thenReturn(contextBytes)
             val capturedRequest = argumentCaptor<RegistrationRequest>()
             registrationService.register(registrationResultId, member, context)
-            verify(membershipPersistenceClient).persistRegistrationRequest(eq(member), capturedRequest.capture(), any())
+            verify(membershipPersistenceClient).persistRegistrationRequest(eq(member), capturedRequest.capture())
             assertThat(capturedRequest.firstValue.memberContext.data.toBytes()).isEqualTo(
                 contextBytes
             )
@@ -599,8 +598,7 @@ class DynamicMemberRegistrationServiceTest {
             whenever(
                 membershipPersistenceClient.persistRegistrationRequest(
                     eq(member),
-                    status.capture(),
-                    any(),
+                    status.capture()
                 )
             ).doReturn(
                 persistenceOperation

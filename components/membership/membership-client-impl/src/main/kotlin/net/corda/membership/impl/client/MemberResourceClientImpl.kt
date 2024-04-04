@@ -322,8 +322,7 @@ class MemberResourceClientImpl @Activate constructor(
                             CryptoSignatureSpec("", null, null),
                         ),
                         registrationContext[SERIAL]?.toLong(),
-                    ),
-                    true,
+                    )
                 )
                 when (val result = persistentOperation.execute()) {
                     is MembershipPersistenceResult.Failure -> {
