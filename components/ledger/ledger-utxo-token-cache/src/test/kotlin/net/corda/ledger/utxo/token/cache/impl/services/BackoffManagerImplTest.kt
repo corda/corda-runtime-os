@@ -55,7 +55,7 @@ class BackoffManagerImplTest {
     @Test
     fun `ensure entry is removed after max interval is reached`() {
         val backoffManager = BackoffManagerImpl(
-            AutoTickTestClock(Instant.EPOCH, 10.seconds),
+            AutoTickTestClock(Instant.EPOCH, 0.seconds),
             Duration.ofMillis(0L),
             Duration.ofMillis(0L) // expire immediately
         )
