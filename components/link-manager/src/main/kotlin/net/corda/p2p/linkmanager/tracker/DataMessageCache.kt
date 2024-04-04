@@ -57,9 +57,6 @@ internal class DataMessageCache(
         }
     }
 
-    override fun close() {
-    }
-
     override fun changed() {
         updateCacheSize(config.config.maxCacheSizeMegabytes)
     }
