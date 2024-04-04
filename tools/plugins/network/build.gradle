@@ -41,6 +41,7 @@ dependencies {
     implementation 'net.corda:corda-config-schema'
     implementation project(":tools:plugins:package")
     implementation project(':tools:plugins:plugins-rest')
+    implementation project(':tools:plugins:common-utils')
 
     testImplementation libs.bundles.test
     testImplementation "net.corda.cli.host:api:$pluginHostVersion"

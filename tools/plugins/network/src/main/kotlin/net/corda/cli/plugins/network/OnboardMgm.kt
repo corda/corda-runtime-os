@@ -4,8 +4,9 @@ import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.membership.rest.v1.MGMRestResource
+import net.corda.sdk.data.Checksum
 import net.corda.sdk.network.ExportGroupPolicyFromMgm
-import net.corda.sdk.network.RegistrationContext
+import net.corda.sdk.network.RegistrationRequest
 import net.corda.sdk.packaging.CpiAttributes
 import net.corda.sdk.packaging.CpiUploader
 import net.corda.sdk.packaging.CpiV2Creator
@@ -36,7 +37,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
                 "If not specified, an auto-generated MGM CPI will be used.",
         ],
     )
-    var cpiHash: String? = null
+    var cpiChecksum: Checksum? = null
 
     @Option(
         names = ["--save-group-policy-as", "-s"],
@@ -94,8 +95,8 @@ class OnboardMgm : Runnable, BaseOnboard() {
         ca.caCertificate.toPem()
     }
 
-    override val registrationContext by lazy {
-        RegistrationContext().createMgmRegistrationContext(
+    override val memberRegistrationRequest by lazy {
+        RegistrationRequest().createMgmRegistrationRequest(
             mtls = mtls,
             p2pGatewayUrls = p2pGatewayUrls,
             sessionKey = sessionKeyId,
@@ -125,25 +126,25 @@ class OnboardMgm : Runnable, BaseOnboard() {
         cpiFile
     }
 
-    override val cpiFileChecksum: String by lazy {
-        if (cpiHash != null) {
-            val existingHash = getExistingCpiHash(cpiHash)
-            if (existingHash != null) {
-                return@lazy existingHash
+    override val cpiFileChecksum: Checksum by lazy {
+        if (cpiChecksum != null) {
+            val existingChecksum = getExistingCpiChecksum(cpiChecksum)
+            if (existingChecksum != null) {
+                return@lazy existingChecksum
             } else {
                 throw IllegalArgumentException("Invalid CPI hash provided. CPI hash does not exist on the Corda cluster.")
             }
         } else {
-            val existingHash = getExistingCpiHash()
-            if (existingHash != null) {
-                return@lazy existingHash
+            val existingChecksum = getExistingCpiChecksum()
+            if (existingChecksum != null) {
+                return@lazy existingChecksum
             }
 
             uploadCpi(cpi, "$cpiName.cpi")
         }
     }
 
-    private fun getExistingCpiHash(hash: String? = null): String? {
+    private fun getExistingCpiChecksum(checksum: Checksum? = null): Checksum? {
         val restClient = RestClientUtils.createRestClient(
             CpiUploadRestResource::class,
             insecure = insecure,
@@ -154,9 +155,9 @@ class OnboardMgm : Runnable, BaseOnboard() {
         )
         val response = CpiUploader().getAllCpis(restClient = restClient, wait = waitDurationSeconds.seconds)
         return response.cpis
-            .filter { it.cpiFileChecksum == hash || (hash == null && it.groupPolicy?.contains("CREATE_ID") ?: false) }
+            .filter { it.cpiFileChecksum == checksum?.value || (checksum?.value == null && it.groupPolicy?.contains("CREATE_ID") ?: false) }
             .map { it.cpiFileChecksum }
-            .firstOrNull()
+            .firstOrNull()?.let { Checksum(it) }
     }
 
     override fun run() {

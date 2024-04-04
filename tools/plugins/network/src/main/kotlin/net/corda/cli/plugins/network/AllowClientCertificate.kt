@@ -2,9 +2,13 @@ package net.corda.cli.plugins.network
 
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
+import net.corda.cli.plugins.typeconverter.ShortHashConverter
+import net.corda.cli.plugins.typeconverter.X500NameConverter
+import net.corda.crypto.core.ShortHash
 import net.corda.membership.rest.v1.MGMRestResource
 import net.corda.sdk.network.ClientCertificates
 import net.corda.sdk.rest.RestClientUtils
+import net.corda.v5.base.types.MemberX500Name
 import picocli.CommandLine.Command
 import picocli.CommandLine.Parameters
 import kotlin.time.Duration.Companion.seconds
@@ -21,15 +25,17 @@ class AllowClientCertificate : Runnable, RestCommand() {
         description = ["The MGM holding identity short hash"],
         paramLabel = "MGM_HASH",
         index = "0",
+        converter = [ShortHashConverter::class],
     )
-    lateinit var mgmShortHash: String
+    lateinit var mgmShortHash: ShortHash
 
     @Parameters(
         description = ["The certificate subject to allow"],
         paramLabel = "SUBJECTS",
         index = "1..*",
+        converter = [X500NameConverter::class],
     )
-    var subjects: Collection<String> = emptyList()
+    var subjects: Collection<MemberX500Name> = emptyList()
 
     override fun run() {
         verifyAndPrintError {
