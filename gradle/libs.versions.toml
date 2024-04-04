@@ -41,7 +41,7 @@ pf4jVersion = "3.10.0"
 unirestVersion = "3.14.5"
 zipkinCoreVersion = "2.27.1"
 zipkinReporterVersion = "3.3.0"
-nettyVersion = "4.1.94.Final"
+nettyVersion = "4.1.108.Final"
 
 # Testing
 assertjVersion = "3.25.3"
