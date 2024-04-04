@@ -13,7 +13,7 @@ import kotlin.math.min
 
 class BackoffManagerImpl(
     private val clock: Clock,
-    private dbBackoffMinPeriod: Duration,
+    dbBackoffMinPeriod: Duration,
     private val dbBackoffMaxPeriod: Duration
 ) : BackoffManager {
 
