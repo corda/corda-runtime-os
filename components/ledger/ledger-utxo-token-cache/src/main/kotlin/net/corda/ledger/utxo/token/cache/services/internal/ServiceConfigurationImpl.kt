@@ -28,10 +28,10 @@ class ServiceConfigurationImpl : ServiceConfiguration {
     override val tokenCacheExpiryPeriod: Duration
         get() = Duration.ofMillis(getLongValue(UTXO_TOKEN_CACHE_EXPIRY_PERIOD_MILLISECONDS))
 
-    override val dbTokensFetchMinPeriod: Duration
+    override val dbBackoffMinPeriod: Duration
         get() = Duration.ofMillis(getLongValue(UTXO_TOKEN_MIN_DB_BACKOFF_PERIOD_MILLISECONDS))
 
-    override val dbTokensFetchMaxPeriod: Duration
+    override val dbBackoffMaxPeriod: Duration
         get() = Duration.ofMillis(getLongValue(UTXO_TOKEN_MAX_DB_BACKOFF_PERIOD_MILLISECONDS))
 
     private fun getIntValue(name: String): Int {

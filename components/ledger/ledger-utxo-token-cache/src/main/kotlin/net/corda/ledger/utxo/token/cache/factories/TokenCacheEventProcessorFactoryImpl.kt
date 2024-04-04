@@ -86,8 +86,8 @@ class TokenCacheEventProcessorFactoryImpl(
                     serviceConfiguration,
                     BackoffManagerImpl(
                         UTCClock(),
-                        serviceConfiguration.dbTokensFetchMinPeriod,
-                        serviceConfiguration.dbTokensFetchMaxPeriod
+                        serviceConfiguration.dbBackoffMinPeriod,
+                        serviceConfiguration.dbBackoffMaxPeriod
                     )
                 )
             ),

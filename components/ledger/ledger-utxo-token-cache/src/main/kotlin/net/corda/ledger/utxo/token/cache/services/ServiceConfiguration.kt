@@ -12,7 +12,7 @@ interface ServiceConfiguration {
 
     val tokenCacheExpiryPeriod: Duration
 
-    val dbTokensFetchMinPeriod: Duration
+    val dbBackoffMinPeriod: Duration
 
-    val dbTokensFetchMaxPeriod: Duration
+    val dbBackoffMaxPeriod: Duration
 }
