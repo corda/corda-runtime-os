@@ -13,23 +13,23 @@ import kotlin.math.min
 
 class BackoffManagerImpl(
     private val clock: Clock,
-    private val dbTokensFetchMinInterval: Duration,
-    private val dbTokensFetchMaxInterval: Duration
+    private val dbBackoffMinPeriod: Duration,
+    private val dbBackoffMaxPeriod: Duration
 ) : BackoffManager {
 
     inner class AttemptAndBackoffTimePair(val attempt: Int, val backoffTime: Instant)
 
-    private val backoffStrategy = Exponential(base = 2.0, growthFactor = dbTokensFetchMinInterval.toMillis())
+    private val backoffStrategy = Exponential(base = 2.0, growthFactor = dbBackoffMinPeriod.toMillis())
 
     val cache: Cache<TokenPoolKey, AttemptAndBackoffTimePair> = CacheFactoryImpl().build(
         "token-claim-backoff-map",
-        Caffeine.newBuilder().expireAfterWrite(dbTokensFetchMaxInterval)
+        Caffeine.newBuilder().expireAfterWrite(dbBackoffMaxPeriod)
     )
 
     override fun update(poolKey: TokenPoolKey) {
         val attemptAndBackoffTimePair = cache.get(poolKey) { AttemptAndBackoffTimePair(-1, clock.instant()) }
         val attempt = attemptAndBackoffTimePair.attempt + 1
-        val delayInMillis = min(backoffStrategy.delay(attempt), dbTokensFetchMaxInterval.toMillis())
+        val delayInMillis = min(backoffStrategy.delay(attempt), dbBackoffMaxPeriod.toMillis())
         val backoffTime = clock.instant().plus(Duration.ofMillis(delayInMillis))
 
         cache.put(poolKey, AttemptAndBackoffTimePair(attempt, backoffTime))
