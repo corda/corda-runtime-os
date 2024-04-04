@@ -84,11 +84,11 @@ class SchedulerProcessorImpl @Activate constructor(
             60, ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_STATUS_PROCESSOR
         ),
         // TODO CORE-16331 Add configuration with a default of 10 minutes under the ledger.repair configuration section
-        Schedule(
+ /*       Schedule(
             ScheduledTask.SCHEDULE_TASK_NAME_LEDGER_REPAIR,
             java.lang.Long.getLong(LEDGER_REPAIR_SCHEDULE_PERIOD_SYSTEM_PROPERTY, defaultLedgerRepairSchedulePeriod),
             ScheduledTask.SCHEDULE_TASK_TOPIC_LEDGER_REPAIR_PROCESSOR
-        )
+        )*/
     )
     private var schedulers: Schedulers? = null
 
