@@ -6,7 +6,9 @@ import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.data.p2p.app.AppMessage
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
-import net.corda.lifecycle.Resource
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
 import org.slf4j.Logger
@@ -14,58 +16,120 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentHashMap
 
-class DataMessageCache(
+internal class DataMessageCache(
+    coordinatorFactory: LifecycleCoordinatorFactory,
     private val stateManager: StateManager,
     private val schemaRegistry: AvroSchemaRegistry,
-) : Resource {
+    private val config: DeliveryTrackerConfiguration,
+) : LifecycleWithDominoTile, DeliveryTrackerConfiguration.ConfigurationChanged {
     private companion object {
+        const val NAME = "DataMessageCache"
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-//        const val KEY_PREFIX = "P2P-msg"
-        // TODO Get from config (DeliveryTracker)
-        val maxCacheSize = 1L
-        val maxCacheOffsetAge = 1L
     }
+
+    fun get(key: String): AppMessage? {
+        if (failedCreates.isNotEmpty()) {
+            messageCache.putAll(failedCreates)
+            failedCreates.clear()
+        }
+        return messageCache.getIfPresent(key)?.message ?: stateManager.getIfPresent(key)
+    }
+
+    fun put(key: String, message: AppMessage, partitionAndOffset: PartitionAndOffset) {
+        messageCache.put(key, TrackedMessage(message, partitionAndOffset))
+        offsetToMessageId[partitionAndOffset] = key
+        if (partitionAndOffset.offset > (partitionOffsetTracker[partitionAndOffset.partition] ?: -1)) {
+            partitionOffsetTracker[partitionAndOffset.partition] = partitionAndOffset.offset
+        }
+        persistOlderCacheEntries()
+    }
+
+    fun invalidate(key: String) {
+        when(messageCache.getIfPresent(key)) {
+            null -> {
+                logger.trace("Deleting delivery tracker entry from state manager for '{}'.", key)
+                stateManager.deleteIfPresent(key)
+            }
+            else -> {
+                logger.trace("Discarding cached delivery tracker entry for '{}'.", key)
+                messageCache.invalidate(key)
+            }
+        }
+    }
+
+    override fun close() {
+    }
+
+    override fun changed() {
+        updateCacheSize(config.config.maxCacheSizeMegabytes)
+    }
+
+    override val dominoTile = ComplexDominoTile(
+        componentName = NAME,
+        coordinatorFactory = coordinatorFactory,
+        dependentChildren = listOf(stateManager.name, config.dominoTile.coordinatorName),
+        onStart = ::onStart,
+    )
+
+    private fun onStart() {
+        config.lister(this)
+    }
+
+    internal data class PartitionAndOffset(val partition: Int, val offset: Long)
 
     private data class TrackedMessage(
         val message: AppMessage,
-        val offset: Long,
+        val tracker: PartitionAndOffset,
     )
 
-    private val messageCache: Cache<MessageId, TrackedMessage> =
+    /**
+     * Spill-over map for temporarily storing evicted cache entries that fail to be persisted.
+     */
+    private val failedCreates = ConcurrentHashMap<String, TrackedMessage>()
+
+    /**
+     * Map of partition/offset information to message IDs.
+     */
+    private val offsetToMessageId = ConcurrentHashMap<PartitionAndOffset, String>()
+
+    /**
+     * Keeps track of the largest offset value per partition.
+     */
+    private val partitionOffsetTracker = ConcurrentHashMap<Int, Long>()
+
+    private val messageCache: Cache<String, TrackedMessage> =
         CacheFactoryImpl().build(
             "P2P-delivery-tracker-cache",
             Caffeine.newBuilder()
-                .maximumSize(maxCacheSize)
-                .removalListener<MessageId?, TrackedMessage?> { _, value, _ ->
-                    value?.let { offsetToMessageId.remove(value.offset) }
+                .maximumSize(config.config.maxCacheSizeMegabytes)
+                .removalListener<String?, TrackedMessage?> { _, value, _ ->
+                    value?.let { onRemoval(it) }
                 }.evictionListener { key, value, _ ->
                     if (key != null && value != null) {
-                        stateManager.put(key, value.message)
-                        offsetToMessageId.remove(value.offset)
+                        onEviction(key, value)
                     }
                 }
         )
 
-    private val offsetToMessageId = ConcurrentHashMap<Long, MessageId>()
-
-    fun get(key: MessageId): AppMessage? {
-        return messageCache.getIfPresent(key)?.message ?: stateManager.getIfPresent(key)
-    }
-
-    fun put(key: MessageId, message: AppMessage, offset: Long) {
-        messageCache.put(key, TrackedMessage(message, offset))
-        offsetToMessageId[offset] = key
-        persistOlderCacheEntries()
-    }
-
-    fun invalidate(key: MessageId) {
-        messageCache.getIfPresent(key)?.let {
-            logger.trace("Discarding cached delivery tracker entry for '{}'.", key)
-            messageCache.invalidate(key)
-        } ?: {
-            logger.trace("Deleting delivery tracker entry from state manager for '{}'.", key)
-            stateManager.deleteIfPresent(key)
+    private fun updateCacheSize(size: Long) {
+        messageCache.policy().eviction().ifPresent {
+            it.maximum = size
         }
+    }
+
+    private fun onEviction(key: String, value: TrackedMessage) {
+        logger.trace("Handling cache eviction for message ID: '{}'", key)
+        val failure = stateManager.put(mapOf(key to value.message))
+        if (failure.isNotEmpty()) {
+            failedCreates[key] = value
+        }
+        offsetToMessageId.remove(value.tracker)
+    }
+
+    private fun onRemoval(value: TrackedMessage) {
+        val key = value.tracker
+        logger.trace("Handling cache entry removal for message ID: '{}'", offsetToMessageId[key])
+        offsetToMessageId.remove(key)
     }
 
     private fun StateManager.getIfPresent(key: String): AppMessage? {
@@ -96,36 +160,57 @@ class DataMessageCache(
             } while (retryCount++ < 3 && failedDeletes.isNotEmpty())
 
             if (failedDeletes.isNotEmpty()) {
-                logger.error("Failed to delete the state for key '{}' after '{} attempts.", key, retryCount)
+                logger.warn("Failed to delete the state for key '{}' after '{} attempts.", key, retryCount)
             }
         }
-        // TODO refactor retry
     }
 
-    private fun StateManager.put(id: MessageId, message: AppMessage) {
-        val newState = State(id, schemaRegistry.serialize(message).array())
-        create(setOf(newState)).forEach {
-            logger.warn("Failed to persist message '{}' for tracking delivery.", it)
+    private fun StateManager.put(messages: Map<String, AppMessage>): Set<String> {
+        val newStates = messages.mapValues {
+            State(it.key, schemaRegistry.serialize(it.value).array())
         }
-        // TODO retry
+        var statesToCreate = newStates.values
+        var retryCount = 0
+        var failedCreates = setOf<String>()
+        do {
+            try {
+                failedCreates = create(statesToCreate).also {
+                    logger.warn("Failed to persist tracking state for messages with the following keys: '{}'.", it)
+                }
+            } catch (e: Exception) {
+                logger.error("Unexpected error while trying to persist message state to the state manager.", e)
+            }
+            if (failedCreates.isNotEmpty()) {
+                statesToCreate = newStates.filterKeys { failedCreates.contains(it) }.values
+            }
+        } while (retryCount++ < 3 && failedCreates.isNotEmpty())
+
+        if (failedCreates.isNotEmpty()) {
+            logger.warn("Failed to persist tracking state for message IDs: '{}' after '{}' attempts.", failedCreates, retryCount)
+        }
+        return failedCreates
     }
 
     private fun persistOlderCacheEntries() {
-        val threshold = offsetToMessageId.keys.max() - maxCacheOffsetAge
-        offsetToMessageId.filterKeys { it < threshold }.forEach { entry ->
-            val messageId = entry.value
-            messageCache.getIfPresent(messageId)?.message?.let {
-                stateManager.put(messageId, it)
-                messageCache.invalidate(messageId)
-            } ?: offsetToMessageId.remove(entry.key)
-
+        val thresholds = partitionOffsetTracker.mapValues {
+            it.value - config.config.maxCacheOffsetAge
+        }
+        val messagesToPersist = offsetToMessageId.filterKeys { it.offset < (thresholds[it.partition] ?: 0) }
+            .mapNotNull { entry ->
+                val messageId = entry.value
+                messageCache.getIfPresent(messageId)?.message?.let {
+                    messageId to it
+                }
+            }.toMap()
+        if (messagesToPersist.isEmpty()) {
+            return
+        }
+        logger.trace(
+            "Messages with IDs: '{}' are older than the configured offset age and will be moved to the state manager.",
+            messagesToPersist.keys
+        )
+        stateManager.put(messagesToPersist).also { failed ->
+            messageCache.invalidateAll((messagesToPersist - failed).keys)
         }
     }
-
-//    private fun MessageId.toKey() = "$KEY_PREFIX$this"
-
-    override fun close() {
-    }
 }
-
-private typealias MessageId = String
