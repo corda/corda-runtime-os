@@ -21,8 +21,11 @@ dependencies {
     implementation libs.jackson.datatype.jsr310
     implementation libs.unirest.java
     implementation libs.unirest.objectmapper.jackson
+    implementation project(':components:membership:membership-rest')
     implementation project(':libs:corda-sdk')
     implementation project(':libs:rest:json-serialization')
+    implementation project(':libs:membership:certificates-common')
+    implementation project(':libs:rest:rest-client')
     testImplementation libs.bundles.test
     testImplementation libs.javalin
     testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinCoroutinesVersion"
