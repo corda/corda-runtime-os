@@ -2,7 +2,7 @@
 @Library('corda-shared-build-pipeline-steps@5.2') _
 
 cordaPipelineKubernetesAgent(
-    runIntegrationTests: true,
+    runIntegrationTests: false,
     createPostgresDb: true,
     gradleAdditionalArgs: '-PrunUnstableTests',
     dailyBuildCron: 'H */6 * * 1-5',

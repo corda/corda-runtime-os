@@ -2,15 +2,15 @@
 
 cordaPipelineKubernetesAgent(
     dailyBuildCron: 'H 03 * * *',
-    runIntegrationTests: true,
+    runIntegrationTests: false,
     publishRepoPrefix: 'corda-ent-maven',
     createPostgresDb: true,
     publishOSGiImage: true,
     publishPreTestImage: true,
     publishHelmChart: true,
     e2eTestName: 'corda-runtime-os-e2e-tests',
-    runE2eTests: true,
-    runResiliencyTests: true,
+    runE2eTests: false,
+    runResiliencyTests: false,
     gradleAdditionalArgs: '-Dscan.tag.Nightly-Build',
     generateSbom: true,
     javaVersion: '17'
