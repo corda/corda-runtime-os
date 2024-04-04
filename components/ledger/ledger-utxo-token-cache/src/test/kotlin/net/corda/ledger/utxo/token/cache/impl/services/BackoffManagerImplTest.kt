@@ -49,7 +49,7 @@ class BackoffManagerImplTest {
         assertThat(backoffManager.backoff(tokenPoolKey1)).isTrue() // backoff time has not expired
         assertThat(backoffManager.backoff(tokenPoolKey1)).isTrue() // backoff time has not expired
         assertThat(backoffManager.backoff(tokenPoolKey1)).isTrue() // backoff time has not expired
-        assertThat(backoffManager.backoff(tokenPoolKey1)).isFalse() // backoff time has expired
+        assertThat(backoffManager.backoff(tokenPoolKey1)).isFalse() // backoff time has expire
     }
 
     @Test
