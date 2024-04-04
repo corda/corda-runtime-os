@@ -22,7 +22,7 @@ class BackoffManagerImpl(
     private val backoffStrategy = Exponential(base = 2.0, growthFactor = dbBackoffMinPeriod.toMillis())
 
     val cache: Cache<TokenPoolKey, AttemptAndBackoffTimePair> = CacheFactoryImpl().build(
-        "token-claim-backoff-map",
+        "token-claim-db-backoff-map",
         Caffeine.newBuilder().expireAfterWrite(dbBackoffMaxPeriod)
     )
 
