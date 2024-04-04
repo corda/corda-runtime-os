@@ -570,12 +570,12 @@ class MembershipPersistenceTest {
     @Test
     fun `registration requests can persist over RPC topic`() {
         val registrationId = randomUUID().toString()
-        val status = RegistrationStatus.SENT_TO_MGM
+        val status = RegistrationStatus.RECEIVED_BY_MGM
 
         val result = membershipPersistenceClientWrapper.persistRegistrationRequest(
             viewOwningHoldingIdentity,
             RegistrationRequest(
-                RegistrationStatus.SENT_TO_MGM,
+                RegistrationStatus.RECEIVED_BY_MGM,
                 registrationId,
                 registeringHoldingIdentity,
                 SignedData(
@@ -642,12 +642,12 @@ class MembershipPersistenceTest {
     @Test
     fun `serial information can be persisted when requests are processed in unordered manner`() {
         val registrationId = randomUUID().toString()
-        val status = RegistrationStatus.PENDING_MEMBER_VERIFICATION
+        val status = RegistrationStatus.NEW
 
         val statusPersistence = membershipPersistenceClientWrapper.persistRegistrationRequest(
             viewOwningHoldingIdentity,
             RegistrationRequest(
-                RegistrationStatus.PENDING_MEMBER_VERIFICATION,
+                RegistrationStatus.NEW,
                 registrationId,
                 registeringHoldingIdentity,
                 SignedData(
@@ -714,7 +714,7 @@ class MembershipPersistenceTest {
         val serialAndStatusPersistence = membershipPersistenceClientWrapper.persistRegistrationRequest(
             viewOwningHoldingIdentity,
             RegistrationRequest(
-                RegistrationStatus.SENT_TO_MGM,
+                RegistrationStatus.PENDING_MEMBER_VERIFICATION,
                 registrationId,
                 registeringHoldingIdentity,
                 SignedData(
@@ -1246,6 +1246,7 @@ class MembershipPersistenceTest {
 
         // 2. Persist a request
         val registrationId = randomUUID().toString()
+        persistRequest(registeringHoldingIdentity, registrationId, RegistrationStatus.NEW)
         val requestPersistentResult = persistRequest(registeringHoldingIdentity, registrationId)
 
         assertThat(requestPersistentResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
@@ -1354,7 +1355,7 @@ class MembershipPersistenceTest {
         val persistRegRequestResult = membershipPersistenceClientWrapper.persistRegistrationRequest(
             viewOwningHoldingIdentity,
             RegistrationRequest(
-                RegistrationStatus.SENT_TO_MGM,
+                RegistrationStatus.NEW,
                 registrationId,
                 registeringHoldingIdentity,
                 SignedData(
@@ -1401,7 +1402,7 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity).isNotNull
         assertThat(persistedEntity.registrationId).isEqualTo(registrationId)
         assertThat(persistedEntity.holdingIdentityShortHash).isEqualTo(registeringHoldingIdentity.shortHash.value)
-        assertThat(persistedEntity.status).isEqualTo(RegistrationStatus.SENT_TO_MGM.name)
+        assertThat(persistedEntity.status).isEqualTo(RegistrationStatus.NEW.name)
 
         val updateRegRequestStatusResult = membershipPersistenceClientWrapper.setRegistrationRequestStatus(
             viewOwningHoldingIdentity,
@@ -1514,18 +1515,22 @@ class MembershipPersistenceTest {
         }
         // Persist a request pending manual approval
         val registrationId1 = randomUUID().toString()
+        persistRequest(registeringHoldingIdentity, registrationId1, RegistrationStatus.NEW)
         val requestPersistentResult =
             persistRequest(registeringHoldingIdentity, registrationId1, RegistrationStatus.PENDING_MANUAL_APPROVAL)
         assertThat(requestPersistentResult).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         // Persist a completed request
         val registrationId2 = randomUUID().toString()
+        persistRequest(viewOwningHoldingIdentity, registrationId2, RegistrationStatus.RECEIVED_BY_MGM)
         val requestPersistentResult2 =
             persistRequest(viewOwningHoldingIdentity, registrationId2, RegistrationStatus.DECLINED)
         assertThat(requestPersistentResult2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         // Persist a new request
         val registrationId3 = randomUUID().toString()
+        val holdingId3 = HoldingIdentity(MemberX500Name.parse("O=Charlie, C=GB, L=London"), groupId)
+        persistRequest(holdingId3, registrationId3, RegistrationStatus.NEW)
         val requestPersistentResult3 = persistRequest(
-            HoldingIdentity(MemberX500Name.parse("O=Charlie, C=GB, L=London"), groupId),
+            holdingId3,
             registrationId3
         )
         assertThat(requestPersistentResult3).isInstanceOf(MembershipPersistenceResult.Success::class.java)
