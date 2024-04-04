@@ -42,6 +42,7 @@ pf4jVersion = "3.10.0"
 unirestVersion = "3.14.5"
 zipkinCoreVersion = "2.27.1"
 zipkinReporterVersion = "3.3.0"
+nettyVersion = "4.1.94.Final"
 
 # Testing
 assertjVersion = "3.25.3"
@@ -126,6 +127,7 @@ snappy-java = { group = "org.xerial.snappy", name = "snappy-java", version.ref =
 zipkin-core = { group = "io.zipkin.zipkin2", name = "zipkin", version.ref = "zipkinCoreVersion" }
 zipkin-sender-urlconnection = { group = "io.zipkin.reporter2", name = "zipkin-sender-urlconnection", version.ref = "zipkinReporterVersion" }
 zipkin-reporter-brave = { group = "io.zipkin.reporter2", name = "zipkin-reporter-brave", version.ref = "zipkinReporterVersion" }
+netty = { group = "io.netty", name = "netty-codec-http", version.ref = "nettyVersion" }
 
 gradle-enterprise = { group = "com.gradle", name = "gradle-enterprise-gradle-plugin", version.ref = "gradleEnterpriseVersion" }
 liquibase = { group = "org.liquibase", name = "liquibase-core", version.ref = "liquibaseVersion"}
