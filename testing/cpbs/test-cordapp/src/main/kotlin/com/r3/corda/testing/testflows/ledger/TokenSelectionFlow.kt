@@ -1,7 +1,5 @@
 package com.r3.corda.testing.testflows.ledger
 
-import com.r3.corda.testing.testflows.messages.TokenSelectionRequest
-import com.r3.corda.testing.testflows.messages.TokenSelectionResponse
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
@@ -12,6 +10,8 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.utxo.token.selection.TokenClaim
 import net.corda.v5.ledger.utxo.token.selection.TokenClaimCriteria
 import net.corda.v5.ledger.utxo.token.selection.TokenSelection
+import com.r3.corda.testing.testflows.messages.TokenSelectionRequest
+import com.r3.corda.testing.testflows.messages.TokenSelectionResponse
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 
@@ -39,7 +39,7 @@ class TokenSelectionFlow : ClientStartableFlow {
             val queryCriteria = getCriteriaFromRequest(inputs)
 
             log.info("Querying for tokens with: ${jsonMarshallingService.format(queryCriteria)}")
-            val claimResult = tokenSelection.tryClaim("claim1", queryCriteria)
+            val claimResult = tokenSelection.tryClaim(queryCriteria)
 
 
             val response = if (claimResult == null) {
