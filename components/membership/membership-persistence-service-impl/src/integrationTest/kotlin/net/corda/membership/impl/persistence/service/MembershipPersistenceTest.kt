@@ -688,11 +688,13 @@ class MembershipPersistenceTest {
 
         assertThat(statusPersistence).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
-        assertThat(membershipPersistenceClientWrapper.setRegistrationRequestStatus(
-            viewOwningHoldingIdentity,
-            registrationId,
-            status,
-        ).execute()).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        assertThat(
+            membershipPersistenceClientWrapper.setRegistrationRequestStatus(
+                viewOwningHoldingIdentity,
+                registrationId,
+                status,
+            ).execute()
+        ).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
         val persistedEntity = vnodeEmf.createEntityManager().use {
             it.find(RegistrationRequestEntity::class.java, registrationId)
