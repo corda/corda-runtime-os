@@ -13,6 +13,7 @@ import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationState
 import net.corda.orm.utils.transaction
+import net.corda.orm.utils.use
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.OperationalStatus
@@ -59,7 +60,7 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
     }
 
     override fun findVirtualNodeOperationByRequestId(entityManager: EntityManager, requestId: String): VirtualNodeOperationDto {
-        entityManager.transaction {
+        entityManager.use {
             val operationStatuses = entityManager.createQuery(
                 "from ${VirtualNodeOperationEntity::class.java.simpleName} where requestId = :requestId " +
                     "order by latestUpdateTimestamp desc",
