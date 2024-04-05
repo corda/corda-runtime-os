@@ -1,5 +1,6 @@
 package net.corda.sdk.network
 
+import net.corda.crypto.core.ShortHash
 import net.corda.membership.rest.v1.MGMRestResource
 import net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
 import net.corda.membership.rest.v1.types.response.PreAuthToken
@@ -20,7 +21,7 @@ class MgmGeneratePreAuth {
      */
     fun generatePreAuthToken(
         restClient: RestClient<MGMRestResource>,
-        holdingIdentityShortHash: String,
+        holdingIdentityShortHash: ShortHash,
         request: PreAuthTokenRequest,
         wait: Duration = 10.seconds
     ): PreAuthToken {
@@ -30,7 +31,7 @@ class MgmGeneratePreAuth {
                 operationName = "Generate pre-auth token"
             ) {
                 val resource = client.start().proxy
-                resource.generatePreAuthToken(holdingIdentityShortHash, request)
+                resource.generatePreAuthToken(holdingIdentityShortHash.value, request)
             }
         }
     }
