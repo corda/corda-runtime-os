@@ -2,6 +2,7 @@ plugins {
     id 'java-gradle-plugin'
     id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'org.jetbrains.kotlin.jvm'
+    id 'corda.common-library'
 }
 
 ext {
@@ -23,14 +24,18 @@ dependencies {
     implementation libs.unirest.objectmapper.jackson
     implementation project(':components:membership:membership-rest')
     implementation project(':libs:corda-sdk')
-    implementation project(':libs:rest:json-serialization')
     implementation project(':libs:membership:certificates-common')
+    implementation project(':libs:rest:json-serialization')
     implementation project(':libs:rest:rest-client')
     implementation project(':libs:virtual-node:cpi-upload-endpoints')
     implementation project(':libs:virtual-node:virtual-node-endpoints-maintenance')
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-base'
+
     testImplementation libs.bundles.test
     testImplementation libs.javalin
     testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinCoroutinesVersion"
+
 }
 
 integrationTest {

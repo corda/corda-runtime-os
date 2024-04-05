@@ -1,5 +1,6 @@
 package net.corda.sdk.network
 
+import net.corda.crypto.core.ShortHash
 import net.corda.membership.rest.v1.MemberRegistrationRestResource
 import net.corda.membership.rest.v1.NetworkRestResource
 import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
@@ -15,27 +16,24 @@ class RegistrationRequester {
     /**
      * Submit the registration
      * @param restClient of type RestClient<MemberRegistrationRestResource>
-     * @param registrationContext the payload to be used in the request, see [RegistrationContext]
+     * @param memberRegistrationRequest [RegistrationRequest]
      * @param holdingId the holding identity of the node
      * @param wait Duration before timing out, default 10 seconds
      * @return ID of the registration request
      */
     fun requestRegistration(
         restClient: RestClient<MemberRegistrationRestResource>,
-        registrationContext: Map<String, String>,
-        holdingId: String,
+        memberRegistrationRequest: MemberRegistrationRequest,
+        holdingId: ShortHash,
         wait: Duration = 10.seconds
     ): RegistrationRequestProgress {
-        val request = MemberRegistrationRequest(
-            context = registrationContext,
-        )
         return restClient.use { client ->
             executeWithRetry(
                 waitDuration = wait,
                 operationName = "Request registration"
             ) {
                 val resource = client.start().proxy
-                resource.startRegistration(holdingId, request)
+                resource.startRegistration(holdingId.value, memberRegistrationRequest)
             }
         }
     }
@@ -50,7 +48,7 @@ class RegistrationRequester {
     fun configureAsNetworkParticipant(
         restClient: RestClient<NetworkRestResource>,
         request: HostedIdentitySetupRequest,
-        holdingId: String,
+        holdingId: ShortHash,
         wait: Duration = 10.seconds
     ) {
         restClient.use { client ->
@@ -59,7 +57,7 @@ class RegistrationRequester {
                 operationName = "Configure $holdingId as network participant"
             ) {
                 val resource = client.start().proxy
-                resource.setupHostedIdentities(holdingId, request)
+                resource.setupHostedIdentities(holdingId.value, request)
             }
         }
     }

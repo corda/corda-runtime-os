@@ -3,6 +3,8 @@ package net.corda.cli.plugins.cpi.commands
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.rest.client.RestClient
+import net.corda.sdk.data.Checksum
+import net.corda.sdk.data.RequestId
 import net.corda.sdk.packaging.CpiUploader
 import net.corda.sdk.rest.RestClientUtils.createRestClient
 import org.slf4j.Logger
@@ -67,7 +69,7 @@ class CPIUpload : RestCommand(), Runnable {
                 cpi = cpi.inputStream(),
                 cpiName = cpi.name,
                 wait = waitDurationSeconds.seconds
-            ).id
+            ).let { RequestId(it.id) }
         } catch (e: Exception) {
             sysErr.error(e.message, e)
             logger.error("Unexpected error during CPI upload", e)
@@ -81,8 +83,8 @@ class CPIUpload : RestCommand(), Runnable {
     }
 
     @Suppress("NestedBlockDepth")
-    private fun pollForOKStatus(cpiUploadResult: String, restClient: RestClient<CpiUploadRestResource>) {
-        val checksum: String
+    private fun pollForOKStatus(cpiUploadResult: RequestId, restClient: RestClient<CpiUploadRestResource>) {
+        val checksum: Checksum
         sysOut.info("Polling for result.")
         try {
             checksum = CpiUploader().cpiChecksum(
