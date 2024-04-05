@@ -1,5 +1,5 @@
 [versions]
-kotlinVersion = "1.8.21"
+kotlinVersion = "1.9.23"
 
 apacheCommonsCodecVersion="1.16.1"
 apacheCommonsCompressVersion = "1.26.1"
