@@ -179,27 +179,27 @@ class CordappTasksImpl(var pc: ProjectContext) {
             alias = pc.r3RootCertKeyAlias
         )
         pc.logger.quiet("Certificate '${pc.r3RootCertKeyAlias}' uploaded.")
-        val cpiUploadStatus = helper.uploadCpi(
+        val cpiCheksum = helper.uploadCpi(
             pc.cordaClusterURL,
             pc.cordaRestUser,
             pc.cordaRestPassword,
             pc.corDappCpiFilePath,
             pc.corDappCpiName,
             pc.project.version.toString(),
-            pc.corDappCpiUploadStatusFilePath,
+            pc.corDappCpiChecksumFilePath,
             pc.cpiUploadTimeout
         )
-        pc.logger.quiet("CPI ${pc.corDappCpiName} uploaded: ${cpiUploadStatus.cpiFileChecksum}")
-        val notaryUploadStatus = helper.uploadCpi(
+        pc.logger.quiet("CPI ${pc.corDappCpiName} uploaded: $cpiCheksum")
+        val notaryChecksum = helper.uploadCpi(
             pc.cordaClusterURL,
             pc.cordaRestUser,
             pc.cordaRestPassword,
             pc.notaryCpiFilePath,
             pc.notaryCpiName,
             pc.project.version.toString(),
-            pc.notaryCpiUploadStatusFilePath,
+            pc.notaryCpiChecksumFilePath,
             pc.cpiUploadTimeout
         )
-        pc.logger.quiet("CPI ${pc.notaryCpiName} uploaded: ${notaryUploadStatus.cpiFileChecksum}")
+        pc.logger.quiet("CPI ${pc.notaryCpiName} uploaded: $notaryChecksum")
     }
 }

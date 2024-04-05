@@ -26,6 +26,8 @@ dependencies {
     implementation project(':libs:rest:json-serialization')
     implementation project(':libs:membership:certificates-common')
     implementation project(':libs:rest:rest-client')
+    implementation project(':libs:virtual-node:cpi-upload-endpoints')
+    implementation project(':libs:virtual-node:virtual-node-endpoints-maintenance')
     testImplementation libs.bundles.test
     testImplementation libs.javalin
     testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinCoroutinesVersion"

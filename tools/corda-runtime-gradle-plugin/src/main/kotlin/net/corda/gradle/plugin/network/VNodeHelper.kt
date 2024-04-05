@@ -6,14 +6,13 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import kong.unirest.HttpResponse
 import kong.unirest.JsonNode
 import kong.unirest.Unirest
-import net.corda.gradle.plugin.dtos.CpiUploadStatus
 import net.corda.gradle.plugin.dtos.GetCPIsResponseDTO
 import net.corda.gradle.plugin.dtos.RegistrationRequestProgressDTO
 import net.corda.gradle.plugin.dtos.VNode
 import net.corda.gradle.plugin.dtos.VirtualNodeInfoDTO
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
 import net.corda.gradle.plugin.retry
-import java.io.FileInputStream
+import java.io.File
 import java.net.HttpURLConnection
 import java.time.Duration
 import java.util.*
@@ -58,12 +57,11 @@ class VNodeHelper {
      * Reads the latest CPI checksums from file.
      */
     private fun getCpiCheckSum(
-        cpiUploadStatusFilePath: String
+        cpiChecksumFilePath: String
     ): String {
         try {
-            val fis = FileInputStream(cpiUploadStatusFilePath)
-            val statusDTO: CpiUploadStatus = mapper.readValue(fis, CpiUploadStatus::class.java)
-            return statusDTO.cpiFileChecksum!!
+            val fis = File(cpiChecksumFilePath)
+            return mapper.readValue(fis, String::class.java)
         } catch (e: Exception) {
             throw CordaRuntimeGradlePluginException("Failed to read CPI checksum from file, with error: $e")
         }

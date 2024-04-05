@@ -28,7 +28,7 @@ class NetworkTasksImpl(var pc: ProjectContext) {
             }
         }
         nodesToCreate.forEach {
-            val cpiUploadFilePath = if (it.serviceX500Name == null) pc.corDappCpiUploadStatusFilePath else pc.notaryCpiUploadStatusFilePath
+            val cpiUploadFilePath = if (it.serviceX500Name == null) pc.corDappCpiChecksumFilePath else pc.notaryCpiChecksumFilePath
 
             VNodeHelper().createVNode(
                 pc.cordaClusterURL,
