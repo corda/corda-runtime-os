@@ -642,7 +642,7 @@ class MembershipPersistenceTest {
     @Test
     fun `serial information can be persisted when requests are processed in unordered manner`() {
         val registrationId = randomUUID().toString()
-        val status = RegistrationStatus.NEW
+        val status = RegistrationStatus.PENDING_MEMBER_VERIFICATION
 
         val statusPersistence = membershipPersistenceClientWrapper.persistRegistrationRequest(
             viewOwningHoldingIdentity,
@@ -688,6 +688,12 @@ class MembershipPersistenceTest {
 
         assertThat(statusPersistence).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
+        assertThat(membershipPersistenceClientWrapper.setRegistrationRequestStatus(
+            viewOwningHoldingIdentity,
+            registrationId,
+            status,
+        ).execute()).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
         val persistedEntity = vnodeEmf.createEntityManager().use {
             it.find(RegistrationRequestEntity::class.java, registrationId)
         }
@@ -714,7 +720,7 @@ class MembershipPersistenceTest {
         val serialAndStatusPersistence = membershipPersistenceClientWrapper.persistRegistrationRequest(
             viewOwningHoldingIdentity,
             RegistrationRequest(
-                RegistrationStatus.PENDING_MEMBER_VERIFICATION,
+                RegistrationStatus.SENT_TO_MGM,
                 registrationId,
                 registeringHoldingIdentity,
                 SignedData(
@@ -1525,7 +1531,7 @@ class MembershipPersistenceTest {
         val requestPersistentResult2 =
             persistRequest(viewOwningHoldingIdentity, registrationId2, RegistrationStatus.DECLINED)
         assertThat(requestPersistentResult2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-        // Persist a new request
+        // Persist a new request and change its status to SENT_TO_MGM
         val registrationId3 = randomUUID().toString()
         val holdingId3 = HoldingIdentity(MemberX500Name.parse("O=Charlie, C=GB, L=London"), groupId)
         persistRequest(holdingId3, registrationId3, RegistrationStatus.NEW)
