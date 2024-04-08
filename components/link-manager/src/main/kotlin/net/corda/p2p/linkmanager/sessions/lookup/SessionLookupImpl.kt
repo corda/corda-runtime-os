@@ -1,26 +1,35 @@
 package net.corda.p2p.linkmanager.sessions.lookup
 
-import net.corda.data.p2p.AuthenticatedMessageAndKey
-import net.corda.data.p2p.app.AuthenticatedMessage
-import net.corda.data.p2p.app.MembershipStatusFilter
-import net.corda.libs.statemanager.api.State
+import net.corda.data.p2p.event.SessionDirection
+import net.corda.libs.statemanager.api.MetadataFilter
+import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.StateManager
-import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.p2p.linkmanager.membership.lookup
+import net.corda.p2p.crypto.protocol.api.CheckRevocation
+import net.corda.p2p.crypto.protocol.api.Session
+import net.corda.p2p.linkmanager.membership.getSessionCounterpartiesFromMessage
+import net.corda.p2p.linkmanager.sessions.ReEstablishmentMessageSender
 import net.corda.p2p.linkmanager.sessions.SessionCache
 import net.corda.p2p.linkmanager.sessions.SessionManager
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.couldNotFindSessionInformation
-import net.corda.p2p.linkmanager.sessions.StateManagerAction
+import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.SessionEstablished
+import net.corda.p2p.linkmanager.sessions.StateConvertor
 import net.corda.p2p.linkmanager.sessions.StateManagerWrapper
-import net.corda.v5.membership.MemberInfo
-import net.corda.virtualnode.toCorda
+import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.toOutbound
+import net.corda.p2p.linkmanager.sessions.utils.InboundSessionMessageContext
+import net.corda.p2p.linkmanager.sessions.utils.OutboundMessageContext
+import net.corda.p2p.linkmanager.sessions.utils.OutboundMessageState
+import net.corda.p2p.linkmanager.sessions.writer.SessionWriter
 import org.slf4j.LoggerFactory
 
+@Suppress("LongParameterList")
 internal class SessionLookupImpl(
     stateManager: StateManager,
     private val sessionCache: SessionCache,
+    private val sessionWriter: SessionWriter,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    stateConvertor: StateConvertor,
+    checkRevocation: CheckRevocation,
+    reEstablishmentMessageSender: ReEstablishmentMessageSender,
 ) : SessionLookup {
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -29,144 +38,101 @@ internal class SessionLookupImpl(
     private val stateManager = StateManagerWrapper(
         stateManager,
         sessionCache,
+        stateConvertor,
+        checkRevocation,
+        reEstablishmentMessageSender,
     )
 
-    override fun getSessionBySessionId(sessionID: String): SessionManager.SessionDirection? {
-        TODO("Not yet implemented")
-    }
-
-    override fun <T> getOutboundSessions(keysAndMessages: Map<String?, List<OutboundMessageContext<T>>>) {
-        val cachedSessions = getCachedOutboundSessions(keysAndMessages)
-        val notCachedSessions = (keysAndMessages - cachedSessions.keys).keys
-        val sessionStates =
-            if (notCachedSessions.isNotEmpty()) {
-                stateManager.get(notCachedSessions.filterNotNull())
-                    .let { states ->
-                        notCachedSessions.map { (id, items) ->
-                            OutboundMessageState(
-                                id,
-                                states[id],
-                                items,
-                            )
-                        }
-                    }
-            } else {
-                OutboundMessageState(
-                    null,
-                    null,
-                    null,
-                )
-            }
-    }
-
-    private fun <T> getCachedOutboundSessions(
+    override fun <T> getCachedOutboundSessions(
         messagesAndKeys: Map<String?, Collection<OutboundMessageContext<T>>>,
-    ): Map<String, Collection<Pair<T, SessionManager.SessionState.SessionEstablished>>> {
+    ): Map<String, Collection<Pair<T, SessionEstablished>>> {
         val allCached = sessionCache.getAllPresentOutboundSessions(messagesAndKeys.keys.filterNotNull())
         return allCached.mapValues { entry ->
             val contexts = messagesAndKeys[entry.key]
-            val counterparties = contexts?.firstOrNull()
+            val message = contexts?.firstOrNull()
                 ?.message
-                ?.message
-                ?.getSessionCounterpartiesFromMessage() ?: return@mapValues emptyList()
+                ?.message ?: return@mapValues emptyList()
+            val counterparties = membershipGroupReaderProvider.getSessionCounterpartiesFromMessage(message)
+                ?: return@mapValues emptyList()
 
             contexts.map { context ->
-                context.trace to SessionManager.SessionState.SessionEstablished(entry.value.session, counterparties)
+                context.trace to SessionEstablished(entry.value.session, counterparties)
             }
         }.toMap()
     }
 
-    private fun AuthenticatedMessage.getSessionCounterpartiesFromMessage(): SessionManager.SessionCounterparties? {
-        val peer = this.header.destination
-        val us = this.header.source
-        val status = this.header.statusFilter
-        val ourInfo = membershipGroupReaderProvider.lookup(
-            us.toCorda(), us.toCorda(), MembershipStatusFilter.ACTIVE_OR_SUSPENDED
-        )
-        // could happen when member has pending registration or something went wrong
-        if (ourInfo == null) {
-            logger.warn("Could not get member information about us from message sent from $us" +
-                    " to $peer with ID `${this.header.messageId}`.")
-        }
-        val counterpartyInfo = membershipGroupReaderProvider.lookup(us.toCorda(), peer.toCorda(), status)
-        if (counterpartyInfo == null) {
-            logger.couldNotFindSessionInformation(us.toCorda().shortHash, peer.toCorda().shortHash, this.header.messageId)
-            return null
-        }
-        return SessionManager.SessionCounterparties(
-            us.toCorda(),
-            peer.toCorda(),
-            status,
-            counterpartyInfo.serial,
-            isCommunicationBetweenMgmAndMember(ourInfo, counterpartyInfo)
-        )
-    }
-
-    private fun isCommunicationBetweenMgmAndMember(ourInfo: MemberInfo?, counterpartyInfo: MemberInfo): Boolean {
-        return counterpartyInfo.isMgm || ourInfo?.isMgm == true
-    }
-
-    data class OutboundMessageContext<T>(
-        val trace: T,
-        val message: AuthenticatedMessageAndKey,
-    )
-
-    private data class OutboundMessageState<T>(
-        val key: String?,
-        val state: State?,
-        val messages: Collection<OutboundMessageContext<T>>,
-    ) {
-        val first by lazy {
-            messages.first()
-        }
-        val others by lazy {
-            messages.drop(1)
-        }
-
-        fun toResults(
-            sessionState: SessionManager.SessionState,
-        ): Collection<OutboundMessageResults<T>> {
-            return listOf(
-                OutboundMessageResults(
-                    key = this.key,
-                    messages = this.messages,
-                    action = null,
-                    sessionState = sessionState,
-                ),
-            )
-        }
-
-        fun toResultsFirstAndOther(
-            firstState: SessionManager.SessionState,
-            otherStates: SessionManager.SessionState,
-            action: StateManagerAction,
-        ): Collection<OutboundMessageResults<T>> {
-            val firstResult = OutboundMessageResults(
-                key = this.key,
-                messages = listOf(first),
-                action = action,
-                sessionState = firstState,
-            )
-            return if (others.isEmpty()) {
-                listOf(firstResult)
-            } else {
-                listOf(
-                    firstResult,
-                    OutboundMessageResults(
-                        key = this.key,
-                        messages = others,
-                        action = null,
-                        sessionState = otherStates,
-                    ),
-                )
+    override fun <T> getAllCachedSessions(
+        messagesAndKeys: Map<String, List<T>>,
+    ): Map<String, Pair<List<T>, SessionManager.SessionDirection>> {
+        return messagesAndKeys.mapNotNull { (key, keyAndMessage) ->
+            sessionCache.getBySessionIfCached(key)?.let { sessionDirection ->
+                key to (keyAndMessage to sessionDirection)
             }
-        }
+        }.toMap()
     }
 
-    private data class OutboundMessageResults<T>(
-        val key: String?,
-        val messages: Collection<OutboundMessageContext<T>>,
-        val action: StateManagerAction?,
-        val sessionState: SessionManager.SessionState,
-    )
+    override fun <T> getPersistedOutboundSessions(
+        sessionsNotCached: Map<String?, List<OutboundMessageContext<T>>>,
+    ): List<OutboundMessageState<T>> {
+        return stateManager.get(sessionsNotCached.keys.filterNotNull())
+            .let { states ->
+                sessionsNotCached.map { (id, items) ->
+                    OutboundMessageState(
+                        id,
+                        states[id],
+                        items,
+                    )
+                }
+            }
+    }
+
+    override fun <T> getPersistedOutboundSessionsBySessionId(
+        notInboundSessions: Set<String>,
+        sessionsNotCached: Map<String, List<T>>,
+    ): List<Pair<List<T>, SessionManager.SessionDirection.Outbound>> {
+        return stateManager.findStatesMatchingAny(
+            notInboundSessions.map { getSessionIdFilter(it) },
+        )
+            .entries
+            .mapNotNull { (key, state) ->
+                val session = state.sessionState.sessionData as? Session ?: return@mapNotNull null
+                val sessionId = state.managerState.metadata.toOutbound().sessionId
+                sessionsNotCached[sessionId]?.let { traceables ->
+                    val outboundSession = sessionWriter.cacheSession(
+                        SessionDirection.OUTBOUND,
+                        state.toCounterparties(),
+                        session,
+                        key,
+                    ) as SessionManager.SessionDirection.Outbound
+                    traceables to outboundSession
+                }
+            }
+    }
+
+    private fun getSessionIdFilter(sessionId: String): MetadataFilter = MetadataFilter("sessionId", Operation.Equals, sessionId)
+
+    override fun <T> getPersistedInboundSessions(
+        sessionsNotCached: Map<String, List<T>>,
+    ): List<Pair<List<T>, SessionManager.SessionDirection.Inbound>> {
+        return stateManager.get(sessionsNotCached.keys)
+            .entries
+            .mapNotNull { (sessionId, state) ->
+                val session = state.sessionState.sessionData as? Session ?: return@mapNotNull null
+                sessionsNotCached[sessionId]?.let { traceables ->
+                    val inboundSession = sessionWriter.cacheSession(
+                        SessionDirection.INBOUND,
+                        state.toCounterparties(),
+                        session,
+                    ) as SessionManager.SessionDirection.Inbound
+                    traceables to inboundSession
+                }
+            }
+    }
+
+    override fun <T> getSessionIdIfInboundSessionMessage(
+        data: Any,
+        trace: T
+    ): InboundSessionMessageContext<T>? {
+        TODO("Not yet implemented")
+    }
 }

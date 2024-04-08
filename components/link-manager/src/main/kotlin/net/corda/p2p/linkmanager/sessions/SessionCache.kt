@@ -7,11 +7,11 @@ import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.data.p2p.event.SessionDirection
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.lifecycle.Resource
 import net.corda.metrics.CordaMetrics
+import net.corda.metrics.CordaMetrics.Metric.EstimatedSessionCacheSize
 import net.corda.p2p.linkmanager.metrics.recordP2PMetric
 import net.corda.p2p.linkmanager.metrics.recordSessionTimeoutMetric
-import net.corda.lifecycle.Resource
-import net.corda.metrics.CordaMetrics.Metric.EstimatedSessionCacheSize
 import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata.Companion.toCommonMetadata
 import net.corda.p2p.linkmanager.state.direction
@@ -57,7 +57,7 @@ internal class SessionCache(
             },
         )
 
-    private val counterpartiesForSessionId = ConcurrentHashMap<String, String>()
+    private val counterpartiesForOutboundSessionId = ConcurrentHashMap<String, String>()
 
     private val cachedOutboundSessions: Cache<String, SessionManager.SessionDirection.Outbound> =
         CacheFactoryImpl().build(
@@ -66,7 +66,7 @@ internal class SessionCache(
                 .maximumSize(defaultCacheSize.outbound)
                 .removalListener<String?, SessionManager.SessionDirection.Outbound?> { _, session, _ ->
                     session?.session?.let {
-                        counterpartiesForSessionId.remove(it.sessionId)
+                        counterpartiesForOutboundSessionId.remove(it.sessionId)
                     }
                 }.evictionListener { key, _, _ ->
                     key?.let { removeFromScheduler(it) }
@@ -89,7 +89,7 @@ internal class SessionCache(
 
     fun putOutboundSession(key: String, outboundSession: SessionManager.SessionDirection.Outbound) {
         cachedOutboundSessions.put(key, outboundSession)
-        counterpartiesForSessionId[outboundSession.session.sessionId] = key
+        counterpartiesForOutboundSessionId[outboundSession.session.sessionId] = key
     }
 
     fun getAllPresentOutboundSessions(keys: Iterable<String>): Map<String, SessionManager.SessionDirection.Outbound> {
@@ -97,11 +97,11 @@ internal class SessionCache(
     }
 
     fun getBySessionIfCached(sessionID: String): SessionManager.SessionDirection? =
-        cachedInboundSessions.getIfPresent(sessionID) ?: counterpartiesForSessionId[sessionID]?.let {
+        cachedInboundSessions.getIfPresent(sessionID) ?: counterpartiesForOutboundSessionId[sessionID]?.let {
             cachedOutboundSessions.getIfPresent(it)
         }
 
-    fun getKeyForOutboundSessionId(sessionID: String) = counterpartiesForSessionId[sessionID]
+    fun getKeyForOutboundSessionId(sessionID: String) = counterpartiesForOutboundSessionId[sessionID]
 
     fun getByKeyIfCached(key: String): SessionManager.SessionDirection? =
         cachedInboundSessions.getIfPresent(key) ?: cachedOutboundSessions.getIfPresent(key)
@@ -116,7 +116,7 @@ internal class SessionCache(
     }
 
     fun deleteBySessionId(sessionId: String) {
-        val key = counterpartiesForSessionId[sessionId]
+        val key = counterpartiesForOutboundSessionId[sessionId]
         if (key == null) {
             logger.warn("Failed to find associated state key for session ID '$sessionId'")
             return

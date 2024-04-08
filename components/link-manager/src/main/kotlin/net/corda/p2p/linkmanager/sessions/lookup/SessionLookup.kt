@@ -1,20 +1,38 @@
 package net.corda.p2p.linkmanager.sessions.lookup
 
 import net.corda.p2p.linkmanager.sessions.SessionManager
+import net.corda.p2p.linkmanager.sessions.utils.InboundSessionMessageContext
+import net.corda.p2p.linkmanager.sessions.utils.OutboundMessageContext
+import net.corda.p2p.linkmanager.sessions.utils.OutboundMessageState
 
 internal interface SessionLookup {
-    /**
-     * Looks for a given session with [sessionID] first in the session cache and then in the
-     * state manager DB, if not found in the cache.
-     *
-     * @param sessionID The ID of the session.
-     *
-     * @return The session itself, or null if no session was found with given [sessionID].
-     */
-    fun getSessionBySessionId(sessionID: String): SessionManager.SessionDirection?
+    fun <T> getCachedOutboundSessions(
+        messagesAndKeys: Map<String?, Collection<OutboundMessageContext<T>>>,
+    ): Map<String, Collection<Pair<T, SessionManager.SessionState.SessionEstablished>>>
+
+    fun <T> getAllCachedSessions(
+        messagesAndKeys: Map<String, List<T>>,
+    ): Map<String, Pair<List<T>, SessionManager.SessionDirection>>
+
+    fun <T> getPersistedOutboundSessions(
+        sessionsNotCached: Map<String?, List<OutboundMessageContext<T>>>,
+    ): List<OutboundMessageState<T>>
+
+    fun <T> getPersistedOutboundSessionsBySessionId(
+        notInboundSessions: Set<String>,
+        sessionsNotCached: Map<String, List<T>>,
+    ): List<Pair<List<T>, SessionManager.SessionDirection.Outbound>>
+
+    fun <T> getPersistedInboundSessions(
+        sessionsNotCached: Map<String, List<T>>,
+    ): List<Pair<List<T>, SessionManager.SessionDirection.Inbound>>
+
+    fun <T> getSessionIdIfInboundSessionMessage(data: Any, trace: T): InboundSessionMessageContext<T>?
 
     /**
-     * Get sthe outbound session based
+     * Gets the states for the outbound session based on the messages and their IDs.
      */
-    fun <T> getOutboundSessions(keysAndMessages: Map<String?, List<SessionLookupImpl.OutboundMessageContext<T>>>)
+    //fun <T> getOutboundSessionStates(keysAndMessages: Map<String?, List<OutboundMessageContext<T>>>): List<OutboundMessageState<T>>
+
+    //fun getOutboundSessions(keysAndMessages: Map<String?): List<SessionManager.SessionDirection?>
 }
