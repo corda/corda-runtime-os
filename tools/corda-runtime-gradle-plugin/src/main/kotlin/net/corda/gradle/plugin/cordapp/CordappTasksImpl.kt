@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.gradle.plugin.configuration.ProjectContext
 import net.corda.gradle.plugin.dtos.GroupPolicyDTO
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
+import net.corda.v5.base.types.MemberX500Name
 import java.io.File
 import java.io.FileInputStream
 
@@ -20,11 +21,11 @@ class CordappTasksImpl(var pc: ProjectContext) {
         if (!groupPolicyFile.exists() || groupPolicyFile.lastModified() < networkConfigFile.lastModified()) {
 
             pc.logger.quiet("Creating the Group policy.")
-            val configX500Ids = pc.networkConfig.x500Names
+            val configX500Names = pc.networkConfig.x500Names.filterNotNull().map { MemberX500Name.parse(it) }
 
             GroupPolicyHelper().createStaticGroupPolicy(
                 groupPolicyFile,
-                configX500Ids,
+                configX500Names,
             )
         } else {
             pc.logger.quiet("Group policy up to date.")

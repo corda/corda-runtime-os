@@ -487,7 +487,7 @@ class StaticMemberRegistrationServiceTest {
             whenever(
                 persistenceClient.persistRegistrationRequest(
                     eq(alice),
-                    capturedRequest.capture()
+                    capturedRequest.capture(),
                 )
             ).doReturn(persistRegistrationRequestOperation)
             setUpPublisher()

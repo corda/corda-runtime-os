@@ -2,6 +2,7 @@ plugins {
     id 'java-gradle-plugin'
     id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'org.jetbrains.kotlin.jvm'
+    id 'corda.common-library'
 }
 
 ext {
@@ -23,9 +24,13 @@ dependencies {
     implementation libs.unirest.objectmapper.jackson
     implementation project(':libs:corda-sdk')
     implementation project(':libs:rest:json-serialization')
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-base'
+
     testImplementation libs.bundles.test
     testImplementation libs.javalin
     testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinCoroutinesVersion"
+
 }
 
 integrationTest {

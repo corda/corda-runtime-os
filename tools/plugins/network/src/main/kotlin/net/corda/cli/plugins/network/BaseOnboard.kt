@@ -6,8 +6,10 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.cli.plugins.packaging.signing.SigningOptions
+import net.corda.cli.plugins.typeconverter.X500NameConverter
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.core.CryptoConsts.Categories.KeyCategory
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
@@ -25,10 +27,13 @@ import net.corda.membership.rest.v1.MemberRegistrationRestResource
 import net.corda.membership.rest.v1.NetworkRestResource
 import net.corda.membership.rest.v1.types.request.HostedIdentitySessionKeyAndCertificate
 import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
+import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 import net.corda.rest.json.serialization.JsonObjectAsString
 import net.corda.schema.configuration.ConfigKeys.RootConfigKey
 import net.corda.sdk.config.ClusterConfig
+import net.corda.sdk.data.Checksum
+import net.corda.sdk.data.RequestId
 import net.corda.sdk.network.ClientCertificates
 import net.corda.sdk.network.Keys
 import net.corda.sdk.network.RegistrationRequester
@@ -37,6 +42,7 @@ import net.corda.sdk.network.VirtualNode
 import net.corda.sdk.packaging.CpiUploader
 import net.corda.sdk.packaging.KeyStoreHelper
 import net.corda.sdk.rest.RestClientUtils.createRestClient
+import net.corda.v5.base.types.MemberX500Name
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
 import java.io.File
@@ -58,8 +64,9 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         description = ["The X500 name of the virtual node."],
         arity = "1",
         index = "0",
+        converter = [X500NameConverter::class]
     )
-    lateinit var name: String
+    lateinit var name: MemberX500Name
 
     @Option(
         names = ["--mutual-tls", "-m"],
@@ -73,8 +80,9 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             "The TLS certificate subject. Leave empty to use random certificate subject." +
                 "Will only be used on the first onboard to the cluster.",
         ],
+        converter = [X500NameConverter::class]
     )
-    var tlsCertificateSubject: String? = null
+    var tlsCertificateSubject: MemberX500Name? = null
 
     @Option(
         names = ["--p2p-gateway-url", "-g"],
@@ -90,7 +98,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
 
     internal class OnboardException(message: String) : Exception(message)
 
-    protected fun uploadCpi(cpi: File, cpiName: String): String {
+    protected fun uploadCpi(cpi: File, cpiName: String): Checksum {
         val restClient = createRestClient(
             CpiUploadRestResource::class,
             insecure = insecure,
@@ -102,7 +110,9 @@ abstract class BaseOnboard : Runnable, RestCommand() {
 
         // Cpi upload can take longer than the default 10 seconds, wait for minimum of 30
         val longerWaitValue = getLongerWait()
-        val uploadId = CpiUploader().uploadCPI(restClient, cpi.inputStream(), cpiName, longerWaitValue).id
+        val uploadId = with(CpiUploader().uploadCPI(restClient, cpi.inputStream(), cpiName, longerWaitValue)) {
+            RequestId(this.id)
+        }
         return checkCpiStatus(uploadId)
     }
 
@@ -114,7 +124,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         }
     }
 
-    private fun checkCpiStatus(id: String): String {
+    private fun checkCpiStatus(id: RequestId): Checksum {
         val restClient = createRestClient(
             CpiUploadRestResource::class,
             insecure = insecure,
@@ -126,11 +136,11 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         return CpiUploader().cpiChecksum(restClient = restClient, uploadRequestId = id, wait = waitDurationSeconds.seconds)
     }
 
-    protected abstract val cpiFileChecksum: String
+    protected abstract val cpiFileChecksum: Checksum
 
-    protected abstract val registrationContext: Map<String, String>
+    protected abstract val memberRegistrationRequest: MemberRegistrationRequest
 
-    protected val holdingId: String by lazy {
+    protected val holdingId: ShortHash by lazy {
         val restClient = createRestClient(
             VirtualNodeRestResource::class,
             insecure = insecure,
@@ -140,8 +150,8 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             targetUrl = targetUrl
         )
         val request = JsonCreateVirtualNodeRequest(
-            x500Name = name,
-            cpiFileChecksum = cpiFileChecksum,
+            x500Name = name.toString(),
+            cpiFileChecksum = cpiFileChecksum.value,
             vaultDdlConnection = null,
             vaultDmlConnection = null,
             cryptoDdlConnection = null,
@@ -188,7 +198,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         assignSoftHsmAndGenerateKey(KeyCategory.PRE_AUTH_KEY)
     }
     protected val certificateSubject by lazy {
-        tlsCertificateSubject ?: "O=P2P Certificate, OU=$p2pHosts, L=London, C=GB"
+        tlsCertificateSubject ?: MemberX500Name.parse("O=P2P Certificate, OU=$p2pHosts, L=London, C=GB")
     }
 
     private val p2pHosts = extractHostsFromUrls(p2pGatewayUrls)
@@ -287,10 +297,10 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         )
         val response = RegistrationRequester().requestRegistration(
             restClient = restClient,
-            registrationContext = registrationContext,
+            memberRegistrationRequest = memberRegistrationRequest,
             holdingId = holdingId
         )
-        val registrationId = response.registrationId
+        val registrationId = RequestId(response.registrationId)
         val submissionStatus = response.registrationStatus
 
         if (submissionStatus != "SUBMITTED") {

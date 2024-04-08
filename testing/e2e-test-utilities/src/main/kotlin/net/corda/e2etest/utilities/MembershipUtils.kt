@@ -1,3 +1,4 @@
+@file:Suppress("TooManyFunctions")
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -175,7 +176,7 @@ fun ClusterInfo.onboardNotaryMember(
     wait: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
     notaryServiceName: String = DEFAULT_NOTARY_SERVICE,
-    isBackchainRequired: Boolean = true,
+    isBackchainRequired: Boolean? = null,
     notaryPlugin: String = "nonvalidating"
 ) = onboardMember(
     resourceName,
@@ -187,7 +188,7 @@ fun ClusterInfo.onboardNotaryMember(
         addSoftHsmFor(holdingId, CAT_NOTARY)
         val notaryKeyId = createKeyFor(holdingId, "$holdingId$CAT_NOTARY", CAT_NOTARY, DEFAULT_KEY_SCHEME)
 
-        mapOf(
+        mutableMapOf(
             "corda.roles.0" to "notary",
             "corda.notary.service.name" to MemberX500Name.parse(notaryServiceName).toString(),
             "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.$notaryPlugin",
@@ -196,10 +197,10 @@ fun ClusterInfo.onboardNotaryMember(
             "corda.notary.keys.0.signature.spec" to DEFAULT_SIGNATURE_SPEC
         ) + (getAdditionalContext?.let { it(holdingId) } ?: emptyMap()) + (
                 // Add the optional backchain property if version is >= 5.2
-                if (restApiVersion != RestApiVersion.C5_0 && restApiVersion != RestApiVersion.C5_1)
+                if (restApiVersion != RestApiVersion.C5_0 && restApiVersion != RestApiVersion.C5_1 && isBackchainRequired != null)
                     mapOf("corda.notary.service.backchain.required" to "$isBackchainRequired")
                 else emptyMap()
-        )
+                )
     },
     useLedgerKey = false
 )
@@ -334,7 +335,7 @@ fun registerStaticMember(
     holdingIdentityShortHash: String,
     notaryServiceName: String? = null,
     customMetadata: Map<String, String> = emptyMap(),
-    isBackchainRequired: Boolean = true,
+    isBackchainRequired: Boolean? = null,
     notaryPlugin: String = "nonvalidating"
 ) = DEFAULT_CLUSTER.registerStaticMember(
     holdingIdentityShortHash,
@@ -348,7 +349,7 @@ fun ClusterInfo.registerStaticMember(
     holdingIdentityShortHash: String,
     notaryServiceName: String? = null,
     customMetadata: Map<String, String> = emptyMap(),
-    isBackchainRequired: Boolean = true,
+    isBackchainRequired: Boolean? = null,
     notaryPlugin: String = "nonvalidating"
 ) {
     cluster {
