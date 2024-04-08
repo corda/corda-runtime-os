@@ -32,8 +32,10 @@ internal class DataMessageCache(
     }
 
     fun get(key: String): AppMessage? {
-        if (failedCreates.get().isNotEmpty()) {
-            messageCache.putAll(failedCreates.getAndSet(ConcurrentHashMap()))
+        failedCreates.getAndSet(ConcurrentHashMap())?.let { failed ->
+            if (failed.isNotEmpty()) {
+                messageCache.putAll(failed)
+            }
         }
         return messageCache.getIfPresent(key)?.message ?: stateManager.getIfPresent(key)
     }
@@ -42,13 +44,17 @@ internal class DataMessageCache(
         val message = record.value ?: return
         messageCache.put(record.key, TrackedMessage(message, record.partition, record.offset))
         partitionOffsetTracker.compute(record.partition) { _, info ->
-            if ((info == null) || (record.offset > info.latestOffset)) {
-                val offsetToMessageId = info?.offsetToMessageId ?: ConcurrentHashMap<Long, String>()
+            if (info == null) {
+                val offsetToMessageId = ConcurrentHashMap<Long, String>()
                 offsetToMessageId[record.offset] = record.key
                 PartitionInfo(record.offset, offsetToMessageId)
             } else {
                 info.offsetToMessageId[record.offset] = record.key
-                info
+                if (record.offset > info.latestOffset) {
+                    PartitionInfo(record.offset, info.offsetToMessageId)
+                } else {
+                    info
+                }
             }
         }
         persistOlderCacheEntries()
