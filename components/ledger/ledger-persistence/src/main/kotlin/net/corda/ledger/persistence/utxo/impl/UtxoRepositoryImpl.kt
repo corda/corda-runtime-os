@@ -35,6 +35,8 @@ import java.sql.Connection
 import java.sql.Timestamp
 import java.sql.Types
 import java.time.Instant
+import java.util.Calendar
+import java.util.TimeZone
 import javax.persistence.EntityManager
 import javax.persistence.Query
 import javax.persistence.Tuple
@@ -61,6 +63,7 @@ class UtxoRepositoryImpl(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val TOP_LEVEL_MERKLE_PROOF_INDEX = -1
+        private val utcCalendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
     }
 
     @Suppress("Unused")
@@ -373,8 +376,7 @@ class UtxoRepositoryImpl(
                 } else {
                     statement.setNull(parameterIndex.next(), Types.NUMERIC)
                 }
-
-                statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp))
+                statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp), utcCalendar)
                 statement.setNull(parameterIndex.next(), Types.TIMESTAMP)
                 statement.setString(parameterIndex.next(), visibleTransactionOutput.customRepresentation.json)
             }
@@ -397,7 +399,7 @@ class UtxoRepositoryImpl(
                 statement.setInt(parameterIndex.next(), signature.index)
                 statement.setBytes(parameterIndex.next(), signature.signatureBytes)
                 statement.setString(parameterIndex.next(), signature.publicKeyHash.toString())
-                statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp))
+                statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp), utcCalendar)
             }
         }
     }

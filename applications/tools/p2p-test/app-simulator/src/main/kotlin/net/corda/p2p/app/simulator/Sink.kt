@@ -17,6 +17,8 @@ import net.corda.schema.configuration.MessagingConfig
 import org.slf4j.LoggerFactory
 import java.io.Closeable
 import java.sql.Timestamp
+import java.util.Calendar
+import java.util.TimeZone
 
 @Suppress("LongParameterList")
 class Sink(
@@ -67,6 +69,8 @@ class Sink(
                 "VALUES (?, ?, ?, ?, ?) on conflict do nothing",
         )
 
+        private val utcCalendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+
         override fun onNext(events: List<EventLogRecord<String, String>>): List<Record<*, *>> {
             val messageReceivedEvents = events.map {
                 objectMapper.readValue<MessageReceivedEvent>(it.value!!)
@@ -81,8 +85,8 @@ class Sink(
             messages.forEach { messageReceivedEvent ->
                 dbConnection.statement.setString(1, messageReceivedEvent.sender)
                 dbConnection.statement.setString(2, messageReceivedEvent.messageId)
-                dbConnection.statement.setTimestamp(3, Timestamp.from(messageReceivedEvent.sendTimestamp))
-                dbConnection.statement.setTimestamp(4, Timestamp.from(messageReceivedEvent.receiveTimestamp))
+                dbConnection.statement.setTimestamp(3, Timestamp.from(messageReceivedEvent.sendTimestamp), utcCalendar)
+                dbConnection.statement.setTimestamp(4, Timestamp.from(messageReceivedEvent.receiveTimestamp), utcCalendar)
                 dbConnection.statement.setLong(5, messageReceivedEvent.deliveryLatency.toMillis())
                 dbConnection.statement.addBatch()
             }
