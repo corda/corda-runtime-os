@@ -368,6 +368,12 @@ class UtxoRepositoryImpl(
                     statement.setNull(parameterIndex.next(), Types.NUMERIC)
                 }
 
+                if(visibleTransactionOutput.token?.priority != null) {
+                    statement.setLong(parameterIndex.next(), visibleTransactionOutput.token.priority!!)
+                } else {
+                    statement.setNull(parameterIndex.next(), Types.BIGINT)
+                }
+
                 statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp))
                 statement.setNull(parameterIndex.next(), Types.TIMESTAMP)
                 statement.setString(parameterIndex.next(), visibleTransactionOutput.customRepresentation.json)
