@@ -399,7 +399,7 @@ class UtxoRepositoryImpl(
                 statement.setInt(parameterIndex.next(), signature.index)
                 statement.setBytes(parameterIndex.next(), signature.signatureBytes)
                 statement.setString(parameterIndex.next(), signature.publicKeyHash.toString())
-                statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp))
+                statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp), utcCalendar)
             }
         }
     }
