@@ -12,6 +12,7 @@ import net.corda.ledger.utxo.token.cache.repositories.UtxoTokenRepository
 import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
 import net.corda.ledger.utxo.token.cache.services.TokenSelectionMetrics
 import net.corda.orm.JpaEntitiesRegistry
+import net.corda.v5.ledger.utxo.token.selection.Strategy
 import net.corda.v5.ledger.utxo.token.selection.TokenBalance
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.VirtualNodeInfo
@@ -23,13 +24,14 @@ class AvailableTokenServiceImpl(
     private val dbConnectionManager: DbConnectionManager,
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     private val utxoTokenRepository: UtxoTokenRepository,
-    private val tokenSelectionMetrics: TokenSelectionMetrics
+    private val tokenSelectionMetrics: TokenSelectionMetrics,
 ) : AvailableTokenService, SingletonSerializeAsToken {
     override fun findAvailTokens(
         poolKey: TokenPoolKey,
         ownerHash: String?,
         tagRegex: String?,
-        maxTokens: Int
+        maxTokens: Int,
+        strategy: Strategy?
     ): AvailTokenQueryResult {
         val virtualNode = getVirtualNodeInfo(poolKey)
 
@@ -40,7 +42,8 @@ class AvailableTokenServiceImpl(
                 poolKey,
                 ownerHash,
                 tagRegex,
-                maxTokens
+                maxTokens,
+                strategy
             )
         }
     }
