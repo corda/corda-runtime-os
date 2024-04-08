@@ -8,6 +8,7 @@ import net.corda.v5.ledger.utxo.token.selection.TokenBalance
 
 interface AvailableTokenService {
 
+    @Suppress("LongParameterList")
     fun findAvailTokens(poolKey: TokenPoolKey, ownerHash: String?, tagRegex: String?, maxTokens: Int, strategy: Strategy?): AvailTokenQueryResult
 
     fun queryBalance(poolKey: TokenPoolKey, ownerHash: String?, tagRegex: String?, claimedTokens: Collection<CachedToken>): TokenBalance
