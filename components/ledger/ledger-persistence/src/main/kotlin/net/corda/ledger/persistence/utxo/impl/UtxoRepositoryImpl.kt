@@ -368,7 +368,7 @@ class UtxoRepositoryImpl(
                     statement.setNull(parameterIndex.next(), Types.NUMERIC)
                 }
 
-                if(visibleTransactionOutput.token?.priority != null) {
+                if (visibleTransactionOutput.token?.priority != null) {
                     statement.setLong(parameterIndex.next(), visibleTransactionOutput.token.priority!!)
                 } else {
                     statement.setNull(parameterIndex.next(), Types.BIGINT)

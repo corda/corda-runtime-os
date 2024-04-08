@@ -53,8 +53,8 @@ class SqlQueryProviderTokens : SqlQueryProvider {
         } else {
             ""
         }
-        val orderBy = when(strategy) {
-            null, Strategy.RANDOM  -> "ORDER BY t_output.transaction_id"
+        val orderBy = when (strategy) {
+            null, Strategy.RANDOM -> "ORDER BY t_output.transaction_id"
             Strategy.PRIORITY -> "ORDER BY t_output.token_priority NULLS LAST, t_output.transaction_id"
         }
 
