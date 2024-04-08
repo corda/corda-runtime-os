@@ -10,6 +10,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.messaging.api.records.EventLogRecord
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
 import org.assertj.core.api.Assertions.assertThat
@@ -78,6 +79,19 @@ class DataMessageCacheTest {
         config,
     )
 
+    private fun createTestRecord(
+        key: String,
+        value: AppMessage,
+        partition: Int = 1,
+        offset: Long = 1,
+    ) = EventLogRecord(
+        topic = "topic",
+        key = key,
+        value = value,
+        partition = partition,
+        offset = offset,
+    )
+
     @Test
     fun `onStart will listen to configuration changes`() {
         followStatusChangesByNameHandlers.forEach { followStatusChangesByNameHandler ->
@@ -99,7 +113,7 @@ class DataMessageCacheTest {
         fun `get can return a value previously cached using put`() {
             val testMessage = mock<AppMessage>()
             val key = "key"
-            cache.put(key, testMessage, DataMessageCache.PartitionAndOffset(1, 1))
+            cache.put(createTestRecord(key, testMessage))
 
             val result = cache.get(key)
 
@@ -122,9 +136,9 @@ class DataMessageCacheTest {
             val testMessage = mock<AppMessage>()
             val key1 = "key-1"
             val key2 = "key-2"
-            cache.put(key1, testMessage, DataMessageCache.PartitionAndOffset(1, 10))
+            cache.put(createTestRecord(key1, testMessage, 1, 10))
 
-            cache.put(key2, testMessage, DataMessageCache.PartitionAndOffset(1, 55000))
+            cache.put(createTestRecord(key2, testMessage, 1, 55000))
 
             assertThat(createCaptor.firstValue.single().key).isEqualTo(key1)
         }
@@ -141,9 +155,8 @@ class DataMessageCacheTest {
 
         @Test
         fun `invalidate discards previously added cache entry`() {
-            val testMessage = mock<AppMessage>()
             val key = "key"
-            cache.put(key, testMessage, DataMessageCache.PartitionAndOffset(1, 1))
+            cache.put(createTestRecord(key, mock<AppMessage>()))
 
             cache.invalidate(key)
 
