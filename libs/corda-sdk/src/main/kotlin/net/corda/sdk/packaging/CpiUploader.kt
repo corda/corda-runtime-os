@@ -183,4 +183,18 @@ class CpiUploader {
         }
         return false
     }
+
+    fun cpiChecksumExists(
+        restClient: RestClient<CpiUploadRestResource>,
+        checksum: Checksum,
+        wait: Duration = 10.seconds
+    ): Boolean {
+        val existingCpis = getAllCpis(restClient, wait)
+        existingCpis.cpis.forEach { cpi ->
+            if (Objects.equals(cpi.cpiFileChecksum, checksum.value)) {
+                return true
+            }
+        }
+        return false
+    }
 }

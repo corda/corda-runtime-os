@@ -6,12 +6,18 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import kong.unirest.HttpResponse
 import kong.unirest.JsonNode
 import kong.unirest.Unirest
-import net.corda.gradle.plugin.dtos.GetCPIsResponseDTO
 import net.corda.gradle.plugin.dtos.RegistrationRequestProgressDTO
 import net.corda.gradle.plugin.dtos.VNode
 import net.corda.gradle.plugin.dtos.VirtualNodeInfoDTO
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
 import net.corda.gradle.plugin.retry
+import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
+import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType
+import net.corda.rest.client.RestClient
+import net.corda.sdk.data.Checksum
+import net.corda.sdk.network.VirtualNode
+import net.corda.sdk.packaging.CpiUploader
 import java.io.File
 import java.net.HttpURLConnection
 import java.time.Duration
@@ -27,70 +33,48 @@ class VNodeHelper {
     }
 
     fun createVNode(
-        cordaClusterURL: String,
-        cordaRestUser: String,
-        cordaRestPassword: String,
+        uploaderRestClient: RestClient<CpiUploadRestResource>,
+        restClient: RestClient<VirtualNodeRestResource>,
         vNode: VNode,
         cpiUploadStatusFilePath: String
     ) {
-        val cpiCheckSum = getCpiCheckSum(cpiUploadStatusFilePath)
+        val cpiCheckSum = readCpiChecksumFromFile(cpiUploadStatusFilePath)
+        if (!CpiUploader().cpiChecksumExists(restClient = uploaderRestClient, checksum = cpiCheckSum)) {
+            throw CordaRuntimeGradlePluginException("CPI $cpiCheckSum not uploaded.")
+        }
 
-        if (!checkCpiUploaded(
-                cordaClusterURL,
-                cordaRestUser,
-                cordaRestPassword,
-                cpiCheckSum
-            )
-        ) throw CordaRuntimeGradlePluginException("CPI $cpiCheckSum not uploaded.")
-
-        val response: HttpResponse<JsonNode> = Unirest.post("$cordaClusterURL/api/v1/virtualnode")
-            .body("{ \"request\" : { \"cpiFileChecksum\": \"" + cpiCheckSum + "\", \"x500Name\": \"" + vNode.x500Name + "\" } }")
-            .basicAuth(cordaRestUser, cordaRestPassword)
-            .asJson()
-
-        if (response.status != HttpURLConnection.HTTP_ACCEPTED) {
-            throw CordaRuntimeGradlePluginException("Creation of virtual node failed with response status: ${response.status}")
+        val request = CreateVirtualNodeRequestType.JsonCreateVirtualNodeRequest(
+            x500Name = vNode.x500Name!!,
+            cpiFileChecksum = cpiCheckSum.value,
+            vaultDdlConnection = null,
+            vaultDmlConnection = null,
+            cryptoDdlConnection = null,
+            cryptoDmlConnection = null,
+            uniquenessDdlConnection = null,
+            uniquenessDmlConnection = null,
+        )
+        val response = VirtualNode().create(
+            restClient = restClient,
+            request = request
+        )
+        val responseStatusCode = response.responseCode.statusCode
+        if (responseStatusCode != HttpURLConnection.HTTP_ACCEPTED) {
+            throw CordaRuntimeGradlePluginException("Creation of virtual node failed with response status: $responseStatusCode")
         }
     }
 
     /**
      * Reads the latest CPI checksums from file.
      */
-    private fun getCpiCheckSum(
+    fun readCpiChecksumFromFile(
         cpiChecksumFilePath: String
-    ): String {
+    ): Checksum {
         try {
             val fis = File(cpiChecksumFilePath)
-            return mapper.readValue(fis, String::class.java)
+            // Mapper won't parse directly into Checksum
+            return Checksum(mapper.readValue(fis, String::class.java))
         } catch (e: Exception) {
             throw CordaRuntimeGradlePluginException("Failed to read CPI checksum from file, with error: $e")
-        }
-    }
-
-    private fun checkCpiUploaded(
-        cordaClusterURL: String,
-        cordaRestUser: String,
-        cordaRestPassword: String,
-        cpiCheckSum: String
-    ): Boolean {
-
-        val response: HttpResponse<JsonNode> = Unirest.get(cordaClusterURL + "/api/v1/cpi")
-            .basicAuth(cordaRestUser, cordaRestPassword)
-            .asJson()
-
-        if (response.status != HttpURLConnection.HTTP_OK) {
-            throw CordaRuntimeGradlePluginException("Failed to check CPIs, response status: " + response.status)
-        }
-
-        try {
-            val cpisResponse: GetCPIsResponseDTO = mapper.readValue(response.body.toString(), GetCPIsResponseDTO::class.java)
-
-            cpisResponse.cpis?.forEach { cpi ->
-                if (Objects.equals(cpi.cpiFileChecksum, cpiCheckSum)) return true
-            }
-            return false
-        } catch (e: Exception) {
-            throw CordaRuntimeGradlePluginException("Failed to check CPIs with exception: ${e.message}", e)
         }
     }
 

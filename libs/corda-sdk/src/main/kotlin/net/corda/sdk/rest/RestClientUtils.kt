@@ -62,7 +62,7 @@ object RestClientUtils {
                 .minimumServerProtocolVersion(minimumServerProtocolVersion)
                 .username(username)
                 .password(password),
-            healthCheckInterval = 500
+            healthCheckInterval = 0
         )
 
         restClient.addConnectionListener(ConnectionListener())
@@ -129,7 +129,7 @@ object RestClientUtils {
                     // All other exceptions, perform retry
                     else -> {
                         lastException = ex
-                        logger.warn("""Cannot perform operation "$operationName" yet""")
+                        logger.debug("""Cannot perform operation "$operationName" yet""")
                         val remaining = (endTime - System.currentTimeMillis()).coerceAtLeast(0)
                         Thread.sleep(timeBetweenAttempts.inWholeMilliseconds.coerceAtMost(remaining))
                     }

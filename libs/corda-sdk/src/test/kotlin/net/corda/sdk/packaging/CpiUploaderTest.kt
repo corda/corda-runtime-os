@@ -6,6 +6,7 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.cpiupload.endpoints.v1.GetCPIsResponse
 import net.corda.rest.client.RestClient
 import net.corda.rest.client.RestConnection
+import net.corda.sdk.data.Checksum
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
@@ -87,6 +88,64 @@ class CpiUploaderTest {
             restClient = mockedRestClient,
             cpiName = "foo",
             cpiVersion = "1.0"
+        )
+        assertThat(result).isTrue
+    }
+
+    @Test
+    fun testCpiChecksumExistsReturnsFalseNoMatch() {
+        val mockedCpiUpload = mock<CpiUploadRestResource> {
+            on { getAllCpis() } doReturn GetCPIsResponse(
+                listOf(
+                    CpiMetadata(
+                        id = CpiIdentifier(
+                            cpiName = "",
+                            cpiVersion = "",
+                            signerSummaryHash = ""
+                        ),
+                        cpiFileChecksum = "123",
+                        cpiFileFullChecksum = "",
+                        cpks = emptyList(),
+                        groupPolicy = "",
+                        timestamp = Instant.now()
+                    )
+                )
+            )
+        }
+        val restConnection = mock<RestConnection<CpiUploadRestResource>> { on { proxy } doReturn mockedCpiUpload }
+        val mockedRestClient = mock<RestClient<CpiUploadRestResource>> { on { start() } doReturn restConnection }
+        val result = CpiUploader().cpiChecksumExists(
+            restClient = mockedRestClient,
+            checksum = Checksum("abc")
+        )
+        assertThat(result).isFalse
+    }
+
+    @Test
+    fun testCpiChecksumExistsReturnsTrue() {
+        val mockedCpiUpload = mock<CpiUploadRestResource> {
+            on { getAllCpis() } doReturn GetCPIsResponse(
+                listOf(
+                    CpiMetadata(
+                        id = CpiIdentifier(
+                            cpiName = "",
+                            cpiVersion = "",
+                            signerSummaryHash = ""
+                        ),
+                        cpiFileChecksum = "abc",
+                        cpiFileFullChecksum = "",
+                        cpks = emptyList(),
+                        groupPolicy = "",
+                        timestamp = Instant.now()
+                    )
+                )
+            )
+        }
+        val restConnection = mock<RestConnection<CpiUploadRestResource>> { on { proxy } doReturn mockedCpiUpload }
+        val mockedRestClient = mock<RestClient<CpiUploadRestResource>> { on { start() } doReturn restConnection }
+        val result = CpiUploader().cpiChecksumExists(
+            restClient = mockedRestClient,
+            checksum = Checksum("abc")
         )
         assertThat(result).isTrue
     }

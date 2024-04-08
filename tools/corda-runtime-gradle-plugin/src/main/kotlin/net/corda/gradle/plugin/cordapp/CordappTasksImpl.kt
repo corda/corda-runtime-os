@@ -13,6 +13,8 @@ import net.corda.sdk.packaging.KeyStoreHelper
 import net.corda.sdk.rest.RestClientUtils
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
+import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
 import net.corda.v5.base.types.MemberX500Name
 import java.io.File
 import java.io.FileInputStream
@@ -150,7 +152,7 @@ class CordappTasksImpl(var pc: ProjectContext) {
     fun deployCPIs() {
         val helper = DeployCpiHelper()
         val clientCertificate = ClientCertificates()
-        val restClient = RestClientUtils.createRestClient(
+        val certificateRestClient = RestClientUtils.createRestClient(
             CertificatesRestResource::class,
             insecure = true,
             username = pc.cordaRestUser,
@@ -158,7 +160,7 @@ class CordappTasksImpl(var pc: ProjectContext) {
             targetUrl = pc.cordaClusterURL
         )
         clientCertificate.uploadCertificate(
-            restClient = restClient,
+            restClient = certificateRestClient,
             certificate = File(pc.gradleDefaultCertFilePath).inputStream(),
             usage = CertificateUsage.CODE_SIGNER,
             alias = pc.gradleDefaultCertAlias
@@ -166,7 +168,7 @@ class CordappTasksImpl(var pc: ProjectContext) {
         pc.logger.quiet("Certificate '${pc.gradleDefaultCertAlias}' uploaded.")
 
         clientCertificate.uploadCertificate(
-            restClient = restClient,
+            restClient = certificateRestClient,
             certificate = File(pc.keystoreCertFilePath).inputStream(),
             usage = CertificateUsage.CODE_SIGNER,
             alias = pc.keystoreAlias
@@ -174,33 +176,49 @@ class CordappTasksImpl(var pc: ProjectContext) {
         pc.logger.quiet("Certificate '${pc.keystoreAlias}' uploaded.")
 
         clientCertificate.uploadCertificate(
-            restClient = restClient,
+            restClient = certificateRestClient,
             certificate = File(pc.r3RootCertFile).inputStream(),
             usage = CertificateUsage.CODE_SIGNER,
             alias = pc.r3RootCertKeyAlias
         )
         pc.logger.quiet("Certificate '${pc.r3RootCertKeyAlias}' uploaded.")
-        val cpiCheksum = helper.uploadCpi(
-            pc.cordaClusterURL,
-            pc.cordaRestUser,
-            pc.cordaRestPassword,
+        certificateRestClient.close()
+
+        val uploaderRestClient = RestClientUtils.createRestClient(
+            CpiUploadRestResource::class,
+            insecure = true,
+            username = pc.cordaRestUser,
+            password = pc.cordaRestPassword,
+            targetUrl = pc.cordaClusterURL
+        )
+        val forceUploaderRestClient = RestClientUtils.createRestClient(
+            VirtualNodeMaintenanceRestResource::class,
+            insecure = true,
+            username = pc.cordaRestUser,
+            password = pc.cordaRestPassword,
+            targetUrl = pc.cordaClusterURL
+        )
+        val cpiChecksum = helper.uploadCpi(
+            uploaderRestClient,
+            forceUploaderRestClient,
             pc.corDappCpiFilePath,
             pc.corDappCpiName,
             pc.project.version.toString(),
             pc.corDappCpiChecksumFilePath,
             pc.cpiUploadTimeout
         )
-        pc.logger.quiet("CPI ${pc.corDappCpiName} uploaded: $cpiCheksum")
+        pc.logger.quiet("CPI ${pc.corDappCpiName} uploaded: ${cpiChecksum.value}")
         val notaryChecksum = helper.uploadCpi(
-            pc.cordaClusterURL,
-            pc.cordaRestUser,
-            pc.cordaRestPassword,
+            uploaderRestClient,
+            forceUploaderRestClient,
             pc.notaryCpiFilePath,
             pc.notaryCpiName,
             pc.project.version.toString(),
             pc.notaryCpiChecksumFilePath,
             pc.cpiUploadTimeout
         )
-        pc.logger.quiet("CPI ${pc.notaryCpiName} uploaded: $notaryChecksum")
+        pc.logger.quiet("CPI ${pc.notaryCpiName} uploaded: ${notaryChecksum.value}")
+        uploaderRestClient.close()
+        forceUploaderRestClient.close()
     }
 }

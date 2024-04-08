@@ -6,8 +6,10 @@ import kong.unirest.Unirest
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
+import net.corda.rest.client.RestClient
+import net.corda.sdk.data.Checksum
+import net.corda.sdk.data.RequestId
 import net.corda.sdk.packaging.CpiUploader
-import net.corda.sdk.rest.RestClientUtils
 import java.io.File
 import java.io.FileOutputStream
 import java.io.PrintStream
@@ -26,30 +28,14 @@ class DeployCpiHelper {
 
     @Suppress("LongParameterList")
     fun uploadCpi(
-        cordaClusterURL: String,
-        cordaRestUser: String,
-        cordaRestPassword: String,
+        uploaderRestClient: RestClient<CpiUploadRestResource>,
+        forceUploaderRestClient: RestClient<VirtualNodeMaintenanceRestResource>,
         cpiFilePath: String,
         cpiName: String,
         cpiVersion: String,
-        cpiCheksumFilePath: String,
+        cpiChecksumFilePath: String,
         cpiUploadTimeout: Long
-    ): String {
-
-        val uploaderRestClient = RestClientUtils.createRestClient(
-            CpiUploadRestResource::class,
-            insecure = true,
-            username = cordaRestUser,
-            password = cordaRestPassword,
-            targetUrl = cordaClusterURL
-        )
-        val forceUploaderRestClient = RestClientUtils.createRestClient(
-            VirtualNodeMaintenanceRestResource::class,
-            insecure = true,
-            username = cordaRestUser,
-            password = cordaRestPassword,
-            targetUrl = cordaClusterURL
-        )
+    ): Checksum {
         val uploaderClass = CpiUploader()
         val cpiFile = File(cpiFilePath)
         val requestId =
@@ -68,10 +54,17 @@ class DeployCpiHelper {
 
         val cpiChecksum = uploaderClass.cpiChecksum(
             restClient = uploaderRestClient,
-            uploadRequestId = requestId,
+            uploadRequestId = RequestId(requestId),
             wait = cpiUploadTimeout.toDuration(DurationUnit.MILLISECONDS)
         )
-        PrintStream(FileOutputStream(cpiCheksumFilePath)).print(mapper.writeValueAsString(cpiChecksum))
+        writeChecksumToFile(checksum = cpiChecksum, cpiChecksumFilePath = cpiChecksumFilePath)
         return cpiChecksum
+    }
+
+    fun writeChecksumToFile(
+        checksum: Checksum,
+        cpiChecksumFilePath: String
+    ) {
+        PrintStream(FileOutputStream(cpiChecksumFilePath)).print(mapper.writeValueAsString(checksum.value))
     }
 }

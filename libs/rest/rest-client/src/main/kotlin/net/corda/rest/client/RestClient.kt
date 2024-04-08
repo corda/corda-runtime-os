@@ -122,7 +122,11 @@ class RestClient<I : RestResource> internal constructor(
                     // Up above we made a successful call to `ops.protocolVersion` so we are in position to notify
                     // listeners that connection is active.
                     connectionEventDistributor.onConnect()
-                    healthCheckTimer = schedulePeriodicHealthCheck()
+                    if (healthCheckInterval > 0) {
+                        healthCheckTimer = schedulePeriodicHealthCheck()
+                    } else {
+                        log.trace("Skipping healthcheck")
+                    }
                 }
             } catch (throwable: Throwable) {
                 log.error("Unexpected error when starting", throwable)

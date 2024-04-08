@@ -4,9 +4,13 @@ import net.corda.gradle.plugin.configuration.ProjectContext
 import net.corda.gradle.plugin.dtos.VNode
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
 import net.corda.gradle.plugin.getExistingNodes
-import net.corda.gradle.plugin.retry
 import net.corda.gradle.plugin.rpcWait
-import java.time.Duration
+import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
+import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
+import net.corda.sdk.network.VirtualNode
+import net.corda.sdk.rest.RestClientUtils
+import net.corda.v5.base.types.MemberX500Name
+import kotlin.time.Duration.Companion.seconds
 
 class NetworkTasksImpl(var pc: ProjectContext) {
 
@@ -27,23 +31,43 @@ class NetworkTasksImpl(var pc: ProjectContext) {
                         en.cpiIdentifier?.cpiName.equals(vn.cpi)
             }
         }
+
+        val uploaderRestClient = RestClientUtils.createRestClient(
+            CpiUploadRestResource::class,
+            insecure = true,
+            username = pc.cordaRestUser,
+            password = pc.cordaRestPassword,
+            targetUrl = pc.cordaClusterURL
+        )
+
+        val vNodeRestClient = RestClientUtils.createRestClient(
+            VirtualNodeRestResource::class,
+            insecure = true,
+            username = pc.cordaRestUser,
+            password = pc.cordaRestPassword,
+            targetUrl = pc.cordaClusterURL
+        )
+
         nodesToCreate.forEach {
             val cpiUploadFilePath = if (it.serviceX500Name == null) pc.corDappCpiChecksumFilePath else pc.notaryCpiChecksumFilePath
-
             VNodeHelper().createVNode(
-                pc.cordaClusterURL,
-                pc.cordaRestUser,
-                pc.cordaRestPassword,
+                uploaderRestClient,
+                vNodeRestClient,
                 it,
                 cpiUploadFilePath
             )
-            // Check if the virtual node has been created.
-            retry(timeout = Duration.ofMillis(30000)) {
-                getExistingNodes(pc).singleOrNull { knownVNode ->
-                    knownVNode.holdingIdentity?.x500Name.equals(it.x500Name)
-                } ?: throw CordaRuntimeGradlePluginException("Failed to create VNode: ${it.x500Name}")
-            }
         }
+        uploaderRestClient.close()
+
+        nodesToCreate.forEach {
+            // Check if the virtual node has been created.
+            VirtualNode().waitForX500NameToAppearInListOfAllVirtualNodes(
+                restClient = vNodeRestClient,
+                x500Name = MemberX500Name.parse(it.x500Name!!),
+                wait = 30.seconds
+            )
+        }
+        vNodeRestClient.close()
     }
 
     /**
