@@ -134,8 +134,8 @@ class ConfigRestResourceImplTests {
     fun `updateConfig throws if config is not valid JSON or HOCON`() {
         val invalidConfig = TestJsonObject("a=b\nc")
         val expectedMessage =
-            "Configuration \"${invalidConfig.escapedJson}\" could not be validated. Valid JSON or HOCON expected. " +
-                "Cause: String: 2: Key 'c' may not be followed by token: end of file"
+            "Configuration \"${invalidConfig.escapedJson}\" could not be validated. Valid JSON or HOCON expected."
+        val expectedReason = "String: 2: Key 'c' may not be followed by token: end of file"
 
         val (_, configRPCOps) = getConfigRPCOps(mock())
         val e = assertThrows<HttpApiException> {
@@ -143,13 +143,16 @@ class ConfigRestResourceImplTests {
         }
 
         assertEquals(expectedMessage, e.message)
+        assertEquals(com.typesafe.config.ConfigException.Parse::class.java.name,e.exceptionDetails!!.cause)
+        assertEquals(expectedReason, e.exceptionDetails!!.reason)
         assertEquals(ResponseCode.BAD_REQUEST, e.responseCode)
     }
 
     @Test
     fun `updateConfig throws if config fails validator`() {
-        val expectedMessage = "Configuration \"a=b\" could not be validated. Valid JSON or HOCON expected. " +
-                "Cause: Configuration failed to validate for key key at schema version 1.0: $invalidConfigError"
+        val expectedMessage = "Configuration \"a=b\" could not be validated. Valid JSON or HOCON expected."
+        val expectedReason =
+            "Configuration failed to validate for key key at schema version 1.0: $invalidConfigError"
 
         val (_, configRPCOps) = getConfigRPCOps(mock(), true)
         val e = assertThrows<HttpApiException> {
@@ -157,6 +160,8 @@ class ConfigRestResourceImplTests {
         }
 
         assertEquals(expectedMessage, e.message)
+        assertEquals(ConfigurationValidationException::class.java.name, e.exceptionDetails!!.cause)
+        assertEquals(expectedReason, e.exceptionDetails!!.reason)
         assertEquals(ResponseCode.BAD_REQUEST, e.responseCode)
     }
 

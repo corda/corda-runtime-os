@@ -49,6 +49,7 @@ import net.corda.rest.PluggableRestResource
 import net.corda.rest.asynchronous.v1.AsyncOperationStatus
 import net.corda.rest.asynchronous.v1.AsyncResponse
 import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.InvalidStateChangeException
@@ -569,7 +570,10 @@ internal class VirtualNodeRestResourceImpl(
         val state = try {
             VirtualNodeStateTransitions.valueOf(newState.uppercase())
         } catch (e: IllegalArgumentException) {
-            throw InvalidInputDataException(details = mapOf("newState" to "must be one of ACTIVE, MAINTENANCE"))
+            throw InvalidInputDataException(
+                details = mapOf("newState" to "must be one of ACTIVE, MAINTENANCE"),
+                exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
+            )
         }
         val virtualNode = getVirtualNode(virtualNodeShortId)
 
@@ -592,11 +596,22 @@ internal class VirtualNodeRestResourceImpl(
             "Remote request failed with exception of type ${exception.errorType}: ${exception.errorMessage}"
         )
         return when (exception.errorType) {
-            VirtualNodeOperationNotFoundException::class.java.name -> ResourceNotFoundException(exception.errorMessage)
+            VirtualNodeOperationNotFoundException::class.java.name -> ResourceNotFoundException(
+                title = VirtualNodeOperationNotFoundException::class.java.simpleName,
+                exceptionDetails = ExceptionDetails(exception.errorType, exception.errorMessage)
+            )
             VirtualNodeOperationBadRequestException::class.java.name,
             LiquibaseDiffCheckFailedException::class.java.name,
-            javax.persistence.RollbackException::class.java.name -> BadRequestException(exception.errorMessage)
-            else -> InternalServerException(exception.errorMessage)
+            javax.persistence.RollbackException::class.java.name -> BadRequestException(
+                title = BadRequestException::class.java.simpleName,
+                exceptionDetails = ExceptionDetails(exception.errorType, exception.errorMessage)
+            )
+            else -> InternalServerException(
+                exceptionDetails = ExceptionDetails(
+                    exception.errorType,
+                    exception.errorMessage
+                )
+            )
         }
     }
 
