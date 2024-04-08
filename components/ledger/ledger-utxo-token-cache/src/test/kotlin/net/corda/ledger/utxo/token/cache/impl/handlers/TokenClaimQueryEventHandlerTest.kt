@@ -76,7 +76,7 @@ class TokenClaimQueryEventHandlerTest {
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, mock(), mock())
         val claimQuery = createClaimQuery(100)
         whenever(recordFactory.getFailedClaimResponse(any(), any(), any())).thenReturn(claimQueryResult)
-        whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any(), any()))
+        whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any(), eq(null)))
             .thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
 
         val result = target.handle(tokenCache, poolCacheState, claimQuery)
@@ -90,7 +90,7 @@ class TokenClaimQueryEventHandlerTest {
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, mock(), mock())
         val claimQuery = createClaimQuery(100)
         whenever(recordFactory.getFailedClaimResponse(any(), any(), any())).thenReturn(claimQueryResult)
-        whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any(), any()))
+        whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any(), eq(null)))
             .thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
 
         val result = target.handle(tokenCache, poolCacheState, claimQuery)
@@ -119,7 +119,7 @@ class TokenClaimQueryEventHandlerTest {
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, mock(), mock())
         val claimQuery = createClaimQuery(100)
         whenever(recordFactory.getFailedClaimResponse(any(), any(), any())).thenReturn(claimQueryResult)
-        whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any(), any()))
+        whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any(), eq(null)))
             .thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
         cachedTokens += token99
 
@@ -166,7 +166,7 @@ class TokenClaimQueryEventHandlerTest {
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, mock(), mock())
         val claimQuery = createClaimQuery(100)
         whenever(recordFactory.getFailedClaimResponse(any(), any(), any())).thenReturn(claimQueryResult)
-        whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any(), any()))
+        whenever(availableTokenService.findAvailTokens(any(), eq(null), eq(null), any(), eq(null)))
             .thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
         whenever(poolCacheState.isTokenClaimed(token100Ref)).thenReturn(true)
         whenever(poolCacheState.isTokenClaimed(token101Ref)).thenReturn(true)
@@ -233,14 +233,14 @@ class TokenClaimQueryEventHandlerTest {
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, mock(), backoffManager)
         val claimQuery = createClaimQuery(100)
         whenever(
-            availableTokenService.findAvailTokens(any(), eq(null), eq(null), any(), any())
+            availableTokenService.findAvailTokens(any(), eq(null), eq(null), any(), eq(null))
         ).thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
 
         target.handle(tokenCache, poolCacheState, claimQuery) // Accesses the db
         target.handle(tokenCache, poolCacheState, claimQuery) // No access to the db
         target.handle(tokenCache, poolCacheState, claimQuery) // No access to the db
 
-        verify(availableTokenService, times(1)).findAvailTokens(any(), eq(null), eq(null), any(), any())
+        verify(availableTokenService, times(1)).findAvailTokens(any(), eq(null), eq(null), any(), eq(null))
     }
 
     @Test
@@ -254,7 +254,7 @@ class TokenClaimQueryEventHandlerTest {
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService, mock(), backoffManager)
         val claimQuery = createClaimQuery(100)
         whenever(
-            availableTokenService.findAvailTokens(any(), eq(null), eq(null), any(), any())
+            availableTokenService.findAvailTokens(any(), eq(null), eq(null), any(), eq(null))
         ).thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
 
         target.handle(tokenCache, poolCacheState, claimQuery) // Accesses the db - Expiry period 1 second
@@ -263,7 +263,7 @@ class TokenClaimQueryEventHandlerTest {
         clock.instant() // Advance time
         target.handle(tokenCache, poolCacheState, claimQuery) // Accesses access to the db
 
-        verify(availableTokenService, times(2)).findAvailTokens(any(), eq(null), eq(null), any(), any())
+        verify(availableTokenService, times(2)).findAvailTokens(any(), eq(null), eq(null), any(), eq(null))
     }
 
     private fun createClaimQuery(targetAmount: Int, tag: String? = null, ownerHash: String? = null): ClaimQuery {
