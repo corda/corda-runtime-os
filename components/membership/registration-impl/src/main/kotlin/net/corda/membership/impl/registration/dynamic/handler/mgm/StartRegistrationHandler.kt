@@ -307,7 +307,7 @@ internal class StartRegistrationHandler(
         if (!condition) {
             val errorMsg = errorMsgFn()
             val reasonForUser = reasonForUserFn()
-            registrationLogger.info(errorMsg)
+            registrationLogger.warn(errorMsg)
             throw InvalidRegistrationRequestException(errorMsg, reasonForUser)
         }
     }
