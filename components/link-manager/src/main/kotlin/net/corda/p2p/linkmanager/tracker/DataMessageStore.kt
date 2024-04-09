@@ -3,6 +3,7 @@ package net.corda.p2p.linkmanager.tracker
 import net.corda.data.p2p.app.AppMessage
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.p2p.linkmanager.tracker.exception.DataMessageStoreException
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
 import org.slf4j.LoggerFactory
