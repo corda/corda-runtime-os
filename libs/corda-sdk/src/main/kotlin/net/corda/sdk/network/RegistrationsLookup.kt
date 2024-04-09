@@ -8,7 +8,7 @@ import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.rest.client.RestClient
 import net.corda.sdk.data.RequestId
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
-import java.util.*
+import java.util.Objects
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 

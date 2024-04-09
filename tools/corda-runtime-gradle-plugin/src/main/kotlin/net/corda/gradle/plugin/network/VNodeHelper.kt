@@ -20,7 +20,6 @@ import net.corda.sdk.network.VirtualNode
 import net.corda.sdk.packaging.CpiUploader
 import java.io.File
 import java.net.HttpURLConnection
-import java.util.*
 
 class VNodeHelper {
 
