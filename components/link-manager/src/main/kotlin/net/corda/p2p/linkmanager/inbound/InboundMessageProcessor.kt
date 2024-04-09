@@ -50,8 +50,7 @@ internal class InboundMessageProcessor(
     private val networkMessagingValidator: NetworkMessagingValidator =
         NetworkMessagingValidator(membershipGroupReaderProvider),
     private val features: Features = Features(),
-) :
-    EventLogProcessor<String, LinkInMessage> {
+) : EventLogProcessor<String, LinkInMessage> {
 
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.name)
@@ -232,8 +231,11 @@ internal class InboundMessageProcessor(
                     is AuthenticatedMessageAck -> {
                         logger.debug { "Processing ack for message ${ack.messageId} from session $sessionIdAndMessage." }
                         sessionManager.messageAcknowledged(sessionIdAndMessage.sessionId)
-                        val record = makeMarkerForAckMessage(ack)
-                        record
+                        if (features.enableP2PStatefulDeliveryTracker) {
+                            forwardAckMessageToP2POut(ack.messageId, it)
+                        } else {
+                            makeMarkerForAckMessage(ack)
+                        }
                     }
                     else -> {
                         logger.warn("Received an inbound message with unexpected type for SessionId = $sessionIdAndMessage.")
@@ -340,6 +342,10 @@ internal class InboundMessageProcessor(
             )
             InboundResponse(listOf(record))
         }
+    }
+
+    private fun forwardAckMessageToP2POut(messageId: String, messageAck: MessageAck): Record<String, AppMessage> {
+        return Record(Schemas.P2P.P2P_OUT_TOPIC, messageId, AppMessage(messageAck))
     }
 
     private fun makeMarkerForAckMessage(message: AuthenticatedMessageAck): Record<String, AppMessageMarker> {

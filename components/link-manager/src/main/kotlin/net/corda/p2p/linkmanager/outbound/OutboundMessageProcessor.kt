@@ -38,6 +38,7 @@ import net.corda.utilities.trace
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.time.Instant
+import net.corda.data.p2p.MessageAck
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.metrics.CordaMetrics
 import net.corda.p2p.linkmanager.TraceableItem
@@ -93,6 +94,9 @@ internal class OutboundMessageProcessor(
                 is OutboundUnauthenticatedMessage -> {
                     unauthenticatedMessages += TraceableItem(message, event)
                     recordOutboundMessagesMetric(message)
+                }
+                is MessageAck -> {
+
                 }
                 null -> {
                     logger.warn("Message is null.")

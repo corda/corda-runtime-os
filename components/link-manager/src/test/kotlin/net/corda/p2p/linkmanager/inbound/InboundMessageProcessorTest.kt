@@ -65,6 +65,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 
 class InboundMessageProcessorTest {
     companion object {
@@ -322,6 +323,36 @@ class InboundMessageProcessorTest {
                 it.topic == P2P_OUT_MARKERS && value is AppMessageMarker &&
                         value.marker is LinkManagerReceivedMarker && value.timestamp == 1000000L
             }
+            verify(sessionManager).messageAcknowledged(SESSION_ID)
+        }
+
+        @Test
+        fun `ack with Outbound session and stateful delivery tracker will forward the message ack to p2pout`() {
+            whenever(features.enableP2PStatefulDeliveryTracker).doReturn(true)
+            val session = mock<AuthenticatedSession>()
+            setupGetSessionsById(
+                SessionManager.SessionDirection.Outbound(
+                    SessionManager.Counterparties(
+                        remoteIdentity,
+                        myIdentity
+                    ),
+                    session
+                )
+            )
+            val messageAck = MessageAck(AuthenticatedMessageAck(MESSAGE_ID))
+            val dataMessage = AuthenticatedDataMessage(commonHeader, messageAck.toByteBuffer(), ByteBuffer.wrap(byteArrayOf()))
+
+            val records = processor.onNext(
+                listOf(
+                    EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0),
+                )
+            )
+
+            assertThat(records).hasSize(1).allSatisfy {
+                assertThat(it.topic).isEqualTo(P2P_OUT_TOPIC)
+                assertThat((it.value as AppMessage).message).isEqualTo(messageAck)
+            }
+
             verify(sessionManager).messageAcknowledged(SESSION_ID)
         }
 
