@@ -46,14 +46,16 @@ internal class InboundLinkManager(
         commonComponents.sessionManager,
         groupPolicyProvider,
         membershipGroupReaderProvider,
+        publisher,
         clock
     )
     private val inboundMessageSubscription = {
-        subscriptionFactory.createEventLogSubscription(
+        subscriptionFactory.createEventSourceSubscription(
             subscriptionConfig,
             processor,
             messagingConfiguration,
             partitionAssignmentListener = null,
+            consumerOffsetProvider = null,
         )
     }
     private val subscriptionConfig = SubscriptionConfig(INBOUND_MESSAGE_PROCESSOR_GROUP, Schemas.P2P.LINK_IN_TOPIC)
