@@ -8,6 +8,7 @@ import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.rest.client.RestClient
 import net.corda.sdk.data.RequestId
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
+import java.util.*
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -33,6 +34,20 @@ class RegistrationsLookup {
                 val resource = client.start().proxy
                 resource.checkRegistrationProgress(holdingIdentityShortHash.value)
             }
+        }
+    }
+
+    /**
+     * Call the [checkRegistrations] function, and check if registration status is approved
+     */
+    fun isVnodeRegistrationApproved(
+        restClient: RestClient<MemberRegistrationRestResource>,
+        holdingIdentityShortHash: ShortHash,
+        wait: Duration = 10.seconds
+    ): Boolean {
+        val registrationStatuses = checkRegistrations(restClient, holdingIdentityShortHash, wait)
+        return registrationStatuses.any { request ->
+            Objects.equals(request.registrationStatus, "APPROVED")
         }
     }
 

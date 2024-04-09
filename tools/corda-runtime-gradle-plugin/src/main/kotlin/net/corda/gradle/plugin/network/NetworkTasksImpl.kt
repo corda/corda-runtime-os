@@ -1,15 +1,20 @@
 package net.corda.gradle.plugin.network
 
+import net.corda.crypto.core.ShortHash
 import net.corda.gradle.plugin.configuration.ProjectContext
 import net.corda.gradle.plugin.dtos.VNode
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
-import net.corda.gradle.plugin.getExistingNodes
 import net.corda.gradle.plugin.rpcWait
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
+import net.corda.membership.rest.v1.MemberRegistrationRestResource
+import net.corda.membership.rest.v1.types.response.RegistrationRequestProgress
+import net.corda.sdk.data.RequestId
+import net.corda.sdk.network.RegistrationsLookup
 import net.corda.sdk.network.VirtualNode
 import net.corda.sdk.rest.RestClientUtils
 import net.corda.v5.base.types.MemberX500Name
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class NetworkTasksImpl(var pc: ProjectContext) {
@@ -21,16 +26,6 @@ class NetworkTasksImpl(var pc: ProjectContext) {
 
         // Represents the list of VNodes as specified in the network Config json file (static-network-config.json)
         val requiredNodes: List<VNode> = pc.networkConfig.vNodes
-
-        val existingVNodes = getExistingNodes(pc)
-
-        // Check if each required vnode already exist, if not create it.
-        val nodesToCreate = requiredNodes.filter { vn ->
-            !existingVNodes.any { en ->
-                en.holdingIdentity?.x500Name.equals(vn.x500Name) &&
-                        en.cpiIdentifier?.cpiName.equals(vn.cpi)
-            }
-        }
 
         val uploaderRestClient = RestClientUtils.createRestClient(
             CpiUploadRestResource::class,
@@ -47,6 +42,16 @@ class NetworkTasksImpl(var pc: ProjectContext) {
             password = pc.cordaRestPassword,
             targetUrl = pc.cordaClusterURL
         )
+
+        val existingNodes = VirtualNode().getAllVirtualNodes(vNodeRestClient).virtualNodes
+
+        // Check if each required vnode already exist, if not create it.
+        val nodesToCreate = requiredNodes.filter { vn ->
+            !existingNodes.any { en ->
+                en.holdingIdentity.x500Name.equals(vn.x500Name) &&
+                        en.cpiIdentifier.cpiName.equals(vn.cpi)
+            }
+        }
 
         nodesToCreate.forEach {
             val cpiUploadFilePath = if (it.serviceX500Name == null) pc.corDappCpiChecksumFilePath else pc.notaryCpiChecksumFilePath
@@ -82,36 +87,69 @@ class NetworkTasksImpl(var pc: ProjectContext) {
         // as this will move to async mechanism post beta2. see CORE-12153
         rpcWait(3000)
 
-        val existingNodes = getExistingNodes(pc)
+        val vNodeRestClient = RestClientUtils.createRestClient(
+            VirtualNodeRestResource::class,
+            insecure = true,
+            username = pc.cordaRestUser,
+            password = pc.cordaRestPassword,
+            targetUrl = pc.cordaClusterURL
+        )
+
+        val registrationRestClient = RestClientUtils.createRestClient(
+            MemberRegistrationRestResource::class,
+            insecure = true,
+            username = pc.cordaRestUser,
+            password = pc.cordaRestPassword,
+            targetUrl = pc.cordaClusterURL
+        )
+
+        val existingNodes = VirtualNode().getAllVirtualNodes(vNodeRestClient).virtualNodes
+        vNodeRestClient.close()
         val helper = VNodeHelper()
+        val listOfDetails: MutableList<Triple<MemberX500Name, ShortHash, RegistrationRequestProgress>> = mutableListOf()
 
         requiredNodes.forEach { vn ->
             val match = helper.findMatchingVNodeFromList(existingNodes, vn)
 
             val shortHash = try {
-                match.holdingIdentity!!.shortHash!!
+                ShortHash.parse(match.holdingIdentity.shortHash)
             } catch (e: Exception) {
                 throw CordaRuntimeGradlePluginException("Cannot read ShortHash for virtual node '${vn.x500Name}'")
             }
 
-            if (!helper.checkVNodeIsRegistered(
-                    pc.cordaClusterURL,
-                    pc.cordaRestUser,
-                    pc.cordaRestPassword,
-                    shortHash
+            if (!RegistrationsLookup().isVnodeRegistrationApproved(
+                    restClient = registrationRestClient,
+                    holdingIdentityShortHash = shortHash
                 )
             ) {
-                pc.logger.quiet("Registering vNode: ${vn.x500Name} with shortHash: $shortHash")
-                helper.registerVNode(
-                    pc.cordaClusterURL,
-                    pc.cordaRestUser,
-                    pc.cordaRestPassword,
+                val registration = helper.registerVNode(
+                    registrationRestClient,
                     vn,
-                    shortHash,
-                    pc.vnodeRegistrationTimeout
+                    shortHash
                 )
-                pc.logger.quiet("VNode ${vn.x500Name} with shortHash $shortHash registered.")
+                val detail = Triple(MemberX500Name.parse(vn.x500Name!!), shortHash, registration)
+                listOfDetails.add(detail)
+                pc.logger.quiet(
+                    "Registering vNode: ${vn.x500Name} with shortHash: $shortHash. Registration request id: ${registration.registrationId}"
+                )
             }
         }
+
+        listOfDetails.forEach { vn ->
+            val x500Name = vn.first
+            val shortHash = vn.second
+            val registrationId = vn.third.registrationId
+
+            // Wait until the VNode is registered
+            // The timeout is controlled by setting the vnodeRegistrationTimeout property
+            RegistrationsLookup().waitForRegistrationApproval(
+                restClient = registrationRestClient,
+                registrationId = RequestId(registrationId),
+                holdingId = shortHash,
+                wait = pc.vnodeRegistrationTimeout.milliseconds
+            )
+            pc.logger.quiet("VNode $x500Name with shortHash $shortHash registered.")
+        }
+        registrationRestClient.close()
     }
 }

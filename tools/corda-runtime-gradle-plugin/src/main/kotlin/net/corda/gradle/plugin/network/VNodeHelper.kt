@@ -1,26 +1,25 @@
 package net.corda.gradle.plugin.network
 
-import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
-import kong.unirest.HttpResponse
-import kong.unirest.JsonNode
 import kong.unirest.Unirest
-import net.corda.gradle.plugin.dtos.RegistrationRequestProgressDTO
+import net.corda.crypto.core.ShortHash
 import net.corda.gradle.plugin.dtos.VNode
-import net.corda.gradle.plugin.dtos.VirtualNodeInfoDTO
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
-import net.corda.gradle.plugin.retry
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType
+import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
+import net.corda.membership.rest.v1.MemberRegistrationRestResource
+import net.corda.membership.rest.v1.types.response.RegistrationRequestProgress
 import net.corda.rest.client.RestClient
 import net.corda.sdk.data.Checksum
+import net.corda.sdk.network.RegistrationRequest
+import net.corda.sdk.network.RegistrationRequester
 import net.corda.sdk.network.VirtualNode
 import net.corda.sdk.packaging.CpiUploader
 import java.io.File
 import java.net.HttpURLConnection
-import java.time.Duration
 import java.util.*
 
 class VNodeHelper {
@@ -78,10 +77,10 @@ class VNodeHelper {
         }
     }
 
-    fun findMatchingVNodeFromList(existingNodes: List<VirtualNodeInfoDTO>, requiredNode: VNode): VirtualNodeInfoDTO {
+    fun findMatchingVNodeFromList(existingNodes: List<VirtualNodeInfo>, requiredNode: VNode): VirtualNodeInfo {
         val matches = existingNodes.filter { en ->
-            en.holdingIdentity?.x500Name.equals(requiredNode.x500Name) &&
-                    en.cpiIdentifier?.cpiName.equals(requiredNode.cpi)
+            en.holdingIdentity.x500Name == requiredNode.x500Name &&
+                    en.cpiIdentifier.cpiName == requiredNode.cpi
         }
         if (matches.isEmpty()) {
             throw CordaRuntimeGradlePluginException(
@@ -100,102 +99,26 @@ class VNodeHelper {
      */
     @Suppress("LongParameterList")
     fun registerVNode(
-        cordaClusterURL: String,
-        cordaRestUser: String,
-        cordaRestPassword: String,
+        restClient: RestClient<MemberRegistrationRestResource>,
         vNode: VNode,
-        shortHash: String,
-        vnodeRegistrationTimeout: Long
-    ) {
+        shortHash: ShortHash
+    ): RegistrationRequestProgress {
         val registrationBody = if (vNode.serviceX500Name == null) {
-            """ 
-            { 
-                "memberRegistrationRequest" : {
-                    "context" : {
-                        "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" 
-                    }
-                }
-            }
-            """.trimIndent()
+            RegistrationRequest().createStaticMemberRegistrationRequest()
         } else {
             val flowProtocolValue = vNode.flowProtocolName ?: "com.r3.corda.notary.plugin.nonvalidating"
             val backchainValue = vNode.backchainRequired ?: "true"
-            """
-            { 
-                "memberRegistrationRequest" : {
-                    "context" : {
-                        "corda.key.scheme" : "CORDA.ECDSA.SECP256R1",
-                        "corda.roles.0" : "notary",
-                        "corda.notary.service.name" : "${vNode.serviceX500Name}",
-                        "corda.notary.service.flow.protocol.version.0" : "1",
-                        "corda.notary.service.flow.protocol.name" : "$flowProtocolValue",
-                        "corda.notary.service.backchain.required" : "$backchainValue"
-                    } 
-                }
-            }
-            """.trimIndent()
-        }
-
-        val response: HttpResponse<JsonNode> = Unirest.post("$cordaClusterURL/api/v1/membership/$shortHash")
-            .body(registrationBody)
-            .basicAuth(cordaRestUser, cordaRestPassword)
-            .asJson()
-
-        if (response.status != HttpURLConnection.HTTP_OK) {
-            throw CordaRuntimeGradlePluginException(
-                "Failed to request registration of virtual node $shortHash, response status: ${response.status}, reason: ${response.body}"
+            RegistrationRequest().createStaticNotaryRegistrationRequest(
+                notaryServiceName = vNode.serviceX500Name!!,
+                notaryServiceProtocol = flowProtocolValue,
+                isBackchainRequired = backchainValue.toBoolean()
             )
         }
 
-        // Wait until the VNode is registered
-        // The timeout is controlled by setting the vnodeRegistrationTimeout property
-        retry(timeout = Duration.ofMillis(vnodeRegistrationTimeout)) {
-            if (!checkVNodeIsRegistered(
-                    cordaClusterURL,
-                    cordaRestUser,
-                    cordaRestPassword,
-                    shortHash
-                )
-            ) {
-                throw CordaRuntimeGradlePluginException("VNode $shortHash not registered.")
-            }
-        }
-    }
-
-    /**
-     * Checks if a virtual node with given shortHash has been registered
-     * @return returns true if the vnode is registered
-     */
-    fun checkVNodeIsRegistered(
-        cordaClusterURL: String,
-        cordaRestUser: String,
-        cordaRestPassword: String,
-        shortHash: String
-    ): Boolean {
-
-        val response: HttpResponse<JsonNode> = Unirest.get("$cordaClusterURL/api/v1/membership/$shortHash")
-            .basicAuth(cordaRestUser, cordaRestPassword)
-            .asJson()
-
-        if (response.status != HttpURLConnection.HTTP_OK) {
-            return false
-        }
-
-        try {
-            if (!response.body.array.isEmpty) {
-                val requests: List<RegistrationRequestProgressDTO> = mapper.readValue(
-                    response.body.toString(),
-                    object : TypeReference<List<RegistrationRequestProgressDTO>>() {})
-
-                // Returns true if any requests have registrationStatus of "APPROVED"
-                return requests.any { request ->
-                    Objects.equals(request.registrationStatus, "APPROVED")
-                }
-            }
-            // Returns false if array was empty or "APPROVED" wasn't found
-            return false
-        } catch (e: Exception) {
-            throw CordaRuntimeGradlePluginException("Failed to check registration status for $shortHash with exception: ${e.message}.", e)
-        }
+        return RegistrationRequester().requestRegistration(
+            restClient = restClient,
+            memberRegistrationRequest = registrationBody,
+            holdingId = shortHash
+        )
     }
 }
