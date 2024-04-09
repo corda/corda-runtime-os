@@ -65,6 +65,7 @@ assertj-core = { group = "org.assertj", name = "assertj-core", version.ref = "as
 bouncycastle-pkix = { group = "org.bouncycastle", name = "bcpkix-lts8on", version.ref = "bouncycastleVersion" }
 bouncycastle-prov = { group = "org.bouncycastle", name = "bcprov-lts8on", version.ref = "bouncycastleVersion" }
 bouncycastle-util = { group = "org.bouncycastle", name = "bcutil-lts8on", version.ref = "bouncycastleVersion" }
+#bouncycastle-core = { group = "org.bouncycastle", name = "bccore-lts8on", version.ref = "bouncycastleVersion" }
 brave-context-slf4j = { group = "io.zipkin.brave", name = "brave-context-slf4j", version.ref = "braveVersion" }
 brave-instrumentation-servlet = { group = "io.zipkin.brave", name = "brave-instrumentation-servlet", version.ref = "braveVersion" }
 caffeine = { group = "com.github.ben-manes.caffeine", name = "caffeine", version.ref = "caffeineVersion" }

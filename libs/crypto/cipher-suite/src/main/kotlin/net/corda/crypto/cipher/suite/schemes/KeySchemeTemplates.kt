@@ -24,7 +24,7 @@ import org.bouncycastle.asn1.x9.X9ObjectIdentifiers
 import org.bouncycastle.jcajce.spec.EdDSAParameterSpec
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.spec.GOST3410ParameterSpec
-import org.bouncycastle.pqc.jcajce.spec.SPHINCS256KeyGenParameterSpec
+//import org.bouncycastle.pqc.jcajce.spec.SPHINCS256KeyGenParameterSpec
 
 
 /**
@@ -116,15 +116,15 @@ val X25519_TEMPLATE = KeySchemeTemplate(
 /**
  * Template to create [KeyScheme] for SPHINCS.
  */
-@JvmField
-val SPHINCS256_TEMPLATE = KeySchemeTemplate(
-    codeName = SPHINCS256_CODE_NAME,
-    algorithmOIDs = listOf(AlgorithmIdentifier(BCObjectIdentifiers.sphincs256, DLSequence(arrayOf(ASN1Integer(0), SHA512_256)))),
-    algorithmName = "SPHINCS256",
-    algSpec = SPHINCS256KeyGenParameterSpec(SPHINCS256KeyGenParameterSpec.SHA512_256),
-    keySize = null,
-    capabilities = setOf(KeySchemeCapability.SIGN)
-)
+//@JvmField
+//val SPHINCS256_TEMPLATE = KeySchemeTemplate(
+//    codeName = SPHINCS256_CODE_NAME,
+//    algorithmOIDs = listOf(AlgorithmIdentifier(BCObjectIdentifiers.sphincs256, DLSequence(arrayOf(ASN1Integer(0), SHA512_256)))),
+//    algorithmName = "SPHINCS256",
+//    algSpec = SPHINCS256KeyGenParameterSpec(SPHINCS256KeyGenParameterSpec.SHA512_256),
+//    keySize = null,
+//    capabilities = setOf(KeySchemeCapability.SIGN)
+//)
 
 /**
  * Template to create [KeyScheme] for SM2.
@@ -170,5 +170,5 @@ val all = listOf(
     ECDSA_SECP256R1_TEMPLATE,
     SM2_TEMPLATE,
     GOST3410_GOST3411_TEMPLATE,
-    SPHINCS256_TEMPLATE
+//    SPHINCS256_TEMPLATE
 )

@@ -24,7 +24,7 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.bouncycastle.jcajce.interfaces.EdDSAPublicKey
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey
 import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPublicKey
-import org.bouncycastle.pqc.jcajce.provider.sphincs.BCSphincs256PublicKey
+//import org.bouncycastle.pqc.jcajce.provider.sphincs.BCSphincs256PublicKey
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.util.function.Function
@@ -72,7 +72,8 @@ class KryoCheckpointSerializerBuilderImpl(
     override fun build(): KryoCheckpointSerializer {
         val publicKeySerializers = listOf(
             PublicKey::class.java, EdDSAPublicKey::class.java, CompositeKey::class.java,
-            BCECPublicKey::class.java, BCRSAPublicKey::class.java, BCSphincs256PublicKey::class.java
+            BCECPublicKey::class.java, BCRSAPublicKey::class.java
+//            , BCSphincs256PublicKey::class.java
         ).associateWith { PublicKeySerializer(keyEncodingService) }
 
         val otherCustomSerializers = mapOf(

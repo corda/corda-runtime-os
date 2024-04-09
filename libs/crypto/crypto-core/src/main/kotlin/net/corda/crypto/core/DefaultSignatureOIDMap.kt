@@ -11,7 +11,7 @@ import net.corda.crypto.cipher.suite.schemes.ID_CURVE_25519PH
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.cipher.suite.schemes.SHA512_256
 import net.corda.crypto.cipher.suite.schemes.SM2_TEMPLATE
-import net.corda.crypto.cipher.suite.schemes.SPHINCS256_TEMPLATE
+//import net.corda.crypto.cipher.suite.schemes.SPHINCS256_TEMPLATE
 import net.corda.v5.crypto.SignatureSpec
 import org.bouncycastle.asn1.ASN1Integer
 import org.bouncycastle.asn1.DERNull
@@ -117,12 +117,12 @@ object DefaultSignatureOIDMap {
             } else {
                 null
             }
-        } else if (SPHINCS256_TEMPLATE.algorithmOIDs.contains(algorithm)) {
-            if (signatureSpec.equal(SignatureSpecs.SPHINCS256_SHA512)) {
-                SPHINCS256_SHA512
-            } else {
-                null
-            }
+//        } else if (SPHINCS256_TEMPLATE.algorithmOIDs.contains(algorithm)) {
+//            if (signatureSpec.equal(SignatureSpecs.SPHINCS256_SHA512)) {
+//                SPHINCS256_SHA512
+//            } else {
+//                null
+//            }
         } else if (SM2_TEMPLATE.algorithmOIDs.contains(algorithm)) {
             when {
                 signatureSpec.equal(SignatureSpecs.SM2_SM3) -> SM3_SM2

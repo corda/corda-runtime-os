@@ -10,12 +10,12 @@ import net.corda.crypto.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
 import net.corda.crypto.cipher.suite.schemes.KeySchemeTemplate
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.cipher.suite.schemes.SM2_TEMPLATE
-import net.corda.crypto.cipher.suite.schemes.SPHINCS256_TEMPLATE
+//import net.corda.crypto.cipher.suite.schemes.SPHINCS256_TEMPLATE
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.jce.provider.BouncyCastleProvider
-import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider
+//import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -47,10 +47,10 @@ class DefaultSignatureOIDMapTests {
         @Suppress("MaxLineLength")
         fun setup() {
             defaultProvider = BouncyCastleProvider()
-            postQuantumProvider = BouncyCastlePQCProvider()
+//            postQuantumProvider = BouncyCastlePQCProvider()
             rsa = generateKeyPair(RSA_TEMPLATE, defaultProvider)
             eddsa = generateKeyPair(EDDSA_ED25519_TEMPLATE, defaultProvider)
-            sphincs = generateKeyPair(SPHINCS256_TEMPLATE, postQuantumProvider)
+//            sphincs = generateKeyPair(SPHINCS256_TEMPLATE, postQuantumProvider)
             sm2 = generateKeyPair(SM2_TEMPLATE, defaultProvider)
             gost = generateKeyPair(GOST3410_GOST3411_TEMPLATE, defaultProvider)
             ecdsak1 = generateKeyPair(ECDSA_SECP256K1_TEMPLATE, defaultProvider)

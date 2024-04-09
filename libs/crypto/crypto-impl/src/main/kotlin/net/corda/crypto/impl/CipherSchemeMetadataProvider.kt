@@ -22,7 +22,7 @@ import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
-import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider
+//import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider
 import org.bouncycastle.util.encoders.Base64
 import org.bouncycastle.util.io.pem.PemObject
 
@@ -41,12 +41,12 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
 
     private val cordaBouncyCastleProvider: Provider = BouncyCastleProvider()
 
-    private val bouncyCastlePQCProvider = BouncyCastlePQCProvider()
+//    private val bouncyCastlePQCProvider = BouncyCastlePQCProvider()
 
     val providers: Map<String, Provider> = listOf(
         cordaBouncyCastleProvider,
         cordaSecurityProvider,
-        bouncyCastlePQCProvider
+//        bouncyCastlePQCProvider
     )
         .associateBy(Provider::getName)
 
@@ -99,8 +99,8 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
      * SPHINCS-256 hash-based key scheme using SHA512 for message hashing. It provides 128bit security against
      * post-quantum attackers at the cost of larger key nd signature sizes and loss of compatibility.
      */
-    @Suppress("VariableNaming", "PropertyName")
-    val SPHINCS256: KeySchemeInfo = SPHINCS256KeySchemeInfo(bouncyCastlePQCProvider)
+//    @Suppress("VariableNaming", "PropertyName")
+//    val SPHINCS256: KeySchemeInfo = SPHINCS256KeySchemeInfo(bouncyCastlePQCProvider)
 
     @Suppress("VariableNaming", "PropertyName")
     val OID_COMPOSITE_KEY_IDENTIFIER = ASN1ObjectIdentifier(OID_COMPOSITE_KEY)
@@ -128,7 +128,7 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
         EDDSA_ED25519.scheme to EDDSA_ED25519,
         SM2.scheme to SM2,
         GOST3410_GOST3411.scheme to GOST3410_GOST3411,
-        SPHINCS256.scheme to SPHINCS256
+//        SPHINCS256.scheme to SPHINCS256
     )
 
     val schemes: List<KeyScheme> = listOf(
@@ -137,7 +137,7 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
         ECDSA_SECP256R1.scheme,
         EDDSA_ED25519.scheme,
         X25519.scheme,
-        SPHINCS256.scheme,
+//        SPHINCS256.scheme,
         SM2.scheme,
         GOST3410_GOST3411.scheme,
         COMPOSITE_KEY

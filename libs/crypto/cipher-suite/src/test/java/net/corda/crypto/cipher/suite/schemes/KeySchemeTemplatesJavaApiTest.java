@@ -17,7 +17,7 @@ public class KeySchemeTemplatesJavaApiTest {
         assertNotNull(KeySchemeTemplates.ECDSA_SECP256R1_TEMPLATE);
         assertNotNull(KeySchemeTemplates.EDDSA_ED25519_TEMPLATE);
         assertNotNull(KeySchemeTemplates.X25519_TEMPLATE);
-        assertNotNull(KeySchemeTemplates.SPHINCS256_TEMPLATE);
+//        assertNotNull(KeySchemeTemplates.SPHINCS256_TEMPLATE);
         assertNotNull(KeySchemeTemplates.SM2_TEMPLATE);
         assertNotNull(KeySchemeTemplates.GOST3410_GOST3411_TEMPLATE);
         assertEquals(8, KeySchemeTemplates.all.size());
@@ -26,7 +26,7 @@ public class KeySchemeTemplatesJavaApiTest {
         assertTrue(KeySchemeTemplates.all.contains(KeySchemeTemplates.ECDSA_SECP256R1_TEMPLATE));
         assertTrue(KeySchemeTemplates.all.contains(KeySchemeTemplates.EDDSA_ED25519_TEMPLATE));
         assertTrue(KeySchemeTemplates.all.contains(KeySchemeTemplates.X25519_TEMPLATE));
-        assertTrue(KeySchemeTemplates.all.contains(KeySchemeTemplates.SPHINCS256_TEMPLATE));
+//        assertTrue(KeySchemeTemplates.all.contains(KeySchemeTemplates.SPHINCS256_TEMPLATE));
         assertTrue(KeySchemeTemplates.all.contains(KeySchemeTemplates.SM2_TEMPLATE));
         assertTrue(KeySchemeTemplates.all.contains(KeySchemeTemplates.GOST3410_GOST3411_TEMPLATE));
     }
