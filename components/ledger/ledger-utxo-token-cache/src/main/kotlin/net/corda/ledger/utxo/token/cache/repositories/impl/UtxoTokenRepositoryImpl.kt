@@ -28,7 +28,7 @@ class UtxoTokenRepositoryImpl(
         ownerHash: String?,
         regexTag: String?,
         maxTokens: Int,
-        strategy: Strategy?
+        strategy: Strategy
     ): AvailTokenQueryResult {
         val sqlQuery = sqlQueryProvider.getPagedSelectQuery(
             maxTokens,

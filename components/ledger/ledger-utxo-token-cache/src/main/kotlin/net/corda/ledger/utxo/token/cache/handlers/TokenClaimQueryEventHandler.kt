@@ -59,7 +59,7 @@ class TokenClaimQueryEventHandler(
                 event.ownerHash,
                 event.tagRegex,
                 maxTokens,
-                event.strategy
+                event.getStrategyOrDefault()
             )
 
             // Remove the claimed tokens from the query results

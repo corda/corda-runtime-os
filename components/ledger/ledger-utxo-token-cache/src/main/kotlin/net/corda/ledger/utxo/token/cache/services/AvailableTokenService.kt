@@ -14,7 +14,7 @@ interface AvailableTokenService {
         ownerHash: String?,
         tagRegex: String?,
         maxTokens: Int,
-        strategy: Strategy?
+        strategy: Strategy
     ): AvailTokenQueryResult
 
     fun queryBalance(poolKey: TokenPoolKey, ownerHash: String?, tagRegex: String?, claimedTokens: Collection<CachedToken>): TokenBalance

@@ -42,7 +42,7 @@ class SqlQueryProviderTokens : SqlQueryProvider {
         """.trimIndent()
     }
 
-    override fun getPagedSelectQuery(limit: Int, includeTagFilter: Boolean, includeOwnerFilter: Boolean, strategy: Strategy?): String {
+    override fun getPagedSelectQuery(limit: Int, includeTagFilter: Boolean, includeOwnerFilter: Boolean, strategy: Strategy): String {
         val tagFilter = if (includeTagFilter) {
             "AND t_output.token_tag ~ :$SQL_PARAMETER_TAG_FILTER"
         } else {
@@ -54,7 +54,7 @@ class SqlQueryProviderTokens : SqlQueryProvider {
             ""
         }
         val orderBy = when (strategy) {
-            null, Strategy.RANDOM -> "ORDER BY t_output.transaction_id"
+            Strategy.RANDOM -> "ORDER BY t_output.transaction_id"
             Strategy.PRIORITY -> "ORDER BY t_output.token_priority NULLS LAST, t_output.transaction_id"
         }
 

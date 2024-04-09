@@ -18,7 +18,7 @@ interface UtxoTokenRepository {
         ownerHash: String?,
         regexTag: String?,
         maxTokens: Int,
-        strategy: Strategy?
+        strategy: Strategy
     ): AvailTokenQueryResult
 
     /**
