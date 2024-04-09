@@ -293,7 +293,7 @@ internal class StartRegistrationHandler(
         reasonForUser: String?
     ) {
         if (!condition) {
-            registrationLogger.info(errorMsg)
+            registrationLogger.warn(errorMsg)
             throw InvalidRegistrationRequestException(errorMsg, reasonForUser)
         }
     }

@@ -729,7 +729,7 @@ class StartRegistrationHandlerTest {
             val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
             verify(membershipQueryClient, never()).queryPreAuthTokens(any(), any(), any(), any())
-            result.assertDeclinedRegistration()
+            result.assertDeclinedRegistration(Regex(".*invalid format for the provided pre-auth token.*"))
         }
 
         @Test
@@ -745,13 +745,12 @@ class StartRegistrationHandlerTest {
             val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
             verify(membershipQueryClient).queryPreAuthTokens(any(), any(), any(), any())
-            result.assertDeclinedRegistration()
+            result.assertDeclinedRegistration(Regex(".*failure to query configured pre-auth tokens.*"))
         }
 
         @Test
         fun `No matching pre-auth token results in declined registration`() {
             val token = UUID(0, 1)
-
             whenever(deserializer.deserialize(registrationContextBytes)).doReturn(
                 KeyValuePairList(listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString())))
             )
@@ -762,7 +761,7 @@ class StartRegistrationHandlerTest {
             val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
             verify(membershipQueryClient).queryPreAuthTokens(any(), any(), any(), any())
-            result.assertDeclinedRegistration()
+            result.assertDeclinedRegistration(Regex(".*pre-auth token which is not currently active.*"))
         }
 
         @Test
@@ -832,7 +831,7 @@ class StartRegistrationHandlerTest {
 
             val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
-            result.assertDeclinedRegistration()
+            result.assertDeclinedRegistration(Regex(".*pre-auth token which has expired.*"))
         }
     }
 
