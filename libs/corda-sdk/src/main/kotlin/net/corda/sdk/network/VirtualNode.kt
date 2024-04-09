@@ -130,7 +130,7 @@ class VirtualNode {
             operationName = "Wait for x500 name to appear in list of virtual nodes"
         ) {
             val existingNodes = getAllVirtualNodes(restClient)
-            if (existingNodes.virtualNodes.firstOrNull { it.holdingIdentity.x500Name == x500Name.toString() } == null) {
+            if (existingNodes.virtualNodes.none { it.holdingIdentity.x500Name == x500Name.toString() }) {
                 throw VirtualNodeLookupException("Failed to find virtual node with x500 name: $x500Name")
             }
         }

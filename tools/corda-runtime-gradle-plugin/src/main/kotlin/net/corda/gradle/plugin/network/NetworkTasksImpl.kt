@@ -48,8 +48,7 @@ class NetworkTasksImpl(var pc: ProjectContext) {
         // Check if each required vnode already exist, if not create it.
         val nodesToCreate = requiredNodes.filter { vn ->
             !existingNodes.any { en ->
-                en.holdingIdentity.x500Name.equals(vn.x500Name) &&
-                        en.cpiIdentifier.cpiName.equals(vn.cpi)
+                en.holdingIdentity.x500Name == vn.x500Name && en.cpiIdentifier.cpiName == vn.cpi
             }
         }
 
