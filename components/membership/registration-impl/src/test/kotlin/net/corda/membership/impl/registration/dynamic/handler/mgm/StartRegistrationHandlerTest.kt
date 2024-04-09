@@ -1038,7 +1038,12 @@ class StartRegistrationHandlerTest {
             whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(notaryRegistrationId)))
                 .doReturn(MembershipQueryResult.Success(registrationRequest))
             whenever(
-                memberInfoFactory.createSelfSignedMemberInfo(eq(registrationRequest.memberProvidedContext.data.array()), any(), any(), any())
+                memberInfoFactory.createSelfSignedMemberInfo(
+                    eq(registrationRequest.memberProvidedContext.data.array()),
+                    any(),
+                    any(),
+                    any()
+                )
             )
                 .doReturn(notaryPendingMemberInfo)
 
@@ -1063,7 +1068,12 @@ class StartRegistrationHandlerTest {
             whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(notaryRegistrationId)))
                 .doReturn(MembershipQueryResult.Success(registrationRequest))
             whenever(
-                memberInfoFactory.createSelfSignedMemberInfo(eq(registrationRequest.memberProvidedContext.data.array()), any(), any(), any())
+                memberInfoFactory.createSelfSignedMemberInfo(
+                    eq(registrationRequest.memberProvidedContext.data.array()),
+                    any(),
+                    any(),
+                    any()
+                )
             )
                 .doReturn(notaryPendingMemberInfo)
 
@@ -1088,7 +1098,12 @@ class StartRegistrationHandlerTest {
             whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(notaryRegistrationId)))
                 .doReturn(MembershipQueryResult.Success(registrationRequest))
             whenever(
-                memberInfoFactory.createSelfSignedMemberInfo(eq(registrationRequest.memberProvidedContext.data.array()), any(), any(), any())
+                memberInfoFactory.createSelfSignedMemberInfo(
+                    eq(registrationRequest.memberProvidedContext.data.array()),
+                    any(),
+                    any(),
+                    any()
+                )
             )
                 .doReturn(notaryPendingMemberInfo)
 
@@ -1116,7 +1131,12 @@ class StartRegistrationHandlerTest {
             whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(notaryRegistrationId)))
                 .doReturn(MembershipQueryResult.Success(registrationRequest))
             whenever(
-                memberInfoFactory.createSelfSignedMemberInfo(eq(registrationRequest.memberProvidedContext.data.array()), any(), any(), any())
+                memberInfoFactory.createSelfSignedMemberInfo(
+                    eq(registrationRequest.memberProvidedContext.data.array()),
+                    any(),
+                    any(),
+                    any()
+                )
             )
                 .doReturn(notaryPendingMemberInfo)
 
@@ -1139,7 +1159,12 @@ class StartRegistrationHandlerTest {
             whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(notaryRegistrationId)))
                 .doReturn(MembershipQueryResult.Success(registrationRequest))
             whenever(
-                memberInfoFactory.createSelfSignedMemberInfo(eq(registrationRequest.memberProvidedContext.data.array()), any(), any(), any())
+                memberInfoFactory.createSelfSignedMemberInfo(
+                    eq(registrationRequest.memberProvidedContext.data.array()),
+                    any(),
+                    any(),
+                    any()
+                )
             )
                 .doReturn(notaryPendingMemberInfo)
             val registrationState = getRegistrationState(notaryRegistrationId, notaryHoldingIdentity, mgmHoldingIdentity)
@@ -1152,10 +1177,10 @@ class StartRegistrationHandlerTest {
             val contextWithUpdates = mock<MemberContext> {
                 on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
                 on { entries } doReturn (
-                        memberContextEntries + mapOf(
-                            LEDGER_KEYS_ID.format(1) to TEST_KEY_ID
-                        )
-                        ).entries
+                    memberContextEntries + mapOf(
+                        LEDGER_KEYS_ID.format(1) to TEST_KEY_ID
+                    )
+                    ).entries
             }
             whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
             whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
@@ -1171,10 +1196,10 @@ class StartRegistrationHandlerTest {
             val contextWithUpdates = mock<MemberContext> {
                 on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
                 on { entries } doReturn (
-                        memberContextEntries + mapOf(
-                            PARTY_SESSION_KEYS_ID.format(1) to TEST_KEY_ID
-                        )
-                        ).entries
+                    memberContextEntries + mapOf(
+                        PARTY_SESSION_KEYS_ID.format(1) to TEST_KEY_ID
+                    )
+                    ).entries
             }
             whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
             whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
@@ -1217,7 +1242,12 @@ class StartRegistrationHandlerTest {
             whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(notaryRegistrationId)))
                 .doReturn(MembershipQueryResult.Success(registrationRequest))
             whenever(
-                memberInfoFactory.createSelfSignedMemberInfo(eq(registrationRequest.memberProvidedContext.data.array()), any(), any(), any())
+                memberInfoFactory.createSelfSignedMemberInfo(
+                    eq(registrationRequest.memberProvidedContext.data.array()),
+                    any(),
+                    any(),
+                    any()
+                )
             )
                 .doReturn(notaryPendingMemberInfo)
             val registrationState = getRegistrationState(notaryRegistrationId, notaryHoldingIdentity, mgmHoldingIdentity)
