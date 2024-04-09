@@ -62,8 +62,9 @@ testLoggerVersion = "4.0.0"
 apache-commons-codec = { group = "commons-codec", name = "commons-codec", version.ref = "apacheCommonsCodecVersion" }
 apache-commons-compress = { group = "org.apache.commons", name = "commons-compress", version.ref = "apacheCommonsCompressVersion" }
 assertj-core = { group = "org.assertj", name = "assertj-core", version.ref = "assertjVersion" }
-bouncycastle-pkix = { group = "org.bouncycastle", name = "bcpkix-jdk18on", version.ref = "bouncycastleVersion" }
-bouncycastle-prov = { group = "org.bouncycastle", name = "bcprov-jdk18on", version.ref = "bouncycastleVersion" }
+bouncycastle-pkix = { group = "org.bouncycastle", name = "bcpkix-lts8on", version.ref = "bouncycastleVersion" }
+bouncycastle-prov = { group = "org.bouncycastle", name = "bcprov-lts8on", version.ref = "bouncycastleVersion" }
+bouncycastle-util = { group = "org.bouncycastle", name = "bcutil-lts8on", version.ref = "bouncycastleVersion" }
 brave-context-slf4j = { group = "io.zipkin.brave", name = "brave-context-slf4j", version.ref = "braveVersion" }
 brave-instrumentation-servlet = { group = "io.zipkin.brave", name = "brave-instrumentation-servlet", version.ref = "braveVersion" }
 caffeine = { group = "com.github.ben-manes.caffeine", name = "caffeine", version.ref = "caffeineVersion" }
@@ -129,7 +130,7 @@ zipkin-reporter-brave = { group = "io.zipkin.reporter2", name = "zipkin-reporter
 gradle-enterprise = { group = "com.gradle", name = "gradle-enterprise-gradle-plugin", version.ref = "gradleEnterpriseVersion" }
 
 [bundles]
-bouncycastle = ["bouncycastle-prov", "bouncycastle-pkix"]
+bouncycastle = ["bouncycastle-prov", "bouncycastle-pkix", "bouncycastle-util"]
 jetty = ["jetty-server", "jetty-xml", "jetty-websocket-servlet", "jetty-websocket-server"]
 test = ["junit", "junit-api", "junit-params", "mockito-core", "mockito-kotlin", "assertj-core", "kotlin-test"]
 test-runtime = ["junit-engine", "junit-platform"]
