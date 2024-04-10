@@ -35,11 +35,11 @@ class DeployCpiHelper {
         cpiChecksumFilePath: String,
         cpiUploadTimeout: Long
     ): Checksum {
-        val uploaderClass = CpiUploader()
+        val cpiUploader = CpiUploader()
         val cpiFile = File(cpiFilePath)
         val requestId =
             try {
-                uploaderClass.uploadCpiEvenIfExists(
+                cpiUploader.uploadCpiEvenIfExists(
                     uploadRestClient = uploaderRestClient,
                     forceUploadRestClient = forceUploaderRestClient,
                     cpi = cpiFile.inputStream(),
@@ -51,7 +51,7 @@ class DeployCpiHelper {
                 throw CordaRuntimeGradlePluginException("Failed to request upload of CPI: '$cpiName'.")
             }
 
-        val cpiChecksum = uploaderClass.cpiChecksum(
+        val cpiChecksum = cpiUploader.cpiChecksum(
             restClient = uploaderRestClient,
             uploadRequestId = RequestId(requestId),
             wait = cpiUploadTimeout.toDuration(DurationUnit.MILLISECONDS)

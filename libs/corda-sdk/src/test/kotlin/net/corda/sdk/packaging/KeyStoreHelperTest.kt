@@ -2,14 +2,12 @@ package net.corda.sdk.packaging
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import java.nio.file.Files
 import java.security.KeyStore
-import kotlin.io.path.deleteIfExists
+import kotlin.io.path.createTempFile
 
 class KeyStoreHelperTest {
 
-    private val targetKeystore = Files.createTempFile("myKeyStore", ".pfx").also {
-        it.deleteIfExists()
+    private val targetKeystore = createTempFile("myKeyStore", ".pfx").also {
         it.toFile().deleteOnExit()
     }
     private val keystoreAlias = "myAlias"
@@ -64,8 +62,7 @@ class KeyStoreHelperTest {
             certificateInputStream = ksh.getDefaultGradleCertificateStream()
         )
 
-        val targetCertFile = Files.createTempFile("myCert", ".pem").also {
-            it.deleteIfExists()
+        val targetCertFile = createTempFile("myCert", ".pem").also {
             it.toFile().deleteOnExit()
         }
 

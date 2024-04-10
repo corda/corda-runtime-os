@@ -8,7 +8,6 @@ import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.rest.client.RestClient
 import net.corda.sdk.data.RequestId
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
-import java.util.Objects
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -47,7 +46,7 @@ class RegistrationsLookup {
     ): Boolean {
         val registrationStatuses = checkRegistrations(restClient, holdingIdentityShortHash, wait)
         return registrationStatuses.any { request ->
-            Objects.equals(request.registrationStatus, "APPROVED")
+            request.registrationStatus == RegistrationStatus.APPROVED
         }
     }
 
