@@ -50,8 +50,8 @@ class ProjectContext(val project: Project, pluginConfig: PluginConfiguration) {
     val notaryCpiFilePath: String = "$workflowBuildDir/$notaryCpiName-${project.version}.cpi"
     val corDappCpbFilePath: String = "$workflowBuildDir/libs/${workflowsModuleName}-${project.version}-package.cpb"
     val corDappCpiFilePath: String = "$workflowBuildDir/$corDappCpiName-${project.version}.cpi"
-    val corDappCpiUploadStatusFilePath: String = "$workspaceDir/corDappCpiUploadStatus.json"
-    val notaryCpiUploadStatusFilePath: String = "$workspaceDir/notaryCpiUploadStatus.json"
+    val corDappCpiChecksumFilePath: String = "$workspaceDir/corDappCpiChecksum.json"
+    val notaryCpiChecksumFilePath: String = "$workspaceDir/notaryCpiChecksum.json"
 
     val networkConfig: NetworkConfig = NetworkConfig("${project.rootDir}/${networkConfigFile}")
     val isNotaryNonValidating: Boolean = EnvironmentSetupHelper().isNotaryNonValidating(networkConfig)

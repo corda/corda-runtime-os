@@ -3,6 +3,7 @@ package net.corda.sdk.network
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
+import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 
 class RegistrationRequest {
 
@@ -153,6 +154,38 @@ class RegistrationRequest {
         val extProperties = customProperties.filterKeys { it.startsWith("${MemberInfoExtension.CUSTOM_KEY_PREFIX}.") }
 
         return MemberRegistrationRequest(context = context + preAuth + roleProperty + extProperties + endpoints)
+    }
+
+    /**
+     * Create the registration request body for a static member
+     */
+    fun createStaticMemberRegistrationRequest(): MemberRegistrationRequest {
+        val context = mapOf(
+            "corda.key.scheme" to ECDSA_SECP256R1_CODE_NAME
+        )
+        return MemberRegistrationRequest(context = context)
+    }
+
+    /**
+     * Create the registration request body for a static notary
+     * @param [notaryServiceName] the value to use for the service name
+     * @param [notaryServiceProtocol] the full package value for the protocol e.g. com.r3.corda.notary.plugin.nonvalidating
+     * @param [isBackchainRequired] boolean value
+     */
+    fun createStaticNotaryRegistrationRequest(
+        notaryServiceName: String,
+        notaryServiceProtocol: String,
+        isBackchainRequired: Boolean
+    ): MemberRegistrationRequest {
+        val context = mapOf(
+            "corda.key.scheme" to ECDSA_SECP256R1_CODE_NAME,
+            MemberInfoExtension.NOTARY_SERVICE_NAME to notaryServiceName,
+            MemberInfoExtension.NOTARY_SERVICE_BACKCHAIN_REQUIRED to "$isBackchainRequired",
+            MemberInfoExtension.NOTARY_SERVICE_PROTOCOL to notaryServiceProtocol,
+            MemberInfoExtension.NOTARY_SERVICE_PROTOCOL_VERSIONS.format("0") to "1",
+            "${MemberInfoExtension.ROLES_PREFIX}.0" to MemberInfoExtension.NOTARY_ROLE
+        )
+        return MemberRegistrationRequest(context = context)
     }
 }
 

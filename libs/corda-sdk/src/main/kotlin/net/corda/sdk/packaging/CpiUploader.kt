@@ -9,6 +9,7 @@ import net.corda.sdk.data.Checksum
 import net.corda.sdk.data.RequestId
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
 import java.io.InputStream
+import java.util.Objects
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -17,7 +18,7 @@ class CpiUploader {
     /**
      * Upload a given CPI
      * @param restClient of type RestClient<CpiUploadRestResource>
-     * @param cpi value of the CPI to upload
+     * @param cpi InputStream of the CPI to upload
      * @param cpiName name of the CPI file
      * @param wait Duration before timing out, default 30 seconds
      */
@@ -40,6 +41,48 @@ class CpiUploader {
                     )
                 )
             }
+        }
+    }
+
+    /**
+     * Upload a CPI, if it already exists then force upload it again
+     * @param uploadRestClient of type RestClient<CpiUploadRestResource>
+     * @param forceUploadRestClient of type RestClient<VirtualNodeMaintenanceRestResource>
+     * @param cpi InputStream of the CPI to upload
+     * @param cpiName name of the CPI file
+     * @param cpiVersion version of the CPI file
+     * @param wait Duration before timing out, default 30 seconds
+     */
+    @Suppress("LongParameterList")
+    fun uploadCpiEvenIfExists(
+        uploadRestClient: RestClient<CpiUploadRestResource>,
+        forceUploadRestClient: RestClient<VirtualNodeMaintenanceRestResource>,
+        cpi: InputStream,
+        cpiName: String,
+        cpiVersion: String,
+        wait: Duration = 30.seconds
+    ): CpiUploadRestResource.CpiUploadResponse {
+        return if (
+            cpiPreviouslyUploaded(
+                restClient = uploadRestClient,
+                cpiName = cpiName,
+                cpiVersion = cpiVersion,
+                wait = wait
+            )
+        ) {
+            forceCpiUpload(
+                restClient = forceUploadRestClient,
+                cpiFile = cpi,
+                cpiName = cpiName,
+                wait = wait
+            )
+        } else {
+            uploadCPI(
+                restClient = uploadRestClient,
+                cpi = cpi,
+                cpiName = cpiName,
+                wait = wait
+            )
         }
     }
 
@@ -92,8 +135,8 @@ class CpiUploader {
 
     /**
      * Force upload a given CPI
-     * @param restClient of type RestClient<CpiUploadRestResource>
-     * @param cpi value of the CPI to upload
+     * @param restClient of type RestClient<VirtualNodeMaintenanceRestResource>
+     * @param cpi InputStream of the CPI to upload
      * @param cpiName name of the CPI file
      * @param wait Duration before timing out, default 30 seconds
      */
@@ -117,5 +160,41 @@ class CpiUploader {
                 )
             }
         }
+    }
+
+    /**
+     * Checks if a CPI has previously been uploaded by comparing the cpiName and cpiVersion to CPIs already uploaded.
+     * @param restClient of type RestClient<CpiUploadRestResource>
+     * @param cpiName name of the CPI file
+     * @param cpiVersion version of the CPI file
+     * @param wait Duration before timing out, default 10 seconds
+     */
+    fun cpiPreviouslyUploaded(
+        restClient: RestClient<CpiUploadRestResource>,
+        cpiName: String,
+        cpiVersion: String,
+        wait: Duration = 10.seconds
+    ): Boolean {
+        val existingCpis = getAllCpis(restClient, wait)
+        existingCpis.cpis.forEach { cpi ->
+            if (Objects.equals(cpi.id.cpiName, cpiName) && Objects.equals(cpi.id.cpiVersion, cpiVersion)) {
+                return true
+            }
+        }
+        return false
+    }
+
+    fun cpiChecksumExists(
+        restClient: RestClient<CpiUploadRestResource>,
+        checksum: Checksum,
+        wait: Duration = 10.seconds
+    ): Boolean {
+        val existingCpis = getAllCpis(restClient, wait)
+        existingCpis.cpis.forEach { cpi ->
+            if (Objects.equals(cpi.cpiFileChecksum, checksum.value)) {
+                return true
+            }
+        }
+        return false
     }
 }
