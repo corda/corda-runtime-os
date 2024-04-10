@@ -105,8 +105,8 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
             .build()
 
         val requestConfig = RequestConfig.custom()
-            .setConnectionRequestTimeout(1)
-            .setConnectTimeout(1)
+            .setConnectionRequestTimeout(60_000)
+            .setConnectTimeout(60_000)
             .setSocketTimeout(1)
             .build()
 
