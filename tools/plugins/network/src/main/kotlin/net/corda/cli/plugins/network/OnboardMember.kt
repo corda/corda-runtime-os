@@ -2,9 +2,11 @@ package net.corda.cli.plugins.network
 
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.cli.plugins.network.utils.inferCpiName
+import net.corda.crypto.core.CryptoConsts.Categories.KeyCategory
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
+import net.corda.sdk.data.Checksum
 import net.corda.sdk.network.MemberRole
-import net.corda.sdk.network.RegistrationContext
+import net.corda.sdk.network.RegistrationRequest
 import net.corda.sdk.packaging.CpiAttributes
 import net.corda.sdk.packaging.CpiUploader
 import net.corda.sdk.packaging.CpiV2Creator
@@ -83,7 +85,7 @@ class OnboardMember : Runnable, BaseOnboard() {
 
     override val cpiFileChecksum by lazy {
         if (cpiHash != null) {
-            return@lazy cpiHash!!
+            return@lazy Checksum(cpiHash!!)
         }
         if (cpbFile?.canRead() != true) {
             throw OnboardException("Please set either CPB file or CPI hash")
@@ -106,7 +108,7 @@ class OnboardMember : Runnable, BaseOnboard() {
         )
     }
 
-    private fun uploadCpb(cpbFile: File): String {
+    private fun uploadCpb(cpbFile: File): Checksum {
         val cpiName = inferCpiName(cpbFile, groupPolicyFile)
         val cpiFile = File(cpisRoot, "$cpiName.cpi")
         println("Creating and uploading CPI using CPB '${cpbFile.name}'")
@@ -122,7 +124,7 @@ class OnboardMember : Runnable, BaseOnboard() {
         val cpisFromCluster = CpiUploader().getAllCpis(restClient = restClient, wait = waitDurationSeconds.seconds).cpis
         cpisFromCluster.firstOrNull { it.id.cpiName == cpiName && it.id.cpiVersion == CPI_VERSION }?.let {
             println("CPI already exists, using CPI ${it.id}")
-            return it.cpiFileChecksum
+            return Checksum(it.cpiFileChecksum)
         }
         if (!cpiFile.exists()) {
             runCatching { createCpi(cpbFile, cpiFile) }.onFailure { e ->
@@ -157,16 +159,16 @@ class OnboardMember : Runnable, BaseOnboard() {
     }
 
     private val ledgerKeyId by lazy {
-        assignSoftHsmAndGenerateKey("LEDGER")
+        assignSoftHsmAndGenerateKey(KeyCategory.LEDGER_KEY)
     }
 
     private val notaryKeyId by lazy {
-        assignSoftHsmAndGenerateKey("NOTARY")
+        assignSoftHsmAndGenerateKey(KeyCategory.NOTARY_KEY)
     }
 
-    override val registrationContext by lazy {
+    override val memberRegistrationRequest by lazy {
         if (roles.contains(MemberRole.NOTARY)) {
-            RegistrationContext().createNotaryRegistrationContext(
+            RegistrationRequest().createNotaryRegistrationRequest(
                 preAuthToken = preAuthToken,
                 roles = roles,
                 customProperties = customProperties,
@@ -175,7 +177,7 @@ class OnboardMember : Runnable, BaseOnboard() {
                 notaryKey = notaryKeyId
             )
         } else {
-            RegistrationContext().createMemberRegistrationContext(
+            RegistrationRequest().createMemberRegistrationRequest(
                 preAuthToken = preAuthToken,
                 roles = roles,
                 customProperties = customProperties,
@@ -205,7 +207,7 @@ class OnboardMember : Runnable, BaseOnboard() {
             setupNetwork()
 
             println("Provided registration context: ")
-            println(registrationContext)
+            println(memberRegistrationRequest)
 
             register(waitForFinalStatus)
 

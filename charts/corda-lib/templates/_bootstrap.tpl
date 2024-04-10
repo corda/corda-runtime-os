@@ -255,7 +255,7 @@ spec:
               java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar initial-config create-crypto-config \
                 --salt "${SALT}" --passphrase "${PASSPHRASE}" \
               {{- if (((.Values).config).vault).url }}
-                -t "VAULT" --vault-path "cryptosecrets" -n 2 -ks "salt" -kp "passphrase" -ks "salt2" -kp "passphrase2" \
+                -t "VAULT" --vault-path "cryptosecrets" -n 1 -ks "salt" -kp "passphrase" \
               {{- end }}
                 -l /tmp
           workingDir: /tmp

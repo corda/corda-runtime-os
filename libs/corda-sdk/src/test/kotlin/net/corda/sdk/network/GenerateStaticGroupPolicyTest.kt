@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.JsonNodeType
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
+import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import kotlin.test.assertNotNull
@@ -49,11 +51,13 @@ class GenerateStaticGroupPolicyTest {
 
     @Test
     fun `passed member is in members array`() {
-        val myMember = mapOf(
-            "name" to "C=GB, L=London, O=Terry",
-            "memberStatus" to "ACTIVE",
-            "endpointUrl-1" to "https://terry.corda5.r3.com:10000",
-            "endpointProtocol-1" to 1,
+        val myMember = MemberRegistrationRequest(
+            context = mapOf(
+                "name" to "C=GB, L=London, O=Terry",
+                "memberStatus" to "ACTIVE",
+                "endpointUrl-1" to "https://terry.corda5.r3.com:10000",
+                "endpointProtocol-1" to "1",
+            )
         )
         val ggp = GenerateStaticGroupPolicy()
         val returnValue = ggp.generateStaticGroupPolicy(listOf(myMember))
@@ -68,32 +72,34 @@ class GenerateStaticGroupPolicyTest {
     }
 
     @Test
-    fun `member list from string populates`() {
+    fun `member list from x500 name populates`() {
         val ggp = GenerateStaticGroupPolicy()
-        val members = ggp.createMembersListFromListOfX500Strings(listOf("C=GB, L=London, O=Terry"))
+        val member = MemberX500Name.parse("C=GB, L=London, O=Terry")
+        val members = ggp.createMembersListFromListOfX500Names(listOf(member))
         val parsedMembers = om.readTree(om.writeValueAsString(members))
-        parsedMembers.find { it["name"].asText() == "C=GB, L=London, O=Terry" }.apply {
-            assertThat(this?.get("memberStatus")?.asText()).isEqualTo("ACTIVE")
-            assertThat(this?.get("endpointUrl-1")?.asText()).isEqualTo("https://member.corda5.r3.com:10000")
-            assertThat(this?.get("endpointProtocol-1")?.asText()).isEqualTo("1")
+        parsedMembers.find { it["context"]["name"].asText() == member.toString() }.run {
+            assertNotNull(this, "Member (as JsonNode) should not be null when parsed from string")
+            assertThat(this["context"]["memberStatus"].asText()).isEqualTo("ACTIVE")
+            assertThat(this["context"]["endpointUrl-1"].asText()).isEqualTo("https://member.corda5.r3.com:10000")
+            assertThat(this["context"]["endpointProtocol-1"].asText()).isEqualTo("1")
         }
     }
 
     @Test
-    fun `can generate a policy with a list of member name strings`() {
+    fun `can generate a policy with a list of members`() {
         val myList = listOf(
-            "C=GB, L=London, O=Dave",
-            "C=GB, L=London, O=Edith",
-            "C=GB, L=London, O=Fred"
+            MemberX500Name.parse("C=GB, L=London, O=Dave"),
+            MemberX500Name.parse("C=GB, L=London, O=Edith"),
+            MemberX500Name.parse("C=GB, L=London, O=Fred")
         )
         val ggp = GenerateStaticGroupPolicy()
-        val createdMembersBlock = ggp.createMembersListFromListOfX500Strings(myList)
+        val createdMembersBlock = ggp.createMembersListFromListOfX500Names(myList)
         val rawPolicyOutput = ggp.generateStaticGroupPolicy(createdMembersBlock)
         val returnValueAsString = om.writeValueAsString(rawPolicyOutput)
         val memberList = memberList(returnValueAsString)
-        assertThat(memberList.find { it["name"].asText() == "C=GB, L=London, O=Dave" }).isNotEmpty
-        assertThat(memberList.find { it["name"].asText() == "C=GB, L=London, O=Edith" }).isNotEmpty
-        assertThat(memberList.find { it["name"].asText() == "C=GB, L=London, O=Fred" }).isNotEmpty
+        assertThat(memberList.find { it["name"].asText() == MemberX500Name.parse("C=GB, L=London, O=Dave").toString() }).isNotEmpty
+        assertThat(memberList.find { it["name"].asText() == MemberX500Name.parse("C=GB, L=London, O=Edith").toString() }).isNotEmpty
+        assertThat(memberList.find { it["name"].asText() == MemberX500Name.parse("C=GB, L=London, O=Fred").toString() }).isNotEmpty
     }
 
     /**

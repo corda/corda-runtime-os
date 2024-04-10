@@ -30,7 +30,7 @@ class OnboardMemberTest {
         private val password = "--password=${DEFAULT_CLUSTER.rest.password}"
         private const val INSECURE = "--insecure=true"
 
-        private val mgmName = MemberX500Name.parse("O=MGM-${UUID.randomUUID()}, L=London, C=GB").toString()
+        private val mgmName = MemberX500Name.parse("O=MGM-${UUID.randomUUID()}, L=London, C=GB")
         private fun memberName() = MemberX500Name.parse("O=Member-${UUID.randomUUID()}, L=London, C=GB")
 
         private lateinit var outputStub: OutputStub
@@ -47,7 +47,7 @@ class OnboardMemberTest {
             defaulGroupPolicyLocation = "${System.getProperty("user.home")}/.corda/gp/groupPolicy.json"
 
             CommandLine(command).execute(
-                mgmName,
+                mgmName.toString(),
                 targetUrl,
                 user,
                 password,
@@ -86,7 +86,7 @@ class OnboardMemberTest {
         )
 
         outputStub.lookup(member)
-        assertThat(outputStub.getAllPartyNames().contains(member.toString())).isTrue
+        assertThat(outputStub.getAllPartyNames().contains(member)).isTrue
     }
 
     @Test
@@ -114,7 +114,7 @@ class OnboardMemberTest {
         )
 
         outputStub.lookup(member)
-        assertThat(outputStub.getAllPartyNames().contains(member.toString())).isTrue
+        assertThat(outputStub.getAllPartyNames().contains(member)).isTrue
     }
 
     @Test
@@ -160,7 +160,7 @@ class OnboardMemberTest {
         )
 
         outputStub.lookup(member)
-        assertThat(outputStub.getAllPartyNames().contains(member.toString())).isTrue
+        assertThat(outputStub.getAllPartyNames().contains(member)).isTrue
     }
 
     @Test
@@ -180,7 +180,7 @@ class OnboardMemberTest {
         )
 
         outputStub.lookup(member)
-        assertThat(outputStub.getAllPartyNames().contains(member.toString())).isTrue
+        assertThat(outputStub.getAllPartyNames().contains(member)).isTrue
     }
 
     @Test

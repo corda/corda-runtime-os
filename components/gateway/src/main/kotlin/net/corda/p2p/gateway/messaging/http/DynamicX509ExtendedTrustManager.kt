@@ -19,7 +19,7 @@ internal class DynamicX509ExtendedTrustManager(
     private val trustStoresMap: TrustStoresMap,
     private val revocationConfig: RevocationConfig,
     private val dynamicCertificateSubjectStore: DynamicCertificateSubjectStore,
-    private val trustManagerFactory: TrustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+    private val trustManagerFactory: TrustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()),
 ) : X509ExtendedTrustManager() {
     companion object {
         private val wrongUsageMessage = this::class.java.simpleName + " can only be used by the gateway server."
@@ -92,7 +92,7 @@ internal class DynamicX509ExtendedTrustManager(
         } catch (e: IllegalArgumentException) {
             throw CertificateException(
                 "Client certificate subject ${chain.first().subjectX500Principal} is not a valid subject: $e",
-                e
+                e,
             )
         }
         if (!dynamicCertificateSubjectStore.subjectAllowed(certificateSubject)) {
@@ -116,7 +116,7 @@ internal class DynamicX509ExtendedTrustManager(
 
     private fun checkClientCertificate(
         chain: Array<out X509Certificate>?,
-        verify: (X509ExtendedTrustManager) -> Unit
+        verify: (X509ExtendedTrustManager) -> Unit,
     ) {
         validateClientCertificateChain(chain)
         validateTrustedCertificates(verify)

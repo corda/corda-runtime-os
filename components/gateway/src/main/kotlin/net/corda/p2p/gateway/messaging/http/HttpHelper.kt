@@ -2,14 +2,14 @@ package net.corda.p2p.gateway.messaging.http
 
 import io.netty.buffer.Unpooled
 import io.netty.handler.codec.http.DefaultFullHttpRequest
+import io.netty.handler.codec.http.DefaultFullHttpResponse
 import io.netty.handler.codec.http.HttpHeaderNames
 import io.netty.handler.codec.http.HttpHeaderValues
 import io.netty.handler.codec.http.HttpMethod
-import io.netty.handler.codec.http.HttpVersion
-import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.codec.http.HttpRequest
 import io.netty.handler.codec.http.HttpResponse
-import io.netty.handler.codec.http.DefaultFullHttpResponse
+import io.netty.handler.codec.http.HttpResponseStatus
+import io.netty.handler.codec.http.HttpVersion
 import java.lang.IllegalArgumentException
 import java.net.URI
 import java.net.URL
@@ -36,7 +36,7 @@ class HttpHelper {
                 HttpVersion.HTTP_1_1,
                 HttpMethod.POST,
                 URL(SCHEME, uri.host, uri.port, uri.path).toString(),
-                content
+                content,
             ).apply {
                 headers()
                     .set(HttpHeaderNames.HOST, uri.host)
@@ -72,9 +72,8 @@ class HttpHelper {
                 if (!urlPaths.contains(uri.path)) {
                     return HttpResponseStatus.NOT_FOUND
                 }
-
             } catch (e: IllegalArgumentException) {
-                //The URI string in the request is invalid - cannot be used to instantiate URI object
+                // The URI string in the request is invalid - cannot be used to instantiate URI object
                 return HttpResponseStatus.BAD_REQUEST
             }
 
@@ -91,8 +90,7 @@ class HttpHelper {
                 return HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE
             }
 
-            if (!HttpHeaderValues.APPLICATION_JSON.contentEqualsIgnoreCase(this.headers()[HttpHeaderNames.CONTENT_TYPE]))
-            {
+            if (!HttpHeaderValues.APPLICATION_JSON.contentEqualsIgnoreCase(this.headers()[HttpHeaderNames.CONTENT_TYPE])) {
                 return HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE
             }
 

@@ -63,7 +63,7 @@ class RevocationCheckerTest {
     fun setup() {
         mockDominoTile = Mockito.mockConstruction(RPCSubscriptionDominoTile::class.java) { _, context ->
             @Suppress("UNCHECKED_CAST")
-            (context.arguments()[1] as  () -> RPCSubscription<RevocationCheckRequest, RevocationCheckResponse>)()
+            (context.arguments()[1] as () -> RPCSubscription<RevocationCheckRequest, RevocationCheckResponse>)()
         }
         revocationChecker = RevocationChecker(subscriptionFactory, mock(), mock())
     }
@@ -78,7 +78,9 @@ class RevocationCheckerTest {
     fun `valid certificate passes validation`() {
         val result = CompletableFuture<RevocationCheckResponse>()
         processor.firstValue.onNext(
-            RevocationCheckRequest(listOf(cert), trustStoreWithRevocation, RevocationMode.HARD_FAIL), result)
+            RevocationCheckRequest(listOf(cert), trustStoreWithRevocation, RevocationMode.HARD_FAIL),
+            result,
+        )
         assertThat(result.getOrThrow().status).isEqualTo(Active())
     }
 
@@ -86,7 +88,9 @@ class RevocationCheckerTest {
     fun `corrupeted certificate causes the future to complete exceptionally`() {
         val result = CompletableFuture<RevocationCheckResponse>()
         processor.firstValue.onNext(
-            RevocationCheckRequest(listOf(corruptedCert), trustStoreWithRevocation, RevocationMode.HARD_FAIL), result)
+            RevocationCheckRequest(listOf(corruptedCert), trustStoreWithRevocation, RevocationMode.HARD_FAIL),
+            result,
+        )
         assertThrows<ExecutionException> { result.get() }
     }
 
@@ -95,7 +99,8 @@ class RevocationCheckerTest {
         val result = CompletableFuture<RevocationCheckResponse>()
         processor.firstValue.onNext(
             RevocationCheckRequest(listOf(revokedCert.toPem()), trustStoreWithRevocation, RevocationMode.HARD_FAIL),
-            result)
+            result,
+        )
         assertThat(result.getOrThrow().status).isInstanceOf(Revoked::class.java)
     }
 
@@ -104,7 +109,8 @@ class RevocationCheckerTest {
         val resultFuture = CompletableFuture<RevocationCheckResponse>()
         processor.firstValue.onNext(
             RevocationCheckRequest(listOf(revokedCert.toPem()), trustStoreWithRevocation, RevocationMode.SOFT_FAIL),
-            resultFuture)
+            resultFuture,
+        )
         assertThat(resultFuture.getOrThrow().status).isInstanceOf(Revoked::class.java)
     }
 
@@ -112,7 +118,9 @@ class RevocationCheckerTest {
     fun `if truststore is wrong validation fails`() {
         val resultFuture = CompletableFuture<RevocationCheckResponse>()
         processor.firstValue.onNext(
-            RevocationCheckRequest(listOf(cert), wrongTrustStore, RevocationMode.HARD_FAIL), resultFuture)
+            RevocationCheckRequest(listOf(cert), wrongTrustStore, RevocationMode.HARD_FAIL),
+            resultFuture,
+        )
         assertThat(resultFuture.getOrThrow().status).isInstanceOf(Revoked::class.java)
     }
 }

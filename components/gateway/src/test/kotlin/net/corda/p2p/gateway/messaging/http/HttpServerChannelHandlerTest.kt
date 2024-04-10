@@ -58,7 +58,7 @@ class HttpServerChannelHandlerTest {
                 mock()
             }
         }
-        val mockCtx = mock<ChannelHandlerContext>{
+        val mockCtx = mock<ChannelHandlerContext> {
             on { channel() } doReturn mockCtxChannel
             on { writeAndFlush(any()) } doReturn mockWriteFuture
             on { close() } doReturn mockCloseFuture
@@ -101,7 +101,7 @@ class HttpServerChannelHandlerTest {
         val byteBufAllocator = mock<ByteBufAllocator> {
             on { buffer(any(), any()) } doReturn handlerByteBuf
         }
-        val mockCtx = mock<ChannelHandlerContext>{
+        val mockCtx = mock<ChannelHandlerContext> {
             on { channel() } doReturn mockCtxChannel
             on { alloc() } doReturn byteBufAllocator
         }
@@ -156,7 +156,7 @@ class HttpServerChannelHandlerTest {
                 mock()
             }
         }
-        val mockCtx = mock<ChannelHandlerContext>{
+        val mockCtx = mock<ChannelHandlerContext> {
             on { channel() } doReturn mockCtxChannel
             on { alloc() } doReturn byteBufAllocator
             on { writeAndFlush(any()) } doReturn mockWriteFuture
@@ -176,5 +176,4 @@ class HttpServerChannelHandlerTest {
         verify(mockCtx).close()
         assertThat(waitOnClose).isTrue
     }
-
 }

@@ -26,7 +26,8 @@ class UtxoDemoTokenStateObserver : UtxoTokenTransactionStateObserver<TestUtxoSta
                 TOKEN_SYMBOL
             ),
             TOKEN_AMOUNT,
-            UtxoTokenFilterFields()
+            UtxoTokenFilterFields(),
+            context.stateAndRef.state.contractState.priority
         )
     }
 }

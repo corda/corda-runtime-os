@@ -61,9 +61,9 @@ internal class InboundMessageHandler(
         // Setting max limits for variable-length fields to prevent malicious clients from trying to trigger large memory allocations.
         System.setProperty(SystemLimitException.MAX_BYTES_LENGTH_PROPERTY, AVRO_LIMIT.toString())
         System.setProperty(SystemLimitException.MAX_STRING_LENGTH_PROPERTY, AVRO_LIMIT.toString())
-        
+
         // Need to call package private method for changes to have effect
-        // The fact that [SystemLimitException] is using static initializer is not nice, especially given that is class 
+        // The fact that [SystemLimitException] is using static initializer is not nice, especially given that is class
         // loaded when [AvroSchemaRegistry] is created.
         val declaredMethod = SystemLimitException::class.java.getDeclaredMethod("resetLimits")
         declaredMethod.setAccessible(true)
@@ -79,13 +79,13 @@ internal class InboundMessageHandler(
         publisherFactory,
         lifecycleCoordinatorFactory,
         PublisherConfig("inbound-message-handler", false),
-        messagingConfiguration
+        messagingConfiguration,
     )
 
     private val dynamicCertificateSubjectStore = DynamicCertificateSubjectStore(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
-        messagingConfiguration
+        messagingConfiguration,
     )
     private val linkManagerClient =
         LinkManagerRpcClient(
@@ -113,7 +113,7 @@ internal class InboundMessageHandler(
             p2pInPublisher.dominoTile.toNamedLifecycle(),
             server.dominoTile.toNamedLifecycle(),
             dynamicCertificateSubjectStore.dominoTile.toNamedLifecycle(),
-        )
+        ),
     )
 
     /**
@@ -145,8 +145,12 @@ internal class InboundMessageHandler(
             return HttpResponseStatus.BAD_REQUEST
         }
 
-        logger.debug("Received and processing message {} of type {} from {}",
-            gatewayMessage.id, p2pMessage.payload::class.java, request.source)
+        logger.debug(
+            "Received and processing message {} of type {} from {}",
+            gatewayMessage.id,
+            p2pMessage.payload::class.java,
+            request.source,
+        )
         return if (commonComponents.features.enableP2PGatewayToLinkManagerOverHttp) {
             return forwardMessage(
                 httpWriter,

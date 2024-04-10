@@ -186,7 +186,7 @@ fun ClusterInfo.createKeyFor(
     category: String,
     scheme: String
 ): String = cluster {
-    val keyId = assertWithRetry {
+    assertWithRetry {
         interval(1.seconds)
         command { createKey(tenantId, alias, category, scheme) }
         condition {
@@ -194,14 +194,24 @@ fun ClusterInfo.createKeyFor(
             it.code == 200 || it.code == 409
         }
         failMessage("Failed to create key for holding id '$tenantId'")
-    }.toJson()
-    assertWithRetryIgnoringExceptions {
-        interval(1.seconds)
-        command { getKey(tenantId, keyId["id"].textValue()) }
-        condition { it.code == 200 }
-        failMessage("Failed to get key for holding id '$tenantId' and key id '$keyId'")
     }
-    keyId["id"].textValue()
+    val keys = assertWithRetryIgnoringExceptions {
+        interval(1.seconds)
+        command {
+            getKey(
+                tenantId = tenantId,
+                alias = alias,
+                category = category,
+            )
+        }
+        condition {
+            it.code == 200 &&
+                    it.toJson().isObject &&
+                    !it.toJson().isEmpty
+        }
+        failMessage("Failed to get keys for holding id '$tenantId' and alias '$alias'")
+    }.toJson()
+    keys.fieldNames().next()
 }
 
 private val keyExistsLock = ReentrantLock()
@@ -284,7 +294,7 @@ fun ClusterInfo.getTime(
             condition { it.code == ResponseCode.OK.statusCode }
         }
     }.headers.single { it.first == "Date" }.second
-)
+).toInstant()
 
 private fun <T> Semaphore.runWith(block: () -> T): T {
     this.acquire()

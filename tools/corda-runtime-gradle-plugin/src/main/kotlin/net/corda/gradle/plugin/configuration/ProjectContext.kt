@@ -21,6 +21,7 @@ class ProjectContext(val project: Project, pluginConfig: PluginConfiguration) {
     val composeFilePath: String = pluginConfig.composeFilePath.get()
     val composeNetworkName: String = pluginConfig.composeNetworkName.get()
     val notaryVersion: String = pluginConfig.notaryVersion.get()
+    val runtimeVersion: String = pluginConfig.runtimeVersion.get()
     val cordaBinDir: String = pluginConfig.cordaBinDir.get()
     val artifactoryUsername: String = pluginConfig.artifactoryUsername.get()
     val artifactoryPassword: String = pluginConfig.artifactoryPassword.get()

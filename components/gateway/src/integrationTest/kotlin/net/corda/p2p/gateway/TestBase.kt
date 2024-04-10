@@ -51,9 +51,13 @@ import java.net.URL
 import java.security.KeyStore
 import java.util.UUID
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random.Default.nextInt
 
 internal open class TestBase {
+    private companion object {
+        val nextPortToUse = AtomicInteger(2000)
+    }
     private val toClose = ConcurrentLinkedQueue<Resource>()
     private fun readKeyStore(url: URL?, password: String = keystorePass): KeyStoreWithPassword {
         val keyStore = KeyStore.getInstance("JKS").also { keyStore ->
@@ -80,10 +84,10 @@ internal open class TestBase {
 
     protected fun getOpenPort(): Int {
         while (true) {
+            val port = nextPortToUse.getAndIncrement()
             try {
-                ServerSocket(0).use {
-                    return it.localPort
-                }
+                ServerSocket(port).close()
+                return port
             } catch (e: BindException) {
                 // Go to next port...
             }
@@ -125,7 +129,7 @@ internal open class TestBase {
     protected val lifecycleCoordinatorFactory =
         LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
 
-    protected inner class ConfigPublisher(private var coordinatorFactory: LifecycleCoordinatorFactory? = null): Resource {
+    protected inner class ConfigPublisher(private var coordinatorFactory: LifecycleCoordinatorFactory? = null) : Resource {
         init {
             coordinatorFactory = coordinatorFactory ?: lifecycleCoordinatorFactory
         }
@@ -153,11 +157,15 @@ internal open class TestBase {
 
         private fun Publisher.publishGatewayConfig(config: Config) {
             val configSource = config.root().render(ConfigRenderOptions.concise())
-            this.publish(listOf(Record(
-                CONFIG_TOPIC,
-                ConfigKeys.P2P_GATEWAY_CONFIG,
-                Configuration(configSource, configSource, 0, ConfigurationSchemaVersion(1, 0))
-            ))).forEach { it.get() }
+            this.publish(
+                listOf(
+                    Record(
+                        CONFIG_TOPIC,
+                        ConfigKeys.P2P_GATEWAY_CONFIG,
+                        Configuration(configSource, configSource, 0, ConfigurationSchemaVersion(1, 0)),
+                    ),
+                ),
+            ).forEach { it.get() }
         }
 
         fun publishConfig(configuration: GatewayConfiguration) {
@@ -168,31 +176,53 @@ internal open class TestBase {
                         "hostPort" to it.hostPort,
                         "urlPath" to it.urlPaths.first(),
                     )
-                }
+                },
             )
             val publishConfig = ConfigFactory.empty()
-                .withValue("serversConfiguration",
-                    servers)
-                .withValue("maxRequestSize",
-                    ConfigValueFactory.fromAnyRef(configuration.maxRequestSize))
-                .withValue("sslConfig.revocationCheck.mode",
-                    ConfigValueFactory.fromAnyRef(configuration.sslConfig.revocationCheck.mode.toString()))
-                .withValue("sslConfig.tlsType",
-                    ConfigValueFactory.fromAnyRef(configuration.sslConfig.tlsType.toString()))
-                .withValue("connectionConfig.connectionIdleTimeout",
-                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.connectionIdleTimeout))
-                .withValue("connectionConfig.maxClientConnections",
-                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxClientConnections))
-                .withValue("connectionConfig.acquireTimeout",
-                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.acquireTimeout))
-                .withValue("connectionConfig.responseTimeout",
-                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.responseTimeout))
-                .withValue("connectionConfig.retryDelay",
-                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.retryDelay))
-                .withValue("connectionConfig.initialReconnectionDelay",
-                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.initialReconnectionDelay))
-                .withValue("connectionConfig.maxReconnectionDelay",
-                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxReconnectionDelay))
+                .withValue(
+                    "serversConfiguration",
+                    servers,
+                )
+                .withValue(
+                    "maxRequestSize",
+                    ConfigValueFactory.fromAnyRef(configuration.maxRequestSize),
+                )
+                .withValue(
+                    "sslConfig.revocationCheck.mode",
+                    ConfigValueFactory.fromAnyRef(configuration.sslConfig.revocationCheck.mode.toString()),
+                )
+                .withValue(
+                    "sslConfig.tlsType",
+                    ConfigValueFactory.fromAnyRef(configuration.sslConfig.tlsType.toString()),
+                )
+                .withValue(
+                    "connectionConfig.connectionIdleTimeout",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.connectionIdleTimeout),
+                )
+                .withValue(
+                    "connectionConfig.maxClientConnections",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxClientConnections),
+                )
+                .withValue(
+                    "connectionConfig.acquireTimeout",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.acquireTimeout),
+                )
+                .withValue(
+                    "connectionConfig.responseTimeout",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.responseTimeout),
+                )
+                .withValue(
+                    "connectionConfig.retryDelay",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.retryDelay),
+                )
+                .withValue(
+                    "connectionConfig.initialReconnectionDelay",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.initialReconnectionDelay),
+                )
+                .withValue(
+                    "connectionConfig.maxReconnectionDelay",
+                    ConfigValueFactory.fromAnyRef(configuration.connectionConfig.maxReconnectionDelay),
+                )
             emulator.publisherFactory
                 .createPublisher(PublisherConfig(configPublisherClientId, false), messagingConfig)
                 .use { publisher ->
@@ -216,7 +246,8 @@ internal open class TestBase {
 
     protected fun createConfigurationServiceFor(
         configuration: GatewayConfiguration,
-        coordinatorFactory: LifecycleCoordinatorFactory? = null) : ConfigurationReadService {
+        coordinatorFactory: LifecycleCoordinatorFactory? = null,
+    ): ConfigurationReadService {
         val publisher = ConfigPublisher(coordinatorFactory)
         keep(publisher)
         publisher.publishConfig(configuration)
@@ -252,7 +283,7 @@ internal open class TestBase {
     fun PrivateKeyWithCertificateChain.toKeyStoreAndPassword(): KeyStoreWithPassword {
         return KeyStoreWithPassword(
             this.toKeyStore(),
-            CertificateAuthority.PASSWORD
+            CertificateAuthority.PASSWORD,
         )
     }
 }

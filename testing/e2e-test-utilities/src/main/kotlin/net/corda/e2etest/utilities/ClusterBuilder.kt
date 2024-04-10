@@ -18,7 +18,7 @@ import java.time.Instant
  *  The caller needs to marshall the response body to json, and then query
  *  the json for the expected results.
  */
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LargeClass")
 class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String) {
 
     internal companion object {
@@ -297,20 +297,24 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     private fun registerNotaryBody(
         notaryServiceName: String,
         customMetadata: Map<String, String>,
-        isBackchainRequiredNotary: Boolean = true,
+        isBackchainRequiredNotary: Boolean? = null,
         notaryPlugin: String = "nonvalidating"
     ): String {
-        val context = (mapOf(
+
+        val context = mutableMapOf(
             "corda.key.scheme" to "CORDA.ECDSA.SECP256R1",
             "corda.roles.0" to "notary",
             "corda.notary.service.name" to notaryServiceName,
             "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.$notaryPlugin",
-            "corda.notary.service.flow.protocol.version.0" to "1",
-            "corda.notary.service.backchain.required" to "$isBackchainRequiredNotary"
-        ) + customMetadata)
-            .map { "\"${it.key}\" : \"${it.value}\"" }
-            .joinToString()
-        return """{ "context": { $context } }""".trimMargin()
+            "corda.notary.service.flow.protocol.version.0" to "1"
+        )
+        if (isBackchainRequiredNotary != null) {
+            context["corda.notary.service.backchain.required"] = "$isBackchainRequiredNotary"
+        }
+
+        val fullContext = (context + customMetadata).map { "\"${it.key}\" : \"${it.value}\"" }.joinToString()
+
+        return """{ "context": { $fullContext } }""".trimMargin()
     }
 
     private fun createRbacRoleBody(roleName: String, groupVisibility: String?): String {
@@ -550,7 +554,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         holdingIdShortHash: String,
         notaryServiceName: String? = null,
         customMetadata: Map<String, String> = emptyMap(),
-        isBackchainRequiredNotary: Boolean = true,
+        isBackchainRequiredNotary: Boolean? = null,
         notaryPlugin: String = "nonvalidating"
     ) = register(
         holdingIdShortHash,

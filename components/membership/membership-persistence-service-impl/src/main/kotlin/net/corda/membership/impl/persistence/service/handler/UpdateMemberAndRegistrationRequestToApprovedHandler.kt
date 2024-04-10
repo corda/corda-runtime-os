@@ -16,6 +16,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTI
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.exceptions.NotFoundEntityPersistenceException
 import net.corda.membership.lib.registration.RegistrationStatusExt.canMoveToStatus
 import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.virtualnode.toCorda
@@ -65,7 +66,7 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
                 MemberInfoEntity::class.java,
                 MemberInfoEntityPrimaryKey(request.member.groupId, request.member.x500Name, true),
                 LockModeType.PESSIMISTIC_WRITE,
-            ) ?: throw MembershipPersistenceException("Could not find member: ${request.member}")
+            ) ?: throw NotFoundEntityPersistenceException("Could not find member: ${request.member}")
             val currentMgmContext = keyValuePairListDeserializer.deserialize(member.mgmContext)
                 ?: throw MembershipPersistenceException("Can not extract the mgm context")
             val mgmContext = KeyValuePairList(
@@ -105,7 +106,7 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
                 RegistrationRequestEntity::class.java,
                 request.registrationId,
                 LockModeType.PESSIMISTIC_WRITE,
-            ) ?: throw MembershipPersistenceException("Could not find registration request: ${request.registrationId}")
+            ) ?: throw NotFoundEntityPersistenceException("Could not find registration request: ${request.registrationId}")
             if (!registrationRequest.status.toStatus().canMoveToStatus(RegistrationStatus.APPROVED)) {
                 throw MembershipPersistenceException(
                     "Registration request ${request.registrationId} has status ${registrationRequest.status} and can not be approved"

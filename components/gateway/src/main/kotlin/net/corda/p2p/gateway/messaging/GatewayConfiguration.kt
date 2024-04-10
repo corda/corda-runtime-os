@@ -43,7 +43,7 @@ internal data class GatewayServerConfiguration(
     ) : this(
         hostAddress,
         hostPort,
-        setOf(urlPath)
+        setOf(urlPath),
     )
 }
 
@@ -94,7 +94,7 @@ internal fun Config.toGatewayConfiguration(): GatewayConfiguration {
         },
         sslConfig = this.getConfig("sslConfig").toSslConfiguration(),
         maxRequestSize = this.getLong("maxRequestSize"),
-        connectionConfig = connectionConfig
+        connectionConfig = connectionConfig,
     )
 }
 internal fun Config.toServerConfiguration(): GatewayServerConfiguration {

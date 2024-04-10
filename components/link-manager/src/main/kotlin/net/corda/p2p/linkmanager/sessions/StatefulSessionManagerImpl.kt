@@ -7,12 +7,19 @@ import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.ReEstablishSessionMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.data.p2p.event.SessionCreated
 import net.corda.data.p2p.event.SessionDirection
+import net.corda.data.p2p.event.SessionEvent
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.MetadataFilter
+import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.State
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.Session
@@ -62,7 +69,6 @@ internal class StatefulSessionManagerImpl(
     private val deadSessionMonitor: DeadSessionMonitor,
     private val schemaRegistry: AvroSchemaRegistry,
     private val sessionCache: SessionCache,
-    private val sessionEventPublisher: StatefulSessionEventPublisher,
     private val sessionLookup: SessionLookup,
     private val sessionWriter: SessionWriter,
     private val sessionMessageProcessor: SessionMessageProcessor,
@@ -237,7 +243,7 @@ internal class StatefulSessionManagerImpl(
     override fun <T> processSessionMessages(
         wrappedMessages: Collection<T>,
         getMessage: (T) -> LinkInMessage,
-    ): Collection<Pair<T, LinkOutMessage?>> {
+    ): Collection<Pair<T, SessionManager.ProcessSessionMessagesResult>> {
         val messages = wrappedMessages.map { it to getMessage(it) }
         val results = sessionMessageProcessor.processInboundSessionMessages(messages) +
                 sessionMessageProcessor.processOutboundSessionMessages(messages)
@@ -251,8 +257,9 @@ internal class StatefulSessionManagerImpl(
             } else {
                 result
             }
-        }.onEach { result ->
-            when (result.result?.message?.payload) {
+        }.map { result ->
+            val linkOutMessage = result.result?.message
+            val sessionCreationRecords = when (linkOutMessage?.payload) {
                 is AvroResponderHelloMessage, is AvroResponderHandshakeMessage -> {
                     result.result.sessionToCache?.let { sessionToCache ->
                         sessionWriter.cacheSession(
@@ -260,8 +267,8 @@ internal class StatefulSessionManagerImpl(
                             result.result.stateAction.state.toCounterparties(),
                             sessionToCache,
                         )
-                        sessionEventPublisher.sessionCreated(sessionToCache.sessionId, SessionDirection.INBOUND)
-                    }
+                        recordsForSessionCreated(sessionToCache.sessionId, SessionDirection.INBOUND)
+                    } ?: emptyList()
                 }
                 is AvroInitiatorHelloMessage, is AvroInitiatorHandshakeMessage, null -> {
                     result.result?.sessionToCache?.let { sessionToCache ->
@@ -272,12 +279,12 @@ internal class StatefulSessionManagerImpl(
                             sessionToCache,
                             key,
                         )
-                        sessionEventPublisher.sessionCreated(key, SessionDirection.OUTBOUND)
-                    }
+                        recordsForSessionCreated(key, SessionDirection.OUTBOUND)
+                    } ?: emptyList()
                 }
+                else -> emptyList()
             }
-        }.map { result ->
-            result.traceable to result.result?.message
+            result.traceable to SessionManager.ProcessSessionMessagesResult(linkOutMessage, sessionCreationRecords)
         }
     }
 
