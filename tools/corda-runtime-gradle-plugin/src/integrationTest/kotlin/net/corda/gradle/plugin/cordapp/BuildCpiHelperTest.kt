@@ -10,6 +10,7 @@ import java.util.jar.Attributes
 import java.util.jar.JarInputStream
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.createTempFile
+import kotlin.io.path.deleteIfExists
 import kotlin.io.path.exists
 import kotlin.test.assertEquals
 
@@ -20,7 +21,8 @@ class BuildCpiHelperTest : FunctionalBaseTest() {
     private val keyStoreFilePath = resourcesDir.resolve("signingkeys.pfx").absolutePathString()
     private val groupPolicyFilePath = resourcesDir.resolve("TestGroupPolicy.json").absolutePathString()
 
-    private val outputCpiFile =  createTempFile("test-cpi", "cpi").also {
+    private val outputCpiFile =  createTempFile("test-cpi", ".cpi").also {
+        it.deleteIfExists()
         it.toFile().deleteOnExit()
     }
 
