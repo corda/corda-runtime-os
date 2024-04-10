@@ -15,6 +15,7 @@ import net.corda.membership.rest.v1.MGMAdminRestResource
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceNotFoundException
@@ -100,18 +101,35 @@ class MGMAdminRestResourceImpl @Activate constructor(
                     parseRegistrationRequestId(requestId)
                 )
             } catch (e: CouldNotFindEntityException) {
-                throw ResourceNotFoundException(e.entity, holdingIdentityShortHash)
+                throw ResourceNotFoundException(
+                    e.entity,
+                    holdingIdentityShortHash,
+                    ExceptionDetails(e::class.java.name, "${e.message}")
+                )
             } catch (e: MemberNotAnMgmException) {
                 throw InvalidInputDataException(
-                    details = mapOf("holdingIdentityShortHash" to holdingIdentityShortHash),
                     title = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
+                    details = mapOf("holdingIdentityShortHash" to holdingIdentityShortHash),
+                    exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
                 )
             } catch (e: CordaRPCAPIPartitionException) {
-                throw ServiceUnavailableException("Could not perform operation for $holdingIdentityShortHash: Repartition Event!")
+                throw ServiceUnavailableException(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(
+                        e::class.java.name,
+                        "Could not perform operation for $holdingIdentityShortHash: Repartition Event!"
+                    )
+                )
             } catch (e: IllegalArgumentException) {
-                throw BadRequestException("${e.message}")
+                throw BadRequestException(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
+                )
             } catch (e: ContextDeserializationException) {
-                throw InternalServerException("${e.message}")
+                throw InternalServerException(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
+                )
             }
         }
     }

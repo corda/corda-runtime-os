@@ -30,7 +30,7 @@ dependencies {
     implementation project(":libs:utilities")
 
     implementation libs.typesafe.config
-    implementation "io.netty:netty-codec-http:$nettyVersion"
+    implementation libs.netty
     implementation "commons-validator:commons-validator:$commonsVersion"
     implementation libs.caffeine
     implementation project(':libs:schema-registry:schema-registry')

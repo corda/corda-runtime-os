@@ -27,6 +27,7 @@ import net.corda.data.p2p.event.SessionDirection
 import net.corda.data.p2p.event.SessionEvent
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
@@ -49,6 +50,7 @@ import net.corda.test.util.time.MockTimeFacilitiesProvider
 import net.corda.utilities.Either
 import net.corda.utilities.flags.Features
 import net.corda.utilities.seconds
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -65,6 +67,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.util.concurrent.CompletableFuture
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 
 class InboundMessageProcessorTest {
@@ -96,11 +99,16 @@ class InboundMessageProcessorTest {
     private val features = mock<Features> {
         on { enableP2PGatewayToLinkManagerOverHttp } doReturn false
     }
+    private val publishedRecords = argumentCaptor<List<Record<*, *>>>()
+    private val publisher = mock<PublisherWithDominoLogic> {
+        on { publish(publishedRecords.capture()) } doReturn listOf(CompletableFuture.completedFuture(Unit))
+    }
 
     private val processor = InboundMessageProcessor(
         sessionManager,
         membersAndGroups.second,
         membersAndGroups.first,
+        publisher,
         mockTimeFacilitiesProvider.clock,
         networkMessagingValidator,
         features,
@@ -122,14 +130,14 @@ class InboundMessageProcessorTest {
 
     @Test
     fun `ignores messages with null values`() {
-        val records = processor.onNext(
+        processor.onNext(
             listOf(
                 EventLogRecord(LINK_IN_TOPIC, "key", null, 0, 0),
                 EventLogRecord(LINK_IN_TOPIC, "key", null, 0, 0)
             )
         )
 
-        assertThat(records).isEmpty()
+        assertThat(publishedRecords.allValues).isEmpty()
         assertThat(loggingInterceptor.errors)
             .hasSize(2)
             .contains("Received null message. The message was discarded.")
@@ -137,14 +145,14 @@ class InboundMessageProcessorTest {
 
     @Test
     fun `ignores messages with unknown value`() {
-        val records = processor.onNext(
+        processor.onNext(
             listOf(
                 EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage("payload"), 0, 0),
                 EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(33), 0, 0)
             )
         )
 
-        assertThat(records).isEmpty()
+        assertThat(publishedRecords.allValues).isEmpty()
         assertThat(loggingInterceptor.errors)
             .contains("Received unknown payload type Integer. The message was discarded.")
             .contains("Received unknown payload type String. The message was discarded.")
@@ -188,12 +196,13 @@ class InboundMessageProcessorTest {
                 messageAndPayload.toByteBuffer(), ByteBuffer.wrap(byteArrayOf())
             )
 
-            val records = processor.onNext(
+            processor.onNext(
                 listOf(
                     EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0),
                 )
             )
 
+            val records = publishedRecords.allValues.flatten()
             assertThat(records).hasSize(2).anyMatch {
                 val value = it.value
                 it.topic == P2P_IN_TOPIC &&
@@ -217,6 +226,58 @@ class InboundMessageProcessorTest {
         }
 
         @Test
+        fun `AuthenticatedDataMessage with Inbound session will not publish ack if failed to publish the message`() {
+            val authenticatedMsg = AuthenticatedMessage(
+                AuthenticatedMessageHeader(
+                    remoteIdentity.toAvro(),
+                    myIdentity.toAvro(),
+                    null, MESSAGE_ID, "trace-id", "system-1", status
+                ),
+                ByteBuffer.wrap("payload".toByteArray())
+            )
+            val authenticatedMessageAndKey = AuthenticatedMessageAndKey(
+                authenticatedMsg,
+                "key"
+            )
+            val messageAndPayload = DataMessagePayload(authenticatedMessageAndKey)
+            val authenticationResult = mock<AuthenticationResult> {
+                on { header } doReturn commonHeader
+                on { mac } doReturn byteArrayOf()
+            }
+            val session = mock<AuthenticatedSession> {
+                on { createMac(any()) } doReturn authenticationResult
+            }
+            setupGetSessionsById(
+                SessionManager.SessionDirection.Inbound(
+                    SessionManager.Counterparties(
+                        remoteIdentity,
+                        myIdentity
+                    ),
+                    session
+                )
+            )
+            val dataMessage = AuthenticatedDataMessage(
+                commonHeader,
+                messageAndPayload.toByteBuffer(), ByteBuffer.wrap(byteArrayOf())
+            )
+            val publishedRecords = argumentCaptor<List<Record<*, *>>>()
+            whenever(
+                publisher.publish(publishedRecords.capture())
+            ).doReturn(listOf(CompletableFuture.failedFuture(CordaRuntimeException("Oops"))))
+
+            processor.onNext(
+                listOf(
+                    EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0),
+                )
+            )
+
+            assertThat(publishedRecords.allValues.flatten()).hasSize(1)
+                .allMatch {
+                    it.topic == P2P_IN_TOPIC
+                }
+        }
+
+        @Test
         fun `AuthenticatedDataMessage with Inbound session will produce a message on the P2P_IN_TOPIC topics and a response`() {
             val features = mock<Features> {
                 on { enableP2PGatewayToLinkManagerOverHttp } doReturn true
@@ -226,6 +287,7 @@ class InboundMessageProcessorTest {
                 sessionManager,
                 membersAndGroups.second,
                 membersAndGroups.first,
+                publisher,
                 mockTimeFacilitiesProvider.clock,
                 networkMessagingValidator,
                 features,
@@ -282,7 +344,7 @@ class InboundMessageProcessorTest {
                 softly.assertThat(record?.topic).isEqualTo(P2P_IN_TOPIC)
                 softly.assertThat(record?.key).isEqualTo("key")
                 softly.assertThat(value?.message).isEqualTo(authenticatedMsg)
-                val payload = reply?.item?.httpReply?.payload as? AuthenticatedDataMessage
+                val payload = reply?.item?.ack?.asLeft()?.payload as? AuthenticatedDataMessage
                 val messageAck = MessageAck.fromByteBuffer(payload?.payload)
                 val ack = messageAck.ack as? AuthenticatedMessageAck
                 softly.assertThat(ack?.messageId).isEqualTo(MESSAGE_ID)
@@ -312,12 +374,13 @@ class InboundMessageProcessorTest {
             )
             mockTimeFacilitiesProvider.advanceTime(1000.seconds)
 
-            val records = processor.onNext(
+            processor.onNext(
                 listOf(
                     EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0),
                 )
             )
 
+            val records = publishedRecords.allValues.flatten()
             assertThat(records).hasSize(1).allMatch {
                 val value = it.value
                 it.topic == P2P_OUT_MARKERS && value is AppMessageMarker &&
@@ -342,12 +405,13 @@ class InboundMessageProcessorTest {
             val messageAck = MessageAck(AuthenticatedMessageAck(MESSAGE_ID))
             val dataMessage = AuthenticatedDataMessage(commonHeader, messageAck.toByteBuffer(), ByteBuffer.wrap(byteArrayOf()))
 
-            val records = processor.onNext(
+            processor.onNext(
                 listOf(
                     EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0),
                 )
             )
 
+            val records = publishedRecords.allValues.flatten()
             assertThat(records).hasSize(1).allSatisfy {
                 assertThat(it.topic).isEqualTo(P2P_OUT_TOPIC)
                 assertThat((it.value as AppMessage).message).isEqualTo(messageAck)
@@ -373,13 +437,13 @@ class InboundMessageProcessorTest {
                 ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf())
             )
 
-            val records = processor.onNext(
+            processor.onNext(
                 listOf(
                     EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0),
                 )
             )
 
-            assertThat(records).hasSize(0)
+            assertThat(publishedRecords.allValues).hasSize(0)
             verify(sessionManager, never()).messageAcknowledged(SESSION_ID)
             assertThat(loggingInterceptor.errors).allSatisfy {
                 assertThat(it).matches("Could not deserialize message for session Session.* The message was discarded\\.")
@@ -408,13 +472,13 @@ class InboundMessageProcessorTest {
                 messageAck.toByteBuffer(), ByteBuffer.wrap(byteArrayOf())
             )
 
-            val records = processor.onNext(
+            processor.onNext(
                 listOf(
                     EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0),
                 )
             )
 
-            assertThat(records).hasSize(0)
+            assertThat(publishedRecords.allValues).hasSize(0)
             assertThat(loggingInterceptor.errors)
                 .hasSize(1)
                 .anySatisfy {
@@ -445,13 +509,13 @@ class InboundMessageProcessorTest {
                 messageAndPayload.toByteBuffer(), ByteBuffer.wrap(byteArrayOf())
             )
 
-            val records = processor.onNext(
+            processor.onNext(
                 listOf(
                     EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0),
                 )
             )
 
-            assertThat(records).isEmpty()
+            assertThat(publishedRecords.allValues).isEmpty()
             assertThat(loggingInterceptor.warnings)
                 .hasSize(1)
                 .contains("Received message with SessionId = Session for which there is no active session. The message was discarded.")
@@ -475,11 +539,11 @@ class InboundMessageProcessorTest {
                 ByteBuffer.wrap("authTag".toByteArray())
             )
 
-            val records = processor.onNext(
+            processor.onNext(
                 listOf(EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0))
             )
 
-            assertThat(records).isEmpty()
+            assertThat(publishedRecords.allValues).isEmpty()
             verify(networkMessagingValidator).isValidInbound(eq(myIdentity), eq(remoteIdentity))
         }
 
@@ -501,11 +565,11 @@ class InboundMessageProcessorTest {
                 ByteBuffer.wrap("authTag".toByteArray())
             )
 
-            val records = processor.onNext(
+            processor.onNext(
                 listOf(EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0))
             )
 
-            assertThat(records).isEmpty()
+            assertThat(publishedRecords.allValues).isEmpty()
             verify(sessionManager, never()).messageAcknowledged(any())
             verify(networkMessagingValidator).isValidInbound(eq(myIdentity), eq(remoteIdentity))
         }
@@ -604,12 +668,13 @@ class InboundMessageProcessorTest {
                 )
             )
 
-            val records = processor.onNext(
+            processor.onNext(
                 listOf(
                     EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0),
                 )
             )
 
+            val records = publishedRecords.allValues.flatten()
             assertThat(records).hasSize(2).anyMatch {
                 val value = it.value
                 it.topic == P2P_IN_TOPIC &&
@@ -631,6 +696,64 @@ class InboundMessageProcessorTest {
         }
 
         @Test
+        fun `receiving data message with Inbound session will not ack if the session message failed`() {
+            val authenticatedMsg = AuthenticatedMessage(
+                AuthenticatedMessageHeader(
+                    remoteIdentity.toAvro(),
+                    myIdentity.toAvro(),
+                    null, MESSAGE_ID, "trace-id", "system-1", status
+                ),
+                ByteBuffer.wrap("payload".toByteArray())
+            )
+            val authenticatedMessageAndKey = AuthenticatedMessageAndKey(
+                authenticatedMsg,
+                "key"
+            )
+            val messageAndPayload = DataMessagePayload(authenticatedMessageAndKey)
+            val encryptionResult = mock<EncryptionResult> {
+                on { header } doReturn commonHeader
+                on { authTag } doReturn byteArrayOf()
+                on { encryptedPayload } doReturn messageAndPayload.toByteBuffer().array()
+            }
+            val dataMessage = AuthenticatedEncryptedDataMessage(
+                commonHeader,
+                messageAndPayload.toByteBuffer(), ByteBuffer.wrap(byteArrayOf())
+            )
+            val session = mock<AuthenticatedEncryptionSession> {
+                on { encryptData(any()) } doReturn encryptionResult
+                on {
+                    decryptData(
+                        commonHeader, messageAndPayload.toByteBuffer().array(), byteArrayOf()
+                    )
+                } doReturn messageAndPayload.toByteBuffer().array()
+            }
+            setupGetSessionsById(
+                SessionManager.SessionDirection.Inbound(
+                    SessionManager.Counterparties(
+                        remoteIdentity,
+                        myIdentity
+                    ),
+                    session
+                )
+            )
+            val publishedRecords = argumentCaptor<List<Record<*, *>>>()
+            whenever(
+                publisher.publish(publishedRecords.capture())
+            ).doReturn(listOf(CompletableFuture.failedFuture(CordaRuntimeException("Oops"))))
+
+            processor.onNext(
+                listOf(
+                    EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0),
+                )
+            )
+
+            assertThat(publishedRecords.allValues.flatten()).hasSize(1)
+                .allMatch {
+                    it.topic == P2P_IN_TOPIC
+                }
+        }
+
+        @Test
         fun `receiving data message with Inbound session will produce a message on the P2P_IN_TOPIC and a response`() {
             val features = mock<Features> {
                 on { enableP2PGatewayToLinkManagerOverHttp } doReturn true
@@ -640,6 +763,7 @@ class InboundMessageProcessorTest {
                 sessionManager,
                 membersAndGroups.second,
                 membersAndGroups.first,
+                publisher,
                 mockTimeFacilitiesProvider.clock,
                 networkMessagingValidator,
                 features,
@@ -700,7 +824,7 @@ class InboundMessageProcessorTest {
                 softly.assertThat(record?.key).isEqualTo("key")
                 val value = record?.value as? AppMessage
                 softly.assertThat(value?.message).isEqualTo(authenticatedMsg)
-                val payload = replies.firstOrNull()?.item?.httpReply?.payload as? AuthenticatedEncryptedDataMessage
+                val payload = replies.firstOrNull()?.item?.ack?.asLeft()?.payload as? AuthenticatedEncryptedDataMessage
                 softly.assertThat(payload?.header).isEqualTo(commonHeader)
                 softly.assertThat(payload?.encryptedPayload).isEqualTo(messageAndPayload.toByteBuffer())
             }
@@ -748,13 +872,13 @@ class InboundMessageProcessorTest {
                 )
             )
 
-            val records = processor.onNext(
+            processor.onNext(
                 listOf(
                     EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0),
                 )
             )
 
-            assertThat(records).isEmpty()
+            assertThat(publishedRecords.allValues).isEmpty()
             assertThat(loggingInterceptor.warnings)
                 .hasSize(1)
                 .anySatisfy {
@@ -808,13 +932,13 @@ class InboundMessageProcessorTest {
                 )
             )
 
-            val records = processor.onNext(
+            processor.onNext(
                 listOf(
                     EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0),
                 )
             )
 
-            assertThat(records).isEmpty()
+            assertThat(publishedRecords.allValues).isEmpty()
             assertThat(loggingInterceptor.warnings)
                 .hasSize(1)
                 .allSatisfy {
@@ -845,11 +969,11 @@ class InboundMessageProcessorTest {
                 )
             )
 
-            val records = processor.onNext(
+            processor.onNext(
                 listOf(EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0))
             )
 
-            assertThat(records).isEmpty()
+            assertThat(publishedRecords.allValues).isEmpty()
             verify(networkMessagingValidator).isValidInbound(myIdentity, remoteIdentity)
         }
 
@@ -872,11 +996,11 @@ class InboundMessageProcessorTest {
                 )
             )
 
-            val records = processor.onNext(
+            processor.onNext(
                 listOf(EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0))
             )
 
-            assertThat(records).isEmpty()
+            assertThat(publishedRecords.allValues).isEmpty()
             verify(sessionManager, never()).messageAcknowledged(any())
             verify(networkMessagingValidator).isValidInbound(myIdentity, remoteIdentity)
         }
@@ -1049,12 +1173,13 @@ class InboundMessageProcessorTest {
                 captor.firstValue.map { it to SessionManager.ProcessSessionMessagesResult(null, listOf(sessionCreationRecord)) }
             }
 
-            val records = processor.onNext(
+            processor.onNext(
                 listOf(
                     EventLogRecord(LINK_IN_TOPIC, "key", message, 0, 0),
                 )
             )
 
+            val records = publishedRecords.allValues.flatten()
             assertThat(records).hasSize(1).allSatisfy {
                 assertThat(it.topic).isEqualTo(SESSION_EVENTS)
                 assertThat(it.value).isSameAs(sessionCreated)
@@ -1077,12 +1202,13 @@ class InboundMessageProcessorTest {
                 captor.firstValue.map { it to response }
             }
 
-            val records = processor.onNext(
+            processor.onNext(
                 listOf(
                     EventLogRecord(LINK_IN_TOPIC, "key", message, 0, 0),
                 )
             )
 
+            val records = publishedRecords.allValues.flatten()
             val result = records.associate { it.topic to it.value }
             assertThat(result).hasSize(2)
             assertThat(result.keys).containsExactlyInAnyOrder(LINK_OUT_TOPIC, SESSION_EVENTS)
@@ -1112,12 +1238,13 @@ class InboundMessageProcessorTest {
                 captor.firstValue.map { it to response }
             }
 
-            val records = processor.onNext(
+            processor.onNext(
                 listOf(
                     EventLogRecord(LINK_IN_TOPIC, "key", message, 0, 0),
                 )
             )
 
+            val records = publishedRecords.allValues.flatten()
             val result = records.associate { it.topic to it.value }
             assertThat(result).hasSize(2)
             assertThat(result.keys).containsExactlyInAnyOrder(LINK_OUT_TOPIC, SESSION_EVENTS)
@@ -1138,12 +1265,13 @@ class InboundMessageProcessorTest {
             }
             val message = LinkInMessage(inboundUnauthenticatedMessage)
 
-            val records = processor.onNext(
+            processor.onNext(
                 listOf(
                     EventLogRecord(LINK_IN_TOPIC, "key", message, 0, 0),
                 )
             )
 
+            val records = publishedRecords.allValues.flatten()
             assertThat(records).hasSize(1).anySatisfy {
                 assertThat(it.topic).isEqualTo(P2P_IN_TOPIC)
                 assertThat(it.value).isInstanceOf(AppMessage::class.java)

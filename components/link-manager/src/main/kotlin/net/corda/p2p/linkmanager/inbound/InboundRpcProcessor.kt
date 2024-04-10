@@ -70,7 +70,7 @@ internal class InboundRpcProcessor(
         }
         return responses.map {
             ItemWithSource(
-                Either.Right(it.item.httpReply ?: LinkManagerResponse(null)),
+                Either.Right(it.item.ack?.asLeft() ?: LinkManagerResponse(null)),
                 it.source,
             )
         }
