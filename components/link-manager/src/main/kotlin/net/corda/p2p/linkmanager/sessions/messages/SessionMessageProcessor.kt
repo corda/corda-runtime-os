@@ -7,13 +7,13 @@ import net.corda.data.p2p.crypto.ResponderHandshakeMessage
 import net.corda.data.p2p.crypto.ResponderHelloMessage
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.Operation
-import net.corda.libs.statemanager.api.StateManager
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.linkmanager.membership.calculateOutboundSessionKey
 import net.corda.p2p.linkmanager.sessions.CreateAction
-import net.corda.p2p.linkmanager.sessions.ReEstablishmentMessageSender
-import net.corda.p2p.linkmanager.sessions.SessionCache
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.alreadySessionWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.noSessionWarning
@@ -35,7 +35,6 @@ import net.corda.p2p.linkmanager.sessions.utils.Result
 import net.corda.p2p.linkmanager.sessions.utils.SessionUtils.getSessionCounterpartiesFromState
 import net.corda.p2p.linkmanager.sessions.utils.TraceableResult
 import net.corda.p2p.linkmanager.state.SessionState
-import net.corda.p2p.messaging.P2pRecordsFactory
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
@@ -44,30 +43,17 @@ import java.time.Duration
 
 @Suppress("LongParameterList")
 internal class SessionMessageProcessor(
-    stateManager: StateManager,
-    p2pRecordsFactory: P2pRecordsFactory,
+    coordinatorFactory: LifecycleCoordinatorFactory,
     private val clock: Clock,
+    private val stateManager: StateManagerWrapper,
     private val sessionManagerImpl: SessionManagerImpl,
-    sessionCache: SessionCache,
     private val stateConvertor: StateConvertor,
     private val stateFactory: StateFactory = StateFactory(stateConvertor),
-) {
+) : LifecycleWithDominoTile {
     companion object {
         private val SESSION_VALIDITY_PERIOD: Duration = Duration.ofDays(7)
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
-
-    private val reEstablishmentMessageSender = ReEstablishmentMessageSender(
-        p2pRecordsFactory,
-        sessionManagerImpl,
-    )
-    private val stateManager = StateManagerWrapper(
-        stateManager,
-        sessionCache,
-        stateConvertor,
-        sessionManagerImpl.revocationCheckerClient::checkRevocation,
-        reEstablishmentMessageSender,
-    )
 
     fun <T> processOutboundSessionMessages(messages: List<Pair<T, LinkInMessage?>>): Collection<TraceableResult<T>> {
         val messageContexts =
@@ -429,4 +415,16 @@ internal class SessionMessageProcessor(
             else -> null
         }
     }
+
+    override val dominoTile =
+        ComplexDominoTile(
+            this::class.java.simpleName,
+            coordinatorFactory,
+            dependentChildren =
+            setOf(
+                stateManager.name,
+                sessionManagerImpl.dominoTile.coordinatorName,
+            ),
+            managedChildren = emptySet(),
+        )
 }

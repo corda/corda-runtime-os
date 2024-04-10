@@ -8,14 +8,11 @@ import net.corda.data.p2p.ReEstablishSessionMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.event.SessionDirection
-import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.State
-import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.Session
@@ -42,7 +39,6 @@ import net.corda.p2p.linkmanager.sessions.utils.OutboundMessageState
 import net.corda.p2p.linkmanager.sessions.utils.SessionUtils.getSessionCounterpartiesFromState
 import net.corda.p2p.linkmanager.sessions.writer.SessionWriter
 import net.corda.p2p.linkmanager.state.SessionState
-import net.corda.p2p.messaging.P2pRecordsFactory
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
@@ -56,10 +52,9 @@ import net.corda.data.p2p.crypto.ResponderHelloMessage as AvroResponderHelloMess
 
 @Suppress("LongParameterList")
 internal class StatefulSessionManagerImpl(
-    subscriptionFactory: SubscriptionFactory,
-    messagingConfig: SmartConfig,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    stateManager: StateManager,
+    sessionEventListener: StatefulSessionEventProcessor,
+    private val stateManager: StateManagerWrapper,
     private val sessionManagerImpl: SessionManagerImpl,
     private val stateConvertor: StateConvertor,
     private val clock: Clock,
@@ -72,7 +67,6 @@ internal class StatefulSessionManagerImpl(
     private val sessionWriter: SessionWriter,
     private val sessionMessageProcessor: SessionMessageProcessor,
     private val stateFactory: StateFactory = StateFactory(stateConvertor),
-    p2pRecordsFactory: P2pRecordsFactory,
 ) : SessionManager {
     companion object {
         const val LINK_MANAGER_SUBSYSTEM = "link-manager"
@@ -213,8 +207,6 @@ internal class StatefulSessionManagerImpl(
         val inboundSessionsFromStateManager = if (sessionIdsNotInCache.isEmpty()) {
             emptyList()
         } else {
-            // inbound and outbound sessions are keyed differently, we will only get inbound
-            // when using the session IDs
             sessionLookup.getPersistedInboundSessions(sessionIdsNotInCache)
         }
         val sessionsIdsNotInInboundStateManager =
@@ -222,7 +214,6 @@ internal class StatefulSessionManagerImpl(
         val outboundSessionsFromStateManager = if (sessionsIdsNotInInboundStateManager.isEmpty()) {
             emptyList()
         } else {
-            // session IDs are stored in the metadata for outbound sessions
             sessionLookup.getPersistedOutboundSessionsBySessionId(sessionsIdsNotInInboundStateManager, sessionIdsNotInCache)
         }
         val sessionsNotFound =
@@ -458,27 +449,6 @@ internal class StatefulSessionManagerImpl(
         }
     }
 
-    private val sessionEventListener = StatefulSessionEventProcessor(
-        coordinatorFactory,
-        subscriptionFactory,
-        messagingConfig,
-        stateManager,
-        stateConvertor,
-        sessionCache,
-        sessionManagerImpl,
-    )
-    private val reEstablishmentMessageSender = ReEstablishmentMessageSender(
-        p2pRecordsFactory,
-        sessionManagerImpl,
-    )
-    private val stateManager = StateManagerWrapper(
-        stateManager,
-        sessionCache,
-        stateConvertor,
-        sessionManagerImpl.revocationCheckerClient::checkRevocation,
-        reEstablishmentMessageSender,
-    )
-
     override val dominoTile =
         ComplexDominoTile(
             this::class.java.simpleName,
@@ -490,12 +460,17 @@ internal class StatefulSessionManagerImpl(
                 LifecycleCoordinatorName.forComponent<SessionEncryptionOpsClient>(),
                 sessionEventPublisher.dominoTile.coordinatorName,
                 sessionEventListener.dominoTile.coordinatorName,
+                LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+                sessionLookup.dominoTile.coordinatorName,
+                sessionMessageProcessor.dominoTile.coordinatorName,
             ),
             managedChildren =
             setOf(
                 sessionManagerImpl.dominoTile.toNamedLifecycle(),
                 sessionEventPublisher.dominoTile.toNamedLifecycle(),
                 sessionEventListener.dominoTile.toNamedLifecycle(),
+                sessionLookup.dominoTile.toNamedLifecycle(),
+                sessionMessageProcessor.dominoTile.toNamedLifecycle(),
             ),
         )
 }

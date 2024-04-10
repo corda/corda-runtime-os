@@ -15,35 +15,28 @@ import net.corda.p2p.linkmanager.metrics.recordSessionTimeoutMetric
 import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata.Companion.toCommonMetadata
 import net.corda.p2p.linkmanager.state.direction
-import net.corda.utilities.time.Clock
 import org.slf4j.LoggerFactory
-import java.time.Duration
 import java.time.Instant
-import java.util.Random
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executors
 import java.util.concurrent.Future
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.jvm.optionals.getOrNull
 
 @Suppress("TooManyFunctions")
 internal class SessionCache(
     private val stateManager: StateManager,
-    private val clock: Clock,
     private val eventPublisher: StatefulSessionEventPublisher,
-    private val scheduler: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(),
-    private val noiseFactory: Random = Random(),
 ): Resource {
     private companion object {
         val defaultCacheSize = SessionManagerImpl.CacheSizes()
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        const val MAX_RETRY_COUNT = 3
     }
 
     private val tasks = ConcurrentHashMap<String, SavedState>()
 
-    private data class SavedState(
+    internal data class SavedState(
         val expiry: Instant,
         val version: Int,
         val future: Future<*>,
@@ -134,57 +127,15 @@ internal class SessionCache(
         cachedOutboundSessions.invalidate(key)
     }
 
-    fun validateStateAndScheduleExpiry(
-        state: State,
-        beforeUpdate: Boolean = false,
-    ): State? {
-        val now = clock.instant()
-        val expiry = state.metadata.toCommonMetadata().expiry
-        val noise = Duration.of(
-            noiseFactory.nextLong(20 * 60),
-            TimeUnit.SECONDS.toChronoUnit(),
-        )
-        val stateToForget = if (beforeUpdate) {
-            state.copy(
-                version = state.version + 1,
-            )
-        } else {
-            state
-        }
-        val duration = Duration.between(now, expiry) - noise
-        return if (duration.isNegative) {
-            forgetState(stateToForget)
-            null
-        } else {
-            tasks.compute(state.key) { _, currentValue ->
-                if ((currentValue?.expiry == expiry) && (currentValue.version == stateToForget.version)) {
-                    currentValue
-                } else {
-                    currentValue?.future?.cancel(false)
-                    SavedState(
-                        expiry = expiry,
-                        version = stateToForget.version,
-                        future = scheduler.schedule(
-                            {
-                                forgetState(stateToForget)
-                            },
-                            duration.toMillis(),
-                            TimeUnit.MILLISECONDS,
-                        ),
-                    )
-                }
-            }
-            state
+    fun cacheScheduledTask(key: String, task: SavedState) {
+        tasks.compute(key) { _, _ ->
+            task
         }
     }
 
-    fun validateStatesAndScheduleExpiry(states: Map<String, State>): Map<String, State> {
-        return states.mapNotNull { (key, state) ->
-            validateStateAndScheduleExpiry(state)?.let {
-                key to it
-            }
-        }.toMap()
-    }
+    fun retrieveCurrentlyScheduledTask(key: String) = tasks[key]
+
+    fun cancelCurrentlyScheduledTask(task: SavedState?) = task?.future?.cancel(false)
 
     private fun removeFromScheduler(key: String) {
         tasks.compute(key) { _, currentValue ->
@@ -196,9 +147,9 @@ internal class SessionCache(
     fun forgetState(state: State) {
         var stateToDelete = state
         val key = state.key
-        var retryCount = 0
         var failedDeletes = mapOf<String, State>()
-        do {
+
+        for (i in 0 until MAX_RETRY_COUNT) {
             try {
                 failedDeletes = stateManager.delete(listOf(stateToDelete))
                 recordSessionTimeoutMetric(state.metadata.toCommonMetadata().source, stateToDelete.direction())
@@ -207,11 +158,13 @@ internal class SessionCache(
             }
             if (failedDeletes.isNotEmpty()) {
                 stateToDelete = failedDeletes.values.first()
+            } else {
+                break
             }
-        } while (retryCount++ < 3 && failedDeletes.isNotEmpty())
+        }
 
         if (failedDeletes.isNotEmpty()) {
-            logger.error("Failed to delete the state for key $key after $retryCount attempts.")
+            logger.error("Failed to delete the state for key $key after $MAX_RETRY_COUNT attempts.")
         }
 
         invalidate(key)

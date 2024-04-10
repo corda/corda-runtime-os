@@ -3,46 +3,29 @@ package net.corda.p2p.linkmanager.sessions.lookup
 import net.corda.data.p2p.event.SessionDirection
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.Operation
-import net.corda.libs.statemanager.api.StateManager
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.p2p.crypto.protocol.api.CheckRevocation
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.membership.getSessionCounterpartiesFromMessage
-import net.corda.p2p.linkmanager.sessions.ReEstablishmentMessageSender
 import net.corda.p2p.linkmanager.sessions.SessionCache
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.SessionEstablished
-import net.corda.p2p.linkmanager.sessions.StateConvertor
 import net.corda.p2p.linkmanager.sessions.StateManagerWrapper
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.toOutbound
-import net.corda.p2p.linkmanager.sessions.utils.InboundSessionMessageContext
 import net.corda.p2p.linkmanager.sessions.utils.OutboundMessageContext
 import net.corda.p2p.linkmanager.sessions.utils.OutboundMessageState
 import net.corda.p2p.linkmanager.sessions.writer.SessionWriter
-import org.slf4j.LoggerFactory
 
-@Suppress("LongParameterList")
 internal class SessionLookupImpl(
-    stateManager: StateManager,
+    coordinatorFactory: LifecycleCoordinatorFactory,
     private val sessionCache: SessionCache,
     private val sessionWriter: SessionWriter,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    stateConvertor: StateConvertor,
-    checkRevocation: CheckRevocation,
-    reEstablishmentMessageSender: ReEstablishmentMessageSender,
+    private val stateManager: StateManagerWrapper,
 ) : SessionLookup {
-    private companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
-
-    private val stateManager = StateManagerWrapper(
-        stateManager,
-        sessionCache,
-        stateConvertor,
-        checkRevocation,
-        reEstablishmentMessageSender,
-    )
-
     override fun <T> getCachedOutboundSessions(
         messagesAndKeys: Map<String?, Collection<OutboundMessageContext<T>>>,
     ): Map<String, Collection<Pair<T, SessionEstablished>>> {
@@ -129,10 +112,15 @@ internal class SessionLookupImpl(
             }
     }
 
-    override fun <T> getSessionIdIfInboundSessionMessage(
-        data: Any,
-        trace: T
-    ): InboundSessionMessageContext<T>? {
-        TODO("Not yet implemented")
-    }
+    override val dominoTile: DominoTile =
+        ComplexDominoTile(
+            this::class.java.simpleName,
+            coordinatorFactory,
+            dependentChildren =
+            setOf(
+                stateManager.name,
+                LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+            ),
+            managedChildren = emptySet(),
+        )
 }

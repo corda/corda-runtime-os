@@ -3,10 +3,12 @@ package net.corda.p2p.linkmanager.sessions
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.metrics.CordaMetrics
 import net.corda.p2p.crypto.protocol.api.CheckRevocation
 import net.corda.p2p.linkmanager.metrics.recordP2PMetric
 import net.corda.p2p.linkmanager.metrics.recordSessionCreationTime
+import net.corda.p2p.linkmanager.sessions.expiration.SessionExpirationScheduler
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.isOutbound
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.toOutbound
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
@@ -16,9 +18,11 @@ import net.corda.p2p.linkmanager.state.direction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+@Suppress("LongParameterList")
 internal class StateManagerWrapper(
     private val stateManager: StateManager,
     private val sessionCache: SessionCache,
+    private val sessionExpirationScheduler: SessionExpirationScheduler,
     private val stateConvertor: StateConvertor,
     private val checkRevocation: CheckRevocation,
     private val reEstablishmentMessageSender: ReEstablishmentMessageSender,
@@ -26,6 +30,8 @@ internal class StateManagerWrapper(
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(StateManagerWrapper::class.java)
     }
+
+    val name: LifecycleCoordinatorName = stateManager.name
 
     data class StateManagerSessionState(
         val managerState: State,
@@ -35,13 +41,13 @@ internal class StateManagerWrapper(
     }
     fun get(
         keys: Collection<String>,
-    ) = sessionCache.validateStatesAndScheduleExpiry(
+    ) = sessionExpirationScheduler.validateStatesAndScheduleExpiry(
         stateManager.get(keys),
     ).toStates()
 
     fun findStatesMatchingAny(
         filters: Collection<MetadataFilter>,
-    ) = sessionCache.validateStatesAndScheduleExpiry(
+    ) = sessionExpirationScheduler.validateStatesAndScheduleExpiry(
         stateManager.findByMetadataMatchingAny(filters),
     ).toStates()
 
@@ -53,7 +59,7 @@ internal class StateManagerWrapper(
             .map {
                 it.state
             }.mapNotNull {
-                sessionCache.validateStateAndScheduleExpiry(
+                sessionExpirationScheduler.validateStateAndScheduleExpiry(
                     state = it,
                     beforeUpdate = true,
                 )
@@ -62,7 +68,7 @@ internal class StateManagerWrapper(
             .map {
                 it.state
             }.mapNotNull {
-                sessionCache.validateStateAndScheduleExpiry(it)
+                sessionExpirationScheduler.validateStateAndScheduleExpiry(it)
             }
         val failedUpdates = if (updates.isNotEmpty()) {
             stateManager.update(updates).onEach {
