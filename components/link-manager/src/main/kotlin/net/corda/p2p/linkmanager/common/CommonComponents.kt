@@ -199,7 +199,6 @@ internal class CommonComponents(
         deadSessionMonitor,
         schemaRegistry,
         sessionCache,
-        sessionEventPublisher,
         sessionLookup,
         sessionWriter,
         sessionMessageProcessor,
