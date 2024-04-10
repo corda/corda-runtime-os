@@ -1,8 +1,5 @@
 package net.corda.p2p.linkmanager.sessions.events
 
-import java.util.UUID
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Future
 import net.corda.data.p2p.event.SessionCreated
 import net.corda.data.p2p.event.SessionDeleted
 import net.corda.data.p2p.event.SessionDirection
@@ -29,6 +26,9 @@ import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
 import net.corda.schema.Schemas
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.UUID
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Future
 
 @Suppress("LongParameterList")
 internal class StatefulSessionEventProcessor(
@@ -37,7 +37,7 @@ internal class StatefulSessionEventProcessor(
     messagingConfiguration: SmartConfig,
     private val stateManager: StateManager,
     private val stateConvertor: StateConvertor,
-    val sessionCache: SessionCache,
+    private val sessionCache: SessionCache,
     private val sessionManagerImpl: SessionManagerImpl,
 ): LifecycleWithDominoTile {
 

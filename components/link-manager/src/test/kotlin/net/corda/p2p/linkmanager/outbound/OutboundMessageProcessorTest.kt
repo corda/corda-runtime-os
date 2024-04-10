@@ -1,8 +1,6 @@
 package net.corda.p2p.linkmanager.outbound
 
 import net.corda.data.identity.HoldingIdentity
-import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.messaging.api.records.EventLogRecord
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.app.AppMessage
@@ -13,18 +11,24 @@ import net.corda.data.p2p.app.InboundUnauthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
 import net.corda.data.p2p.app.OutboundUnauthenticatedMessageHeader
+import net.corda.data.p2p.markers.AppMessageMarker
+import net.corda.data.p2p.markers.LinkManagerDiscardedMarker
+import net.corda.data.p2p.markers.LinkManagerProcessedMarker
+import net.corda.data.p2p.markers.LinkManagerReceivedMarker
+import net.corda.data.p2p.markers.TtlExpiredMarker
+import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import net.corda.messaging.api.records.EventLogRecord
+import net.corda.messaging.api.records.Record
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationResult
+import net.corda.p2p.linkmanager.TraceableItem
+import net.corda.p2p.linkmanager.common.MessageConverter
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
+import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueues
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.mockMembersAndGroups
-import net.corda.data.p2p.markers.AppMessageMarker
-import net.corda.data.p2p.markers.LinkManagerDiscardedMarker
-import net.corda.data.p2p.markers.LinkManagerReceivedMarker
-import net.corda.data.p2p.markers.LinkManagerProcessedMarker
-import net.corda.data.p2p.markers.TtlExpiredMarker
-import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.schema.Schemas
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.MockTimeFacilitiesProvider
@@ -35,19 +39,15 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
-import net.corda.membership.lib.exceptions.BadGroupPolicyException
-import net.corda.messaging.api.records.Record
-import net.corda.p2p.linkmanager.TraceableItem
-import net.corda.p2p.linkmanager.common.MessageConverter
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doThrow
 
 class OutboundMessageProcessorTest {
     private val myIdentity = createTestHoldingIdentity("CN=PartyA, O=Corp, L=LDN, C=GB", "Group")
@@ -1122,7 +1122,7 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `onNext produces only a LinkManagerProcessedMarker if CannotEstablishSession`() {
-        setupSessionManager(SessionManager.SessionState.CannotEstablishSession)
+        setupSessionManager(SessionManager.SessionState.CannotEstablishSession(""))
         val messages = listOf(
             EventLogRecord(
                 Schemas.P2P.P2P_OUT_TOPIC,
@@ -1154,7 +1154,7 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `processReplayedAuthenticatedMessage doesn't queue messages when CannotEstablishSession`() {
-        setupSessionManager(SessionManager.SessionState.CannotEstablishSession)
+        setupSessionManager(SessionManager.SessionState.CannotEstablishSession(""))
         val records = processor.processReplayedAuthenticatedMessage(
             AuthenticatedMessageAndKey(
                 AuthenticatedMessage(

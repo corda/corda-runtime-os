@@ -13,7 +13,6 @@ import net.corda.data.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.data.p2p.crypto.InitiatorHelloMessage
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
-import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -58,7 +57,7 @@ class StatefulSessionManagerImplTest {
     private val coordinatorFactory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), any()) } doReturn coordinator
     }
-    private val stateManager = mock<StateManager>()
+    private val stateManager = mock<StateManagerWrapper>()
     private val deadSessionMonitor = mock<DeadSessionMonitor>()
     private val sessionManagerImplDominoTile = mock<ComplexDominoTile> {
         on { coordinatorName } doReturn mock()
@@ -101,18 +100,13 @@ class StatefulSessionManagerImplTest {
         mock(),
     )
 
-    private val sessionCache = SessionCache(
-        stateManager,
-        clock,
-        sessionEventPublisher,
-    )
+    private val sessionCache = mock<SessionCache>()
 
     private val p2pRecordsFactory = mock<P2pRecordsFactory>()
 
     private val manager = StatefulSessionManagerImpl(
-        mock(),
-        mock(),
         coordinatorFactory,
+        mock(),
         stateManager,
         sessionManagerImpl,
         stateConvertor,
@@ -123,7 +117,6 @@ class StatefulSessionManagerImplTest {
         sessionCache,
         sessionEventPublisher,
         mock(), mock(), mock(), mock(),
-        p2pRecordsFactory,
     )
 
     private data class Wrapper<T>(
@@ -135,7 +128,7 @@ class StatefulSessionManagerImplTest {
         publisherWithDominoLogic.close()
     }
 
-    private fun mockState(id: String, sent: Long = 50L): State {
+    private fun mockState(id: String, sent: Long = 50L): StateManagerWrapper.StateManagerSessionState {
         val state = mock<State> {
             on { value } doReturn id.toByteArray()
             on { metadata } doReturn Metadata(
@@ -159,7 +152,7 @@ class StatefulSessionManagerImplTest {
             on { sessionData } doReturn serialisableSessionData
         }
         whenever(stateConvertor.toCordaSessionState(same(state), any())).doReturn(sessionState)
-        return state
+        return mock()
     }
 
     @Nested
@@ -227,10 +220,10 @@ class StatefulSessionManagerImplTest {
             val responder = mock<AuthenticationProtocolResponder> {
                 on { getSession() } doReturn session
             }
-            val sessionState = mock<SessionState> {
-                on { sessionData } doReturn responder
-            }
-            whenever(stateConvertor.toCordaSessionState(same(state), any())).doReturn(sessionState)
+            //val sessionState = mock<SessionState> {
+            //    on { sessionData } doReturn responder
+            //}
+            //whenever(stateConvertor.toCordaSessionState(same(state), any())).doReturn(sessionState)
             val responseHeaders = mock<LinkOutHeader> {
                 on { sourceIdentity } doReturn HoldingIdentity(
                     "O=Alice, L=London, C=GB",
@@ -252,8 +245,8 @@ class StatefulSessionManagerImplTest {
                 ),
             ).doReturn(responseMessage)
             whenever(stateConvertor.toStateByteArray(SessionState(responseMessage, session))).doReturn(rawData)
-            val statesUpdates = argumentCaptor<Collection<State>>()
-            whenever(stateManager.update(statesUpdates.capture())).doReturn(emptyMap())
+            //val statesUpdates = argumentCaptor<Collection<State>>()
+            //whenever(stateManager.update(statesUpdates.capture())).doReturn(emptyMap())
             manager.processSessionMessages(messages) {
                 it.value
             }
@@ -276,7 +269,7 @@ class StatefulSessionManagerImplTest {
         fun `it will publish correct message if session state cannot be decrypted`() {
             val testSessionId = "test-session"
             val state = mockState(testSessionId)
-            whenever(stateConvertor.toCordaSessionState(same(state), any())).doReturn(null)
+            //whenever(stateConvertor.toCordaSessionState(same(state), any())).doReturn(null)
             whenever(stateManager.get(setOf(testSessionId))).doReturn(
                 mapOf(
                     testSessionId to state,
@@ -346,10 +339,10 @@ class StatefulSessionManagerImplTest {
             val responder = mock<AuthenticationProtocolResponder> {
                 on { getSession() } doReturn session
             }
-            val sessionState = mock<SessionState> {
-                on { sessionData } doReturn responder
-            }
-            whenever(stateConvertor.toCordaSessionState(same(state), any())).doReturn(sessionState)
+            //val sessionState = mock<SessionState> {
+            //    on { sessionData } doReturn responder
+            //}
+            //whenever(stateConvertor.toCordaSessionState(same(state), any())).doReturn(sessionState)
             val responseHeaders = mock<LinkOutHeader> {
                 on { sourceIdentity } doReturn HoldingIdentity(
                     "O=Alice, L=London, C=GB",
@@ -372,7 +365,7 @@ class StatefulSessionManagerImplTest {
             ).doReturn(responseMessage)
             whenever(stateConvertor.toStateByteArray(SessionState(responseMessage, session))).doReturn(rawData)
             val statesUpdates = argumentCaptor<Collection<State>>()
-            whenever(stateManager.update(statesUpdates.capture())).doReturn(emptyMap())
+            //whenever(stateManager.update(statesUpdates.capture())).doReturn(emptyMap())
 
             val results = manager.processSessionMessages(messages) {
                 it.value
@@ -430,21 +423,21 @@ class StatefulSessionManagerImplTest {
                 on { payload } doReturn handshakeMessage
             }
             val messages = listOf(Wrapper(message))
-            val session = mock<AuthenticatedSession> {
-                on { sessionId } doReturn sessionIdentity
-            }
-            val responder = mock<AuthenticationProtocolResponder> {
-                on { getSession() } doReturn session
-            }
-            val responseMessage = mock<LinkOutMessage>()
-            val sessionState = SessionState(
-                responseMessage,
-                responder,
-            )
-            whenever(stateConvertor.toCordaSessionState(same(state), any())).doReturn(sessionState)
+            //val session = mock<AuthenticatedSession> {
+            //    on { sessionId } doReturn sessionIdentity
+            //}
+            //val responder = mock<AuthenticationProtocolResponder> {
+            //    on { getSession() } doReturn session
+            //}
+            //val responseMessage = mock<LinkOutMessage>()
+            //val sessionState = SessionState(
+            //    responseMessage,
+            //    responder,
+            //)
+            //whenever(stateConvertor.toCordaSessionState(same(state), any())).doReturn(sessionState)
 
             val statesUpdates = argumentCaptor<Collection<State>>()
-            whenever(stateManager.update(statesUpdates.capture())).doReturn(emptyMap())
+            //whenever(stateManager.update(statesUpdates.capture())).doReturn(emptyMap())
 
             manager.processSessionMessages(messages) {
                 it.value

@@ -5,6 +5,7 @@ import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.p2p.crypto.protocol.api.CheckRevocation
+import net.corda.p2p.linkmanager.sessions.expiration.SessionExpirationScheduler
 import net.corda.p2p.linkmanager.state.SessionState
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -27,7 +28,8 @@ class StateManagerWrapperTest {
         on { get(keys) } doReturn keysToStates
         on { findByMetadataMatchingAny(filters) } doReturn keysToStates
     }
-    private val sessionCache = mock<SessionCache> {
+    private val sessionCache = mock<SessionCache>()
+    private val sessionExpirationScheduler = mock<SessionExpirationScheduler> {
         on { validateStatesAndScheduleExpiry(keysToStates) } doReturn keysToStates
     }
     private val sessionState = mock<SessionState>()
@@ -45,6 +47,7 @@ class StateManagerWrapperTest {
     private val wrapper = StateManagerWrapper(
         stateManager,
         sessionCache,
+        sessionExpirationScheduler,
         stateConvertor,
         checkRevocation,
         reEstablishmentMessageSender,
@@ -61,7 +64,7 @@ class StateManagerWrapperTest {
     fun `get calls the scheduler`() {
         wrapper.get(keys)
 
-        verify(sessionCache).validateStatesAndScheduleExpiry(keysToStates)
+        verify(sessionExpirationScheduler).validateStatesAndScheduleExpiry(keysToStates)
     }
 
     @Test
@@ -112,7 +115,7 @@ class StateManagerWrapperTest {
             )
         }
         val keysToStates = mapOf("key3" to outboundState)
-        whenever(sessionCache.validateStatesAndScheduleExpiry(keysToStates)).doReturn(keysToStates)
+        whenever(sessionExpirationScheduler.validateStatesAndScheduleExpiry(keysToStates)).doReturn(keysToStates)
         whenever(stateManager.get(any())).doReturn(mapOf("key3" to outboundState))
         whenever(stateConvertor.toCordaSessionState(outboundState, checkRevocation)).thenReturn(null)
 
@@ -133,7 +136,7 @@ class StateManagerWrapperTest {
     fun `findStatesMatchingAny calls the scheduler`() {
         wrapper.findStatesMatchingAny(filters)
 
-        verify(sessionCache).validateStatesAndScheduleExpiry(keysToStates)
+        verify(sessionExpirationScheduler).validateStatesAndScheduleExpiry(keysToStates)
     }
 
     @Test
@@ -179,7 +182,7 @@ class StateManagerWrapperTest {
         val update = UpdateAction(state, false)
         wrapper.upsert(listOf(update))
 
-        verify(sessionCache).validateStateAndScheduleExpiry(state, true)
+        verify(sessionExpirationScheduler).validateStateAndScheduleExpiry(state, true)
     }
 
     @Test
@@ -187,7 +190,7 @@ class StateManagerWrapperTest {
         val create = CreateAction(state)
         wrapper.upsert(listOf(create))
 
-        verify(sessionCache).validateStateAndScheduleExpiry(state, false)
+        verify(sessionExpirationScheduler).validateStateAndScheduleExpiry(state, false)
     }
 
     @Test
@@ -200,7 +203,7 @@ class StateManagerWrapperTest {
 
     @Test
     fun `upsert with update will update valid sessions`() {
-        whenever(sessionCache.validateStateAndScheduleExpiry(state, true)).doReturn(state)
+        whenever(sessionExpirationScheduler.validateStateAndScheduleExpiry(state, true)).doReturn(state)
         val update = UpdateAction(state, false)
         wrapper.upsert(listOf(update))
 
@@ -217,7 +220,7 @@ class StateManagerWrapperTest {
 
     @Test
     fun `upsert with create will create valid sessions`() {
-        whenever(sessionCache.validateStateAndScheduleExpiry(state, false)).doReturn(state)
+        whenever(sessionExpirationScheduler.validateStateAndScheduleExpiry(state, false)).doReturn(state)
         val create = CreateAction(state)
         wrapper.upsert(listOf(create))
 
@@ -226,7 +229,7 @@ class StateManagerWrapperTest {
 
     @Test
     fun `upsert with return the failures of the updates and creates`() {
-        whenever(sessionCache.validateStateAndScheduleExpiry(any(), any())).doReturn(state)
+        whenever(sessionExpirationScheduler.validateStateAndScheduleExpiry(any(), any())).doReturn(state)
         whenever(stateManager.create(any())).doReturn(setOf("key3", "key4"))
         whenever(stateManager.update(any())).doReturn(mapOf("key1" to state, "key2" to state))
         val update = UpdateAction(state, false)

@@ -24,12 +24,19 @@ import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.sessions.DeadSessionMonitor
 import net.corda.p2p.linkmanager.sessions.DeadSessionMonitorConfigurationHandler
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueuesImpl
+import net.corda.p2p.linkmanager.sessions.ReEstablishmentMessageSender
 import net.corda.p2p.linkmanager.sessions.SessionCache
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.linkmanager.sessions.StateConvertor
+import net.corda.p2p.linkmanager.sessions.StateManagerWrapper
 import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl
+import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventProcessor
 import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
+import net.corda.p2p.linkmanager.sessions.expiration.SessionExpirationScheduler
 import net.corda.p2p.linkmanager.sessions.expiration.StaleSessionProcessor
+import net.corda.p2p.linkmanager.sessions.lookup.SessionLookupImpl
+import net.corda.p2p.linkmanager.sessions.messages.SessionMessageProcessor
+import net.corda.p2p.linkmanager.sessions.writer.SessionWriterImpl
 import net.corda.p2p.messaging.P2pRecordsFactory
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.time.Clock
@@ -80,10 +87,16 @@ internal class CommonComponents(
         messagingConfiguration,
     )
 
+    // no lifecycle
     private val sessionCache = SessionCache(
         stateManager,
-        clock,
         sessionEventPublisher,
+    )
+
+    // no lifecycle
+    private val sessionExpirationScheduler = SessionExpirationScheduler(
+        clock,
+        sessionCache,
     )
 
     private val staleSessionProcessor = StaleSessionProcessor(
@@ -105,34 +118,91 @@ internal class CommonComponents(
 
     private val p2pRecordsFactory = P2pRecordsFactory(clock, cordaAvroSerializationFactory)
 
-    internal val sessionManager = StatefulSessionManagerImpl(
+    // no lifecycle
+    private val sessionWriter = SessionWriterImpl(
+        sessionCache,
+    )
+
+    // no lifecycle
+    private val stateConvertor = StateConvertor(
+        schemaRegistry,
+        sessionEncryptionOpsClient,
+    )
+
+    // existing lifecycle, nothing needs to be added
+    private val oldSessionManager = SessionManagerImpl(
+        groupPolicyProvider,
+        membershipGroupReaderProvider,
+        cryptoOpsClient,
+        messagesPendingSession,
+        publisherFactory,
+        configurationReaderService,
+        lifecycleCoordinatorFactory,
+        messagingConfiguration,
+        linkManagerHostingMap,
+        sessionCache = sessionCache,
+    )
+
+    // no lifecycle
+    private val reEstablishmentMessageSender = ReEstablishmentMessageSender(
+        p2pRecordsFactory,
+        oldSessionManager,
+    )
+
+    // existing lifecycle, nothing needs to be added
+    val sessionEventListener = StatefulSessionEventProcessor(
+        lifecycleCoordinatorFactory,
         subscriptionFactory,
         messagingConfiguration,
-        lifecycleCoordinatorFactory,
         stateManager,
-        SessionManagerImpl(
-            groupPolicyProvider,
-            membershipGroupReaderProvider,
-            cryptoOpsClient,
-            messagesPendingSession,
-            publisherFactory,
-            configurationReaderService,
-            lifecycleCoordinatorFactory,
-            messagingConfiguration,
-            linkManagerHostingMap,
-            sessionCache = sessionCache,
-        ),
-        StateConvertor(
-            schemaRegistry,
-            sessionEncryptionOpsClient,
-        ),
+        stateConvertor,
+        sessionCache,
+        oldSessionManager,
+    )
+
+    // no lifecycle
+    private val stateManagerWrapper = StateManagerWrapper(
+        stateManager,
+        sessionCache,
+        sessionExpirationScheduler,
+        stateConvertor,
+        oldSessionManager.revocationCheckerClient::checkRevocation,
+        reEstablishmentMessageSender,
+    )
+
+    // has lifecycle
+    private val sessionLookup = SessionLookupImpl(
+        lifecycleCoordinatorFactory,
+        sessionCache,
+        sessionWriter,
+        membershipGroupReaderProvider,
+        stateManagerWrapper,
+    )
+
+    // has lifecycle
+    private val sessionMessageProcessor = SessionMessageProcessor(
+        lifecycleCoordinatorFactory,
+        clock,
+        stateManagerWrapper,
+        oldSessionManager,
+        stateConvertor,
+    )
+
+    internal val sessionManager = StatefulSessionManagerImpl(
+        lifecycleCoordinatorFactory,
+        sessionEventListener,
+        stateManagerWrapper,
+        oldSessionManager,
+        stateConvertor,
         clock,
         membershipGroupReaderProvider,
         deadSessionMonitor,
         schemaRegistry,
         sessionCache,
         sessionEventPublisher,
-        p2pRecordsFactory,
+        sessionLookup,
+        sessionWriter,
+        sessionMessageProcessor,
     )
 
     private val trustStoresPublisher = TrustStoresPublisher(

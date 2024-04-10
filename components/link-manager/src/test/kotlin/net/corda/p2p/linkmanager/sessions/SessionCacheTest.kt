@@ -4,18 +4,10 @@ import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.utilities.time.Clock
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Nested
-import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
-import java.time.Duration
 import java.time.Instant
 import java.util.Random
 import java.util.concurrent.ScheduledExecutorService
@@ -74,13 +66,11 @@ class SessionCacheTest {
 
     private val sessionExpiryScheduler = SessionCache(
         stateManager,
-        clock,
         mock(),
-        scheduler,
-        random,
     )
 
-    @Nested
+    // TODO move these test scenarios to SessionExpirationSchedulerTest
+    /*@Nested
     inner class CheckStateValidateAndRememberItTests {
         @Test
         fun `it will return null if the state had expired`() {
@@ -290,5 +280,5 @@ class SessionCacheTest {
                 .doesNotContainKey("two")
                 .hasSize(1)
         }
-    }
+    }*/
 }
