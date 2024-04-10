@@ -80,7 +80,14 @@ internal class InboundMessageProcessor(
                     if (err == null) {
                         publisher.publish(listOf(ack))
                     } else {
-                        logger.info("Failed to publish ack message.", err)
+                        val lastIem = traceable.item.records.lastOrNull()
+                        val topic = lastIem?.topic
+                        val message = (lastIem?.value as? AppMessage)?.message as? AuthenticatedMessage
+                        logger.info(
+                            "Failed to publish message ${message?.header?.messageId} to the '$topic' topic. " +
+                            "The message ack was not published to allow the delivery tracker to retry it.",
+                            err,
+                        )
                     }
                 }
             }
