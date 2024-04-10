@@ -76,7 +76,6 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -729,7 +728,7 @@ class StartRegistrationHandlerTest {
             val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
             verify(membershipQueryClient, never()).queryPreAuthTokens(any(), any(), any(), any())
-            result.assertDeclinedRegistration(Regex(".*invalid format for the provided pre-auth token.*"))
+            result.assertDeclinedRegistration(".*invalid format for the provided pre-auth token.*")
         }
 
         @Test
@@ -745,7 +744,7 @@ class StartRegistrationHandlerTest {
             val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
             verify(membershipQueryClient).queryPreAuthTokens(any(), any(), any(), any())
-            result.assertDeclinedRegistration(Regex(".*failure to query configured pre-auth tokens.*"))
+            result.assertDeclinedRegistration(".*failure to query configured pre-auth tokens.*")
         }
 
         @Test
@@ -761,7 +760,7 @@ class StartRegistrationHandlerTest {
             val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
             verify(membershipQueryClient).queryPreAuthTokens(any(), any(), any(), any())
-            result.assertDeclinedRegistration(Regex(".*pre-auth token which is not currently active.*"))
+            result.assertDeclinedRegistration(".*pre-auth token which is not currently active.*")
         }
 
         @Test
@@ -831,7 +830,7 @@ class StartRegistrationHandlerTest {
 
             val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
-            result.assertDeclinedRegistration(Regex(".*pre-auth token which has expired.*"))
+            result.assertDeclinedRegistration(".*pre-auth token which has expired.*")
         }
     }
 
@@ -874,7 +873,7 @@ class StartRegistrationHandlerTest {
 
             val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
-            result.assertDeclinedRegistration(Regex(DECLINED_REASON_NOTARY_MISSING_NOTARY_DETAILS))
+            result.assertDeclinedRegistration(DECLINED_REASON_NOTARY_MISSING_NOTARY_DETAILS)
         }
 
         @Test
@@ -898,7 +897,7 @@ class StartRegistrationHandlerTest {
 
             val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
-            result.assertDeclinedRegistration(Regex(DECLINED_REASON_NOTARY_LEDGER_KEY))
+            result.assertDeclinedRegistration(DECLINED_REASON_NOTARY_LEDGER_KEY)
         }
 
         @Test
@@ -915,7 +914,7 @@ class StartRegistrationHandlerTest {
 
             val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
-            result.assertDeclinedRegistration(Regex(DECLINED_REASON_INVALID_NOTARY_SERVICE_PLUGIN_TYPE))
+            result.assertDeclinedRegistration(DECLINED_REASON_INVALID_NOTARY_SERVICE_PLUGIN_TYPE)
         }
 
         @Test
@@ -932,7 +931,7 @@ class StartRegistrationHandlerTest {
 
             val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
-            result.assertDeclinedRegistration(Regex("The virtual node and the notary service.*name cannot be the same."))
+            result.assertDeclinedRegistration("The virtual node and the notary service.*name cannot be the same.")
         }
 
         @Test
@@ -962,7 +961,7 @@ class StartRegistrationHandlerTest {
 
             val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
-            result.assertDeclinedRegistration(Regex("Notary service.*already exists."))
+            result.assertDeclinedRegistration("Notary service.*already exists.")
         }
 
         @Test
@@ -980,7 +979,7 @@ class StartRegistrationHandlerTest {
 
             val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
-            result.assertDeclinedRegistration(Regex(".*Could not read group parameters.*"))
+            result.assertDeclinedRegistration(".*Could not read group parameters.*")
         }
 
         @Test
@@ -1017,7 +1016,7 @@ class StartRegistrationHandlerTest {
                 Record(testTopic, testTopicKey, startRegistrationCommand)
             )
 
-            result.assertDeclinedRegistration(Regex(".*virtual node having the same name as the notary service.*"))
+            result.assertDeclinedRegistration(".*virtual node having the same name as the notary service.*")
         }
     }
 
@@ -1456,10 +1455,10 @@ class StartRegistrationHandlerTest {
     private fun RegistrationHandlerResult.assertRegistrationStarted() =
         assertExpectedOutputCommand<VerifyMember>()
 
-    private fun RegistrationHandlerResult.assertDeclinedRegistration(expectedReason: Regex? = null) {
+    private fun RegistrationHandlerResult.assertDeclinedRegistration(expectedReason: String? = null) {
         val outputCommand = assertExpectedOutputCommand<DeclineRegistration>()
         expectedReason?.let {
-            assertTrue(it.matches(outputCommand.reason))
+            assertThat(outputCommand.reason).matches(it)
         }
     }
 
