@@ -265,10 +265,10 @@ internal class StartRegistrationHandler(
             registrationLogger.info("Successful initial validation of registration request.")
             VerifyMember()
         } catch (ex: InvalidRegistrationRequestException) {
-            registrationLogger.warn("Declined registration. ${ex.originalMessage}")
+            registrationLogger.warn("Declined registration. ${ex.originalMessage}", ex)
             DeclineRegistration(ex.originalMessage, ex.reasonForUser)
         } catch (ex: Exception) {
-            registrationLogger.warn("Declined registration. ${ex.message}")
+            registrationLogger.warn("Declined registration. ${ex.message}", ex)
             DeclineRegistration("Failed to verify registration request due to: [${ex.message}]", DECLINED_REASON_FOR_USER_INTERNAL_ERROR)
         }
         outputRecords.add(Record(REGISTRATION_COMMAND_TOPIC, key, RegistrationCommand(outputCommand)))
