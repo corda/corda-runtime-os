@@ -34,7 +34,7 @@ class InboundRpcProcessorTest {
     private val reply = mock<LinkManagerResponse>()
     private val inboundResponse = mock<InboundResponse> {
         on { records } doReturn emptyList()
-        on { httpReply } doReturn reply
+        on { ack } doReturn Either.Left(reply)
     }
     private val replyWithSource = ItemWithSource(
         inboundResponse,
@@ -163,7 +163,20 @@ class InboundRpcProcessorTest {
 
     @Test
     fun `process will create a reply if reply is null`() {
-        whenever(inboundResponse.httpReply).doReturn(null)
+        whenever(inboundResponse.ack).doReturn(null)
+        val replies = rpcProcessor.handle(requests)
+
+        val httpReply = replies.mapNotNull {
+            it.item as? Either.Right
+        }.map {
+            it.b
+        }.firstOrNull()
+        assertThat(httpReply).isNotNull()
+    }
+
+    @Test
+    fun `process will create a reply if reply is a record`() {
+        whenever(inboundResponse.ack).doReturn(Either.Right(mock()))
         val replies = rpcProcessor.handle(requests)
 
         val httpReply = replies.mapNotNull {
