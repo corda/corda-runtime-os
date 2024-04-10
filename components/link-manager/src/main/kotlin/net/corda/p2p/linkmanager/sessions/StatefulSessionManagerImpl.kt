@@ -3,23 +3,18 @@ package net.corda.p2p.linkmanager.sessions
 import net.corda.crypto.client.SessionEncryptionOpsClient
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.LinkInMessage
-import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.ReEstablishSessionMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.event.SessionCreated
 import net.corda.data.p2p.event.SessionDirection
 import net.corda.data.p2p.event.SessionEvent
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.statemanager.api.MetadataFilter
-import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.State
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.Session
@@ -32,7 +27,6 @@ import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSession
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.SessionAlreadyPending
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.SessionEstablished
 import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventProcessor
-import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 import net.corda.p2p.linkmanager.sessions.lookup.SessionLookup
 import net.corda.p2p.linkmanager.sessions.messages.SessionMessageProcessor
 import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata
@@ -46,6 +40,7 @@ import net.corda.p2p.linkmanager.sessions.utils.OutboundMessageState
 import net.corda.p2p.linkmanager.sessions.utils.SessionUtils.getSessionCounterpartiesFromState
 import net.corda.p2p.linkmanager.sessions.writer.SessionWriter
 import net.corda.p2p.linkmanager.state.SessionState
+import net.corda.schema.Schemas
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
@@ -456,6 +451,10 @@ internal class StatefulSessionManagerImpl(
         }
     }
 
+    private fun recordsForSessionCreated(key: String, direction: SessionDirection): List<Record<String, SessionEvent>> {
+        return listOf(Record(Schemas.P2P.SESSION_EVENTS, key, SessionEvent(SessionCreated(direction, key))))
+    }
+
     override val dominoTile =
         ComplexDominoTile(
             this::class.java.simpleName,
@@ -465,7 +464,6 @@ internal class StatefulSessionManagerImpl(
                 stateManager.name,
                 sessionManagerImpl.dominoTile.coordinatorName,
                 LifecycleCoordinatorName.forComponent<SessionEncryptionOpsClient>(),
-                sessionEventPublisher.dominoTile.coordinatorName,
                 sessionEventListener.dominoTile.coordinatorName,
                 LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
                 sessionLookup.dominoTile.coordinatorName,
@@ -474,7 +472,6 @@ internal class StatefulSessionManagerImpl(
             managedChildren =
             setOf(
                 sessionManagerImpl.dominoTile.toNamedLifecycle(),
-                sessionEventPublisher.dominoTile.toNamedLifecycle(),
                 sessionEventListener.dominoTile.toNamedLifecycle(),
                 sessionLookup.dominoTile.toNamedLifecycle(),
                 sessionMessageProcessor.dominoTile.toNamedLifecycle(),

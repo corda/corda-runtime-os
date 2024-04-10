@@ -26,7 +26,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.Session
-import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 import net.corda.p2p.linkmanager.state.SessionState
 import net.corda.p2p.messaging.P2pRecordsFactory
 import net.corda.p2p.messaging.Subsystem
@@ -98,12 +97,6 @@ class StatefulSessionManagerImplTest {
         } doReturn ReEstablishSessionMessage("test")
     }
 
-    private val sessionEventPublisher = StatefulSessionEventPublisher(
-        coordinatorFactory,
-        mock(),
-        mock(),
-    )
-
     private val sessionCache = mock<SessionCache>()
 
     private val p2pRecordsFactory = mock<P2pRecordsFactory>()
@@ -119,7 +112,6 @@ class StatefulSessionManagerImplTest {
         deadSessionMonitor,
         schemaRegistry,
         sessionCache,
-        sessionEventPublisher,
         mock(), mock(), mock(), mock(),
     )
 
