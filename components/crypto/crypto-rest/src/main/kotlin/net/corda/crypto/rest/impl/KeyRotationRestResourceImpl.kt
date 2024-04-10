@@ -188,6 +188,13 @@ class KeyRotationRestResourceImpl @Activate constructor(
 
         when (tenantId) {
             MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER -> { // do unmanaged key rotation status
+                logger.info("Request for master wrapping key rotation status. Listing all key rotation records in state manager: " +
+                        "${stateManager.findByMetadata(MetadataFilter(
+                            KeyRotationMetadataValues.STATUS_TYPE,
+                            Operation.Equals,
+                            KeyRotationRecordType.KEY_ROTATION
+                        ))}"
+                )
                 val records = stateManager.findByMetadataMatchingAll(
                     listOf(
                         MetadataFilter(
@@ -223,6 +230,13 @@ class KeyRotationRestResourceImpl @Activate constructor(
             }
 
             else -> { // do managed key rotation status
+                logger.info("Request for managed key rotation status. Listing all key rotation records in state manager: " +
+                        "${stateManager.findByMetadata(MetadataFilter(
+                            KeyRotationMetadataValues.STATUS_TYPE,
+                            Operation.Equals,
+                            KeyRotationRecordType.KEY_ROTATION
+                        ))}"
+                )
                 val records = stateManager.findByMetadataMatchingAll(
                     listOf(
                         MetadataFilter(KeyRotationMetadataValues.TENANT_ID, Operation.Equals, tenantId),
