@@ -52,6 +52,7 @@ class NetworkTasksImpl(var pc: ProjectContext) {
             }
         }
 
+        pc.logger.quiet("Creating virtual nodes...")
         nodesToCreate.forEach {
             val cpiUploadFilePath = if (it.serviceX500Name == null) pc.corDappCpiChecksumFilePath else pc.notaryCpiChecksumFilePath
             VNodeHelper().createVNode(
@@ -70,6 +71,7 @@ class NetworkTasksImpl(var pc: ProjectContext) {
                 x500Name = MemberX500Name.parse(it.x500Name!!),
                 wait = 30.seconds
             )
+            pc.logger.quiet("Virtual node for ${it.x500Name} is ready to be registered.")
         }
         vNodeRestClient.close()
     }
