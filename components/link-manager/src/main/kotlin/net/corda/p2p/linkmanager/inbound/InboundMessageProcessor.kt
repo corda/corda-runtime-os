@@ -84,7 +84,7 @@ internal class InboundMessageProcessor(
                         val topic = lastIem?.topic
                         val message = (lastIem?.value as? AppMessage)?.message as? AuthenticatedMessage
                         logger.info(
-                            "Failed to publish message ${message?.header?.messageId} to the '$topic' topic. " +
+                            "Failed to publish message '${message?.header?.messageId}' to the '$topic' topic. " +
                             "The message ack was not published to allow the delivery tracker to retry it.",
                             err,
                         )
