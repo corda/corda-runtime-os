@@ -8,7 +8,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.concurrent.Callable
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.ScheduledExecutorService
@@ -19,24 +18,18 @@ class TaskManagerImplTest {
         const val RESULT = 1
     }
 
-    private val callableCaptor = argumentCaptor<Callable<Int>>()
+    private val runnableCaptor = argumentCaptor<Runnable>()
     private val executorService = mock<ScheduledExecutorService>().apply {
         // mocking executor service behaviour regarding completing future exceptionally
-        whenever(this.submit(callableCaptor.capture())).then {
-            val future = CompletableFuture<Int>()
-            try {
-                future.complete(callableCaptor.firstValue.call())
-            } catch (e: Exception) {
-                future.completeExceptionally(e)
-            }
-            future
+        whenever(this.execute(runnableCaptor.capture())).then {
+            runnableCaptor.firstValue.run()
         }
     }
     private val taskManager = TaskManagerImpl("", "", executorService)
 
     @Test
     fun `executeShortRunningTask increments the task count, runs the task and decrements the task count when finished`() {
-        val result = taskManager.executeShortRunningTask {
+        val result = taskManager.executeShortRunningTask("Foo", 1) {
             assertThat(taskManager.liveTaskCounts).containsExactlyEntriesOf(
                 mapOf(TaskManagerImpl.Type.SHORT_RUNNING to 1)
             )
@@ -50,7 +43,7 @@ class TaskManagerImplTest {
 
     @Test
     fun `executeShortRunningTask increments the task count and decrements the task count when the task fails`() {
-        val result = taskManager.executeShortRunningTask {
+        val result = taskManager.executeShortRunningTask("Foo", 1) {
             assertThat(taskManager.liveTaskCounts).containsExactlyEntriesOf(
                 mapOf(TaskManagerImpl.Type.SHORT_RUNNING to 1)
             )
@@ -66,7 +59,7 @@ class TaskManagerImplTest {
 
     @Test
     fun `executeShortRunningTask increments the task count and decrements the task count when the task fails with interrupted exception`() {
-        val result = taskManager.executeShortRunningTask {
+        val result = taskManager.executeShortRunningTask("Foo", 1) {
             assertThat(taskManager.liveTaskCounts).containsExactlyEntriesOf(
                 mapOf(TaskManagerImpl.Type.SHORT_RUNNING to 1)
             )

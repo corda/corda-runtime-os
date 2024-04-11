@@ -165,7 +165,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         return groups.filter {
             it.isNotEmpty()
         }.map { group ->
-            val future = taskManager.executeShortRunningTask {
+            val future = taskManager.executeShortRunningTask("Foo", 1) {
                 eventProcessor.processEvents(group)
             }
             Pair(future, group)

@@ -5,7 +5,10 @@ import net.corda.taskmanager.TaskManager
 import net.corda.taskmanager.TaskManagerFactory
 import java.util.Locale
 import java.util.concurrent.Executors
+import java.util.concurrent.PriorityBlockingQueue
 import java.util.concurrent.ThreadFactory
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
 internal object TaskManagerFactoryImpl : TaskManagerFactory {
@@ -21,10 +24,10 @@ internal object TaskManagerFactoryImpl : TaskManagerFactory {
             executorService = CordaExecutorServiceWrapper(
                 name,
                 "corda.taskmanager.",
-                Executors.newFixedThreadPool(
-                    threads,
-                    threadFactory(threadName)
-                ),
+                ThreadPoolExecutor(threads, threads,
+                    0L, TimeUnit.MILLISECONDS,
+                    PriorityBlockingQueue<Runnable>(threads, TaskManagerImpl.BatchComparator()),
+                    threadFactory(threadName)),
                 CordaMetrics.registry
             )
         )
