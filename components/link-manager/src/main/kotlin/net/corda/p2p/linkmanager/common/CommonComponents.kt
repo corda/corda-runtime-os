@@ -30,6 +30,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.linkmanager.sessions.StateConvertor
 import net.corda.p2p.linkmanager.sessions.StateManagerWrapper
 import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl
+import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventProcessor
 import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 import net.corda.p2p.linkmanager.sessions.expiration.SessionExpirationScheduler
 import net.corda.p2p.linkmanager.sessions.expiration.StaleSessionProcessor
@@ -155,7 +156,7 @@ internal class CommonComponents(
 
     // existing lifecycle, nothing needs to be added
     // OK
-    /*val sessionEventListener = StatefulSessionEventProcessor(
+    val sessionEventListener = StatefulSessionEventProcessor(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
         messagingConfiguration,
@@ -163,7 +164,7 @@ internal class CommonComponents(
         stateConvertor,
         sessionCache,
         oldSessionManager,
-    )*/
+    )
 
     // no lifecycle
     // OK
@@ -195,10 +196,9 @@ internal class CommonComponents(
     )
 
     internal val sessionManager = StatefulSessionManagerImpl(
-        subscriptionFactory,
-        messagingConfiguration,
         lifecycleCoordinatorFactory,
-        stateManager,
+        sessionEventListener,
+        sessionEventPublisher,
         stateManagerWrapper,
         oldSessionManager,
         stateConvertor,
@@ -210,7 +210,6 @@ internal class CommonComponents(
         sessionLookup,
         sessionWriter,
         sessionMessageProcessor,
-        sessionEventPublisher = sessionEventPublisher,
     )
 
     private val trustStoresPublisher = TrustStoresPublisher(
