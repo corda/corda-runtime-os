@@ -423,7 +423,6 @@ internal class SessionMessageProcessor(
             dependentChildren =
             setOf(
                 stateManager.name,
-                sessionManagerImpl.dominoTile.coordinatorName,
             ),
             managedChildren = emptySet(),
         )

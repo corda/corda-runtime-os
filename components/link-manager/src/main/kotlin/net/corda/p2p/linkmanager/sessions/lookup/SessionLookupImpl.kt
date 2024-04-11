@@ -4,7 +4,6 @@ import net.corda.data.p2p.event.SessionDirection
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.Operation
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -119,7 +118,6 @@ internal class SessionLookupImpl(
             dependentChildren =
             setOf(
                 stateManager.name,
-                LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
             ),
             managedChildren = emptySet(),
         )
