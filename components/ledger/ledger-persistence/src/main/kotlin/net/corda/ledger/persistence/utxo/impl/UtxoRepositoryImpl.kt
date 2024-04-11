@@ -634,7 +634,7 @@ class UtxoRepositoryImpl(
                     }
                     val resultSet = statement.executeQuery()
                     while (resultSet.next()) {
-                        results += resultSet.getString(0) to resultSet.getInt(1)
+                        results += resultSet.getString(1) to resultSet.getInt(2)
                     }
                 }
             }
