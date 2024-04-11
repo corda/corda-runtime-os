@@ -14,8 +14,6 @@ import net.corda.messaging.utils.tryGetResult
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getStateAndEventStateTopic
 import net.corda.tracing.wrapWithTracingExecutor
-import net.corda.utilities.debug
-import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.time.Duration
@@ -89,10 +87,12 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             val statePartition = it.toStatePartition()
             val beginning = beginningOffsets[statePartition] ?: 0L
             val end = endOffsets[statePartition] ?: 0L
+            log.info("Checking assigned partitions partition [${statePartition.partition}], " +
+                    "beginning [$beginning], endOffset [$end], sync []${beginning < end}")
             beginning < end
         }
 
-        log.debug { "The following partitions need to sync: $needsSync. The following partitions are in sync: $inSync" }
+        log.info("The following partitions need to sync: $needsSync. The following partitions are in sync: $inSync")
 
         // Out of sync partitions need assigning to the state consumer to bring us into sync.
         partitionsToSync.addAll(needsSync)
@@ -158,7 +158,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             StatePartitionOperation.ADD -> oldAssignment + statePartitions
             StatePartitionOperation.REMOVE -> oldAssignment - statePartitions
         }
-        log.debug { "Assigning partitions $newAssignment to the state consumer" }
+        log.info("Assigning partitions $newAssignment to the state consumer")
         stateConsumer.assign(newAssignment)
     }
 
@@ -181,7 +181,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
         val states = stateConsumer.poll(STATE_POLL_TIMEOUT)
         states.forEach { state ->
-            log.trace { "Processing state: $state" }
+            log.info("Processing polled state: ${state.toLogStr()}")
             // This condition should always be true. This can however guard against a potential race where the partition
             // is revoked while states are being processed, resulting in the partition no longer being required to sync.
             val partition = CordaTopicPartition(state.topic.removeSuffix(STATE_TOPIC_SUFFIX), state.partition)
@@ -191,7 +191,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         }
 
         if (syncPartitions && partitionsToSync.isNotEmpty()) {
-            log.debug { "State consumer in group ${config.group} is syncing partitions: $partitionsToSync" }
+            log.info("State consumer in group ${config.group} is syncing partitions: $partitionsToSync")
             val syncedPartitions = removeAndReturnSyncedPartitions()
             if (syncedPartitions.isNotEmpty()) {
                 onPartitionsSynchronized(syncedPartitions)
@@ -213,6 +213,8 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             val statePartition = it.toStatePartition()
             val position = stateConsumer.position(statePartition)
             val endOffset = endOffsets[statePartition] ?: 0L
+            log.info("Checking for sync partition group [${config.group}], partition [${statePartition.partition}], " +
+                    "position [$position], endOffset [$endOffset], sync []${position >= endOffset}")
             position >= endOffset
         }.toSet()
     }
@@ -260,7 +262,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
     override fun resetEventOffsetPosition() {
-        log.debug { "Last committed offset position reset for the event consumer." }
+        log.info("Last committed offset position reset for the event consumer.")
         eventConsumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
     }
 
@@ -327,7 +329,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
     private fun pauseEventConsumerAndWaitForFutureToFinish(future: CompletableFuture<*>, timeout: Long) {
         val pausePartitions = eventConsumer.assignment() - eventConsumer.paused()
-        log.debug { "Pause partitions and wait for future to finish. Assignment: $pausePartitions" }
+        log.info("Pause partitions and wait for future to finish. Assignment: $pausePartitions")
         eventConsumer.pause(pausePartitions)
         val maxWaitTime = System.currentTimeMillis() + timeout
         var done = future.isDone
@@ -344,7 +346,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
         // Resume only those partitions currently assigned and previously paused.
         val partitionsToResume = eventConsumer.assignment().intersect(pausePartitions)
-        log.debug { "Resume partitions. Finished wait for future[completed=${future.isDone}]. Assignment: $partitionsToResume" }
+        log.info("Resume partitions. Finished wait for future[completed=${future.isDone}]. Assignment: $partitionsToResume")
         eventConsumer.resume(partitionsToResume)
     }
 
