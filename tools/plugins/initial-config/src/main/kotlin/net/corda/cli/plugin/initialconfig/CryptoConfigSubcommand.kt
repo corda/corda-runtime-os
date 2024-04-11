@@ -8,6 +8,7 @@ import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.libs.configuration.helper.VaultSecretConfigGenerator
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
+import net.corda.sdk.bootstrap.initial.toInsertStatement
 import picocli.CommandLine
 import picocli.CommandLine.ParameterException
 import java.io.File

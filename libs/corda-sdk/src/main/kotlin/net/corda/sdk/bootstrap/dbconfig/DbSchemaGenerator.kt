@@ -57,13 +57,14 @@ class DbSchemaGenerator(private val config: SpecConfig = SpecConfig()) {
     var jdbcUrl: String? = null
     var user: String? = null
     var password: String? = null
+
     // This is a workaround to make liquibase play nicely with the logger that's on the class loader
     var classLoaderWorkaround: ClassLoader = this::class.java.classLoader
 
     fun generateSqlFilesForSchemas(
         schemasToGenerate: List<String> = DEFAULT_SCHEMA_OPTIONS,
         generateSchemaSql: List<String>? = null,
-        outputDir: String= "."
+        outputDir: String = "."
     ) {
         if (clearChangeLog) {
             config.deleteFile(databaseChangeLogFile)
@@ -75,7 +76,7 @@ class DbSchemaGenerator(private val config: SpecConfig = SpecConfig()) {
                 file.contains(schemaName)
             }
         }.also { logger.info("Using the following schemas $it") }
-        .forEach { generateSql(it, generateSchemaSql, outputDir) }
+            .forEach { generateSql(it, generateSchemaSql, outputDir) }
     }
 
     private fun generateSql(filename: String, generateSchemaSql: List<String>?, outputDir: String) {
@@ -85,7 +86,7 @@ class DbSchemaGenerator(private val config: SpecConfig = SpecConfig()) {
         val test = "([a-zA-Z0-9]+)/db\\.changelog-master\\.xml".toRegex()
         // Make .sql output file
         val schemaType = checkNotNull(test.find(filename)).groupValues.last()
-        val outputFileName = "${outputDir.removeSuffix("/")}/${schemaType}.sql"
+        val outputFileName = "${outputDir.removeSuffix("/")}/$schemaType.sql"
 
         val oldCl = Thread.currentThread().contextClassLoader
         Thread.currentThread().contextClassLoader = classLoaderWorkaround
@@ -121,7 +122,10 @@ class DbSchemaGenerator(private val config: SpecConfig = SpecConfig()) {
         }.toMap()
 
     private fun writeSchemaToFile(
-        schemaName: String, outputFile: FileWriter, filename: String, generateSchemaSql: Boolean
+        schemaName: String,
+        outputFile: FileWriter,
+        filename: String,
+        generateSchemaSql: Boolean
     ) {
         // A curious feature of the liquibase connection is that if you attempt to generate multiple sql files against
         // the same one, only the first one ends up generating offline sql when using offline mode. Note that multiple
@@ -139,7 +143,7 @@ class DbSchemaGenerator(private val config: SpecConfig = SpecConfig()) {
                 database.defaultSchemaName = schemaName // our tables
                 database.liquibaseSchemaName = schemaName // liquibase tracking tables
                 outputFile.write(System.lineSeparator())
-                outputFile.write("CREATE SCHEMA IF NOT EXISTS ${schemaName};")
+                outputFile.write("CREATE SCHEMA IF NOT EXISTS $schemaName;")
                 outputFile.write(System.lineSeparator())
                 outputFile.write(System.lineSeparator())
             }

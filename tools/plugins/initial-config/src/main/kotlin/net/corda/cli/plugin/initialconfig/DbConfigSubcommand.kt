@@ -7,6 +7,7 @@ import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.configuration.helper.VaultSecretConfigGenerator
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
 import net.corda.libs.configuration.secret.SecretsCreateService
+import net.corda.sdk.bootstrap.initial.toInsertStatement
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File

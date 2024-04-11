@@ -1,4 +1,4 @@
-package net.corda.cli.plugin.initialconfig
+package net.corda.sdk.bootstrap.initial
 
 import net.corda.libs.permissions.common.constant.RoleKeys.DEFAULT_SYSTEM_ADMIN_ROLE
 import net.corda.libs.permissions.common.constant.UserKeys.DEFAULT_ADMIN_FULL_NAME
@@ -82,7 +82,6 @@ fun buildRbacConfigSql(
         details = "Automated initial set-up"
     )
 
-
     output.append(user.toInsertStatement())
     output.append(";\n")
     output.append(userAudit.toInsertStatement())
@@ -107,7 +106,6 @@ fun buildRbacConfigSql(
     return output.toString()
 }
 
-
 @Suppress("LongParameterList")
 fun createUser(
     fullName: String,
@@ -115,7 +113,6 @@ fun createUser(
     timeStamp: Instant,
     password: String? = null
 ): User {
-
     // Create a hashed password if using
     val hashAndSalt = password?.let {
         val passwordService = PasswordServiceFactory().createPasswordService(SecureRandom())
