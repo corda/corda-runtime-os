@@ -1,10 +1,38 @@
 package net.corda.messaging.mediator.processor
 
+import java.util.concurrent.atomic.AtomicBoolean
+
 class TopicOffsetManager {
     private val partitionOffsetManagers = mutableMapOf<Int, PartitionOffsetManager>()
-    fun getPartitionOffsetManager(partition: Int): PartitionOffsetManager {
+    private fun getPartitionOffsetManager(partition: Int): PartitionOffsetManager {
         return partitionOffsetManagers.computeIfAbsent(partition) {
             PartitionOffsetManager()
+        }
+    }
+
+    fun recordPolledOffset(partition: Int, offset: Long) {
+        getPartitionOffsetManager(partition).recordPolledOffset(offset)
+    }
+
+    fun recordOffsetPreCommit(partition: Int, offset: Long) {
+        getPartitionOffsetManager(partition).recordOffsetPreCommit(offset)
+    }
+
+    fun getCommittableOffsets(): Map<Int, Long> {
+        return partitionOffsetManagers.filterValues {
+            it.getCommittableOffset() != null
+        }.mapValues { it.value.getCommittableOffset()!! }
+    }
+
+    fun commit() {
+        partitionOffsetManagers.forEach {
+            it.value.commit()
+        }
+    }
+
+    fun rollback() {
+        partitionOffsetManagers.forEach {
+            it.value.rollback()
         }
     }
 
