@@ -24,6 +24,9 @@ class TokenForceClaimReleaseEventHandler : TokenEventHandler<ForceClaimRelease> 
         if (!state.claimExists(event.claimId)) {
             log.warn("Couldn't find existing claim for claimId='${event.claimId}'")
         } else {
+            // The cache must be flushed because of the priority strategy
+            // Otherwise the token priority won't be respected for tokens that have been released recently
+            tokenCache.removeAll()
             state.removeClaim(event.claimId)
         }
 
