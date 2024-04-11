@@ -23,7 +23,7 @@ interface MediatorConsumer<K : Any, V : Any> : AutoCloseable {
     /**
      * Synchronously commits the consumer offsets. This function should be called only after `poll` was called.
      */
-    fun syncCommitOffsets()
+    fun syncCommitOffsets(records: List<CordaConsumerRecord<K, V>>)
 
     /**
      * Resets consumer's offsets to the last committed positions. Next poll will read from the last committed positions.

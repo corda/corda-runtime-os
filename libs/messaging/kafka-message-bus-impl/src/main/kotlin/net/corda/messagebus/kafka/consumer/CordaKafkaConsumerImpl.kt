@@ -335,9 +335,21 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     }
 
     override fun syncCommitOffsets(event: CordaConsumerRecord<K, V>, metaData: String?) {
+        syncCommitOffsets(listOf(event), metaData)
+    }
+
+    override fun syncCommitOffsets(events: List<CordaConsumerRecord<K, V>>, metaData: String?) {
         val offsets = mutableMapOf<TopicPartition, OffsetAndMetadata>()
-        val topicPartition = TopicPartition(config.topicPrefix + event.topic, event.partition)
-        offsets[topicPartition] = OffsetAndMetadata(event.offset + 1, metaData)
+        events.forEach { event ->
+            val topicPartition = TopicPartition(config.topicPrefix + event.topic, event.partition)
+            offsets.compute(topicPartition) { key, value ->
+                if (value == null) {
+                    OffsetAndMetadata(event.offset + 1, metaData)
+                } else {
+                    OffsetAndMetadata(maxOf(value.offset(), event.offset + 1), metaData)
+                }
+            }
+        }
         var attemptCommit = true
 
         while (attemptCommit) {
@@ -348,17 +360,19 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 when (ex::class.java) {
                     in fatalExceptions -> {
                         logErrorAndThrowFatalException(
-                            "Error attempting to commitSync offsets for record $event.",
+                            "Error attempting to commitSync offsets for records $events.",
                             ex
                         )
                     }
+
                     in transientExceptions -> {
-                        logWarningAndThrowIntermittentException("Failed to commitSync offsets for record $event.", ex)
+                        logWarningAndThrowIntermittentException("Failed to commitSync offsets for records $events.", ex)
                     }
+
                     else -> {
                         logErrorAndThrowFatalException(
                             "Unexpected error attempting to commitSync offsets " +
-                                    "for record $event.", ex
+                                    "for records $events.", ex
                         )
                     }
                 }

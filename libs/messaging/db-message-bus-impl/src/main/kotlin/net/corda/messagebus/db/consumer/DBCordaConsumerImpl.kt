@@ -217,6 +217,10 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
         )
     }
 
+    override fun syncCommitOffsets(events: List<CordaConsumerRecord<K, V>>, metaData: String?) {
+        events.forEach { syncCommitOffsets(it, metaData) }
+    }
+
     override fun syncCommitOffsets(event: CordaConsumerRecord<K, V>, metaData: String?) {
         dbAccess.writeOffsets(
             listOf(

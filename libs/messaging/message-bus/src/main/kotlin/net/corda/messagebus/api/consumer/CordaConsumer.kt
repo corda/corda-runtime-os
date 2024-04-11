@@ -157,6 +157,7 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
      * @throws CordaMessageAPIFatalException fatal error occurred attempting to commit offsets.
      */
     fun syncCommitOffsets(event: CordaConsumerRecord<K, V>, metaData: String? = null)
+    fun syncCommitOffsets(events: List<CordaConsumerRecord<K, V>>, metaData: String? = null)
 
     /**
      * Get metadata about the partitions for a given topic.
