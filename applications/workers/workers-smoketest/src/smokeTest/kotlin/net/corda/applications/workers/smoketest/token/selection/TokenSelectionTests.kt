@@ -174,14 +174,33 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         assertThat(tokenSelectionResult2.flowResult).isEqualTo("SUCCESS")
     }
 
-    @RepeatedTest(3) // Random strategy will sometimes look like Priority strategy
+    @Test
     fun `Test priority selection strategy`(testInfo: TestInfo) {
         val idGenerator = TestRequestIdGenerator(testInfo)
         // Create 3 simple UTXO transactions
         val input = "token test input"
+
+        // A large number of tokens must be created to minimise the change to the random selection
+        // match the result for a priority selection. Bear in mind that repeating the test several times in the same
+        // run won't work because the claimed tokens that are released won't be readily available
         issueTokenWithPriority(input, idGenerator, 2)
         issueTokenWithPriority(input, idGenerator, 1)
         issueTokenWithPriority(input, idGenerator, 2)
+        issueTokenWithPriority(input, idGenerator, null)
+        issueTokenWithPriority(input, idGenerator, null)
+        issueTokenWithPriority(input, idGenerator, 3)
+        issueTokenWithPriority(input, idGenerator, 5)
+        issueTokenWithPriority(input, idGenerator, 4)
+        issueTokenWithPriority(input, idGenerator, 9)
+        issueTokenWithPriority(input, idGenerator, 9)
+        issueTokenWithPriority(input, idGenerator, 10)
+        issueTokenWithPriority(input, idGenerator, 10)
+        issueTokenWithPriority(input, idGenerator, null)
+        issueTokenWithPriority(input, idGenerator, 10)
+        issueTokenWithPriority(input, idGenerator, 2)
+        issueTokenWithPriority(input, idGenerator, 5)
+        issueTokenWithPriority(input, idGenerator, 7)
+        issueTokenWithPriority(input, idGenerator, 8)
 
         // Attempt to select the highest priority token created by the transaction
         val tokenSelectionFlowId = startRestFlow(
