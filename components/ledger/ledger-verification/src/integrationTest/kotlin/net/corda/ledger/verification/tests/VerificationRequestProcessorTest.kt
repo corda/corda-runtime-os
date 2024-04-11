@@ -237,13 +237,9 @@ class VerificationRequestProcessorTest {
             }
         }
 
-        // Send request to message processor (there were max number of redeliveries)
-        val e = assertThrows<CordaHTTPServerTransientException> {
-            processor.process(request)
-        }
-
-        assertThat(e.requestId).isEqualTo(request.flowExternalEventContext.requestId)
-        assertThat(e.cause!!.javaClass).isEqualTo(CpkNotAvailableException::class.java)
+        val result = processor.process(request)
+        val response = result.payload as ExternalEventResponse
+        assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.FATAL)
     }
 
     private fun createTestTransaction(ctx: SandboxGroupContext, isValid: Boolean): UtxoLedgerTransactionContainer {
