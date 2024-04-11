@@ -27,16 +27,3 @@ interface RestSecurityManager : Lifecycle {
      */
     fun buildSubject(principal: String): AuthorizingSubject
 }
-
-/**
- * Non-throwing version of authenticate, returning null instead of throwing in case of authentication failure
- */
-fun RestSecurityManager.tryAuthenticate(principal: String, password: Password): AuthorizingSubject? {
-    password.use {
-        return try {
-            authenticate(principal, password)
-        } catch (e: FailedLoginException) {
-            null
-        }
-    }
-}
