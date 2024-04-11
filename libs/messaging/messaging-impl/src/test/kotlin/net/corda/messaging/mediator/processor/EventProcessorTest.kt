@@ -139,6 +139,9 @@ class EventProcessorTest {
         val mockedState = mock<State>()
         val input = mapOf("key" to EventProcessingInput("key", getStringRecords(1, "key"), null))
 
+
+
+        
         whenever(client.send(any())).thenThrow(CordaMessageAPIFatalException("baz"))
         whenever(stateAndEventProcessor.onNext(anyOrNull(), any())).thenAnswer {
             Response<State>(

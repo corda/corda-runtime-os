@@ -34,7 +34,8 @@ class VerificationSubscriptionFactoryImpl @Activate constructor(
             currentSandboxGroupContext,
             verificationSandboxService,
             VerificationRequestHandlerImpl(responseFactory),
-            responseFactory
+            responseFactory,
+            VerificationExceptionCategorizerImpl()
         )
         val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, VERIFICATION_PATH)
         return subscriptionFactory.createHttpRPCSubscription(rpcConfig, processor)

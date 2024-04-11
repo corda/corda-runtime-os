@@ -7,6 +7,7 @@ import net.corda.flow.external.events.responses.exceptions.NotAllowedCpkExceptio
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.flow.utils.toMap
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
+import net.corda.ledger.verification.processor.VerificationExceptionCategorizer
 import net.corda.ledger.verification.processor.VerificationRequestHandler
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.messaging.api.exception.CordaHTTPServerTransientException
@@ -31,7 +32,8 @@ class VerificationRequestProcessor(
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     private val verificationSandboxService: VerificationSandboxService,
     private val requestHandler: VerificationRequestHandler,
-    private val responseFactory: ExternalEventResponseFactory
+    private val responseFactory: ExternalEventResponseFactory,
+    private val exceptionCategorizer: VerificationExceptionCategorizer
 ) : SyncRPCProcessor<TransactionVerificationRequest, FlowEvent> {
 
     override val requestClass = TransactionVerificationRequest::class.java
@@ -40,11 +42,6 @@ class VerificationRequestProcessor(
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
-
-    private val platformExceptions = setOf(
-        NotAllowedCpkException::class.java,
-        NotSerializableException::class.java
-    )
 
     override fun process(request: TransactionVerificationRequest): FlowEvent {
         val startTime = System.nanoTime()
@@ -62,11 +59,13 @@ class VerificationRequestProcessor(
                     currentSandboxGroupContext.set(sandbox)
                     requestHandler.handleRequest(sandbox, request)
                 } catch (e: Exception) {
-                    if (platformExceptions.contains(e::class.java)) {
-                        return@withMDC platformErrorResponse(request.flowExternalEventContext, e)
+                    return@withMDC when (exceptionCategorizer.categorize(e)) {
+                        ExternalEventResponseErrorType.FATAL -> fatalErrorResponse(request.flowExternalEventContext, e)
+                        ExternalEventResponseErrorType.PLATFORM -> platformErrorResponse(request.flowExternalEventContext, e)
+                        ExternalEventResponseErrorType.TRANSIENT -> throw CordaHTTPServerTransientException(
+                            request.flowExternalEventContext.requestId, e
+                        )
                     }
-                    // all other exceptions are treated as transient...
-                    throw CordaHTTPServerTransientException(request.flowExternalEventContext.requestId, e)
                 } finally {
                     currentSandboxGroupContext.remove()
                 }.also {
@@ -80,8 +79,15 @@ class VerificationRequestProcessor(
         return result.value as FlowEvent
     }
 
+    private fun fatalErrorResponse(
+        externalEventContext: ExternalEventContext,
+        exception: Exception
+    ): Record<String, FlowEvent> {
+        log.warn(errorMessage(externalEventContext, ExternalEventResponseErrorType.FATAL), exception)
+        return responseFactory.fatalError(externalEventContext, exception)
+    }
     private fun platformErrorResponse(externalEventContext: ExternalEventContext, exception: Exception): Record<String, FlowEvent> {
-        log.error(errorMessage(externalEventContext, ExternalEventResponseErrorType.PLATFORM), exception)
+        log.warn(errorMessage(externalEventContext, ExternalEventResponseErrorType.PLATFORM), exception)
         return responseFactory.platformError(externalEventContext, exception)
     }
 
