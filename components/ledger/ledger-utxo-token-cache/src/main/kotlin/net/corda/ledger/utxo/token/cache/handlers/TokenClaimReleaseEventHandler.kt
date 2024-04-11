@@ -27,7 +27,6 @@ class TokenClaimReleaseEventHandler(
         if (!state.claimExists(event.claimId)) {
             log.warn("Couldn't find existing claim for claimId='${event.claimId}'")
         } else {
-
             state.removeClaim(event.claimId)
         }
 
