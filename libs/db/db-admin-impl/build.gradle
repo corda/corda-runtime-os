@@ -13,11 +13,6 @@ dependencies {
     compileOnly "org.osgi:org.osgi.service.component.annotations"
 
     implementation libs.liquibase
-    constraints {
-        implementation(libs.snakeyaml) {
-            because "required until liquibase-core updates it's internal version of snakeYaml, currently using 1.33 which has CVE-2022-1471"
-        }
-    }
 
     api project(":libs:db:db-admin")
 
