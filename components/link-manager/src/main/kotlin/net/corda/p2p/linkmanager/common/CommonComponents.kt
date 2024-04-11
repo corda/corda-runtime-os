@@ -88,12 +88,14 @@ internal class CommonComponents(
     )
 
     // no lifecycle
+    // OK
     private val sessionCache = SessionCache(
         stateManager,
         sessionEventPublisher,
     )
 
     // no lifecycle
+    // OK
     private val sessionExpirationScheduler = SessionExpirationScheduler(
         clock,
         sessionCache,
@@ -119,6 +121,7 @@ internal class CommonComponents(
     private val p2pRecordsFactory = P2pRecordsFactory(clock, cordaAvroSerializationFactory)
 
     // no lifecycle
+    // OK
     private val sessionWriter = SessionWriterImpl(
         sessionCache,
     )
@@ -267,6 +270,7 @@ internal class CommonComponents(
             tlsCertificatesPublisher.dominoTile.toNamedLifecycle(),
             mtlsClientCertificatePublisher.dominoTile.toNamedLifecycle(),
             staleSessionProcessor.dominoTile.toNamedLifecycle(),
+            sessionLookup.dominoTile.toNamedLifecycle(),
         ) + externalManagedDependencies,
         configurationChangeHandler = deadSessionMonitorConfigHandler,
         onClose = { sessionCache.close() }
