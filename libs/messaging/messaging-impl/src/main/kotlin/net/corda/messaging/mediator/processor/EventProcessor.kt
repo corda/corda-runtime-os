@@ -1,6 +1,7 @@
 package net.corda.messaging.mediator.processor
 
 import net.corda.libs.statemanager.api.State
+import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorInputService
 import net.corda.messaging.api.mediator.MediatorInputService.Companion.INPUT_HASH_HEADER
@@ -14,6 +15,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.messaging.mediator.metrics.EventMediatorMetrics
+import net.corda.messaging.utils.toRecord
 import net.corda.tracing.addTraceContextToRecord
 
 /**
@@ -72,7 +74,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         val key = input.key
         val inputState = input.state
         var processorState = inputProcessorState
-        val asyncOutputs = mutableMapOf<Record<K, E>, MutableList<MediatorMessage<Any>>>()
+        val asyncOutputs = mutableMapOf<CordaConsumerRecord<K, E>, MutableList<MediatorMessage<Any>>>()
         val stateChangeAndOperation = try {
             input.records.forEach { consumerInputEvent ->
                 val (updatedProcessorState, newAsyncOutputs) = processConsumerInput(consumerInputEvent, processorState, key)
@@ -124,7 +126,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     }
 
     private fun processConsumerInput(
-        consumerInputEvent: Record<K, E>,
+        consumerInputEvent: CordaConsumerRecord<K, E>,
         processorState: StateAndEventProcessor.State<S>?,
         key: K,
     ): Pair<StateAndEventProcessor.State<S>?, List<MediatorMessage<Any>>> {
@@ -134,7 +136,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         val queue = ArrayDeque(listOf(consumerInputEvent))
         while (queue.isNotEmpty()) {
             val event = getNextEvent(queue, consumerInputHash)
-            val response = config.messageProcessor.onNext(processorStateUpdated, event)
+            val response = config.messageProcessor.onNext(processorStateUpdated, event.toRecord())
             processorStateUpdated = response.updatedState
             val (syncEvents, asyncEvents) = response.responseEvents.map { convertToMessage(it) }.partition {
                 messageRouter.getDestination(it).type == RoutingDestination.Type.SYNCHRONOUS
@@ -152,9 +154,9 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     }
 
     private fun getNextEvent(
-        queue: ArrayDeque<Record<K, E>>,
+        queue: ArrayDeque<CordaConsumerRecord<K, E>>,
         consumerInputHash: String
-    ): Record<K, E> {
+    ): CordaConsumerRecord<K, E> {
         val event = queue.removeFirst()
         return event.copy(headers = event.headers.plus(Pair(INPUT_HASH_HEADER, consumerInputHash)))
     }
@@ -170,8 +172,8 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     }
 
 
-    private fun MutableMap<Record<K, E>, MutableList<MediatorMessage<Any>>>.addOutputs(
-        inputEvent: Record<K, E>,
+    private fun MutableMap<CordaConsumerRecord<K, E>, MutableList<MediatorMessage<Any>>>.addOutputs(
+        inputEvent: CordaConsumerRecord<K, E>,
         asyncEvents: List<MediatorMessage<Any>>
     ) = computeIfAbsent(inputEvent) { mutableListOf() }.addAll(asyncEvents)
 
@@ -181,7 +183,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     private fun processSyncEvents(
         key: K,
         syncEvents: List<MediatorMessage<Any>>
-    ): List<Record<K, E>> {
+    ): List<CordaConsumerRecord<K, E>> {
         return syncEvents.mapNotNull { message ->
             val destination = messageRouter.getDestination(message)
 
@@ -192,8 +194,10 @@ class EventProcessor<K : Any, S : Any, E : Any>(
             }
             reply?.let {
                 addTraceContextToRecord(
-                    Record(
+                    CordaConsumerRecord(
                         "",
+                        0,
+                        0,
                         key,
                         reply.payload,
                         0,

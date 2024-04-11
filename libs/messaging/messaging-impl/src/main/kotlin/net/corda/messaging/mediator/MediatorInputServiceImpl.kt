@@ -2,8 +2,8 @@ package net.corda.messaging.mediator
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.cipher.suite.sha256Bytes
+import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.mediator.MediatorInputService
-import net.corda.messaging.api.records.Record
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -16,7 +16,7 @@ class MediatorInputServiceImpl @Activate constructor(
 ): MediatorInputService {
     private val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
 
-    override fun <K : Any, E : Any> getHash(inputEvent: Record<K, E>): String {
+    override fun <K : Any, E : Any> getHash(inputEvent: CordaConsumerRecord<K, E>): String {
         val recordValueBytes = serialize(inputEvent.value)
         check(recordValueBytes != null) {
             "Input record key and value bytes should not be null"

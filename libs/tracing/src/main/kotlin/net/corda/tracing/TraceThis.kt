@@ -5,6 +5,7 @@ package net.corda.tracing
 
 import aQute.bnd.annotation.Resolution.OPTIONAL
 import aQute.bnd.annotation.spi.ServiceConsumer
+import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -79,6 +80,14 @@ fun addTraceContextToRecord(
 ): CordaProducerRecord<out Any, out Any> {
     return record.copy(headers = TracingState.currentTraceService.addTraceHeaders(record.headers, traceHeadersToOverrideContext))
 }
+
+fun<K: Any, E: Any> addTraceContextToRecord(
+    record: CordaConsumerRecord<K, E>,
+    traceHeadersToOverrideContext: Map<String, Any> = emptyMap() // By default, don't override the current trace context
+): CordaConsumerRecord<K, E> {
+    return record.copy(headers = TracingState.currentTraceService.addTraceHeaders(record.headers, traceHeadersToOverrideContext))
+}
+
 
 fun addTraceContextToMediatorMessage(
     message: MediatorMessage<*>,

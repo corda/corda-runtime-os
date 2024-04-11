@@ -1,6 +1,7 @@
 package net.corda.messaging.mediator.processor
 
 import net.corda.libs.statemanager.api.State
+import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.constants.MessagingMetadataKeys.PROCESSING_FAILURE
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorConsumer
@@ -9,13 +10,11 @@ import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.config.MediatorConsumerConfig
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
-import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.GroupAllocator
 import net.corda.messaging.mediator.MediatorSubscriptionState
 import net.corda.messaging.mediator.MultiSourceEventMediatorImpl
 import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.messaging.mediator.metrics.EventMediatorMetrics
-import net.corda.messaging.utils.toRecord
 import net.corda.taskmanager.TaskManager
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.debug
@@ -142,7 +141,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     ): List<EventProcessingInput<K, E>> {
         val messages = consumer.poll(pollTimeout)
         val records = messages.map {
-            it.toRecord()
+            it
         }.groupBy { it.key }
         val states = stateManager.get(records.keys.map { it.toString() })
         return generateInputs(states.values, records)
@@ -284,7 +283,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      *
      * The input records must be the set of records that should be processed.
      */
-    private fun generateInputs(states: Collection<State>, records: Map<K, List<Record<K, E>>>) : List<EventProcessingInput<K, E>> {
+    private fun generateInputs(states: Collection<State>, records: Map<K, List<CordaConsumerRecord<K, E>>>) : List<EventProcessingInput<K, E>> {
         val (runningStates, failedStates) = states.partition {
             it.metadata[PROCESSING_FAILURE] != true
         }

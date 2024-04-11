@@ -4,7 +4,6 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
-import net.corda.messaging.api.records.Record
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.constants.SubscriptionType
 import java.time.Duration
@@ -50,10 +49,10 @@ fun generateMockCordaConsumerRecordList(numberOfRecords: Long, topic: String, pa
 /**
  * Generate [recordCount] string key/value records
  */
-fun getStringRecords(recordCount: Int, key: String): List<Record<String, String>> {
-    val records = mutableListOf<Record<String, String>>()
+fun getStringRecords(recordCount: Int, key: String): List<CordaConsumerRecord<String, String>> {
+    val records = mutableListOf<CordaConsumerRecord<String, String>>()
     for (j in 1..recordCount) {
-        records.add(Record("topic", key, j.toString()))
+        records.add(CordaConsumerRecord("topic", 0,0, key, j.toString(), 0))
     }
 
     return records

@@ -2,10 +2,10 @@ package net.corda.messaging.mediator
 
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.processor.EventProcessingInput
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -130,7 +130,7 @@ class GroupAllocatorTest {
     private fun getIntInputs(recordCountByKey: List<Int>): List<EventProcessingInput<Int, Int>> {
         return recordCountByKey.mapIndexed { index, count ->
             val records = (1..count).map {value ->
-                Record(null, index, value)
+                CordaConsumerRecord("", 0, 0, index, value, 0)
             }
             EventProcessingInput(index, records, null)
         }
