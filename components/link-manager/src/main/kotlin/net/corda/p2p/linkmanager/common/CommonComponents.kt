@@ -133,6 +133,7 @@ internal class CommonComponents(
     )
 
     // existing lifecycle, nothing needs to be added
+    // OK
     private val oldSessionManager = SessionManagerImpl(
         groupPolicyProvider,
         membershipGroupReaderProvider,
@@ -147,12 +148,14 @@ internal class CommonComponents(
     )
 
     // no lifecycle
+    // OK
     private val reEstablishmentMessageSender = ReEstablishmentMessageSender(
         p2pRecordsFactory,
         oldSessionManager,
     )
 
     // existing lifecycle, nothing needs to be added
+    // OK
     val sessionEventListener = StatefulSessionEventProcessor(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
@@ -164,6 +167,7 @@ internal class CommonComponents(
     )
 
     // no lifecycle
+    // OK
     private val stateManagerWrapper = StateManagerWrapper(
         stateManager,
         sessionCache,
@@ -270,7 +274,6 @@ internal class CommonComponents(
             tlsCertificatesPublisher.dominoTile.toNamedLifecycle(),
             mtlsClientCertificatePublisher.dominoTile.toNamedLifecycle(),
             staleSessionProcessor.dominoTile.toNamedLifecycle(),
-            sessionLookup.dominoTile.toNamedLifecycle(),
         ) + externalManagedDependencies,
         configurationChangeHandler = deadSessionMonitorConfigHandler,
         onClose = { sessionCache.close() }

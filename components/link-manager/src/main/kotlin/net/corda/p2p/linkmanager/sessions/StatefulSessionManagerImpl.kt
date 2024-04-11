@@ -465,7 +465,6 @@ internal class StatefulSessionManagerImpl(
                 sessionManagerImpl.dominoTile.coordinatorName,
                 LifecycleCoordinatorName.forComponent<SessionEncryptionOpsClient>(),
                 sessionEventListener.dominoTile.coordinatorName,
-                LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
                 sessionLookup.dominoTile.coordinatorName,
                 sessionMessageProcessor.dominoTile.coordinatorName,
             ),
