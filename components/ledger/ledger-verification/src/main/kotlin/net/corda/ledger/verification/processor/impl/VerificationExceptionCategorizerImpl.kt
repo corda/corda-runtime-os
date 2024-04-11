@@ -11,7 +11,7 @@ class VerificationExceptionCategorizerImpl : VerificationExceptionCategorizer {
         return when {
             isFatal(exception) -> ExternalEventResponseErrorType.FATAL
             isPlatform(exception) -> ExternalEventResponseErrorType.PLATFORM
-            isTransient(exception) -> ExternalEventResponseErrorType.TRANSIENT
+            // Add transient here when some exist.
             else -> ExternalEventResponseErrorType.PLATFORM
         }
     }
@@ -48,9 +48,5 @@ class VerificationExceptionCategorizerImpl : VerificationExceptionCategorizer {
             criteria<NotSerializableException>()
         )
         return checks.any { it.meetsCriteria(exception) }
-    }
-
-    private fun isTransient(exception: Throwable) : Boolean {
-        return false
     }
 }

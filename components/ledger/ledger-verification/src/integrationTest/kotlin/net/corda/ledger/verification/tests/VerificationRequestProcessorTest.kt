@@ -12,6 +12,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
+import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
@@ -161,7 +162,7 @@ class VerificationRequestProcessorTest {
             verificationSandboxService,
             VerificationRequestHandlerImpl(externalEventResponseFactory),
             externalEventResponseFactory
-        )
+        ) { _ -> ExternalEventResponseErrorType.FATAL }
 
         // Send request to message processor
         val flowEvent = processor.process(request)
@@ -193,7 +194,7 @@ class VerificationRequestProcessorTest {
             verificationSandboxService,
             VerificationRequestHandlerImpl(externalEventResponseFactory),
             externalEventResponseFactory
-        )
+        ) { _ -> ExternalEventResponseErrorType.FATAL }
 
         // Send request to message processor
         val flowEvent = processor.process(request)
@@ -212,7 +213,7 @@ class VerificationRequestProcessorTest {
     }
 
     @Test
-    fun `returns transient exception after CPK not available`() {
+    fun `returns fatal exception after CPK not available`() {
         val virtualNodeInfo = virtualNodeService.load(TEST_CPB)
         val holdingIdentity = virtualNodeInfo.holdingIdentity
         val cpksMetadata =
@@ -228,7 +229,13 @@ class VerificationRequestProcessorTest {
             verificationSandboxService,
             VerificationRequestHandlerImpl(externalEventResponseFactory),
             externalEventResponseFactory
-        )
+        ) { exception: Throwable ->
+            if (exception is CpkNotAvailableException) {
+                ExternalEventResponseErrorType.FATAL
+            } else {
+                ExternalEventResponseErrorType.TRANSIENT
+            }
+        }
 
         // Send request to message processor (there were max number of redeliveries)
         val e = assertThrows<CordaHTTPServerTransientException> {
