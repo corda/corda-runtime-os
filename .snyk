@@ -7,6 +7,6 @@ ignore:
         reason: >-
           The Bouncycastle release that fixes this issue is incompatible with
           OSGi so for now we have to wait for the next one.
-        expires: 2023-07-31T00:00:00.000Z
+        expires: 2024-07-31T00:00:00.000Z
         created: 2024-04-11T15:11:31.735Z
 patch: {}
