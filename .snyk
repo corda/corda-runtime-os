@@ -39,7 +39,9 @@ ignore:
         created: 2023-07-20T08:30:30.517Z
   SNYK-JAVA-ORGBOUNCYCASTLE-6277381:
     - '*':
-        reason: Currently impossible to upgrade to a newer version of Bouncycastle
+        reason: >-
+          The Bouncycastle release that fixes this issue is incompatible with OSGi
+          so for now we have to wait for the next one.
         expires: 2024-07-31T00:00:00.000Z
         created: 2024-04-11T13:33:15.107Z
 patch: {}
