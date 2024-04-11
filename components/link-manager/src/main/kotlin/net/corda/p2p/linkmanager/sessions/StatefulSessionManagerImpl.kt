@@ -30,6 +30,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSession
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.SessionAlreadyPending
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.SessionEstablished
 import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventProcessor
+import net.corda.p2p.linkmanager.sessions.events.StatefulSessionEventPublisher
 import net.corda.p2p.linkmanager.sessions.lookup.SessionLookup
 import net.corda.p2p.linkmanager.sessions.messages.SessionMessageProcessor
 import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata
@@ -74,6 +75,7 @@ internal class StatefulSessionManagerImpl(
     private val sessionWriter: SessionWriter,
     private val sessionMessageProcessor: SessionMessageProcessor,
     private val stateFactory: StateFactory = StateFactory(stateConvertor),
+    sessionEventPublisher: StatefulSessionEventPublisher,
 ) : SessionManager {
     companion object {
         const val LINK_MANAGER_SUBSYSTEM = "link-manager"
@@ -480,6 +482,7 @@ internal class StatefulSessionManagerImpl(
                 stateManager.name,
                 sessionManagerImpl.dominoTile.coordinatorName,
                 LifecycleCoordinatorName.forComponent<SessionEncryptionOpsClient>(),
+                sessionEventPublisher.dominoTile.coordinatorName,
                 sessionEventListener.dominoTile.coordinatorName,
                 sessionLookup.dominoTile.coordinatorName,
                 sessionMessageProcessor.dominoTile.coordinatorName,
@@ -487,6 +490,7 @@ internal class StatefulSessionManagerImpl(
             managedChildren =
             setOf(
                 sessionManagerImpl.dominoTile.toNamedLifecycle(),
+                sessionEventPublisher.dominoTile.toNamedLifecycle(),
                 sessionEventListener.dominoTile.toNamedLifecycle(),
                 sessionLookup.dominoTile.toNamedLifecycle(),
                 sessionMessageProcessor.dominoTile.toNamedLifecycle(),

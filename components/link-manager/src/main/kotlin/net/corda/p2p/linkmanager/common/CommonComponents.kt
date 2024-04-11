@@ -210,6 +210,7 @@ internal class CommonComponents(
         sessionLookup,
         sessionWriter,
         sessionMessageProcessor,
+        sessionEventPublisher = sessionEventPublisher,
     )
 
     private val trustStoresPublisher = TrustStoresPublisher(
