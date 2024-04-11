@@ -37,4 +37,9 @@ ignore:
           HTTP headers used with the client.
         expires: 2023-12-20T08:30:30.514Z
         created: 2023-07-20T08:30:30.517Z
+  SNYK-JAVA-ORGBOUNCYCASTLE-6277381:
+    - '*':
+        reason: Currently impossible to upgrade to a newer version of Bouncycastle
+        expires: 2024-07-31T00:00:00.000Z
+        created: 2024-04-11T13:33:15.107Z
 patch: {}
