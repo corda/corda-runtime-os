@@ -16,6 +16,7 @@ dependencies {
     implementation project(':components:membership:membership-rest')
     implementation libs.jackson.module.kotlin
     implementation libs.kotlin.stdlib
+    implementation libs.liquibase
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-endpoints')
     implementation project(':libs:membership:certificates-common')
