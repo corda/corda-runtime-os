@@ -9,12 +9,15 @@ import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.event.SessionCreated
 import net.corda.data.p2p.event.SessionDirection
 import net.corda.data.p2p.event.SessionEvent
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.State
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.Session
@@ -54,9 +57,12 @@ import net.corda.data.p2p.crypto.ResponderHelloMessage as AvroResponderHelloMess
 
 @Suppress("LongParameterList")
 internal class StatefulSessionManagerImpl(
+    subscriptionFactory: SubscriptionFactory,
+    messagingConfig: SmartConfig,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    sessionEventListener: StatefulSessionEventProcessor,
-    private val stateManager: StateManagerWrapper,
+    stateManager: StateManager,
+    //sessionEventListener: StatefulSessionEventProcessor,
+    private val stateManagerWrapper: StateManagerWrapper,
     private val sessionManagerImpl: SessionManagerImpl,
     private val stateConvertor: StateConvertor,
     private val clock: Clock,
@@ -244,7 +250,7 @@ internal class StatefulSessionManagerImpl(
                 sessionMessageProcessor.processOutboundSessionMessages(messages)
 
         val failedUpdate =
-            stateManager.upsert(results.mapNotNull { it.result?.stateAction }).keys
+            stateManagerWrapper.upsert(results.mapNotNull { it.result?.stateAction }).keys
 
         return results.mapNotNull { result ->
             if (failedUpdate.contains(result.result?.stateAction?.state?.key)) {
@@ -420,7 +426,7 @@ internal class StatefulSessionManagerImpl(
     ): Collection<Pair<T, SessionManager.SessionState>> {
         val resultStates = sessionStates.flatMap { state -> processOutboundMessagesState(state) }
         val updates = resultStates.mapNotNull { it.action }
-        val failedUpdates = stateManager.upsert(updates)
+        val failedUpdates = stateManagerWrapper.upsert(updates)
 
         return resultStates.flatMap { resultState ->
             val key = resultState.key
@@ -454,6 +460,16 @@ internal class StatefulSessionManagerImpl(
     private fun recordsForSessionCreated(key: String, direction: SessionDirection): List<Record<String, SessionEvent>> {
         return listOf(Record(Schemas.P2P.SESSION_EVENTS, key, SessionEvent(SessionCreated(direction, key))))
     }
+
+    private val sessionEventListener = StatefulSessionEventProcessor(
+        coordinatorFactory,
+        subscriptionFactory,
+        messagingConfig,
+        stateManager,
+        stateConvertor,
+        sessionCache,
+        sessionManagerImpl,
+    )
 
     override val dominoTile =
         ComplexDominoTile(
