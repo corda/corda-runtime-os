@@ -232,7 +232,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             }
         }
 
-        log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size})" }
+        log.info("Processing events (${events.joinToString { it.toLogStr() }}, size: ${events.size})")
         try {
             processorMeter.recordCallable {
                 for (event in events) {
@@ -241,7 +241,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 }
             }
         } catch (ex: StateAndEventConsumer.RebalanceInProgressException) {
-            log.warn ("Abandoning processing of events(keys: ${events.joinToString { it.key.toString() }}, " +
+            log.warn ("Abandoning processing of events (${events.joinToString { it.toLogStr() }}, " +
                     "size: ${events.size}) due to rebalance", ex)
             return true
         }
@@ -259,10 +259,11 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 })
                 deadLetterRecords.clear()
             }
+            log.info("Committing events (${events.joinToString { it.toLogStr() }}, size: ${events.size})")
             producer.sendRecordOffsetsToTransaction(eventConsumer, events)
             producer.commitTransaction()
         }
-        log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size}) complete." }
+        log.info("Completed Processing events (keys: ${events.joinToString { it.toLogStr() }}, size: ${events.size})")
 
         stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
         return false
@@ -273,7 +274,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         outputRecords: MutableList<Record<*, *>>,
         updatedStates: MutableMap<Int, MutableMap<K, S?>>
     ) {
-        log.debug { "Processing event: $event" }
+        log.info("Processing event: ${event.toLogStr()}")
         val key = event.key
         val state = updatedStates[event.partition]?.get(event.key)
         val partitionId = event.partition
@@ -284,7 +285,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         when {
             thisEventUpdates == null -> {
                 log.warn(
-                    "Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. " +
+                    "Sending state and event ${event.toLogStr()} for topic ${event.topic} to dead letter queue. " +
                             "Processor failed to complete."
                 )
                 generateChunkKeyCleanupRecords(key, state, null, outputRecords)
@@ -295,7 +296,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
             thisEventUpdates.markForDLQ -> {
                 log.warn(
-                    "Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. " +
+                    "Sending state and event ${event.toLogStr()} for topic ${event.topic} to dead letter queue. " +
                             "Processor marked event for the dead letter queue"
                 )
                 generateChunkKeyCleanupRecords(key, state, null, outputRecords)
@@ -381,4 +382,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             throw CordaMessageAPIIntermittentException(message, ex)
         }
     }
+
+    private fun CordaConsumerRecord<K, *>.toLogStr(): String =
+        "partition [$partition], offset [$offset], key [$key]"
 }

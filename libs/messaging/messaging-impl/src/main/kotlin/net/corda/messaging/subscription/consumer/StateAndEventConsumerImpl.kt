@@ -220,8 +220,10 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     override fun pollEvents(): List<CordaConsumerRecord<K, E>> {
         return when {
             inSyncPartitions.isNotEmpty() -> {
-                eventConsumer.poll(EVENT_POLL_TIMEOUT).also {
-                    log.debug { "Received ${it.size} events on keys ${it.joinToString { it.key.toString() }}" }
+                eventConsumer.poll(EVENT_POLL_TIMEOUT).also { records ->
+                    if (records.isNotEmpty()) {
+                        log.info("Polled ${records.size} events on keys ${records.joinToString { it.toLogStr() }}")
+                    }
                 }
             }
             partitionsToSync.isEmpty() -> {
@@ -316,7 +318,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                 // Only those partitions that are not actively being synced.
                 .filter { !partitionsToSync.contains(it) }
 
-            log.debug { "Rebalance occurred while polling from paused consumer, resuming partitions: $partitionsToResume" }
+            log.info("Rebalance occurred while polling from paused consumer, resuming partitions: $partitionsToResume")
             eventConsumer.resume(partitionsToResume)
 
             throw StateAndEventConsumer.RebalanceInProgressException(message)
@@ -394,9 +396,9 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             val eventConsumerAssignmentToPause = eventConsumer.assignment() - eventConsumer.paused()
             val stateConsumerAssignmentToPause = stateConsumer.assignment() - stateConsumer.paused()
 
-            log.debug { "Resetting poll interval. Pausing event consumer partitions: $eventConsumerAssignmentToPause" }
+            log.info("Resetting poll interval. Pausing event consumer partitions: $eventConsumerAssignmentToPause")
             eventConsumer.pause(eventConsumerAssignmentToPause)
-            log.debug { "Resetting poll interval. Pausing state consumer partitions: $stateConsumerAssignmentToPause" }
+            log.info("Resetting poll interval. Pausing state consumer partitions: $stateConsumerAssignmentToPause")
             stateConsumer.pause(stateConsumerAssignmentToPause)
 
             pollWithCleanUpAndExceptionOnRebalance("Rebalance occurred while resetting poll interval", eventConsumerAssignmentToPause) {}
@@ -414,9 +416,9 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             val eventConsumerAssignmentToResume = eventConsumer.assignment().intersect(eventConsumerAssignmentToPause)
             val stateConsumerAssignmentToResume = stateConsumer.assignment().intersect(stateConsumerAssignmentToPause)
 
-            log.debug { "Reset of event consumer poll interval complete. Resuming event assignment: $eventConsumerAssignmentToResume" }
+            log.info("Reset of event consumer poll interval complete. Resuming event assignment: $eventConsumerAssignmentToResume")
             eventConsumer.resume(eventConsumerAssignmentToResume)
-            log.debug { "Reset of state consumer poll interval complete. Resuming state assignment: $stateConsumerAssignmentToResume" }
+            log.info("Reset of state consumer poll interval complete. Resuming state assignment: $stateConsumerAssignmentToResume")
             stateConsumer.resume(stateConsumerAssignmentToResume)
 
             pollIntervalCutoff = getNextPollIntervalCutoff()
@@ -445,4 +447,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private fun CordaTopicPartition.toStatePartition() : CordaTopicPartition {
         return CordaTopicPartition(getStateAndEventStateTopic(this.topic), this.partition)
     }
+
+    private fun CordaConsumerRecord<K, *>.toLogStr(): String =
+        "partition [$partition], offset [$offset], key [$key]"
 }
