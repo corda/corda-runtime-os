@@ -161,7 +161,8 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         assertThat(tokenSelectionResult1.flowError).isNull()
         assertThat(tokenSelectionResult1.flowResult).isEqualTo("SUCCESS")
 
-        // Attempt to select the token created by the transaction
+        // Attempt to select the token created by the transaction again. This should work because even though
+        // the previous flow claimed the same tokens, the tokens must have been released after the flow terminated
         val tokenSelectionFlowId2 = startRestFlow(
             aliceHoldingId,
             mapOf(),
@@ -174,7 +175,6 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         assertThat(tokenSelectionResult2.flowResult).isEqualTo("SUCCESS")
     }
 
-    @Disabled("Test switched off until priority strategy implementation (CORE-18979) is complete")
     @RepeatedTest(3) // Random strategy will sometimes look like Priority strategy
     fun `Test priority selection strategy`(testInfo: TestInfo) {
         val idGenerator = TestRequestIdGenerator(testInfo)
