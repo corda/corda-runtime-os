@@ -4,12 +4,14 @@ import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.NotAllowedCpkException
 import net.corda.ledger.verification.processor.VerificationExceptionCategorizer
+import net.corda.messaging.api.exception.CordaHTTPServerErrorException
 import java.io.NotSerializableException
 
 class VerificationExceptionCategorizerImpl : VerificationExceptionCategorizer {
     override fun categorize(exception: Throwable): ExternalEventResponseErrorType {
         return when {
-            isFatal(exception) -> ExternalEventResponseErrorType.FATAL
+            // Rethrow things where we know it might fail, but we want some retry.
+            isPossiblyFatal(exception) -> throw exception
             isPlatform(exception) -> ExternalEventResponseErrorType.PLATFORM
             // Add transient here when some exist.
             else -> ExternalEventResponseErrorType.PLATFORM
@@ -34,9 +36,9 @@ class VerificationExceptionCategorizerImpl : VerificationExceptionCategorizer {
         noinline check: (T) -> Boolean = { _ -> true }
     ) : ExceptionCriteria<T> = ExceptionCriteria(T::class.java, check)
 
-    private fun isFatal(exception: Throwable) : Boolean {
+    private fun isPossiblyFatal(exception: Throwable) : Boolean {
         val checks = listOf(
-            // Treat as fatal as bounded retries are desirable if the CPK isn't available.
+            // Treat as potentially fatal as bounded retries are desirable if the CPK isn't available.
             criteria<CpkNotAvailableException>()
         )
         return checks.any { it.meetsCriteria(exception) }

@@ -5,13 +5,14 @@ import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableExcept
 import net.corda.flow.external.events.responses.exceptions.NotAllowedCpkException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.io.NotSerializableException
 import java.util.stream.Stream
 
-class VerificationExceptionCatergorizerImplTest {
+class VerificationExceptionCategorizerImplTest {
 
     private companion object {
         @JvmStatic
@@ -23,7 +24,7 @@ class VerificationExceptionCatergorizerImplTest {
         }
 
         @JvmStatic
-        fun fatalExceptions() : Stream<Arguments> {
+        fun possiblyFatalExceptions() : Stream<Arguments> {
             return Stream.of(
                 Arguments.of(CpkNotAvailableException("bar"))
             )
@@ -31,11 +32,12 @@ class VerificationExceptionCatergorizerImplTest {
     }
 
     @ParameterizedTest(name = "{0} is categorized as a fatal exception")
-    @MethodSource("fatalExceptions")
+    @MethodSource("possiblyFatalExceptions")
     fun `fatal errors are correctly categorized`(exception: Exception) {
         val categorizer = VerificationExceptionCategorizerImpl()
-        val result = categorizer.categorize(exception)
-        assertThat(result).isEqualTo(ExternalEventResponseErrorType.FATAL)
+        assertThrows<Exception> {
+            categorizer.categorize(exception)
+        }
     }
 
     @ParameterizedTest(name = "{0} is categorized as a platform exception")
