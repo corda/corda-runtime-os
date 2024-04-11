@@ -12,7 +12,6 @@ import net.corda.ledger.utxo.verification.CordaPackageSummary
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.verification.processor.VerificationRequestHandler
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
-import net.corda.messaging.api.exception.CordaHTTPServerTransientException
 import net.corda.messaging.api.records.Record
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -21,7 +20,6 @@ import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock

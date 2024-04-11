@@ -4,7 +4,6 @@ import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.NotAllowedCpkException
 import net.corda.ledger.verification.processor.VerificationExceptionCategorizer
-import net.corda.messaging.api.exception.CordaHTTPServerErrorException
 import java.io.NotSerializableException
 
 class VerificationExceptionCategorizerImpl : VerificationExceptionCategorizer {
@@ -18,8 +17,8 @@ class VerificationExceptionCategorizerImpl : VerificationExceptionCategorizer {
         }
     }
 
-    private data class ExceptionCriteria<T: Throwable>(val type: Class<T>, val check: (T) -> Boolean = { _ -> true }) {
-        fun meetsCriteria(exception: Throwable?) : Boolean {
+    private data class ExceptionCriteria<T : Throwable>(val type: Class<T>, val check: (T) -> Boolean = { _ -> true }) {
+        fun meetsCriteria(exception: Throwable?): Boolean {
             if (exception == null) {
                 return false
             }
@@ -32,11 +31,11 @@ class VerificationExceptionCategorizerImpl : VerificationExceptionCategorizer {
         }
     }
 
-    private inline fun <reified T: Throwable> criteria(
+    private inline fun <reified T : Throwable> criteria(
         noinline check: (T) -> Boolean = { _ -> true }
-    ) : ExceptionCriteria<T> = ExceptionCriteria(T::class.java, check)
+    ): ExceptionCriteria<T> = ExceptionCriteria(T::class.java, check)
 
-    private fun isPossiblyFatal(exception: Throwable) : Boolean {
+    private fun isPossiblyFatal(exception: Throwable): Boolean {
         val checks = listOf(
             // Treat as potentially fatal as bounded retries are desirable if the CPK isn't available.
             criteria<CpkNotAvailableException>()
@@ -44,7 +43,7 @@ class VerificationExceptionCategorizerImpl : VerificationExceptionCategorizer {
         return checks.any { it.meetsCriteria(exception) }
     }
 
-    private fun isPlatform(exception: Throwable) : Boolean {
+    private fun isPlatform(exception: Throwable): Boolean {
         val checks = listOf(
             criteria<NotAllowedCpkException>(),
             criteria<NotSerializableException>()

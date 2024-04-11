@@ -3,7 +3,6 @@ package net.corda.ledger.verification.processor.impl
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
-import net.corda.flow.external.events.responses.exceptions.NotAllowedCpkException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.flow.utils.toMap
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
@@ -21,7 +20,6 @@ import net.corda.utilities.translateFlowContextToMDC
 import net.corda.utilities.withMDC
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
-import java.io.NotSerializableException
 import java.time.Duration
 
 /**
@@ -63,7 +61,8 @@ class VerificationRequestProcessor(
                         ExternalEventResponseErrorType.FATAL -> fatalErrorResponse(request.flowExternalEventContext, e)
                         ExternalEventResponseErrorType.PLATFORM -> platformErrorResponse(request.flowExternalEventContext, e)
                         ExternalEventResponseErrorType.TRANSIENT -> throw CordaHTTPServerTransientException(
-                            request.flowExternalEventContext.requestId, e
+                            request.flowExternalEventContext.requestId,
+                            e
                         )
                     }
                 } finally {

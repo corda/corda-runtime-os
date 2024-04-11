@@ -30,7 +30,6 @@ import net.corda.ledger.verification.processor.impl.VerificationRequestProcessor
 import net.corda.ledger.verification.tests.helpers.VirtualNodeService
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.membership.lib.GroupParametersFactory
-import net.corda.messaging.api.exception.CordaHTTPServerTransientException
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -57,7 +56,6 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir

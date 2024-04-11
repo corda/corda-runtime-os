@@ -16,7 +16,7 @@ class VerificationExceptionCategorizerImplTest {
 
     private companion object {
         @JvmStatic
-        fun platformExceptions() : Stream<Arguments> {
+        fun platformExceptions(): Stream<Arguments> {
             return Stream.of(
                 Arguments.of(NotAllowedCpkException("foo")),
                 Arguments.of(NotSerializableException())
@@ -24,7 +24,7 @@ class VerificationExceptionCategorizerImplTest {
         }
 
         @JvmStatic
-        fun possiblyFatalExceptions() : Stream<Arguments> {
+        fun possiblyFatalExceptions(): Stream<Arguments> {
             return Stream.of(
                 Arguments.of(CpkNotAvailableException("bar"))
             )

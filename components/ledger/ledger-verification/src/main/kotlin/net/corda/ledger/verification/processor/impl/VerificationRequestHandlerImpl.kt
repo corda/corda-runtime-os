@@ -1,6 +1,5 @@
 package net.corda.ledger.verification.processor.impl
 
-import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationResult
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
