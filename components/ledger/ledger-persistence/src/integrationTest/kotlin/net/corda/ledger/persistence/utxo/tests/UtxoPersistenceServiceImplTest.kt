@@ -668,7 +668,14 @@ class UtxoPersistenceServiceImplTest {
             filteredTransaction.privacySalt.bytes
         )
 
-        assertThatThrownBy { persistenceService.persistFilteredTransactions(mapOf(noMetadataFtx to emptyList()), emptyList(), emptyList(), "Account") }
+        assertThatThrownBy {
+            persistenceService.persistFilteredTransactions(
+                mapOf(noMetadataFtx to emptyList()),
+                emptyList(),
+                emptyList(),
+                "Account"
+            )
+        }
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasStackTraceContaining("Could not find metadata in the filtered transaction with id: ${filteredTransaction.id}")
     }
@@ -1010,7 +1017,7 @@ class UtxoPersistenceServiceImplTest {
         val filteredTransaction = createFilteredTransaction(signedTransaction, indexes = visibleStateIndexes)
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
 
-        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), emptyList(), emptyList(),"account")
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), emptyList(), emptyList(), "account")
 
         entityManagerFactory.transaction { em ->
             val proofs = em.createNamedQuery("UtxoMerkleProofEntity.findByTransactionId", entityFactory.merkleProof)

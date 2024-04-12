@@ -58,7 +58,7 @@ import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
-@Suppress("LongParameterList", "TooManyFunctions")
+@Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
 class UtxoPersistenceServiceImpl(
     private val entityManagerFactory: EntityManagerFactory,
     private val repository: UtxoRepository,
@@ -511,6 +511,7 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
+    @Suppress("LongMethod")
     override fun persistFilteredTransactions(
         filteredTransactionsAndSignatures: Map<FilteredTransaction, List<DigitalSignatureAndMetadata>>,
         inputStateRefs: List<StateRef>,
@@ -534,8 +535,8 @@ class UtxoPersistenceServiceImpl(
             }
 
             // locally cache the persistence of the metadata, allowing to skip for subsequent persists
-            // return the [TransactionMerkleProof], [TransactionMerkleProofLeaf], [TransactionComponent] and [TransactionSignature] outside the loop to batch insert once per table.
-            // should also make the filtered transaction persist batched
+            // return the [TransactionMerkleProof], [TransactionMerkleProofLeaf], [TransactionComponent] and [TransactionSignature]
+            // outside the loop to batch insert once per table. should also make the filtered transaction persist batched
 
             val seenMetadata = mutableSetOf<SecureHash>()
 

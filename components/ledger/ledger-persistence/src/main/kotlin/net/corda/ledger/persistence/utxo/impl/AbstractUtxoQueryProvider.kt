@@ -125,8 +125,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             FROM {h-schema}utxo_transaction_component
             WHERE (transaction_id||':'|| leaf_idx) in (:stateRefs)
             AND group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
-        """.trimIndent()
-
+            """.trimIndent()
         }
 
     override val updateTransactionStatus: String

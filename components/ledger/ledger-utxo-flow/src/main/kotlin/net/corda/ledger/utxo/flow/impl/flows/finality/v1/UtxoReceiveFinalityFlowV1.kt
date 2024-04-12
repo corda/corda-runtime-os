@@ -214,7 +214,8 @@ class UtxoReceiveFinalityFlowV1(
         persistenceService.persistFilteredTransactionsAndSignatures(
             filteredTransactionsAndSignatures,
             inputStateAndRefs.map { it.ref },
-            referenceStateAndRefs.map { it.ref })
+            referenceStateAndRefs.map { it.ref }
+        )
 
         return InitialTransactionPayload(
             initialTransaction,

@@ -19,6 +19,7 @@ import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndS
 import net.corda.v5.membership.GroupParametersLookup
 import org.slf4j.LoggerFactory
 
+@Suppress("LongParameterList")
 class TransactionDependencyResolutionFlow(
     private val session: FlowSession,
     private val transactionId: SecureHash,
