@@ -1,10 +1,12 @@
 package net.corda.p2p.linkmanager.outbound
 
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.p2p.AuthenticatedMessageAck
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.LinkOutMessage
+import net.corda.data.p2p.MessageAck
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
@@ -46,6 +48,7 @@ import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.linkmanager.TraceableItem
 import net.corda.p2p.linkmanager.common.MessageConverter
+import net.corda.p2p.linkmanager.tracker.AckMessageProcessor
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doThrow
 
@@ -76,6 +79,7 @@ class OutboundMessageProcessorTest {
         on { serial } doReturn serialNumber
     }
     private val messageConverter = mock<MessageConverter>()
+    private val ackMessageProcessor = mock<AckMessageProcessor>()
 
     private val networkMessagingValidator = mock<NetworkMessagingValidator> {
         on { validateInbound(any(), any()) } doReturn Either.Left(Unit)
@@ -90,6 +94,7 @@ class OutboundMessageProcessorTest {
         messagesPendingSession,
         mockTimeFacilitiesProvider.clock,
         messageConverter,
+        ackMessageProcessor,
         networkMessagingValidator
     )
 
@@ -597,6 +602,7 @@ class OutboundMessageProcessorTest {
             messagesPendingSession,
             mockTimeFacilitiesProvider.clock,
             messageConverter,
+            ackMessageProcessor,
             networkMessagingValidator,
         )
 
@@ -641,6 +647,7 @@ class OutboundMessageProcessorTest {
             messagesPendingSession,
             mockTimeFacilitiesProvider.clock,
             messageConverter,
+            ackMessageProcessor,
             networkMessagingValidator,
         )
 
@@ -1358,5 +1365,25 @@ class OutboundMessageProcessorTest {
                 .filter { it.marker is LinkManagerDiscardedMarker }).hasSize(1)
             it.assertThat(markers.map { it.topic }.distinct()).containsOnly(Schemas.P2P.P2P_OUT_MARKERS)
         }
+    }
+
+    @Test
+    fun `onNext delegates to ackMessageProcessor on message ack`() {
+        val ack = MessageAck(
+            AuthenticatedMessageAck("test-id")
+        )
+        val messages = listOf(
+            EventLogRecord(
+                Schemas.P2P.P2P_OUT_TOPIC,
+                "key",
+                AppMessage(ack),
+                0, 1
+            )
+        )
+
+        val records = processor.onNext(messages)
+
+        assertThat(records).isEmpty()
+        verify(ackMessageProcessor).ackReceived(ack, 0)
     }
 }

@@ -14,8 +14,11 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.common.CommonComponents
-import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.delivery.DeliveryTracker
+import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
+import net.corda.p2p.linkmanager.tracker.AckMessageProcessor
+import net.corda.p2p.linkmanager.tracker.DeliveryTrackerConfiguration
+import net.corda.p2p.linkmanager.tracker.PartitionsStates
 import net.corda.p2p.linkmanager.tracker.StatefulDeliveryTracker
 import net.corda.schema.Schemas
 import net.corda.utilities.flags.Features
@@ -38,6 +41,17 @@ internal class OutboundLinkManager(
     companion object {
         private const val OUTBOUND_MESSAGE_PROCESSOR_GROUP = "outbound_message_processor_group"
     }
+
+    private val partitionsStates = PartitionsStates(
+        coordinatorFactory = commonComponents.lifecycleCoordinatorFactory,
+        stateManager = commonComponents.stateManager,
+        config = DeliveryTrackerConfiguration(
+            configurationReaderService = commonComponents.configurationReaderService,
+            coordinatorFactory = commonComponents.lifecycleCoordinatorFactory,
+        ),
+        clock = commonComponents.clock,
+    )
+
     private val outboundMessageProcessor = OutboundMessageProcessor(
         commonComponents.sessionManager,
         linkManagerHostingMap,
@@ -46,6 +60,7 @@ internal class OutboundLinkManager(
         commonComponents.messagesPendingSession,
         clock,
         commonComponents.messageConverter,
+        AckMessageProcessor(partitionsStates),
     )
     private val deliveryTracker = DeliveryTracker(
         lifecycleCoordinatorFactory,
@@ -83,6 +98,7 @@ internal class OutboundLinkManager(
             publisher = publisher,
             messagingConfiguration = messagingConfiguration,
             outboundMessageProcessor = outboundMessageProcessor,
+            partitionsStates = partitionsStates,
         )
         ComplexDominoTile(
             OUTBOUND_MESSAGE_PROCESSOR_GROUP,

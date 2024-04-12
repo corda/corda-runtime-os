@@ -35,6 +35,7 @@ import net.corda.p2p.linkmanager.metrics.recordInboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordInboundSessionMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
 import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl.Companion.LINK_MANAGER_SUBSYSTEM
+import net.corda.p2p.linkmanager.tracker.AckMessageProcessor
 import net.corda.schema.Schemas
 import net.corda.tracing.traceEventProcessing
 import net.corda.utilities.Either
@@ -239,6 +240,7 @@ internal class InboundMessageProcessor(
         }
     }
 
+    @Suppress("NestedBlockDepth")
     private fun <T: InboundMessage> processOutboundDataMessage(
         sessionIdAndMessage: SessionIdAndMessage<T>,
         sessionDirection: SessionManager.SessionDirection.Outbound
@@ -255,7 +257,7 @@ internal class InboundMessageProcessor(
                         logger.debug { "Processing ack for message ${ack.messageId} from session $sessionIdAndMessage." }
                         sessionManager.messageAcknowledged(sessionIdAndMessage.sessionId)
                         if (features.enableP2PStatefulDeliveryTracker) {
-                            forwardAckMessageToP2POut(ack.messageId, it)
+                            AckMessageProcessor.forwardAckMessageToP2POut(ack.messageId, it)
                         } else {
                             makeMarkerForAckMessage(ack)
                         }
@@ -369,10 +371,6 @@ internal class InboundMessageProcessor(
             )
             Either.Right(record)
         }
-    }
-
-    private fun forwardAckMessageToP2POut(messageId: String, messageAck: MessageAck): Record<String, AppMessage> {
-        return Record(Schemas.P2P.P2P_OUT_TOPIC, messageId, AppMessage(messageAck))
     }
 
     private fun makeMarkerForAckMessage(message: AuthenticatedMessageAck): Record<String, AppMessageMarker> {

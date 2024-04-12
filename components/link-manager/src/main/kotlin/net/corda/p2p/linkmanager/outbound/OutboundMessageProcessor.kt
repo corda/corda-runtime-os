@@ -2,6 +2,7 @@ package net.corda.p2p.linkmanager.outbound
 
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.AuthenticatedMessageAndKey
+import net.corda.data.p2p.MessageAck
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.InboundUnauthenticatedMessage
@@ -16,19 +17,25 @@ import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.data.p2p.markers.LinkManagerSentMarker
 import net.corda.data.p2p.markers.TtlExpiredMarker
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
+import net.corda.metrics.CordaMetrics
 import net.corda.p2p.linkmanager.LinkManager
+import net.corda.p2p.linkmanager.TraceableItem
 import net.corda.p2p.linkmanager.common.MessageConverter
 import net.corda.p2p.linkmanager.grouppolicy.networkType
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.p2p.linkmanager.membership.lookup
 import net.corda.p2p.linkmanager.metrics.recordInboundMessagesMetric
+import net.corda.p2p.linkmanager.metrics.recordOutboundMessagesMetric
+import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueues
 import net.corda.p2p.linkmanager.sessions.SessionManager
+import net.corda.p2p.linkmanager.tracker.AckMessageProcessor
 import net.corda.schema.Schemas
 import net.corda.tracing.traceEventProcessing
 import net.corda.utilities.Either
@@ -38,12 +45,6 @@ import net.corda.utilities.trace
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.time.Instant
-import net.corda.data.p2p.MessageAck
-import net.corda.membership.lib.exceptions.BadGroupPolicyException
-import net.corda.metrics.CordaMetrics
-import net.corda.p2p.linkmanager.TraceableItem
-import net.corda.p2p.linkmanager.metrics.recordOutboundMessagesMetric
-import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class OutboundMessageProcessor(
@@ -54,6 +55,7 @@ internal class OutboundMessageProcessor(
     private val messagesPendingSession: PendingSessionMessageQueues,
     private val clock: Clock,
     private val messageConverter: MessageConverter,
+    private val ackMessageProcessor: AckMessageProcessor,
     private val networkMessagingValidator: NetworkMessagingValidator =
         NetworkMessagingValidator(membershipGroupReaderProvider),
 ) : EventLogProcessor<String, AppMessage> {
@@ -96,7 +98,7 @@ internal class OutboundMessageProcessor(
                     recordOutboundMessagesMetric(message)
                 }
                 is MessageAck -> {
-
+                    ackMessageProcessor.ackReceived(message, event.partition)
                 }
                 null -> {
                     logger.warn("Message is null.")

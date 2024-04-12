@@ -14,6 +14,7 @@ internal class StatefulDeliveryTracker(
     messagingConfiguration: SmartConfig,
     publisher: PublisherWithDominoLogic,
     outboundMessageProcessor: OutboundMessageProcessor,
+    partitionsStates: PartitionsStates,
 ) : LifecycleWithDominoTile {
     private val subscriptionConfig = SubscriptionConfig(
         groupName = "stateless-delivery-tracker",
@@ -24,12 +25,6 @@ internal class StatefulDeliveryTracker(
         coordinatorFactory = commonComponents.lifecycleCoordinatorFactory,
     )
 
-    private val partitionsStates = PartitionsStates(
-        coordinatorFactory = commonComponents.lifecycleCoordinatorFactory,
-        stateManager = commonComponents.stateManager,
-        config = config,
-        clock = commonComponents.clock,
-    )
     private val p2pOutSubscription = {
         commonComponents.subscriptionFactory.createEventLogSubscription(
             subscriptionConfig = subscriptionConfig,
