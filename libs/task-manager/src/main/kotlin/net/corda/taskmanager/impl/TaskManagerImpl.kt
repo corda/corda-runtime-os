@@ -5,14 +5,10 @@ import io.micrometer.core.instrument.Timer
 import net.corda.metrics.CordaMetrics
 import net.corda.taskmanager.TaskManager
 import net.corda.utilities.VisibleForTesting
-import java.lang.IllegalStateException
-import java.util.ArrayDeque
 import java.util.UUID
-import java.util.concurrent.Callable
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Future
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
@@ -50,39 +46,82 @@ internal class TaskManagerImpl(
     inner class Batch(private val key: Any, val priority: Long) : Runnable {
         private val queue = LinkedBlockingDeque<Pair<() -> Any, CompletableFuture<Any>>>()
         private var started = false
+        private var closed = false
+
+        inner class BatchCompletableFuture<T> : CompletableFuture<T>() {
+            override fun cancel(mayInterruptIfRunning: Boolean): Boolean {
+                val cancelled = super.cancel(mayInterruptIfRunning)
+                interruptIfRunning(this)
+                return cancelled
+            }
+        }
 
         @Suppress("UNCHECKED_CAST")
         @Synchronized
         fun <T : Any> addToBatch(command: () -> T): CompletableFuture<T> {
-            if(started) throw BatchRaceException()
-            val isFirst = queue.isEmpty()
-            val future = CompletableFuture<Any>()
+            if (closed) throw BatchRaceException()
+            val isFirst = queue.isEmpty() && !started
+            val future = BatchCompletableFuture<Any>()
             queue.add(command to future)
-            if(isFirst) {
+            if (isFirst) {
+                started = true
                 executorService.execute(this)
             }
             return future as CompletableFuture<T>
         }
 
         @Synchronized
-        fun markStarted() {
-            started = true
-            shortRunningTaskBatches.remove(key)
+        private fun close(): Boolean {
+            if (queue.isEmpty()) {
+                closed = true
+                shortRunningTaskBatches.remove(key)
+            }
+            return closed
+        }
+
+        private fun runNextCommand() {
+            val (nextCommand, nextFuture) = queue.poll() ?: return
+            executeStep(nextCommand, nextFuture)
         }
 
         override fun run() {
-            markStarted()
-            while(true) {
-                val (nextCommand, nextFuture) = queue.poll() ?: break
-                executeStep(nextCommand, nextFuture)
+            runNextCommand()
+            if (!close()) {
+                executorService.execute(this)
             }
         }
 
-        private fun executeStep(firstCommand: () -> Any, firstFuture: CompletableFuture<Any>) {
+        @Volatile
+        var currentFuture: CompletableFuture<Any>? = null
+        @Volatile
+        var currentThread: Thread? = null
+
+        @Synchronized
+        private fun interruptIfRunning(future: CompletableFuture<*>) {
+            if (currentFuture == future) {
+                currentThread?.interrupt()
+            }
+        }
+
+        @Synchronized
+        private fun clearCurrentFuture() {
+            currentFuture = null
+            currentThread = null
+            Thread.interrupted()
+        }
+
+        private fun executeStep(command: () -> Any, future: CompletableFuture<Any>) {
             try {
-                firstFuture.complete(firstCommand())
-            } catch(e: Throwable) {
-                firstFuture.completeExceptionally(e)
+                currentFuture = future
+                currentThread = Thread.currentThread()
+                if (!future.isCancelled) {
+                    val commandResult = command()
+                    clearCurrentFuture()
+                    future.complete(commandResult)
+                }
+            } catch (e: Throwable) {
+                clearCurrentFuture()
+                future.completeExceptionally(e)
             }
         }
     }
