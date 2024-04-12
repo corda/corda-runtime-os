@@ -56,6 +56,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     companion object {
         private const val MAX_FAILURE_ATTEMPTS = 5
         private const val TOPIC_OFFSET_METADATA_PREFIX = "topic.offset"
+        private const val DELETE_LATER_METADATA_PROPERTY = "delete.later"
     }
 
     /**
@@ -216,7 +217,17 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 }
             }
         } + alreadySeenInputs.map {
-            mapOf(it.key to EventProcessingOutput(listOf(), StateChangeAndOperation.Noop(it.state), emptyList()))
+            if (it.state?.metadata?.containsKey(DELETE_LATER_METADATA_PROPERTY) ?: false) {
+                mapOf(
+                    it.key to EventProcessingOutput(
+                        listOf(),
+                        StateChangeAndOperation.Delete(it.state!!),
+                        emptyList()
+                    )
+                )
+            } else {
+                mapOf(it.key to EventProcessingOutput(listOf(), StateChangeAndOperation.Noop(it.state), emptyList()))
+            }
         }).fold(mapOf<K, EventProcessingOutput<K, E>>()) { acc, cur ->
             acc + cur
         }.mapKeys { (key, _) ->
@@ -306,7 +317,9 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             }
         }
         stateManager.delete(safeToDelete)
-        stateManager.update(deleteLater) // Updates seen offsets to prevent re-processing
+        stateManager.update(deleteLater.map {
+            it.copy(metadata = Metadata(it.metadata + mapOf(DELETE_LATER_METADATA_PROPERTY to true)))
+        }) // Updates seen offsets to prevent re-processing
         // TODO: stash deleteLater to be considered for delete again each time we call this commit method
 
         outputs.forEach { (key, _) ->
