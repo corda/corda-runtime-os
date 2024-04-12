@@ -11,11 +11,20 @@ import net.corda.virtualnode.HoldingIdentity
 import java.time.Duration
 import java.time.Instant
 
+/**
+ * Possible session statuses for outbound sessions.
+ * Reflects where we are in the Session negotiation process.
+ */
 internal enum class OutboundSessionStatus {
     SentInitiatorHello,
     SentInitiatorHandshake,
     SessionReady,
 }
+
+/**
+ * Possible session statuses for inbound sessions.
+ * Reflects where we are in the Session negotiation process.
+ */
 internal enum class InboundSessionStatus {
     SentResponderHello,
     SentResponderHandshake,
@@ -24,6 +33,7 @@ internal enum class InboundSessionStatus {
 /**
  * [InboundSessionMetadata] represents the metadata stored in the State Manager for an inbound session.
  *
+ * @param commonData The common metadata of the session.
  * @param status Where we are in the Session negotiation process.
  */
 internal data class InboundSessionMetadata(
@@ -61,7 +71,14 @@ internal data class InboundSessionMetadata(
 /**
  * [OutboundSessionMetadata] represents the metadata stored in the State Manager for an outbound session.
  *
+ * @param commonData The common metadata of the session.
+ * @param sessionId The ID of the session. Outbound sessions are keyed by counterparty information, so
+ * session IDs are stored in the metadata.
  * @param status Where we are in the Session negotiation process.
+ * @param serial Serial of the destination's member information.
+ * @param membershipStatus The status of the destination's member information.
+ * @param communicationWithMgm Boolean value which flags if the session is between MGM and member.
+ * @param initiationTimestamp Timestamp when the session was initiated.
  */
 internal data class OutboundSessionMetadata(
     val commonData: CommonMetadata,
@@ -129,6 +146,8 @@ internal data class OutboundSessionMetadata(
 /**
  * [CommonMetadata] stores the common metadata in [OutboundSessionMetadata] and [InboundSessionMetadata].
  *
+ * @param source The identity of the initiator.
+ * @param destination The identity of the recipient.
  * @param lastSendTimestamp The last time a session negotiation message was sent.
  * @param expiry When the Session Expires and should be rotated.
  */
@@ -175,6 +194,9 @@ internal data class CommonMetadata(
     }
 }
 
+/**
+ * Reads the counterparties from the state.
+ */
 internal fun State.toCounterparties(): SessionManager.Counterparties {
     val common = this.metadata.toCommonMetadata()
     return SessionManager.Counterparties(

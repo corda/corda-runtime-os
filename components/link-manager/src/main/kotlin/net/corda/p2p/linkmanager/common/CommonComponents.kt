@@ -87,15 +87,11 @@ internal class CommonComponents(
         messagingConfiguration,
     )
 
-    // no lifecycle
-    // OK
     private val sessionCache = SessionCache(
         stateManager,
         sessionEventPublisher,
     )
 
-    // no lifecycle
-    // OK
     private val sessionExpirationScheduler = SessionExpirationScheduler(
         clock,
         sessionCache,
@@ -120,20 +116,15 @@ internal class CommonComponents(
 
     private val p2pRecordsFactory = P2pRecordsFactory(clock, cordaAvroSerializationFactory)
 
-    // no lifecycle
-    // OK
     private val sessionWriter = SessionWriterImpl(
         sessionCache,
     )
 
-    // no lifecycle
     private val stateConvertor = StateConvertor(
         schemaRegistry,
         sessionEncryptionOpsClient,
     )
 
-    // existing lifecycle, nothing needs to be added
-    // OK
     private val oldSessionManager = SessionManagerImpl(
         groupPolicyProvider,
         membershipGroupReaderProvider,
@@ -147,16 +138,12 @@ internal class CommonComponents(
         sessionCache = sessionCache,
     )
 
-    // no lifecycle
-    // OK
     private val reEstablishmentMessageSender = ReEstablishmentMessageSender(
         p2pRecordsFactory,
         oldSessionManager,
     )
 
-    // existing lifecycle, nothing needs to be added
-    // OK
-    val sessionEventListener = StatefulSessionEventProcessor(
+    private val sessionEventListener = StatefulSessionEventProcessor(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
         messagingConfiguration,
@@ -166,8 +153,6 @@ internal class CommonComponents(
         oldSessionManager,
     )
 
-    // no lifecycle
-    // OK
     private val stateManagerWrapper = StateManagerWrapper(
         stateManager,
         sessionCache,
@@ -177,7 +162,6 @@ internal class CommonComponents(
         reEstablishmentMessageSender,
     )
 
-    // has lifecycle
     private val sessionLookup = SessionLookupImpl(
         lifecycleCoordinatorFactory,
         sessionCache,
@@ -186,7 +170,6 @@ internal class CommonComponents(
         stateManagerWrapper,
     )
 
-    // has lifecycle
     private val sessionMessageProcessor = SessionMessageProcessor(
         lifecycleCoordinatorFactory,
         clock,
