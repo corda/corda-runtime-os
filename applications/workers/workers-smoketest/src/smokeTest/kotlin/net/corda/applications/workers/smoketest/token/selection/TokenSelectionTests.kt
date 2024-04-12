@@ -18,8 +18,6 @@ import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.e2etest.utilities.startRestFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
-import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.junit.jupiter.api.TestInstance
@@ -162,7 +160,8 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         assertThat(tokenSelectionResult1.flowError).isNull()
         assertThat(tokenSelectionResult1.flowResult).isEqualTo("SUCCESS")
 
-        // Attempt to select the token created by the transaction
+        // Attempt to select the token created by the transaction again. This should work because even though
+        // the previous flow claimed the same tokens, the tokens must have been released after the flow terminated
         val tokenSelectionFlowId2 = startRestFlow(
             aliceHoldingId,
             mapOf(),
@@ -175,15 +174,33 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         assertThat(tokenSelectionResult2.flowResult).isEqualTo("SUCCESS")
     }
 
-    @Disabled("Test switched off until priority strategy implementation (CORE-18979) is complete")
-    @RepeatedTest(3) // Random strategy will sometimes look like Priority strategy
+    @Test
     fun `Test priority selection strategy`(testInfo: TestInfo) {
         val idGenerator = TestRequestIdGenerator(testInfo)
         // Create 3 simple UTXO transactions
         val input = "token test input"
+
+        // A large number of tokens must be created to minimise the change to the random selection
+        // match the result for a priority selection. Bear in mind that repeating the test several times in the same
+        // run won't work because the claimed tokens that are released won't be readily available
         issueTokenWithPriority(input, idGenerator, 2)
         issueTokenWithPriority(input, idGenerator, 1)
         issueTokenWithPriority(input, idGenerator, 2)
+        issueTokenWithPriority(input, idGenerator, null)
+        issueTokenWithPriority(input, idGenerator, null)
+        issueTokenWithPriority(input, idGenerator, 3)
+        issueTokenWithPriority(input, idGenerator, 5)
+        issueTokenWithPriority(input, idGenerator, 4)
+        issueTokenWithPriority(input, idGenerator, 9)
+        issueTokenWithPriority(input, idGenerator, 9)
+        issueTokenWithPriority(input, idGenerator, 10)
+        issueTokenWithPriority(input, idGenerator, 10)
+        issueTokenWithPriority(input, idGenerator, null)
+        issueTokenWithPriority(input, idGenerator, 10)
+        issueTokenWithPriority(input, idGenerator, 2)
+        issueTokenWithPriority(input, idGenerator, 5)
+        issueTokenWithPriority(input, idGenerator, 7)
+        issueTokenWithPriority(input, idGenerator, 8)
 
         // Attempt to select the highest priority token created by the transaction
         val tokenSelectionFlowId = startRestFlow(
