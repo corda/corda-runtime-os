@@ -19,11 +19,13 @@ class TokenForceClaimReleaseEventHandler : TokenEventHandler<ForceClaimRelease> 
         state: PoolCacheState,
         event: ForceClaimRelease
     ): Record<String, FlowEvent>? {
+        log.info("Force claim release received for claim id ${event.claimId}")
         log.debug { "Received token claim release for: $event" }
 
         if (!state.claimExists(event.claimId)) {
             log.warn("Couldn't find existing claim for claimId='${event.claimId}'")
         } else {
+            log.info("Removing claims for ${event.claimId}")
             state.removeClaim(event.claimId)
         }
 

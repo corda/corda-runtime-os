@@ -23,6 +23,7 @@ class TokenClaimReleaseEventHandler(
         event: ClaimRelease
     ): Record<String, FlowEvent>? {
         log.debug { "Received token claim release for: $event" }
+        log.debug { "Received token claim release for claim id ${event.claimId}" }
 
         if (!state.claimExists(event.claimId)) {
             log.warn("Couldn't find existing claim for claimId='${event.claimId}'")

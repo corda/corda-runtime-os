@@ -11,6 +11,7 @@ import net.corda.schema.Schemas
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 @Component(service = [FlowPostProcessingHandler::class])
 class TokenClaimReleasePostProcessingHandler @Activate constructor(
@@ -22,9 +23,14 @@ class TokenClaimReleasePostProcessingHandler @Activate constructor(
 
     private val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> {}
 
+    private companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java)
+    }
+
     override fun postProcess(context: FlowEventContext<Any>): List<Record<*, *>> {
         return if (context.checkpoint.isCompleted || context.sendToDlq) {
             tokenClaimCheckpointService.getTokenClaims(context.checkpoint).map {
+                logger.info("Generating a claim release request for claim id ${it.claimId}")
                 val avroPoolKey = it.poolKey.toTokenPoolCacheKey()
                 val claimRelease = TokenForceClaimRelease.newBuilder()
                     .setPoolKey(avroPoolKey)

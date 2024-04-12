@@ -33,6 +33,7 @@ class TokenClaimQueryEventHandler(
         event: ClaimQuery
     ): Record<String, FlowEvent> {
         val claimId = event.externalEventRequestId
+        logger.info("Claiming tokens for claim id $claimId")
         val claim = state.claim(claimId)
         if (claim != null) {
             logger.warn("A token claim is being processed more than once. ClaimId: $claimId")
