@@ -51,7 +51,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
      */
     fun processEvents(
         inputs: Map<K, EventProcessingInput<K, E>>
-    ): Map<K, EventProcessingOutput> {
+    ): Map<K, EventProcessingOutput<K, E>> {
         return inputs.mapValues { (key, input) ->
             val inputState = input.state
             val allConsumerInputs = input.records
@@ -70,7 +70,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
     private fun processRecords(
         input: EventProcessingInput<K, E>,
         inputProcessorState: StateAndEventProcessor.State<S>?,
-    ): EventProcessingOutput {
+    ): EventProcessingOutput<K, E> {
         val key = input.key
         val inputState = input.state
         var processorState = inputProcessorState
@@ -100,7 +100,9 @@ class EventProcessor<K : Any, S : Any, E : Any>(
             stateChangeAndOperation(inputState, state)
         }
 
-        return EventProcessingOutput(asyncOutputs.values.flatten(), stateChangeAndOperation)
+        return EventProcessingOutput(asyncOutputs.values.flatten(),
+            stateChangeAndOperation,
+            asyncOutputs.keys.toList() )
     }
 
     private fun getMostRecentState(

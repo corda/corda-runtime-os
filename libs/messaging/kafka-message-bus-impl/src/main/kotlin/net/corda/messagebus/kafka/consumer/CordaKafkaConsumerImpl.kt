@@ -343,7 +343,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         val offsets = mutableMapOf<TopicPartition, OffsetAndMetadata>()
         events.forEach { event ->
             val topicPartition = TopicPartition(config.topicPrefix + event.topic, event.partition)
-            offsets.compute(topicPartition) { key, value ->
+            offsets.compute(topicPartition) { _, value ->
                 if (value == null) {
                     OffsetAndMetadata(event.offset + 1, metaData)
                 } else {
