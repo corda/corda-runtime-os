@@ -7,6 +7,35 @@ import net.corda.messagebus.api.CordaTopicPartition
  * consumer changes.
  */
 interface CordaConsumerRebalanceListener {
+    companion object {
+        fun concat(
+            first: CordaConsumerRebalanceListener,
+            second: CordaConsumerRebalanceListener?
+        ): CordaConsumerRebalanceListener {
+            return if (second == null) first else ConcatCordaConsumerRebalanceListener(first, second)
+        }
+    }
+
+    class ConcatCordaConsumerRebalanceListener(
+        val first: CordaConsumerRebalanceListener,
+        val second: CordaConsumerRebalanceListener
+    ) : CordaConsumerRebalanceListener {
+        override fun onPartitionsRevoked(partitions: Collection<CordaTopicPartition>) {
+            try {
+                first.onPartitionsRevoked(partitions)
+            } finally {
+                second.onPartitionsRevoked(partitions)
+            }
+        }
+
+        override fun onPartitionsAssigned(partitions: Collection<CordaTopicPartition>) {
+            try {
+                first.onPartitionsAssigned(partitions)
+            } finally {
+                second.onPartitionsAssigned(partitions)
+            }
+        }
+    }
 
     /**
      * This method will be called during a rebalance operation when the consumer has to give up some partitions.

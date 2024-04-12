@@ -1,6 +1,8 @@
 package net.corda.messaging.mediator
 
+import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
+import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messaging.api.mediator.MediatorConsumer
@@ -10,15 +12,15 @@ import java.time.Duration
 /**
  * Message bus consumer that reads messages from configured topic.
  */
-class MessageBusConsumer<K: Any, V: Any>(
+class MessageBusConsumer<K : Any, V : Any>(
     private val topic: String,
     private val consumer: CordaConsumer<K, V>,
-): MediatorConsumer<K, V> {
+) : MediatorConsumer<K, V>, CordaConsumerRebalanceListener {
     private val offsetManager = TopicOffsetManager()
 
     override fun subscribe() {
         offsetManager.assigned()
-        consumer.subscribe(topic)
+        consumer.subscribe(topic, CordaConsumerRebalanceListener.concat(this, consumer.getDefaultRebalanceListener()))
     }
 
     override fun poll(timeout: Duration): List<CordaConsumerRecord<K, V>> {
@@ -46,4 +48,11 @@ class MessageBusConsumer<K: Any, V: Any>(
         consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
 
     override fun close() = consumer.close()
+    override fun onPartitionsRevoked(partitions: Collection<CordaTopicPartition>) {
+        partitions.filter { it.topic == topic }.forEach { offsetManager.revokePartition(it.partition) }
+    }
+
+    override fun onPartitionsAssigned(partitions: Collection<CordaTopicPartition>) {
+        partitions.filter { it.topic == topic }.forEach { offsetManager.assignPartition(it.partition) }
+    }
 }

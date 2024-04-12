@@ -251,6 +251,10 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
         this.defaultListener = defaultListener
     }
 
+    override fun getDefaultRebalanceListener(): CordaConsumerRebalanceListener? {
+        return this.defaultListener
+    }
+
     internal fun getConsumerGroup(): String = groupId
 
     /**

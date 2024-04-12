@@ -752,6 +752,10 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     override fun setDefaultRebalanceListener(defaultListener: CordaConsumerRebalanceListener) {
         this.defaultListener = defaultListener
     }
+
+    override fun getDefaultRebalanceListener(): CordaConsumerRebalanceListener? {
+        return this.defaultListener
+    }
 }
 
 fun CordaConsumerRebalanceListener.toKafkaListener(topicPrefix: String): ConsumerRebalanceListener {

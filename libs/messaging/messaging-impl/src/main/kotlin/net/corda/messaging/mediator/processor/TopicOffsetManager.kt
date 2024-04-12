@@ -1,7 +1,5 @@
 package net.corda.messaging.mediator.processor
 
-import java.util.concurrent.atomic.AtomicBoolean
-
 class TopicOffsetManager {
     private val partitionOffsetManagers = mutableMapOf<Int, PartitionOffsetManager>()
     private fun getPartitionOffsetManager(partition: Int): PartitionOffsetManager {
@@ -38,5 +36,13 @@ class TopicOffsetManager {
 
     fun assigned() {
         partitionOffsetManagers.clear()
+    }
+
+    fun revokePartition(partition: Int) {
+        partitionOffsetManagers.remove(partition)
+    }
+
+    fun assignPartition(partition: Int) {
+        getPartitionOffsetManager(partition).assigned()
     }
 }
