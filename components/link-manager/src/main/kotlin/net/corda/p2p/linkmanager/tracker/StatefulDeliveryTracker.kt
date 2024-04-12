@@ -47,9 +47,6 @@ internal class StatefulDeliveryTracker(
             config.dominoTile.coordinatorName,
             publisher.dominoTile.coordinatorName,
         ),
-        managedChildren = listOf(
-            partitionsStates.dominoTile.toNamedLifecycle(),
-            config.dominoTile.toNamedLifecycle(),
-        ),
+        managedChildren = emptyList(),
     )
 }

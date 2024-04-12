@@ -109,10 +109,14 @@ internal class OutboundLinkManager(
             dependentChildren = listOf(
                 statefulDeliveryTracker.dominoTile.coordinatorName,
                 publisher.dominoTile.coordinatorName,
+                partitionsStates.dominoTile.coordinatorName,
+                deliveryTrackerConfig.dominoTile.coordinatorName,
             ),
             managedChildren = listOf(
                 statefulDeliveryTracker.dominoTile.toNamedLifecycle(),
                 publisher.dominoTile.toNamedLifecycle(),
+                partitionsStates.dominoTile.toNamedLifecycle(),
+                deliveryTrackerConfig.dominoTile.toNamedLifecycle(),
             ),
         )
     } else {
