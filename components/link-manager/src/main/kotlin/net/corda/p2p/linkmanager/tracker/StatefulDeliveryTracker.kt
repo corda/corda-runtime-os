@@ -9,20 +9,18 @@ import net.corda.p2p.linkmanager.common.CommonComponents
 import net.corda.p2p.linkmanager.outbound.OutboundMessageProcessor
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 
+@Suppress("LongParameterList")
 internal class StatefulDeliveryTracker(
     private val commonComponents: CommonComponents,
     messagingConfiguration: SmartConfig,
     publisher: PublisherWithDominoLogic,
     outboundMessageProcessor: OutboundMessageProcessor,
     partitionsStates: PartitionsStates,
+    config: DeliveryTrackerConfiguration,
 ) : LifecycleWithDominoTile {
     private val subscriptionConfig = SubscriptionConfig(
         groupName = "stateless-delivery-tracker",
         eventTopic = P2P_OUT_TOPIC,
-    )
-    private val config = DeliveryTrackerConfiguration(
-        configurationReaderService = commonComponents.configurationReaderService,
-        coordinatorFactory = commonComponents.lifecycleCoordinatorFactory,
     )
 
     private val p2pOutSubscription = {

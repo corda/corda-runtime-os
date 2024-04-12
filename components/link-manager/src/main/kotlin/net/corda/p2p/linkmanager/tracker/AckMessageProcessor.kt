@@ -14,7 +14,7 @@ internal class AckMessageProcessor(
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
-        fun forwardAckMessageToP2POut(messageId: String, messageAck: MessageAck): Record<String, AppMessage> {
+        fun forwardAckMessageToP2pOut(messageId: String, messageAck: MessageAck): Record<String, AppMessage> {
             logger.trace("Forwarding ack for message '{}' to '{}'.", messageId, P2P_OUT_TOPIC)
             return Record(P2P_OUT_TOPIC, messageId, AppMessage(messageAck))
         }

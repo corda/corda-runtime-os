@@ -42,13 +42,15 @@ internal class OutboundLinkManager(
         private const val OUTBOUND_MESSAGE_PROCESSOR_GROUP = "outbound_message_processor_group"
     }
 
+    private val deliveryTrackerConfig = DeliveryTrackerConfiguration(
+        configurationReaderService = commonComponents.configurationReaderService,
+        coordinatorFactory = commonComponents.lifecycleCoordinatorFactory,
+    )
+
     private val partitionsStates = PartitionsStates(
         coordinatorFactory = commonComponents.lifecycleCoordinatorFactory,
         stateManager = commonComponents.stateManager,
-        config = DeliveryTrackerConfiguration(
-            configurationReaderService = commonComponents.configurationReaderService,
-            coordinatorFactory = commonComponents.lifecycleCoordinatorFactory,
-        ),
+        config = deliveryTrackerConfig,
         clock = commonComponents.clock,
     )
 
@@ -99,6 +101,7 @@ internal class OutboundLinkManager(
             messagingConfiguration = messagingConfiguration,
             outboundMessageProcessor = outboundMessageProcessor,
             partitionsStates = partitionsStates,
+            config = deliveryTrackerConfig,
         )
         ComplexDominoTile(
             OUTBOUND_MESSAGE_PROCESSOR_GROUP,

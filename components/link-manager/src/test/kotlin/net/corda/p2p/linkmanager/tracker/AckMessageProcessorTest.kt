@@ -3,14 +3,15 @@ package net.corda.p2p.linkmanager.tracker
 import net.corda.data.p2p.AuthenticatedMessageAck
 import net.corda.data.p2p.MessageAck
 import net.corda.data.p2p.app.AppMessage
-import net.corda.schema.Schemas
-import org.assertj.core.api.Assertions.assertThat
+import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
+import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+
 
 class AckMessageProcessorTest {
     private val partitionState = mock<PartitionState>()
@@ -28,7 +29,6 @@ class AckMessageProcessorTest {
 
         processor.ackReceived(ack, partition)
 
-        verify(partitionsStates).get(partition)
         verify(partitionState).untrackMessage(messageId)
     }
 
@@ -47,11 +47,14 @@ class AckMessageProcessorTest {
         val messageId = "test-id"
         val ack = MessageAck(AuthenticatedMessageAck(messageId))
 
-        val record = AckMessageProcessor.forwardAckMessageToP2POut(messageId, ack)
+        val record = AckMessageProcessor.forwardAckMessageToP2pOut(messageId, ack)
 
-        assertThat(record.topic).isEqualTo(Schemas.P2P.P2P_OUT_TOPIC)
-        assertThat(record.key).isEqualTo(messageId)
-        assertThat(record.value).isEqualTo(AppMessage(ack))
-
+        with(record) {
+            assertSoftly {
+                it.assertThat(topic).isEqualTo(P2P_OUT_TOPIC)
+                it.assertThat(key).isEqualTo(messageId)
+                it.assertThat(value).isEqualTo(AppMessage(ack))
+            }
+        }
     }
 }

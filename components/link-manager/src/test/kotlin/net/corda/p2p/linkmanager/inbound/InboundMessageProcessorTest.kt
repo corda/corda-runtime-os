@@ -414,7 +414,7 @@ class InboundMessageProcessorTest {
             val records = publishedRecords.allValues.flatten()
             assertThat(records).hasSize(1).allSatisfy {
                 assertThat(it.topic).isEqualTo(P2P_OUT_TOPIC)
-                assertThat((it.value as AppMessage).message).isEqualTo(messageAck)
+                assertThat((it.value as? AppMessage)?.message).isEqualTo(messageAck)
             }
 
             verify(sessionManager).messageAcknowledged(SESSION_ID)

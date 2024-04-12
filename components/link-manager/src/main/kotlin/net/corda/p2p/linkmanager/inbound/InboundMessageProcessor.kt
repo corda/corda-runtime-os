@@ -257,7 +257,7 @@ internal class InboundMessageProcessor(
                         logger.debug { "Processing ack for message ${ack.messageId} from session $sessionIdAndMessage." }
                         sessionManager.messageAcknowledged(sessionIdAndMessage.sessionId)
                         if (features.enableP2PStatefulDeliveryTracker) {
-                            AckMessageProcessor.forwardAckMessageToP2POut(ack.messageId, it)
+                            AckMessageProcessor.forwardAckMessageToP2pOut(ack.messageId, it)
                         } else {
                             makeMarkerForAckMessage(ack)
                         }
