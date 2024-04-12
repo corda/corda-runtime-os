@@ -1,5 +1,6 @@
 package net.corda.messaging.mediator.processor
 
+import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.constants.MessagingMetadataKeys.PROCESSING_FAILURE
@@ -54,6 +55,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
 
     companion object {
         private const val MAX_FAILURE_ATTEMPTS = 5
+        private const val TOPIC_OFFSET_METADATA_PREFIX = "topic.offset"
     }
 
     /**
@@ -158,8 +160,19 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      * @return The set of outputs for further processing.
      */
     private fun processInputs(inputs: List<EventProcessingInput<K, E>>): Map<String, EventProcessingOutput<K, E>> {
-        val groups = groupAllocator.allocateGroups(inputs, config)
-        return groups.filter {
+        val prunedInputs = inputs.map { input ->
+            input.state?.let { state ->
+                val notSeenRecords = input.records.filter { record ->
+                    record.offset > ((state.metadata["$TOPIC_OFFSET_METADATA_PREFIX.${record.topic}"] as? Long) ?: -1)
+                }
+                input.copy(records = notSeenRecords)
+            } ?: input
+        }
+        val (alreadySeenInputs, newInputs) = prunedInputs.partition { input ->
+            input.records.isEmpty()
+        }
+        val groups = groupAllocator.allocateGroups(newInputs, config)
+        return (groups.filter {
             it.isNotEmpty()
         }.map { group ->
             val future = taskManager.executeShortRunningTask("Foo", 1) {
@@ -171,7 +184,8 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 future.getOrThrow(config.processorTimeout)
             } catch (e: TimeoutException) {
                 metrics.consumerProcessorFailureCounter.increment(group.keys.size.toDouble())
-                // TODO - what to do in case of time out? This is counted as a failure, but still generated a commit?
+                // A timeout wants to skip over the inputs based on current logic, so we'll replicate
+                // that here by producing no outputs but passing the inputs to the offset commit
                 group.mapValues { (key, input) ->
                     val oldState = input.state
                     val state = stateManagerHelper.failStateProcessing(
@@ -184,13 +198,15 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     } else {
                         StateChangeAndOperation.Create(state)
                     }
-                    EventProcessingOutput<K,E>(listOf(), stateChange, listOf())
+                    EventProcessingOutput(listOf(), stateChange, input.records)
                 }.also {
                     log.warn("Cancelling task for key(s) ${group.keys}")
                     future.cancel(true)
                 }
             }
-        }.fold(mapOf<K, EventProcessingOutput<K,E>>()) { acc, cur ->
+        } + alreadySeenInputs.map {
+            mapOf(it.key to EventProcessingOutput(listOf(), StateChangeAndOperation.Noop(it.state), emptyList()))
+        }).fold(mapOf<K, EventProcessingOutput<K, E>>()) { acc, cur ->
             acc + cur
         }.mapKeys { (key, _) ->
             key.toString()
@@ -309,11 +325,14 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val statesToCreate = mutableListOf<State>()
         val statesToUpdate = mutableListOf<State>()
         val statesToDelete = mutableListOf<State>()
-        outputs.values.forEach {
-            when (it.stateChangeAndOperation) {
-                is StateChangeAndOperation.Create -> statesToCreate.add(it.stateChangeAndOperation.outputState)
-                is StateChangeAndOperation.Update -> statesToUpdate.add(it.stateChangeAndOperation.outputState)
-                is StateChangeAndOperation.Delete -> statesToDelete.add(it.stateChangeAndOperation.outputState)
+        outputs.values.forEach { output ->
+            val stateWithOffsets = output.stateChangeAndOperation.outputState?.let {
+                it.copy(metadata = calculateMaxOffsets(it.metadata, output.processedOffsets))
+            }
+            when (output.stateChangeAndOperation) {
+                is StateChangeAndOperation.Create -> statesToCreate.add(stateWithOffsets!!)
+                is StateChangeAndOperation.Update -> statesToUpdate.add(stateWithOffsets!!)
+                is StateChangeAndOperation.Delete -> statesToDelete.add(stateWithOffsets!!)
                 else -> Unit // No state change required.
             }
         }
@@ -328,6 +347,23 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         sendAsynchronousEvents(outputsToSend)
 
         return Pair(failedToCreate + failedToUpdateOptimisticLockFailure, statesToDelete)
+    }
+
+    private fun calculateMaxOffsets(
+        existingMetadata: Metadata,
+        processedOffsets: List<CordaConsumerRecord<K, E>>
+    ): Metadata {
+        val result = existingMetadata.toMutableMap()
+        processedOffsets.forEach {
+            result.compute("$TOPIC_OFFSET_METADATA_PREFIX.${it.topic}") { _, value ->
+                if (value == null || value !is Long) {
+                    it.offset
+                } else {
+                    maxOf(value, it.offset)
+                }
+            }
+        }
+        return Metadata(result)
     }
 
     /**

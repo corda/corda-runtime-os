@@ -19,9 +19,7 @@ sealed interface StateChangeAndOperation {
 
     // This can happen if both input and output are null. There may still be outputs in this case (for example a flow
     // status change).
-    object Noop : StateChangeAndOperation {
-        override val outputState: State? = null
-    }
+    class Noop(override val outputState: State? = null) : StateChangeAndOperation
 
     // This represents a transient error in event processing, and acts as a signal back to the poll loop that a retry
     // should occur.

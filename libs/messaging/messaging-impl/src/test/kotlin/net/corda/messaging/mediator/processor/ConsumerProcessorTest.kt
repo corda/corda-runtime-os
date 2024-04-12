@@ -92,7 +92,7 @@ class ConsumerProcessorTest {
             val output = mapOf<String, EventProcessingOutput<String, Long>>(
                 "foo-$counter" to EventProcessingOutput(
                     listOf(getAsyncMediatorMessage("payload")),
-                    StateChangeAndOperation.Noop,
+                    StateChangeAndOperation.Noop(),
                     listOf()
                 )
             )
@@ -180,7 +180,7 @@ class ConsumerProcessorTest {
             val output = mapOf(
                 "foo-$counter" to EventProcessingOutput(
                     listOf(getAsyncMediatorMessage("payload")),
-                    StateChangeAndOperation.Noop,
+                    StateChangeAndOperation.Noop(),
                     listOf<CordaConsumerRecord<String, Long>>()
                 )
             )

@@ -170,7 +170,7 @@ class EventProcessor<K : Any, S : Any, E : Any>(
         state == null && processed != null -> StateChangeAndOperation.Create(processed)
         state != null && processed != null -> StateChangeAndOperation.Update(processed)
         state != null && processed == null -> StateChangeAndOperation.Delete(state)
-        else -> StateChangeAndOperation.Noop
+        else -> StateChangeAndOperation.Noop()
     }
 
 
