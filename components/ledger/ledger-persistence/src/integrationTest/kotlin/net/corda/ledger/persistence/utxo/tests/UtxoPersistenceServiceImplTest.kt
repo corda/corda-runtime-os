@@ -1032,20 +1032,6 @@ class UtxoPersistenceServiceImplTest {
         }
     }
 
-    // persist the same filtered transaction id
-    // have the same leaves revealed
-    // pass in the same reference state refs into both calls
-    // the created timestamp on the reference states should be that of the original insert
-
-    // persist the same filtered transaction id
-    // have different leaves revealed, but have the reference state(s) revealed in both
-    // the differences represent new reference states which should be inserted
-    // the new reference states should be inserted
-
-    // persist the same filtered transaction id
-    // have different leaves revealed, but have the reference state(s) revealed in both
-    // the differences represent new input states which should be inserted
-    // the new input states should be inserted
     @Test
     fun `persist filtered transaction containing only a reference state when the reference state already exists does not persist the filtered transaction`() {
         val outputStates = listOf(TestContractState1(), TestContractState1(), TestContractState2())
@@ -1080,7 +1066,7 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
-    fun `persist filtered transaction containing reference states when a reference state already exists persists the filtered transaction`() {
+    fun `persist filtered transaction containing reference states when one of the reference state already exists persists the filtered transaction`() {
         val outputStates = listOf(TestContractState1(), TestContractState1(), TestContractState2())
         val signatures = createSignatures(Instant.now())
         val signedTransaction = createSignedTransaction(outputStates = outputStates, signatures = signatures)

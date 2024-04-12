@@ -534,10 +534,6 @@ class UtxoPersistenceServiceImpl(
                 emptySet()
             }
 
-            // locally cache the persistence of the metadata, allowing to skip for subsequent persists
-            // return the [TransactionMerkleProof], [TransactionMerkleProofLeaf], [TransactionComponent] and [TransactionSignature]
-            // outside the loop to batch insert once per table. should also make the filtered transaction persist batched
-
             val seenMetadata = mutableSetOf<SecureHash>()
 
             val filteredTransactionsToPersist = filteredTransactionsAndSignatures
