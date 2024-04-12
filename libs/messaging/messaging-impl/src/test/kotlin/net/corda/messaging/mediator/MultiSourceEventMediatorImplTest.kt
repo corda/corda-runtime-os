@@ -38,7 +38,14 @@ class MultiSourceEventMediatorImplTest {
             CompletableFuture.supplyAsync(command)
         }
 
-        whenever(executeShortRunningTask(any(), any(), any<() -> Any>())).thenAnswer { invocation ->
+        whenever(
+            executeShortRunningTask(
+                any(),
+                any(),
+                any(),
+                any<() -> Any>()
+            )
+        ).thenAnswer { invocation ->
             val command = invocation.getArgument<() -> Any>(0)
             CompletableFuture.supplyAsync(command)
         }

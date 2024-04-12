@@ -5,12 +5,16 @@ import io.micrometer.core.instrument.Timer
 import net.corda.metrics.CordaMetrics
 import net.corda.taskmanager.TaskManager
 import net.corda.utilities.VisibleForTesting
+import java.time.Duration
+import java.util.TimerTask
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Future
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import kotlin.concurrent.thread
 import kotlin.math.sign
 
@@ -35,34 +39,30 @@ internal class TaskManagerImpl(
     private class BatchRaceException() : Exception("Batch is already close")
 
     private val shortRunningTaskBatches = ConcurrentHashMap<Any, Batch>()
+    private val shortRunningTimeoutTimer = java.util.Timer("$name-Timer", true)
 
     class BatchComparator : Comparator<Runnable> {
         override fun compare(b1: Runnable, b2: Runnable): Int {
-            if(b1 !is Batch || b2 !is Batch) throw IllegalStateException("Was expecting Batch")
+            if (b1 !is Batch || b2 !is Batch) throw IllegalStateException("Was expecting Batch")
             return (b1.priority - b2.priority).sign
         }
 
     }
+
+    private data class Step(val command: () -> Any, val future: CompletableFuture<Any>, val timeout: Duration)
+
     inner class Batch(private val key: Any, val priority: Long) : Runnable {
-        private val queue = LinkedBlockingDeque<Pair<() -> Any, CompletableFuture<Any>>>()
+        private val queue = LinkedBlockingDeque<Step>()
         private var started = false
         private var closed = false
 
-        inner class BatchCompletableFuture<T> : CompletableFuture<T>() {
-            override fun cancel(mayInterruptIfRunning: Boolean): Boolean {
-                val cancelled = super.cancel(mayInterruptIfRunning)
-                if (mayInterruptIfRunning) interruptIfRunning(this)
-                return cancelled
-            }
-        }
-
         @Suppress("UNCHECKED_CAST")
         @Synchronized
-        fun <T : Any> addToBatch(command: () -> T): CompletableFuture<T> {
+        fun <T : Any> addToBatch(timeout: Duration, command: () -> T): CompletableFuture<T> {
             if (closed) throw BatchRaceException()
             val isFirst = queue.isEmpty() && !started
-            val future = BatchCompletableFuture<Any>()
-            queue.add(command to future)
+            val future = CompletableFuture<Any>()
+            queue.add(Step(command, future, timeout))
             if (isFirst) {
                 started = true
                 executorService.execute(this)
@@ -80,8 +80,8 @@ internal class TaskManagerImpl(
         }
 
         private fun runNextCommand() {
-            val (nextCommand, nextFuture) = queue.poll() ?: return
-            executeStep(nextCommand, nextFuture)
+            val (nextCommand, nextFuture, timeout) = queue.poll() ?: return
+            executeStep(nextCommand, nextFuture, timeout)
         }
 
         override fun run() {
@@ -91,50 +91,47 @@ internal class TaskManagerImpl(
             }
         }
 
-        @Volatile
-        var currentFuture: CompletableFuture<Any>? = null
-        @Volatile
-        var currentThread: Thread? = null
-
-        @Synchronized
-        private fun interruptIfRunning(future: CompletableFuture<*>) {
-            if (currentFuture == future) {
-                currentThread?.interrupt()
-            }
-        }
-
-        @Synchronized
-        private fun clearCurrentFuture() {
-            currentFuture = null
-            currentThread = null
-            Thread.interrupted()
-        }
-
-        private fun executeStep(command: () -> Any, future: CompletableFuture<Any>) {
-            try {
-                currentFuture = future
-                currentThread = Thread.currentThread()
-                if (!future.isCancelled) {
-                    val commandResult = command()
-                    clearCurrentFuture()
-                    future.complete(commandResult)
+        private fun executeStep(command: () -> Any, future: CompletableFuture<Any>, timeout: Duration) {
+            if (!future.isCancelled) {
+                val currentThread = Thread.currentThread()
+                val timeoutTimerTask = object : TimerTask() {
+                    override fun run() {
+                        if (future.completeExceptionally(TimeoutException("Command did not complete within timeout $timeout"))) {
+                            currentThread.interrupt()
+                        }
+                    }
                 }
-            } catch (e: Throwable) {
-                clearCurrentFuture()
-                future.completeExceptionally(e)
+                try {
+                    shortRunningTimeoutTimer.schedule(timeoutTimerTask, timeout.toMillis())
+                    val commandResult = command()
+                    if (!future.complete(commandResult) && future.isCompletedExceptionally) {
+                        Thread.interrupted()
+                    }
+                } catch (e: Throwable) {
+                    if (!future.completeExceptionally(e) && future.isCompletedExceptionally) {
+                        Thread.interrupted()
+                    }
+                } finally {
+                    timeoutTimerTask.cancel()
+                }
             }
         }
     }
 
-    override fun <T : Any> executeShortRunningTask(key: Any, priority: Long, command: () -> T): CompletableFuture<T> {
+    override fun <T : Any> executeShortRunningTask(
+        key: Any,
+        priority: Long,
+        commandTimeout: Duration,
+        command: () -> T
+    ): Future<T> {
         val start = System.nanoTime()
         incrementTaskCount(Type.SHORT_RUNNING)
-        while(true) {
+        while (true) {
             val batch = shortRunningTaskBatches.computeIfAbsent(key) {
                 Batch(key, priority)
             }
             try {
-                return batch.addToBatch {
+                return batch.addToBatch(commandTimeout) {
                     try {
                         command().also {
                             recordCompletion(start, Type.SHORT_RUNNING)

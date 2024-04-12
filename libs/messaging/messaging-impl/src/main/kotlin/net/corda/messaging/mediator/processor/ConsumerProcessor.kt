@@ -195,13 +195,13 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         return (groups.filter {
             it.isNotEmpty()
         }.mapIndexed() { index, group ->
-            val future = taskManager.executeShortRunningTask(index, 1) {
+            val future = taskManager.executeShortRunningTask(index, 1, config.processorTimeout) {
                 eventProcessor.processEvents(group)
             }
             Pair(future, group)
         }.map { (future, group) ->
             try {
-                future.getOrThrow(config.processorTimeout)
+                future.getOrThrow()
             } catch (e: TimeoutException) {
                 metrics.consumerProcessorFailureCounter.increment(group.keys.size.toDouble())
                 // A timeout wants to skip over the inputs based on current logic, so we'll replicate
