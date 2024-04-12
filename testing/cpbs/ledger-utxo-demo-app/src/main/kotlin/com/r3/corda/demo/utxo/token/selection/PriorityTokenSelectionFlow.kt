@@ -19,7 +19,8 @@ import net.corda.v5.ledger.utxo.token.selection.TokenSelection
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-class PriortyTokenSelectionFlow : ClientStartableFlow {
+@Suppress("unused")
+class PriorityTokenSelectionFlow : ClientStartableFlow {
 
     private companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -42,7 +43,7 @@ class PriortyTokenSelectionFlow : ClientStartableFlow {
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
-        log.info("PriortyTokenSelectionFlow starting...")
+        log.info("PriorityTokenSelectionFlow starting...")
         try {
             val queryCriteria = TokenClaimCriteria(
                 TOKEN_TYPE,
