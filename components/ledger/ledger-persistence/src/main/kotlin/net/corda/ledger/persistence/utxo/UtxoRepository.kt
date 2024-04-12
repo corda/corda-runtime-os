@@ -210,6 +210,10 @@ interface UtxoRepository {
         limit: Int,
     ): List<String>
 
+    fun incrementTransactionRepairAttemptCount(entityManager: EntityManager, id: String)
+
+    fun stateRefsExist(entityManager: EntityManager, stateRefs: List<StateRef>): List<Pair<String, Int>>
+
     data class TransactionComponent(val transactionId: String, val groupIndex: Int, val leafIndex: Int, val leafData: ByteArray)
 
     data class VisibleTransactionOutput(
@@ -239,8 +243,4 @@ interface UtxoRepository {
     )
 
     data class TransactionMerkleProofLeaf(val merkleProofId: String, val leafIndex: Int)
-
-    fun incrementTransactionRepairAttemptCount(entityManager: EntityManager, id: String)
-
-    fun stateRefsExist(entityManager: EntityManager, stateRefs: List<StateRef>): List<Pair<String, Int>>
 }
