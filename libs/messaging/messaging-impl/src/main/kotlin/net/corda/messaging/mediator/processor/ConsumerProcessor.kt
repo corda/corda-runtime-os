@@ -68,14 +68,16 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         var attempts = 0
         var consumer: MediatorConsumer<K, E>? = null
         val failureCounts = mutableMapOf<String, Int>()
+        val deleteLater = mutableMapOf<String, State>()
         while (!mediatorSubscriptionState.stopped()) {
             attempts++
             try {
                 if (consumer == null) {
                     consumer = consumerFactory.create(consumerConfig)
+                    deleteLater.clear()
                     consumer.subscribe()
                 }
-                pollLoop(consumer, failureCounts)
+                pollLoop(consumer, failureCounts, deleteLater)
                 attempts = 0
             } catch (exception: Exception) {
                 val cause = if (exception is CompletionException) { exception.cause ?: exception} else exception
@@ -116,13 +118,17 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      * @param failureCounts A map of keys to number of failures for that key. Used to pass context between invocations
      *                      of this function.
      */
-    private fun pollLoop(consumer: MediatorConsumer<K, E>, failureCounts: MutableMap<String, Int>) {
+    private fun pollLoop(
+        consumer: MediatorConsumer<K, E>,
+        failureCounts: MutableMap<String, Int>,
+        deleteLater: MutableMap<String, State>
+    ) {
         metrics.processorTimer.recordCallable {
             try {
                 val inputs = getInputs(consumer)
                 val outputs = processInputs(inputs)
                 categorizeOutputs(outputs, failureCounts)
-                commit(consumer, outputs, failureCounts)
+                commit(consumer, outputs, failureCounts, deleteLater)
             } catch (e: Exception) {
                 log.warn("Retrying processing: ${e.message}.")
                 consumer.resetEventOffsetPosition()
@@ -297,7 +303,8 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private fun commit(
         consumer: MediatorConsumer<K, E>,
         outputs: Map<String, EventProcessingOutput<K, E>>,
-        failureCounts: MutableMap<String, Int>
+        failureCounts: MutableMap<String, Int>,
+        previousDeleteLater: MutableMap<String, State>
     ) {
         val (failed, toDelete) = processOutputs(outputs)
         if (failed.isNotEmpty()) {
@@ -310,20 +317,29 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         }
         // Delete after committing offsets to satisfy flow engine replay requirements.
         val (safeToDelete, deleteLater) = toDelete.partition { state ->
-            state.metadata.entries.all {
-                it.key.toTopicAndPartition()?.let { (topic, partition) ->
-                    consumer.alreadySyncedOffset(topic, partition, it.value as Long) ?: true
-                } ?: true
-            }
+            isStateSafeToDelete(consumer, state)
         }
-        stateManager.delete(safeToDelete)
+        val (previousNowSafeToDelete, _) = previousDeleteLater.values.partition { state ->
+            isStateSafeToDelete(consumer, state)
+        }
+        stateManager.delete(safeToDelete + previousNowSafeToDelete)
+        previousNowSafeToDelete.forEach { previousDeleteLater.remove(it.key) }
+
         stateManager.update(deleteLater.map {
             it.copy(metadata = Metadata(it.metadata + mapOf(DELETE_LATER_METADATA_PROPERTY to true)))
         }) // Updates seen offsets to prevent re-processing
-        // TODO: stash deleteLater to be considered for delete again each time we call this commit method
+        previousDeleteLater.putAll(deleteLater.map { it.key to it }.toMap())
 
         outputs.forEach { (key, _) ->
             failureCounts.remove(key)
+        }
+    }
+
+    private fun isStateSafeToDelete(consumer: MediatorConsumer<K, E>, state: State): Boolean {
+        return state.metadata.entries.all {
+            it.key.toTopicAndPartition()?.let { (topic, partition) ->
+                consumer.alreadySyncedOffset(topic, partition, it.value as Long) ?: true
+            } ?: true
         }
     }
 
@@ -332,7 +348,10 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      *
      * The input records must be the set of records that should be processed.
      */
-    private fun generateInputs(states: Collection<State>, records: Map<K, List<CordaConsumerRecord<K, E>>>) : List<EventProcessingInput<K, E>> {
+    private fun generateInputs(
+        states: Collection<State>,
+        records: Map<K, List<CordaConsumerRecord<K, E>>>
+    ): List<EventProcessingInput<K, E>> {
         val (runningStates, failedStates) = states.partition {
             it.metadata[PROCESSING_FAILURE] != true
         }
