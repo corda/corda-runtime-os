@@ -140,9 +140,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         consumer: MediatorConsumer<K, E>,
     ): List<EventProcessingInput<K, E>> {
         val messages = consumer.poll(pollTimeout)
-        val records = messages.map {
-            it
-        }.groupBy { it.key }
+        val records = messages.groupBy { it.key }
         val states = stateManager.get(records.keys.map { it.toString() })
         return generateInputs(states.values, records)
     }
@@ -159,7 +157,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      * @param inputs The set of input to process.
      * @return The set of outputs for further processing.
      */
-    private fun processInputs(inputs: List<EventProcessingInput<K, E>>): Map<String, EventProcessingOutput> {
+    private fun processInputs(inputs: List<EventProcessingInput<K, E>>): Map<String, EventProcessingOutput<K, E>> {
         val groups = groupAllocator.allocateGroups(inputs, config)
         return groups.filter {
             it.isNotEmpty()
@@ -173,6 +171,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 future.getOrThrow(config.processorTimeout)
             } catch (e: TimeoutException) {
                 metrics.consumerProcessorFailureCounter.increment(group.keys.size.toDouble())
+                // TODO - what to do in case of time out? This is counted as a failure, but still generated a commit?
                 group.mapValues { (key, input) ->
                     val oldState = input.state
                     val state = stateManagerHelper.failStateProcessing(
@@ -185,13 +184,13 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     } else {
                         StateChangeAndOperation.Create(state)
                     }
-                    EventProcessingOutput(listOf(), stateChange)
+                    EventProcessingOutput<K,E>(listOf(), stateChange, listOf())
                 }.also {
                     log.warn("Cancelling task for key(s) ${group.keys}")
                     future.cancel(true)
                 }
             }
-        }.fold(mapOf<K, EventProcessingOutput>()) { acc, cur ->
+        }.fold(mapOf<K, EventProcessingOutput<K,E>>()) { acc, cur ->
             acc + cur
         }.mapKeys { (key, _) ->
             key.toString()
@@ -219,7 +218,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      * @throws CordaMessageAPIIntermittentException if any retryable errors are identified.
      */
     private fun categorizeOutputs(
-        outputs: Map<String, EventProcessingOutput>,
+        outputs: Map<String, EventProcessingOutput<K, E>>,
         failureCounts: MutableMap<String, Int>
     ) {
         val transients = outputs.filter {
@@ -259,7 +258,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      */
     private fun commit(
         consumer: MediatorConsumer<K, E>,
-        outputs: Map<String, EventProcessingOutput>,
+        outputs: Map<String, EventProcessingOutput<K, E>>,
         failureCounts: MutableMap<String, Int>
     ) {
         val (failed, toDelete) = processOutputs(outputs)
@@ -269,7 +268,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             )
         }
         metrics.commitTimer.recordCallable {
-            consumer.syncCommitOffsets()
+            consumer.syncCommitOffsets(outputs.flatMap { it.value.processedOffsets })
         }
         // Delete after committing offsets to satisfy flow engine replay requirements.
         stateManager.delete(toDelete)
@@ -306,7 +305,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      * Will send any asynchronous outputs back to the bus for states which saved successfully.
      * @return a map of all the states that failed to save by their keys.
      */
-    private fun processOutputs(outputs: Map<String, EventProcessingOutput>): Pair<Map<String, State>, List<State>> {
+    private fun processOutputs(outputs: Map<String, EventProcessingOutput<K,E>>): Pair<Map<String, State>, List<State>> {
         val statesToCreate = mutableListOf<State>()
         val statesToUpdate = mutableListOf<State>()
         val statesToDelete = mutableListOf<State>()

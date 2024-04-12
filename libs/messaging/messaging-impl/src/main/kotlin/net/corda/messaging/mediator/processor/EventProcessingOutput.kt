@@ -1,11 +1,13 @@
 package net.corda.messaging.mediator.processor
 
 import net.corda.libs.statemanager.api.State
+import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.mediator.MediatorMessage
 
-data class EventProcessingOutput(
+data class  EventProcessingOutput<K: Any, V:Any>(
     val asyncOutputs: List<MediatorMessage<Any>>,
-    val stateChangeAndOperation: StateChangeAndOperation
+    val stateChangeAndOperation: StateChangeAndOperation,
+    val processedOffsets: List<CordaConsumerRecord<K, V>>
 )
 
 sealed interface StateChangeAndOperation {
