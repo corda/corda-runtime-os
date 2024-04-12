@@ -41,6 +41,9 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
 
+/**
+ * Handler for each type of session messages.
+ */
 @Suppress("LongParameterList")
 internal class SessionMessageProcessor(
     coordinatorFactory: LifecycleCoordinatorFactory,

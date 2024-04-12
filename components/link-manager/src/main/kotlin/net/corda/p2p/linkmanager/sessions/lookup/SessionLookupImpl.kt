@@ -26,11 +26,11 @@ internal class SessionLookupImpl(
     private val stateManager: StateManagerWrapper,
 ) : SessionLookup {
     override fun <T> getCachedOutboundSessions(
-        messagesAndKeys: Map<String?, Collection<OutboundMessageContext<T>>>,
+        keysAndMessages: Map<String?, Collection<OutboundMessageContext<T>>>,
     ): Map<String, Collection<Pair<T, SessionEstablished>>> {
-        val allCached = sessionCache.getAllPresentOutboundSessions(messagesAndKeys.keys.filterNotNull())
+        val allCached = sessionCache.getAllPresentOutboundSessions(keysAndMessages.keys.filterNotNull())
         return allCached.mapValues { entry ->
-            val contexts = messagesAndKeys[entry.key]
+            val contexts = keysAndMessages[entry.key]
             val message = contexts?.firstOrNull()
                 ?.message
                 ?.message ?: return@mapValues emptyList()
@@ -54,11 +54,11 @@ internal class SessionLookupImpl(
     }
 
     override fun <T> getPersistedOutboundSessions(
-        sessionsNotCached: Map<String?, List<OutboundMessageContext<T>>>,
+        keysAndMessages: Map<String?, List<OutboundMessageContext<T>>>,
     ): List<OutboundMessageState<T>> {
-        return stateManager.get(sessionsNotCached.keys.filterNotNull())
+        return stateManager.get(keysAndMessages.keys.filterNotNull())
             .let { states ->
-                sessionsNotCached.map { (id, items) ->
+                keysAndMessages.map { (id, items) ->
                     OutboundMessageState(
                         id,
                         states[id],
@@ -69,17 +69,17 @@ internal class SessionLookupImpl(
     }
 
     override fun <T> getPersistedOutboundSessionsBySessionId(
-        notInboundSessions: Set<String>,
-        sessionsNotCached: Map<String, List<T>>,
+        sessionIds: Set<String>,
+        sessionIdsAndMessages: Map<String, List<T>>,
     ): List<Pair<List<T>, SessionManager.SessionDirection.Outbound>> {
         return stateManager.findStatesMatchingAny(
-            notInboundSessions.map { getSessionIdFilter(it) },
+            sessionIds.map { getSessionIdFilter(it) },
         )
             .entries
             .mapNotNull { (key, state) ->
                 val session = state.sessionState.sessionData as? Session ?: return@mapNotNull null
                 val sessionId = state.managerState.metadata.toOutbound().sessionId
-                sessionsNotCached[sessionId]?.let { traceables ->
+                sessionIdsAndMessages[sessionId]?.let { traceables ->
                     val outboundSession = sessionWriter.cacheSession(
                         SessionDirection.OUTBOUND,
                         state.toCounterparties(),
@@ -94,13 +94,13 @@ internal class SessionLookupImpl(
     private fun getSessionIdFilter(sessionId: String): MetadataFilter = MetadataFilter("sessionId", Operation.Equals, sessionId)
 
     override fun <T> getPersistedInboundSessions(
-        sessionsNotCached: Map<String, List<T>>,
+        sessionIdsAndMessages: Map<String, List<T>>,
     ): List<Pair<List<T>, SessionManager.SessionDirection.Inbound>> {
-        return stateManager.get(sessionsNotCached.keys)
+        return stateManager.get(sessionIdsAndMessages.keys)
             .entries
             .mapNotNull { (sessionId, state) ->
                 val session = state.sessionState.sessionData as? Session ?: return@mapNotNull null
-                sessionsNotCached[sessionId]?.let { traceables ->
+                sessionIdsAndMessages[sessionId]?.let { traceables ->
                     val inboundSession = sessionWriter.cacheSession(
                         SessionDirection.INBOUND,
                         state.toCounterparties(),

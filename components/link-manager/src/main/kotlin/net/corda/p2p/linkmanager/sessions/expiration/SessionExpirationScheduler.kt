@@ -11,6 +11,10 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
+/**
+ * Validates the states and schedules expiry time for them.
+ * When the session gets expired it will get evicted from the [SessionCache] and [StateManager] database.
+ */
 internal class SessionExpirationScheduler(
     private val clock: Clock,
     private val sessionCache: SessionCache,
