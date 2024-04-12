@@ -57,8 +57,6 @@ class ProcessorService {
         ) {
             var requestOutcome = "FAILED"
             try {
-                logger.info("Handling ${request.request::class.java.name} for holdingIdentity ${holdingIdentity.shortHash.value}")
-
                 val cpkFileHashes = request.flowExternalEventContext.contextProperties.items.filter {
                     it.key.startsWith(FlowContextPropertyKeys.CPK_FILE_CHECKSUM)
                 }.map { it.value.toSecureHash() }.toSet()

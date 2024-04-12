@@ -40,15 +40,16 @@ class PostgresUtxoQueryProvider @Activate constructor(
             """
             .trimIndent()
 
-    override val persistFilteredTransaction: String
-        get() = """
-            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered, repair_attempt_count)
-                VALUES (:id, :privacySalt, :accountId, :createdAt, '$VERIFIED', :updatedAt, :metadataHash, TRUE, 0)
+    override val persistFilteredTransaction: (batchSize: Int) -> String
+        get() = { batchSize ->
+            """
+            INSERT INTO utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered, repair_attempt_count)
+            VALUES ${List(batchSize) { "(?, ?, ?, ?, '$VERIFIED', ?, ?, TRUE, 0)" }.joinToString(",")}
             ON CONFLICT(id) DO
             UPDATE SET is_filtered = TRUE
             WHERE utxo_transaction.status in ('$UNVERIFIED', '$DRAFT') AND utxo_transaction.is_filtered = FALSE
-            """
-            .trimIndent()
+            """.trimIndent()
+        }
 
     override val persistTransactionMetadata: String
         get() = """

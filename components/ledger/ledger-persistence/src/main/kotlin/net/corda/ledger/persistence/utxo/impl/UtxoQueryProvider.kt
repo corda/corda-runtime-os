@@ -69,7 +69,7 @@ interface UtxoQueryProvider {
     /**
      * @property persistFilteredTransaction SQL text for [UtxoRepositoryImpl.persistFilteredTransaction].
      */
-    val persistFilteredTransaction: String
+    val persistFilteredTransaction: (batchSize: Int) -> String
 
     /**
      * @property persistTransactionMetadata SQL text for [UtxoRepositoryImpl.persistTransactionMetadata].
