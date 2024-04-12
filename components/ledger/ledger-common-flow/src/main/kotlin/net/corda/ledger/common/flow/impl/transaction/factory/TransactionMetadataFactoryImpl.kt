@@ -9,6 +9,7 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.flows.FlowEngine
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -32,11 +33,20 @@ class TransactionMetadataFactoryImpl @Activate constructor(
         val metadata = mapOf(
             TransactionMetadataImpl.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
             TransactionMetadataImpl.PLATFORM_VERSION_KEY to platformInfoProvider.activePlatformVersion,
+            TransactionMetadataImpl.MINIMUM_PLATFORM_VERSION_KEY to getMinimumPlatformVersion(),
             TransactionMetadataImpl.CPI_METADATA_KEY to flowEngine.getCpiSummary(),
             TransactionMetadataImpl.CPK_METADATA_KEY to getCpkSummaries(),
             TransactionMetadataImpl.SCHEMA_VERSION_KEY to TransactionMetadataImpl.SCHEMA_VERSION
         )
         return TransactionMetadataImpl(metadata + ledgerSpecificMetadata)
+    }
+
+    private fun getMinimumPlatformVersion(): Int {
+        return when (val platformVersion = platformInfoProvider.activePlatformVersion) {
+            50000, 50100 -> 50000
+            50200, 50300 -> 50200
+            else -> throw CordaRuntimeException("platformVersion $platformVersion is invalid.")
+        }
     }
 
     private fun getCpkSummaries() = currentSandboxGroupContext

@@ -37,6 +37,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED
 import org.osgi.service.component.annotations.ServiceScope
+import org.slf4j.LoggerFactory
 import java.security.PublicKey
 
 // TODO impl impl in package name
@@ -73,6 +74,9 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     @Reference(service = PrivacySaltProviderService::class)
     private val privacySaltProviderService: PrivacySaltProviderService
 ) : UtxoSignedTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
+    companion object {
+        val log = LoggerFactory.getLogger(this::class.java)
+    }
 
     @Suspendable
     override fun create(
@@ -137,7 +141,12 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     }
 
     private fun serializeMetadata(metadata: TransactionMetadata): ByteArray {
-        return jsonValidator.canonicalize(jsonMarshallingService.format(metadata)).toByteArray()
+        val json = jsonMarshallingService.format(metadata)
+        log.info("XXX metadata json string: $json")
+        val serializedMetadata = jsonValidator.canonicalize(json).toByteArray()
+        log.info("XXX serializedMetadata: $serializedMetadata")
+        println("XXX serializedMetadata: $serializedMetadata")
+        return serializedMetadata
     }
 
     @Suppress("ComplexMethod")

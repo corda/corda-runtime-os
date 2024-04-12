@@ -225,18 +225,10 @@
     },
     "platformVersion": {
       "title": "Active platform version at the time of the creation of the transaction",
-      "type": ["integer", "null"],
-      "default": "",
-      "examples": [
-        1
-      ]
-    },
-    "minimumPlatformVersion": {
-      "title": "Minimum platform version at the time of the creation of the transaction",
       "type": "integer",
       "default": "",
       "examples": [
-        50100
+        1
       ]
     },
     "schemaVersion": {

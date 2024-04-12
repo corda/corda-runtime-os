@@ -32,6 +32,7 @@ class JsonValidatorImpl: JsonValidator,
     override fun canonicalize(json: String): String = JsonCanonicalizer(json).encodedString
 
     override fun parseSchema(schema: InputStream): WrappedJsonSchema =
+        // before parsing it, we can check the schema version
         WrappedJsonSchema(JsonSchemaFactory
             .getInstance(SpecVersion.VersionFlag.V201909)
             .getSchema(schema))

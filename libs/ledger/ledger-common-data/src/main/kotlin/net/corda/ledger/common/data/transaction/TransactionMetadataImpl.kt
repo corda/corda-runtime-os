@@ -5,14 +5,19 @@ import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 
+@Suppress("TooManyFunctions")
 @CordaSerializable
-class TransactionMetadataImpl(private val properties: Map<String, Any>) : TransactionMetadataInternal {
+class TransactionMetadataImpl(private val properties: Map<String, Any?>) : TransactionMetadataInternal {
 
     operator fun get(key: String): Any? = properties[key]
 
     companion object {
         const val ALL_LEDGER_METADATA_COMPONENT_GROUP_ID = 0
         const val SCHEMA_PATH = "/schema/transaction-metadata.json"
+        const val SCHEMA_V2_PATH = "/schema/transaction-metadata-2.json"
+
+        // make schema compatible
+        // create another schema, depending on the schema version, parse different version of metadata, make it parse different schema.
         const val SCHEMA_VERSION = 1
 
         const val LEDGER_MODEL_KEY = "ledgerModel"
@@ -20,6 +25,7 @@ class TransactionMetadataImpl(private val properties: Map<String, Any>) : Transa
         const val TRANSACTION_SUBTYPE_KEY = "transactionSubtype"
         const val DIGEST_SETTINGS_KEY = "digestSettings"
         const val PLATFORM_VERSION_KEY = "platformVersion"
+        const val MINIMUM_PLATFORM_VERSION_KEY = "minimumPlatformVersion"
         const val CPI_METADATA_KEY = "cpiMetadata"
         const val CPK_METADATA_KEY = "cpkMetadata"
         const val COMPONENT_GROUPS_KEY = "componentGroups"
@@ -103,6 +109,22 @@ class TransactionMetadataImpl(private val properties: Map<String, Any>) : Transa
         } catch (e: NumberFormatException) {
             throw CordaRuntimeException(
                 "Transaction metadata representation error: Platform version should be an integer but could not be parsed: $version"
+            )
+        }
+    }
+
+    override fun getMinimumPlatformVersion(): Int? {
+        if (platformVersion == 50000) {
+            return null
+        }
+        val version =
+            this[MINIMUM_PLATFORM_VERSION_KEY].toString()
+
+        return try {
+            version.toInt()
+        } catch (e: NumberFormatException) {
+            throw CordaRuntimeException(
+                "Transaction metadata representation error: Minimum platform version should be an integer but could not be parsed: $version"
             )
         }
     }
