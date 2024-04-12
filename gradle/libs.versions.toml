@@ -48,7 +48,7 @@ nettyVersion = "4.1.108.Final"
 assertjVersion = "3.25.3"
 junitVersion = "5.10.2"
 mockitoVersion = "5.10.0"
-mockitoKotlinVersion = "5.2.1"
+mockitoKotlinVersion = "5.3.1"
 
 # Plugins
 gradleDataVersion = "2"
