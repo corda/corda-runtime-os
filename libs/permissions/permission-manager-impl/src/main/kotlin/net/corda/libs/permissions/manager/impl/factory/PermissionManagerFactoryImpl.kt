@@ -51,9 +51,11 @@ class PermissionManagerFactoryImpl @Activate constructor(
     }
 
     override fun createBasicAuthenticationService(
+        rbacConfig: SmartConfig,
         permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>
     ): BasicAuthenticationService {
         return RbacBasicAuthenticationService(
+            rbacConfig,
             permissionManagementCacheRef,
             passwordServiceFactory.createPasswordService(SecureRandom())
         )

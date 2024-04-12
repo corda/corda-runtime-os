@@ -7,6 +7,7 @@ import net.corda.data.permissions.PermissionType
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.RoleAssociation
 import net.corda.data.permissions.User
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.permissions.password.PasswordHash
 import net.corda.permissions.password.PasswordService
@@ -22,6 +23,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.atomic.AtomicReference
 
 class RbacBasicAuthenticationServiceTest {
@@ -29,6 +31,8 @@ class RbacBasicAuthenticationServiceTest {
     companion object {
         private val passwordService: PasswordService = mock()
         private val permissionManagementCache = mock<PermissionManagementCache>()
+        private val rbacConfig = mock<SmartConfig>()
+        private val passwordExpiryTime = Instant.now().plus(1L, ChronoUnit.DAYS)
 
         private val virtualNode = "f39d810f-6ee6-4742-ab7c-d1fe274ab85e"
         private val permissionString = "flow/start/com.myapp.MyFlow"
@@ -134,7 +138,7 @@ class RbacBasicAuthenticationServiceTest {
     }
 
     private val rbacBasicAuthenticationService =
-        RbacBasicAuthenticationService(AtomicReference(permissionManagementCache), passwordService)
+        RbacBasicAuthenticationService(rbacConfig, AtomicReference(permissionManagementCache), passwordService)
 
     @Test
     fun `authenticate user will return false when user cannot be found in cache`() {
@@ -142,7 +146,7 @@ class RbacBasicAuthenticationServiceTest {
 
         val result = rbacBasicAuthenticationService.authenticateUser("userLoginName1", "password".toCharArray())
 
-        assertFalse(result)
+        assertFalse(result.authenticationSuccess)
     }
 
     @Test
@@ -155,7 +159,7 @@ class RbacBasicAuthenticationServiceTest {
 
         val result = rbacBasicAuthenticationService.authenticateUser("userLoginName1", "password".toCharArray())
 
-        assertFalse(result)
+        assertFalse(result.authenticationSuccess)
     }
 
     @Test
@@ -168,7 +172,7 @@ class RbacBasicAuthenticationServiceTest {
 
         val result = rbacBasicAuthenticationService.authenticateUser("userLoginName1", "password".toCharArray())
 
-        assertFalse(result)
+        assertFalse(result.authenticationSuccess)
     }
 
     @Test
@@ -186,7 +190,7 @@ class RbacBasicAuthenticationServiceTest {
 
         val result = rbacBasicAuthenticationService.authenticateUser("userLoginName2", "password".toCharArray())
 
-        assertFalse(result)
+        assertFalse(result.authenticationSuccess)
 
         verify(permissionManagementCache, times(1)).getUser("userLoginName2")
 
@@ -207,6 +211,7 @@ class RbacBasicAuthenticationServiceTest {
         val user = User().apply {
             saltValue = "abcsalt"
             hashedPassword = "hashedpass"
+            passwordExpiry = passwordExpiryTime
         }
 
         whenever(permissionManagementCache.getUser("userLoginName1")).thenReturn(user)
@@ -214,7 +219,7 @@ class RbacBasicAuthenticationServiceTest {
 
         val result = rbacBasicAuthenticationService.authenticateUser("userLoginName1", "password".toCharArray())
 
-        assertTrue(result)
+        assertTrue(result.authenticationSuccess)
 
         verify(permissionManagementCache, times(1)).getUser("userLoginName1")
 
