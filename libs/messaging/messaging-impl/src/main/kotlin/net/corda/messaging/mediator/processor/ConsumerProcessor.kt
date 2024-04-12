@@ -20,6 +20,7 @@ import net.corda.taskmanager.TaskManager
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.time.Instant
 import java.util.concurrent.CompletionException
 import java.util.concurrent.TimeoutException
 
@@ -57,6 +58,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         private const val MAX_FAILURE_ATTEMPTS = 5
         private const val TOPIC_OFFSET_METADATA_PREFIX = "topic.offset"
         private const val DELETE_LATER_METADATA_PROPERTY = "delete.later"
+        private const val PRIORITY_METADATA_PROPERTY = "priority"
     }
 
     /**
@@ -192,8 +194,8 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val groups = groupAllocator.allocateGroups(newInputs, config)
         return (groups.filter {
             it.isNotEmpty()
-        }.map { group ->
-            val future = taskManager.executeShortRunningTask("Foo", 1) {
+        }.mapIndexed() { index, group ->
+            val future = taskManager.executeShortRunningTask(index, 1) {
                 eventProcessor.processEvents(group)
             }
             Pair(future, group)
@@ -416,6 +418,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 }
             }
         }
+        result.putIfAbsent(PRIORITY_METADATA_PROPERTY, Instant.now().toEpochMilli())
         return Metadata(result)
     }
 
