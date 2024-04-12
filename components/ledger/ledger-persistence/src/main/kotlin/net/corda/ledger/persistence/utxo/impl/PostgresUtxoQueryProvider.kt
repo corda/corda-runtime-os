@@ -81,9 +81,9 @@ class PostgresUtxoQueryProvider @Activate constructor(
             """
             INSERT INTO utxo_visible_transaction_output(
                 transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
-                token_symbol, token_tag, token_owner_hash, token_amount, created, consumed, custom_representation
+                token_symbol, token_tag, token_owner_hash, token_amount, token_priority, created, consumed, custom_representation
             )
-            VALUES ${List(batchSize) { "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CAST(? as JSONB))"}.joinToString(",")}
+            VALUES ${List(batchSize) { "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CAST(? as JSONB))"}.joinToString(",")}
             ON CONFLICT DO NOTHING
             """.trimIndent()
         }

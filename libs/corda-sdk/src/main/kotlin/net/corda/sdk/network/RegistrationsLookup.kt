@@ -37,6 +37,20 @@ class RegistrationsLookup {
     }
 
     /**
+     * Call the [checkRegistrations] function, and check if registration status is approved
+     */
+    fun isVnodeRegistrationApproved(
+        restClient: RestClient<MemberRegistrationRestResource>,
+        holdingIdentityShortHash: ShortHash,
+        wait: Duration = 10.seconds
+    ): Boolean {
+        val registrationStatuses = checkRegistrations(restClient, holdingIdentityShortHash, wait)
+        return registrationStatuses.any { request ->
+            request.registrationStatus == RegistrationStatus.APPROVED
+        }
+    }
+
+    /**
      * List the details of a specific registration
      * @param restClient of type RestClient<MemberRegistrationRestResource>
      * @param holdingIdentityShortHash the holding identity ID of the node

@@ -51,9 +51,13 @@ import java.net.URL
 import java.security.KeyStore
 import java.util.UUID
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random.Default.nextInt
 
 internal open class TestBase {
+    private companion object {
+        val nextPortToUse = AtomicInteger(2000)
+    }
     private val toClose = ConcurrentLinkedQueue<Resource>()
     private fun readKeyStore(url: URL?, password: String = keystorePass): KeyStoreWithPassword {
         val keyStore = KeyStore.getInstance("JKS").also { keyStore ->
@@ -80,10 +84,10 @@ internal open class TestBase {
 
     protected fun getOpenPort(): Int {
         while (true) {
+            val port = nextPortToUse.getAndIncrement()
             try {
-                ServerSocket(0).use {
-                    return it.localPort
-                }
+                ServerSocket(port).close()
+                return port
             } catch (e: BindException) {
                 // Go to next port...
             }

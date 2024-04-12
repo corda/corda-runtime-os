@@ -50,10 +50,11 @@ class LiquibaseSchemaMigratorTest {
     private val commandScopeFactory = mock<(commandNames: Array<String>) -> CommandScope> {
         on { invoke(any()) } doReturn (commandScope)
     }
+    private val liquibaseSchemaUpdater = LiquibaseSchemaUpdaterImpl(commandScopeFactory)
     private val writer = mock<Writer>()
 
     private val migrator: LiquibaseSchemaMigrator =
-        LiquibaseSchemaMigratorImpl(lbFactory, dbFactory, dbFactoryOffline, commandScopeFactory)
+        LiquibaseSchemaMigratorImpl(lbFactory, dbFactory, dbFactoryOffline, liquibaseSchemaUpdater)
 
     @Test
     fun `when updateDb create LB object`() {

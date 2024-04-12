@@ -142,7 +142,7 @@ class CryptoRewrapBusProcessor(
             }
 
             tenantIdSigningKeysRecords.entries.single().let { (_, state) ->
-                logger.debug(
+                logger.info(
                     "Updating state manager record for tenantId ${request.tenantId} " +
                             "after re-wrapping ${request.keyUuid}."
                 )
@@ -195,7 +195,7 @@ class CryptoRewrapBusProcessor(
             }
 
             tenantIdWrappingKeysRecords.forEach { (_, state) ->
-                logger.debug(
+                logger.info(
                     "Updating state manager record for tenantId ${request.tenantId} " +
                         "after re-wrapping ${request.targetKeyAlias}."
                 )
