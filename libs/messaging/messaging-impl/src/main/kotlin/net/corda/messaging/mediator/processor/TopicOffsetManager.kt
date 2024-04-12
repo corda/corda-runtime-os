@@ -8,6 +8,10 @@ class TopicOffsetManager {
         }
     }
 
+    fun getLowestUncommittedOffset(partition: Int): Long? {
+        return getPartitionOffsetManager(partition).getLowestUncommittedOffset()
+    }
+
     fun recordPolledOffset(partition: Int, offset: Long) {
         getPartitionOffsetManager(partition).recordPolledOffset(offset)
     }

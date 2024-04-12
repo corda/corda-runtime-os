@@ -65,11 +65,14 @@ class PartitionOffsetManager {
     }
 
     fun rollback() {
-        for(offset in preCommitted) {
+        for (offset in preCommitted) {
             val flag = offsets[offset] ?: continue
             flag.set(false)
         }
         preCommitted.clear()
     }
 
+    fun getLowestUncommittedOffset(): Long? {
+        return offsets.firstKey()
+    }
 }

@@ -29,6 +29,11 @@ class MessageBusConsumer<K : Any, V : Any>(
         return records
     }
 
+    override fun alreadySyncedOffset(topic: String, partition: Int, offset: Long): Boolean? {
+        if (topic != this.topic) return null
+        return (offsetManager.getLowestUncommittedOffset(partition) ?: Long.MAX_VALUE) > offset
+    }
+
     override fun syncCommitOffsets(records: List<CordaConsumerRecord<K, V>>) {
         if (records.isEmpty()) return
         records.forEach { offsetManager.recordOffsetPreCommit(it.partition, it.offset) }

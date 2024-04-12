@@ -147,6 +147,17 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         return generateInputs(states.values, records)
     }
 
+    private fun CordaConsumerRecord<K, E>.metadataKey(): String {
+        return "$TOPIC_OFFSET_METADATA_PREFIX.${topic}.${partition}"
+    }
+
+    private fun String.toTopicAndPartition(): Pair<String, Int>? {
+        return if (startsWith(TOPIC_OFFSET_METADATA_PREFIX)) {
+            val topicAndPartition = substring(TOPIC_OFFSET_METADATA_PREFIX.length + 1)
+            return topicAndPartition.substringBeforeLast('.') to topicAndPartition.substringAfterLast('.').toInt()
+        } else null
+    }
+
     /**
      * Process a list of inputs into outputs.
      *
@@ -163,7 +174,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val prunedInputs = inputs.map { input ->
             input.state?.let { state ->
                 val notSeenRecords = input.records.filter { record ->
-                    record.offset > ((state.metadata["$TOPIC_OFFSET_METADATA_PREFIX.${record.topic}"] as? Long) ?: -1)
+                    record.offset > ((state.metadata[record.metadataKey()] as? Long) ?: -1)
                 }
                 input.copy(records = notSeenRecords)
             } ?: input
@@ -287,7 +298,17 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             consumer.syncCommitOffsets(outputs.flatMap { it.value.processedOffsets })
         }
         // Delete after committing offsets to satisfy flow engine replay requirements.
-        stateManager.delete(toDelete)
+        val (safeToDelete, deleteLater) = toDelete.partition { state ->
+            state.metadata.entries.all {
+                it.key.toTopicAndPartition()?.let { (topic, partition) ->
+                    consumer.alreadySyncedOffset(topic, partition, it.value as Long) ?: true
+                } ?: true
+            }
+        }
+        stateManager.delete(safeToDelete)
+        stateManager.update(deleteLater) // Updates seen offsets to prevent re-processing
+        // TODO: stash deleteLater to be considered for delete again each time we call this commit method
+
         outputs.forEach { (key, _) ->
             failureCounts.remove(key)
         }
@@ -355,7 +376,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     ): Metadata {
         val result = existingMetadata.toMutableMap()
         processedOffsets.forEach {
-            result.compute("$TOPIC_OFFSET_METADATA_PREFIX.${it.topic}") { _, value ->
+            result.compute(it.metadataKey()) { _, value ->
                 if (value == null || value !is Long) {
                     it.offset
                 } else {
