@@ -51,7 +51,7 @@ internal class TaskManagerImpl(
         inner class BatchCompletableFuture<T> : CompletableFuture<T>() {
             override fun cancel(mayInterruptIfRunning: Boolean): Boolean {
                 val cancelled = super.cancel(mayInterruptIfRunning)
-                interruptIfRunning(this)
+                if (mayInterruptIfRunning) interruptIfRunning(this)
                 return cancelled
             }
         }
