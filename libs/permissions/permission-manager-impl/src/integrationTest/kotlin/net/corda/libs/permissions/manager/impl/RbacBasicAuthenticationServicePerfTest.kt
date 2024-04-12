@@ -69,8 +69,18 @@ class RbacBasicAuthenticationServicePerfTest {
     @Test
     fun singleThreadedTest() {
         // Warm-up
-        assertTrue(rbacBasicAuthenticationService.authenticateUser(userLogons.first(), passwordString.toCharArray()).authenticationSuccess)
-        assertFalse(rbacBasicAuthenticationService.authenticateUser(userLogons.first(), "wrongPassword".toCharArray()).authenticationSuccess)
+        assertTrue(
+            rbacBasicAuthenticationService.authenticateUser(
+                userLogons.first(),
+                passwordString.toCharArray()
+            ).authenticationSuccess
+        )
+        assertFalse(
+            rbacBasicAuthenticationService.authenticateUser(
+                userLogons.first(),
+                "wrongPassword".toCharArray()
+            ).authenticationSuccess
+        )
 
         // Measure time
         val start = System.currentTimeMillis()
@@ -93,8 +103,18 @@ class RbacBasicAuthenticationServicePerfTest {
     @Test
     fun multiThreadedTest() {
         // Warm-up
-        assertTrue(rbacBasicAuthenticationService.authenticateUser(userLogons.first(), passwordString.toCharArray()).authenticationSuccess)
-        assertFalse(rbacBasicAuthenticationService.authenticateUser(userLogons.first(), "wrongPassword".toCharArray()).authenticationSuccess)
+        assertTrue(
+            rbacBasicAuthenticationService.authenticateUser(
+                userLogons.first(),
+                passwordString.toCharArray()
+            ).authenticationSuccess
+        )
+        assertFalse(
+            rbacBasicAuthenticationService.authenticateUser(
+                userLogons.first(),
+                "wrongPassword".toCharArray()
+            ).authenticationSuccess
+        )
 
         // Measure time
         val start = System.currentTimeMillis()
