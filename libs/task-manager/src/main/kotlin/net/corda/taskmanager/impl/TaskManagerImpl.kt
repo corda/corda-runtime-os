@@ -5,16 +5,12 @@ import io.micrometer.core.instrument.Timer
 import net.corda.metrics.CordaMetrics
 import net.corda.taskmanager.TaskManager
 import net.corda.utilities.VisibleForTesting
-import java.time.Duration
-import java.util.TimerTask
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Future
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 import kotlin.concurrent.thread
 import kotlin.math.sign
 
@@ -39,7 +35,6 @@ internal class TaskManagerImpl(
     private class BatchRaceException() : Exception("Batch is already close")
 
     private val shortRunningTaskBatches = ConcurrentHashMap<Any, Batch>()
-    private val shortRunningTimeoutTimer = java.util.Timer("$name-Timer", true)
 
     class BatchComparator : Comparator<Runnable> {
         override fun compare(b1: Runnable, b2: Runnable): Int {
@@ -49,7 +44,11 @@ internal class TaskManagerImpl(
 
     }
 
-    private data class Step(val command: () -> Any, val future: CompletableFuture<Any>, val timeout: Duration)
+    private data class Step(
+        val command: () -> Any,
+        val future: CompletableFuture<Any>,
+        val persistedFuture: CompletableFuture<Unit>
+    )
 
     inner class Batch(private val key: Any, val priority: Long) : Runnable {
         private val queue = LinkedBlockingDeque<Step>()
@@ -58,11 +57,11 @@ internal class TaskManagerImpl(
 
         @Suppress("UNCHECKED_CAST")
         @Synchronized
-        fun <T : Any> addToBatch(timeout: Duration, command: () -> T): CompletableFuture<T> {
+        fun <T : Any> addToBatch(persistedFuture: CompletableFuture<Unit>, command: () -> T): CompletableFuture<T> {
             if (closed) throw BatchRaceException()
             val isFirst = queue.isEmpty() && !started
             val future = CompletableFuture<Any>()
-            queue.add(Step(command, future, timeout))
+            queue.add(Step(command, future, persistedFuture))
             if (isFirst) {
                 started = true
                 executorService.execute(this)
@@ -80,39 +79,30 @@ internal class TaskManagerImpl(
         }
 
         private fun runNextCommand() {
-            val (nextCommand, nextFuture, timeout) = queue.poll() ?: return
-            executeStep(nextCommand, nextFuture, timeout)
+            val (nextCommand, nextFuture, persistedFuture) = queue.poll() ?: return
+            executeStep(nextCommand, nextFuture)
+            // Only submit the next in the queue once this one has made it all the way to persistence
+            persistedFuture.whenComplete { _, _ ->
+                if (!close()) {
+                    executorService.execute(this)
+                }
+            }
         }
 
         override fun run() {
             runNextCommand()
-            if (!close()) {
-                executorService.execute(this)
-            }
         }
 
-        private fun executeStep(command: () -> Any, future: CompletableFuture<Any>, timeout: Duration) {
+        private fun executeStep(
+            command: () -> Any,
+            future: CompletableFuture<Any>
+        ) {
             if (!future.isCancelled) {
-                val currentThread = Thread.currentThread()
-                val timeoutTimerTask = object : TimerTask() {
-                    override fun run() {
-                        if (future.completeExceptionally(TimeoutException("Command did not complete within timeout $timeout"))) {
-                            currentThread.interrupt()
-                        }
-                    }
-                }
                 try {
-                    shortRunningTimeoutTimer.schedule(timeoutTimerTask, timeout.toMillis())
                     val commandResult = command()
-                    if (!future.complete(commandResult) && future.isCompletedExceptionally) {
-                        Thread.interrupted()
-                    }
+                    future.complete(commandResult)
                 } catch (e: Throwable) {
-                    if (!future.completeExceptionally(e) && future.isCompletedExceptionally) {
-                        Thread.interrupted()
-                    }
-                } finally {
-                    timeoutTimerTask.cancel()
+                    future.completeExceptionally(e)
                 }
             }
         }
@@ -121,9 +111,9 @@ internal class TaskManagerImpl(
     override fun <T : Any> executeShortRunningTask(
         key: Any,
         priority: Long,
-        commandTimeout: Duration,
+        persistedFuture: CompletableFuture<Unit>,
         command: () -> T
-    ): Future<T> {
+    ): CompletableFuture<T> {
         val start = System.nanoTime()
         incrementTaskCount(Type.SHORT_RUNNING)
         while (true) {
@@ -131,7 +121,7 @@ internal class TaskManagerImpl(
                 Batch(key, priority)
             }
             try {
-                return batch.addToBatch(commandTimeout) {
+                return batch.addToBatch(persistedFuture) {
                     try {
                         command().also {
                             recordCompletion(start, Type.SHORT_RUNNING)
