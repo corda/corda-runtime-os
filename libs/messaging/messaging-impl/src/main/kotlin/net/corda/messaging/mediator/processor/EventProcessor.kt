@@ -100,9 +100,11 @@ class EventProcessor<K : Any, S : Any, E : Any>(
             stateChangeAndOperation(inputState, state)
         }
 
-        return EventProcessingOutput(asyncOutputs.values.flatten(),
+        return EventProcessingOutput(
+            asyncOutputs.values.flatten(),
             stateChangeAndOperation,
-            asyncOutputs.keys.toList() )
+            input.records
+        )
     }
 
     private fun getMostRecentState(
