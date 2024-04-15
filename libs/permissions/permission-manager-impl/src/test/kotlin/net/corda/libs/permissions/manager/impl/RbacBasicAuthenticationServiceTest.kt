@@ -290,7 +290,10 @@ class RbacBasicAuthenticationServiceTest {
     fun `authenticate user will return true and expiryStatus ACTIVE when outside of expiry warning window`() {
         val storedPasswordHashCapture = argumentCaptor<PasswordHash>()
         val requestPasswordCapture = argumentCaptor<String>()
-        val passwordExpiryActive = Instant.now().plus(rbacConfig.getInt(ConfigKeys.RBAC_PASSWORD_EXPIRY_WARNING_WINDOW).toLong().plus(1), ChronoUnit.DAYS)
+        val passwordExpiryActive = Instant.now().plus(
+            rbacConfig.getInt(ConfigKeys.RBAC_PASSWORD_EXPIRY_WARNING_WINDOW).plus(1).toLong(),
+            ChronoUnit.DAYS
+        )
 
         val user = User().apply {
             saltValue = "abcsalt"
