@@ -18,7 +18,6 @@ import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.e2etest.utilities.startRestFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.junit.jupiter.api.TestInstance
@@ -133,7 +132,6 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         assertThat(tokenBalanceQuery.totalBalance).isEqualTo(BigDecimal.ZERO)
     }
 
-    @Disabled("The flaky test has been disabled while investigation on the issue carries on. Jira: CORE-20130.")
     @Test
     fun `Claim a token in a flow and let the flow finish to validate the token claim is automatically released`(testInfo: TestInfo){
         val idGenerator = TestRequestIdGenerator(testInfo)
