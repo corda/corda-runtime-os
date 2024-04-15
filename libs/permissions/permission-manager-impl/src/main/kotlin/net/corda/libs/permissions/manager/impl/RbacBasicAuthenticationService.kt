@@ -9,6 +9,7 @@ import net.corda.permissions.password.PasswordHash
 import net.corda.permissions.password.PasswordService
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.debug
+import net.corda.utilities.time.Clock
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -16,6 +17,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 class RbacBasicAuthenticationService(
     rbacConfig: SmartConfig,
+    private val clock: Clock,
     private val permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>,
     private val passwordService: PasswordService
 ) : BasicAuthenticationService {
@@ -49,8 +51,14 @@ class RbacBasicAuthenticationService(
         }
 
         if (passwordService.verifies(clearTextPassword, PasswordHash(user.saltValue, user.hashedPassword))) {
-            repeatedLogonsCache.add(loginName, clearTextPassword)
-            return AuthenticationState(true, checkExpiryStatus(user.passwordExpiry))
+            val expiryStatus = checkExpiryStatus(user.passwordExpiry)
+            // Ensure that only active status if cached
+            if (expiryStatus == ExpiryStatus.ACTIVE) {
+                repeatedLogonsCache.add(loginName, clearTextPassword)
+            } else {
+                repeatedLogonsCache.remove(loginName)
+            }
+            return AuthenticationState(true, expiryStatus)
         }
 
         repeatedLogonsCache.remove(loginName)
@@ -71,10 +79,11 @@ class RbacBasicAuthenticationService(
     }
 
     private fun checkExpiryStatus(passwordExpiry: Instant): ExpiryStatus {
+        val timestamp = clock.instant()
         return when {
-            (passwordExpiry >= Instant.now()) -> {
+            (passwordExpiry >= timestamp) -> {
                 // check if the current time is in the warning window for password expiry
-                if (Instant.now() in passwordExpiry.minus(
+                if (timestamp in passwordExpiry.minus(
                         passwordExpiryWarningWindowDays.toLong(),
                         ChronoUnit.DAYS
                     )..passwordExpiry

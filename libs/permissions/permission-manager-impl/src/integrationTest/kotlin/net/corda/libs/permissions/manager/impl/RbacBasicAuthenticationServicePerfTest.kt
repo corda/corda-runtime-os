@@ -5,6 +5,7 @@ import net.corda.data.permissions.User
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.permissions.password.impl.PasswordServiceImpl
+import net.corda.utilities.time.UTCClock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -38,6 +39,8 @@ class RbacBasicAuthenticationServicePerfTest {
 
     private val passwordExpiry = Instant.now().plus(1L, ChronoUnit.DAYS)
 
+    private val clock = UTCClock()
+
     private val permissionManagementCache = mock<PermissionManagementCache>().apply {
         whenever(this.getUser(any())).then { invocation ->
             val loginName = invocation.arguments.single() as String
@@ -62,6 +65,7 @@ class RbacBasicAuthenticationServicePerfTest {
     private val rbacBasicAuthenticationService =
         RbacBasicAuthenticationService(
             rbacConfig,
+            clock,
             AtomicReference(permissionManagementCache),
             passwordService
         )
