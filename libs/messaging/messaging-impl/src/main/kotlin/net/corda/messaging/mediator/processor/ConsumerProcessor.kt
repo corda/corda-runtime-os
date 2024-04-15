@@ -19,6 +19,7 @@ import net.corda.messaging.mediator.metrics.EventMediatorMetrics
 import net.corda.taskmanager.TaskManager
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import java.time.Instant
 import java.util.Queue
 import java.util.concurrent.BlockingQueue
@@ -155,7 +156,9 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         metrics.processorTimer.recordCallable {
             try {
                 val (inputs, retryInputs) = getInputs(consumer, inputsToRetry)
-                val outputs = processInputs(inputs, retryInputs)
+                val retriedOutputs = processInputs(emptyList(), retryInputs)
+                transferOutputs(retriedOutputs, outputsToProcess)
+                val outputs = processInputs(inputs, emptyList())
                 transferOutputs(outputs, outputsToProcess)
                 // TODO try and commit offsets async
                 commitConsumerOffsets(consumer, inputsToCommit)
@@ -227,7 +230,8 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         inputsToRetry: BlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>,
     ): Pair<List<EventProcessingInput<K, E>>, List<Pair<EventProcessingInput<K, E>, CompletableFuture<Unit>>>> {
         val retryMessages = inputsToRetry.drainAll()
-        val polledMessages = if (retryMessages.isNotEmpty()) emptyList() else consumer.poll(pollTimeout)
+        val polledMessages =
+            if (retryMessages.isNotEmpty()) consumer.poll(Duration.ZERO) else consumer.poll(pollTimeout)
         val records = polledMessages.groupBy { it.key }
         val states =
             stateManager.get((records.keys.map { it.toString() } + retryMessages.map { it.first.first().key.toString() }).toSet())
