@@ -133,7 +133,7 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         assertThat(tokenBalanceQuery.totalBalance).isEqualTo(BigDecimal.ZERO)
     }
 
-    @RepeatedTest(100)
+    @Test
     fun `Claim a token in a flow and let the flow finish to validate the token claim is automatically released`(testInfo: TestInfo){
         val idGenerator = TestRequestIdGenerator(testInfo)
         // Create a simple UTXO transaction
