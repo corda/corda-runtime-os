@@ -78,9 +78,13 @@ class RbacBasicAuthenticationService(
         running = false
     }
 
-    private fun checkExpiryStatus(passwordExpiry: Instant): ExpiryStatus {
+    private fun checkExpiryStatus(passwordExpiry: Instant?): ExpiryStatus {
         val timestamp = clock.instant()
         return when {
+            (passwordExpiry == null) -> {
+                ExpiryStatus.ACTIVE
+            }
+
             (passwordExpiry >= timestamp) -> {
                 // check if the current time is in the warning window for password expiry
                 if (timestamp in passwordExpiry.minus(
