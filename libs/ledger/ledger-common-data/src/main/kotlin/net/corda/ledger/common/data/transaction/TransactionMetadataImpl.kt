@@ -125,7 +125,8 @@ class TransactionMetadataImpl(private val properties: Map<String, Any?>) : Trans
             minVersion.toInt()
         } catch (e: NumberFormatException) {
             throw CordaRuntimeException(
-                "Transaction metadata representation error: Minimum platform version should be an integer but could not be parsed: $minVersion"
+                "Transaction metadata representation error: " +
+                    "Minimum platform version should be an integer but could not be parsed: $minVersion"
             )
         }
     }
