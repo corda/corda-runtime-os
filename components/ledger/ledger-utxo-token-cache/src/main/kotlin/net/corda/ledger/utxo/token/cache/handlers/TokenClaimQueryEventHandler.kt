@@ -90,7 +90,9 @@ class TokenClaimQueryEventHandler(
                 selectedTokens
             )
         } else {
-            logger.warn("Not enough tokens. Pool key: ${event.poolKey}, Selected amount: $selectedAmount, Target amount: ${event.targetAmount}")
+            logger.warn(
+                "Not enough tokens. Pool key: ${event.poolKey}, Selected amount: $selectedAmount, Target amount: ${event.targetAmount}"
+            )
             backoffManager.update(event.poolKey)
             recordFactory.getFailedClaimResponse(event.flowId, event.externalEventRequestId, event.poolKey)
         }
