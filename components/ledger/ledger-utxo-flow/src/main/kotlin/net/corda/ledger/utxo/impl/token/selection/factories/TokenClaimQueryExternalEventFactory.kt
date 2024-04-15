@@ -10,11 +10,11 @@ import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.token.query.TokenClaimCriteriaParameters
 import net.corda.ledger.utxo.impl.token.selection.services.TokenClaimCheckpointService
 import net.corda.schema.Schemas
 import net.corda.v5.ledger.utxo.token.selection.Strategy
 import net.corda.v5.ledger.utxo.token.selection.TokenClaim
-import net.corda.v5.ledger.utxo.token.selection.TokenClaimCriteria
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -26,31 +26,32 @@ class TokenClaimQueryExternalEventFactory @Activate constructor(
     private val tokenClaimFactory: TokenClaimFactory,
     @Reference(service = TokenClaimCheckpointService::class)
     private val tokenClaimCheckpointService: TokenClaimCheckpointService
-) : ExternalEventFactory<TokenClaimCriteria, TokenClaimQueryResult, TokenClaim?> {
+) : ExternalEventFactory<TokenClaimCriteriaParameters, TokenClaimQueryResult, TokenClaim?> {
 
     override val responseType = TokenClaimQueryResult::class.java
 
     override fun createExternalEvent(
         checkpoint: FlowCheckpoint,
         flowExternalEventContext: ExternalEventContext,
-        parameters: TokenClaimCriteria
+        parameters: TokenClaimCriteriaParameters
     ): ExternalEventRecord {
+        val criteria = parameters.tokenClaimCriteria
         val key = TokenPoolCacheKey().apply {
             this.shortHolderId = checkpoint.holdingIdentity.shortHash.value
-            this.tokenType = parameters.tokenType
-            this.issuerHash = parameters.issuerHash.toString()
-            this.notaryX500Name = parameters.notaryX500Name.toString()
-            this.symbol = parameters.symbol
+            this.tokenType = criteria.tokenType
+            this.issuerHash = criteria.issuerHash.toString()
+            this.notaryX500Name = criteria.notaryX500Name.toString()
+            this.symbol = criteria.symbol
         }
 
         val claimQuery = TokenClaimQuery().apply {
             this.poolKey = key
             this.requestContext = flowExternalEventContext
-            this.ownerHash = parameters.ownerHash?.toString()
-            this.tagRegex = parameters.tagRegex
+            this.ownerHash = criteria.ownerHash?.toString()
+            this.tagRegex = criteria.tagRegex
             this.targetAmount = TokenAmount(
-                parameters.targetAmount.scale(),
-                ByteBuffer.wrap(parameters.targetAmount.unscaledValue().toByteArray())
+                criteria.targetAmount.scale(),
+                ByteBuffer.wrap(criteria.targetAmount.unscaledValue().toByteArray())
             )
             this.strategy = parameters.strategy?.toAvro()
         }

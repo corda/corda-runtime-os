@@ -7,13 +7,16 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckError
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateConflict
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateUnknown
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRequest
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorNotPreviouslySeenTransaction
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateConflict
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateUnknown
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowBeforeLowerBound
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowOutOfBounds
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorUnhandledException
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.notary.plugin.core.NotaryException
@@ -63,7 +66,12 @@ private fun UniquenessCheckError.toNotaryException(txId: SecureHash?): NotaryExc
             timeWindowUpperBound,
             txId
         )
+        is UniquenessCheckErrorTimeWindowBeforeLowerBound -> NotaryExceptionTimeWindowBeforeLowerBound(
+            evaluationTimestamp,
+            timeWindowLowerBound
+        )
         is UniquenessCheckErrorMalformedRequest -> NotaryExceptionMalformedRequest(errorText, txId)
+        is UniquenessCheckErrorNotPreviouslySeenTransaction -> NotaryExceptionNotPreviouslySeenTransaction()
         is UniquenessCheckErrorUnhandledException -> NotaryExceptionGeneral(
             "Unhandled exception of type $unhandledExceptionType encountered during uniqueness checking with " +
                     "message: $unhandledExceptionMessage",
@@ -75,3 +83,17 @@ private fun UniquenessCheckError.toNotaryException(txId: SecureHash?): NotaryExc
         )
     }
 }
+
+/**
+ * Error type used for scenarios that were unexpected, or couldn't be mapped.
+ *
+ * @property errorText Any additional details regarding the error
+ */
+@CordaSerializable
+internal class NotaryExceptionGeneral(
+    val errorText: String?,
+    txId: SecureHash? = null
+) : net.corda.v5.ledger.notary.plugin.core.NotaryExceptionGeneral(
+    "General Error: $errorText",
+    txId
+)

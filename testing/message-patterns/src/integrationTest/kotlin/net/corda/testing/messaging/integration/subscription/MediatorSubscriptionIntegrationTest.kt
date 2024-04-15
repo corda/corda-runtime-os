@@ -43,6 +43,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -108,7 +109,7 @@ class MediatorSubscriptionIntegrationTest {
             .messagingConfig(messagingConfig)
             .consumerFactories(
                 mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                    inputTopic, "CONSUMER_GROUP", messagingConfig
+                    inputTopic, "CONSUMER_GROUP", UUID.randomUUID().toString(), messagingConfig
                 )
             )
             .clientFactories(

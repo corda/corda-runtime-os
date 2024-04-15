@@ -22,6 +22,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.membership.NotaryInfo
 import com.r3.corda.demo.utxo.contract.TestCommand
 import com.r3.corda.demo.utxo.contract.TestUtxoState
+import net.corda.v5.ledger.notary.plugin.api.NotarizationType
 import org.slf4j.LoggerFactory
 import java.security.PublicKey
 import java.time.Duration
@@ -100,7 +101,8 @@ class NonValidatingNotaryTestFlow : ClientStartableFlow {
             // that we can spend
             val signatures = flowEngine.subFlow(NonValidatingNotaryClientFlowImpl(
                 stx,
-                findNotaryVNodeName()
+                findNotaryVNodeName(),
+                NotarizationType.WRITE
             ))
 
             // TODO The below is static and needs aligning if signatures > 1

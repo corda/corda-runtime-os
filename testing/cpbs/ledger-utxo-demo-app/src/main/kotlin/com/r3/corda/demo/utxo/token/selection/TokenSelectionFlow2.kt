@@ -40,7 +40,7 @@ class TokenSelectionFlow2 : ClientStartableFlow {
                 TOKEN_AMOUNT,
             )
 
-            val claimResult1 = tokenSelection.tryClaim(queryCriteria)
+            val claimResult1 = tokenSelection.tryClaim("claim1", queryCriteria)
 
             // We expect the first claim to succeed
             if (claimResult1 == null) {
@@ -50,7 +50,7 @@ class TokenSelectionFlow2 : ClientStartableFlow {
 
             // Now let's try again, we expect this one to fail, confirming we locked up
             // the only token
-            val claimResult2 = tokenSelection.tryClaim(queryCriteria)
+            val claimResult2 = tokenSelection.tryClaim("claim2", queryCriteria)
 
             // We expect the second claim to fail.
             if (claimResult2 != null) {
