@@ -294,11 +294,11 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             input.records.isEmpty()
         }
         return (retryInputs.map { (input, persistFuture) ->
-            // TODO: this puts it at the back of the queue
             val future = taskManager.executeShortRunningTask(
                 input.key,
                 input.state?.metadata?.get(PRIORITY_METADATA_PROPERTY) as? Long ?: 0,
-                persistFuture
+                persistFuture,
+                true
             ) {
                 val output = eventProcessor.processEvents(mapOf(input.key to input)).values.first()
                 output
@@ -309,7 +309,8 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             val future = taskManager.executeShortRunningTask(
                 input.key,
                 input.state?.metadata?.get(PRIORITY_METADATA_PROPERTY) as? Long ?: 0,
-                persistFuture
+                persistFuture,
+                false
             ) {
                 val output = eventProcessor.processEvents(mapOf(input.key to input)).values.first()
                 output

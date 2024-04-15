@@ -57,14 +57,22 @@ internal class TaskManagerImpl(
 
         @Suppress("UNCHECKED_CAST")
         @Synchronized
-        fun <T : Any> addToBatch(persistedFuture: CompletableFuture<Unit>, command: () -> T): CompletableFuture<T> {
-            if (closed) throw BatchRaceException()
-            val isFirst = queue.isEmpty() && !started
+        fun <T : Any> addToBatch(
+            persistedFuture: CompletableFuture<Unit>,
+            forceFirst: Boolean,
+            command: () -> T
+        ): CompletableFuture<T> {
             val future = CompletableFuture<Any>()
-            queue.add(Step(command, future, persistedFuture))
-            if (isFirst) {
-                started = true
-                executorService.execute(this)
+            if (forceFirst) {
+                queue.addFirst(Step(command, future, persistedFuture))
+            } else {
+                if (closed) throw BatchRaceException()
+                val isFirst = queue.isEmpty() && !started
+                queue.add(Step(command, future, persistedFuture))
+                if (isFirst) {
+                    started = true
+                    executorService.execute(this)
+                }
             }
             return future as CompletableFuture<T>
         }
@@ -112,6 +120,7 @@ internal class TaskManagerImpl(
         key: Any,
         priority: Long,
         persistedFuture: CompletableFuture<Unit>,
+        forceFirst: Boolean,
         command: () -> T
     ): CompletableFuture<T> {
         val start = System.nanoTime()
@@ -121,7 +130,7 @@ internal class TaskManagerImpl(
                 Batch(key, priority)
             }
             try {
-                return batch.addToBatch(persistedFuture) {
+                return batch.addToBatch(persistedFuture, forceFirst) {
                     try {
                         command().also {
                             recordCompletion(start, Type.SHORT_RUNNING)

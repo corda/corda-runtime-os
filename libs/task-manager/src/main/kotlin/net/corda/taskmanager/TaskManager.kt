@@ -8,6 +8,7 @@ interface TaskManager : Executor {
         key: Any,
         priority: Long,
         persistedFuture: CompletableFuture<Unit>,
+        forceFirst: Boolean,
         command: () -> T
     ): CompletableFuture<T>
 
