@@ -2,6 +2,7 @@ package net.corda.testing.ledger.utxo
 
 import net.corda.ledger.persistence.utxo.impl.AbstractUtxoQueryProvider
 import net.corda.ledger.persistence.utxo.impl.UtxoQueryProvider
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.orm.DatabaseTypeProvider
 import net.corda.orm.DatabaseTypeProvider.Companion.HSQLDB_TYPE_FILTER
 import net.corda.utilities.debug
@@ -49,16 +50,20 @@ class HsqldbUtxoQueryProvider @Activate constructor(
     override val persistFilteredTransaction: (batchSize: Int) -> String
         get() = { batchSize ->
             """
-            MERGE INTO {h-schema}utxo_transaction AS ut
-            USING (VALUES :id, CAST(:privacySalt AS VARBINARY(64)), :accountId, CAST(:createdAt AS TIMESTAMP), '$VERIFIED', CAST(:updatedAt AS TIMESTAMP), :metadataHash, TRUE)
+            MERGE INTO utxo_transaction AS ut
+            USING (VALUES${
+                List(batchSize) {
+                    "(?, CAST(? AS VARBINARY(64)), ?, CAST(? AS TIMESTAMP), '$VERIFIED', CAST(? AS TIMESTAMP), ?, TRUE)"
+                }.joinToString(",")
+            })
                 AS x(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
             ON x.id = ut.id
             WHEN MATCHED AND ((ut.status = '$UNVERIFIED' OR ut.status = '$DRAFT') AND ut.is_filtered = FALSE)
             THEN UPDATE SET ut.is_filtered = TRUE
             WHEN NOT MATCHED THEN
                 INSERT (id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
-                VALUES (x.id, x.privacy_salt, x.account_id, x.created, x.status, x.updated, x.metadata_hash, x.is_filtered)"""
-                .trimIndent()
+                VALUES (x.id, x.privacy_salt, x.account_id, x.created, x.status, x.updated, x.metadata_hash, x.is_filtered)
+            """.trimIndent()
         }
 
     override val persistTransactionMetadata: String
@@ -184,6 +189,17 @@ class HsqldbUtxoQueryProvider @Activate constructor(
             WHEN NOT MATCHED THEN
                 INSERT (merkle_proof_id, leaf_index)
                 VALUES (x.merkle_proof_id, x.leaf_index)
+            """.trimIndent()
+        }
+
+    override val stateRefsExist: (batchSize: Int) -> String
+        get() = { batchSize ->
+            """
+            SELECT tc.transaction_id, tc.leaf_idx
+            FROM utxo_transaction_component AS tc
+            WHERE (tc.transaction_id, tc.group_idx, tc.leaf_idx) in (
+                ${List(batchSize) { "(?, ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}, ?)" }.joinToString(",")}
+            )
             """.trimIndent()
         }
 }
