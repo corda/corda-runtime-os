@@ -2,8 +2,8 @@ package net.corda.ledger.utxo.flow.impl.persistence
 
 import io.micrometer.core.instrument.Timer
 import net.corda.crypto.core.fullIdHash
-import net.corda.flow.application.services.FlowCheckpointService
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.metrics.recordSuspendable
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
@@ -90,7 +90,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         service = NotarySignatureVerificationService::class
     ) private val notarySignatureVerificationService: NotarySignatureVerificationService,
     @Reference(service = StateAndRefCache::class) private val stateAndRefCache: StateAndRefCache,
-    @Reference(service = FlowCheckpointService::class) private val flowCheckpointService: FlowCheckpointService
+    @Reference(service = FlowFiberService::class) private val flowFiberService: FlowFiberService
 ) : UtxoLedgerPersistenceService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -257,9 +257,10 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         java.security.AccessController.doPrivileged(
             PrivilegedExceptionAction {
                 val previousTimeStamp =
-                    flowCheckpointService.getCheckpoint().readCustomState(UtxoLedgerLastPersistedTimestamp::class.java)
+                    flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
+                        .readCustomState(UtxoLedgerLastPersistedTimestamp::class.java)
                 if (previousTimeStamp == null || previousTimeStamp.lastPersistedTimestamp < persistTimeStamp) {
-                    flowCheckpointService.getCheckpoint()
+                    flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
                         .writeCustomState(UtxoLedgerLastPersistedTimestamp(persistTimeStamp))
                 }
             }
