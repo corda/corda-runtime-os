@@ -2283,7 +2283,7 @@ class UtxoPersistenceServiceImplTest {
             TransactionMetadataImpl.LEDGER_VERSION_KEY to UtxoTransactionMetadata.LEDGER_VERSION,
             TransactionMetadataImpl.TRANSACTION_SUBTYPE_KEY to UtxoTransactionMetadata.TransactionSubtype.GENERAL,
             TransactionMetadataImpl.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
-            TransactionMetadataImpl.PLATFORM_VERSION_KEY to 123,
+            TransactionMetadataImpl.PLATFORM_VERSION_KEY to 50200,
             TransactionMetadataImpl.CPI_METADATA_KEY to cpiPackageSummaryExample,
             TransactionMetadataImpl.CPK_METADATA_KEY to cpkPackageSummaryListExample(cpkPackageSeed),
             TransactionMetadataImpl.SCHEMA_VERSION_KEY to TransactionMetadataImpl.SCHEMA_VERSION,

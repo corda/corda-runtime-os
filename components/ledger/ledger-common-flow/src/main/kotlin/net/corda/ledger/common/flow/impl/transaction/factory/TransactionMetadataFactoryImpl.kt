@@ -43,9 +43,8 @@ class TransactionMetadataFactoryImpl @Activate constructor(
 
     private fun getMinimumPlatformVersion(): Int {
         return when (val platformVersion = platformInfoProvider.activePlatformVersion) {
-            50000, 50100 -> 50000
-            50200, 50300 -> 50200
-            else -> throw CordaRuntimeException("platformVersion $platformVersion is invalid.")
+            50200, 50300 -> 50200 // 50200 will be 5.2.1 corresponding one in real implementation
+            else -> throw CordaRuntimeException("minimum platformVersion $platformVersion is invalid.")
         }
     }
 

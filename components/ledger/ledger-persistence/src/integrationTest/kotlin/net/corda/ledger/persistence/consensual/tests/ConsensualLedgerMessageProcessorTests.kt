@@ -181,7 +181,7 @@ class ConsensualLedgerMessageProcessorTests {
                 TransactionMetadataImpl.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.name,
                 TransactionMetadataImpl.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
                 TransactionMetadataImpl.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
-                TransactionMetadataImpl.PLATFORM_VERSION_KEY to 123,
+                TransactionMetadataImpl.PLATFORM_VERSION_KEY to 50200,
                 TransactionMetadataImpl.CPI_METADATA_KEY to cpiPackageSummaryExample,
                 TransactionMetadataImpl.CPK_METADATA_KEY to cpkPackageSummaryListExample(),
                 TransactionMetadataImpl.SCHEMA_VERSION_KEY to TransactionMetadataImpl.SCHEMA_VERSION,

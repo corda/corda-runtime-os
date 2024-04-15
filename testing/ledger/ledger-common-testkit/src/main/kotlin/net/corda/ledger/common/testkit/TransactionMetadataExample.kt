@@ -52,7 +52,7 @@ fun transactionMetadataExample(
             TransactionMetadataImpl.LEDGER_MODEL_KEY to ledgerModel,
             TransactionMetadataImpl.LEDGER_VERSION_KEY to 1,
             TransactionMetadataImpl.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
-            TransactionMetadataImpl.PLATFORM_VERSION_KEY to 123,
+            TransactionMetadataImpl.PLATFORM_VERSION_KEY to 50200,
             TransactionMetadataImpl.MINIMUM_PLATFORM_VERSION_KEY to 1,
             TransactionMetadataImpl.CPI_METADATA_KEY to cpiMetadata,
             TransactionMetadataImpl.CPK_METADATA_KEY to cpkMetadata,

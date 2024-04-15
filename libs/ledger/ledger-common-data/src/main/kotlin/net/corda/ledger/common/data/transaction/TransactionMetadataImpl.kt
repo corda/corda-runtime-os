@@ -113,18 +113,15 @@ class TransactionMetadataImpl(private val properties: Map<String, Any?>) : Trans
         }
     }
 
-    override fun getMinimumPlatformVersion(): Int? {
-        if (platformVersion == 50000) {
-            return null
-        }
-        val version =
+    override fun getMinimumPlatformVersion(): Int {
+        val minVersion =
             this[MINIMUM_PLATFORM_VERSION_KEY].toString()
 
         return try {
-            version.toInt()
+            minVersion.toInt()
         } catch (e: NumberFormatException) {
             throw CordaRuntimeException(
-                "Transaction metadata representation error: Minimum platform version should be an integer but could not be parsed: $version"
+                "Transaction metadata representation error: Minimum platform version should be an integer but could not be parsed: $minVersion"
             )
         }
     }

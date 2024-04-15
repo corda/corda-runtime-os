@@ -225,7 +225,7 @@
     },
     "platformVersion": {
       "title": "Active platform version at the time of the creation of the transaction",
-      "type": ["integer", "null"],
+      "type": "integer",
       "default": "",
       "examples": [
         1
