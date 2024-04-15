@@ -23,7 +23,7 @@ class LiquibaseSchemaMigratorImplTest {
     val cl2 = ClassloaderChangeLog(
         linkedSetOf(
             ClassloaderChangeLog.ChangeLogResourceFiles(
-                this.javaClass.packageName, listOf("migration/db.changelog-master3.xml")
+                this.javaClass.packageName, listOf("migration/db.changelog-master3.xml"), this.javaClass.classLoader
             ),
         )
     )
