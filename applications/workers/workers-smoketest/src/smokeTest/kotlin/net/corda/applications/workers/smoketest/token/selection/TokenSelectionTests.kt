@@ -18,6 +18,7 @@ import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.e2etest.utilities.startRestFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.junit.jupiter.api.TestInstance
@@ -132,7 +133,7 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         assertThat(tokenBalanceQuery.totalBalance).isEqualTo(BigDecimal.ZERO)
     }
 
-    @Test
+    @RepeatedTest(100)
     fun `Claim a token in a flow and let the flow finish to validate the token claim is automatically released`(testInfo: TestInfo){
         val idGenerator = TestRequestIdGenerator(testInfo)
         // Create a simple UTXO transaction
