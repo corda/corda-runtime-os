@@ -77,6 +77,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val outputsToProcess =
             LinkedBlockingQueue<Pair<String, Pair<EventProcessingOutput<K, E>, CompletableFuture<Unit>>>>()
         val inputsToCommit = LinkedBlockingQueue<List<CordaConsumerRecord<K, E>>>()
+        val inputsToRetry = LinkedBlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>()
         while (!mediatorSubscriptionState.stopped()) {
             attempts++
             try {
@@ -86,11 +87,11 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     consumer.subscribe()
                     taskManager.executeLongRunningTask {
                         while (!mediatorSubscriptionState.stopped()) {
-                            writeOutputs(consumer, outputsToProcess, failureCounts, deleteLater)
+                            writeReadyOutputs(consumer, outputsToProcess, failureCounts, deleteLater, inputsToRetry)
                         }
                     }
                 }
-                pollLoop(consumer, outputsToProcess, inputsToCommit)
+                pollLoop(consumer, outputsToProcess, inputsToCommit, inputsToRetry)
                 attempts = 0
             } catch (exception: Exception) {
                 val cause = if (exception is CompletionException) { exception.cause ?: exception} else exception
@@ -114,20 +115,17 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         consumer?.close()
     }
 
-    private fun writeOutputs(
+    private fun writeReadyOutputs(
         consumer: MediatorConsumer<K, E>,
         outputsToProcess: BlockingQueue<Pair<String, Pair<EventProcessingOutput<K, E>, CompletableFuture<Unit>>>>,
         failureCounts: MutableMap<String, Int>,
-        deleteLater: MutableMap<String, State>
+        deleteLater: MutableMap<String, State>,
+        inputsToRetry: BlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>
     ) {
-        val outputs = mutableListOf<Pair<String, Pair<EventProcessingOutput<K, E>, CompletableFuture<Unit>>>>()
-        val first = outputsToProcess.poll(100, TimeUnit.MILLISECONDS)
-        if (first != null) {
-            outputs.add(first)
-            outputsToProcess.drainTo(outputs)
-            // TODO the handling of failure is nonsense... we don't have a batch to retry so need to sort out individually
-            categorizeOutputs(outputs, failureCounts)
-            commit(consumer, outputs, failureCounts, deleteLater)
+        val outputs = outputsToProcess.pollAll(100, TimeUnit.MILLISECONDS)
+        if (outputs.isNotEmpty()) {
+            val successfulOutputs = categorizeOutputs(outputs, failureCounts, inputsToRetry)
+            commitProducerOutputs(consumer, successfulOutputs, failureCounts, deleteLater, inputsToRetry)
         }
     }
 
@@ -151,15 +149,16 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private fun pollLoop(
         consumer: MediatorConsumer<K, E>,
         outputsToProcess: Queue<Pair<String, Pair<EventProcessingOutput<K, E>, CompletableFuture<Unit>>>>,
-        inputsToCommit: BlockingQueue<List<CordaConsumerRecord<K, E>>>
+        inputsToCommit: BlockingQueue<List<CordaConsumerRecord<K, E>>>,
+        inputsToRetry: BlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>
     ) {
         metrics.processorTimer.recordCallable {
             try {
-                val inputs = getInputs(consumer)
-                val outputs = processInputs(inputs)
+                val (inputs, retryInputs) = getInputs(consumer, inputsToRetry)
+                val outputs = processInputs(inputs, retryInputs)
                 transferOutputs(outputs, outputsToProcess)
                 // TODO try and commit offsets async
-                commitOffsets(consumer, inputsToCommit)
+                commitConsumerOffsets(consumer, inputsToCommit)
             } catch (e: Exception) {
                 log.warn("Retrying poll processing: ${e.message}.")
                 consumer.resetEventOffsetPosition()
@@ -167,12 +166,12 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun commitOffsets(
+    private fun commitConsumerOffsets(
         consumer: MediatorConsumer<K, E>,
         inputsToCommit: BlockingQueue<List<CordaConsumerRecord<K, E>>>
     ) {
-        val readyToCommit = mutableListOf<List<CordaConsumerRecord<K, E>>>()
-        if (inputsToCommit.drainTo(readyToCommit) > 0) {
+        val readyToCommit = inputsToCommit.drainAll()
+        if (readyToCommit.isNotEmpty()) {
             val allReadyToCommit = readyToCommit.flatMap { it }
             try {
                 metrics.commitTimer.recordCallable {
@@ -198,6 +197,22 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         }
     }
 
+    private fun <T> BlockingQueue<T>.drainAll(): List<T> {
+        val buffer = mutableListOf<T>()
+        this.drainTo(buffer)
+        return buffer
+    }
+
+    private fun <T> BlockingQueue<T>.pollAll(timeout: Long, unit: TimeUnit): List<T> {
+        val buffer = mutableListOf<T>()
+        val first = this.poll(timeout, unit)
+        if (first != null) {
+            buffer.add(first)
+            this.drainTo(buffer)
+        }
+        return buffer
+    }
+
     /**
      * Retrieve a set of input events and states.
      *
@@ -209,11 +224,35 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      */
     private fun getInputs(
         consumer: MediatorConsumer<K, E>,
-    ): List<EventProcessingInput<K, E>> {
-        val messages = consumer.poll(pollTimeout)
-        val records = messages.groupBy { it.key }
-        val states = stateManager.get(records.keys.map { it.toString() })
-        return generateInputs(states.values, records)
+        inputsToRetry: BlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>,
+    ): Pair<List<EventProcessingInput<K, E>>, List<Pair<EventProcessingInput<K, E>, CompletableFuture<Unit>>>> {
+        val retryMessages = inputsToRetry.drainAll()
+        val polledMessages = if (retryMessages.isNotEmpty()) emptyList() else consumer.poll(pollTimeout)
+        val records = polledMessages.groupBy { it.key }
+        val states =
+            stateManager.get((records.keys.map { it.toString() } + retryMessages.map { it.first.first().key.toString() }).toSet())
+        return generateInputs(states.values, records) to regenerateInputs(states.values, retryMessages)
+    }
+
+    private fun regenerateInputs(
+        states: Collection<State>,
+        retryMessages: List<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>
+    ): List<Pair<EventProcessingInput<K, E>, CompletableFuture<Unit>>> {
+        val (runningStates, failedStates) = states.partition {
+            it.metadata[PROCESSING_FAILURE] != true
+        }
+        if (failedStates.isNotEmpty()) {
+            log.info("Not processing ${failedStates.size} states as processing has previously failed.")
+        }
+        val failedKeys = failedStates.map { it.key }.toSet()
+        val records = retryMessages.associateBy { it.first.first().key }
+        val recordsToProcess = records.filter { (key, _) ->
+            !failedKeys.contains(key.toString())
+        }
+        val stateMap = runningStates.associateBy { it.key }
+        return recordsToProcess.map { (key, value) ->
+            EventProcessingInput(key, value.first, stateMap[key.toString()]) to value.second
+        }
     }
 
     private fun CordaConsumerRecord<K, E>.metadataKey(): String {
@@ -239,7 +278,10 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      * @param inputs The set of input to process.
      * @return The set of outputs for further processing.
      */
-    private fun processInputs(inputs: List<EventProcessingInput<K, E>>): Map<String, Pair<CompletableFuture<EventProcessingOutput<K, E>>, CompletableFuture<Unit>>> {
+    private fun processInputs(
+        inputs: List<EventProcessingInput<K, E>>,
+        retryInputs: List<Pair<EventProcessingInput<K, E>, CompletableFuture<Unit>>>
+    ): Map<String, Pair<CompletableFuture<EventProcessingOutput<K, E>>, CompletableFuture<Unit>>> {
         val prunedInputs = inputs.map { input ->
             input.state?.let { state ->
                 val notSeenRecords = input.records.filter { record ->
@@ -251,7 +293,18 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val (alreadySeenInputs, newInputs) = prunedInputs.partition { input ->
             input.records.isEmpty()
         }
-        return (newInputs.map { input ->
+        return (retryInputs.map { (input, persistFuture) ->
+            // TODO: this puts it at the back of the queue
+            val future = taskManager.executeShortRunningTask(
+                input.key,
+                input.state?.metadata?.get(PRIORITY_METADATA_PROPERTY) as? Long ?: 0,
+                persistFuture
+            ) {
+                val output = eventProcessor.processEvents(mapOf(input.key to input)).values.first()
+                output
+            }
+            input.key to (future to persistFuture)
+        } + newInputs.map { input ->
             val persistFuture = CompletableFuture<Unit>()
             val future = taskManager.executeShortRunningTask(
                 input.key,
@@ -278,34 +331,6 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         }
     }
 
-    /*
-    .map { (future, group) ->
-            try {
-                future.getOrThrow()
-            } catch (e: TimeoutException) {
-                metrics.consumerProcessorFailureCounter.increment(group.keys.size.toDouble())
-                // A timeout wants to skip over the inputs based on current logic, so we'll replicate
-                // that here by producing no outputs but passing the inputs to the offset commit
-                group.mapValues { (key, input) ->
-                    val oldState = input.state
-                    val state = stateManagerHelper.failStateProcessing(
-                        key.toString(),
-                        oldState,
-                        "timeout occurred while processing events"
-                    )
-                    val stateChange = if (oldState != null) {
-                        StateChangeAndOperation.Update(state)
-                    } else {
-                        StateChangeAndOperation.Create(state)
-                    }
-                    EventProcessingOutput(listOf(), stateChange, input.records)
-                }.also {
-                    log.warn("Cancelling task for key(s) ${group.keys}")
-                    future.cancel(true)
-                }
-            }
-     */
-
     /**
      * Categorizes transient and non-transient failures from processing the batch.
      *
@@ -328,8 +353,9 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      */
     private fun categorizeOutputs(
         outputs: List<Pair<String, Pair<EventProcessingOutput<K, E>, CompletableFuture<Unit>>>>,
-        failureCounts: MutableMap<String, Int>
-    ) {
+        failureCounts: MutableMap<String, Int>,
+        inputsToRetry: BlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>
+    ): List<Pair<String, Pair<EventProcessingOutput<K, E>, CompletableFuture<Unit>>>> {
         val transients = outputs.filter {
             it.second.first.stateChangeAndOperation is StateChangeAndOperation.Transient
         }
@@ -345,11 +371,12 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val retryableFailures = failures.filter {
             (failureCounts[it.first] ?: 0) < MAX_FAILURE_ATTEMPTS
         }
-        if (retryableFailures.isNotEmpty() || transients.isNotEmpty()) {
-            throw CordaMessageAPIIntermittentException(
-                "Retrying poll and process due to ${retryableFailures.size}/${transients.size} " +
-                        "retryable failures/transient failures (out of ${outputs.size} total outputs)"
-            )
+        val nonFatalFailures = (retryableFailures + transients).toMap()
+        for (failure in nonFatalFailures) {
+            inputsToRetry.add(failure.value.first.processedOffsets to failure.value.second)
+        }
+        return outputs.filter {
+            it.first !in nonFatalFailures
         }
     }
 
@@ -365,19 +392,14 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      * @param failureCounts Context from previous runs. This is cleared for each key present in the outputs on
      *                      successful commit.
      */
-    private fun commit(
+    private fun commitProducerOutputs(
         consumer: MediatorConsumer<K, E>,
         outputs: List<Pair<String, Pair<EventProcessingOutput<K, E>, CompletableFuture<Unit>>>>,
         failureCounts: MutableMap<String, Int>,
-        previousDeleteLater: MutableMap<String, State>
+        previousDeleteLater: MutableMap<String, State>,
+        inputsToRetry: BlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>
     ) {
-        val (failed, toDelete) = processOutputs(outputs)
-        // TODO fix up this error handling.  No longer have a batch to fail.
-        if (failed.isNotEmpty()) {
-            throw CordaMessageAPIIntermittentException(
-                "Error occurred while writing states, retrying. ${failed.size} keys failed to write"
-            )
-        }
+        val toDelete = processOutputs(outputs, inputsToRetry)
         // Delete after committing offsets to satisfy flow engine replay requirements.
         val (safeToDelete, deleteLater) = toDelete.partition { state ->
             isStateSafeToDelete(consumer, state)
@@ -437,7 +459,10 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      * Will send any asynchronous outputs back to the bus for states which saved successfully.
      * @return a map of all the states that failed to save by their keys.
      */
-    private fun processOutputs(outputs: List<Pair<String, Pair<EventProcessingOutput<K, E>, CompletableFuture<Unit>>>>): Pair<Map<String, State>, List<State>> {
+    private fun processOutputs(
+        outputs: List<Pair<String, Pair<EventProcessingOutput<K, E>, CompletableFuture<Unit>>>>,
+        inputsToRetry: BlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>
+    ): List<State> {
         val statesToCreate = mutableListOf<State>()
         val statesToUpdate = mutableListOf<State>()
         val statesToDelete = mutableListOf<State>()
@@ -470,8 +495,11 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             writeFutures[it]!!.complete(Unit)
         }
         val unsuccessfulStates = failedToCreate + failedToUpdateOptimisticLockFailure
-        // TODO need to insert these unsuccessful events back at the head of the Batch on the TaskManager
-        return Pair(unsuccessfulStates, statesToDelete)
+        for (unsuccessful in unsuccessfulStates) {
+            val output = outputsMap[unsuccessful.key]!!
+            inputsToRetry.add(output.first.processedOffsets to output.second)
+        }
+        return statesToDelete
     }
 
     private fun calculateMaxOffsets(
