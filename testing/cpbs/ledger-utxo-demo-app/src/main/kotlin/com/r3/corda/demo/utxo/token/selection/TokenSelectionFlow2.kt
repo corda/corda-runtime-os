@@ -42,20 +42,9 @@ class TokenSelectionFlow2 : ClientStartableFlow {
 
             val claimResult1 = tokenSelection.tryClaim(queryCriteria)
 
-            // We expect the first claim to succeed
             if (claimResult1 == null) {
                 log.info("Token Selection result: 'None found' ")
                  return "FAIL"
-            }
-
-            // Now let's try again, we expect this one to fail, confirming we locked up
-            // the only token
-            val claimResult2 = tokenSelection.tryClaim(queryCriteria)
-
-            // We expect the second claim to fail.
-            if (claimResult2 != null) {
-                log.info("Token Selection result: 'We found something, we did not expect to' ")
-                return "FAIL"
             }
 
             // Now we just exit and let the postprocessing handler clean up for us

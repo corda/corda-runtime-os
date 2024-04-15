@@ -153,7 +153,7 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         val tokenSelectionFlowId1 = startRestFlow(
             aliceHoldingId,
             mapOf(),
-            "com.r3.corda.demo.utxo.token.selection.TokenSelectionFlow3",
+            "com.r3.corda.demo.utxo.token.selection.TokenSelectionFlow2",
             requestId = idGenerator.nextId
         )
         val tokenSelectionResult1 = awaitRestFlowFinished(aliceHoldingId, tokenSelectionFlowId1)
@@ -166,7 +166,7 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         val tokenSelectionFlowId2 = startRestFlow(
             aliceHoldingId,
             mapOf(),
-            "com.r3.corda.demo.utxo.token.selection.TokenSelectionFlow3",
+            "com.r3.corda.demo.utxo.token.selection.TokenSelectionFlow2",
             requestId = idGenerator.nextId
         )
         val tokenSelectionResult2 = awaitRestFlowFinished(aliceHoldingId, tokenSelectionFlowId2)
