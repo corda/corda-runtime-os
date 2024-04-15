@@ -29,6 +29,7 @@ import java.util.concurrent.CompletionException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -82,7 +83,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             LinkedBlockingQueue<Pair<String, Pair<EventProcessingOutput<K, E>, CompletableFuture<Unit>>>>()
         val inputsToCommit = LinkedBlockingQueue<List<CordaConsumerRecord<K, E>>>()
         val inputsToRetry = LinkedBlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>()
-        val inflightStates = ConcurrentHashMap<String, AtomicReference<State>>()
+        val inflightStates = ConcurrentHashMap<String, AtomicReferenceCountingReference<State>>()
         while (!mediatorSubscriptionState.stopped()) {
             attempts++
             try {
@@ -133,7 +134,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         failureCounts: MutableMap<String, Int>,
         deleteLater: MutableMap<String, State>,
         inputsToRetry: BlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>,
-        inflightStates: ConcurrentHashMap<String, AtomicReference<State>>
+        inflightStates: ConcurrentHashMap<String, AtomicReferenceCountingReference<State>>
     ) {
         val outputs = outputsToProcess.pollAll(100, TimeUnit.MILLISECONDS)
         if (outputs.isNotEmpty()) {
@@ -172,7 +173,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         outputsToProcess: Queue<Pair<String, Pair<EventProcessingOutput<K, E>, CompletableFuture<Unit>>>>,
         inputsToCommit: BlockingQueue<List<CordaConsumerRecord<K, E>>>,
         inputsToRetry: BlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>,
-        inflightStates: ConcurrentHashMap<String, AtomicReference<State>>
+        inflightStates: ConcurrentHashMap<String, AtomicReferenceCountingReference<State>>
     ) {
         metrics.processorTimer.recordCallable {
             try {
@@ -243,6 +244,19 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         }
     }
 
+    private class AtomicReferenceCountingReference<T>(value: T?) : AtomicReference<T>(value) {
+        private val referenceCount = AtomicInteger(0)
+        fun getAndReference(): T? {
+            referenceCount.incrementAndGet()
+            return get()
+        }
+
+        fun setAndDereference(value: T?): Boolean {
+            set(value)
+            return referenceCount.decrementAndGet() <= 0
+        }
+    }
+
     /**
      * Retrieve a set of input events and states.
      *
@@ -255,30 +269,27 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private fun getInputs(
         consumer: MediatorConsumer<K, E>,
         inputsToRetry: BlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>,
-        inflightStates: ConcurrentHashMap<String, AtomicReference<State>>,
+        inflightStates: ConcurrentHashMap<String, AtomicReferenceCountingReference<State>>,
     ): Pair<List<EventProcessingInput<K, E>>, List<Pair<EventProcessingInput<K, E>, CompletableFuture<Unit>>>> {
         val retryMessages = inputsToRetry.drainAll()
         val polledMessages =
             if (retryMessages.isNotEmpty()) consumer.poll(Duration.ZERO) else consumer.poll(pollTimeout)
         val newRecords = polledMessages.groupBy { it.key }
         val retryRecords = retryMessages.groupBy { it.first.first().key }
-        val cachedStateHolders = (newRecords.keys - retryRecords.keys).map { it to inflightStates[it.toString()] }
-            .filter { it.second != null }.toMap()
+        val cachedStateHolders =
+            (newRecords.keys - retryRecords.keys).map { it to inflightStates[it.toString()]?.getAndReference() }
+                .filter { it.second != null }.toMap()
         val statesToFetch = (newRecords.keys - cachedStateHolders.keys)
         val states = stateManager.get(statesToFetch.map { it.toString() })
         statesToFetch.forEach {
             val key = it.toString()
             val state = states[key]
-            inflightStates.compute(key) { _, value ->
-                if (value == null) {
-                    AtomicReference(state)
-                } else {
-                    value.set(state)
-                    value
-                }
-            }
+            inflightStates[key] = AtomicReferenceCountingReference(state)
         }
-        return generateInputs(states.values, newRecords) to regenerateInputs(states.values, retryMessages)
+        return generateInputs(states.values + cachedStateHolders.values.map { it!! }, newRecords) to regenerateInputs(
+            states.values,
+            retryMessages
+        )
     }
 
     private fun regenerateInputs(
@@ -328,7 +339,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private fun processInputs(
         inputs: List<EventProcessingInput<K, E>>,
         retryInputs: List<Pair<EventProcessingInput<K, E>, CompletableFuture<Unit>>>,
-        inflightStates: ConcurrentHashMap<String, AtomicReference<State>>
+        inflightStates: ConcurrentHashMap<String, AtomicReferenceCountingReference<State>>
     ): Map<String, Pair<CompletableFuture<EventProcessingOutput<K, E>>, CompletableFuture<Unit>>> {
         val prunedInputs = inputs.map { input ->
             input.state?.let { state ->
@@ -449,7 +460,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         failureCounts: MutableMap<String, Int>,
         previousDeleteLater: MutableMap<String, State>,
         inputsToRetry: BlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>,
-        inflightStates: ConcurrentHashMap<String, AtomicReference<State>>
+        inflightStates: ConcurrentHashMap<String, AtomicReferenceCountingReference<State>>
     ) {
         val toDelete = processOutputs(outputs, inputsToRetry, inflightStates)
         // Delete after committing offsets to satisfy flow engine replay requirements.
@@ -514,7 +525,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private fun processOutputs(
         outputs: List<Pair<String, Pair<EventProcessingOutput<K, E>, CompletableFuture<Unit>>>>,
         inputsToRetry: BlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>,
-        inflightStates: ConcurrentHashMap<String, AtomicReference<State>>
+        inflightStates: ConcurrentHashMap<String, AtomicReferenceCountingReference<State>>
     ): List<State> {
         val statesToCreate = mutableListOf<State>()
         val statesToUpdate = mutableListOf<State>()
@@ -546,16 +557,15 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         sendAsynchronousEvents(outputsToSend)
         successful.forEach {
             val newState = it.value.first.stateChangeAndOperation.outputState
-            inflightStates[it.key]?.set(newState)
+            if (inflightStates[it.key]?.setAndDereference(newState) ?: false) {
+                inflightStates.remove(it.key)
+            }
             writeFutures[it.key]!!.complete(Unit)
         }
         val unsuccessfulStates = failedToCreate + failedToUpdateOptimisticLockFailure
         for (unsuccessful in unsuccessfulStates) {
             val output = outputsMap[unsuccessful.key]!!
             inputsToRetry.add(output.first.processedOffsets to output.second)
-        }
-        statesToDelete.forEach {
-            inflightStates.remove(it.key.toString())
         }
         return statesToDelete
     }
