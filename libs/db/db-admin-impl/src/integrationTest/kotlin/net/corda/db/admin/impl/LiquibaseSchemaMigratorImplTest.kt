@@ -39,6 +39,8 @@ class LiquibaseSchemaMigratorImplTest {
 
     @Test
     fun `when updateDb create DB schema`() {
+        println("cl1 = ${cl1.masterChangeLogFiles}")
+        println("cl2 = ${cl2.masterChangeLogFiles}")
         val lbm = LiquibaseSchemaMigratorImpl()
 
         lbm.updateDb(ds.connection, cl1)
