@@ -53,7 +53,7 @@ class TokenClaimQueryExternalEventFactory @Activate constructor(
                 criteria.targetAmount.scale(),
                 ByteBuffer.wrap(criteria.targetAmount.unscaledValue().toByteArray())
             )
-            this.strategy = parameters.strategy?.toAvro()
+            this.strategy = parameters.tokenClaimCriteria.strategy?.toAvro()
         }
 
         return ExternalEventRecord(Schemas.Services.TOKEN_CACHE_EVENT, key, TokenPoolCacheEvent(key, claimQuery))
