@@ -18,7 +18,6 @@ import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.e2etest.utilities.startRestFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.junit.jupiter.api.TestInstance
@@ -133,7 +132,6 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         assertThat(tokenBalanceQuery.totalBalance).isEqualTo(BigDecimal.ZERO)
     }
 
-    @Disabled("The flaky test has been disabled while investigation on the issue carries on. Jira: CORE-20130.")
     @Test
     fun `Claim a token in a flow and let the flow finish to validate the token claim is automatically released`(testInfo: TestInfo){
         val idGenerator = TestRequestIdGenerator(testInfo)
@@ -153,26 +151,26 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         val tokenSelectionFlowId1 = startRestFlow(
             aliceHoldingId,
             mapOf(),
-            "com.r3.corda.demo.utxo.token.selection.TokenSelectionFlow2",
+            "com.r3.corda.demo.utxo.token.selection.TokenSelectionFlow",
             requestId = idGenerator.nextId
         )
         val tokenSelectionResult1 = awaitRestFlowFinished(aliceHoldingId, tokenSelectionFlowId1)
         assertThat(tokenSelectionResult1.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
         assertThat(tokenSelectionResult1.flowError).isNull()
-        assertThat(tokenSelectionResult1.flowResult).isEqualTo("SUCCESS")
+        assertThat(tokenSelectionResult1.flowResult).isEqualTo("1") // The flow managed to claim one token
 
         // Attempt to select the token created by the transaction again. This should work because even though
         // the previous flow claimed the same tokens, the tokens must have been released after the flow terminated
         val tokenSelectionFlowId2 = startRestFlow(
             aliceHoldingId,
             mapOf(),
-            "com.r3.corda.demo.utxo.token.selection.TokenSelectionFlow2",
+            "com.r3.corda.demo.utxo.token.selection.TokenSelectionFlow",
             requestId = idGenerator.nextId
         )
         val tokenSelectionResult2 = awaitRestFlowFinished(aliceHoldingId, tokenSelectionFlowId2)
         assertThat(tokenSelectionResult2.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS)
         assertThat(tokenSelectionResult2.flowError).isNull()
-        assertThat(tokenSelectionResult2.flowResult).isEqualTo("SUCCESS")
+        assertThat(tokenSelectionResult2.flowResult).isEqualTo("1") // The flow managed to claim one token
     }
 
     @Test
