@@ -856,7 +856,7 @@ class UtxoReceiveFinalityFlowV1Test {
         assertThatThrownBy { callReceiveFinalityFlow() }
 
         // assert persisting filtered transactions and signatures never happened since they are invalid.
-        verify(persistenceService, never()).persistFilteredTransactionsAndSignatures(listOf(filteredTxAndSig, filteredTxAndSig2))
+        verify(persistenceService, never()).persistFilteredTransactionsAndSignatures(listOf(filteredTxAndSig, filteredTxAndSig2), any(), any())
     }
 
     private fun callReceiveFinalityFlow(validator: UtxoTransactionValidator = UtxoTransactionValidator { }) {

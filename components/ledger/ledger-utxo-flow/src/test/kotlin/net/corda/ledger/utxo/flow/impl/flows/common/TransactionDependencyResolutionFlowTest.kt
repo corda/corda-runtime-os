@@ -81,7 +81,7 @@ class TransactionDependencyResolutionFlowTest : UtxoLedgerTest() {
             on { notaries } doReturn listOf(mockNotary)
         }
         whenever(mockGroupParametersLookup.currentGroupParameters).thenReturn(mockGroupParameters)
-        whenever(mockLedgerPersistenceService.persistFilteredTransactionsAndSignatures(any())).doAnswer {
+        whenever(mockLedgerPersistenceService.persistFilteredTransactionsAndSignatures(any(), any(), any())).doAnswer {
             @Suppress("unchecked_cast")
             filteredDependencyStorage.addAll(it.arguments.first() as List<UtxoFilteredTransactionAndSignatures>)
             Unit
@@ -167,14 +167,18 @@ class TransactionDependencyResolutionFlowTest : UtxoLedgerTest() {
         transactionId: SecureHash,
         notaryName: MemberX500Name,
         transactionDependencies: Set<SecureHash>,
-        filteredDependencies: List<UtxoFilteredTransactionAndSignatures>? = null
+        filteredDependencies: List<UtxoFilteredTransactionAndSignatures>? = null,
+        inputStateRefs: List<StateRef> = emptyList(),
+        referenceStateRefs: List<StateRef> = emptyList()
     ) {
         val flow = TransactionDependencyResolutionFlow(
             session,
             transactionId,
             notaryName,
             transactionDependencies,
-            filteredDependencies
+            filteredDependencies,
+            inputStateRefs,
+            referenceStateRefs
         )
         flow.flowEngine = mockFlowEngine
         flow.ledgerPersistenceService = mockLedgerPersistenceService
