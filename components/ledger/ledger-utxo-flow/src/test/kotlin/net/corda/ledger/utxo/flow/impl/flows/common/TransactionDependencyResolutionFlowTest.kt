@@ -162,6 +162,7 @@ class TransactionDependencyResolutionFlowTest : UtxoLedgerTest() {
         assertThat(filteredDependencyStorage).containsExactly(filteredDependency)
     }
 
+    @Suppress("LongParameterList")
     private fun callReceiveTransactionFlow(
         session: FlowSession,
         transactionId: SecureHash,
