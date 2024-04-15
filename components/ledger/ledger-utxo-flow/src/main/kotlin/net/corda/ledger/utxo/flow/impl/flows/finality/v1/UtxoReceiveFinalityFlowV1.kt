@@ -223,7 +223,6 @@ class UtxoReceiveFinalityFlowV1(
             inputStateAndRefs,
             referenceStateAndRefs
         )
-        // do nothing
     }
 
     @Suspendable

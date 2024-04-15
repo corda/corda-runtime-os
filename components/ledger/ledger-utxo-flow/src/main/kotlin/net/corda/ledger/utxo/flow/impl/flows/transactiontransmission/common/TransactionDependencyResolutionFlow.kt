@@ -24,10 +24,9 @@ class TransactionDependencyResolutionFlow(
     private val session: FlowSession,
     private val transactionId: SecureHash,
     private val notaryName: MemberX500Name,
-    private val transactionDependencies: Set<SecureHash>,
-    private val filteredDependencies: List<UtxoFilteredTransactionAndSignatures>?,
     private val inputStateRefs: List<StateRef>,
-    private val referenceStateRefs: List<StateRef>
+    private val referenceStateRefs: List<StateRef>,
+    private val filteredDependencies: List<UtxoFilteredTransactionAndSignatures>?
 ) : SubFlow<Unit> {
 
     private companion object {
@@ -48,6 +47,10 @@ class TransactionDependencyResolutionFlow(
 
     @Suspendable
     override fun call() {
+        val transactionDependencies = (inputStateRefs.asSequence() + referenceStateRefs.asSequence())
+            .map { it.transactionId }
+            .toSet()
+
         if (transactionDependencies.isNotEmpty()) {
             if (filteredDependencies.isNullOrEmpty()) {
                 // If we have dependencies but no filtered dependencies then we need to perform backchain resolution

@@ -89,12 +89,31 @@ class TransactionDependencyResolutionFlowTest : UtxoLedgerTest() {
     }
 
     @Test
-    fun `notary backchain on - receiving transaction with dependencies should call backchain resolution flow`() {
+    fun `notary backchain on - receiving transaction with input state refs should call backchain resolution flow`() {
         callReceiveTransactionFlow(
             sessionAlice,
             TX_ID_1,
             notaryX500Name,
-            setOf(TX_INPUT_DEPENDENCY_STATE_REF_1.transactionId, TX_INPUT_DEPENDENCY_STATE_REF_2.transactionId)
+            inputStateRefs = listOf(TX_INPUT_DEPENDENCY_STATE_REF_1, TX_INPUT_DEPENDENCY_STATE_REF_2),
+            referenceStateRefs = emptyList()
+        )
+
+        verify(mockFlowEngine).subFlow(
+            TransactionBackchainResolutionFlow(
+                setOf(TX_INPUT_DEPENDENCY_STATE_REF_1.transactionId, TX_INPUT_DEPENDENCY_STATE_REF_2.transactionId),
+                sessionAlice
+            )
+        )
+    }
+
+    @Test
+    fun `notary backchain on - receiving transaction with reference state refs should call backchain resolution flow`() {
+        callReceiveTransactionFlow(
+            sessionAlice,
+            TX_ID_1,
+            notaryX500Name,
+            inputStateRefs = emptyList(),
+            referenceStateRefs = listOf(TX_INPUT_DEPENDENCY_STATE_REF_1, TX_INPUT_DEPENDENCY_STATE_REF_2)
         )
 
         verify(mockFlowEngine).subFlow(
@@ -111,7 +130,8 @@ class TransactionDependencyResolutionFlowTest : UtxoLedgerTest() {
             sessionAlice,
             TX_ID_1,
             notaryX500Name,
-            emptySet()
+            inputStateRefs = emptyList(),
+            referenceStateRefs = emptyList()
         )
 
         verify(mockFlowEngine, never()).subFlow(
@@ -142,8 +162,9 @@ class TransactionDependencyResolutionFlowTest : UtxoLedgerTest() {
             sessionAlice,
             TX_ID_1,
             notaryX500Name,
-            setOf(TX_INPUT_DEPENDENCY_STATE_REF_1.transactionId),
-            listOf(filteredDependency)
+            inputStateRefs = listOf(TX_INPUT_DEPENDENCY_STATE_REF_1),
+            referenceStateRefs = emptyList(),
+            filteredDependencies = listOf(filteredDependency)
         )
 
         verify(mockFlowEngine, never()).subFlow(
@@ -167,19 +188,17 @@ class TransactionDependencyResolutionFlowTest : UtxoLedgerTest() {
         session: FlowSession,
         transactionId: SecureHash,
         notaryName: MemberX500Name,
-        transactionDependencies: Set<SecureHash>,
-        filteredDependencies: List<UtxoFilteredTransactionAndSignatures>? = null,
         inputStateRefs: List<StateRef> = emptyList(),
-        referenceStateRefs: List<StateRef> = emptyList()
+        referenceStateRefs: List<StateRef> = emptyList(),
+        filteredDependencies: List<UtxoFilteredTransactionAndSignatures>? = null
     ) {
         val flow = TransactionDependencyResolutionFlow(
             session,
             transactionId,
             notaryName,
-            transactionDependencies,
-            filteredDependencies,
             inputStateRefs,
-            referenceStateRefs
+            referenceStateRefs,
+            filteredDependencies
         )
         flow.flowEngine = mockFlowEngine
         flow.ledgerPersistenceService = mockLedgerPersistenceService
