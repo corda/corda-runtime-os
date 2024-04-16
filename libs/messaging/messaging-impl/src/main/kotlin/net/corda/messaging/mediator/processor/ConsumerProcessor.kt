@@ -237,9 +237,11 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         outputsToProcess: Queue<Pair<String, Pair<EventProcessingOutput<K, E>, CompletableFuture<Unit>>>>
     ) {
         for (output in outputs) {
-            output.value.first.whenComplete { outputToProcess: EventProcessingOutput<K, E>?, _ ->
+            output.value.first.whenComplete { outputToProcess: EventProcessingOutput<K, E>?, throwable: Throwable? ->
                 if (outputToProcess != null) {
                     outputsToProcess.add(output.key to (outputToProcess to output.value.second))
+                } else {
+                    log.error("Unexpected throwable from step", throwable)
                 }
             }
         }
