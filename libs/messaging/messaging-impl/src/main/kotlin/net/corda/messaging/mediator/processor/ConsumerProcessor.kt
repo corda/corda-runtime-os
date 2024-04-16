@@ -2,6 +2,8 @@ package net.corda.messaging.mediator.processor
 
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
+import net.corda.messagebus.api.CordaTopicPartition
+import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.constants.MessagingMetadataKeys.PROCESSING_FAILURE
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -85,11 +87,21 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val inputsToCommit = LinkedBlockingDeque<List<CordaConsumerRecord<K, E>>>()
         val inputsToRetry = LinkedBlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>()
         val inflightStates = ConcurrentHashMap<String, AtomicReferenceCountingReference<State>>()
+        val assignedPartitions: MutableSet<CordaTopicPartition> = ConcurrentHashMap.newKeySet()
+        val rebalanceListener = object : CordaConsumerRebalanceListener {
+            override fun onPartitionsRevoked(partitions: Collection<CordaTopicPartition>) {
+                assignedPartitions.removeAll(partitions)
+            }
+
+            override fun onPartitionsAssigned(partitions: Collection<CordaTopicPartition>) {
+                assignedPartitions.addAll(partitions)
+            }
+        }
         while (!mediatorSubscriptionState.stopped()) {
             attempts++
             try {
                 if (consumer == null) {
-                    consumer = consumerFactory.create(consumerConfig)
+                    consumer = consumerFactory.create(consumerConfig, rebalanceListener)
                     deleteLater.clear()
                     consumer.subscribe()
                     taskManager.executeLongRunningTask {
@@ -105,7 +117,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                         }
                     }
                 }
-                pollLoop(consumer, outputsToProcess, inputsToCommit, inputsToRetry, inflightStates)
+                pollLoop(consumer, outputsToProcess, inputsToCommit, inputsToRetry, inflightStates, assignedPartitions)
                 attempts = 0
             } catch (exception: Exception) {
                 val cause = if (exception is CompletionException) { exception.cause ?: exception} else exception
@@ -155,7 +167,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     categorizeDelayedActions
                 )
             } catch (e: Exception) {
-                // TODO do some logging
+                log.warn("Error trying to commit produced outputs", e)
                 outputsToProcess.putBackAll(outputs)
             }
         }
@@ -183,11 +195,12 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         outputsToProcess: Queue<Pair<String, Pair<EventProcessingOutput<K, E>, CompletableFuture<Unit>>>>,
         inputsToCommit: BlockingDeque<List<CordaConsumerRecord<K, E>>>,
         inputsToRetry: BlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>,
-        inflightStates: ConcurrentHashMap<String, AtomicReferenceCountingReference<State>>
+        inflightStates: ConcurrentHashMap<String, AtomicReferenceCountingReference<State>>,
+        assignedPartitions: MutableSet<CordaTopicPartition>
     ) {
         metrics.processorTimer.recordCallable {
             try {
-                val (inputs, retryInputs) = getInputs(consumer, inputsToRetry, inflightStates)
+                val (inputs, retryInputs) = getInputs(consumer, inputsToRetry, inflightStates, assignedPartitions)
                 val retriedOutputs = processInputs(emptyList(), retryInputs, inflightStates)
                 transferOutputs(retriedOutputs, outputsToProcess)
                 val outputs = processInputs(inputs, emptyList(), inflightStates)
@@ -280,8 +293,12 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         consumer: MediatorConsumer<K, E>,
         inputsToRetry: BlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>,
         inflightStates: ConcurrentHashMap<String, AtomicReferenceCountingReference<State>>,
+        assignedPartitions: Set<CordaTopicPartition>,
     ): Pair<List<EventProcessingInput<K, E>>, List<Pair<EventProcessingInput<K, E>, CompletableFuture<Unit>>>> {
+        // Retries filtered to exclude any partitions we don't own
         val retryMessages = inputsToRetry.drainAll()
+            .map { it.first.filter { CordaTopicPartition(it.topic, it.partition) in assignedPartitions } to it.second }
+            .filter { it.first.isNotEmpty() }
         val polledMessages =
             if (retryMessages.isNotEmpty()) consumer.poll(Duration.ZERO) else consumer.poll(pollTimeout)
         val newRecords = polledMessages.groupBy { it.key }
@@ -354,7 +371,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val prunedInputs = inputs.map { input ->
             input.state?.let { state ->
                 val notSeenRecords = input.records.filter { record ->
-                    record.offset > ((state.metadata[record.metadataKey()] as? Long) ?: -1)
+                    record.offset > ((state.metadata[record.metadataKey()] as? Number)?.toLong() ?: -1)
                 }
                 input.copy(records = notSeenRecords)
             } ?: input
@@ -500,7 +517,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private fun isStateSafeToDelete(consumer: MediatorConsumer<K, E>, state: State): Boolean {
         return state.metadata.entries.all {
             it.key.toTopicAndPartition()?.let { (topic, partition) ->
-                consumer.alreadySyncedOffset(topic, partition, it.value as Long) ?: true
+                consumer.alreadySyncedOffset(topic, partition, (it.value as Number).toLong()) ?: true
             } ?: true
         }
     }
@@ -595,10 +612,10 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val result = existingMetadata.toMutableMap()
         processedOffsets.forEach {
             result.compute(it.metadataKey()) { _, value ->
-                if (value == null || value !is Long) {
+                if (value == null || value !is Number) {
                     it.offset
                 } else {
-                    maxOf(value, it.offset)
+                    maxOf(value.toLong(), it.offset)
                 }
             }
         }

@@ -1,6 +1,5 @@
 package net.corda.taskmanager.impl
 
-import net.corda.metrics.CordaMetrics
 import net.corda.taskmanager.TaskManager
 import net.corda.taskmanager.TaskManagerFactory
 import java.util.Locale
@@ -21,14 +20,11 @@ internal object TaskManagerFactoryImpl : TaskManagerFactory {
         return TaskManagerImpl(
             name = name,
             longRunningThreadName = "$threadName-long-running-thread",
-            executorService = CordaExecutorServiceWrapper(
-                name,
-                "corda.taskmanager.",
-                ThreadPoolExecutor(threads, threads,
-                    0L, TimeUnit.MILLISECONDS,
-                    PriorityBlockingQueue<Runnable>(threads, TaskManagerImpl.BatchComparator()),
-                    threadFactory(threadName)),
-                CordaMetrics.registry
+            executorService = ThreadPoolExecutor(
+                threads, threads,
+                0L, TimeUnit.MILLISECONDS,
+                PriorityBlockingQueue<Runnable>(threads, TaskManagerImpl.BatchComparator()),
+                threadFactory(threadName)
             )
         )
     }

@@ -32,7 +32,10 @@ class MessageBusConsumerFactory(
     private val rebalanceListener: CordaConsumerRebalanceListener?
 ): MediatorConsumerFactory {
 
-    override fun <K : Any, V : Any> create(config: MediatorConsumerConfig<K, V>): MediatorConsumer<K, V> {
+    override fun <K : Any, V : Any> create(
+        config: MediatorConsumerConfig<K, V>,
+        localRebalanceListener: CordaConsumerRebalanceListener?
+    ): MediatorConsumer<K, V> {
         val eventConsumerConfig = ConsumerConfig(
             groupName,
             "$clientId-eventConsumer",
@@ -45,7 +48,10 @@ class MessageBusConsumerFactory(
             config.keyClass,
             config.valueClass,
             config.onSerializationError,
-            rebalanceListener?: LoggingConsumerRebalanceListener(clientId)
+            CordaConsumerRebalanceListener.concat(
+                rebalanceListener ?: LoggingConsumerRebalanceListener(clientId),
+                localRebalanceListener
+            )
         )
 
         return MessageBusConsumer(
