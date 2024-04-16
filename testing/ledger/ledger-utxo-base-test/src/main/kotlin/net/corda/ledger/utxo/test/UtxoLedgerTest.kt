@@ -31,7 +31,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
 abstract class UtxoLedgerTest : CommonLedgerTest() {
-    private val mockUtxoLedgerPersistenceService = mock<UtxoLedgerPersistenceService>()
+    protected val mockUtxoLedgerPersistenceService = mock<UtxoLedgerPersistenceService>()
     private val mockUtxoLedgerTransactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
     private val mockUtxoLedgerGroupParametersPersistenceService = mock<UtxoLedgerGroupParametersPersistenceService>()
     private val mockGroupParametersLookup = mockGroupParametersLookup()
