@@ -14,9 +14,25 @@ ext {
 dependencies {
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
     implementation project(':components:membership:membership-rest')
+    implementation libs.jackson.dataformat.yaml
+    implementation libs.jackson.databind
     implementation libs.jackson.module.kotlin
+    implementation libs.kafka.client
     implementation libs.kotlin.stdlib
+    implementation libs.kubernetes.client
     implementation libs.liquibase
+    implementation libs.postgresql.jdbc
+    implementation libs.slf4j.api
+
+    constraints {
+        implementation(libs.okio) {
+            because 'kubernetes-client uses an older version of Okio library, needs to be at least 3.4.0 to avoid CVE-2023-0833.'
+        }
+        implementation(libs.okHttp) {
+            because 'kubernetes-client uses an older version of okhttp3 library, needs to be at least 4.9.2 to avoid CVE-2023-0833.'
+        }
+    }
+
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-datamodel')
     implementation project(':libs:configuration:configuration-endpoints')
@@ -27,6 +43,7 @@ dependencies {
     implementation project(':libs:packaging:packaging-verify')
     implementation project(':libs:permissions:permission-common')
     implementation project(':libs:permissions:permission-datamodel')
+    implementation project(':libs:permissions:permission-endpoint')
     implementation project(':libs:permissions:permission-password')
     implementation project(':libs:rest:json-serialization')
     implementation project(':libs:rest:rest-client')
@@ -36,23 +53,8 @@ dependencies {
     implementation project(":libs:utilities")
     implementation project(":libs:configuration:configuration-core")
     implementation 'net.corda:corda-config-schema'
+    implementation 'net.corda:corda-rbac-schema'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-
-
-    implementation libs.slf4j.api
-    implementation libs.jackson.dataformat.yaml
-    implementation libs.jackson.databind
-    implementation libs.kubernetes.client
-    constraints {
-        implementation(libs.okio) {
-            because 'kubernetes-client uses an older version of Okio library, needs to be at least 3.4.0 to avoid CVE-2023-0833.'
-        }
-        implementation(libs.okHttp) {
-            because 'kubernetes-client uses an older version of okhttp3 library, needs to be at least 4.9.2 to avoid CVE-2023-0833.'
-        }
-    }
-    implementation libs.postgresql.jdbc
-    implementation libs.kafka.client
 
     testImplementation libs.bundles.test
     testImplementation project(':testing:test-utilities')
