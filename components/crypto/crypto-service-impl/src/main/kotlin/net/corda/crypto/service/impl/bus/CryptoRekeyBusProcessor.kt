@@ -297,6 +297,7 @@ class CryptoRekeyBusProcessor(
                     IndividualKeyRotationRequest(
                         request.requestId,
                         tenantId,
+                        defaultUnmanagedWrappingKeyName,
                         alias,
                         null, // keyUuid not used in unmanaged key rotation
                         KeyType.UNMANAGED
@@ -318,6 +319,7 @@ class CryptoRekeyBusProcessor(
                     IndividualKeyRotationRequest(
                         request.requestId,
                         request.tenantId,
+                        null,
                         null,
                         it.toString(),
                         KeyType.MANAGED
