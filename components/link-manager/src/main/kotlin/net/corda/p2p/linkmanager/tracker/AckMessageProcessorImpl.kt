@@ -8,7 +8,7 @@ import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-internal interface AckMessageProcessor {
+internal fun interface AckMessageProcessor {
     fun ackReceived(messageAck: MessageAck, partition: Int)
 }
 
