@@ -285,7 +285,7 @@ class UtxoFinalityFlowV1(
         // the dependencies without having to query the database, otherwise we just use the regular signed transaction
         val notarizationFlow = newPluggableNotaryClientFlowInstance(
             filteredTransactionsAndSignatures?.let {
-                UtxoSignedTransactionWithDependencies(transaction, it)
+                UtxoSignedTransactionWithDependencies(transaction as UtxoSignedTransaction, it)
             } ?: transaction
         )
 
@@ -366,7 +366,7 @@ class UtxoFinalityFlowV1(
     // function to avoid trying (and failing) to serialize the objects used internally.
     @VisibleForTesting
     internal fun newPluggableNotaryClientFlowInstance(
-        transaction: UtxoSignedTransactionInternal
+        transaction: UtxoSignedTransaction
     ): PluggableNotaryClientFlow {
         @Suppress("deprecation", "removal")
         return java.security.AccessController.doPrivileged(
