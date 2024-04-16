@@ -285,7 +285,7 @@ class UtxoFinalityFlowV1(
         // the dependencies without having to query the database, otherwise we just use the regular signed transaction
         val notarizationFlow = newPluggableNotaryClientFlowInstance(
             filteredTransactionsAndSignatures?.let {
-                UtxoSignedTransactionWithDependencies(transaction as UtxoSignedTransaction, it)
+                UtxoSignedTransactionWithDependencies(transaction, it)
             } ?: transaction
         )
 
