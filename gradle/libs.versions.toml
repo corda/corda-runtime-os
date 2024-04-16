@@ -19,6 +19,8 @@ nimbusVersion = "11.10.1"
 kafkaClientVersion = "3.6.1_1"
 kubernetesClientVersion = "6.11.0"
 log4jVersion = "2.23.0"
+# If upgrading liquibase to 4.28, enable `LiquibaseSchemaMigratorImplTest.when updateDb create DB schema`
+# and `LiquibaseSchemaMigratorImplTest.when createUpdateSql generate DB schema` on Windows
 liquibaseVersion = "4.27.0"
 mssqlDriverVersion = "11.2.3.jre17"
 postgresDriverVersion = "42.7.3"
