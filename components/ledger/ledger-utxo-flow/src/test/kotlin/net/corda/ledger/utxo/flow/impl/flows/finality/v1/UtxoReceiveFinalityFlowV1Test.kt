@@ -834,7 +834,7 @@ class UtxoReceiveFinalityFlowV1Test {
         assertThatThrownBy { callReceiveFinalityFlow() }
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessageContaining(
-                "Missing input state and ref from the filtered transaction"
+                "Missing input state and ref $stxInputState from the filtered transaction"
             )
 
         // assert that the filtered transaction receives and dependencies don't match
@@ -857,7 +857,11 @@ class UtxoReceiveFinalityFlowV1Test {
 
         // assert persisting filtered transactions and signatures never happened since they are invalid.
         verify(persistenceService, never())
-            .persistFilteredTransactionsAndSignatures(listOf(filteredTxAndSig, filteredTxAndSig2), any(), any())
+            .persistFilteredTransactionsAndSignatures(
+                listOf(filteredTxAndSig, filteredTxAndSig2),
+                listOf(stxInputState),
+                listOf(stxRefState)
+            )
     }
 
     private fun callReceiveFinalityFlow(validator: UtxoTransactionValidator = UtxoTransactionValidator { }) {

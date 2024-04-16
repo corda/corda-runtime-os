@@ -234,8 +234,8 @@ class UtxoLedgerPersistenceServiceImplTest {
 
         utxoLedgerPersistenceService.persistFilteredTransactionsAndSignatures(
             listOf(UtxoFilteredTransactionAndSignaturesImpl(filteredTransaction, signature)),
-            any(),
-            any()
+            emptyList(),
+            emptyList()
         )
 
         verify(serializationService).serialize(any<Any>())
