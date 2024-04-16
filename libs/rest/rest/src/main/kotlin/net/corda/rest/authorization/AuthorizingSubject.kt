@@ -11,7 +11,7 @@ interface AuthorizingSubject {
      * Identity of underlying subject
      */
     val principal: String
-    
+
     val expiryStatus: ExpiryStatus?
 
     /**

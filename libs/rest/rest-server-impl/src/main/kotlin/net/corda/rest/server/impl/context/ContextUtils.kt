@@ -56,6 +56,7 @@ internal object ContextUtils {
         return LoggerFactory.getLogger(ContextUtils::class.java.name + "." + this)
     }
 
+    @Suppress("ThrowsCount")
     fun authenticate(
         ctx: ClientRequestContext,
         restAuthProvider: RestAuthenticationProvider,
