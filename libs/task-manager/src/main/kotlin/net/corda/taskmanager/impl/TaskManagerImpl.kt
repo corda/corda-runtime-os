@@ -32,7 +32,7 @@ internal class TaskManagerImpl(
     private val shortRunningTaskGauge = liveTaskGauge(Type.SHORT_RUNNING)
     private val longRunningTaskGauge = liveTaskGauge(Type.LONG_RUNNING)
 
-    private class BatchRaceException() : Exception("Batch is already close")
+    private class BatchRaceException : Exception("Batch is already close")
 
     private val shortRunningTaskBatches = ConcurrentHashMap<Any, Batch>()
 
@@ -140,7 +140,7 @@ internal class TaskManagerImpl(
                         throw e
                     }
                 }
-            } catch(e: BatchRaceException) {
+            } catch (_: BatchRaceException) {
             }
         }
     }

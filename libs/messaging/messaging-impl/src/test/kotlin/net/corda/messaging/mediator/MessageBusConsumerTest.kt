@@ -57,7 +57,7 @@ class MessageBusConsumerTest {
         }
     }
 
-    // TODO: Fix those when the offset manager is done (or injected)
+    // TODO Fix those when the offset manager is done (or injected)
     @Disabled("Need to deal with offset manager first")
     @Test
     fun testSyncCommitOffsets() {

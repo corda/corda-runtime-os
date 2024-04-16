@@ -31,6 +31,8 @@ class MediatorInputServiceImplTest {
     @Test
     fun `get hash of invalid input` () {
         whenever(serializer.serialize(any())).thenReturn(null)
-        assertThrows<IllegalStateException> {  mediatorInputService.getHash(CordaConsumerRecord(topic = "",0,0, key = "key", value = "value", 0)) }
+        assertThrows<IllegalStateException> {
+            mediatorInputService.getHash(CordaConsumerRecord(topic = "", 0, 0, key = "key", value = "value", 0))
+        }
     }
 }

@@ -8,7 +8,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.time.Duration
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.ScheduledExecutorService
 
@@ -29,7 +29,7 @@ class TaskManagerImplTest {
 
     @Test
     fun `executeShortRunningTask increments the task count, runs the task and decrements the task count when finished`() {
-        val result = taskManager.executeShortRunningTask("Foo", 1, Duration.ofHours(1)) {
+        val result = taskManager.executeShortRunningTask("Foo", 1, CompletableFuture<Unit>(), false) {
             assertThat(taskManager.liveTaskCounts).containsExactlyEntriesOf(
                 mapOf(TaskManagerImpl.Type.SHORT_RUNNING to 1)
             )
@@ -43,7 +43,7 @@ class TaskManagerImplTest {
 
     @Test
     fun `executeShortRunningTask increments the task count and decrements the task count when the task fails`() {
-        val result = taskManager.executeShortRunningTask("Foo", 1, Duration.ofHours(1)) {
+        val result = taskManager.executeShortRunningTask("Foo", 1, CompletableFuture<Unit>(), false) {
             assertThat(taskManager.liveTaskCounts).containsExactlyEntriesOf(
                 mapOf(TaskManagerImpl.Type.SHORT_RUNNING to 1)
             )
@@ -59,7 +59,7 @@ class TaskManagerImplTest {
 
     @Test
     fun `executeShortRunningTask increments the task count and decrements the task count when the task fails with interrupted exception`() {
-        val result = taskManager.executeShortRunningTask("Foo", 1, Duration.ofHours(1)) {
+        val result = taskManager.executeShortRunningTask("Foo", 1, CompletableFuture<Unit>(), false) {
             assertThat(taskManager.liveTaskCounts).containsExactlyEntriesOf(
                 mapOf(TaskManagerImpl.Type.SHORT_RUNNING to 1)
             )

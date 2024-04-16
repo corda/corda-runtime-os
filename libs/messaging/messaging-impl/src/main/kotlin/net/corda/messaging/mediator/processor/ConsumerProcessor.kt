@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicReference
  * All asynchronous outputs (states and message bus events) are stored after all groups have been processed.
  * Any flows from groups that fail to save state to the [stateManager] are retried.
  */
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private val config: EventMediatorConfig<K, S, E>,
     private val groupAllocator: GroupAllocator,
@@ -155,7 +155,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     categorizeDelayedActions
                 )
             } catch (e: Exception) {
-                // TODO: do some logging
+                // TODO do some logging
                 outputsToProcess.putBackAll(outputs)
             }
         }
