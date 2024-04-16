@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager.outbound
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.p2p.MessageAck
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -17,6 +18,7 @@ import net.corda.p2p.linkmanager.common.CommonComponents
 import net.corda.p2p.linkmanager.delivery.DeliveryTracker
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.tracker.AckMessageProcessor
+import net.corda.p2p.linkmanager.tracker.AckMessageProcessorImpl
 import net.corda.p2p.linkmanager.tracker.DeliveryTrackerConfiguration
 import net.corda.p2p.linkmanager.tracker.PartitionsStates
 import net.corda.p2p.linkmanager.tracker.StatefulDeliveryTracker
@@ -42,17 +44,35 @@ internal class OutboundLinkManager(
         private const val OUTBOUND_MESSAGE_PROCESSOR_GROUP = "outbound_message_processor_group"
     }
 
-    private val deliveryTrackerConfig = DeliveryTrackerConfiguration(
-        configurationReaderService = commonComponents.configurationReaderService,
-        coordinatorFactory = commonComponents.lifecycleCoordinatorFactory,
-    )
+    private val deliveryTrackerConfig = if (features.enableP2PStatefulDeliveryTracker) {
+        DeliveryTrackerConfiguration(
+            configurationReaderService = commonComponents.configurationReaderService,
+            coordinatorFactory = commonComponents.lifecycleCoordinatorFactory,
+        )
+    } else {
+        null
+    }
 
-    private val partitionsStates = PartitionsStates(
-        coordinatorFactory = commonComponents.lifecycleCoordinatorFactory,
-        stateManager = commonComponents.stateManager,
-        config = deliveryTrackerConfig,
-        clock = commonComponents.clock,
-    )
+    private val partitionsStates = if (features.enableP2PStatefulDeliveryTracker) {
+        PartitionsStates(
+            coordinatorFactory = commonComponents.lifecycleCoordinatorFactory,
+            stateManager = commonComponents.stateManager,
+            config = deliveryTrackerConfig!!,
+            clock = commonComponents.clock,
+        )
+    } else {
+        null
+    }
+
+    private val ackMessageProcessor: AckMessageProcessor = if (features.enableP2PStatefulDeliveryTracker) {
+        AckMessageProcessorImpl(partitionsStates!!)
+    } else {
+        object : AckMessageProcessor {
+            override fun ackReceived(messageAck: MessageAck, partition: Int) {
+                TODO("Not yet implemented")
+            }
+        }
+    }
 
     private val outboundMessageProcessor = OutboundMessageProcessor(
         commonComponents.sessionManager,
@@ -62,7 +82,7 @@ internal class OutboundLinkManager(
         commonComponents.messagesPendingSession,
         clock,
         commonComponents.messageConverter,
-        AckMessageProcessor(partitionsStates),
+        ackMessageProcessor,
     )
     private val deliveryTracker = DeliveryTracker(
         lifecycleCoordinatorFactory,
@@ -100,8 +120,8 @@ internal class OutboundLinkManager(
             publisher = publisher,
             messagingConfiguration = messagingConfiguration,
             outboundMessageProcessor = outboundMessageProcessor,
-            partitionsStates = partitionsStates,
-            config = deliveryTrackerConfig,
+            partitionsStates = partitionsStates!!,
+            config = deliveryTrackerConfig!!,
         )
         ComplexDominoTile(
             OUTBOUND_MESSAGE_PROCESSOR_GROUP,

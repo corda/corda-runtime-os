@@ -363,9 +363,10 @@ class InboundMessageProcessorTest {
                     session
                 )
             )
+            val key = "key"
             val messageAck = MessageAck(
                 AuthenticatedMessageAck(
-                    MESSAGE_ID
+                    MESSAGE_ID, key
                 )
             )
             val dataMessage = AuthenticatedDataMessage(
@@ -376,7 +377,7 @@ class InboundMessageProcessorTest {
 
             processor.onNext(
                 listOf(
-                    EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0),
+                    EventLogRecord(LINK_IN_TOPIC, key, LinkInMessage(dataMessage), 0, 0),
                 )
             )
 
@@ -402,12 +403,13 @@ class InboundMessageProcessorTest {
                     session
                 )
             )
-            val messageAck = MessageAck(AuthenticatedMessageAck(MESSAGE_ID))
+            val key = "key"
+            val messageAck = MessageAck(AuthenticatedMessageAck(MESSAGE_ID, key))
             val dataMessage = AuthenticatedDataMessage(commonHeader, messageAck.toByteBuffer(), ByteBuffer.wrap(byteArrayOf()))
 
             processor.onNext(
                 listOf(
-                    EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0),
+                    EventLogRecord(LINK_IN_TOPIC, key, LinkInMessage(dataMessage), 0, 0),
                 )
             )
 
@@ -462,9 +464,10 @@ class InboundMessageProcessorTest {
                     session
                 )
             )
+            val key = "key"
             val messageAck = MessageAck(
                 AuthenticatedMessageAck(
-                    MESSAGE_ID
+                    MESSAGE_ID, key
                 )
             )
             val dataMessage = AuthenticatedDataMessage(
@@ -474,7 +477,7 @@ class InboundMessageProcessorTest {
 
             processor.onNext(
                 listOf(
-                    EventLogRecord(LINK_IN_TOPIC, "key", LinkInMessage(dataMessage), 0, 0),
+                    EventLogRecord(LINK_IN_TOPIC, key, LinkInMessage(dataMessage), 0, 0),
                 )
             )
 

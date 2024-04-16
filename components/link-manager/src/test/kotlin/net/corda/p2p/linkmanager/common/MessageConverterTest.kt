@@ -227,7 +227,7 @@ class MessageConverterTest {
         val session = mock<AuthenticatedSession> {
             on { createMac(any()) } doReturn mac
         }
-        val message = MessageAck(AuthenticatedMessageAck("messageId"))
+        val message = MessageAck(AuthenticatedMessageAck("messageId", "key"))
         val groupId = "group-1"
         val peer = createTestHoldingIdentity("CN=Impostor, O=Evil Corp, L=LDN, C=GB", groupId)
         val us = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", groupId)

@@ -8,19 +8,23 @@ import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-internal class AckMessageProcessor(
+internal interface AckMessageProcessor {
+    fun ackReceived(messageAck: MessageAck, partition: Int)
+}
+
+internal class AckMessageProcessorImpl(
     private val partitionsStates: PartitionsStates,
-) {
+) : AckMessageProcessor {
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
-        fun forwardAckMessageToP2pOut(messageId: String, messageAck: MessageAck): Record<String, AppMessage> {
+        fun forwardAckMessageToP2pOut(messageId: String, messageAck: MessageAck, key: String): Record<String, AppMessage> {
             logger.trace("Forwarding ack for message '{}' to '{}'.", messageId, P2P_OUT_TOPIC)
-            return Record(P2P_OUT_TOPIC, messageId, AppMessage(messageAck))
+            return Record(P2P_OUT_TOPIC, key, AppMessage(messageAck))
         }
     }
 
-    fun ackReceived(messageAck: MessageAck, partition: Int) {
+    override fun ackReceived(messageAck: MessageAck, partition: Int) {
         when (val ack = messageAck.ack) {
             is AuthenticatedMessageAck -> processAck(ack, partition)
             else -> logger.warn("Failed to process message ack. Cause: Unexpected ack type.")

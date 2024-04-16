@@ -48,7 +48,7 @@ import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.linkmanager.TraceableItem
 import net.corda.p2p.linkmanager.common.MessageConverter
-import net.corda.p2p.linkmanager.tracker.AckMessageProcessor
+import net.corda.p2p.linkmanager.tracker.AckMessageProcessorImpl
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doThrow
 
@@ -79,7 +79,7 @@ class OutboundMessageProcessorTest {
         on { serial } doReturn serialNumber
     }
     private val messageConverter = mock<MessageConverter>()
-    private val ackMessageProcessor = mock<AckMessageProcessor>()
+    private val ackMessageProcessor = mock<AckMessageProcessorImpl>()
 
     private val networkMessagingValidator = mock<NetworkMessagingValidator> {
         on { validateInbound(any(), any()) } doReturn Either.Left(Unit)
@@ -1369,13 +1369,14 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `onNext delegates to ackMessageProcessor on message ack`() {
+        val key = "key"
         val ack = MessageAck(
-            AuthenticatedMessageAck("test-id")
+            AuthenticatedMessageAck("test-id", key)
         )
         val messages = listOf(
             EventLogRecord(
                 Schemas.P2P.P2P_OUT_TOPIC,
-                "key",
+                key,
                 AppMessage(ack),
                 0, 1
             )

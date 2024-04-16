@@ -35,7 +35,7 @@ import net.corda.p2p.linkmanager.metrics.recordInboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordInboundSessionMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
 import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl.Companion.LINK_MANAGER_SUBSYSTEM
-import net.corda.p2p.linkmanager.tracker.AckMessageProcessor
+import net.corda.p2p.linkmanager.tracker.AckMessageProcessorImpl
 import net.corda.schema.Schemas
 import net.corda.tracing.traceEventProcessing
 import net.corda.utilities.Either
@@ -257,7 +257,7 @@ internal class InboundMessageProcessor(
                         logger.debug { "Processing ack for message ${ack.messageId} from session $sessionIdAndMessage." }
                         sessionManager.messageAcknowledged(sessionIdAndMessage.sessionId)
                         if (features.enableP2PStatefulDeliveryTracker) {
-                            AckMessageProcessor.forwardAckMessageToP2pOut(ack.messageId, it)
+                            AckMessageProcessorImpl.forwardAckMessageToP2pOut(ack.messageId, it, ack.key)
                         } else {
                             makeMarkerForAckMessage(ack)
                         }
@@ -288,7 +288,7 @@ internal class InboundMessageProcessor(
                 "Processing message ${innerMessage.message.header.messageId} " +
                     "of type ${innerMessage.message.javaClass} from session ${session.sessionId}"
             }
-            makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack ->
+            makeAckMessageForFlowMessage(innerMessage, session)?.let { ack ->
                 InboundResponse(
                     listOf(
                         Record(Schemas.P2P.P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message))
@@ -344,13 +344,14 @@ internal class InboundMessageProcessor(
     }
 
     private fun makeAckMessageForFlowMessage(
-        message: AuthenticatedMessage,
+        messageAndKey: AuthenticatedMessageAndKey,
         session: Session
     ): Either<LinkManagerResponse, Record<String, LinkOutMessage>>? {
+        val message = messageAndKey.message
         // We route the ACK back to the original source
         val ackDest = message.header.source.toCorda()
         val ackSource = message.header.destination.toCorda()
-        val ackMessage = MessageAck(AuthenticatedMessageAck(message.header.messageId))
+        val ackMessage = MessageAck(AuthenticatedMessageAck(message.header.messageId, messageAndKey.key))
         return if (features.enableP2PGatewayToLinkManagerOverHttp) {
             Either.Left(
                 MessageConverter.createLinkManagerResponse(ackMessage, session)

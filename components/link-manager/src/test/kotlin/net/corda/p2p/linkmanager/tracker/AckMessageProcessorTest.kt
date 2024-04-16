@@ -12,20 +12,19 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 
-
 class AckMessageProcessorTest {
     private val partitionState = mock<PartitionState>()
     private val partitionsStates = mock<PartitionsStates> {
         on { get(any()) } doReturn partitionState
     }
 
-    private val processor = AckMessageProcessor(partitionsStates)
+    private val processor = AckMessageProcessorImpl(partitionsStates)
 
     @Test
     fun `ackReceived stops tracking message on receiving ack`() {
         val messageId = "test-id"
         val partition = 10
-        val ack = MessageAck(AuthenticatedMessageAck(messageId))
+        val ack = MessageAck(AuthenticatedMessageAck(messageId, "key"))
 
         processor.ackReceived(ack, partition)
 
@@ -45,14 +44,15 @@ class AckMessageProcessorTest {
     @Test
     fun `forwardAckMessageToP2POut returns correct record`() {
         val messageId = "test-id"
-        val ack = MessageAck(AuthenticatedMessageAck(messageId))
+        val messageKey = "key"
+        val ack = MessageAck(AuthenticatedMessageAck(messageId, messageKey))
 
-        val record = AckMessageProcessor.forwardAckMessageToP2pOut(messageId, ack)
+        val record = AckMessageProcessorImpl.forwardAckMessageToP2pOut(messageId, ack, messageKey)
 
         with(record) {
             assertSoftly {
                 it.assertThat(topic).isEqualTo(P2P_OUT_TOPIC)
-                it.assertThat(key).isEqualTo(messageId)
+                it.assertThat(key).isEqualTo(messageKey)
                 it.assertThat(value).isEqualTo(AppMessage(ack))
             }
         }
