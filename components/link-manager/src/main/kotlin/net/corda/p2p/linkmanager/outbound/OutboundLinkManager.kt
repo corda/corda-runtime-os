@@ -1,7 +1,6 @@
 package net.corda.p2p.linkmanager.outbound
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.p2p.MessageAck
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -67,11 +66,7 @@ internal class OutboundLinkManager(
     private val ackMessageProcessor: AckMessageProcessor = if (features.enableP2PStatefulDeliveryTracker) {
         AckMessageProcessorImpl(partitionsStates!!)
     } else {
-        object : AckMessageProcessor {
-            override fun ackReceived(messageAck: MessageAck, partition: Int) {
-                TODO("Not yet implemented")
-            }
-        }
+        AckMessageProcessor { _, _ -> TODO("Not yet implemented") }
     }
 
     private val outboundMessageProcessor = OutboundMessageProcessor(
