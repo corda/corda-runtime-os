@@ -18,6 +18,7 @@ import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
 import net.corda.ledger.utxo.flow.impl.persistence.VaultNamedParameterizedQueryImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoBaselinedTransactionBuilder
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionWithDependencies
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
@@ -149,11 +150,15 @@ class UtxoLedgerServiceImpl @Activate constructor(
     override fun findFilteredTransactionsAndSignatures(
         signedTransaction: UtxoSignedTransaction
     ): Map<SecureHash, UtxoFilteredTransactionAndSignatures> {
-        return utxoLedgerPersistenceService.findFilteredTransactionsAndSignatures(
-            signedTransaction.inputStateRefs + signedTransaction.referenceStateRefs,
-            signedTransaction.notaryKey,
-            signedTransaction.notaryName
-        )
+        return if (signedTransaction is UtxoSignedTransactionWithDependencies) {
+            signedTransaction.filteredDependencies.associateBy { it.filteredTransaction.id }
+        } else {
+            utxoLedgerPersistenceService.findFilteredTransactionsAndSignatures(
+                signedTransaction.inputStateRefs + signedTransaction.referenceStateRefs,
+                signedTransaction.notaryKey,
+                signedTransaction.notaryName
+            )
+        }
     }
 
     @Suspendable

@@ -1,14 +1,23 @@
 package net.corda.libs.permissions.manager.impl
 
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
+import net.corda.libs.permissions.manager.AuthenticationState
 import net.corda.libs.permissions.manager.BasicAuthenticationService
+import net.corda.libs.permissions.manager.ExpiryStatus
 import net.corda.permissions.password.PasswordHash
 import net.corda.permissions.password.PasswordService
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.debug
+import net.corda.utilities.time.Clock
 import org.slf4j.LoggerFactory
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.atomic.AtomicReference
 
 class RbacBasicAuthenticationService(
+    rbacConfig: SmartConfig,
+    private val clock: Clock,
     private val permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>,
     private val passwordService: PasswordService
 ) : BasicAuthenticationService {
@@ -19,7 +28,11 @@ class RbacBasicAuthenticationService(
 
     private val repeatedLogonsCache = RepeatedLogonsCache()
 
-    override fun authenticateUser(loginName: String, password: CharArray): Boolean {
+    private val passwordExpiryWarningWindowDays = rbacConfig.getInt(ConfigKeys.RBAC_PASSWORD_EXPIRY_WARNING_WINDOW)
+
+    private val failedAuthentication = AuthenticationState(false, null)
+
+    override fun authenticateUser(loginName: String, password: CharArray): AuthenticationState {
         logger.debug { "Checking authentication for user $loginName." }
         val permissionManagementCache = checkNotNull(permissionManagementCacheRef.get()) {
             "Permission management cache is null."
@@ -28,22 +41,28 @@ class RbacBasicAuthenticationService(
         val clearTextPassword = String(password)
 
         if (repeatedLogonsCache.verifies(loginName, clearTextPassword)) {
-            return true
+            return AuthenticationState(true, null)
         }
 
-        val user = permissionManagementCache.getUser(loginName) ?: return false
+        val user = permissionManagementCache.getUser(loginName) ?: return failedAuthentication
 
         if (user.saltValue == null || user.hashedPassword == null) {
-            return false
+            return failedAuthentication
         }
 
         if (passwordService.verifies(clearTextPassword, PasswordHash(user.saltValue, user.hashedPassword))) {
-            repeatedLogonsCache.add(loginName, clearTextPassword)
-            return true
+            val expiryStatus = checkExpiryStatus(user.passwordExpiry)
+            // Ensure that only active status if cached
+            if (expiryStatus == ExpiryStatus.ACTIVE) {
+                repeatedLogonsCache.add(loginName, clearTextPassword)
+            } else {
+                repeatedLogonsCache.remove(loginName)
+            }
+            return AuthenticationState(true, expiryStatus)
         }
 
         repeatedLogonsCache.remove(loginName)
-        return false
+        return failedAuthentication
     }
 
     private var running = false
@@ -57,5 +76,29 @@ class RbacBasicAuthenticationService(
 
     override fun stop() {
         running = false
+    }
+
+    private fun checkExpiryStatus(passwordExpiry: Instant?): ExpiryStatus {
+        val timestamp = clock.instant()
+        return when {
+            (passwordExpiry == null) -> {
+                ExpiryStatus.ACTIVE
+            }
+
+            (passwordExpiry >= timestamp) -> {
+                // check if the current time is in the warning window for password expiry
+                if (timestamp in passwordExpiry.minus(
+                        passwordExpiryWarningWindowDays.toLong(),
+                        ChronoUnit.DAYS
+                    )..passwordExpiry
+                ) {
+                    ExpiryStatus.CLOSE_TO_EXPIRY
+                } else {
+                    ExpiryStatus.ACTIVE
+                }
+            }
+
+            else -> ExpiryStatus.EXPIRED
+        }
     }
 }
