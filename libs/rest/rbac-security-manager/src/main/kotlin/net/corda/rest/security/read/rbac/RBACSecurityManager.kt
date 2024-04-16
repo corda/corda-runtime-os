@@ -17,7 +17,7 @@ class RBACSecurityManager(
     override val id = AuthServiceId(RBACSecurityManager::class.java.name)
 
     override fun authenticate(principal: String, password: Password): AuthorizingSubject {
-        if (!basicAuthenticationService.authenticateUser(principal.lowercase(), password.value)) {
+        if (!basicAuthenticationService.authenticateUser(principal.lowercase(), password.value).authenticationSuccess) {
             throw FailedLoginException("User not authenticated.")
         }
 
