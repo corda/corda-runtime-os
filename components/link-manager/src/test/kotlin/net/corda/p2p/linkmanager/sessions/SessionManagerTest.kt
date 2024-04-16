@@ -21,6 +21,7 @@ import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.membership.read.MembershipGroupReader
@@ -29,14 +30,20 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
+import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
 import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.InvalidPeerCertificate
+import net.corda.p2p.crypto.protocol.api.InvalidSelectedModeError
+import net.corda.p2p.crypto.protocol.api.NoCommonModeError
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
+import net.corda.p2p.linkmanager.common.CommonComponents
+import net.corda.p2p.linkmanager.grouppolicy.protocolModes
 import net.corda.p2p.linkmanager.hosting.HostingMapListener
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
+import net.corda.p2p.linkmanager.sessions.SessionMessageHelper.SessionManagerConfigChangeHandler
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.mockMemberInfo
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -66,12 +73,6 @@ import java.security.Key
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
 import java.time.Instant
-import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
-import net.corda.p2p.crypto.protocol.api.InvalidSelectedModeError
-import net.corda.p2p.crypto.protocol.api.NoCommonModeError
-import net.corda.p2p.linkmanager.grouppolicy.protocolModes
-import net.corda.membership.lib.exceptions.BadGroupPolicyException
-import net.corda.p2p.linkmanager.sessions.SessionManagerImpl.SessionManagerConfigChangeHandler
 
 class SessionManagerTest {
 
@@ -210,7 +211,7 @@ class SessionManagerTest {
     private val cryptoOpsClient = mock<CryptoOpsClient> {
         on { sign(any(), eq(OUR_KEY.public), any<SignatureSpec>(), any(), any()) } doReturn signature
     }
-    private val pendingSessionMessageQueues = mock<PendingSessionMessageQueues> {
+    private val pendingSessionMessageQueues = mock<PendingSessionMessageQueuesImpl> {
         val pendingSessionMessageQueuesDominoTile = mock<ComplexDominoTile> {
             whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
         }
@@ -234,7 +235,7 @@ class SessionManagerTest {
     }
     private val resources = ResourcesHolder()
 
-    private val config = SessionManagerImpl.SessionManagerConfig(
+    private val config = SessionMessageHelper.SessionManagerConfig(
         MAX_MESSAGE_SIZE,
         RevocationCheckMode.OFF,
     )
@@ -242,18 +243,21 @@ class SessionManagerTest {
     private val sessionManager = createSessionManager(mock())
 
     private fun createSessionManager(
-        sessionManagerConfig: SessionManagerImpl.SessionManagerConfig,
-    ): SessionManagerImpl {
-        return SessionManagerImpl(
-            groupPolicyProvider,
-            membershipGroupReaderProvider,
+        sessionManagerConfig: SessionMessageHelper.SessionManagerConfig,
+    ): SessionMessageHelper {
+        val commonComponents = mock<CommonComponents> {
+            on { groupPolicyProvider } doReturn groupPolicyProvider
+            on { membershipGroupReaderProvider } doReturn membershipGroupReaderProvider
+            on { messagesPendingSession } doReturn pendingSessionMessageQueues
+            on { publisherFactory } doReturn mock()
+            on { lifecycleCoordinatorFactory } doReturn mock()
+            on { messagingConfiguration } doReturn mock()
+            on { linkManagerHostingMap } doReturn linkManagerHostingMap
+            on { configurationReaderService } doReturn mock()
+        }
+        return SessionMessageHelper(
+            commonComponents,
             cryptoOpsClient,
-            pendingSessionMessageQueues,
-            mock(),
-            mock(),
-            mock(),
-            mock(),
-            linkManagerHostingMap,
             protocolFactory,
             mock(),
         ).apply {

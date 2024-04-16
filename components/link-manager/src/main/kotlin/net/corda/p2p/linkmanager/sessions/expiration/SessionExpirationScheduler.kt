@@ -2,7 +2,6 @@ package net.corda.p2p.linkmanager.sessions.expiration
 
 import net.corda.libs.statemanager.api.State
 import net.corda.p2p.linkmanager.sessions.SessionCache
-import net.corda.p2p.linkmanager.sessions.SessionCache.SavedState
 import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata.Companion.toCommonMetadata
 import net.corda.utilities.time.Clock
 import java.time.Duration
@@ -51,23 +50,25 @@ internal class SessionExpirationScheduler(
             sessionCache.forgetState(stateToForget)
             null
         } else {
-            val currentValue = sessionCache.retrieveCurrentlyScheduledTask(state.key)
-            if ((currentValue?.expiry == expiry) && (currentValue.version == stateToForget.version)) {
-                sessionCache.cacheScheduledTask(state.key, currentValue)
-            } else {
-                sessionCache.cancelCurrentlyScheduledTask(currentValue)
-                val newValue = SavedState(
-                    expiry = expiry,
-                    version = stateToForget.version,
-                    future = scheduler.schedule(
-                        {
-                            sessionCache.forgetState(stateToForget)
-                        },
-                        duration.toMillis(),
-                        TimeUnit.MILLISECONDS,
-                    ),
-                )
-                sessionCache.cacheScheduledTask(state.key, newValue)
+            sessionCache.cacheScheduledTask(
+                state
+            ) { existingState ->
+                if ((existingState?.expiry == expiry) && (existingState.version == stateToForget.version)) {
+                    existingState
+                } else {
+                    existingState?.future?.cancel(false)
+                    SessionCache.SavedState(
+                        expiry = expiry,
+                        version = stateToForget.version,
+                        future = scheduler.schedule(
+                            {
+                                sessionCache.forgetState(stateToForget)
+                            },
+                            duration.toMillis(),
+                            TimeUnit.MILLISECONDS,
+                        ),
+                    )
+                }
             }
             state
         }

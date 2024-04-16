@@ -1,55 +1,28 @@
 package net.corda.p2p.linkmanager.sessions
 
-import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.metrics.CordaMetrics
-import net.corda.p2p.crypto.protocol.api.CheckRevocation
 import net.corda.p2p.linkmanager.metrics.recordP2PMetric
 import net.corda.p2p.linkmanager.metrics.recordSessionCreationTime
 import net.corda.p2p.linkmanager.sessions.expiration.SessionExpirationScheduler
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.isOutbound
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.toOutbound
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
-import net.corda.p2p.linkmanager.sessions.metadata.toCounterparties
-import net.corda.p2p.linkmanager.state.SessionState
 import net.corda.p2p.linkmanager.state.direction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-@Suppress("LongParameterList")
 internal class StateManagerWrapper(
     private val stateManager: StateManager,
-    private val sessionCache: SessionCache,
     private val sessionExpirationScheduler: SessionExpirationScheduler,
-    private val stateConvertor: StateConvertor,
-    private val checkRevocation: CheckRevocation,
-    private val reEstablishmentMessageSender: ReEstablishmentMessageSender,
 ) {
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(StateManagerWrapper::class.java)
     }
 
     val name: LifecycleCoordinatorName = stateManager.name
-
-    data class StateManagerSessionState(
-        val managerState: State,
-        val sessionState: SessionState,
-    ) {
-        fun toCounterparties() = managerState.toCounterparties()
-    }
-    fun get(
-        keys: Collection<String>,
-    ) = sessionExpirationScheduler.validateStatesAndScheduleExpiry(
-        stateManager.get(keys),
-    ).toStates()
-
-    fun findStatesMatchingAny(
-        filters: Collection<MetadataFilter>,
-    ) = sessionExpirationScheduler.validateStatesAndScheduleExpiry(
-        stateManager.findByMetadataMatchingAny(filters),
-    ).toStates()
 
     fun upsert(
         changes: Collection<StateManagerAction>,
@@ -110,22 +83,5 @@ internal class StateManagerWrapper(
         updates.filter { it.isReplay }.groupBy { it.state.direction() }.forEach {
             recordP2PMetric(CordaMetrics.Metric.SessionMessageReplayCount, it.key, it.value.size.toDouble())
         }
-    }
-    private fun Map<String, State>.toStates():  Map<String, StateManagerSessionState> {
-        return this.mapNotNull { (key, state) ->
-            val session = stateConvertor.toCordaSessionState(
-                state,
-                checkRevocation,
-            )
-            if (session == null) {
-                sessionCache.forgetState(state)
-                if (!state.metadata.isOutbound()) {
-                    reEstablishmentMessageSender.send(state)
-                }
-                null
-            } else {
-                key to StateManagerSessionState(state, session)
-            }
-        }.toMap()
     }
 }

@@ -5,7 +5,7 @@ import net.corda.data.p2p.LinkOutMessage
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.sessions.StateManagerAction
-import net.corda.p2p.linkmanager.sessions.StateManagerWrapper
+import net.corda.p2p.linkmanager.sessions.lookup.SessionLookup
 
 internal data class OutboundMessageContext<T>(
     val trace: T,
@@ -33,7 +33,7 @@ internal data class OutboundMessageResults<T>(
 
 internal data class OutboundMessageState<T>(
     val key: String?,
-    val stateManagerSessionState: StateManagerWrapper.StateManagerSessionState?,
+    val stateManagerSessionState: SessionLookup.StateManagerSessionState?,
     val messages: Collection<OutboundMessageContext<T>>,
 ) {
     val first by lazy {

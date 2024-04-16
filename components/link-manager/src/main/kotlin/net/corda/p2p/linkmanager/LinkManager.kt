@@ -21,6 +21,7 @@ import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMapImpl
 import net.corda.p2p.linkmanager.inbound.InboundLinkManager
 import net.corda.p2p.linkmanager.outbound.OutboundLinkManager
+import net.corda.p2p.linkmanager.sessions.SessionManagerCommonComponents
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
@@ -62,12 +63,10 @@ class LinkManager(
 
     private val commonComponents = CommonComponents(
         lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,
-        cordaAvroSerializationFactory = cordaAvroSerializationFactory,
         linkManagerHostingMap = linkManagerHostingMap,
         groupPolicyProvider = groupPolicyProvider,
         membershipGroupReaderProvider = membershipGroupReaderProvider,
         configurationReaderService = configurationReaderService,
-        cryptoOpsClient = cryptoOpsClient,
         subscriptionFactory = subscriptionFactory,
         publisherFactory = publisherFactory,
         messagingConfiguration = messagingConfiguration,
@@ -80,9 +79,15 @@ class LinkManager(
         schemaRegistry = schemaRegistry,
         sessionEncryptionOpsClient = sessionEncryptionOpsClient,
     )
+    private val sessionManagerCommonComponents = SessionManagerCommonComponents(
+        cryptoOpsClient,
+        cordaAvroSerializationFactory,
+        commonComponents,
+    )
     private val outboundLinkManager = OutboundLinkManager(
         lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,
         commonComponents = commonComponents,
+        sessionComponents = sessionManagerCommonComponents,
         linkManagerHostingMap = linkManagerHostingMap,
         groupPolicyProvider = groupPolicyProvider,
         membershipGroupReaderProvider = membershipGroupReaderProvider,
@@ -94,7 +99,7 @@ class LinkManager(
     )
     private val inboundLinkManager = InboundLinkManager(
         lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,
-        commonComponents = commonComponents,
+        commonComponents = sessionManagerCommonComponents,
         groupPolicyProvider = groupPolicyProvider,
         membershipGroupReaderProvider = membershipGroupReaderProvider,
         subscriptionFactory = subscriptionFactory,
@@ -108,11 +113,13 @@ class LinkManager(
         lifecycleCoordinatorFactory,
         dependentChildren = setOf(
             commonComponents.dominoTile.coordinatorName,
+            sessionManagerCommonComponents.dominoTile.coordinatorName,
             outboundLinkManager.dominoTile.coordinatorName,
             inboundLinkManager.dominoTile.coordinatorName,
         ),
         managedChildren = setOf(
             commonComponents.dominoTile.toNamedLifecycle(),
+            sessionManagerCommonComponents.dominoTile.toNamedLifecycle(),
             outboundLinkManager.dominoTile.toNamedLifecycle(),
             inboundLinkManager.dominoTile.toNamedLifecycle(),
         )

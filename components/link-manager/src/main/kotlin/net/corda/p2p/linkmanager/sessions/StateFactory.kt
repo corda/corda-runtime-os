@@ -7,11 +7,8 @@ import net.corda.p2p.linkmanager.state.SessionState
 internal class StateFactory(
     private val stateConvertor: StateConvertor,
 ) {
-    fun createState(state: State, metadata: Metadata) = State(
-        key = state.key,
-        value = state.value,
-        version = state.version,
-        metadata = metadata,
+    fun createState(state: State, metadata: Metadata) = state.copy(
+        metadata = metadata
     )
 
     fun createState(key: String, sessionState: SessionState, version: Int = 0, metadata: Metadata) = State(

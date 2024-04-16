@@ -5,22 +5,19 @@ import net.corda.data.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.data.p2p.crypto.InitiatorHelloMessage
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage
 import net.corda.data.p2p.crypto.ResponderHelloMessage
-import net.corda.libs.statemanager.api.MetadataFilter
-import net.corda.libs.statemanager.api.Operation
-import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
+import net.corda.p2p.linkmanager.common.CommonComponents
 import net.corda.p2p.linkmanager.membership.calculateOutboundSessionKey
 import net.corda.p2p.linkmanager.sessions.CreateAction
-import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
+import net.corda.p2p.linkmanager.sessions.SessionMessageHelper
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.alreadySessionWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.noSessionWarning
-import net.corda.p2p.linkmanager.sessions.StateConvertor
 import net.corda.p2p.linkmanager.sessions.StateFactory
-import net.corda.p2p.linkmanager.sessions.StateManagerWrapper
 import net.corda.p2p.linkmanager.sessions.UpdateAction
+import net.corda.p2p.linkmanager.sessions.lookup.SessionLookup
 import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata
 import net.corda.p2p.linkmanager.sessions.metadata.InboundSessionMetadata
 import net.corda.p2p.linkmanager.sessions.metadata.InboundSessionMetadata.Companion.toInbound
@@ -32,10 +29,9 @@ import net.corda.p2p.linkmanager.sessions.utils.InboundSessionMessageContext
 import net.corda.p2p.linkmanager.sessions.utils.OutboundSessionMessage
 import net.corda.p2p.linkmanager.sessions.utils.OutboundSessionMessageContext
 import net.corda.p2p.linkmanager.sessions.utils.Result
-import net.corda.p2p.linkmanager.sessions.utils.SessionUtils.getSessionCounterpartiesFromState
 import net.corda.p2p.linkmanager.sessions.utils.TraceableResult
+import net.corda.p2p.linkmanager.sessions.utils.getSessionCounterpartiesFromState
 import net.corda.p2p.linkmanager.state.SessionState
-import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -44,15 +40,15 @@ import java.time.Duration
 /**
  * Handler for each type of session messages.
  */
-@Suppress("LongParameterList")
 internal class SessionMessageProcessor(
-    coordinatorFactory: LifecycleCoordinatorFactory,
-    private val clock: Clock,
-    private val stateManager: StateManagerWrapper,
-    private val sessionManagerImpl: SessionManagerImpl,
-    private val stateConvertor: StateConvertor,
-    private val stateFactory: StateFactory = StateFactory(stateConvertor),
+    commonComponents: CommonComponents,
+    private val sessionMessageHelper: SessionMessageHelper,
+    private val sessionLookup: SessionLookup,
+    private val stateFactory: StateFactory = StateFactory(commonComponents.stateConvertor),
 ) : LifecycleWithDominoTile {
+    private val coordinatorFactory = commonComponents.lifecycleCoordinatorFactory
+    private val clock = commonComponents.clock
+
     companion object {
         private val SESSION_VALIDITY_PERIOD: Duration = Duration.ofDays(7)
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -69,8 +65,8 @@ internal class SessionMessageProcessor(
             return emptyList()
         }
         val states =
-            stateManager
-                .findStatesMatchingAny(messageContexts.keys.map { getSessionIdFilter(it) })
+            sessionLookup
+                .findStatesMatchingAny(messageContexts.keys.map { sessionLookup.getSessionIdFilter(it) })
                 .values.associateBy { state ->
                     state.managerState.metadata.toOutbound().sessionId
                 }
@@ -104,7 +100,7 @@ internal class SessionMessageProcessor(
         if (messageContexts.isEmpty()) {
             return emptyList()
         }
-        val states = stateManager.get(messageContexts.keys)
+        val states = sessionLookup.findStates(messageContexts.keys)
 
         return messageContexts.flatMap { (sessionId, contexts) ->
             val state = states[sessionId]
@@ -128,19 +124,14 @@ internal class SessionMessageProcessor(
         }
     }
 
-    /**
-     * TODO Refactor SessionManagerImpl to move logic needed here i.e. create an ResponderHello from an InitiatorHello
-     * into a new component. This component should not store the AuthenticationProtocol in an in memory map or replay session
-     * messages.
-     */
     private fun processInitiatorHello(
-        state: StateManagerWrapper.StateManagerSessionState?,
+        state: SessionLookup.StateManagerSessionState?,
         message: InboundSessionMessage.InitiatorHelloMessage,
     ): Result? {
         val metadata = state?.managerState?.metadata?.toInbound()
         return when (metadata?.status) {
             null -> {
-                sessionManagerImpl.processInitiatorHello(message.initiatorHelloMessage)?.let {
+                sessionMessageHelper.processInitiatorHello(message.initiatorHelloMessage)?.let {
                         (responseMessage, authenticationProtocol) ->
                     val timestamp = clock.instant()
                     val newMetadata =
@@ -184,7 +175,7 @@ internal class SessionMessageProcessor(
     }
 
     private fun processInitiatorHandshake(
-        state: StateManagerWrapper.StateManagerSessionState?,
+        state: SessionLookup.StateManagerSessionState?,
         message: InboundSessionMessage.InitiatorHandshakeMessage,
     ): Result? {
         val metadata = state?.managerState?.metadata?.toInbound()
@@ -201,7 +192,7 @@ internal class SessionMessageProcessor(
                     )
                     return null
                 }
-                sessionManagerImpl.processInitiatorHandshake(sessionData, message.initiatorHandshakeMessage)?.let { responseMessage ->
+                sessionMessageHelper.processInitiatorHandshake(sessionData, message.initiatorHandshakeMessage)?.let { responseMessage ->
                     val timestamp = clock.instant()
                     val newMetadata =
                         InboundSessionMetadata(
@@ -242,7 +233,7 @@ internal class SessionMessageProcessor(
     }
 
     private fun processResponderHello(
-        state: StateManagerWrapper.StateManagerSessionState?,
+        state: SessionLookup.StateManagerSessionState?,
         message: OutboundSessionMessage.ResponderHelloMessage,
     ): Result? {
         val metadata = state?.managerState?.metadata?.toOutbound()
@@ -251,7 +242,7 @@ internal class SessionMessageProcessor(
                 val sessionState = state.sessionState.sessionData as? AuthenticationProtocolInitiator ?: return null
                 val counterparties = getSessionCounterpartiesFromState(state.managerState)
 
-                sessionManagerImpl.processResponderHello(
+                sessionMessageHelper.processResponderHello(
                     counterparties,
                     sessionState,
                     message.responderHelloMessage,
@@ -311,7 +302,7 @@ internal class SessionMessageProcessor(
     }
 
     private fun processResponderHandshake(
-        state: StateManagerWrapper.StateManagerSessionState?,
+        state: SessionLookup.StateManagerSessionState?,
         message: OutboundSessionMessage.ResponderHandshakeMessage,
     ): Result? {
         val metadata = state?.managerState?.metadata?.toOutbound()
@@ -320,7 +311,7 @@ internal class SessionMessageProcessor(
                 val sessionState = state.sessionState.sessionData as? AuthenticationProtocolInitiator ?: return null
                 val counterparties = getSessionCounterpartiesFromState(state.managerState)
 
-                sessionManagerImpl.processResponderHandshake(
+                sessionMessageHelper.processResponderHandshake(
                     message.responderHandshakeMessage,
                     counterparties,
                     sessionState,
@@ -371,8 +362,6 @@ internal class SessionMessageProcessor(
             }
         }
     }
-
-    private fun getSessionIdFilter(sessionId: String): MetadataFilter = MetadataFilter("sessionId", Operation.Equals, sessionId)
 
     private fun <T> Any.getSessionIdIfOutboundSessionMessage(trace: T): OutboundSessionMessageContext<T>? {
         return when (this) {
@@ -425,7 +414,7 @@ internal class SessionMessageProcessor(
             coordinatorFactory,
             dependentChildren =
             setOf(
-                stateManager.name,
+                sessionLookup.name,
             ),
             managedChildren = emptySet(),
         )

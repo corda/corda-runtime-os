@@ -2,20 +2,19 @@ package net.corda.p2p.linkmanager.sessions.events
 
 import net.corda.data.p2p.event.SessionDeleted
 import net.corda.data.p2p.event.SessionEvent
-import net.corda.libs.configuration.SmartConfig
-import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.linkmanager.common.CommonComponents
 import net.corda.schema.Schemas
 
-class StatefulSessionEventPublisher(
-    coordinatorFactory: LifecycleCoordinatorFactory,
-    publisherFactory: PublisherFactory,
-    messagingConfiguration: SmartConfig,
+internal class StatefulSessionEventPublisher(
+    commonComponents: CommonComponents,
 ): LifecycleWithDominoTile {
+    private val coordinatorFactory = commonComponents.lifecycleCoordinatorFactory
+    private val publisherFactory = commonComponents.publisherFactory
+    private val messagingConfiguration = commonComponents.messagingConfiguration
 
     companion object {
         private const val CLIENT_ID = "StatefulSessionEventPublisher"

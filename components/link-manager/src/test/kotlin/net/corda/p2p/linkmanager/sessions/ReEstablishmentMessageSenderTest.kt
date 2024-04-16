@@ -37,7 +37,7 @@ class ReEstablishmentMessageSenderTest {
     private val publisher = mock<PublisherWithDominoLogic> {
         on { publish(publishedRecords.capture()) } doReturn mock()
     }
-    private val sessionManagerImpl = mock<SessionManagerImpl> {
+    private val sessionMessageHelper = mock<SessionMessageHelper> {
         on { publisher } doReturn publisher
     }
     private val inboundMetadata = Metadata(
@@ -74,7 +74,7 @@ class ReEstablishmentMessageSenderTest {
     }
     private val sender = ReEstablishmentMessageSender(
         p2pRecordsFactory,
-        sessionManagerImpl,
+        sessionMessageHelper,
     )
 
     @Test
