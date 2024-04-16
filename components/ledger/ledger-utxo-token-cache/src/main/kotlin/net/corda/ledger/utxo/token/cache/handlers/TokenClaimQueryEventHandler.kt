@@ -49,27 +49,31 @@ class TokenClaimQueryEventHandler(
         var selectionResult = selectTokens(tokenCache, state, event)
 
         // if we didn't reach the target amount, reload the cache to ensure it's full and retry
-        if (selectionResult.first < event.targetAmount && !backoffManager.backoff(event.poolKey)) {
-            // The max. number of tokens retrieved should be the configured size plus the number of claimed tokens
-            // This way the cache size will be equal to the configured size once the claimed tokens are removed
-            // from the query results
-            val maxTokens = serviceConfiguration.cachedTokenPageSize + state.claimedTokens().size
-            val findResult = availableTokenService.findAvailTokens(
-                event.poolKey,
-                event.ownerHash,
-                event.tagRegex,
-                maxTokens,
-                event.getStrategyOrDefault()
-            )
+        if (selectionResult.first < event.targetAmount) {
+            if (!backoffManager.backoff(event.poolKey)) {
+                // The max. number of tokens retrieved should be the configured size plus the number of claimed tokens
+                // This way the cache size will be equal to the configured size once the claimed tokens are removed
+                // from the query results
+                val maxTokens = serviceConfiguration.cachedTokenPageSize + state.claimedTokens().size
+                val findResult = availableTokenService.findAvailTokens(
+                    event.poolKey,
+                    event.ownerHash,
+                    event.tagRegex,
+                    maxTokens,
+                    event.getStrategyOrDefault()
+                )
 
-            // Remove the claimed tokens from the query results
-            val tokens = findResult.tokens.filterNot { state.isTokenClaimed(it.stateRef) }
+                // Remove the claimed tokens from the query results
+                val tokens = findResult.tokens.filterNot { state.isTokenClaimed(it.stateRef) }
 
-            // Replace the tokens in the cache with the ones from the query result that have not been claimed
-            tokenCache.removeAll()
-            tokenCache.add(tokens, event.getStrategyOrDefault())
+                // Replace the tokens in the cache with the ones from the query result that have not been claimed
+                tokenCache.removeAll()
+                tokenCache.add(tokens, event.getStrategyOrDefault())
 
-            selectionResult = selectTokens(tokenCache, state, event)
+                selectionResult = selectTokens(tokenCache, state, event)
+            } else {
+                logger.warn("Backing off from querying the database for tokens. Pool key: ${event.poolKey}")
+            }
         }
 
         val selectedAmount = selectionResult.first
@@ -86,6 +90,9 @@ class TokenClaimQueryEventHandler(
                 selectedTokens
             )
         } else {
+            logger.warn(
+                "Not enough tokens. Pool key: ${event.poolKey}, Selected amount: $selectedAmount, Target amount: ${event.targetAmount}"
+            )
             backoffManager.update(event.poolKey)
             recordFactory.getFailedClaimResponse(event.flowId, event.externalEventRequestId, event.poolKey)
         }
