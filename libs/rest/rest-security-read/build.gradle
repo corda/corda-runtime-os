@@ -15,4 +15,5 @@ dependencies {
     api project(":libs:lifecycle:lifecycle")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     api project(":libs:rest:rest-common")
+    implementation project(":libs:permissions:permission-manager")
 }

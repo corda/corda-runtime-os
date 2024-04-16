@@ -11,4 +11,5 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation project(":libs:permissions:permission-manager")
 }

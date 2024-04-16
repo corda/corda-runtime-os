@@ -4,6 +4,7 @@ import io.javalin.core.util.Header
 import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
 import io.javalin.http.UnauthorizedResponse
+import net.corda.libs.permissions.manager.ExpiryStatus
 import net.corda.metrics.CordaMetrics
 import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.exception.HttpApiException
@@ -81,6 +82,15 @@ internal object ContextUtils {
                     ),
                     it
                 )
+                if (it.expiryStatus == ExpiryStatus.EXPIRED || it.expiryStatus == ExpiryStatus.CLOSE_TO_EXPIRY) {
+                    ctx.addPasswordExpiryHeader(it.expiryStatus!!)
+                    if (it.expiryStatus == ExpiryStatus.EXPIRED) {
+                        "Password has expired".let { passwordExpired ->
+                            log.warn(passwordExpired)
+                            throw UnauthorizedResponse(passwordExpired)
+                        }
+                    }
+                }
                 CURRENT_REST_CONTEXT.set(restAuthContext)
                 log.trace { """Authenticate user "${it.principal}" completed.""" }
             }
