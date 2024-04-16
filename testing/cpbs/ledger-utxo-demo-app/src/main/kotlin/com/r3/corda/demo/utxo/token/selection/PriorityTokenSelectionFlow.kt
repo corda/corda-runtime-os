@@ -58,7 +58,7 @@ class PriorityTokenSelectionFlow : ClientStartableFlow {
             val priorities = mutableListOf<Long?>()
             do {
                 val tokenClaim = tokenSelection.tryClaim(queryCriteria)
-                if(tokenClaim != null) {
+                if (tokenClaim != null) {
                     // Lookup the states that match the returned tokens
                     val stateRefList = tokenClaim.claimedTokens.map { it.stateRef }
                     priorities.addAll(utxoLedgerService
