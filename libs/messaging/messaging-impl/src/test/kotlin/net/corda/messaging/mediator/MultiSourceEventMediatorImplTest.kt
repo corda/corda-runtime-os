@@ -43,6 +43,7 @@ class MultiSourceEventMediatorImplTest {
                 any(),
                 any(),
                 any(),
+                any(),
                 any<() -> Any>()
             )
         ).thenAnswer { invocation ->
