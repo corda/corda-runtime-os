@@ -5,4 +5,4 @@ import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndS
 class UtxoSignedTransactionWithDependencies(
     private val delegate: UtxoSignedTransactionInternal,
     val filteredDependencies: List<UtxoFilteredTransactionAndSignatures>
-): UtxoSignedTransactionInternal by delegate
+) : UtxoSignedTransactionInternal by delegate
