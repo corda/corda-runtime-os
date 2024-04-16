@@ -28,7 +28,7 @@ internal class SessionCache(
     private val eventPublisher: StatefulSessionEventPublisher,
 ): Resource {
     private companion object {
-        val defaultCacheSize = SessionManagerImpl.CacheSizes()
+        val defaultCacheSize = SessionMessageHelper.CacheSizes()
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val MAX_RETRY_COUNT = 3
@@ -127,15 +127,11 @@ internal class SessionCache(
         cachedOutboundSessions.invalidate(key)
     }
 
-    fun cacheScheduledTask(key: String, task: SavedState) {
-        tasks.compute(key) { _, _ ->
-            task
+    fun cacheScheduledTask(state: State, mapperFunction: (SavedState?) -> SavedState) {
+        tasks.compute(state.key) { _, currentValue ->
+            mapperFunction(currentValue)
         }
     }
-
-    fun retrieveCurrentlyScheduledTask(key: String) = tasks[key]
-
-    fun cancelCurrentlyScheduledTask(task: SavedState?) = task?.future?.cancel(false)
 
     private fun removeFromScheduler(key: String) {
         tasks.compute(key) { _, currentValue ->
@@ -186,7 +182,7 @@ internal class SessionCache(
         }
     }
 
-    fun updateCacheSizes(sizes: SessionManagerImpl.CacheSizes) {
+    fun updateCacheSizes(sizes: SessionMessageHelper.CacheSizes) {
         cachedInboundSessions.policy().eviction().getOrNull()?.maximum = sizes.inbound
         cachedOutboundSessions.policy().eviction().getOrNull()?.maximum = sizes.outbound
     }

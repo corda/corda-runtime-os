@@ -10,14 +10,13 @@ import net.corda.data.p2p.event.SessionCreated
 import net.corda.data.p2p.event.SessionDirection
 import net.corda.data.p2p.event.SessionEvent
 import net.corda.libs.statemanager.api.State
-import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
-import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.Session
+import net.corda.p2p.linkmanager.common.CommonComponents
 import net.corda.p2p.linkmanager.common.MessageConverter.Companion.createLinkOutMessage
 import net.corda.p2p.linkmanager.membership.calculateOutboundSessionKey
 import net.corda.p2p.linkmanager.membership.getSessionCounterpartiesFromMessage
@@ -38,12 +37,10 @@ import net.corda.p2p.linkmanager.sessions.metadata.toCounterparties
 import net.corda.p2p.linkmanager.sessions.utils.OutboundMessageContext
 import net.corda.p2p.linkmanager.sessions.utils.OutboundMessageResults
 import net.corda.p2p.linkmanager.sessions.utils.OutboundMessageState
-import net.corda.p2p.linkmanager.sessions.utils.SessionUtils.getSessionCounterpartiesFromState
+import net.corda.p2p.linkmanager.sessions.utils.getSessionCounterpartiesFromState
 import net.corda.p2p.linkmanager.sessions.writer.SessionWriter
 import net.corda.p2p.linkmanager.state.SessionState
 import net.corda.schema.Schemas
-import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -55,22 +52,24 @@ import net.corda.data.p2p.crypto.ResponderHelloMessage as AvroResponderHelloMess
 
 @Suppress("LongParameterList")
 internal class StatefulSessionManagerImpl(
-    coordinatorFactory: LifecycleCoordinatorFactory,
+    commonComponents: CommonComponents,
     sessionEventListener: StatefulSessionEventProcessor,
     sessionEventPublisher: StatefulSessionEventPublisher,
     private val stateManager: StateManagerWrapper,
-    private val sessionManagerImpl: SessionManagerImpl,
-    private val stateConvertor: StateConvertor,
-    private val clock: Clock,
-    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    private val sessionMessageHelper: SessionMessageHelper,
     private val deadSessionMonitor: DeadSessionMonitor,
-    private val schemaRegistry: AvroSchemaRegistry,
     private val sessionCache: SessionCache,
     private val sessionLookup: SessionLookup,
     private val sessionWriter: SessionWriter,
     private val sessionMessageProcessor: SessionMessageProcessor,
-    private val stateFactory: StateFactory = StateFactory(stateConvertor),
+    private val stateFactory: StateFactory = StateFactory(commonComponents.stateConvertor),
 ) : SessionManager {
+    private val clock = commonComponents.clock
+    private val coordinatorFactory = commonComponents.lifecycleCoordinatorFactory
+    private val stateConvertor = commonComponents.stateConvertor
+    private val membershipGroupReaderProvider = commonComponents.membershipGroupReaderProvider
+    private val schemaRegistry = commonComponents.schemaRegistry
+
     companion object {
         const val LINK_MANAGER_SUBSYSTEM = "link-manager"
         private val SESSION_VALIDITY_PERIOD: Duration = Duration.ofDays(7)
@@ -99,14 +98,15 @@ internal class StatefulSessionManagerImpl(
         val cachedSessions = sessionLookup.getCachedOutboundSessions(keysToMessages)
 
         val notInCache = (keysToMessages - cachedSessions.keys)
-        val sessionStates =
-            if (notInCache.isEmpty()) {
-                return cachedSessions.values.flatten()
-            } else {
+        val stateUpdates = if (notInCache.isEmpty()) {
+            emptyList()
+        } else {
+            processStateUpdates(
                 sessionLookup.getPersistedOutboundSessions(notInCache)
-            }
+            )
+        }
 
-        return processStateUpdates(sessionStates) + cachedSessions.values.flatten()
+        return stateUpdates + cachedSessions.values.flatten()
     }
 
     private fun <T> processOutboundMessagesState(
@@ -181,11 +181,10 @@ internal class StatefulSessionManagerImpl(
     ): Collection<OutboundMessageResults<T>> {
         return state.stateManagerSessionState?.sessionState?.retrieveEstablishedSession(counterparties)?.let { established ->
             state.key?.let { key ->
-                sessionWriter.cacheSession(
-                    SessionDirection.OUTBOUND,
+                sessionWriter.cacheOutboundSession(
+                    key,
                     state.stateManagerSessionState.toCounterparties(),
                     established.session,
-                    key,
                 )
             }
             state.toResults(
@@ -259,8 +258,7 @@ internal class StatefulSessionManagerImpl(
             val sessionCreationRecords = when (linkOutMessage?.payload) {
                 is AvroResponderHelloMessage, is AvroResponderHandshakeMessage -> {
                     result.result.sessionToCache?.let { sessionToCache ->
-                        sessionWriter.cacheSession(
-                            SessionDirection.INBOUND,
+                        sessionWriter.cacheInboundSession(
                             result.result.stateAction.state.toCounterparties(),
                             sessionToCache,
                         )
@@ -270,11 +268,10 @@ internal class StatefulSessionManagerImpl(
                 is AvroInitiatorHelloMessage, is AvroInitiatorHandshakeMessage, null -> {
                     result.result?.sessionToCache?.let { sessionToCache ->
                         val key = result.result.stateAction.state.key
-                        sessionWriter.cacheSession(
-                            SessionDirection.OUTBOUND,
+                        sessionWriter.cacheOutboundSession(
+                            key,
                             result.result.stateAction.state.toCounterparties(),
                             sessionToCache,
-                            key,
                         )
                         recordsForSessionCreated(key, SessionDirection.OUTBOUND)
                     } ?: emptyList()
@@ -343,9 +340,9 @@ internal class StatefulSessionManagerImpl(
         counterParties: SessionManager.SessionCounterparties,
         filter: MembershipStatusFilter,
     ): Pair<NewSessionsNeeded, State>? {
-        val initMessage = sessionManagerImpl.genSessionInitMessages(counterParties, 1).firstOrNull() ?: return null
+        val initMessage = sessionMessageHelper.genSessionInitMessages(counterParties, 1).firstOrNull() ?: return null
         val message =
-            sessionManagerImpl.linkOutMessagesFromSessionInitMessages(
+            sessionMessageHelper.linkOutMessagesFromSessionInitMessages(
                 counterParties,
                 listOf(initMessage),
                 filter,
@@ -379,7 +376,7 @@ internal class StatefulSessionManagerImpl(
         return NewSessionsNeeded(listOf(message), counterParties) to newState
     }
 
-    private fun StateManagerWrapper.StateManagerSessionState.replaySessionMessage(
+    private fun SessionLookup.StateManagerSessionState.replaySessionMessage(
         statusFilter: MembershipStatusFilter,
     ): Pair<NewSessionsNeeded, State>? {
         val previousSessionMessage = this.sessionState.message ?: return null
@@ -438,7 +435,7 @@ internal class StatefulSessionManagerImpl(
                     OutboundSessionStatus.SessionReady -> resultState.messages.first().sessionCounterparties()?.let {
                         val session = stateConvertor.toCordaSessionState(
                             savedState,
-                            sessionManagerImpl.revocationCheckerClient::checkRevocation,
+                            sessionMessageHelper.revocationCheckerClient::checkRevocation,
                         )
                         session?.retrieveEstablishedSession(it)
                     } ?: CannotEstablishSession("Could not retrieve established session needed for state " +
@@ -464,7 +461,7 @@ internal class StatefulSessionManagerImpl(
             dependentChildren =
             setOf(
                 stateManager.name,
-                sessionManagerImpl.dominoTile.coordinatorName,
+                sessionMessageHelper.dominoTile.coordinatorName,
                 LifecycleCoordinatorName.forComponent<SessionEncryptionOpsClient>(),
                 sessionEventPublisher.dominoTile.coordinatorName,
                 sessionEventListener.dominoTile.coordinatorName,
@@ -473,7 +470,7 @@ internal class StatefulSessionManagerImpl(
             ),
             managedChildren =
             setOf(
-                sessionManagerImpl.dominoTile.toNamedLifecycle(),
+                sessionMessageHelper.dominoTile.toNamedLifecycle(),
                 sessionEventPublisher.dominoTile.toNamedLifecycle(),
                 sessionEventListener.dominoTile.toNamedLifecycle(),
                 sessionLookup.dominoTile.toNamedLifecycle(),

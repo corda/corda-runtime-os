@@ -67,7 +67,7 @@ internal interface SessionManager : LifecycleWithDominoTile {
             val sessionCounterparties: SessionCounterparties,
         ) : SessionState()
 
-        data class CannotEstablishSession(val reason: String) : SessionState() {
+        class CannotEstablishSession(reason: String) : SessionState() {
             init {
                 logger.warn(reason)
             }

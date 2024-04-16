@@ -1,16 +1,15 @@
 package net.corda.p2p.linkmanager.sessions
 
 import com.typesafe.config.Config
-import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.p2p.LinkOutMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.data.p2p.crypto.InitiatorHelloMessage
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage
 import net.corda.data.p2p.crypto.ResponderHelloMessage
-import net.corda.libs.configuration.SmartConfig
+import net.corda.data.p2p.crypto.protocol.RevocationCheckMode
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
-import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
@@ -19,6 +18,8 @@ import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
+import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.CORDA_4
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
@@ -26,10 +27,6 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.STANDARD_EV3
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.data.p2p.app.MembershipStatusFilter
-import net.corda.data.p2p.crypto.protocol.RevocationCheckMode
-import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
@@ -37,17 +34,20 @@ import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.InvalidPeerCertificate
+import net.corda.p2p.crypto.protocol.api.InvalidSelectedModeError
+import net.corda.p2p.crypto.protocol.api.NoCommonModeError
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
+import net.corda.p2p.linkmanager.common.CommonComponents
 import net.corda.p2p.linkmanager.common.MessageConverter.Companion.createLinkOutMessage
 import net.corda.p2p.linkmanager.common.PublicKeyReader.Companion.getSignatureSpec
 import net.corda.p2p.linkmanager.common.PublicKeyReader.Companion.toKeyAlgorithm
 import net.corda.p2p.linkmanager.grouppolicy.networkType
 import net.corda.p2p.linkmanager.grouppolicy.protocolModes
-import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.membership.lookup
 import net.corda.p2p.linkmanager.membership.lookupByKey
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionCounterparties
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.badGroupPolicy
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.couldNotFindGroupInfo
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.ourHashNotInMembersMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.ourIdNotInMembersMapWarning
@@ -63,25 +63,21 @@ import java.util.Base64
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicReference
-import net.corda.membership.lib.exceptions.BadGroupPolicyException
-import net.corda.p2p.crypto.protocol.api.InvalidSelectedModeError
-import net.corda.p2p.crypto.protocol.api.NoCommonModeError
-import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.badGroupPolicy
 
-@Suppress("LongParameterList")
-internal class SessionManagerImpl(
-    private val groupPolicyProvider: GroupPolicyProvider,
-    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+internal class SessionMessageHelper(
+    commonComponents: CommonComponents,
     private val cryptoOpsClient: CryptoOpsClient,
-    private val pendingOutboundSessionMessageQueues: PendingSessionMessageQueues,
-    publisherFactory: PublisherFactory,
-    private val configurationReaderService: ConfigurationReadService,
-    coordinatorFactory: LifecycleCoordinatorFactory,
-    messagingConfiguration: SmartConfig,
-    private val linkManagerHostingMap: LinkManagerHostingMap,
     private val protocolFactory: ProtocolFactory = CryptoProtocolFactory(),
     private val sessionCache: SessionCache,
 ) : LifecycleWithDominoTile {
+    private val groupPolicyProvider = commonComponents.groupPolicyProvider
+    private val membershipGroupReaderProvider = commonComponents.membershipGroupReaderProvider
+    private val pendingOutboundSessionMessageQueues = commonComponents.messagesPendingSession
+    private val publisherFactory = commonComponents.publisherFactory
+    private val coordinatorFactory = commonComponents.lifecycleCoordinatorFactory
+    private val messagingConfiguration = commonComponents.messagingConfiguration
+    private val linkManagerHostingMap = commonComponents.linkManagerHostingMap
+    private val configurationReaderService = commonComponents.configurationReaderService
 
     private companion object {
         private const val SESSION_MANAGER_CLIENT_ID = "session-manager"

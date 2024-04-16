@@ -13,6 +13,7 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.p2p.linkmanager.common.CommonComponents
 import net.corda.p2p.linkmanager.sessions.SessionCache
 import net.corda.schema.Schemas.ScheduledTask.SCHEDULED_TASK_NAME_STALE_P2P_SESSION_CLEANUP
 import net.corda.schema.Schemas.ScheduledTask.SCHEDULED_TASK_TOPIC_STALE_P2P_SESSION_PROCESSOR
@@ -68,8 +69,15 @@ class StaleSessionProcessorTest {
         on { findByMetadataMatchingAny(eq(expectedMetadataFilter)) } doReturn expiredStates
     }
     private val sessionCache = mock<SessionCache>()
+    private val commonComponents = mock<CommonComponents> {
+        on { lifecycleCoordinatorFactory } doReturn lifecycleCoordinatorFactory
+        on { subscriptionFactory } doReturn subscriptionFactory
+        on { clock } doReturn clock
+        on { messagingConfiguration } doReturn configuration
+        on { stateManager } doReturn stateManager
+    }
     private val staleSessionProcessor = StaleSessionProcessor(
-        lifecycleCoordinatorFactory, subscriptionFactory, configuration, clock, stateManager, sessionCache
+        commonComponents, sessionCache
     )
 
     @AfterEach

@@ -4,8 +4,7 @@ import net.corda.libs.statemanager.api.State
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.toOutbound
 
-internal object SessionUtils {
-    fun getSessionCounterpartiesFromState(state: State): SessionManager.SessionCounterparties {
+internal fun getSessionCounterpartiesFromState(state: State): SessionManager.SessionCounterparties {
         val metadata = state.metadata.toOutbound()
         return SessionManager.SessionCounterparties(
             metadata.commonData.source,
@@ -14,5 +13,4 @@ internal object SessionUtils {
             metadata.serial,
             metadata.communicationWithMgm,
         )
-    }
 }
