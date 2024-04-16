@@ -52,11 +52,11 @@ class SessionErrorExecutor(
                 FlowMapperResult(null, listOf())
             }
             FlowMapperStateType.ERROR -> {
-                log.debug { defaultMsg.format(IGNORING) }
+                log.debug { defaultMsg.replaceFirst("{}", IGNORING) }
                 FlowMapperResult(flowMapperState, listOf())
             }
             FlowMapperStateType.OPEN -> {
-                log.debug { defaultMsg.format(FORWARDING) }
+                log.debug { defaultMsg.replaceFirst("{}", FORWARDING) }
                 flowMapperState.status = FlowMapperStateType.ERROR
                 val record = recordFactory.forwardError(
                     sessionEvent,
@@ -68,7 +68,7 @@ class SessionErrorExecutor(
                 FlowMapperResult(flowMapperState, listOf(record))
             }
             FlowMapperStateType.CLOSING -> {
-                log.debug { defaultMsg.format(IGNORING) }
+                log.debug { defaultMsg.replaceFirst("{}", IGNORING) }
                 flowMapperState.status = FlowMapperStateType.ERROR
                 FlowMapperResult(flowMapperState, listOf())
             }
