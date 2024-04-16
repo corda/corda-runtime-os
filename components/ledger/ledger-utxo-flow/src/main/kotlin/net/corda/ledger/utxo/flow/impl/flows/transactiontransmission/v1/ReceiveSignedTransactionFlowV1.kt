@@ -2,7 +2,6 @@ package net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.v1
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
-import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.common.TransactionDependencyResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.common.UtxoTransactionPayload
