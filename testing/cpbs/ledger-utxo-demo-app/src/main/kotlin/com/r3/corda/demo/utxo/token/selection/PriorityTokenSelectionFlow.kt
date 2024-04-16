@@ -54,13 +54,18 @@ class PriorityTokenSelectionFlow : ClientStartableFlow {
                 Strategy.PRIORITY
             )
 
-            val tokenClaim = requireNotNull(tokenSelection.tryClaim("claim1", queryCriteria))
-
-            // Lookup the states that match the returned tokens
-            val stateRefList = tokenClaim.claimedTokens.map { it.stateRef }
-            val priorities = utxoLedgerService
-                .resolve<TestUtxoState>(stateRefList)
-                .map { it.state.contractState.priority }
+            // Claim until there no tokens left
+            val priorities = mutableListOf<Long?>()
+            do {
+                val tokenClaim = tokenSelection.tryClaim(queryCriteria)
+                if(tokenClaim != null) {
+                    // Lookup the states that match the returned tokens
+                    val stateRefList = tokenClaim.claimedTokens.map { it.stateRef }
+                    priorities.addAll(utxoLedgerService
+                        .resolve<TestUtxoState>(stateRefList)
+                        .map { it.state.contractState.priority })
+                }
+            } while (tokenClaim != null)
 
             // Now we just exit and let the postprocessing handler clean up for us
             // If we run this flow again we expect to get the same results as we never used

@@ -201,7 +201,8 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         issueTokenWithPriority(input, idGenerator, 7)
         issueTokenWithPriority(input, idGenerator, 8)
 
-        // Attempt to select the highest priority token created by the transaction
+        // Ensure the tokens are claimed in the correct order.
+        // The priority is from the smallest values to the highest ones. Any null value should be placed at the end
         val tokenSelectionFlowId = startRestFlow(
             aliceHoldingId,
             mapOf(),
@@ -212,7 +213,7 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         assertAll(
             { assertThat(tokenSelectionResult.flowError).isNull() },
             { assertThat(tokenSelectionResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS) },
-            { assertThat(tokenSelectionResult.flowResult).isEqualTo("[1]") },
+            { assertThat(tokenSelectionResult.flowResult).isEqualTo("[1,2,2,2,3,4,5,5,7,8,9,9,10,10,10,null,null,null]") },
         )
     }
 
