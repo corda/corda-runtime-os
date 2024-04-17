@@ -112,7 +112,7 @@ class PriorityTokenSelectionFlow : ClientStartableFlow {
 
         val claimedTokenList = mutableListOf<ClaimedToken>()
         do {
-            val tokenClaim = tokenSelection.tryClaim(queryCriteria)
+            val tokenClaim = tokenSelection.tryClaim("claim1", queryCriteria)
             if (tokenClaim != null) {
                 // Lookup the states that match the returned tokens
                 claimedTokenList.add(tokenClaim.claimedTokens.single())
