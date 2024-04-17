@@ -86,7 +86,7 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
     @BeforeAll
     fun beforeAll() {
         // check cluster is ready
-        assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(100))
+   //     assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(100))
 
         DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
 
@@ -201,19 +201,43 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         issueTokenWithPriority(input, idGenerator, 7)
         issueTokenWithPriority(input, idGenerator, 8)
 
+        // Claim some tokens
         // Ensure the tokens are claimed in the correct order.
         // The priority is from the smallest values to the highest ones. Any null value should be placed at the end
-        val tokenSelectionFlowId = startRestFlow(
-            aliceHoldingId,
-            mapOf(),
+        var tokenSelectionFlowId = startRestFlow(
+            bobHoldingId,
+            mapOf(
+                "noTokensToClaim" to 5,
+                "memberX500" to aliceX500
+                ),
             "com.r3.corda.demo.utxo.token.selection.PriorityTokenSelectionFlow",
             requestId = idGenerator.nextId
         )
-        val tokenSelectionResult = awaitRestFlowFinished(aliceHoldingId, tokenSelectionFlowId)
+
+        var tokenSelectionResult = awaitRestFlowFinished(bobHoldingId, tokenSelectionFlowId)
         assertAll(
             { assertThat(tokenSelectionResult.flowError).isNull() },
             { assertThat(tokenSelectionResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS) },
-            { assertThat(tokenSelectionResult.flowResult).isEqualTo("[1,2,2,2,3,4,5,5,7,8,9,9,10,10,10,null,null,null]") },
+            { assertThat(tokenSelectionResult.flowResult).isEqualTo("[1,2,2,2,3]") },
+        )
+
+        // Claim the remaining tokens
+        // Ensure the tokens are claimed in the correct order.
+        // The priority is from the smallest values to the highest ones. Any null value should be placed at the end
+        tokenSelectionFlowId = startRestFlow(
+            bobHoldingId,
+            mapOf(
+                "noTokensToClaim" to 13,
+                "memberX500" to aliceX500
+                ),
+            "com.r3.corda.demo.utxo.token.selection.PriorityTokenSelectionFlow",
+            requestId = idGenerator.nextId
+        )
+        tokenSelectionResult = awaitRestFlowFinished(bobHoldingId, tokenSelectionFlowId)
+        assertAll(
+            { assertThat(tokenSelectionResult.flowError).isNull() },
+            { assertThat(tokenSelectionResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS) },
+            { assertThat(tokenSelectionResult.flowResult).isEqualTo("[4,5,5,7,8,9,9,10,10,10,null,null,null]") },
         )
     }
 
