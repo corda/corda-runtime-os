@@ -8,10 +8,15 @@ import javax.persistence.Entity
 import javax.persistence.Id
 import javax.persistence.JoinColumn
 import javax.persistence.ManyToOne
+import javax.persistence.NamedQuery
 import javax.persistence.OneToMany
 import javax.persistence.Table
 
 @CordaSerializable
+@NamedQuery(
+    name = "UtxoTransactionEntity.findAll",
+    query = "from UtxoTransactionEntity"
+)
 @Entity
 @Table(name = "utxo_transaction")
 data class UtxoTransactionEntity(
@@ -40,6 +45,9 @@ data class UtxoTransactionEntity(
 
     @get:Column(name = "is_filtered", nullable = true)
     var isFiltered: Boolean = false,
+
+    @get:Column(name = "repair_attempt_count", nullable = false)
+    var repairAttemptCount: Int,
 ) {
     @get:OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
     var components: MutableList<UtxoTransactionComponentEntity> = mutableListOf()

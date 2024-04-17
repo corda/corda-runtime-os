@@ -24,3 +24,11 @@ class CordaHTTPServerErrorException(val statusCode: Int, message: String?, excep
  */
 class CordaHTTPServerTransientException(val requestId: String, cause: Throwable? = null) :
     CordaRuntimeException("Transient server exception while processing request '$requestId'. Cause: ${cause?.message}", cause)
+
+/**
+ * Exception thrown within the RPC client when a transient error escapes the client retry logic.
+ *
+ * In this case processing may be retried from within the mediator code.
+ */
+class CordaHTTPClientSideTransientException(val statusCode: Int, message: String, exception: Throwable? = null) :
+    CordaRuntimeException(message, exception)

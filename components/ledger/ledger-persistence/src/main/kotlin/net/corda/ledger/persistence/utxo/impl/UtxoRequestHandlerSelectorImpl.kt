@@ -5,7 +5,9 @@ import net.corda.data.ledger.persistence.FindSignedGroupParameters
 import net.corda.data.ledger.persistence.FindSignedLedgerTransaction
 import net.corda.data.ledger.persistence.FindTransaction
 import net.corda.data.ledger.persistence.FindTransactionIdsAndStatuses
+import net.corda.data.ledger.persistence.FindTransactionsWithStatusCreatedBetweenTime
 import net.corda.data.ledger.persistence.FindUnconsumedStatesByType
+import net.corda.data.ledger.persistence.IncrementTransactionRepairAttemptCount
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.data.ledger.persistence.PersistFilteredTransactionsAndSignatures
@@ -28,7 +30,9 @@ import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedGro
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedLedgerTransactionRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionIdsAndStatusesRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionsWithStatusCreatedBetweenTimeRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindUnconsumedStatesByTypeRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoIncrementTransactionRepairAttemptCountRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistFilteredTransactionRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistSignedGroupParametersIfDoNotExistRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistTransactionIfDoesNotExistRequestHandler
@@ -199,6 +203,23 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     externalEventResponseFactory,
                     persistenceService,
                     serializationService
+                )
+            }
+            is FindTransactionsWithStatusCreatedBetweenTime -> {
+                UtxoFindTransactionsWithStatusCreatedBetweenTimeRequestHandler(
+                    req,
+                    externalEventContext,
+                    persistenceService,
+                    externalEventResponseFactory,
+                    serializationService
+                )
+            }
+            is IncrementTransactionRepairAttemptCount -> {
+                UtxoIncrementTransactionRepairAttemptCountRequestHandler(
+                    req,
+                    externalEventContext,
+                    persistenceService,
+                    externalEventResponseFactory
                 )
             }
             else -> {

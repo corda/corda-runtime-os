@@ -29,7 +29,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
 import org.mockito.kotlin.any
@@ -44,6 +43,7 @@ import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
+import java.util.concurrent.Future
 import java.util.concurrent.TimeoutException
 
 @Execution(ExecutionMode.SAME_THREAD)
@@ -106,8 +106,7 @@ class ConsumerProcessorTest {
             )
         )
         whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(
-            getGroups(2, 4),
-            listOf()
+            getGroups(2, 4)
         )
         whenever(stateManagerHelper.createOrUpdateState(any(), any(), any())).thenReturn(mock())
         whenever(stateManager.get(any())).thenReturn(mapOf())
@@ -117,7 +116,7 @@ class ConsumerProcessorTest {
         verify(consumer, times(1)).poll(any())
         verify(consumerFactory, times(1)).create<String, String>(any())
         verify(consumer, times(1)).subscribe()
-        verify(groupAllocator, times(2)).allocateGroups<String, String, String>(any(), any())
+        verify(groupAllocator, times(1)).allocateGroups<String, String, String>(any(), any())
         verify(taskManager, times(2)).executeShortRunningTask<Unit>(any())
 
         verify(stateManager, times(2)).get(any())
@@ -195,45 +194,51 @@ class ConsumerProcessorTest {
         )
         whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(
             getGroups(2, 4),
-            listOf()
+            getGroups(2, 4)
         )
         whenever(stateManagerHelper.createOrUpdateState(any(), any(), any())).thenReturn(mock())
         whenever(stateManager.get(any())).thenReturn(mapOf())
-        whenever(consumer.syncCommitOffsets()).doThrow(CordaRuntimeException("Oops"))
+        doThrow(CordaRuntimeException("Oops")).doNothing().`when`(consumer).syncCommitOffsets()
 
-        assertThrows<CordaRuntimeException> { consumerProcessor.processTopic(getConsumerFactory(), getConsumerConfig()) }
+        consumerProcessor.processTopic(getConsumerFactory(2), getConsumerConfig())
 
-        verify(consumer, times(1)).poll(any())
+        verify(consumer, times(2)).poll(any())
         verify(consumerFactory, times(1)).create<String, String>(any())
         verify(consumer, times(1)).subscribe()
         verify(groupAllocator, times(2)).allocateGroups<String, String, String>(any(), any())
-        verify(taskManager, times(2)).executeShortRunningTask<Unit>(any())
+        verify(taskManager, times(4)).executeShortRunningTask<Unit>(any())
 
-        verify(stateManager, times(2)).get(any())
-        verify(stateManager, times(1)).create(any())
-        verify(stateManager, times(1)).update(any())
+        verify(stateManager, times(4)).get(any())
+        verify(stateManager, times(2)).create(any())
+        verify(stateManager, times(2)).update(any())
 
-        verify(messageRouter, times(2)).getDestination(any())
-        verify(client, times(2)).send(any())
+        verify(messageRouter, times(4)).getDestination(any())
+        verify(client, times(4)).send(any())
 
-        verify(consumer, times(1)).syncCommitOffsets()
+        verify(consumer, times(2)).syncCommitOffsets()
         verify(consumer, times(1)).close()
-        verify(stateManager, times(0)).delete(any())
+        verify(stateManager, times(1)).delete(any())
     }
 
     @Test
     fun `when event processing times out, mark all states in the group as failed`() {
-        whenever(taskManager.executeShortRunningTask<Unit>(any())).thenAnswer {
-            val future = CompletableFuture<Map<String, EventProcessingOutput>>()
-            future.completeExceptionally(TimeoutException())
-            future
+        val future1 = mock<Future<Unit>>().apply {
+            whenever(get(any(), any())).thenThrow(TimeoutException("Timed out"))
         }
+        val future2 = mock<Future<Unit>>().apply {
+            whenever(get(any(), any())).thenThrow(TimeoutException("Timed out"))
+        }
+        whenever(taskManager.executeShortRunningTask<Unit>(any()))
+            .thenReturn(future1)
+            .thenReturn(future2)
         whenever(stateManagerHelper.failStateProcessing(any(), anyOrNull(), any())).thenReturn(mock())
         whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(getGroups(2, 4), listOf())
 
         consumerProcessor.processTopic(getConsumerFactory(), getConsumerConfig())
 
         verify(stateManagerHelper, times(2)).failStateProcessing(any(), anyOrNull(), any())
+        verify(future1, times(1)).cancel(true)
+        verify(future2, times(1)).cancel(true)
     }
 
     @Test
@@ -256,6 +261,73 @@ class ConsumerProcessorTest {
         verify(taskManager, never()).executeShortRunningTask<Unit>(any())
     }
 
+    @Test
+    fun `when a set of events fail with transient errors, an infinite number of retries occur`() {
+        var counter = 0
+        whenever(taskManager.executeShortRunningTask<Unit>(any())).thenAnswer {
+            counter++
+            val output = mapOf(
+                "foo-$counter" to EventProcessingOutput(
+                    listOf(getAsyncMediatorMessage("payload")),
+                    StateChangeAndOperation.Transient
+                )
+            )
+            val future = CompletableFuture<Map<String, EventProcessingOutput>>()
+            future.complete(output)
+            future
+        }
+        whenever(messageRouter.getDestination(any())).thenReturn(
+            RoutingDestination(
+                client, "endpoint",
+                RoutingDestination.Type.ASYNCHRONOUS
+            )
+        )
+        val metadata = Metadata(mapOf(PROCESSING_FAILURE to true))
+        val mockState = mock<State>()
+        whenever(mockState.metadata).thenReturn(metadata)
+        whenever(stateManagerHelper.failStateProcessing(any(), anyOrNull(), any())).thenReturn(mockState)
+        whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(
+            getGroups(2, 4)
+        )
+        whenever(stateManagerHelper.createOrUpdateState(any(), any(), any())).thenReturn(mock())
+        whenever(stateManager.get(any())).thenReturn(mapOf())
+
+        consumerProcessor.processTopic(getConsumerFactory(6), getConsumerConfig())
+
+        verify(consumer, times(6)).resetEventOffsetPosition()
+        verify(consumer, never()).syncCommitOffsets()
+    }
+
+    @Test
+    fun `when a set of events fail with non-transient errors, an finite number of retries occur`() {
+        // A timeout of processing is non-transient, because the processor may be stuck indefinitely.
+        whenever(taskManager.executeShortRunningTask<Unit>(any())).thenAnswer {
+            val future = CompletableFuture<Map<String, EventProcessingOutput>>()
+            future.completeExceptionally(TimeoutException())
+            future
+        }
+        whenever(messageRouter.getDestination(any())).thenReturn(
+            RoutingDestination(
+                client, "endpoint",
+                RoutingDestination.Type.ASYNCHRONOUS
+            )
+        )
+        val metadata = Metadata(mapOf(PROCESSING_FAILURE to true))
+        val mockState = mock<State>()
+        whenever(mockState.metadata).thenReturn(metadata)
+        whenever(stateManagerHelper.failStateProcessing(any(), anyOrNull(), any())).thenReturn(mockState)
+        whenever(groupAllocator.allocateGroups<String, String, String>(any(), any())).thenReturn(
+            getGroups(2, 4)
+        )
+        whenever(stateManagerHelper.createOrUpdateState(any(), any(), any())).thenReturn(mock())
+        whenever(stateManager.get(any())).thenReturn(mapOf())
+
+        consumerProcessor.processTopic(getConsumerFactory(6), getConsumerConfig())
+
+        verify(consumer, times(5)).resetEventOffsetPosition()
+        verify(consumer, times(1)).syncCommitOffsets()
+    }
+
     private fun getGroups(groupCount: Int, recordCountPerGroup: Int): List<Map<String, EventProcessingInput<String, String>>> {
         val groups = mutableListOf<Map<String, EventProcessingInput<String, String>>>()
         for (i in 0 until groupCount) {
@@ -268,10 +340,14 @@ class ConsumerProcessorTest {
         return groups
     }
 
-    private fun getConsumerFactory(): MediatorConsumerFactory {
+    private fun getConsumerFactory(loops: Int = 1): MediatorConsumerFactory {
         consumer.apply {
+            var attempts = 0
             whenever(poll(any())).thenAnswer {
-                mediatorSubscriptionState.stop()
+                attempts++
+                if (attempts >= loops) {
+                    mediatorSubscriptionState.stop()
+                }
                 listOf(getConsumerRecord())
             }
         }

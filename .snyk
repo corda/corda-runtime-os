@@ -2,39 +2,11 @@
 version: v1.25.0
 # ignores vulnerabilities until expiry date; change duration by modifying expiry date
 ignore:
-  SNYK-JAVA-IONETTY-1042268:
+  SNYK-JAVA-ORGBOUNCYCASTLE-6277381:
     - '*':
         reason: >-
-          Corda 5 does not make use of the default SSLEngine configuration when
-          using Netty. It explicitly configures the SSLEngine with the endpoint
-          identification algorithm set to “HTTPS”, which means a Corda gateway
-          will always validate server certificate hostnames when establishing
-          HTTPS connections with other gateways.
-        expires: 2023-12-20T12:08:30.514Z
-        created: 2022-12-20T12:08:30.517Z
-
-  SNYK-JAVA-ORGECLIPSEJETTY-5769685:
-    - '*':
-        reason: >-
-          This vulnerability does not apply to C5 as we are not parsing XML configuration
-          when setting-up Jetty server. We are only using Jetty through Javalin which is
-          configuring Jetty programmatically.
-        expires: 2023-12-13T12:08:30.514Z
-        created: 2023-07-13T12:08:30.517Z
-
-  SNYK-JAVA-COMSQUAREUPOKIO-5773320:
-    - '*':
-        reason: >-
-          Corda 5 is not vulnerable to a DoS attack as the exploitable library is used by
-          an HTTP client, not server.
-        expires: 2023-12-20T08:26:30.514Z
-        created: 2023-07-20T08:26:30.517Z
-
-  SNYK-JAVA-COMSQUAREUPOKHTTP3-2958044:
-    - '*':
-        reason: >-
-          Corda 5 is not vulnerable to this attack as users do not have control over the
-          HTTP headers used with the client.
-        expires: 2023-12-20T08:30:30.514Z
-        created: 2023-07-20T08:30:30.517Z
+          The Bouncycastle release that fixes this issue is incompatible with
+          OSGi so for now we have to wait for the next one.
+        expires: 2024-07-31T00:00:00.000Z
+        created: 2024-04-11T15:11:31.735Z
 patch: {}

@@ -6,11 +6,15 @@ import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
 import org.bouncycastle.crypto.util.PrivateKeyFactory
+import org.bouncycastle.openssl.jcajce.JcaMiscPEMGenerator
 import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder
 import org.bouncycastle.operator.DefaultSignatureAlgorithmIdentifierFinder
 import org.bouncycastle.operator.bc.BcRSAContentSignerBuilder
+import org.bouncycastle.util.io.pem.PemObjectGenerator
+import org.bouncycastle.util.io.pem.PemWriter
 import java.io.File
 import java.io.InputStream
+import java.io.StringWriter
 import java.math.BigInteger
 import java.security.KeyPairGenerator
 import java.security.KeyStore
@@ -91,6 +95,30 @@ class KeyStoreHelper {
         keyStoreFile.outputStream().use {
             keyStore.store(it, keyStorePassword.toCharArray())
         }
+    }
+
+    /**
+     * Export a certificate from the keystore
+     * @param keyStoreFile file to use
+     * @param password
+     * @param certificateAlias unique name to use
+     * @param exportedCertFile target file to be generated
+     */
+    fun exportCertificateFromKeyStore(
+        keyStoreFile: File,
+        keyStorePassword: String,
+        certificateAlias: String,
+        exportedCertFile: File
+    ) {
+        val keyStore = KeyStore.getInstance(KEYSTORE_INSTANCE_TYPE)
+        keyStore.load(keyStoreFile.inputStream(), keyStorePassword.toCharArray())
+        val cert = keyStore.getCertificate(certificateAlias)
+        val writer = StringWriter()
+        PemWriter(writer).use { pw ->
+            val gen: PemObjectGenerator = JcaMiscPEMGenerator(cert)
+            pw.writeObject(gen)
+        }
+        exportedCertFile.writeText(writer.toString())
     }
 
     /**

@@ -1,12 +1,13 @@
 package net.corda.cli.plugins.vnode.commands
 
-import liquibase.Contexts
 import liquibase.Liquibase
 import liquibase.database.Database
 import liquibase.database.DatabaseFactory
 import liquibase.database.jvm.JdbcConnection
 import liquibase.resource.ClassLoaderResourceAccessor
 import net.corda.cli.plugins.vnode.withPluginClassLoader
+import net.corda.db.admin.LiquibaseSchemaUpdater
+import net.corda.db.admin.impl.LiquibaseSchemaUpdaterImpl
 import picocli.CommandLine
 import java.io.File
 import java.io.FileWriter
@@ -21,7 +22,10 @@ import java.sql.DriverManager
     ],
     mixinStandardHelpOptions = true
 )
-class PlatformMigration(private val config: PlatformMigrationConfig = PlatformMigrationConfig()) : Runnable {
+class PlatformMigration(
+    private val config: PlatformMigrationConfig = PlatformMigrationConfig(),
+    private val liquibaseSchemaUpdater: LiquibaseSchemaUpdater = LiquibaseSchemaUpdaterImpl()
+) : Runnable {
     @CommandLine.Option(
         names = ["--jdbc-url"],
         description = [
@@ -122,7 +126,8 @@ class PlatformMigration(private val config: PlatformMigrationConfig = PlatformMi
             }
 
             connection.use {
-                config.liquibaseFactory(fileAndSchema.filename, database).update(Contexts(), fileWriter)
+                val lb = config.liquibaseFactory(fileAndSchema.filename, database)
+                liquibaseSchemaUpdater.update(lb, fileWriter)
             }
         }
     }

@@ -10,6 +10,7 @@ import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerServiceImpl
 import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
+import net.corda.ledger.utxo.flow.impl.notary.PluggableNotaryService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
@@ -31,7 +32,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
 abstract class UtxoLedgerTest : CommonLedgerTest() {
-    private val mockUtxoLedgerPersistenceService = mock<UtxoLedgerPersistenceService>()
+    protected val mockUtxoLedgerPersistenceService = mock<UtxoLedgerPersistenceService>()
     private val mockUtxoLedgerTransactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
     private val mockUtxoLedgerGroupParametersPersistenceService = mock<UtxoLedgerGroupParametersPersistenceService>()
     private val mockGroupParametersLookup = mockGroupParametersLookup()
@@ -58,6 +59,8 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         whenever(it.lookup(notaryX500Name)).thenReturn(notaryExampleInfo)
         whenever(it.lookup(anotherNotaryX500Name)).thenReturn(anotherNotaryExampleInfo)
     }
+
+    val mockPluggableNotaryService = mock<PluggableNotaryService>()
 
     private val utxoFilteredTransactionFactory = UtxoFilteredTransactionFactoryImpl(
         FilteredTransactionFactoryImpl(
@@ -97,6 +100,7 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         mockUtxoLedgerStateQueryService,
         mockCurrentSandboxGroupContext,
         mockNotaryLookup,
+        mockPluggableNotaryService,
         mockExternalEventExecutor,
         mockResultSetFactory,
         mockUtxoLedgerTransactionVerificationService,

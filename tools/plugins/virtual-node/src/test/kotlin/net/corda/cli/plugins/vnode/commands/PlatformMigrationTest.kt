@@ -1,11 +1,16 @@
 package net.corda.cli.plugins.vnode.commands
 
-import liquibase.Contexts
 import liquibase.Liquibase
+import liquibase.command.CommandArgumentDefinition
+import liquibase.command.CommandScope
 import liquibase.database.Database
+import net.corda.db.admin.impl.LiquibaseSchemaUpdaterImpl
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.ArgumentMatchers
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
@@ -34,6 +39,17 @@ class PlatformMigrationTest {
     val mockWriterFactory = mock<(String) -> FileWriter>()
     val mockLineReader = mock<(String, (String) -> Unit) -> Unit>()
 
+    private val commandScope = mock<(CommandScope)> { cs ->
+        on { addArgumentValue(ArgumentMatchers.anyString(), any()) } doReturn cs
+        on { addArgumentValue(any<CommandArgumentDefinition<Any>>(), anyOrNull()) } doReturn cs
+        on { execute() } doReturn mock()
+    }
+    private val commandScopeFactory = mock<(commandNames: Array<String>) -> CommandScope> {
+        on { invoke(any()) } doReturn (commandScope)
+    }
+
+    private val liquibaseSchemaUpdater = LiquibaseSchemaUpdaterImpl(commandScopeFactory)
+
     val pmConfig = PlatformMigration.PlatformMigrationConfig(
         lineReader = mockLineReader,
         writerFactory = mockWriterFactory,
@@ -52,7 +68,7 @@ class PlatformMigrationTest {
         val validHoldingIds = listOf("30f232111e9a", "25ab40d125a6", "ebf080aaeb79")
     }
 
-    private fun createPlatformMigration() = PlatformMigration(pmConfig).apply {
+    private fun createPlatformMigration() = PlatformMigration(pmConfig, liquibaseSchemaUpdater).apply {
         jdbcUrl = JDBC_URL
         user = USER
         password = PASSWORD
@@ -127,10 +143,7 @@ class PlatformMigrationTest {
             any()
         )
 
-        verify(mockLiquibase, times(NUMBER_OF_SUPPORTED_SCHEMAS * validHoldingIds.size)).update(
-            any<Contexts>(),
-            eq(mockFileWriter)
-        )
+        verify(commandScope, times(NUMBER_OF_SUPPORTED_SCHEMAS * validHoldingIds.size)).execute()
 
         verify(mockFileWriter, times(1)).close()
     }

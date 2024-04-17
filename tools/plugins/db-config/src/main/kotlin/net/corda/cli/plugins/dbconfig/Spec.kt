@@ -1,6 +1,5 @@
 package net.corda.cli.plugins.dbconfig
 
-import liquibase.Contexts
 import liquibase.Liquibase
 import liquibase.database.Database
 import liquibase.database.DatabaseFactory
@@ -8,6 +7,8 @@ import liquibase.database.OfflineConnection
 import liquibase.database.core.PostgresDatabase
 import liquibase.database.jvm.JdbcConnection
 import liquibase.resource.ClassLoaderResourceAccessor
+import net.corda.db.admin.LiquibaseSchemaUpdater
+import net.corda.db.admin.impl.LiquibaseSchemaUpdaterImpl
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
@@ -25,7 +26,10 @@ import java.sql.DriverManager
             "migration to a new version."],
     mixinStandardHelpOptions = true
 )
-class Spec(private val config: SpecConfig = SpecConfig()) : Runnable {
+class Spec(
+    private val config: SpecConfig = SpecConfig(),
+    private val liquibaseSchemaUpdater: LiquibaseSchemaUpdater = LiquibaseSchemaUpdaterImpl()
+) : Runnable {
     @CommandLine.Option(
         names = ["--change-log"],
         description = ["Path and filename of the databasechangelog CSV file which is created by Liquibase in offline" +
@@ -200,7 +204,8 @@ class Spec(private val config: SpecConfig = SpecConfig()) : Runnable {
                 outputFile.write(System.lineSeparator())
             }
 
-            config.liquibaseFactory(filename, database).update(Contexts(), outputFile)
+            val lb = config.liquibaseFactory(filename, database)
+            liquibaseSchemaUpdater.update(lb, outputFile)
         }
     }
 

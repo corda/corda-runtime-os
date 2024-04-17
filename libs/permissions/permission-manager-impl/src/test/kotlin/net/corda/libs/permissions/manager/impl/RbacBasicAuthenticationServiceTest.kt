@@ -7,9 +7,14 @@ import net.corda.data.permissions.PermissionType
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.RoleAssociation
 import net.corda.data.permissions.User
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
+import net.corda.libs.permissions.manager.ExpiryStatus
 import net.corda.permissions.password.PasswordHash
 import net.corda.permissions.password.PasswordService
+import net.corda.schema.configuration.ConfigKeys
+import net.corda.utilities.time.Clock
+import net.corda.utilities.time.UTCClock
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -17,11 +22,13 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.atomic.AtomicReference
 
 class RbacBasicAuthenticationServiceTest {
@@ -29,6 +36,8 @@ class RbacBasicAuthenticationServiceTest {
     companion object {
         private val passwordService: PasswordService = mock()
         private val permissionManagementCache = mock<PermissionManagementCache>()
+        private val rbacConfig = mock<SmartConfig>()
+        private val passwordExpiryTime = Instant.now().plus(1L, ChronoUnit.DAYS)
 
         private val virtualNode = "f39d810f-6ee6-4742-ab7c-d1fe274ab85e"
         private val permissionString = "flow/start/com.myapp.MyFlow"
@@ -130,11 +139,13 @@ class RbacBasicAuthenticationServiceTest {
             whenever(permissionManagementCache.getRole(roleWithPermDenied.id)).thenReturn(roleWithPermDenied)
             whenever(permissionManagementCache.getPermission(permission.id)).thenReturn(permission)
             whenever(permissionManagementCache.getPermission(permissionDenied.id)).thenReturn(permissionDenied)
+
+            whenever(rbacConfig.getInt(ConfigKeys.RBAC_PASSWORD_EXPIRY_WARNING_WINDOW)).thenReturn(30)
         }
     }
 
     private val rbacBasicAuthenticationService =
-        RbacBasicAuthenticationService(AtomicReference(permissionManagementCache), passwordService)
+        RbacBasicAuthenticationService(rbacConfig, UTCClock(), AtomicReference(permissionManagementCache), passwordService)
 
     @Test
     fun `authenticate user will return false when user cannot be found in cache`() {
@@ -142,7 +153,7 @@ class RbacBasicAuthenticationServiceTest {
 
         val result = rbacBasicAuthenticationService.authenticateUser("userLoginName1", "password".toCharArray())
 
-        assertFalse(result)
+        assertFalse(result.authenticationSuccess)
     }
 
     @Test
@@ -155,7 +166,7 @@ class RbacBasicAuthenticationServiceTest {
 
         val result = rbacBasicAuthenticationService.authenticateUser("userLoginName1", "password".toCharArray())
 
-        assertFalse(result)
+        assertFalse(result.authenticationSuccess)
     }
 
     @Test
@@ -168,7 +179,7 @@ class RbacBasicAuthenticationServiceTest {
 
         val result = rbacBasicAuthenticationService.authenticateUser("userLoginName1", "password".toCharArray())
 
-        assertFalse(result)
+        assertFalse(result.authenticationSuccess)
     }
 
     @Test
@@ -186,7 +197,7 @@ class RbacBasicAuthenticationServiceTest {
 
         val result = rbacBasicAuthenticationService.authenticateUser("userLoginName2", "password".toCharArray())
 
-        assertFalse(result)
+        assertFalse(result.authenticationSuccess)
 
         verify(permissionManagementCache, times(1)).getUser("userLoginName2")
 
@@ -207,6 +218,7 @@ class RbacBasicAuthenticationServiceTest {
         val user = User().apply {
             saltValue = "abcsalt"
             hashedPassword = "hashedpass"
+            passwordExpiry = passwordExpiryTime
         }
 
         whenever(permissionManagementCache.getUser("userLoginName1")).thenReturn(user)
@@ -214,7 +226,7 @@ class RbacBasicAuthenticationServiceTest {
 
         val result = rbacBasicAuthenticationService.authenticateUser("userLoginName1", "password".toCharArray())
 
-        assertTrue(result)
+        assertTrue(result.authenticationSuccess)
 
         verify(permissionManagementCache, times(1)).getUser("userLoginName1")
 
@@ -225,5 +237,78 @@ class RbacBasicAuthenticationServiceTest {
         assertEquals("hashedpass", storedPasswordHashCapture.firstValue.value)
         assertEquals("abcsalt", storedPasswordHashCapture.firstValue.salt)
         assertEquals("password", requestPasswordCapture.firstValue)
+    }
+
+    @Test
+    fun `authenticate user will return true and expiryStatus EXPIRED when password expired`() {
+        val storedPasswordHashCapture = argumentCaptor<PasswordHash>()
+        val requestPasswordCapture = argumentCaptor<String>()
+        val minimumClock = mock<Clock>().apply {
+            whenever(instant()).thenReturn(Instant.MIN)
+        }
+
+        val user = User().apply {
+            saltValue = "abcsalt"
+            hashedPassword = "hashedpass"
+            passwordExpiry = minimumClock.instant()
+        }
+
+        whenever(permissionManagementCache.getUser("userLoginName1")).thenReturn(user)
+        whenever(passwordService.verifies(requestPasswordCapture.capture(), storedPasswordHashCapture.capture())).thenReturn(true)
+
+        val result = rbacBasicAuthenticationService.authenticateUser("userLoginName1", "password".toCharArray())
+
+        verify(permissionManagementCache, atLeastOnce()).getUser("userLoginName1")
+
+        assertTrue(result.authenticationSuccess)
+        assertEquals(ExpiryStatus.EXPIRED, result.expiryStatus)
+    }
+
+    @Test
+    fun `authenticate user will return true and expiryStatus CLOSE_TO_EXPIRY when within expiry warning window`() {
+        val storedPasswordHashCapture = argumentCaptor<PasswordHash>()
+        val requestPasswordCapture = argumentCaptor<String>()
+
+        val user = User().apply {
+            saltValue = "abcsalt"
+            hashedPassword = "hashedpass"
+            passwordExpiry = passwordExpiryTime
+        }
+
+        whenever(permissionManagementCache.getUser("userLoginName1")).thenReturn(user)
+        whenever(passwordService.verifies(requestPasswordCapture.capture(), storedPasswordHashCapture.capture())).thenReturn(true)
+
+        val result = rbacBasicAuthenticationService.authenticateUser("userLoginName1", "password".toCharArray())
+
+        verify(permissionManagementCache, atLeastOnce()).getUser("userLoginName1")
+
+        assertTrue(result.authenticationSuccess)
+        assertEquals(ExpiryStatus.CLOSE_TO_EXPIRY, result.expiryStatus)
+    }
+
+    @Test
+    fun `authenticate user will return true and expiryStatus ACTIVE when outside of expiry warning window`() {
+        val storedPasswordHashCapture = argumentCaptor<PasswordHash>()
+        val requestPasswordCapture = argumentCaptor<String>()
+        val passwordExpiryActive = Instant.now().plus(
+            rbacConfig.getInt(ConfigKeys.RBAC_PASSWORD_EXPIRY_WARNING_WINDOW).plus(1).toLong(),
+            ChronoUnit.DAYS
+        )
+
+        val user = User().apply {
+            saltValue = "abcsalt"
+            hashedPassword = "hashedpass"
+            passwordExpiry = passwordExpiryActive
+        }
+
+        whenever(permissionManagementCache.getUser("userLoginName1")).thenReturn(user)
+        whenever(passwordService.verifies(requestPasswordCapture.capture(), storedPasswordHashCapture.capture())).thenReturn(true)
+
+        val result = rbacBasicAuthenticationService.authenticateUser("userLoginName1", "password".toCharArray())
+
+        verify(permissionManagementCache, atLeastOnce()).getUser("userLoginName1")
+
+        assertTrue(result.authenticationSuccess)
+        assertEquals(ExpiryStatus.ACTIVE, result.expiryStatus)
     }
 }

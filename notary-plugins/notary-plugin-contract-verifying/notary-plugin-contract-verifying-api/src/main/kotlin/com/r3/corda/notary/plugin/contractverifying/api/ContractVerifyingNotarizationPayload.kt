@@ -1,6 +1,7 @@
 package com.r3.corda.notary.plugin.contractverifying.api
 
 import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.ledger.notary.plugin.api.NotarizationType
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndSignatures
 
@@ -8,4 +9,5 @@ import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndS
 data class ContractVerifyingNotarizationPayload(
     val initialTransaction: UtxoSignedTransaction,
     val filteredTransactionsAndSignatures: List<UtxoFilteredTransactionAndSignatures>,
+    val notarizationType: NotarizationType
 )

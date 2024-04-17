@@ -26,7 +26,7 @@ class HsqldbUtxoQueryProvider @Activate constructor(
             USING (VALUES :id, CAST(:privacySalt AS VARBINARY(64)), :accountId, CAST(:createdAt AS TIMESTAMP), :status, CAST(:updatedAt AS TIMESTAMP), :metadataHash, FALSE)
                 AS x(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
             ON x.id = ut.id
-            WHEN MATCHED AND ((ut.status = '$UNVERIFIED' or ut.status = '$DRAFT') OR (ut.status = '$VERIFIED' AND ut.is_filtered = TRUE)) 
+            WHEN MATCHED AND ((ut.status = '$UNVERIFIED' or ut.status = '$DRAFT') AND (ut.is_filtered = FALSE)) 
             THEN UPDATE SET ut.status = x.status, ut.updated = x.updated, ut.is_filtered = FALSE
             WHEN NOT MATCHED THEN
                 INSERT (id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
@@ -110,17 +110,17 @@ class HsqldbUtxoQueryProvider @Activate constructor(
             MERGE INTO utxo_visible_transaction_output AS uto
             USING (VALUES${
                 List(batchSize) {
-                    "(?, CAST(? AS INT), CAST(? AS INT), ?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS TIMESTAMP), ?, ?)"
+                    "(?, CAST(? AS INT), CAST(? AS INT), ?, ?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS TIMESTAMP), ?, ?)"
                 }.joinToString(",")
             })
                 AS x(transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
-                     token_symbol, token_tag, token_owner_hash, token_amount, created, consumed, custom_representation)
+                     token_symbol, token_tag, token_owner_hash, token_amount, token_priority, created, consumed, custom_representation)
             ON uto.transaction_id = x.transaction_id AND uto.group_idx = x.group_idx AND uto.leaf_idx = x.leaf_idx
             WHEN NOT MATCHED THEN
                 INSERT (transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
-                        token_symbol, token_tag, token_owner_hash, token_amount, created, consumed, custom_representation)
+                        token_symbol, token_tag, token_owner_hash, token_amount, token_priority, created, consumed, custom_representation)
                 VALUES (x.transaction_id, x.group_idx, x.leaf_idx, x.type, x.token_type, x.token_issuer_hash, x.token_notary_x500_name,
-                        x.token_symbol, x.token_tag, x.token_owner_hash, x.token_amount, x.created, x.consumed, x.custom_representation)
+                        x.token_symbol, x.token_tag, x.token_owner_hash, x.token_amount, x.token_priority, x.created, x.consumed, x.custom_representation)
             """.trimIndent()
         }
 

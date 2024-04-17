@@ -216,10 +216,11 @@ class PersistenceServiceInternalTests {
     fun `persist`() {
         val persistenceService = PersistenceServiceInternal(sandbox::getClass)
         val dog = sandbox.createDog("Rover").instance
+        val payload = PersistEntities(listOf(sandbox.serialize(dog)))
 
         val entityManager = Stubs.EntityManagerStub()
 
-        persistenceService.persist(entityManager, listOf(dog))
+        persistenceService.persist(sandbox.getSerializationService(), entityManager, payload)
 
         assertThat(entityManager.persisted).contains(dog)
     }

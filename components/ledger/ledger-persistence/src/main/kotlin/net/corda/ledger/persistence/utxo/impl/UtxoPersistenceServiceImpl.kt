@@ -311,27 +311,36 @@ class UtxoPersistenceServiceImpl(
                 requireNotNull(metadata.getCpiMetadata()) { "Metadata without CPI metadata" }.fileChecksum
             )
 
-            if (transaction.status != TransactionStatus.UNVERIFIED) {
-                // Insert the Transaction
-                repository.persistTransaction(
-                    em,
-                    transactionIdString,
-                    transaction.privacySalt.bytes,
-                    transaction.account,
-                    nowUtc,
-                    transaction.status,
-                    metadataHash,
-                )
-            } else {
-                repository.persistUnverifiedTransaction(
-                    em,
-                    transactionIdString,
-                    transaction.privacySalt.bytes,
-                    transaction.account,
-                    nowUtc,
-                    metadataHash
-                )
-            }
+            val inserted =
+                if (transaction.status != TransactionStatus.UNVERIFIED) {
+                    /**
+                     * Insert the Transaction
+                     * The record will only be inserted when:
+                     * - there is no record exists given txId
+                     * - there is record which is UNVERIFIED stx
+                     * - there is record which is DRAFT stx
+                     * */
+                    repository.persistTransaction(
+                        em,
+                        transactionIdString,
+                        transaction.privacySalt.bytes,
+                        transaction.account,
+                        nowUtc,
+                        transaction.status,
+                        metadataHash,
+                    )
+                } else {
+                    // ignore if the incoming transaction is an unverified stx
+                    repository.persistUnverifiedTransaction(
+                        em,
+                        transactionIdString,
+                        transaction.privacySalt.bytes,
+                        transaction.account,
+                        nowUtc,
+                        metadataHash
+                    )
+                    null
+                }
 
             repository.persistTransactionComponents(
                 em,
@@ -350,12 +359,42 @@ class UtxoPersistenceServiceImpl(
 
             repository.persistTransactionSources(em, transactionIdString, consumedTransactionSources + referenceTransactionSources)
 
-            repository.persistVisibleTransactionOutputs(
-                em,
-                transactionIdString,
-                nowUtc,
-                visibleTransactionOutputs
-            )
+            // rectify data from U -> V
+            if (inserted != null && !inserted) {
+                // inserted != null means the incoming tx is not UNVERIFIED (incoming U is always stx)
+                // tx not being inserted implies that tx of the same ID exists in the table, and need to be rectified
+
+                val indexes = repository.findConsumedTransactionSourcesForTransaction(
+                    em,
+                    transactionIdString,
+                    visibleTransactionOutputs.map { output -> output.stateIndex }
+                )
+
+                // insert outputs to be able to mark spent outputs as consumed
+                repository.persistVisibleTransactionOutputs(
+                    em,
+                    transactionIdString,
+                    nowUtc,
+                    visibleTransactionOutputs
+                )
+
+                if (indexes.isNotEmpty()) {
+                    repository.markTransactionVisibleStatesConsumed(
+                        em,
+                        indexes.map { index -> StateRef(transaction.id, index) },
+                        nowUtc
+                    )
+                }
+                repository.updateTransactionToVerified(em, transactionIdString, nowUtc)
+            } else {
+                // outputs of stx UNVERIFIED would be empty
+                repository.persistVisibleTransactionOutputs(
+                    em,
+                    transactionIdString,
+                    nowUtc,
+                    visibleTransactionOutputs
+                )
+            }
 
             // Mark inputs as consumed
             if (transaction.status == TransactionStatus.VERIFIED) {
@@ -477,7 +516,6 @@ class UtxoPersistenceServiceImpl(
         account: String
     ) {
         entityManagerFactory.transaction { em ->
-
             filteredTransactionsAndSignatures.forEach { (filteredTransaction, signatures) ->
 
                 val nowUtc = utcClock.instant()
@@ -514,6 +552,7 @@ class UtxoPersistenceServiceImpl(
                 )
 
                 // 3. Persist the transaction itself to the utxo_transaction table
+                // if the same id of UNVERIFIED or DRAFT stx exists, leaving the status as it is.
                 repository.persistFilteredTransaction(
                     em,
                     filteredTransaction.id.toString(),
@@ -720,7 +759,25 @@ class UtxoPersistenceServiceImpl(
             }.filterNotNull().toMap()
     }
 
-    fun createTransactionMerkleProof(
+    override fun findTransactionsWithStatusCreatedBetweenTime(
+        status: TransactionStatus,
+        from: Instant,
+        until: Instant,
+        limit: Int,
+    ): List<SecureHash> {
+        return entityManagerFactory.transaction { em ->
+            repository.findTransactionsWithStatusCreatedBetweenTime(em, status, from, until, limit)
+                .map { id -> digestService.parseSecureHash(id) }
+        }
+    }
+
+    override fun incrementTransactionRepairAttemptCount(id: String) {
+        entityManagerFactory.transaction { em ->
+            repository.incrementTransactionRepairAttemptCount(em, id)
+        }
+    }
+
+    private fun createTransactionMerkleProof(
         transactionId: String,
         groupIndex: Int,
         treeSize: Int,

@@ -4,20 +4,26 @@ import com.r3.corda.demo.utxo.contract.TOKEN_AMOUNT
 import com.r3.corda.demo.utxo.contract.TOKEN_ISSUER_HASH
 import com.r3.corda.demo.utxo.contract.TOKEN_SYMBOL
 import com.r3.corda.demo.utxo.contract.TOKEN_TYPE
+import com.r3.corda.demo.utxo.contract.TestUtxoState
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.common.NotaryLookup
+import net.corda.v5.ledger.utxo.UtxoLedgerService
+import net.corda.v5.ledger.utxo.token.selection.Strategy
 import net.corda.v5.ledger.utxo.token.selection.TokenClaimCriteria
 import net.corda.v5.ledger.utxo.token.selection.TokenSelection
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-class TokenSelectionFlow2 : ClientStartableFlow {
+@Suppress("unused")
+class PriorityTokenSelectionFlow : ClientStartableFlow {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject
@@ -28,9 +34,16 @@ class TokenSelectionFlow2 : ClientStartableFlow {
 
     @CordaInject
     lateinit var notaryLookup: NotaryLookup
+
+    @CordaInject
+    lateinit var jsonMarshallingService: JsonMarshallingService
+
+    @CordaInject
+    lateinit var utxoLedgerService: UtxoLedgerService
+
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
-        log.info("Starting Token Selection Flow...")
+        log.info("PriorityTokenSelectionFlow starting...")
         try {
             val queryCriteria = TokenClaimCriteria(
                 TOKEN_TYPE,
@@ -38,30 +51,21 @@ class TokenSelectionFlow2 : ClientStartableFlow {
                 notaryLookup.notaryServices.single().name,
                 TOKEN_SYMBOL,
                 TOKEN_AMOUNT,
+                Strategy.PRIORITY
             )
 
-            val claimResult1 = tokenSelection.tryClaim(queryCriteria)
+            val tokenClaim = requireNotNull(tokenSelection.tryClaim("claim1", queryCriteria))
 
-            // We expect the first claim to succeed
-            if (claimResult1 == null) {
-                log.info("Token Selection result: 'None found' ")
-                 return "FAIL"
-            }
-
-            // Now let's try again, we expect this one to fail, confirming we locked up
-            // the only token
-            val claimResult2 = tokenSelection.tryClaim(queryCriteria)
-
-            // We expect the second claim to fail.
-            if (claimResult2 != null) {
-                log.info("Token Selection result: 'We found something, we did not expect to' ")
-                return "FAIL"
-            }
+            // Lookup the states that match the returned tokens
+            val stateRefList = tokenClaim.claimedTokens.map { it.stateRef }
+            val priorities = utxoLedgerService
+                .resolve<TestUtxoState>(stateRefList)
+                .map { it.state.contractState.priority }
 
             // Now we just exit and let the postprocessing handler clean up for us
             // If we run this flow again we expect to get the same results as we never used
             // the claimed token and the flow completing should have freed the claim.
-            return "SUCCESS"
+            return jsonMarshallingService.format(priorities)
 
         } catch (e: Exception) {
             log.error("Unexpected error while processing the flow", e)

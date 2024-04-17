@@ -9,6 +9,8 @@ import net.corda.rest.client.config.RestClientConfig
 import net.corda.rest.client.exceptions.ClientSslHandshakeException
 import net.corda.rest.exception.ResourceAlreadyExistsException
 import net.corda.sdk.network.OnboardFailedException
+import net.corda.utilities.debug
+import net.corda.utilities.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.MalformedURLException
@@ -62,7 +64,7 @@ object RestClientUtils {
                 .minimumServerProtocolVersion(minimumServerProtocolVersion)
                 .username(username)
                 .password(password),
-            healthCheckInterval = 500
+            healthCheckInterval = 0
         )
 
         restClient.addConnectionListener(ConnectionListener())
@@ -114,7 +116,7 @@ object RestClientUtils {
         operationName: String,
         block: () -> T
     ): T {
-        logger.info("""Performing operation "$operationName"""")
+        logger.trace { """Performing operation "$operationName"""" }
         val endTime = System.currentTimeMillis() + waitDuration.inWholeMilliseconds
         var lastException: Exception?
         do {
@@ -129,7 +131,7 @@ object RestClientUtils {
                     // All other exceptions, perform retry
                     else -> {
                         lastException = ex
-                        logger.warn("""Cannot perform operation "$operationName" yet""")
+                        logger.debug { """Cannot perform operation "$operationName" yet""" }
                         val remaining = (endTime - System.currentTimeMillis()).coerceAtLeast(0)
                         Thread.sleep(timeBetweenAttempts.inWholeMilliseconds.coerceAtMost(remaining))
                     }

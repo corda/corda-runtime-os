@@ -35,6 +35,8 @@ import java.sql.Connection
 import java.sql.Timestamp
 import java.sql.Types
 import java.time.Instant
+import java.util.Calendar
+import java.util.TimeZone
 import javax.persistence.EntityManager
 import javax.persistence.Query
 import javax.persistence.Tuple
@@ -61,6 +63,7 @@ class UtxoRepositoryImpl(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val TOP_LEVEL_MERKLE_PROOF_INDEX = -1
+        private val utcCalendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
     }
 
     @Suppress("Unused")
@@ -191,8 +194,8 @@ class UtxoRepositoryImpl(
         timestamp: Instant,
         status: TransactionStatus,
         metadataHash: String,
-    ) {
-        entityManager.createNativeQuery(queryProvider.persistTransaction)
+    ): Boolean {
+        return entityManager.createNativeQuery(queryProvider.persistTransaction)
             .setParameter("id", id)
             .setParameter("privacySalt", privacySalt)
             .setParameter("accountId", account)
@@ -200,8 +203,7 @@ class UtxoRepositoryImpl(
             .setParameter("status", status.value)
             .setParameter("updatedAt", timestamp)
             .setParameter("metadataHash", metadataHash)
-            .executeUpdate()
-            .logResult("transaction [$id]")
+            .executeUpdate() != 0
     }
 
     override fun persistUnverifiedTransaction(
@@ -242,6 +244,13 @@ class UtxoRepositoryImpl(
             .logResult("transaction [$id]")
     }
 
+    override fun updateTransactionToVerified(entityManager: EntityManager, id: String, timestamp: Instant) {
+        entityManager.createNativeQuery(queryProvider.updateTransactionToVerified)
+            .setParameter("transactionId", id)
+            .setParameter("updatedAt", timestamp)
+            .executeUpdate()
+    }
+
     override fun persistTransactionMetadata(
         entityManager: EntityManager,
         hash: String,
@@ -269,11 +278,11 @@ class UtxoRepositoryImpl(
                 queryProvider.persistTransactionSources,
                 transactionSources
             ) { statement, parameterIndex, transactionSource ->
-                statement.setString(parameterIndex.next(), transactionId)
-                statement.setInt(parameterIndex.next(), transactionSource.group.ordinal)
-                statement.setInt(parameterIndex.next(), transactionSource.index)
-                statement.setString(parameterIndex.next(), transactionSource.sourceTransactionId)
-                statement.setInt(parameterIndex.next(), transactionSource.sourceIndex)
+                statement.setString(parameterIndex.next(), transactionId) // new transaction id
+                statement.setInt(parameterIndex.next(), transactionSource.group.ordinal) // refs or inputs
+                statement.setInt(parameterIndex.next(), transactionSource.index) // index in refs or inputs
+                statement.setString(parameterIndex.next(), transactionSource.sourceTransactionId) // tx state came from
+                statement.setInt(parameterIndex.next(), transactionSource.sourceIndex) // index from tx it came from
             }
         }
     }
@@ -368,7 +377,13 @@ class UtxoRepositoryImpl(
                     statement.setNull(parameterIndex.next(), Types.NUMERIC)
                 }
 
-                statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp))
+                if (visibleTransactionOutput.token?.priority != null) {
+                    statement.setLong(parameterIndex.next(), visibleTransactionOutput.token.priority!!)
+                } else {
+                    statement.setNull(parameterIndex.next(), Types.BIGINT)
+                }
+
+                statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp), utcCalendar)
                 statement.setNull(parameterIndex.next(), Types.TIMESTAMP)
                 statement.setString(parameterIndex.next(), visibleTransactionOutput.customRepresentation.json)
             }
@@ -391,7 +406,7 @@ class UtxoRepositoryImpl(
                 statement.setInt(parameterIndex.next(), signature.index)
                 statement.setBytes(parameterIndex.next(), signature.signatureBytes)
                 statement.setString(parameterIndex.next(), signature.publicKeyHash.toString())
-                statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp))
+                statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp), utcCalendar)
             }
         }
     }
@@ -567,6 +582,44 @@ class UtxoRepositoryImpl(
                 signatures = transactionSignatures
             )
         }
+    }
+
+    // select from transaction sources where input states of "previous" transaction are seen as sourceTransactionIds + indexes
+    override fun findConsumedTransactionSourcesForTransaction(
+        entityManager: EntityManager,
+        transactionId: String,
+        indexes: List<Int>
+    ): List<Int> {
+        return entityManager.createNativeQuery(queryProvider.findConsumedTransactionSourcesForTransaction)
+            .setParameter("transactionId", transactionId)
+            .setParameter("inputStateIndexes", indexes)
+            .resultList
+            .map { it as Int }
+    }
+
+    override fun findTransactionsWithStatusCreatedBetweenTime(
+        entityManager: EntityManager,
+        status: TransactionStatus,
+        from: Instant,
+        until: Instant,
+        limit: Int,
+    ): List<String> {
+        @Suppress("UNCHECKED_CAST")
+        return entityManager.createNativeQuery(queryProvider.findTransactionsWithStatusCreatedBetweenTime)
+            .setParameter("status", status.value)
+            .setParameter("from", from)
+            .setParameter("until", until)
+            .setMaxResults(limit)
+            .resultList as List<String>
+    }
+
+    override fun incrementTransactionRepairAttemptCount(
+        entityManager: EntityManager,
+        id: String
+    ) {
+        entityManager.createNativeQuery(queryProvider.incrementRepairAttemptCount)
+            .setParameter("transactionId", id)
+            .executeUpdate()
     }
 
     private fun <T> EntityManager.connection(block: (connection: Connection) -> T) {

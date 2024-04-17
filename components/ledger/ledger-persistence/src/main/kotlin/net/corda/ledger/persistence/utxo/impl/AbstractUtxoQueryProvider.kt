@@ -193,4 +193,38 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             	)
             WHERE utmp.transaction_id IN (:transactionIds)"""
             .trimIndent()
+
+    override val findConsumedTransactionSourcesForTransaction: String
+        get() = """
+            SELECT utxo_transaction_sources.source_state_idx from {h-schema}utxo_transaction_sources 
+            WHERE source_state_transaction_id = :transactionId 
+            AND group_idx = ${UtxoComponentGroup.INPUTS.ordinal}
+            AND source_state_idx in :inputStateIndexes
+        """.trimIndent()
+
+    override val updateTransactionToVerified: String
+        get() = """
+            UPDATE {h-schema}utxo_transaction 
+            SET status = '$VERIFIED', updated = :updatedAt, is_filtered = FALSE
+            WHERE id = :transactionId
+            AND status in ('$UNVERIFIED', '$DRAFT') 
+            OR (status = '$VERIFIED' AND is_filtered = TRUE)
+        """.trimIndent()
+
+    override val findTransactionsWithStatusCreatedBetweenTime: String
+        get() = """
+            SELECT id
+            FROM {h-schema}utxo_transaction
+            WHERE status = :status 
+                AND created >= :from 
+                AND created < :until
+            ORDER BY repair_attempt_count ASC, created ASC
+        """.trimIndent()
+
+    override val incrementRepairAttemptCount: String
+        get() = """
+            UPDATE {h-schema}utxo_transaction
+            SET repair_attempt_count = repair_attempt_count + 1
+            WHERE id = :transactionId
+        """.trimIndent()
 }
