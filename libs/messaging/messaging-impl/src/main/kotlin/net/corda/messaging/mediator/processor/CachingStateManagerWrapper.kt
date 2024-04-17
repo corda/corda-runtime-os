@@ -9,7 +9,7 @@ import java.time.Duration
 
 class CachingStateManagerWrapper(val stateManager: StateManager) {
 
-    val cache: Cache<String, State?> = CacheFactoryImpl().buildNonAsync(
+    private val cache: Cache<String, State?> = CacheFactoryImpl().buildNonAsync(
         stateManager.name.toString(),
         Caffeine.newBuilder().maximumSize(1000).expireAfterWrite(Duration.ofSeconds(600))
     )
@@ -63,5 +63,9 @@ class CachingStateManagerWrapper(val stateManager: StateManager) {
         return stateManager.delete(states).apply {
             this.forEach { cacheState(it.value) }
         }
+    }
+
+    fun invalidate() {
+        cache.invalidateAll()
     }
 }

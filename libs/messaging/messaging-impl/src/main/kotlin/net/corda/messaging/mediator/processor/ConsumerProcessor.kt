@@ -89,6 +89,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
 
             override fun onPartitionsAssigned(partitions: Collection<CordaTopicPartition>) {
                 assignedPartitions.addAll(partitions)
+                stateManager.invalidate()
             }
         }
         while (!mediatorSubscriptionState.stopped()) {
@@ -198,7 +199,6 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 transferOutputs(retriedOutputs, outputsToProcess)
                 val outputs = processInputs(inputs, emptyList(), inputsToCommit)
                 transferOutputs(outputs, outputsToProcess)
-                // TODO try and commit offsets async
                 commitConsumerOffsets(consumer, inputsToCommit)
             } catch (e: Exception) {
                 log.warn("Retrying poll processing: ${e.message}.")
@@ -207,10 +207,17 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         }
     }
 
+    private var lastCommitTime: Long = System.nanoTime()
+    private val commitInterval: Long = Duration.ofSeconds(5).toNanos()
+
     private fun commitConsumerOffsets(
         consumer: MediatorConsumer<K, E>,
         inputsToCommit: BlockingDeque<List<CordaConsumerRecord<K, E>>>
     ) {
+        val now = System.nanoTime()
+        if ((now - lastCommitTime) < commitInterval) return
+        lastCommitTime = now
+        // TODO try and commit offsets async
         val readyToCommit = inputsToCommit.drainAll()
         if (readyToCommit.isNotEmpty()) {
             val allReadyToCommit = readyToCommit.flatMap { it }
