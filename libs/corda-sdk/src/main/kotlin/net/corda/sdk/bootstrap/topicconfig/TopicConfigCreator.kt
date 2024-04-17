@@ -217,6 +217,7 @@ class TopicConfigCreator(
             yamlFiles.map { entry: JarEntry ->
                 val data: String = jar.getInputStream(entry)
                     .bufferedReader(Charset.defaultCharset()).use { it.readText() }
+                logger.info("Print data: $data")
                 val parsedData: TopicDefinitions = mapper.readValue(data)
                 entry.name to parsedData
             }
