@@ -59,6 +59,7 @@ snykVersion = "0.5.1"
 cyclonedxVersion = "1.8.2"
 dokkaVersion = "1.9.10"
 testLoggerVersion = "4.0.0"
+sonarVersion = "4.4.1.3373"
 
 [libraries]
 apache-commons-codec = { group = "commons-codec", name = "commons-codec", version.ref = "apacheCommonsCodecVersion" }
@@ -150,3 +151,4 @@ snyk = { id = "io.snyk.gradle.plugin.snykplugin", version.ref = "snykVersion" }
 cyclonedx-bom = { id = "org.cyclonedx.bom", version.ref = "cyclonedxVersion" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokkaVersion" }
 test-logger = { id = "com.adarshr.test-logger", version.ref = "testLoggerVersion" }
+sonar = { id = "org.sonarqube", version.ref = "sonarVersion" }
