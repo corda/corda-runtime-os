@@ -73,7 +73,8 @@ class PriorityTokenSelectionFlow : ClientStartableFlow {
             val claimedTokenList = claimTokens(request.noTokensToClaim)
 
             if (claimedTokenList.size != request.noTokensToClaim) {
-                log.warn("Failed to claim enough tokens. Claimed tokens: $${claimedTokenList.size} No. Tokens to claim: ${request.noTokensToClaim}")
+                log.warn("Failed to claim enough tokens. Claimed tokens: $${claimedTokenList.size}" +
+                        "No. Tokens to claim: ${request.noTokensToClaim}")
                 return "Failed to claim enough tokens"
             }
 
@@ -100,7 +101,7 @@ class PriorityTokenSelectionFlow : ClientStartableFlow {
     }
 
     @Suspendable
-    private fun claimTokens(noTokensToClaim: Int): List<ClaimedToken>{
+    private fun claimTokens(noTokensToClaim: Int): List<ClaimedToken> {
         val queryCriteria = TokenClaimCriteria(
             TOKEN_TYPE,
             digestService.parseSecureHash(TOKEN_ISSUER_HASH),
