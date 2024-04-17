@@ -38,8 +38,8 @@ fun createDefaultCryptoConfigEntity(
     val wrappingKeys = (1..numberOfUnmanagedWrappingKeys).toList().map { index ->
         val (wrappingPassphraseSecret, wrappingSaltSecret) = when (type) {
             SecretsServiceType.CORDA -> {
-                require(passphrase != null)
-                require(salt != null)
+                requireNotNull(passphrase)
+                requireNotNull(salt)
                 createWrappingPassphraseForCordaSecretService(
                     index = index,
                     passphrase = passphrase,
@@ -49,7 +49,7 @@ fun createDefaultCryptoConfigEntity(
                 )
             }
             SecretsServiceType.VAULT -> {
-                require(vaultPath != null)
+                requireNotNull(vaultPath)
                 require(vaultWrappingKeyPassphrases.size >= numberOfUnmanagedWrappingKeys)
                 require(vaultWrappingKeySalts.size >= numberOfUnmanagedWrappingKeys)
                 createWrappingPassphraseForVaultSecretService(

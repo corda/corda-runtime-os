@@ -66,9 +66,7 @@ private fun getColumnInfo(property: KProperty1<out Any, *>): ColumnInfo? {
 
 private fun <T : Annotation> KProperty1<*, *>.getVarAnnotation(type: Class<T>): T? {
     return (javaField?.getAnnotation(type) ?: javaGetter?.getAnnotation(type))?.also {
-        if (this !is KMutableProperty1<*, *>) {
-            throw IllegalArgumentException("Property '$this' must be var for JPA annotations.")
-        }
+        require(this is KMutableProperty1<*, *>) { "Property '$this' must be var for JPA annotations." }
     }
 }
 
