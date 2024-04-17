@@ -14,6 +14,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.mediator.GroupAllocator
 import net.corda.messaging.mediator.MediatorSubscriptionState
 import net.corda.messaging.mediator.StateManagerHelper
+import net.corda.messaging.mediator.processor.CachingStateManagerWrapper
 import net.corda.messaging.mediator.processor.ConsumerProcessor
 import net.corda.messaging.mediator.processor.EventProcessor
 import net.corda.taskmanager.TaskManager
@@ -105,6 +106,7 @@ class MediatorComponentFactory<K : Any, S : Any, E : Any>(
         taskManager: TaskManager,
         messageRouter: MessageRouter,
         mediatorSubscriptionState: MediatorSubscriptionState,
+        stateManagerWrapper: CachingStateManagerWrapper
     ): ConsumerProcessor<K, S, E> {
         val eventProcessor = EventProcessor(eventMediatorConfig, stateManagerHelper, messageRouter, mediatorInputService)
         return ConsumerProcessor(
@@ -114,7 +116,7 @@ class MediatorComponentFactory<K : Any, S : Any, E : Any>(
             messageRouter,
             mediatorSubscriptionState,
             eventProcessor,
-            stateManagerHelper
+            stateManagerWrapper
         )
     }
 }

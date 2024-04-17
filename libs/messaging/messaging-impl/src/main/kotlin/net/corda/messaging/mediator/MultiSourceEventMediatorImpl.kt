@@ -7,6 +7,7 @@ import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.config.MediatorConsumerConfig
 import net.corda.messaging.mediator.factory.MediatorComponentFactory
+import net.corda.messaging.mediator.processor.CachingStateManagerWrapper
 import net.corda.taskmanager.TaskManager
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
@@ -44,10 +45,18 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
         lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
 
+        val stateManagerWrapper = CachingStateManagerWrapper(config.stateManager)
+
         config.consumerFactories.map { consumerFactory ->
             taskManager.executeLongRunningTask {
                 val consumerProcessor =
-                    mediatorComponentFactory.createConsumerProcessor(config, taskManager, messageRouter, mediatorSubscriptionState)
+                    mediatorComponentFactory.createConsumerProcessor(
+                        config,
+                        taskManager,
+                        messageRouter,
+                        mediatorSubscriptionState,
+                        stateManagerWrapper
+                    )
                 consumerProcessor.processTopic(consumerFactory, consumerConfig)
             }.exceptionally { exception ->
                 handleTaskException(exception)

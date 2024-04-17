@@ -18,6 +18,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.GroupAllocator
 import net.corda.messaging.mediator.MediatorSubscriptionState
 import net.corda.messaging.mediator.StateManagerHelper
+import net.corda.messaging.mediator.processor.CachingStateManagerWrapper
 import net.corda.taskmanager.TaskManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -199,8 +200,10 @@ class MediatorComponentFactoryTest {
 
     @Test
     fun `create a consumer processor`() {
-        val consumerProcessor = mediatorComponentFactory.createConsumerProcessor(eventMediatorConfig, taskManager, messageRouter,
-        mediatorSubscriptionState)
+        val consumerProcessor = mediatorComponentFactory.createConsumerProcessor(
+            eventMediatorConfig, taskManager, messageRouter,
+            mediatorSubscriptionState, CachingStateManagerWrapper(eventMediatorConfig.stateManager)
+        )
 
         assertThat(consumerProcessor).isNotNull()
     }

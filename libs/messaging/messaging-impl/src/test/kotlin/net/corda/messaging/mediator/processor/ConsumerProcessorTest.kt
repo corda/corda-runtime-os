@@ -80,7 +80,13 @@ class ConsumerProcessorTest {
         eventMediatorConfig = buildStringTestConfig()
         stateManagerHelper = mock()
         consumerProcessor = ConsumerProcessor(
-            eventMediatorConfig, groupAllocator, taskManager, messageRouter, mediatorSubscriptionState, eventProcessor, stateManagerHelper
+            eventMediatorConfig,
+            groupAllocator,
+            taskManager,
+            messageRouter,
+            mediatorSubscriptionState,
+            eventProcessor,
+            CachingStateManagerWrapper(eventMediatorConfig.stateManager)
         )
     }
 

@@ -16,7 +16,6 @@ import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.mediator.GroupAllocator
 import net.corda.messaging.mediator.MediatorSubscriptionState
 import net.corda.messaging.mediator.MultiSourceEventMediatorImpl
-import net.corda.messaging.mediator.StateManagerHelper
 import net.corda.messaging.mediator.metrics.EventMediatorMetrics
 import net.corda.taskmanager.TaskManager
 import net.corda.utilities.debug
@@ -54,7 +53,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private val messageRouter: MessageRouter,
     private val mediatorSubscriptionState: MediatorSubscriptionState,
     private val eventProcessor: EventProcessor<K, S, E>,
-    private val stateManagerHelper: StateManagerHelper<S>
+    private val stateManager: CachingStateManagerWrapper
 ) {
 
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
@@ -62,8 +61,6 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private val metrics = EventMediatorMetrics(config.name)
 
     private val pollTimeout = config.pollTimeout
-
-    private val stateManager = config.stateManager
 
     companion object {
         private const val MAX_FAILURE_ATTEMPTS = 5
