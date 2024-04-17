@@ -6,6 +6,7 @@ import com.fasterxml.jackson.module.kotlin.KotlinFeature
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.messagebus.db.datamodel.TopicEntry
+import net.corda.sdk.bootstrap.initial.toInsertStatement
 import net.corda.utilities.debug
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.LoggerFactory
