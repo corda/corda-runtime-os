@@ -241,7 +241,7 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         val tokenSelectionFlowId = startRestFlow(
             bobHoldingId,
             mapOf(
-                "noTokensToClaim" to 13,
+                "noTokensToClaim" to noTokensToClaim,
                 "memberX500" to aliceX500
             ),
             "com.r3.corda.demo.utxo.token.selection.PriorityTokenSelectionFlow",
