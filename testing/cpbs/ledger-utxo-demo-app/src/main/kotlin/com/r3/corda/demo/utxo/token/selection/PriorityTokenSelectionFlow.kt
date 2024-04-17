@@ -63,15 +63,12 @@ class PriorityTokenSelectionFlow : ClientStartableFlow {
     @CordaInject
     lateinit var utxoLedgerService: UtxoLedgerService
 
-    @CordaInject
-    lateinit var marshallingService: JsonMarshallingService
-
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
         log.info("PriorityTokenSelectionFlow starting...")
         try {
             val request =
-                requestBody.getRequestBodyAs(marshallingService, PriorityTokenSelectionMsg::class.java)
+                requestBody.getRequestBodyAs(jsonMarshallingService, PriorityTokenSelectionMsg::class.java)
 
             val claimedTokenList = claimTokens(request.noTokensToClaim)
 
@@ -81,7 +78,6 @@ class PriorityTokenSelectionFlow : ClientStartableFlow {
                 return "Failed to claim enough tokens"
             }
 
-
             val memberInfo = requireNotNull(memberLookup.lookup(MemberX500Name.parse(request.memberX500))) {
                 "Member ${request.memberX500} does not exist in the membership group"
             }
@@ -90,12 +86,11 @@ class PriorityTokenSelectionFlow : ClientStartableFlow {
             spendTokens(claimedTokenList, memberInfo)
 
             // Create a list with the priority of each claimed token
-            // val tokenPriorityList = mutableListOf<Long?>()
             val tokenPriorityList = claimedTokenList.map {
                 utxoLedgerService.resolve<TestUtxoState>(it.stateRef).state.contractState.priority
             }
 
-            return jsonMarshallingService.format(tokenPriorityList)
+            return tokenPriorityList.toString()
         } catch (e: Exception) {
             log.error("Unexpected error while processing the flow", e)
             throw e
@@ -165,7 +160,6 @@ class PriorityTokenSelectionFlow : ClientStartableFlow {
         val noTokensToClaim: Int,
         val memberX500: String
     )
-
 }
 
 @Suppress("unused")

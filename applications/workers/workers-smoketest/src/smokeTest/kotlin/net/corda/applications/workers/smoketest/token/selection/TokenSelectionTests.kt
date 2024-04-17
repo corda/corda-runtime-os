@@ -189,26 +189,28 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         // Claim some tokens
         // Ensure the tokens are claimed in the correct order.
         // The priority is from the smallest values to the highest ones. Any null value should be placed at the end
-        var tokenSelectionResult = runPriorityTokenSelectionFlow(5, idGenerator.nextId)
-        assertAll(
-            { assertThat(tokenSelectionResult.flowError).isNull() },
-            { assertThat(tokenSelectionResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS) },
-            { assertThat(tokenSelectionResult.flowResult).isEqualTo(prioritiesList.take(5).toString()) },
-        )
+        runPriorityTokenSelectionFlow(5, idGenerator.nextId).let { tokenSelectionResult ->
+            assertAll(
+                { assertThat(tokenSelectionResult.flowError).isNull() },
+                { assertThat(tokenSelectionResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS) },
+                { assertThat(tokenSelectionResult.flowResult).isEqualTo(prioritiesList.take(5).toString()) },
+            )
+        }
 
         // Claim the remaining tokens
         // Ensure the tokens are claimed in the correct order.
         // The priority is from the smallest values to the highest ones. Any null value should be placed at the end
-        tokenSelectionResult = runPriorityTokenSelectionFlow(13, idGenerator.nextId)
-        assertAll(
-            { assertThat(tokenSelectionResult.flowError).isNull() },
-            { assertThat(tokenSelectionResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS) },
-            {
-                assertThat(tokenSelectionResult.flowResult).isEqualTo(
-                    prioritiesList.subList(5, prioritiesList.size).toString()
-                )
-            },
-        )
+        runPriorityTokenSelectionFlow(13, idGenerator.nextId).let { tokenSelectionResult ->
+            assertAll(
+                { assertThat(tokenSelectionResult.flowError).isNull() },
+                { assertThat(tokenSelectionResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS) },
+                {
+                    assertThat(tokenSelectionResult.flowResult).isEqualTo(
+                        prioritiesList.subList(5, prioritiesList.size).toString()
+                    )
+                },
+            )
+        }
     }
 
     private fun issueTokenWithPriority(idGenerator: TestRequestIdGenerator, priority: Long?) {
