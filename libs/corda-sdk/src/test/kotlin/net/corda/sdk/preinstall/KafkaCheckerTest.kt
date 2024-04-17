@@ -1,5 +1,12 @@
-package net.corda.cli.plugins.preinstall
+package net.corda.sdk.preinstall
 
+import net.corda.sdk.preinstall.checker.KafkaChecker
+import net.corda.sdk.preinstall.data.CordaValues
+import net.corda.sdk.preinstall.data.SecretKeyRef
+import net.corda.sdk.preinstall.data.SecretValues
+import net.corda.sdk.preinstall.data.ValueFrom
+import net.corda.sdk.preinstall.kafka.KafkaAdmin
+import net.corda.sdk.preinstall.kafka.KafkaProperties
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.Node
@@ -9,27 +16,26 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import picocli.CommandLine
 
-
-class CheckKafkaTest {
+class KafkaCheckerTest {
 
     @Test
     fun testKafkaFileParsing() {
-        val path = "./src/test/resources/KafkaTestBadConnection.yaml"
-        val kafka = CheckKafka()
-        CommandLine(kafka).execute(path)
+        val path = "./src/test/resources/preinstall/KafkaTestBadConnection.yaml"
+        val kafkaChecker = KafkaChecker(path)
+        val ret = kafkaChecker.check()
 
-        assertTrue(kafka.report.toString().contains("Parse Kafka properties from YAML: PASSED"))
+        assertEquals(0, ret)
+        assertTrue(kafkaChecker.report.toString().contains("Parse Kafka properties from YAML: PASSED"))
     }
 
     @Test
     fun testKafkaSaslSslNonPemTruststore() {
         // Test SASL_SSL with non-PEM format truststore
-        val kafka = CheckKafka()
-        val path = "./src/test/resources/KafkaTestSaslTls.yaml"
-        val yaml: PreInstallPlugin.CordaValues = kafka.parseYaml(path)
-        val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers!!)
+        val path = "./src/test/resources/preinstall/KafkaTestSaslTls.yaml"
+        val kafkaChecker = KafkaChecker(path)
+        val yaml: CordaValues = kafkaChecker.parseYaml(path)
+        val props = KafkaProperties(yaml.kafka.bootstrapServers!!)
         props.saslEnabled = yaml.kafka.sasl?.enabled ?: false
         props.saslUsername = "sasl-user"
         props.saslPassword = "sasl-pass"
@@ -44,8 +50,11 @@ class CheckKafkaTest {
         assertEquals("SASL_SSL", check.getProperty("security.protocol"))
         assertEquals("-----BEGIN CERTIFICATE-----", check.getProperty("ssl.truststore.certificates"))
         assertEquals("PLAIN", check.getProperty("sasl.mechanism"))
-        assertEquals("org.apache.kafka.common.security.plain.PlainLoginModule required " +
-                "username=\"sasl-user\" password=\"sasl-pass\" ;", check.getProperty("sasl.jaas.config"))
+        assertEquals(
+            "org.apache.kafka.common.security.plain.PlainLoginModule required " +
+                "username=\"sasl-user\" password=\"sasl-pass\" ;",
+            check.getProperty("sasl.jaas.config")
+        )
         assertEquals("localhost:9093", check.getProperty("bootstrap.servers"))
         assertEquals("truststore-pass", check.getProperty("ssl.truststore.password"))
         assertEquals("JKS", check.getProperty("ssl.truststore.type"))
@@ -54,10 +63,10 @@ class CheckKafkaTest {
     @Test
     fun testKafkaSaslSslPemTruststore() {
         // Test SASL_SSL with PEM format truststore (i.e. no password required)
-        val kafka = CheckKafka()
-        val path = "./src/test/resources/KafkaTestSaslTlsPEM.yaml"
-        val yaml = kafka.parseYaml<PreInstallPlugin.CordaValues>(path)
-        val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers!!)
+        val path = "./src/test/resources/preinstall/KafkaTestSaslTlsPEM.yaml"
+        val kafkaChecker = KafkaChecker(path)
+        val yaml = kafkaChecker.parseYaml<CordaValues>(path)
+        val props = KafkaProperties(yaml.kafka.bootstrapServers!!)
         props.saslEnabled = yaml.kafka.sasl?.enabled ?: false
         props.saslUsername = "sasl-user1"
         props.saslPassword = "sasl-pass2"
@@ -71,8 +80,11 @@ class CheckKafkaTest {
         assertEquals("SASL_SSL", check.getProperty("security.protocol"))
         assertEquals("-----BEGIN CERTIFICATE-----", check.getProperty("ssl.truststore.certificates"))
         assertEquals("PLAIN", check.getProperty("sasl.mechanism"))
-        assertEquals("org.apache.kafka.common.security.plain.PlainLoginModule required " +
-                "username=\"sasl-user1\" password=\"sasl-pass2\" ;", check.getProperty("sasl.jaas.config"))
+        assertEquals(
+            "org.apache.kafka.common.security.plain.PlainLoginModule required " +
+                "username=\"sasl-user1\" password=\"sasl-pass2\" ;",
+            check.getProperty("sasl.jaas.config")
+        )
         assertEquals("localhost:9093", check.getProperty("bootstrap.servers"))
         assertEquals("PEM", check.getProperty("ssl.truststore.type"))
     }
@@ -80,16 +92,16 @@ class CheckKafkaTest {
     @Test
     fun testKafkaSaslPlain() {
         // Test SASL_PLAINTEXT
-        val kafka = CheckKafka()
-        val path = "./src/test/resources/KafkaTestSaslPlain.yaml"
-        val yaml = kafka.parseYaml<PreInstallPlugin.CordaValues>(path)
-        val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers!!)
+        val path = "./src/test/resources/preinstall/KafkaTestSaslPlain.yaml"
+        val kafkaChecker = KafkaChecker(path)
+        val yaml = kafkaChecker.parseYaml<CordaValues>(path)
+        val props = KafkaProperties(yaml.kafka.bootstrapServers!!)
         props.saslEnabled = yaml.kafka.sasl?.enabled ?: false
         props.saslUsername = "sasl-user"
         props.saslPassword = "sasl-pass"
         props.saslMechanism = yaml.kafka.sasl?.mechanism
 
-        assertThrows<CheckKafka.KafkaProperties.SaslPlainWithoutTlsException> {
+        assertThrows<KafkaProperties.SaslPlainWithoutTlsException> {
             props.getKafkaProperties()
         }
     }
@@ -97,10 +109,10 @@ class CheckKafkaTest {
     @Test
     fun testKafkaSaslScram() {
         // Test SASL_PLAINTEXT
-        val kafka = CheckKafka()
-        val path = "./src/test/resources/KafkaTestSaslScram.yaml"
-        val yaml = kafka.parseYaml<PreInstallPlugin.CordaValues>(path)
-        val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers!!)
+        val path = "./src/test/resources/preinstall/KafkaTestSaslScram.yaml"
+        val kafkaChecker = KafkaChecker(path)
+        val yaml = kafkaChecker.parseYaml<CordaValues>(path)
+        val props = KafkaProperties(yaml.kafka.bootstrapServers!!)
         props.saslEnabled = yaml.kafka.sasl?.enabled ?: false
         props.saslUsername = "sasl-user"
         props.saslPassword = "sasl-pass"
@@ -110,18 +122,21 @@ class CheckKafkaTest {
 
         assertEquals("SASL_PLAINTEXT", check.getProperty("security.protocol"))
         assertEquals("SCRAM", check.getProperty("sasl.mechanism"))
-        assertEquals("org.apache.kafka.common.security.scram.ScramLoginModule required " +
-                "username=\"sasl-user\" password=\"sasl-pass\" ;", check.getProperty("sasl.jaas.config"))
+        assertEquals(
+            "org.apache.kafka.common.security.scram.ScramLoginModule required " +
+                "username=\"sasl-user\" password=\"sasl-pass\" ;",
+            check.getProperty("sasl.jaas.config")
+        )
         assertEquals("localhost:9093", check.getProperty("bootstrap.servers"))
     }
 
     @Test
     fun testKafkaSsl() {
         // Test SSL
-        val kafka = CheckKafka()
-        val path = "./src/test/resources/KafkaTestTls.yaml"
-        val yaml = kafka.parseYaml<PreInstallPlugin.CordaValues>(path)
-        val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers!!)
+        val path = "./src/test/resources/preinstall/KafkaTestTls.yaml"
+        val kafkaChecker = KafkaChecker(path)
+        val yaml = kafkaChecker.parseYaml<CordaValues>(path)
+        val props = KafkaProperties(yaml.kafka.bootstrapServers!!)
         props.tlsEnabled = yaml.kafka.tls!!.enabled
         props.truststoreFile = "-----BEGIN CERTIFICATE-----"
         props.truststorePassword = "truststore-pass"
@@ -138,36 +153,36 @@ class CheckKafkaTest {
 
     @Test
     fun testKafkaConnect() {
-        val mockAdmin = mock<CheckKafka.KafkaAdmin>()
+        val mockAdmin = mock<KafkaAdmin>()
         val nodes: Collection<Node> = listOf(Node(0, "localhost", 9092), Node(1, "localhost", 9093))
         whenever(mockAdmin.getDescriptionID()).thenReturn("ClusterID")
         whenever(mockAdmin.getNodes()).thenReturn(nodes)
 
-        val ck = CheckKafka()
-        ck.checkConnectionAndBrokers("foo", mockAdmin, 2)
+        val kafkaChecker = KafkaChecker("")
+        kafkaChecker.checkConnectionAndBrokers("foo", mockAdmin, 2)
 
-        assertTrue( ck.report.toString().contains("Connect to Kafka cluster using foo client: PASSED") )
+        assertTrue(kafkaChecker.report.toString().contains("Connect to Kafka cluster using foo client: PASSED"))
     }
 
     @Test
     fun testKafkaConnectBrokersLessThanReplicas() {
-        val mockAdmin = mock<CheckKafka.KafkaAdmin>()
+        val mockAdmin = mock<KafkaAdmin>()
         val nodes: Collection<Node> = listOf(Node(0, "localhost", 9092))
         whenever(mockAdmin.getDescriptionID()).thenReturn("ClusterID")
         whenever(mockAdmin.getNodes()).thenReturn(nodes)
 
-        val ck = CheckKafka()
-        ck.checkConnectionAndBrokers("foo", mockAdmin, 2)
+        val kafkaChecker = KafkaChecker("")
+        kafkaChecker.checkConnectionAndBrokers("foo", mockAdmin, 2)
 
-        assertTrue( ck.report.toString().contains("Kafka replica count is less than or equal to the broker count: FAILED") )
+        assertTrue(kafkaChecker.report.toString().contains("Kafka replica count is less than or equal to the broker count: FAILED"))
     }
 
     @Test
     fun testKafkaConnectFails() {
-        val kafka = CheckKafka()
-        val path = "./src/test/resources/KafkaTestBadConnection.yaml"
-        val yaml = kafka.parseYaml<PreInstallPlugin.CordaValues>(path)
-        val props = CheckKafka.KafkaProperties(yaml.kafka.bootstrapServers!!)
+        val path = "./src/test/resources/preinstall/KafkaTestBadConnection.yaml"
+        val kafkaChecker = KafkaChecker(path)
+        val yaml = kafkaChecker.parseYaml<CordaValues>(path)
+        val props = KafkaProperties(yaml.kafka.bootstrapServers!!)
         props.saslEnabled = yaml.kafka.sasl?.enabled ?: false
         props.saslUsername = "sasl-user"
         props.saslPassword = "sasl-pass"
@@ -176,7 +191,6 @@ class CheckKafkaTest {
         props.truststoreFile = "-----BEGIN CERTIFICATE-----"
         props.truststorePassword = "truststore-pass"
         props.truststoreType = yaml.kafka.tls!!.truststore!!.type
-
 
         val config = props.getKafkaProperties()
         config["default.api.timeout.ms"] = 1
@@ -189,27 +203,26 @@ class CheckKafkaTest {
 
     @Test
     fun testGetCredentialsPrefersWorkerValues() {
-        val kafka = CheckKafka()
-        val defaultValues = PreInstallPlugin.SecretValues(
-            PreInstallPlugin.ValueFrom(PreInstallPlugin.SecretKeyRef("defaultKey", "defaultName")),
+        val kafkaChecker = KafkaChecker("")
+        val defaultValues = SecretValues(
+            ValueFrom(SecretKeyRef("defaultKey", "defaultName")),
             "defaultValue"
         )
-        val workerValues = PreInstallPlugin.SecretValues(
-            PreInstallPlugin.ValueFrom(PreInstallPlugin.SecretKeyRef("workerKey", "")),
+        val workerValues = SecretValues(
+            ValueFrom(SecretKeyRef("workerKey", "")),
             "workerValue"
         )
-        val credential = kafka.getCredential(defaultValues, workerValues, "namespace")
+        val credential = kafkaChecker.getCredential(defaultValues, workerValues, "namespace")
 
         assertEquals("workerValue", credential)
     }
 
     @Test
     fun testKafkaTlsWithNoTruststore() {
-        val kafka = CheckKafka()
-        val yaml = kafka.parseYaml<PreInstallPlugin.CordaValues>("./src/test/resources/KafkaTestTlsWithNoTruststore.yaml")
-        kafka.getKafkaProperties(yaml)
+        val kafkaChecker = KafkaChecker("")
+        val yaml = kafkaChecker.parseYaml<CordaValues>("./src/test/resources/preinstall/KafkaTestTlsWithNoTruststore.yaml")
+        kafkaChecker.getKafkaProperties(yaml)
 
-        assertTrue(kafka.report.testsPassed())
+        assertTrue(kafkaChecker.report.testsPassed())
     }
-
 }

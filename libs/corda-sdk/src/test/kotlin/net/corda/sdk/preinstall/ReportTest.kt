@@ -1,10 +1,9 @@
-package net.corda.cli.plugins.preinstall
+package net.corda.sdk.preinstall
 
-import net.corda.cli.plugins.preinstall.PreInstallPlugin.Report
-import net.corda.cli.plugins.preinstall.PreInstallPlugin.ReportEntry
+import net.corda.sdk.preinstall.report.Report
+import net.corda.sdk.preinstall.report.ReportEntry
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-
 
 class ReportTest {
 

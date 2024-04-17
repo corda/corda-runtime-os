@@ -1,0 +1,33 @@
+bootstrap: { }
+config:
+  storageId: "default"
+databases: []
+stateManager: { }
+workers: { }
+
+kafka:
+  bootstrapServers: ""
+  topicPrefix: ""
+  tls:
+    enabled: true
+    truststore:
+      valueFrom:
+        secretKeyRef:
+          name: ""
+          key: ""
+      password:
+        valueFrom:
+          secretKeyRef:
+            name: ""
+            key: ""
+      type: "PKCS12"
+  sasl:
+    mechanism: "SCRAM"
+    enabled: true
+    username:
+      value: "alice"
+    password:
+      valueFrom:
+        secretKeyRef:
+          name: ""
+          key: ""
