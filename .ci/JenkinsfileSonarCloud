@@ -55,6 +55,9 @@ pipeline {
     stages {
         stage('SonarQube analysis') {
             steps {
+                when {
+                    expression { return env.BRANCH_NAME == gitUtils.getDefaultBranch(gitUtils.getRepoName())}
+                }
                 withSonarQubeEnv('SonarCloud') {
                     sh './gradlew sonar -Si'
                 }
