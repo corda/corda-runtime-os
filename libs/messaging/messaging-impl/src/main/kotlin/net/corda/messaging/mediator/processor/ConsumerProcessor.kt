@@ -80,7 +80,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val outputsToProcess =
             LinkedBlockingDeque<Pair<String, Pair<EventProcessingOutput<K, E>, CompletableFuture<Unit>>>>()
         val inputsToCommit = LinkedBlockingDeque<List<CordaConsumerRecord<K, E>>>()
-        val inputsToRetry = LinkedBlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>()
+        val inputsToRetry = LinkedBlockingQueue<List<CordaConsumerRecord<K, E>>>()
         val assignedPartitions: MutableSet<CordaTopicPartition> = ConcurrentHashMap.newKeySet()
         val rebalanceListener = object : CordaConsumerRebalanceListener {
             override fun onPartitionsRevoked(partitions: Collection<CordaTopicPartition>) {
@@ -140,7 +140,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         outputsToProcess: BlockingDeque<Pair<String, Pair<EventProcessingOutput<K, E>, CompletableFuture<Unit>>>>,
         failureCounts: MutableMap<String, Int>,
         deleteLater: MutableMap<String, State>,
-        inputsToRetry: BlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>,
+        inputsToRetry: LinkedBlockingQueue<List<CordaConsumerRecord<K, E>>>,
         inputsToCommit: BlockingDeque<List<CordaConsumerRecord<K, E>>>
     ) {
         val outputs = outputsToProcess.pollAll(100, TimeUnit.MILLISECONDS)
@@ -188,7 +188,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         consumer: MediatorConsumer<K, E>,
         outputsToProcess: Queue<Pair<String, Pair<EventProcessingOutput<K, E>, CompletableFuture<Unit>>>>,
         inputsToCommit: BlockingDeque<List<CordaConsumerRecord<K, E>>>,
-        inputsToRetry: BlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>,
+        inputsToRetry: BlockingQueue<List<CordaConsumerRecord<K, E>>>,
         assignedPartitions: MutableSet<CordaTopicPartition>
     ) {
         metrics.processorTimer.recordCallable {
@@ -273,19 +273,19 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      */
     private fun getInputs(
         consumer: MediatorConsumer<K, E>,
-        inputsToRetry: BlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>,
+        inputsToRetry: BlockingQueue<List<CordaConsumerRecord<K, E>>>,
         assignedPartitions: Set<CordaTopicPartition>,
-    ): Pair<List<EventProcessingInput<K, E>>, List<Pair<EventProcessingInput<K, E>, CompletableFuture<Unit>>>> {
+    ): Pair<List<EventProcessingInput<K, E>>, List<EventProcessingInput<K, E>>> {
         // Retries filtered to exclude any partitions we don't own
         val retryMessages = inputsToRetry.drainAll()
-            .map { it.first.filter { CordaTopicPartition(it.topic, it.partition) in assignedPartitions } to it.second }
-            .filter { it.first.isNotEmpty() }
+            .map { it.filter { CordaTopicPartition(it.topic, it.partition) in assignedPartitions } }
+            .filter { it.isNotEmpty() }
         val polledMessages =
             if (retryMessages.isNotEmpty()) consumer.poll(Duration.ZERO) else consumer.poll(pollTimeout)
         val newRecords = polledMessages.groupBy { it.key }
-        val retryRecords = retryMessages.groupBy { it.first.first().key }
+        val retryRecords = retryMessages.groupBy { it.first().key }.mapValues { it.value.flatten() }
         val states = stateManager.get(newRecords.map { it.toString() }, retryRecords.map { it.toString() }).values
-        return generateInputs(states, newRecords) to regenerateInputs(states, retryMessages)
+        return generateInputs(states, newRecords) to generateInputs(states, retryRecords)
     }
 
     private fun CordaConsumerRecord<K, E>.metadataKey(): String {
@@ -313,7 +313,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      */
     private fun processInputs(
         inputs: List<EventProcessingInput<K, E>>,
-        retryInputs: List<Pair<EventProcessingInput<K, E>, CompletableFuture<Unit>>>,
+        retryInputs: List<EventProcessingInput<K, E>>,
         inputsToCommit: BlockingDeque<List<CordaConsumerRecord<K, E>>>
     ): Map<String, Pair<CompletableFuture<EventProcessingOutput<K, E>>, CompletableFuture<Unit>>> {
         val prunedInputs = inputs.map { input ->
@@ -330,7 +330,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val (alreadySeenInputs, newInputs) = prunedInputs.partition { input ->
             input.records.isEmpty()
         }
-        return (retryInputs.map { (input, _) ->
+        return (retryInputs.map { input ->
             val persistFuture = CompletableFuture<Unit>()
             val future = taskManager.executeShortRunningTask(
                 input.key,
@@ -405,7 +405,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private fun categorizeOutputs(
         outputs: List<Pair<String, Pair<EventProcessingOutput<K, E>, CompletableFuture<Unit>>>>,
         failureCounts: MutableMap<String, Int>,
-        inputsToRetry: BlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>
+        inputsToRetry: LinkedBlockingQueue<List<CordaConsumerRecord<K, E>>>
     ): Pair<List<Pair<String, Pair<EventProcessingOutput<K, E>, CompletableFuture<Unit>>>>, List<Runnable>> {
         val transients = outputs.filter {
             it.second.first.stateChangeAndOperation is StateChangeAndOperation.Transient
@@ -425,7 +425,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val nonFatalFailures = (retryableFailures + transients).toMap()
         val failureDelayedActions = nonFatalFailures.map { failure ->
             Runnable {
-                inputsToRetry.add(failure.value.first.processedOffsets to failure.value.second)
+                inputsToRetry.add(failure.value.first.processedOffsets)
             }
         }
         return outputs.filter {
@@ -450,7 +450,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         outputs: List<Pair<String, Pair<EventProcessingOutput<K, E>, CompletableFuture<Unit>>>>,
         failureCounts: MutableMap<String, Int>,
         previousDeleteLater: MutableMap<String, State>,
-        inputsToRetry: BlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>,
+        inputsToRetry: LinkedBlockingQueue<List<CordaConsumerRecord<K, E>>>,
         categorizeDelayedActions: List<Runnable>,
         inputsToCommit: BlockingDeque<List<CordaConsumerRecord<K, E>>>
     ) {
@@ -515,28 +515,6 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun regenerateInputs(
-        states: Collection<State>,
-        retryMessages: List<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>
-    ): List<Pair<EventProcessingInput<K, E>, CompletableFuture<Unit>>> {
-        if (retryMessages.isEmpty()) return emptyList()
-        val (runningStates, failedStates) = states.partition {
-            it.metadata[PROCESSING_FAILURE] != true
-        }
-        if (failedStates.isNotEmpty()) {
-            log.info("Not processing ${failedStates.size} states as processing has previously failed.")
-        }
-        val failedKeys = failedStates.map { it.key }.toSet()
-        val records = retryMessages.associateBy { it.first.first().key }
-        val recordsToProcess = records.filter { (key, _) ->
-            !failedKeys.contains(key.toString())
-        }
-        val stateMap = runningStates.associateBy { it.key }
-        return recordsToProcess.map { (key, value) ->
-            EventProcessingInput(key, value.first, stateMap[key.toString()]) to value.second
-        }
-    }
-
     /**
      * Persist any states outputted by the [eventProcessor] to the [stateManager]
      * Tracks failures, to allow for groups whose states failed to save to be retied.
@@ -545,7 +523,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      */
     private fun processOutputs(
         outputs: List<Pair<String, Pair<EventProcessingOutput<K, E>, CompletableFuture<Unit>>>>,
-        inputsToRetry: BlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>,
+        inputsToRetry: LinkedBlockingQueue<List<CordaConsumerRecord<K, E>>>,
         inputsToCommit: BlockingDeque<List<CordaConsumerRecord<K, E>>>
     ): Pair<List<State>, List<Runnable>> {
         val statesToCreate = mutableListOf<State>()
@@ -586,7 +564,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val unsuccessfulDelayedActions = unsuccessfulStates.map { unsuccessful ->
             Runnable {
                 val output = outputsMap[unsuccessful.key]!!
-                inputsToRetry.add(output.first.processedOffsets to output.second)
+                inputsToRetry.add(output.first.processedOffsets)
             }
         }
         return statesToDelete to (successfulDelayedActions + unsuccessfulDelayedActions)
