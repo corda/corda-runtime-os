@@ -5,6 +5,7 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.e2etest.utilities.ClusterReadiness
 import net.corda.e2etest.utilities.ClusterReadinessChecker
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
+import net.corda.e2etest.utilities.FlowStatus
 import net.corda.e2etest.utilities.REST_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
@@ -204,17 +205,7 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         // Claim some tokens
         // Ensure the tokens are claimed in the correct order.
         // The priority is from the smallest values to the highest ones. Any null value should be placed at the end
-        var tokenSelectionFlowId = startRestFlow(
-            bobHoldingId,
-            mapOf(
-                "noTokensToClaim" to 5,
-                "memberX500" to aliceX500
-                ),
-            "com.r3.corda.demo.utxo.token.selection.PriorityTokenSelectionFlow",
-            requestId = idGenerator.nextId
-        )
-
-        var tokenSelectionResult = awaitRestFlowFinished(bobHoldingId, tokenSelectionFlowId)
+        var tokenSelectionResult = runPriorityTokenSelectionFlow(5, idGenerator.nextId)
         assertAll(
             { assertThat(tokenSelectionResult.flowError).isNull() },
             { assertThat(tokenSelectionResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS) },
@@ -224,16 +215,7 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         // Claim the remaining tokens
         // Ensure the tokens are claimed in the correct order.
         // The priority is from the smallest values to the highest ones. Any null value should be placed at the end
-        tokenSelectionFlowId = startRestFlow(
-            bobHoldingId,
-            mapOf(
-                "noTokensToClaim" to 13,
-                "memberX500" to aliceX500
-                ),
-            "com.r3.corda.demo.utxo.token.selection.PriorityTokenSelectionFlow",
-            requestId = idGenerator.nextId
-        )
-        tokenSelectionResult = awaitRestFlowFinished(bobHoldingId, tokenSelectionFlowId)
+        tokenSelectionResult = runPriorityTokenSelectionFlow(13, idGenerator.nextId)
         assertAll(
             { assertThat(tokenSelectionResult.flowError).isNull() },
             { assertThat(tokenSelectionResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS) },
@@ -253,6 +235,19 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
             { assertThat(utxoFlowResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS) },
             { assertThat(utxoFlowResult.flowError).isNull() },
         )
+    }
+
+    private fun runPriorityTokenSelectionFlow(noTokensToClaim: Int, requestId: String): FlowStatus {
+        val tokenSelectionFlowId = startRestFlow(
+            bobHoldingId,
+            mapOf(
+                "noTokensToClaim" to 13,
+                "memberX500" to aliceX500
+            ),
+            "com.r3.corda.demo.utxo.token.selection.PriorityTokenSelectionFlow",
+            requestId = requestId
+        )
+        return awaitRestFlowFinished(bobHoldingId, tokenSelectionFlowId)
     }
 }
 
