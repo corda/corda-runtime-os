@@ -3,7 +3,7 @@ kotlinVersion = "1.8.21"
 
 apacheCommonsCodecVersion="1.16.1"
 apacheCommonsCompressVersion = "1.26.1"
-bouncycastleVersion = "1.78"
+bouncycastleVersion = "1.78.1"
 braveVersion = "6.0.1"
 caffeineVersion = "3.1.8"
 guavaVersion = "33.0.0-jre"
