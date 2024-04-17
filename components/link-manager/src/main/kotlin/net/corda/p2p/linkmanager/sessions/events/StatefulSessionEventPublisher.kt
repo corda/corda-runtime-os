@@ -10,11 +10,14 @@ import net.corda.p2p.linkmanager.common.CommonComponents
 import net.corda.schema.Schemas
 
 internal class StatefulSessionEventPublisher(
-    commonComponents: CommonComponents,
+    private val commonComponents: CommonComponents,
 ): LifecycleWithDominoTile {
-    private val coordinatorFactory = commonComponents.lifecycleCoordinatorFactory
-    private val publisherFactory = commonComponents.publisherFactory
-    private val messagingConfiguration = commonComponents.messagingConfiguration
+    private val coordinatorFactory
+        get() = commonComponents.lifecycleCoordinatorFactory
+    private val publisherFactory
+        get() = commonComponents.publisherFactory
+    private val messagingConfiguration
+        get() = commonComponents.messagingConfiguration
 
     companion object {
         private const val CLIENT_ID = "StatefulSessionEventPublisher"
