@@ -1,5 +1,6 @@
 package net.corda.cli.plugins.topicconfig
 
+import net.corda.sdk.bootstrap.topicconfig.TopicConfigCreator
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.common.acl.AccessControlEntry
 import org.apache.kafka.common.acl.AclBinding
@@ -26,7 +27,14 @@ class CreateConnectTest {
 
     @Test
     fun `validate new topic with no config`() {
-        assertThat(getCommandWithGeneratedConfig().getTopics(listOf(Create.PreviewTopicConfiguration("topic", 5, 3, emptyMap()))))
+        assertThat(
+            getCommandWithGeneratedConfig()
+                .getTopics(
+                    listOf(
+                        TopicConfigCreator.PreviewTopicConfiguration("topic", 5, 3, emptyMap())
+                    )
+                )
+        )
             .containsEntry("topic", NewTopic("topic", 5, 3).configs(emptyMap()))
     }
 
@@ -34,7 +42,7 @@ class CreateConnectTest {
     fun `validate new topic with config`() {
         assertThat(
             getCommandWithGeneratedConfig().getTopics(
-                listOf(Create.PreviewTopicConfiguration("topic", 5, 3, mapOf("key" to "value")))
+                listOf(TopicConfigCreator.PreviewTopicConfiguration("topic", 5, 3, mapOf("key" to "value")))
             )
         ).containsEntry("topic", NewTopic("topic", 5, 3).configs(mapOf("key" to "value")))
     }
@@ -45,20 +53,34 @@ class CreateConnectTest {
         val acls = cmd.getGeneratedTopicConfigs().acls
         assertThat(cmd.getAclBindings(acls))
             .containsExactly(
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
-                    AccessControlEntry("User:Chris", "*", AclOperation.READ, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
-                    AccessControlEntry("User:Chris", "*", AclOperation.WRITE, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
-                    AccessControlEntry("User:Chris", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
-                    AccessControlEntry("User:Mo", "*", AclOperation.READ, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
-                    AccessControlEntry("User:Mo", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.certificates.rpc.ops", PatternType.LITERAL),
-                    AccessControlEntry("User:Dan", "*", AclOperation.READ, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.certificates.rpc.ops", PatternType.LITERAL),
-                    AccessControlEntry("User:Dan", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW))
+                AclBinding(
+                    ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
+                    AccessControlEntry("User:Chris", "*", AclOperation.READ, AclPermissionType.ALLOW)
+                ),
+                AclBinding(
+                    ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
+                    AccessControlEntry("User:Chris", "*", AclOperation.WRITE, AclPermissionType.ALLOW)
+                ),
+                AclBinding(
+                    ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
+                    AccessControlEntry("User:Chris", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)
+                ),
+                AclBinding(
+                    ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
+                    AccessControlEntry("User:Mo", "*", AclOperation.READ, AclPermissionType.ALLOW)
+                ),
+                AclBinding(
+                    ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
+                    AccessControlEntry("User:Mo", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)
+                ),
+                AclBinding(
+                    ResourcePattern(ResourceType.TOPIC, "prefix.certificates.rpc.ops", PatternType.LITERAL),
+                    AccessControlEntry("User:Dan", "*", AclOperation.READ, AclPermissionType.ALLOW)
+                ),
+                AclBinding(
+                    ResourcePattern(ResourceType.TOPIC, "prefix.certificates.rpc.ops", PatternType.LITERAL),
+                    AccessControlEntry("User:Dan", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)
+                )
 
             )
     }
@@ -69,24 +91,42 @@ class CreateConnectTest {
         val acls = cmd.getGeneratedTopicConfigs().acls
         assertThat(cmd.getAclBindings(acls))
             .containsExactly(
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
-                    AccessControlEntry("User:Chris", "*", AclOperation.READ, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
-                    AccessControlEntry("User:Chris", "*", AclOperation.WRITE, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
-                    AccessControlEntry("User:Chris", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
-                    AccessControlEntry("User:Mo", "*", AclOperation.READ, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
-                    AccessControlEntry("User:Mo", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
-                    AccessControlEntry("User:Mo", "*", AclOperation.WRITE, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.certificates.rpc.ops", PatternType.LITERAL),
-                    AccessControlEntry("User:Dan", "*", AclOperation.READ, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.certificates.rpc.ops", PatternType.LITERAL),
-                    AccessControlEntry("User:Dan", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.certificates.rpc.ops", PatternType.LITERAL),
-                    AccessControlEntry("User:George", "*", AclOperation.READ, AclPermissionType.ALLOW))
+                AclBinding(
+                    ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
+                    AccessControlEntry("User:Chris", "*", AclOperation.READ, AclPermissionType.ALLOW)
+                ),
+                AclBinding(
+                    ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
+                    AccessControlEntry("User:Chris", "*", AclOperation.WRITE, AclPermissionType.ALLOW)
+                ),
+                AclBinding(
+                    ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
+                    AccessControlEntry("User:Chris", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)
+                ),
+                AclBinding(
+                    ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
+                    AccessControlEntry("User:Mo", "*", AclOperation.READ, AclPermissionType.ALLOW)
+                ),
+                AclBinding(
+                    ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
+                    AccessControlEntry("User:Mo", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)
+                ),
+                AclBinding(
+                    ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
+                    AccessControlEntry("User:Mo", "*", AclOperation.WRITE, AclPermissionType.ALLOW)
+                ),
+                AclBinding(
+                    ResourcePattern(ResourceType.TOPIC, "prefix.certificates.rpc.ops", PatternType.LITERAL),
+                    AccessControlEntry("User:Dan", "*", AclOperation.READ, AclPermissionType.ALLOW)
+                ),
+                AclBinding(
+                    ResourcePattern(ResourceType.TOPIC, "prefix.certificates.rpc.ops", PatternType.LITERAL),
+                    AccessControlEntry("User:Dan", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)
+                ),
+                AclBinding(
+                    ResourcePattern(ResourceType.TOPIC, "prefix.certificates.rpc.ops", PatternType.LITERAL),
+                    AccessControlEntry("User:George", "*", AclOperation.READ, AclPermissionType.ALLOW)
+                )
 
             )
     }
@@ -96,12 +136,20 @@ class CreateConnectTest {
         val cmd = getCommandWithConfigFile()
         val topics = cmd.getGeneratedTopicConfigs().topics
         assertThat(cmd.getTopics(topics))
-            .containsEntry("prefix.avro.schema", NewTopic("prefix.avro.schema", 5, 3)
-                .configs(mapOf("cleanup.policy" to "compact", "segment.ms" to "600000",
-                    "delete.retention.ms" to "300000", "min.compaction.lag.ms" to "60000",
-                    "max.compaction.lag.ms" to "604800000", "min.cleanable.dirty.ratio" to "0.5")))
-            .containsEntry("prefix.certificates.rpc.ops", NewTopic("prefix.certificates.rpc.ops", 4, 2)
-                .configs(emptyMap()))
+            .containsEntry(
+                "prefix.avro.schema", NewTopic("prefix.avro.schema", 5, 3)
+                    .configs(
+                        mapOf(
+                            "cleanup.policy" to "compact", "segment.ms" to "600000",
+                            "delete.retention.ms" to "300000", "min.compaction.lag.ms" to "60000",
+                            "max.compaction.lag.ms" to "604800000", "min.cleanable.dirty.ratio" to "0.5"
+                        )
+                    )
+            )
+            .containsEntry(
+                "prefix.certificates.rpc.ops", NewTopic("prefix.certificates.rpc.ops", 4, 2)
+                    .configs(emptyMap())
+            )
     }
 
     @Test
@@ -109,12 +157,20 @@ class CreateConnectTest {
         val cmd = getCommandWithConfigAndOverrideFiles()
         val topics = cmd.getGeneratedTopicConfigs().topics
         assertThat(cmd.getTopics(topics))
-            .containsEntry("prefix.avro.schema", NewTopic("prefix.avro.schema", 8, 3)
-                .configs(mapOf("cleanup.policy" to "compact", "segment.ms" to "600000",
-                    "delete.retention.ms" to "300000", "min.compaction.lag.ms" to "60000",
-                    "max.compaction.lag.ms" to "604800000", "min.cleanable.dirty.ratio" to "0.7")))
-            .containsEntry("prefix.certificates.rpc.ops", NewTopic("prefix.certificates.rpc.ops", 4, 2)
-                .configs(emptyMap()))
+            .containsEntry(
+                "prefix.avro.schema", NewTopic("prefix.avro.schema", 8, 3)
+                    .configs(
+                        mapOf(
+                            "cleanup.policy" to "compact", "segment.ms" to "600000",
+                            "delete.retention.ms" to "300000", "min.compaction.lag.ms" to "60000",
+                            "max.compaction.lag.ms" to "604800000", "min.cleanable.dirty.ratio" to "0.7"
+                        )
+                    )
+            )
+            .containsEntry(
+                "prefix.certificates.rpc.ops", NewTopic("prefix.certificates.rpc.ops", 4, 2)
+                    .configs(emptyMap())
+            )
     }
 
     @Test
@@ -128,8 +184,10 @@ class CreateConnectTest {
         command.run()
         System.setOut(PrintStream(FileOutputStream(FileDescriptor.out)))
 
-        assertEquals("Required parameters missing: kafka bootstrap server [-b, --bootstrap-server]",
-            baos.toString().trim())
+        assertEquals(
+            "Required parameters missing: kafka bootstrap server [-b, --bootstrap-server]",
+            baos.toString().trim()
+        )
     }
 
     private fun getCommandWithGeneratedConfig() = CreateConnect().apply {
