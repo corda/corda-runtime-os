@@ -25,6 +25,7 @@ dependencies {
     implementation project(':libs:rest:rest')
     implementation project(":libs:serialization:serialization-avro")
     implementation project(":libs:state-manager:state-manager-api")
+    implementation project(":libs:cache:cache-caffeine")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-avro-schema"
