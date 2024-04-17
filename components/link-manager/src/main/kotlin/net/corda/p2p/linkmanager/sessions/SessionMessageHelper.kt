@@ -65,19 +65,27 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicReference
 
 internal class SessionMessageHelper(
-    commonComponents: CommonComponents,
+    private val commonComponents: CommonComponents,
     private val cryptoOpsClient: CryptoOpsClient,
     private val protocolFactory: ProtocolFactory = CryptoProtocolFactory(),
     private val sessionCache: SessionCache,
 ) : LifecycleWithDominoTile {
-    private val groupPolicyProvider = commonComponents.groupPolicyProvider
-    private val membershipGroupReaderProvider = commonComponents.membershipGroupReaderProvider
-    private val pendingOutboundSessionMessageQueues = commonComponents.messagesPendingSession
-    private val publisherFactory = commonComponents.publisherFactory
-    private val coordinatorFactory = commonComponents.lifecycleCoordinatorFactory
-    private val messagingConfiguration = commonComponents.messagingConfiguration
-    private val linkManagerHostingMap = commonComponents.linkManagerHostingMap
-    private val configurationReaderService = commonComponents.configurationReaderService
+    private val groupPolicyProvider
+        get() = commonComponents.groupPolicyProvider
+    private val membershipGroupReaderProvider
+        get() = commonComponents.membershipGroupReaderProvider
+    private val pendingOutboundSessionMessageQueues
+        get() = commonComponents.messagesPendingSession
+    private val publisherFactory
+        get() = commonComponents.publisherFactory
+    private val coordinatorFactory
+        get() = commonComponents.lifecycleCoordinatorFactory
+    private val messagingConfiguration
+        get() = commonComponents.messagingConfiguration
+    private val linkManagerHostingMap
+        get() = commonComponents.linkManagerHostingMap
+    private val configurationReaderService
+        get() = commonComponents.configurationReaderService
 
     private companion object {
         private const val SESSION_MANAGER_CLIENT_ID = "session-manager"

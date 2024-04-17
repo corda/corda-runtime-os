@@ -27,15 +27,20 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 
 internal class StatefulSessionEventProcessor(
-    commonComponents: CommonComponents,
+    private val commonComponents: CommonComponents,
     val sessionCache: SessionCache,
     private val sessionMessageHelper: SessionMessageHelper,
 ): LifecycleWithDominoTile {
-    private val coordinatorFactory = commonComponents.lifecycleCoordinatorFactory
-    private val messagingConfiguration = commonComponents.messagingConfiguration
-    private val subscriptionFactory = commonComponents.subscriptionFactory
-    private val stateConvertor = commonComponents.stateConvertor
-    private val stateManager = commonComponents.stateManager
+    private val coordinatorFactory
+        get() = commonComponents.lifecycleCoordinatorFactory
+    private val messagingConfiguration
+        get() = commonComponents.messagingConfiguration
+    private val subscriptionFactory
+        get() = commonComponents.subscriptionFactory
+    private val stateConvertor
+        get() = commonComponents.stateConvertor
+    private val stateManager
+        get() = commonComponents.stateManager
 
     private companion object {
         val CONSUMER_GROUP_ID = "session-events" + UUID.randomUUID().toString()

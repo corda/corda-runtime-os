@@ -52,7 +52,7 @@ import net.corda.data.p2p.crypto.ResponderHelloMessage as AvroResponderHelloMess
 
 @Suppress("LongParameterList")
 internal class StatefulSessionManagerImpl(
-    commonComponents: CommonComponents,
+    private val commonComponents: CommonComponents,
     sessionEventListener: StatefulSessionEventProcessor,
     sessionEventPublisher: StatefulSessionEventPublisher,
     private val stateManager: StateManagerWrapper,
@@ -64,11 +64,16 @@ internal class StatefulSessionManagerImpl(
     private val sessionMessageProcessor: SessionMessageProcessor,
     private val stateFactory: StateFactory = StateFactory(commonComponents.stateConvertor),
 ) : SessionManager {
-    private val clock = commonComponents.clock
-    private val coordinatorFactory = commonComponents.lifecycleCoordinatorFactory
-    private val stateConvertor = commonComponents.stateConvertor
-    private val membershipGroupReaderProvider = commonComponents.membershipGroupReaderProvider
-    private val schemaRegistry = commonComponents.schemaRegistry
+    private val clock
+        get() = commonComponents.clock
+    private val coordinatorFactory
+        get() = commonComponents.lifecycleCoordinatorFactory
+    private val stateConvertor
+        get() = commonComponents.stateConvertor
+    private val membershipGroupReaderProvider
+        get() = commonComponents.membershipGroupReaderProvider
+    private val schemaRegistry
+        get() = commonComponents.schemaRegistry
 
     companion object {
         const val LINK_MANAGER_SUBSYSTEM = "link-manager"

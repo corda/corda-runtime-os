@@ -2,7 +2,6 @@ package net.corda.p2p.linkmanager.sessions
 
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.metrics.CordaMetrics
 import net.corda.p2p.linkmanager.metrics.recordP2PMetric
 import net.corda.p2p.linkmanager.metrics.recordSessionCreationTime
@@ -22,7 +21,7 @@ internal class StateManagerWrapper(
         val logger: Logger = LoggerFactory.getLogger(StateManagerWrapper::class.java)
     }
 
-    val name: LifecycleCoordinatorName = stateManager.name
+    internal val name get() = stateManager.name
 
     fun upsert(
         changes: Collection<StateManagerAction>,

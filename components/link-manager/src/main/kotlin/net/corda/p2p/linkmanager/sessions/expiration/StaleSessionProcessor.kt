@@ -28,14 +28,19 @@ import org.slf4j.LoggerFactory
  * removed from the cache, not just from the [StateManager] and we publish the required [SessionDeleted] events.
  */
 internal class StaleSessionProcessor(
-    commonComponents: CommonComponents,
+    private val commonComponents: CommonComponents,
     private val sessionCache: SessionCache,
 ) : DurableProcessor<String, ScheduledTaskTrigger>, LifecycleWithDominoTile {
-    private val clock = commonComponents.clock
-    private val lifecycleCoordinatorFactory = commonComponents.lifecycleCoordinatorFactory
-    private val subscriptionFactory = commonComponents.subscriptionFactory
-    private val configuration = commonComponents.messagingConfiguration
-    private val stateManager = commonComponents.stateManager
+    private val clock
+        get() = commonComponents.clock
+    private val lifecycleCoordinatorFactory
+        get() = commonComponents.lifecycleCoordinatorFactory
+    private val subscriptionFactory
+        get() = commonComponents.subscriptionFactory
+    private val configuration
+        get() = commonComponents.messagingConfiguration
+    private val stateManager
+        get() = commonComponents.stateManager
 
     private companion object {
         const val STALE_SESSION_PROCESSOR_GROUP = "stale_session_processor_group"
