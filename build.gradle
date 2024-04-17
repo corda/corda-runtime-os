@@ -29,6 +29,7 @@ plugins {
     alias libs.plugins.dependency.check.versions // discover possible dependency version upgrades
     alias libs.plugins.dokka apply false
     alias libs.plugins.cyclonedx.bom apply false
+    id "org.sonarqube" version "4.4.1.3373"
 }
 
 tasks.named("wrapper") {
@@ -45,6 +46,14 @@ snyk {
     severity = project.findProperty("snykSeverity") ?: 'low'
     autoDownload = true
     autoUpdate = true
+}
+
+sonar {
+    properties {
+        property "sonar.projectKey", "corda"
+        property "sonar.organization", "corda"
+        property "sonar.host.url", "https://sonarcloud.io"
+    }
 }
 
 allprojects {
