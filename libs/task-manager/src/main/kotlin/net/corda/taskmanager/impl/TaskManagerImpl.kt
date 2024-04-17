@@ -65,6 +65,8 @@ internal class TaskManagerImpl(
             val future = CompletableFuture<Any>()
             if (forceFirst) {
                 queue.addFirst(Step(command, future, persistedFuture))
+                started = true
+                executorService.execute(this)
             } else {
                 if (closed) throw BatchRaceException()
                 val isFirst = queue.isEmpty() && !started
@@ -88,13 +90,13 @@ internal class TaskManagerImpl(
 
         private fun runNextCommand() {
             val (nextCommand, nextFuture, persistedFuture) = queue.poll() ?: return
-            executeStep(nextCommand, nextFuture)
             // Only submit the next in the queue once this one has made it all the way to persistence
             persistedFuture.whenComplete { _, _ ->
                 if (!close()) {
                     executorService.execute(this)
                 }
             }
+            executeStep(nextCommand, nextFuture)
         }
 
         override fun run() {

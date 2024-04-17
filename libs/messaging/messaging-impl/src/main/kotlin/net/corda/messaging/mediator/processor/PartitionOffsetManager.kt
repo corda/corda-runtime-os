@@ -47,7 +47,7 @@ class PartitionOffsetManager {
             if(it.value.get()) {
                 highest = it.key
             } else {
-                return@forEach
+                return highest
             }
         }
         return highest

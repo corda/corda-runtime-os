@@ -112,7 +112,8 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                                 failureCounts,
                                 deleteLater,
                                 inputsToRetry,
-                                inflightStates
+                                inflightStates,
+                                inputsToCommit
                             )
                         }
                     }
@@ -147,7 +148,8 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         failureCounts: MutableMap<String, Int>,
         deleteLater: MutableMap<String, State>,
         inputsToRetry: BlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>,
-        inflightStates: ConcurrentHashMap<String, AtomicReferenceCountingReference<State>>
+        inflightStates: ConcurrentHashMap<String, AtomicReferenceCountingReference<State>>,
+        inputsToCommit: BlockingDeque<List<CordaConsumerRecord<K, E>>>
     ) {
         val outputs = outputsToProcess.pollAll(100, TimeUnit.MILLISECONDS)
         if (outputs.isNotEmpty()) {
@@ -164,7 +166,8 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                     deleteLater,
                     inputsToRetry,
                     inflightStates,
-                    categorizeDelayedActions
+                    categorizeDelayedActions,
+                    inputsToCommit
                 )
             } catch (e: Exception) {
                 log.warn("Error trying to commit produced outputs", e)
@@ -201,9 +204,9 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         metrics.processorTimer.recordCallable {
             try {
                 val (inputs, retryInputs) = getInputs(consumer, inputsToRetry, inflightStates, assignedPartitions)
-                val retriedOutputs = processInputs(emptyList(), retryInputs, inflightStates)
+                val retriedOutputs = processInputs(emptyList(), retryInputs, inflightStates, inputsToCommit)
                 transferOutputs(retriedOutputs, outputsToProcess)
-                val outputs = processInputs(inputs, emptyList(), inflightStates)
+                val outputs = processInputs(inputs, emptyList(), inflightStates, inputsToCommit)
                 transferOutputs(outputs, outputsToProcess)
                 // TODO try and commit offsets async
                 commitConsumerOffsets(consumer, inputsToCommit)
@@ -305,26 +308,58 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             if (retryMessages.isNotEmpty()) consumer.poll(Duration.ZERO) else consumer.poll(pollTimeout)
         val newRecords = polledMessages.groupBy { it.key }
         val retryRecords = retryMessages.groupBy { it.first.first().key }
-        val cachedStateHolders =
-            (newRecords.keys - retryRecords.keys).map { it to inflightStates[it.toString()]?.getAndReference() }
-                .filter { it.second != null }.toMap()
-        val statesToFetch = ((newRecords.keys + retryRecords.keys) - cachedStateHolders.keys)
+        val cachedStatesHolders = (newRecords.keys - retryRecords.keys).map {
+            val holder = inflightStates.compute(it.toString()) { _, value ->
+                value?.getAndReference()
+                value
+            }
+            it to holder
+        }.filter { it.second != null }.toMap()
+        val allRecordKeys = newRecords.keys + retryRecords.keys
+        val statesToFetch = allRecordKeys - cachedStatesHolders.keys
+        // Reference counting needs to happen before loading the states so that a write back from persistence does not get discarded
+        // between here and state manager get returning
+        statesToFetch.forEach {
+            val key = it.toString()
+            inflightStates.compute(key) { _, value ->
+                if (value == null) {
+                    AtomicReferenceCountingReference<State>(null).also {
+                        it.getAndReference()
+                    }
+                } else {
+                    if (it in newRecords.keys) {
+                        value.getAndReference()
+                    }
+                    value
+                }
+            }
+        }
         val states = stateManager.get(statesToFetch.map { it.toString() })
         statesToFetch.forEach {
             val key = it.toString()
             val state = states[key]
-            inflightStates[key] = AtomicReferenceCountingReference(state)
+            if (state != null) {
+                inflightStates.compute(key) { _, value ->
+                    if (value != null) {
+                        val oldState = value.get()
+                        if (oldState == null || oldState.version <= state.version) {
+                            value.set(state)
+                        }
+                        value
+                    } else null
+                }
+            }
         }
-        return generateInputs(states.values + cachedStateHolders.values.map { it!! }, newRecords) to regenerateInputs(
-            states.values,
-            retryMessages
-        )
+        // Everything should have an entry in inflightStates now
+        val allStates = allRecordKeys.map { inflightStates[it.toString()]?.get() }.filterNotNull()
+        return generateInputs(allStates, newRecords) to regenerateInputs(allStates, retryMessages)
     }
 
     private fun regenerateInputs(
         states: Collection<State>,
         retryMessages: List<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>
     ): List<Pair<EventProcessingInput<K, E>, CompletableFuture<Unit>>> {
+        if (retryMessages.isEmpty()) return emptyList()
         val (runningStates, failedStates) = states.partition {
             it.metadata[PROCESSING_FAILURE] != true
         }
@@ -368,20 +403,25 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private fun processInputs(
         inputs: List<EventProcessingInput<K, E>>,
         retryInputs: List<Pair<EventProcessingInput<K, E>, CompletableFuture<Unit>>>,
-        inflightStates: ConcurrentHashMap<String, AtomicReferenceCountingReference<State>>
+        inflightStates: ConcurrentHashMap<String, AtomicReferenceCountingReference<State>>,
+        inputsToCommit: BlockingDeque<List<CordaConsumerRecord<K, E>>>
     ): Map<String, Pair<CompletableFuture<EventProcessingOutput<K, E>>, CompletableFuture<Unit>>> {
         val prunedInputs = inputs.map { input ->
             input.state?.let { state ->
-                val notSeenRecords = input.records.filter { record ->
-                    record.offset > ((state.metadata[record.metadataKey()] as? Number)?.toLong() ?: -1)
+                val (notSeenRecords, seenRecords) = input.records.partition { record ->
+                    // Because original design expects to replay last message to re-trigger outputs stored in state
+                    // we use >= rather than >
+                    record.offset >= ((state.metadata[record.metadataKey()] as? Number)?.toLong() ?: -1)
                 }
+                inputsToCommit.add(seenRecords)
                 input.copy(records = notSeenRecords)
             } ?: input
         }
         val (alreadySeenInputs, newInputs) = prunedInputs.partition { input ->
             input.records.isEmpty()
         }
-        return (retryInputs.map { (input, persistFuture) ->
+        return (retryInputs.map { (input, _) ->
+            val persistFuture = CompletableFuture<Unit>()
             val future = taskManager.executeShortRunningTask(
                 input.key,
                 input.state?.metadata?.get(PRIORITY_METADATA_PROPERTY) as? Long ?: 0,
@@ -492,9 +532,15 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         previousDeleteLater: MutableMap<String, State>,
         inputsToRetry: BlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>,
         inflightStates: ConcurrentHashMap<String, AtomicReferenceCountingReference<State>>,
-        categorizeDelayedActions: List<Runnable>
+        categorizeDelayedActions: List<Runnable>,
+        inputsToCommit: BlockingDeque<List<CordaConsumerRecord<K, E>>>
     ) {
-        val (toDelete, processOutputsDelayedActions) = processOutputs(outputs, inputsToRetry, inflightStates)
+        val (toDelete, processOutputsDelayedActions) = processOutputs(
+            outputs,
+            inputsToRetry,
+            inflightStates,
+            inputsToCommit
+        )
         // Delete after committing offsets to satisfy flow engine replay requirements.
         val (safeToDelete, deleteLater) = toDelete.partition { state ->
             isStateSafeToDelete(consumer, state)
@@ -503,9 +549,18 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             isStateSafeToDelete(consumer, state)
         }
         stateManager.delete(safeToDelete + previousNowSafeToDelete)
-        stateManager.update(deleteLater.map {
+        val toDeleteLater = deleteLater.map {
             it.copy(metadata = Metadata(it.metadata + mapOf(DELETE_LATER_METADATA_PROPERTY to true)))
-        }) // Updates seen offsets to prevent re-processing
+        }
+        stateManager.update(toDeleteLater) // Updates seen offsets to prevent re-processing
+        toDeleteLater.forEach {
+            inflightStates.compute(it.key) { _, value ->
+                if (value != null) {
+                    value.set(it.copy(version = it.version + 1))
+                }
+                value
+            }
+        }
         for (delayedAction in (categorizeDelayedActions + processOutputsDelayedActions)) {
             delayedAction.run()
         }
@@ -533,6 +588,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         states: Collection<State>,
         records: Map<K, List<CordaConsumerRecord<K, E>>>
     ): List<EventProcessingInput<K, E>> {
+        if (records.isEmpty()) return emptyList()
         val (runningStates, failedStates) = states.partition {
             it.metadata[PROCESSING_FAILURE] != true
         }
@@ -558,7 +614,8 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private fun processOutputs(
         outputs: List<Pair<String, Pair<EventProcessingOutput<K, E>, CompletableFuture<Unit>>>>,
         inputsToRetry: BlockingQueue<Pair<List<CordaConsumerRecord<K, E>>, CompletableFuture<Unit>>>,
-        inflightStates: ConcurrentHashMap<String, AtomicReferenceCountingReference<State>>
+        inflightStates: ConcurrentHashMap<String, AtomicReferenceCountingReference<State>>,
+        inputsToCommit: BlockingDeque<List<CordaConsumerRecord<K, E>>>
     ): Pair<List<State>, List<Runnable>> {
         val statesToCreate = mutableListOf<State>()
         val statesToUpdate = mutableListOf<State>()
@@ -590,11 +647,23 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         sendAsynchronousEvents(outputsToSend)
         val successfulDelayedActions = successful.map {
             Runnable {
-                val newState = it.value.first.stateChangeAndOperation.outputState
-                if (inflightStates[it.key]?.setAndDereference(newState) ?: false) {
-                    inflightStates.remove(it.key)
+                val incrementVersion =
+                    it.value.first.stateChangeAndOperation.let { it is StateChangeAndOperation.Update /*|| it is StateChangeAndOperation.Create*/ }
+                val newState =
+                    it.value.first.stateChangeAndOperation.outputState?.let { if (incrementVersion) it.copy(version = it.version + 1) else it }
+                inflightStates.compute(it.key) { _, value ->
+                    if (value != null) {
+                        val oldState = value.get()
+                        if (if (oldState == null || oldState.version < (newState?.version ?: Integer.MAX_VALUE)) {
+                                value.setAndDereference(newState)
+                            } else {
+                                value.setAndDereference(oldState)
+                            }
+                        ) null else value
+                    } else null
                 }
                 writeFutures[it.key]!!.complete(Unit)
+                inputsToCommit.add(it.value.first.processedOffsets)
             }
         }
         val unsuccessfulStates = failedToCreate + failedToUpdateOptimisticLockFailure
