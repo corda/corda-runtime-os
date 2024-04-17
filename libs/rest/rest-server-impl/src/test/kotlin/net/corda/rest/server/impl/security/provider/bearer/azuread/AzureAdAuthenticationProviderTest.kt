@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
@@ -25,7 +26,7 @@ class AzureAdAuthenticationProviderTest {
     private val settings: AzureAdSettingsProvider = mock()
     private val jwtProcessor: JwtProcessor = mock()
     private val restSecurityManager = mock<RestSecurityManager>().apply {
-        whenever(buildSubject(any())).thenReturn(TestAdminSubject(username))
+        whenever(buildSubject(any(), eq(null))).thenReturn(TestAdminSubject(username))
     }
 
     private lateinit var provider: AzureAdAuthenticationProvider

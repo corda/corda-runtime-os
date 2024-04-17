@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import javax.security.auth.login.FailedLoginException
@@ -26,7 +27,7 @@ class JwtAuthenticationProviderTest {
     private val permission = "InvokeRpc:${TestRestResource::class.java.name}#dummy2"
 
     private val restSecurityManager = mock<RestSecurityManager>().apply {
-        whenever(buildSubject(any())).thenReturn(TestAdminSubject(username))
+        whenever(buildSubject(any(), eq(null))).thenReturn(TestAdminSubject(username))
     }
 
     private val provider = JwtAuthenticationProvider(jwtProcessor, claimExtractor, ::restSecurityManager)
