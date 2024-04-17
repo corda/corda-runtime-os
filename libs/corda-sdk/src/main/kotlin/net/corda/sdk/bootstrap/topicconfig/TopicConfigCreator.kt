@@ -6,6 +6,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import com.fasterxml.jackson.module.kotlin.KotlinFeature
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
+import org.slf4j.LoggerFactory
 import java.net.URL
 import java.net.URLDecoder
 import java.nio.charset.Charset
@@ -18,6 +19,7 @@ class TopicConfigCreator(
     val classLoader: ClassLoader
 ) {
     private val resourceGetter: (String) -> List<URL> = { path -> classLoader.getResources(path).toList().filterNotNull() }
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     data class TopicConfig(
         val name: String,
@@ -98,10 +100,11 @@ class TopicConfigCreator(
 
     fun getTopicConfigs(): List<TopicConfig> {
         val files: List<URL> = resourceGetter("net/corda/schema")
+        val extractedResources = extractResourcesFromJars(files, listOf("yml", "yaml")).values.toList()
+        logger.info("extractedResources: ${extractedResources.joinToString()}")
 
         @Suppress("UNCHECKED_CAST")
-        val topicDefinitions: List<TopicDefinitions> =
-            extractResourcesFromJars(files, listOf("yml", "yaml")).values.toList() as List<TopicDefinitions>
+        val topicDefinitions: List<TopicDefinitions> = extractedResources as List<TopicDefinitions>
         val topicConfigs = topicDefinitions.flatMap { it: TopicDefinitions ->
             it.topics.values
         }
