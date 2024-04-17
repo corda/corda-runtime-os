@@ -7,9 +7,9 @@ import net.corda.data.permissions.PermissionType
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.RoleAssociation
 import net.corda.data.permissions.User
+import net.corda.data.rest.PasswordExpiryStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
-import net.corda.libs.permissions.manager.ExpiryStatus
 import net.corda.permissions.password.PasswordHash
 import net.corda.permissions.password.PasswordService
 import net.corda.schema.configuration.ConfigKeys
@@ -261,7 +261,7 @@ class RbacBasicAuthenticationServiceTest {
         verify(permissionManagementCache, atLeastOnce()).getUser("userLoginName1")
 
         assertTrue(result.authenticationSuccess)
-        assertEquals(ExpiryStatus.EXPIRED, result.expiryStatus)
+        assertEquals(PasswordExpiryStatus.EXPIRED, result.expiryStatus)
     }
 
     @Test
@@ -283,7 +283,7 @@ class RbacBasicAuthenticationServiceTest {
         verify(permissionManagementCache, atLeastOnce()).getUser("userLoginName1")
 
         assertTrue(result.authenticationSuccess)
-        assertEquals(ExpiryStatus.CLOSE_TO_EXPIRY, result.expiryStatus)
+        assertEquals(PasswordExpiryStatus.CLOSE_TO_EXPIRY, result.expiryStatus)
     }
 
     @Test
@@ -309,6 +309,6 @@ class RbacBasicAuthenticationServiceTest {
         verify(permissionManagementCache, atLeastOnce()).getUser("userLoginName1")
 
         assertTrue(result.authenticationSuccess)
-        assertEquals(ExpiryStatus.ACTIVE, result.expiryStatus)
+        assertEquals(PasswordExpiryStatus.ACTIVE, result.expiryStatus)
     }
 }

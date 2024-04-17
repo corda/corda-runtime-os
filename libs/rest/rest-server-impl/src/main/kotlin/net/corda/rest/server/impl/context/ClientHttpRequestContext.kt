@@ -5,7 +5,7 @@ import io.javalin.http.Context
 import io.javalin.http.UploadedFile
 import io.javalin.plugin.json.JsonMapper
 import io.javalin.plugin.json.jsonMapper
-import net.corda.libs.permissions.manager.ExpiryStatus
+import net.corda.data.rest.PasswordExpiryStatus
 import net.corda.rest.server.impl.security.RestAuthenticationProvider
 
 /**
@@ -59,7 +59,7 @@ internal class ClientHttpRequestContext(private val ctx: Context) : ClientReques
         addHeaderValues(authMethods)
     }
 
-    override fun addPasswordExpiryHeader(expiryStatus: ExpiryStatus) {
+    override fun addPasswordExpiryHeader(expiryStatus: PasswordExpiryStatus) {
         ctx.res.addHeader(Header.WWW_AUTHENTICATE, "PasswordExpiryStatus: $expiryStatus")
     }
 

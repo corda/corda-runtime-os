@@ -1,7 +1,7 @@
 package net.corda.rest.security.read.rbac
 
+import net.corda.data.rest.PasswordExpiryStatus
 import net.corda.libs.permission.PermissionValidator
-import net.corda.libs.permissions.manager.ExpiryStatus
 import net.corda.rest.authorization.AuthorizingSubject
 import java.util.function.Supplier
 
@@ -11,7 +11,7 @@ import java.util.function.Supplier
 class RBACAuthorizingSubject(
     private val permissionValidatorSupplier: Supplier<PermissionValidator>,
     override val principal: String,
-    override val expiryStatus: ExpiryStatus?
+    override val expiryStatus: PasswordExpiryStatus?
 ) : AuthorizingSubject {
 
     /**

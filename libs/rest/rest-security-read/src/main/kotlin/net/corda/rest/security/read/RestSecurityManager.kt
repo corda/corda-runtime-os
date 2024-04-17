@@ -1,6 +1,6 @@
 package net.corda.rest.security.read
 
-import net.corda.libs.permissions.manager.ExpiryStatus
+import net.corda.data.rest.PasswordExpiryStatus
 import net.corda.lifecycle.Lifecycle
 import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.security.AuthServiceId
@@ -26,5 +26,5 @@ interface RestSecurityManager : Lifecycle {
      * Construct an [AuthorizingSubject] instance con permissions of the user associated to
      * the given principal. Throws an exception if the principal cannot be resolved to a known user.
      */
-    fun buildSubject(principal: String, expiryStatus: ExpiryStatus? = null): AuthorizingSubject
+    fun buildSubject(principal: String, expiryStatus: PasswordExpiryStatus? = null): AuthorizingSubject
 }

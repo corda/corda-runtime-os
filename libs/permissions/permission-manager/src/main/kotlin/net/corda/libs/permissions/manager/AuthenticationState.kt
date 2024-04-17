@@ -1,9 +1,5 @@
 package net.corda.libs.permissions.manager
 
-data class AuthenticationState(val authenticationSuccess: Boolean, val expiryStatus: ExpiryStatus?)
+import net.corda.data.rest.PasswordExpiryStatus
 
-enum class ExpiryStatus {
-    ACTIVE,
-    CLOSE_TO_EXPIRY,
-    EXPIRED
-}
+data class AuthenticationState(val authenticationSuccess: Boolean, val expiryStatus: PasswordExpiryStatus?)

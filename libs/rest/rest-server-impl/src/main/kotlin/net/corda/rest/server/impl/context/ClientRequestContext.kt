@@ -5,7 +5,7 @@ import io.javalin.core.util.Header
 import io.javalin.http.UploadedFile
 import io.javalin.http.util.ContextUtil
 import io.javalin.plugin.json.JsonMapper
-import net.corda.libs.permissions.manager.ExpiryStatus
+import net.corda.data.rest.PasswordExpiryStatus
 import net.corda.rest.server.impl.security.RestAuthenticationProvider
 
 /**
@@ -83,7 +83,7 @@ interface ClientRequestContext {
      */
     fun addWwwAuthenticateHeaders(restAuthProvider: RestAuthenticationProvider) {}
 
-    fun addPasswordExpiryHeader(expiryStatus: ExpiryStatus) {}
+    fun addPasswordExpiryHeader(expiryStatus: PasswordExpiryStatus) {}
 
     fun getResourceAccessString(): String {
         // Examples of strings will look like:

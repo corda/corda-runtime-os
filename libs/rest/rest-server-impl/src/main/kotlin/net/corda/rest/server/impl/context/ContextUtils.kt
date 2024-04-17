@@ -4,7 +4,7 @@ import io.javalin.core.util.Header
 import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
 import io.javalin.http.UnauthorizedResponse
-import net.corda.libs.permissions.manager.ExpiryStatus
+import net.corda.data.rest.PasswordExpiryStatus
 import net.corda.metrics.CordaMetrics
 import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.exception.HttpApiException
@@ -83,9 +83,9 @@ internal object ContextUtils {
                     ),
                     it
                 )
-                if (it.expiryStatus == ExpiryStatus.EXPIRED || it.expiryStatus == ExpiryStatus.CLOSE_TO_EXPIRY) {
+                if (it.expiryStatus == PasswordExpiryStatus.EXPIRED || it.expiryStatus == PasswordExpiryStatus.CLOSE_TO_EXPIRY) {
                     ctx.addPasswordExpiryHeader(it.expiryStatus!!)
-                    if (it.expiryStatus == ExpiryStatus.EXPIRED) {
+                    if (it.expiryStatus == PasswordExpiryStatus.EXPIRED) {
                         "Password has expired".let { passwordExpired ->
                             log.warn(passwordExpired)
                             throw UnauthorizedResponse(passwordExpired)

@@ -1,8 +1,8 @@
 package net.corda.rest.security.read.rbac
 
+import net.corda.data.rest.PasswordExpiryStatus
 import net.corda.libs.permission.PermissionValidator
 import net.corda.libs.permissions.manager.BasicAuthenticationService
-import net.corda.libs.permissions.manager.ExpiryStatus
 import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.security.AuthServiceId
 import net.corda.rest.security.read.Password
@@ -26,7 +26,7 @@ class RBACSecurityManager(
         return buildSubject(principal, authenticationState.expiryStatus)
     }
 
-    override fun buildSubject(principal: String, expiryStatus: ExpiryStatus?): AuthorizingSubject {
+    override fun buildSubject(principal: String, expiryStatus: PasswordExpiryStatus?): AuthorizingSubject {
         return RBACAuthorizingSubject(permissionValidatorSupplier, principal, expiryStatus)
     }
 

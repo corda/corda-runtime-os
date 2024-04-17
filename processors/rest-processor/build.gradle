@@ -32,7 +32,6 @@ dependencies {
     implementation project(":components:crypto:crypto-client-hsm")
     implementation project(':components:crypto:crypto-rest')
     implementation project(':components:membership:group-policy')
-    implementation project(":libs:permissions:permission-manager")
     implementation project(":libs:utilities")
 
     implementation project(':libs:configuration:configuration-core')

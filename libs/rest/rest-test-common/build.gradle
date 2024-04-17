@@ -19,7 +19,6 @@ dependencies {
 
     implementation libs.mockito.kotlin
 
-    implementation project(":libs:permissions:permission-manager")
     implementation project(":libs:rest:rest")
     implementation project(":libs:rest:rest-common")
     implementation project(":libs:rest:rest-tools")
