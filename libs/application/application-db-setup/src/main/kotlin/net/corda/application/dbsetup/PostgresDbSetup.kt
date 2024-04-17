@@ -7,8 +7,6 @@ import net.corda.db.core.OSGiDataSourceFactory
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.sdk.bootstrap.initial.buildRbacConfigSql
-import net.corda.sdk.bootstrap.initial.toInsertStatement
 import org.slf4j.LoggerFactory
 
 // TODO This class bootstraps database, duplicating functionality available via CLI
