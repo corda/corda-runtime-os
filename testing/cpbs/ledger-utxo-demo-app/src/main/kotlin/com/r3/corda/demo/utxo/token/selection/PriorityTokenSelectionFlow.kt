@@ -30,6 +30,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import java.util.UUID
 
 @Suppress("unused")
 @InitiatingFlow(protocol = "token-selection-priority-flow-protocol")
@@ -102,6 +103,7 @@ class PriorityTokenSelectionFlow : ClientStartableFlow {
 
     @Suspendable
     private fun claimTokens(noTokensToClaim: Int): List<ClaimedToken> {
+
         val queryCriteria = TokenClaimCriteria(
             TOKEN_TYPE,
             digestService.parseSecureHash(TOKEN_ISSUER_HASH),
@@ -113,7 +115,7 @@ class PriorityTokenSelectionFlow : ClientStartableFlow {
 
         val claimedTokenList = mutableListOf<ClaimedToken>()
         do {
-            val tokenClaim = tokenSelection.tryClaim("claim1", queryCriteria)
+            val tokenClaim = tokenSelection.tryClaim("claim-${UUID.randomUUID()}", queryCriteria)
             if (tokenClaim != null) {
                 // Lookup the states that match the returned tokens
                 claimedTokenList.add(tokenClaim.claimedTokens.single())
