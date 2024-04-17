@@ -203,7 +203,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
             offset = 0,
             resultClass,
             clock,
-            flowFiberService.getExecutingFiber().getExecutionContext()
+            flowFiberService
         )
     }
 
