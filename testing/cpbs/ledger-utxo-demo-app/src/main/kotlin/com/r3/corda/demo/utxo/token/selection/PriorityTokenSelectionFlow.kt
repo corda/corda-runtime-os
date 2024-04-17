@@ -32,8 +32,10 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 
+private const val PRIORITY_TOKEN_SELECTION_PROTOCOL = "token-selection-priority-flow-protocol"
+
 @Suppress("unused")
-@InitiatingFlow(protocol = "token-selection-priority-flow-protocol")
+@InitiatingFlow(protocol = PRIORITY_TOKEN_SELECTION_PROTOCOL)
 class PriorityTokenSelectionFlow : ClientStartableFlow {
 
     private companion object {
@@ -61,15 +63,12 @@ class PriorityTokenSelectionFlow : ClientStartableFlow {
     @CordaInject
     lateinit var utxoLedgerService: UtxoLedgerService
 
-    @CordaInject
-    lateinit var marshallingService: JsonMarshallingService
-
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
         log.info("PriorityTokenSelectionFlow starting...")
         try {
             val request =
-                requestBody.getRequestBodyAs(marshallingService, PriorityTokenSelectionMsg::class.java)
+                requestBody.getRequestBodyAs(jsonMarshallingService, PriorityTokenSelectionMsg::class.java)
 
             val claimedTokenList = claimTokens(request.noTokensToClaim)
 
@@ -79,22 +78,19 @@ class PriorityTokenSelectionFlow : ClientStartableFlow {
                 return "Failed to claim enough tokens"
             }
 
-
             val memberInfo = requireNotNull(memberLookup.lookup(MemberX500Name.parse(request.memberX500))) {
                 "Member ${request.memberX500} does not exist in the membership group"
             }
 
             // Spend the tokens so they cannot be selected again
-            spendTokens(claimedTokenList.toList(), memberInfo)
+            spendTokens(claimedTokenList, memberInfo)
 
             // Create a list with the priority of each claimed token
-            val tokenPriorityList = mutableListOf<Long?>()
-            claimedTokenList.map {
-                val utxoState = utxoLedgerService.resolve<TestUtxoState>(it.stateRef)
-                tokenPriorityList.add(utxoState.state.contractState.priority)
+            val tokenPriorityList = claimedTokenList.map {
+                utxoLedgerService.resolve<TestUtxoState>(it.stateRef).state.contractState.priority
             }
 
-            return jsonMarshallingService.format(tokenPriorityList)
+            return tokenPriorityList.toString()
         } catch (e: Exception) {
             log.error("Unexpected error while processing the flow", e)
             throw e
@@ -138,7 +134,6 @@ class PriorityTokenSelectionFlow : ClientStartableFlow {
 
         val now = Instant.now()
 
-        @Suppress("DEPRECATION")
         val signedTransaction = txBuilder
             .setNotary(notaryLookup.notaryServices.single().name)
             .setTimeWindowBetween(now, now.plus(1, ChronoUnit.DAYS))
@@ -165,14 +160,14 @@ class PriorityTokenSelectionFlow : ClientStartableFlow {
         val noTokensToClaim: Int,
         val memberX500: String
     )
-
 }
 
-@InitiatedBy(protocol = "token-selection-priority-flow-protocol")
+@Suppress("unused")
+@InitiatedBy(protocol = PRIORITY_TOKEN_SELECTION_PROTOCOL)
 class SpendTokenResponder : ResponderFlow {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject
