@@ -1,5 +1,6 @@
 package net.corda.crypto.softhsm.impl
 
+import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.persistence.HSMUsage
@@ -9,16 +10,16 @@ import net.corda.crypto.softhsm.HSMRepository
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
+import net.corda.utilities.debug
 import net.corda.v5.base.util.EncodingUtils.toHex
 import org.slf4j.LoggerFactory
-import java.lang.IllegalStateException
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.PersistenceException
 import javax.persistence.Tuple
-import net.corda.utilities.debug
+
 
 /**
  * Database operations for HSM.
@@ -133,7 +134,7 @@ class HSMRepositoryImpl(
                     tenantAssociation
                 }
             }
-        } catch(e: PersistenceException) {
+        } catch (e: PersistenceException) {
             val match = e.cause?.message?.contains("ConstraintViolationException") ?: false
             // NOTE: this is not great, but we must be able to detect a constraint violation in case
             //  of a race condition, however, the JPA exception type doesn't give us enough info, so we check
@@ -172,7 +173,7 @@ class HSMRepositoryImpl(
             hsmId = hsmId,
             timestamp = Instant.now(),
             masterKeyAlias = if (masterKeyPolicy == MasterKeyPolicy.UNIQUE) {
-                generateRandomShortAlias()
+                generateRandomShortAlias(tenantId)
             } else {
                 null
             }
@@ -183,8 +184,10 @@ class HSMRepositoryImpl(
         return association
     }
 
-    private fun generateRandomShortAlias() =
-        toHex(UUID.randomUUID().toString().toByteArray()).take(12)
+    // Previously we got occasionally clashes when using only UUID.randomUUID() and without sha256Bytes
+    // using tenantId and hashing the value before passing to toHex function should ensure the randomness
+    private fun generateRandomShortAlias(tenantId: String) =
+        toHex(UUID.randomUUID().toString().plus(tenantId).toByteArray().sha256Bytes()).take(12)
 }
 
 // NOTE: this should be on the Entity.
