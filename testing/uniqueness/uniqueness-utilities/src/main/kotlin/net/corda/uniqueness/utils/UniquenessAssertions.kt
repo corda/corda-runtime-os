@@ -145,6 +145,20 @@ object UniquenessAssertions {
     }
 
     /**
+     * Checks for a time window before lower bounds response
+     */
+    fun assertTimeWindowBeforeLowerBoundResponse(response: UniquenessCheckResponseAvro) {
+        getResultOfType<UniquenessCheckResultTimeWindowBeforeLowerBoundAvro>(response)
+    }
+
+    /**
+     * Checks for a not previously seen transaction response
+     */
+    fun assertNotPreviouslySeenTransactionResponse(response: UniquenessCheckResponseAvro) {
+        getResultOfType<UniquenessCheckResultNotPreviouslySeenTransactionAvro>(response)
+    }
+
+    /**
      * Checks that all commit timestamps within a list of responses are unique
      */
     fun assertUniqueCommitTimestamps(responses: Collection<UniquenessCheckResponseAvro>) {

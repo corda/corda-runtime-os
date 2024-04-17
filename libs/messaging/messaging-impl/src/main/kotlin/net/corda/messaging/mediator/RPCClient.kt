@@ -3,6 +3,7 @@ package net.corda.messaging.mediator
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.messaging.api.exception.CordaHTTPClientErrorException
+import net.corda.messaging.api.exception.CordaHTTPClientSideTransientException
 import net.corda.messaging.api.exception.CordaHTTPServerErrorException
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -21,6 +22,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.IOException
+import java.net.ConnectException
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -140,7 +142,8 @@ class RPCClient(
                 IOException::class.java,
                 TimeoutException::class.java,
                 CordaHTTPClientErrorException::class.java,
-                CordaHTTPServerErrorException::class.java
+                CordaHTTPServerErrorException::class.java,
+                CordaHTTPClientSideTransientException::class.java
             )
             .additionalMetrics(EnumMap(mutableMapOf(CordaMetrics.Tag.HttpRequestUri to uri)))
             .build()
@@ -148,19 +151,24 @@ class RPCClient(
 
     private fun handleExceptions(e: Exception, endpoint: String): Nothing {
         val exceptionToThrow = when (e) {
+            is ConnectException,
             is IOException,
-            is InterruptedException,
             is TimeoutException,
-            is CordaHTTPClientErrorException,
-            is CordaHTTPServerErrorException -> {
+            is CordaHTTPClientSideTransientException -> {
                 log.warn("Intermittent error in RPCClient request $endpoint: ", e)
                 CordaMessageAPIIntermittentException(e.message, e)
             }
 
+            is CordaHTTPClientErrorException,
+            is CordaHTTPServerErrorException,
             is IllegalArgumentException,
             is SecurityException -> {
                 log.warn("Fatal error in RPCClient request $endpoint: ", e)
                 CordaMessageAPIFatalException(e.message, e)
+            }
+            is InterruptedException -> {
+                log.info("Thread interrupted calling RPCClient: $endpoint", e)
+                throw e
             }
 
             else -> {

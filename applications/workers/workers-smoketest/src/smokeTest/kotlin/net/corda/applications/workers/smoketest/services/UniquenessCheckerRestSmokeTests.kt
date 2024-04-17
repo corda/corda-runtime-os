@@ -9,6 +9,7 @@ import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
+import net.corda.data.uniqueness.UniquenessCheckType
 import net.corda.e2etest.utilities.ClusterReadiness
 import net.corda.e2etest.utilities.ClusterReadinessChecker
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
@@ -181,7 +182,8 @@ class UniquenessCheckerRestSmokeTests : ClusterReadiness by ClusterReadinessChec
                 emptyList(),
                 0,
                 null,
-                defaultTimeWindowUpperBound
+                defaultTimeWindowUpperBound,
+                UniquenessCheckType.WRITE
             )
         )
 }

@@ -24,6 +24,7 @@ class MediatorConsumerFactoryFactoryTest {
         val messageBusConsumerFactory = mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
             "topic",
             "consumerGroup",
+            "clientId",
             messageBusConfig,
         )
 

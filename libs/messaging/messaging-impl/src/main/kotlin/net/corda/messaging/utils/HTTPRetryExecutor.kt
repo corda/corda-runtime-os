@@ -1,6 +1,7 @@
 package net.corda.messaging.utils
 
 import net.corda.messaging.api.exception.CordaHTTPClientErrorException
+import net.corda.messaging.api.exception.CordaHTTPClientSideTransientException
 import net.corda.messaging.api.exception.CordaHTTPServerErrorException
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.trace
@@ -67,9 +68,11 @@ class HTTPRetryExecutor {
             }
         }
 
+        @Suppress("ThrowsCount")
         private fun checkResponseStatus(statusCode: Int) {
             log.trace { "Received response with status code $statusCode" }
             when (statusCode) {
+                503 -> throw CordaHTTPClientSideTransientException(statusCode, "Server returned a transient error")
                 in 400..499 -> throw CordaHTTPClientErrorException(statusCode, "Server returned status code $statusCode.")
                 in 500..599 -> throw CordaHTTPServerErrorException(statusCode, "Server returned status code $statusCode.")
             }

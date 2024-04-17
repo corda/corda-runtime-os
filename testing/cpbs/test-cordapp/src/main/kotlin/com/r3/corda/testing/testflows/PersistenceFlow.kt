@@ -1,5 +1,7 @@
 package com.r3.corda.testing.testflows
 
+import com.r3.corda.testing.bundles.dogs.Dog
+import com.r3.corda.testing.testflows.messages.TestFlowInput
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
@@ -7,8 +9,6 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.annotations.Suspendable
-import com.r3.corda.testing.bundles.dogs.Dog
-import com.r3.corda.testing.testflows.messages.TestFlowInput
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.UUID
@@ -35,22 +35,22 @@ class PersistenceFlow : ClientStartableFlow {
         try {
             val inputs = requestBody.getRequestBodyAs(jsonMarshallingService, TestFlowInput::class.java)
 
-            persistenceService.persist(123)
+            persistenceService.persist("entity1", 123)
             persistenceService.remove(123)
 
             val id = UUID.randomUUID()
             val dog = Dog(id, "Penny", Instant.now(), "Alice")
-            persistenceService.persist(dog)
+            persistenceService.persist("entity2", dog)
             log.info("Persisted Dog: $dog")
 
             val id2 = UUID.randomUUID()
             val dog2 = Dog(id2, "Lenard", Instant.now(), "Alice")
-            persistenceService.persist(listOf(dog2))
+            persistenceService.persist("entity3", listOf(dog2))
             log.info("Persisted Dog (bulk): $dog2")
 
             if (inputs.throwException) {
                 try {
-                    persistenceService.persist(dog)
+                    persistenceService.persist("entity4", dog)
                     log.error("Persisted second Dog incorrectly: $dog")
 
                 } catch (e: CordaPersistenceException) {

@@ -8,6 +8,7 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
+import net.corda.data.uniqueness.UniquenessCheckType
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.backingstore.BackingStore
@@ -88,7 +89,8 @@ class UniquenessCheckerImplTests {
                 emptyList(),
                 0,
                 null,
-                defaultTimeWindowUpperBound
+                defaultTimeWindowUpperBound,
+                UniquenessCheckType.WRITE
             )
         )
 

@@ -24,9 +24,10 @@ class UtxoEntityFactory(private val entityManagerFactory: EntityManagerFactory) 
         status: String,
         updated: Instant,
         utxoTransactionMetadata: Any,
-        isFiltered: Boolean = false
+        isFiltered: Boolean = false,
+        repairAttemptCount: Int = 0
     ): Any {
-        return utxoTransaction.constructors.single { it.parameterCount == 8 }.newInstance(
+        return utxoTransaction.constructors.single { it.parameterCount == 9 }.newInstance(
             transactionId,
             privacySalt,
             accountId,
@@ -34,7 +35,8 @@ class UtxoEntityFactory(private val entityManagerFactory: EntityManagerFactory) 
             status,
             updated,
             utxoTransactionMetadata,
-            isFiltered
+            isFiltered,
+            repairAttemptCount
         )
     }
 

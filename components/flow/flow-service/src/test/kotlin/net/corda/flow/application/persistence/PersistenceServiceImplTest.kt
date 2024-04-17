@@ -1,6 +1,5 @@
 package net.corda.flow.application.persistence
 
-import java.nio.ByteBuffer
 import net.corda.flow.application.persistence.external.events.AbstractPersistenceExternalEventFactory
 import net.corda.flow.application.persistence.external.events.FindExternalEventFactory
 import net.corda.flow.application.persistence.external.events.MergeExternalEventFactory
@@ -15,6 +14,7 @@ import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
@@ -22,6 +22,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 
 class PersistenceServiceImplTest {
 
@@ -33,7 +34,7 @@ class PersistenceServiceImplTest {
     private lateinit var persistenceService: PersistenceService
 
     private val byteBuffer = ByteBuffer.wrap("bytes".toByteArray())
-
+    private val dedupeId = "dedupeId"
     private val argumentCaptor = argumentCaptor<Class<out AbstractPersistenceExternalEventFactory<Any>>>()
 
     @BeforeEach
@@ -53,22 +54,29 @@ class PersistenceServiceImplTest {
 
     @Test
     fun `persist executes successfully`() {
-        persistenceService.persist(TestObject())
+        persistenceService.persist(dedupeId, TestObject())
 
         verify(serializationService).serialize(any<TestObject>())
         assertThat(argumentCaptor.firstValue).isEqualTo(PersistExternalEventFactory::class.java)
     }
 
     @Test
+    fun `persist with a large id fails`() {
+        assertThrows<IllegalArgumentException> {
+            persistenceService.persist(dedupeId.repeat(100), TestObject())
+        }
+    }
+
+    @Test
     fun `bulk persist executes successfully`() {
-        persistenceService.persist(listOf(TestObject(), TestObject()))
+        persistenceService.persist(dedupeId, listOf(TestObject(), TestObject()))
         verify(serializationService, times(2)).serialize(any<TestObject>())
         assertThat(argumentCaptor.firstValue).isEqualTo(PersistExternalEventFactory::class.java)
     }
 
     @Test
     fun `bulk persist with no input entities does nothing`() {
-        persistenceService.persist(emptyList<Any>())
+        persistenceService.persist(dedupeId, emptyList<Any>())
         verify(externalEventExecutor, never()).execute(any<Class<ExternalEventFactory<Any, Any, Any>>>(), any())
         verify(serializationService, never()).deserialize<TestObject>(any<ByteArray>(), any())
         verify(serializationService, never()).serialize<TestObject>(any())

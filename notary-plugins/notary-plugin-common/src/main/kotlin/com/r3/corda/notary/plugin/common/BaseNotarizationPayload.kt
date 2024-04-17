@@ -1,6 +1,7 @@
 package com.r3.corda.notary.plugin.common
 
 import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.ledger.notary.plugin.api.NotarizationType
 import java.security.PublicKey
 
 /**
@@ -17,6 +18,7 @@ import java.security.PublicKey
 abstract class BaseNotarizationPayload(
     val transaction: Any,
     val notaryKey: PublicKey,
+    val notarizationType: NotarizationType,
     private val validTypes: List<Class<*>>
 ) {
 
