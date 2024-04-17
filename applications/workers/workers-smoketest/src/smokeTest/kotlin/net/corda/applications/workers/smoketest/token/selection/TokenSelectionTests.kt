@@ -122,7 +122,7 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
     }
 
     @Test
-    fun `ensure it is possible to send a balance query request and receive a response`(testInfo: TestInfo) {
+    fun `Ensure it is possible to send a balance query request and receive a response`(testInfo: TestInfo) {
         val idGenerator = TestRequestIdGenerator(testInfo)
 
         // Start the flow that will send the request and receive the response
@@ -177,30 +177,14 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
     @Test
     fun `Test priority selection strategy`(testInfo: TestInfo) {
         val idGenerator = TestRequestIdGenerator(testInfo)
-        // Create 3 simple UTXO transactions
-        val input = "token test input"
+
+        val prioritiesList: List<Long?> = listOf(1, 2, 2, 2, 3, 4, 5, 5, 7, 8, 9, 9, 10, 10, 10, null, null, null)
 
         // A large number of tokens must be created to minimise the change to the random selection
-        // match the result for a priority selection. Bear in mind that repeating the test several times in the same
-        // run won't work because the claimed tokens that are released won't be readily available
-        issueTokenWithPriority(input, idGenerator, 2)
-        issueTokenWithPriority(input, idGenerator, 1)
-        issueTokenWithPriority(input, idGenerator, 2)
-        issueTokenWithPriority(input, idGenerator, null)
-        issueTokenWithPriority(input, idGenerator, null)
-        issueTokenWithPriority(input, idGenerator, 3)
-        issueTokenWithPriority(input, idGenerator, 5)
-        issueTokenWithPriority(input, idGenerator, 4)
-        issueTokenWithPriority(input, idGenerator, 9)
-        issueTokenWithPriority(input, idGenerator, 9)
-        issueTokenWithPriority(input, idGenerator, 10)
-        issueTokenWithPriority(input, idGenerator, 10)
-        issueTokenWithPriority(input, idGenerator, null)
-        issueTokenWithPriority(input, idGenerator, 10)
-        issueTokenWithPriority(input, idGenerator, 2)
-        issueTokenWithPriority(input, idGenerator, 5)
-        issueTokenWithPriority(input, idGenerator, 7)
-        issueTokenWithPriority(input, idGenerator, 8)
+        // match the result for a priority selection.
+        prioritiesList.shuffled().forEach {
+            issueTokenWithPriority(idGenerator, it)
+        }
 
         // Claim some tokens
         // Ensure the tokens are claimed in the correct order.
@@ -209,7 +193,7 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         assertAll(
             { assertThat(tokenSelectionResult.flowError).isNull() },
             { assertThat(tokenSelectionResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS) },
-            { assertThat(tokenSelectionResult.flowResult).isEqualTo("[1,2,2,2,3]") },
+            { assertThat(tokenSelectionResult.flowResult).isEqualTo(prioritiesList.take(5).toString()) },
         )
 
         // Claim the remaining tokens
@@ -219,14 +203,18 @@ class TokenSelectionTests : ClusterReadiness by ClusterReadinessChecker() {
         assertAll(
             { assertThat(tokenSelectionResult.flowError).isNull() },
             { assertThat(tokenSelectionResult.flowStatus).isEqualTo(REST_FLOW_STATUS_SUCCESS) },
-            { assertThat(tokenSelectionResult.flowResult).isEqualTo("[4,5,5,7,8,9,9,10,10,10,null,null,null]") },
+            {
+                assertThat(tokenSelectionResult.flowResult).isEqualTo(
+                    prioritiesList.subList(5, prioritiesList.size).toString()
+                )
+            },
         )
     }
 
-    private fun issueTokenWithPriority(input: String, idGenerator: TestRequestIdGenerator, priority: Long?) {
+    private fun issueTokenWithPriority(idGenerator: TestRequestIdGenerator, priority: Long?) {
         val utxoFlowRequestId = startRestFlow(
             bobHoldingId,
-            mapOf("input" to input, "members" to listOf(aliceX500), "notary" to NOTARY_SERVICE_X500, "priority" to priority),
+            mapOf("input" to "token test input", "members" to listOf(aliceX500), "notary" to NOTARY_SERVICE_X500, "priority" to priority),
             "com.r3.corda.demo.utxo.UtxoDemoFlow",
             requestId = idGenerator.nextId
         )

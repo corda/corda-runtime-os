@@ -32,8 +32,10 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 
+private const val PRIORITY_TOKEN_SELECTION_PROTOCOL = "token-selection-priority-flow-protocol"
+
 @Suppress("unused")
-@InitiatingFlow(protocol = "token-selection-priority-flow-protocol")
+@InitiatingFlow(protocol = PRIORITY_TOKEN_SELECTION_PROTOCOL)
 class PriorityTokenSelectionFlow : ClientStartableFlow {
 
     private companion object {
@@ -85,13 +87,12 @@ class PriorityTokenSelectionFlow : ClientStartableFlow {
             }
 
             // Spend the tokens so they cannot be selected again
-            spendTokens(claimedTokenList.toList(), memberInfo)
+            spendTokens(claimedTokenList, memberInfo)
 
             // Create a list with the priority of each claimed token
-            val tokenPriorityList = mutableListOf<Long?>()
-            claimedTokenList.map {
-                val utxoState = utxoLedgerService.resolve<TestUtxoState>(it.stateRef)
-                tokenPriorityList.add(utxoState.state.contractState.priority)
+            // val tokenPriorityList = mutableListOf<Long?>()
+            val tokenPriorityList = claimedTokenList.map {
+                utxoLedgerService.resolve<TestUtxoState>(it.stateRef).state.contractState.priority
             }
 
             return jsonMarshallingService.format(tokenPriorityList)
@@ -138,7 +139,6 @@ class PriorityTokenSelectionFlow : ClientStartableFlow {
 
         val now = Instant.now()
 
-        @Suppress("DEPRECATION")
         val signedTransaction = txBuilder
             .setNotary(notaryLookup.notaryServices.single().name)
             .setTimeWindowBetween(now, now.plus(1, ChronoUnit.DAYS))
@@ -168,11 +168,12 @@ class PriorityTokenSelectionFlow : ClientStartableFlow {
 
 }
 
-@InitiatedBy(protocol = "token-selection-priority-flow-protocol")
+@Suppress("unused")
+@InitiatedBy(protocol = PRIORITY_TOKEN_SELECTION_PROTOCOL)
 class SpendTokenResponder : ResponderFlow {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject
