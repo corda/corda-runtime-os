@@ -1,5 +1,6 @@
 package net.corda.persistence.common
 
+import net.corda.flow.external.events.responses.exceptions.criteria
 import net.corda.persistence.common.PersistenceExceptionType.FATAL
 import net.corda.persistence.common.PersistenceExceptionType.PLATFORM
 import net.corda.persistence.common.PersistenceExceptionType.TRANSIENT
@@ -38,24 +39,6 @@ internal class PersistenceExceptionCategorizerImpl : PersistenceExceptionCategor
             logger.warn("Categorized exception as $it: $exception", exception)
         }
     }
-
-    private data class ExceptionCriteria<T: Throwable>(val type: Class<T>, val check: (T) -> Boolean = { _ -> true }) {
-        fun meetsCriteria(exception: Throwable?) : Boolean {
-            if (exception == null) {
-                return false
-            }
-            val meetsCriteria = if (type.isAssignableFrom(exception::class.java)) {
-                check(type.cast(exception))
-            } else {
-                false
-            }
-            return (meetsCriteria || meetsCriteria(exception.cause))
-        }
-    }
-
-    private inline fun <reified T: Throwable> criteria(
-        noinline check: (T) -> Boolean = { _ -> true }
-    ) : ExceptionCriteria<T> = ExceptionCriteria(T::class.java, check)
 
     private fun isFatal(exception: Exception): Boolean {
         val checks = listOf(
