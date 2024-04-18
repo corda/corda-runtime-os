@@ -214,7 +214,12 @@ class TopicConfigCreator(
                 extensions.contains(it.name.substringAfterLast("."))
             }
 
+            logger.info("Current JAR: ${jar.name}")
+
             yamlFiles.map { entry: JarEntry ->
+
+                logger.info("Current YAML file: ${entry.name}")
+
                 val data: String = jar.getInputStream(entry)
                     .bufferedReader(Charset.defaultCharset()).use { it.readText() }
                 logger.info("Print data: $data")
