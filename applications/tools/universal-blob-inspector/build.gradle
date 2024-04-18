@@ -17,8 +17,9 @@ dependencies {
     // Command line parsing
     implementation "info.picocli:picocli:$picocliVersion"
 
-    // JSON
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation libs.jackson.databind
+
+    testImplementation libs.bundles.test
 }
 
 ext {
