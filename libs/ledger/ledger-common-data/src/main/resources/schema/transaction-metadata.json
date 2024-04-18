@@ -233,7 +233,7 @@
     },
     "minimumPlatformVersion": {
       "title": "Minimum platform version at the time of the creation of the transaction",
-      "type": "integer",
+      "type": ["integer", "null"],
       "default": "",
       "examples": [
         50100

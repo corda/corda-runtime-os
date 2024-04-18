@@ -113,9 +113,9 @@ class TransactionMetadataImpl(private val properties: Map<String, Any?>) : Trans
         }
     }
 
-    override fun getMinimumPlatformVersion(): Int {
+    override fun getMinimumPlatformVersion(): Int? {
         if (this[MINIMUM_PLATFORM_VERSION_KEY] == null) {
-            return -1
+            return null
         }
 
         val minVersion =
