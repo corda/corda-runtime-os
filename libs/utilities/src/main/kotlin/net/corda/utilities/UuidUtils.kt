@@ -4,7 +4,7 @@ import java.nio.ByteBuffer
 import java.util.UUID
 
 /**
- * Converts UUID straight to bytes instead of converting uuid.ToString().ToByteArray()
+ * Converts UUID straight to bytes instead of converting uuid.toString().toByteArray()
  * which dilutes the randomness if only part of the uuid is taken later on.
  */
 fun UUID.convertToBytes(): ByteArray {
