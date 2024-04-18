@@ -13,7 +13,6 @@
     "ledgerVersion",
     "componentGroups",
     "platformVersion",
-    "minimumPlatformVersion",
     "schemaVersion"
   ],
   "properties": {

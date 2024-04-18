@@ -35,6 +35,7 @@ object TransactionMetadataUtils {
     }
 
     private fun getMetadataSchema(jsonValidator: JsonValidator): WrappedJsonSchema {
+        // dynamically get schema path
         return jsonValidator.parseSchema(getSchema(TransactionMetadataImpl.SCHEMA_PATH))
     }
 
