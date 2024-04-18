@@ -36,10 +36,9 @@ class TaskSchedulerLogEntityRepository {
                 }
             }
             catch (e: PersistenceException) {
-                // NOTE: this is not great, but we must be able to detect a constraint violation in case
-                //  of a race condition, however, the JPA exception type doesn't give us enough info, so we check
-                //  the hibernate generated message.
-                if(e.message?.contains("ConstraintViolationException") == true) {
+                val testQuery = em.createNamedQuery(TASK_SCHEDULER_LOG_GET_QUERY_NAME, TaskSchedulerLogEntity::class.java)
+                testQuery.setParameter(TASK_SCHEDULER_LOG_QUERY_PARAM_NAME, taskName)
+                if(testQuery.resultList.size == 1) {
                     // in this case, re-run the get query
                     log.warn("Race condition on inserting scheduled task. Ignoring the exception and returning the existing value: $e")
                     readQuery.resultList.first()
