@@ -101,7 +101,6 @@ class TopicConfigCreator(
     fun getTopicConfigs(): List<TopicConfig> {
         val files: List<URL> = resourceGetter("net/corda/schema")
         val extractedResources = extractResourcesFromJars(files, listOf("yml", "yaml")).values.toList()
-        logger.info("extractedResources: ${extractedResources.joinToString()}")
 
         @Suppress("UNCHECKED_CAST")
         val topicDefinitions: List<TopicDefinitions> = extractedResources as List<TopicDefinitions>
@@ -210,11 +209,15 @@ class TopicConfigCreator(
         getEntries: (JarFile) -> List<JarEntry> = { jar: JarFile -> jar.entries().toList() }
     ): Map<String, *> {
         return jars.flatMap { jar: JarFile ->
-            val yamlFiles = getEntries(jar).filter {
-                extensions.contains(it.name.substringAfterLast("."))
+            logger.info("Current JAR: ${jar.name}")
+            val jarEntries = getEntries(jar)
+            logger.info("list of all files: ${jarEntries.joinToString(", ")}")
+            val yamlFiles = jarEntries.filter {
+                extensions.contains(it.name.substringAfterLast(".")) &&
+                    it.name.contains("corda") // filter out other files like liquibase
             }
 
-            logger.info("Current JAR: ${jar.name}")
+            logger.info("list of filtered yamlFiles: ${yamlFiles.joinToString(", ")}")
 
             yamlFiles.map { entry: JarEntry ->
 
@@ -222,7 +225,6 @@ class TopicConfigCreator(
 
                 val data: String = jar.getInputStream(entry)
                     .bufferedReader(Charset.defaultCharset()).use { it.readText() }
-                logger.info("Print data: $data")
                 val parsedData: TopicDefinitions = mapper.readValue(data)
                 entry.name to parsedData
             }
