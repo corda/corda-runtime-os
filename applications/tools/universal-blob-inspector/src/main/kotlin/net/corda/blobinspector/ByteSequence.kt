@@ -12,6 +12,7 @@ import java.nio.ByteBuffer
  * @property offset The start position of the sequence within the byte array.
  * @property size The number of bytes this sequence represents.
  */
+@Suppress("TooManyFunctions")
 sealed class ByteSequence(private val _bytes: ByteArray, val offset: Int, val size: Int) : Comparable<ByteSequence> {
     /**
      * The underlying bytes.  Some implementations may choose to make a copy of the underlying [ByteArray] for
@@ -181,7 +182,9 @@ private fun parseHexBinary(s: String): ByteArray {
         }
         return if (ch in 'a'..'f') {
             ch - 'a' + 10
-        } else -1
+        } else {
+            -1
+        }
     }
 
     var i = 0
@@ -204,7 +207,11 @@ private fun parseHexBinary(s: String): ByteArray {
  */
 class OpaqueBytesSubSequence(override val bytes: ByteArray, offset: Int, size: Int) : ByteSequence(bytes, offset, size) {
     init {
-        require(offset >= 0 && offset < bytes.size) { "Offset must be greater than or equal to 0, and less than the size of the backing array" }
-        require(size >= 0 && offset + size <= bytes.size) { "Sub-sequence size must be greater than or equal to 0, and less than the size of the backing array" }
+        require(
+            offset >= 0 && offset < bytes.size
+        ) { "Offset must be greater than or equal to 0, and less than the size of the backing array" }
+        require(size >= 0 && offset + size <= bytes.size) {
+            "Sub-sequence size must be greater than or equal to 0, and less than the size of the backing array"
+        }
     }
 }

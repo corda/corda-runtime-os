@@ -83,13 +83,14 @@ data class Descriptor(val name: Symbol?, val code: UnsignedLong? = null) : Descr
 }
 
 data class Field(
-        val name: String,
-        val type: String,
-        val requires: List<String>,
-        val default: String?,
-        val label: String?,
-        val mandatory: Boolean,
-        val multiple: Boolean) : DescribedType {
+    val name: String,
+    val type: String,
+    val requires: List<String>,
+    val default: String?,
+    val label: String?,
+    val mandatory: Boolean,
+    val multiple: Boolean
+) : DescribedType {
     companion object : DescribedTypeConstructor<Field> {
         val DESCRIPTOR = PredefinedDescriptorRegistry.FIELD.amqpDescriptor
 
@@ -107,7 +108,15 @@ data class Field(
             val list = described as? List<*> ?: throw IllegalStateException("Was expecting a list")
 
             @Suppress("unchecked_cast")
-            return Field(list[0] as String, list[1] as String, list[2] as List<String>, list[3] as? String, list[4] as? String, list[5] as Boolean, list[6] as Boolean)
+            return Field(
+                list[0] as String,
+                list[1] as String,
+                list[2] as List<String>,
+                list[3] as? String,
+                list[4] as? String,
+                list[5] as Boolean,
+                list[6] as Boolean
+            )
         }
     }
 
@@ -152,11 +161,11 @@ sealed class TypeNotation : DescribedType {
 }
 
 data class CompositeType(
-        override val name: String,
-        override val label: String?,
-        override val provides: List<String>,
-        override val descriptor: Descriptor,
-        val fields: List<Field>
+    override val name: String,
+    override val label: String?,
+    override val provides: List<String>,
+    override val descriptor: Descriptor,
+    val fields: List<Field>
 ) : TypeNotation() {
     companion object : DescribedTypeConstructor<CompositeType> {
         val DESCRIPTOR = PredefinedDescriptorRegistry.COMPOSITE_TYPE.amqpDescriptor
@@ -175,7 +184,13 @@ data class CompositeType(
             val list = described as? List<*> ?: throw IllegalStateException("Was expecting a list")
 
             @Suppress("unchecked_cast")
-            return CompositeType(list[0] as String, list[1] as? String, list[2] as List<String>, list[3] as Descriptor, list[4] as List<Field>)
+            return CompositeType(
+                list[0] as String,
+                list[1] as? String,
+                list[2] as List<String>,
+                list[3] as Descriptor,
+                list[4] as List<Field>
+            )
         }
     }
 
@@ -203,21 +218,26 @@ data class CompositeType(
     }
 }
 
-data class RestrictedType(override val name: String,
-                          override val label: String?,
-                          override val provides: List<String>,
-                          val source: String,
-                          override val descriptor: Descriptor,
-                          val choices: List<Choice>) : TypeNotation() {
+data class RestrictedType(
+    override val name: String,
+    override val label: String?,
+    override val provides: List<String>,
+    val source: String,
+    override val descriptor: Descriptor,
+    val choices: List<Choice>
+) : TypeNotation() {
     companion object : DescribedTypeConstructor<RestrictedType> {
         val DESCRIPTOR = PredefinedDescriptorRegistry.RESTRICTED_TYPE.amqpDescriptor
 
         fun get(describedType: DescribedType): RestrictedType {
             if (describedType.descriptor != DESCRIPTOR) {
+                @Suppress("TooGenericExceptionThrown")
                 throw RuntimeException("Unexpected descriptor ${describedType.descriptor}.")
             }
             val list = describedType.described as List<*>
-            return newInstance(listOf(list[0], list[1], list[2], list[3], Descriptor.get(list[4]!!), (list[5] as List<*>).map { Choice.get(it!!) }))
+            return newInstance(
+                listOf(list[0], list[1], list[2], list[3], Descriptor.get(list[4]!!), (list[5] as List<*>).map { Choice.get(it!!) })
+            )
         }
 
         override fun getTypeClass(): Class<*> = RestrictedType::class.java
@@ -226,7 +246,14 @@ data class RestrictedType(override val name: String,
             val list = described as? List<*> ?: throw IllegalStateException("Was expecting a list")
 
             @Suppress("unchecked_cast")
-            return RestrictedType(list[0] as String, list[1] as? String, list[2] as List<String>, list[3] as String, list[4] as Descriptor, list[5] as List<Choice>)
+            return RestrictedType(
+                list[0] as String,
+                list[1] as? String,
+                list[2] as List<String>,
+                list[3] as String,
+                list[4] as Descriptor,
+                list[5] as List<Choice>
+            )
         }
     }
 
@@ -291,6 +318,7 @@ data class ReferencedObject(private val refCounter: Int) : DescribedType {
         fun get(obj: Any): ReferencedObject {
             val describedType = obj as DescribedType
             if (describedType.descriptor != DESCRIPTOR) {
+                @Suppress("TooGenericExceptionThrown")
                 throw RuntimeException("Unexpected descriptor ${describedType.descriptor}.")
             }
             return newInstance(describedType.described)
@@ -310,5 +338,3 @@ data class ReferencedObject(private val refCounter: Int) : DescribedType {
 
     override fun toString(): String = "<refObject refCounter=$refCounter/>"
 }
-
-

@@ -7,7 +7,7 @@ import org.apache.qpid.proton.codec.DescribedTypeConstructor
 data class Envelope(val obj: Any?, val schema: Schema, val transformsSchema: Any?, val bundles: Any?) : DescribedType {
     companion object : DescribedTypeConstructor<Envelope> {
         val DESCRIPTOR = PredefinedDescriptorRegistry.ENVELOPE.amqpDescriptor
-        //val DESCRIPTOR_OBJECT = Descriptor(null, DESCRIPTOR)
+        // val DESCRIPTOR_OBJECT = Descriptor(null, DESCRIPTOR)
 
         // described list should either be two or three elements long
         private const val ENVELOPE_WITHOUT_TRANSFORMS = 2
@@ -19,9 +19,11 @@ data class Envelope(val obj: Any?, val schema: Schema, val transformsSchema: Any
         private const val TRANSFORMS_SCHEMA_IDX = 2
         private const val BUNDLES_IDX = 3
 
+        @Suppress("ThrowsCount")
         fun get(data: Data, osgiBundles: Boolean = false): Envelope {
             val describedType = data.describedType
             if (describedType.descriptor != DESCRIPTOR) {
+                @Suppress("TooGenericExceptionThrown")
                 throw RuntimeException("Unexpected descriptor ${describedType.descriptor}, should be $DESCRIPTOR.")
             }
             val list = describedType.described as List<*>
@@ -31,8 +33,18 @@ data class Envelope(val obj: Any?, val schema: Schema, val transformsSchema: Any
             val transformSchema: Any? = when (list.size) {
                 ENVELOPE_WITHOUT_TRANSFORMS -> null
                 ENVELOPE_WITH_TRANSFORMS -> list[TRANSFORMS_SCHEMA_IDX]
-                ENVELOPE_WITH_BUNDLES -> if (!osgiBundles) throw RuntimeException("Malformed list, bad length of ${list.size} (should be 2 or 3)") else list[TRANSFORMS_SCHEMA_IDX]
-                else -> throw RuntimeException("Malformed list, bad length of ${list.size} (should be 2 or 3)")
+                ENVELOPE_WITH_BUNDLES -> if (!osgiBundles) {
+                    @Suppress("TooGenericExceptionThrown")
+                    throw RuntimeException(
+                        "Malformed list, bad length of ${list.size} (should be 2 or 3)"
+                    )
+                } else {
+                    list[TRANSFORMS_SCHEMA_IDX]
+                }
+                else -> {
+                    @Suppress("TooGenericExceptionThrown")
+                    throw RuntimeException("Malformed list, bad length of ${list.size} (should be 2 or 3)")
+                }
             }
 
             val bundles: Any? = when (list.size) {

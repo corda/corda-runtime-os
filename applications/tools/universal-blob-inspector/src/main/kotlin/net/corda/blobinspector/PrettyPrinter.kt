@@ -29,6 +29,7 @@ fun convertToJson(it: Any?, jg: JsonGenerator) {
         it.forEach { element -> convertToJson(element, jg) }
         jg.writeEndArray()
     } else if (it is Map<*, *>) {
+        @Suppress("ComplexCondition")
         if (it.containsKey("_class") || it.containsKey("_custom") || it.containsKey("_predefined") || it.containsKey("_bytes")) {
             // Object
             jg.writeStartObject()

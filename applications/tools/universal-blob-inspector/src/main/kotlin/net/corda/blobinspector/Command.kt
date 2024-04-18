@@ -5,8 +5,12 @@ import java.io.File
 import java.io.FileInputStream
 import java.util.concurrent.Callable
 
-@CommandLine.Command(name = "blobinspector", mixinStandardHelpOptions = true, version = ["blobinspector 1.0"],
-        description = ["Prints the content of a blob."])
+@CommandLine.Command(
+    name = "blobinspector",
+    mixinStandardHelpOptions = true,
+    version = ["blobinspector 1.0"],
+    description = ["Prints the content of a blob."]
+)
 class Command : Callable<Int> {
     @CommandLine.Parameters(arity = "0..1", description = ["The file containing a blob to inspect. Will use stdin if not specified."])
     var inputFile: File? = null

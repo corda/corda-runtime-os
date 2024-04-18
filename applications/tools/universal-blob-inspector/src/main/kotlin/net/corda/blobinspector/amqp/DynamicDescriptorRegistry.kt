@@ -53,8 +53,10 @@ class DynamicDescriptorRegistry(private val lenientBuiltIns: Boolean = false) {
         }
     }
 
-    class RestrictedTypeHandle(@Suppress("Unused")
-                               val type: RestrictedType) : TypeHandle {
+    class RestrictedTypeHandle(
+        @Suppress("Unused")
+        val type: RestrictedType
+    ) : TypeHandle {
         override fun transform(value: Any?, referencedObjects: MutableList<Any?>): Any? {
             return value
         }
@@ -70,10 +72,12 @@ class DynamicDescriptorRegistry(private val lenientBuiltIns: Boolean = false) {
         override fun transform(value: Any?, referencedObjects: MutableList<Any?>): Any? {
             return if (name == "REFERENCED_OBJECT") {
                 val position = (value as UnsignedInteger).toInt()
-                //println(position)
-                //referencedObjects.forEachIndexed { index, obj -> println("$index $obj") }
+                // println(position)
+                // referencedObjects.forEachIndexed { index, obj -> println("$index $obj") }
                 referencedObjects[position]
-            } else mapOf("_predefined" to name, "_value" to value)
+            } else {
+                mapOf("_predefined" to name, "_value" to value)
+            }
         }
     }
 }

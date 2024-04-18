@@ -15,9 +15,11 @@ import org.apache.qpid.proton.codec.Data
 import java.io.InputStream
 import java.nio.ByteBuffer
 
-class AMQPSerializationFormatDecoder(val recurse: (ByteSequence, Int) -> Any?,
-                                     val envelopeFactory: (Data) -> Envelope,
-                                     val registryFactory: () -> DynamicDescriptorRegistry) : SerializationFormatDecoder {
+class AMQPSerializationFormatDecoder(
+    val recurse: (ByteSequence, Int) -> Any?,
+    val envelopeFactory: (Data) -> Envelope,
+    val registryFactory: () -> DynamicDescriptorRegistry
+) : SerializationFormatDecoder {
     override fun duplicate(): SerializationFormatDecoder {
         return AMQPSerializationFormatDecoder(recurse, envelopeFactory, registryFactory)
     }
@@ -31,13 +33,15 @@ class AMQPSerializationFormatDecoder(val recurse: (ByteSequence, Int) -> Any?,
             println("Blob includes tail padding")
         }
         val envelope = envelopeFactory(data)
-        //println("Object = \n${envelope.obj}")
-        //println("Schema = \n${envelope.schema}")
+        // println("Object = \n${envelope.obj}")
+        // println("Schema = \n${envelope.schema}")
         val registry = registryFactory()
         registerSchema(registry, envelope.schema)
 
-        val rendering = mapOf("_value" to readObject(envelope.obj, registry, recurseDepth, false),
-                "_bytes" to originalBytes)
+        val rendering = mapOf(
+            "_value" to readObject(envelope.obj, registry, recurseDepth, false),
+            "_bytes" to originalBytes
+        )
         return AMQPDecodedBytes(rendering)
     }
 
@@ -48,19 +52,24 @@ class AMQPSerializationFormatDecoder(val recurse: (ByteSequence, Int) -> Any?,
             } else if (obj.descriptor is UnsignedLong) {
                 Descriptor(null, obj.descriptor as UnsignedLong)
             } else {
+                @Suppress("TooGenericExceptionThrown")
                 throw RuntimeException("Described type descriptor is unexpectedly ${obj.descriptor}")
             }
-            val typeHandle = registry[descriptor]
-                    ?: throw RuntimeException("No registered type for descriptor $descriptor")
+            val typeHandle = registry[descriptor] ?: run {
+                @Suppress("TooGenericExceptionThrown")
+                throw RuntimeException("No registered type for descriptor $descriptor")
+            }
 
             val transformedObj = readObject(obj.described, registry, depth + 1, true)
             val transformed = typeHandle.transform(transformedObj, referencedObjects)
             val serializedBytes = extractSerializedBytes(transformed)
-            (if (serializedBytes != null) {
-                mapOf("_class" to (transformed as Map<*, *>)["_class"], "_value" to recurse(serializedBytes, depth + 1))
-            } else {
-                transformed
-            }).also {
+            (
+                if (serializedBytes != null) {
+                    mapOf("_class" to (transformed as Map<*, *>)["_class"], "_value" to recurse(serializedBytes, depth + 1))
+                } else {
+                    transformed
+                }
+                ).also {
                 referencedObjects.add(it)
             }
         } else if (obj is List<*>) {
@@ -71,10 +80,10 @@ class AMQPSerializationFormatDecoder(val recurse: (ByteSequence, Int) -> Any?,
         } else if (obj is Map<*, *>) {
             return obj.map {
                 readObject(it.key, registry, depth + 1, false) to readObject(
-                        it.value,
-                        registry,
-                        depth + 1,
-                        false
+                    it.value,
+                    registry,
+                    depth + 1,
+                    false
                 )
             }.toMap().also {
                 if (!described) referencedObjects.add(it)
