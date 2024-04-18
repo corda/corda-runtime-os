@@ -30,7 +30,7 @@ class RbacBasicAuthenticationService(
 
     private val passwordExpiryWarningWindowDays = rbacConfig.getInt(ConfigKeys.RBAC_PASSWORD_EXPIRY_WARNING_WINDOW)
 
-    private val failedAuthentication = AuthenticationState(false, null)
+    private val failedAuthentication = AuthenticationState(false, PasswordExpiryStatus.EXPIRED)
 
     override fun authenticateUser(loginName: String, password: CharArray): AuthenticationState {
         logger.debug { "Checking authentication for user $loginName." }
@@ -41,7 +41,7 @@ class RbacBasicAuthenticationService(
         val clearTextPassword = String(password)
 
         if (repeatedLogonsCache.verifies(loginName, clearTextPassword)) {
-            return AuthenticationState(true, null)
+            return AuthenticationState(true, PasswordExpiryStatus.ACTIVE)
         }
 
         val user = permissionManagementCache.getUser(loginName) ?: return failedAuthentication

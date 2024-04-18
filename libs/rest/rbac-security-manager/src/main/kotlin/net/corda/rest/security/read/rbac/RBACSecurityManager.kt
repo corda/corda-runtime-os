@@ -26,7 +26,7 @@ class RBACSecurityManager(
         return buildSubject(principal, authenticationState.expiryStatus)
     }
 
-    override fun buildSubject(principal: String, expiryStatus: PasswordExpiryStatus?): AuthorizingSubject {
+    override fun buildSubject(principal: String, expiryStatus: PasswordExpiryStatus): AuthorizingSubject {
         return RBACAuthorizingSubject(permissionValidatorSupplier, principal, expiryStatus)
     }
 

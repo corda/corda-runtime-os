@@ -26,5 +26,5 @@ interface RestSecurityManager : Lifecycle {
      * Construct an [AuthorizingSubject] instance con permissions of the user associated to
      * the given principal. Throws an exception if the principal cannot be resolved to a known user.
      */
-    fun buildSubject(principal: String, expiryStatus: PasswordExpiryStatus? = null): AuthorizingSubject
+    fun buildSubject(principal: String, expiryStatus: PasswordExpiryStatus): AuthorizingSubject
 }

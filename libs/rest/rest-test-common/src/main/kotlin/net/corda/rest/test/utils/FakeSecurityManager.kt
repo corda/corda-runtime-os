@@ -36,7 +36,7 @@ class FakeSecurityManager : RestSecurityManager {
 
     private inner class RecordKeepingSubject(
         override val principal: String,
-        override val expiryStatus: PasswordExpiryStatus? = null
+        override val expiryStatus: PasswordExpiryStatus = PasswordExpiryStatus.ACTIVE
     ) : AuthorizingSubject {
         override fun isPermitted(action: String, vararg arguments: String): Boolean {
             _checksExecuted.add(SecurityCheck(action, arguments.asList()))
@@ -52,7 +52,7 @@ class FakeSecurityManager : RestSecurityManager {
         }
     }
 
-    override fun buildSubject(principal: String, expiryStatus: PasswordExpiryStatus?): AuthorizingSubject {
+    override fun buildSubject(principal: String, expiryStatus: PasswordExpiryStatus): AuthorizingSubject {
         return RecordKeepingSubject(FakeSecurityManager::class.java.simpleName)
     }
 

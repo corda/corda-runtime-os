@@ -11,7 +11,7 @@ import java.util.function.Supplier
 class RBACAuthorizingSubject(
     private val permissionValidatorSupplier: Supplier<PermissionValidator>,
     override val principal: String,
-    override val expiryStatus: PasswordExpiryStatus?
+    override val expiryStatus: PasswordExpiryStatus
 ) : AuthorizingSubject {
 
     /**

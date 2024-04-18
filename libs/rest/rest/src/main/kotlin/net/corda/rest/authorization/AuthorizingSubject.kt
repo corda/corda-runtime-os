@@ -12,7 +12,7 @@ interface AuthorizingSubject {
      */
     val principal: String
 
-    val expiryStatus: PasswordExpiryStatus?
+    val expiryStatus: PasswordExpiryStatus
 
     /**
      * Determines if the underlying subject is entitled to perform a certain action,
