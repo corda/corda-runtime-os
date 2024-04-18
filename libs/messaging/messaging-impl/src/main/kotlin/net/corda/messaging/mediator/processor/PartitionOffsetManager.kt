@@ -73,6 +73,6 @@ class PartitionOffsetManager {
     }
 
     fun getLowestUncommittedOffset(): Long? {
-        return offsets.firstKey()
+        return offsets.firstEntry()?.key
     }
 }
