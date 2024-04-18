@@ -219,8 +219,9 @@ class KafkaCheckerTest {
 
     @Test
     fun testKafkaTlsWithNoTruststore() {
-        val kafkaChecker = KafkaChecker("")
-        val yaml = kafkaChecker.parseYaml<CordaValues>("./src/test/resources/preinstall/KafkaTestTlsWithNoTruststore.yaml")
+        val path = "./src/test/resources/preinstall/KafkaTestTlsWithNoTruststore.yaml"
+        val kafkaChecker = KafkaChecker(path)
+        val yaml = kafkaChecker.parseYaml<CordaValues>(path)
         kafkaChecker.getKafkaProperties(yaml)
 
         assertTrue(kafkaChecker.report.testsPassed())
