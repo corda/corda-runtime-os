@@ -100,6 +100,10 @@ class DbSchemaGenerator(private val config: SpecConfig = SpecConfig()) {
             )
         }
         logger.info("Generated sql file $outputFileName")
+        val file = File(outputFileName)
+        if (file.exists()) {
+            logger.info("contents of file ${file.readText()}")
+        }
         Thread.currentThread().contextClassLoader = oldCl
     }
 
