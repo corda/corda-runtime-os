@@ -21,7 +21,6 @@ import net.corda.taskmanager.TaskManager
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.Duration
-import java.time.Instant
 import java.util.Queue
 import java.util.concurrent.BlockingDeque
 import java.util.concurrent.BlockingQueue
@@ -341,7 +340,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             val persistFuture = CompletableFuture<Unit>()
             val future = taskManager.executeShortRunningTask(
                 input.key,
-                input.state?.metadata?.get(PRIORITY_METADATA_PROPERTY) as? Long ?: 0,
+                input.state?.metadata?.get(PRIORITY_METADATA_PROPERTY) as? Long ?: System.currentTimeMillis(),
                 persistFuture,
                 true
             ) {
@@ -359,7 +358,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             val persistFuture = CompletableFuture<Unit>()
             val future = taskManager.executeShortRunningTask(
                 input.key,
-                input.state?.metadata?.get(PRIORITY_METADATA_PROPERTY) as? Long ?: 0,
+                input.state?.metadata?.get(PRIORITY_METADATA_PROPERTY) as? Long ?: System.currentTimeMillis(),
                 persistFuture,
                 false
             ) {
@@ -591,7 +590,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 }
             }
         }
-        result.putIfAbsent(PRIORITY_METADATA_PROPERTY, Instant.now().toEpochMilli())
+        result.putIfAbsent(PRIORITY_METADATA_PROPERTY, System.currentTimeMillis())
         return Metadata(result)
     }
 
