@@ -2,7 +2,7 @@ package net.corda.ledger.utxo.flow.impl.persistence
 
 import io.micrometer.core.instrument.Timer
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.fiber.FlowFiberExecutionContext
+import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.metrics.recordSuspendable
 import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerLastPersistedTimestamp
@@ -29,7 +29,7 @@ class VaultNamedParameterizedQueryImpl<T>(
     private var offset: Int,
     private val resultClass: Class<T>,
     private val clock: Clock,
-    private val flowFiberExecutionContext: FlowFiberExecutionContext,
+    private val flowFiberService: FlowFiberService
 ) : VaultNamedParameterizedQuery<T> {
 
     private companion object {
@@ -90,7 +90,10 @@ class VaultNamedParameterizedQueryImpl<T>(
 
     private fun getNowOrLatestAsOfLastPersistence(): Instant {
         return clock.instant().let { now ->
-            flowFiberExecutionContext.flowCheckpoint.readCustomState(UtxoLedgerLastPersistedTimestamp::class.java)
+            flowFiberService
+                .getExecutingFiber()
+                .getExecutionContext()
+                .flowCheckpoint.readCustomState(UtxoLedgerLastPersistedTimestamp::class.java)
                 ?.lastPersistedTimestamp?.let { prev ->
                     if (now < prev) prev else now
                 } ?: now
