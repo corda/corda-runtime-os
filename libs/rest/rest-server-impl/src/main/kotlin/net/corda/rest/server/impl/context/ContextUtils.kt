@@ -83,13 +83,12 @@ internal object ContextUtils {
                     ),
                     it
                 )
-                if (it.expiryStatus == PasswordExpiryStatus.EXPIRED || it.expiryStatus == PasswordExpiryStatus.CLOSE_TO_EXPIRY) {
+                if (it.expiryStatus == PasswordExpiryStatus.CLOSE_TO_EXPIRY) {
                     ctx.addPasswordExpiryHeader(it.expiryStatus!!)
-                    if (it.expiryStatus == PasswordExpiryStatus.EXPIRED) {
-                        "Password has expired".let { passwordExpired ->
-                            log.warn(passwordExpired)
-                            throw UnauthorizedResponse(passwordExpired)
-                        }
+                } else if (it.expiryStatus == PasswordExpiryStatus.EXPIRED) {
+                    "Password has expired".let { passwordExpiredWarning ->
+                        log.warn(passwordExpiredWarning)
+                        throw UnauthorizedResponse(passwordExpiredWarning)
                     }
                 }
                 CURRENT_REST_CONTEXT.set(restAuthContext)
