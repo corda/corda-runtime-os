@@ -2,7 +2,6 @@ package net.corda.ledger.utxo.flow.impl.persistence
 
 import io.micrometer.core.instrument.Timer
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.metrics.recordSuspendable
 import net.corda.flow.persistence.query.ResultSetFactory
