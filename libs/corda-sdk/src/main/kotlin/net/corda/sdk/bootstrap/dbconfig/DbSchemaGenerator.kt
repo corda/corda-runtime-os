@@ -96,7 +96,7 @@ class DbSchemaGenerator(private val config: SpecConfig = SpecConfig()) {
                 checkNotNull(schemaNameByType[schemaType]) { "Cannot find schema name from schema type derived from path" },
                 outputFile,
                 filename,
-                generateSchemaSql.isNullOrEmpty()
+                !generateSchemaSql.isNullOrEmpty()
             )
         }
         logger.info("Generated sql file $outputFileName")
