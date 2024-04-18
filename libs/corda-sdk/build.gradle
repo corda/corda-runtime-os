@@ -55,6 +55,7 @@ dependencies {
     implementation project(":libs:utilities")
     implementation project(":libs:configuration:configuration-core")
     implementation 'net.corda:corda-config-schema'
+    implementation 'net.corda:corda-db-schema'
     implementation 'net.corda:corda-rbac-schema'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 

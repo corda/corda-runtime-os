@@ -6,7 +6,6 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import com.fasterxml.jackson.module.kotlin.KotlinFeature
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
-import org.slf4j.LoggerFactory
 import java.net.URL
 import java.net.URLDecoder
 import java.nio.charset.Charset
@@ -19,7 +18,6 @@ class TopicConfigCreator(
     val classLoader: ClassLoader
 ) {
     private val resourceGetter: (String) -> List<URL> = { path -> classLoader.getResources(path).toList().filterNotNull() }
-    private val logger = LoggerFactory.getLogger(this::class.java)
 
     data class TopicConfig(
         val name: String,
@@ -209,20 +207,12 @@ class TopicConfigCreator(
         getEntries: (JarFile) -> List<JarEntry> = { jar: JarFile -> jar.entries().toList() }
     ): Map<String, *> {
         return jars.flatMap { jar: JarFile ->
-            logger.info("Current JAR: ${jar.name}")
-            val jarEntries = getEntries(jar)
-            logger.info("list of all files: ${jarEntries.joinToString(", ")}")
-            val yamlFiles = jarEntries.filter {
+            val yamlFiles = getEntries(jar).filter {
                 extensions.contains(it.name.substringAfterLast(".")) &&
                     it.name.contains("corda") // filter out other files like liquibase
             }
 
-            logger.info("list of filtered yamlFiles: ${yamlFiles.joinToString(", ")}")
-
             yamlFiles.map { entry: JarEntry ->
-
-                logger.info("Current YAML file: ${entry.name}")
-
                 val data: String = jar.getInputStream(entry)
                     .bufferedReader(Charset.defaultCharset()).use { it.readText() }
                 val parsedData: TopicDefinitions = mapper.readValue(data)
