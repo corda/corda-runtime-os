@@ -157,4 +157,15 @@ interface UtxoLedgerPersistenceService {
     fun persistFilteredTransactionsAndSignatures(
         filteredTransactionsAndSignatures: List<UtxoFilteredTransactionAndSignatures>
     )
+
+    @Suspendable
+    fun findTransactionsWithStatusCreatedBetweenTime(
+        status: TransactionStatus,
+        from: Instant,
+        until: Instant,
+        limit: Int,
+    ): List<SecureHash>
+
+    @Suspendable
+    fun incrementTransactionRepairAttemptCount(id: SecureHash)
 }

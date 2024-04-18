@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test
 import picocli.CommandLine
 
 
-class KafkaCheckerTest {
+class CheckKafkaTest {
 
     @Test
     fun testKafkaFileParsing() {

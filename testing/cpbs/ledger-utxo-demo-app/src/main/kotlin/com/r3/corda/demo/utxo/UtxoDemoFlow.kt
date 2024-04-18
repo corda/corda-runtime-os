@@ -90,6 +90,7 @@ class UtxoDemoFlow : ClientStartableFlow {
                     signedTransaction,
                     sessions
                 )
+
                 finalizationResult.transaction.id.toString().also {
                     log.info("Success! Response: $it")
                 }

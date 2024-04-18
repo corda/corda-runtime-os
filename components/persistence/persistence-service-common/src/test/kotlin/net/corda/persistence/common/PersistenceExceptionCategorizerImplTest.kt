@@ -1,11 +1,13 @@
 package net.corda.persistence.common
 
+import net.corda.persistence.common.PersistenceExceptionCategorizerImpl.Companion.CONNECTION_CLOSED_MESSAGE
 import org.assertj.core.api.Assertions.assertThat
 import org.hibernate.QueryException
 import org.hibernate.ResourceClosedException
 import org.hibernate.SessionException
 import org.hibernate.TransactionException
 import org.hibernate.cache.CacheException
+import org.hibernate.exception.ConstraintViolationException
 import org.hibernate.exception.GenericJDBCException
 import org.hibernate.exception.JDBCConnectionException
 import org.hibernate.exception.LockAcquisitionException
@@ -13,6 +15,7 @@ import org.hibernate.exception.SQLGrammarException
 import org.hibernate.procedure.NoSuchParameterException
 import org.hibernate.procedure.ParameterMisuseException
 import org.hibernate.property.access.spi.PropertyAccessException
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -51,7 +54,14 @@ class PersistenceExceptionCategorizerImplTest {
                 Arguments.of(LockAcquisitionException(DUMMY_MESSAGE, DUMMY_SQL_EXCEPTION, DUMMY_SQL)),
                 Arguments.of(TransactionException(DUMMY_MESSAGE)),
                 Arguments.of(CacheException(DUMMY_MESSAGE)),
-                Arguments.of(SQLTransientConnectionException("Connection is not available, request timed out after"))
+                Arguments.of(SQLTransientConnectionException("Connection is not available, request timed out after")),
+                Arguments.of(SQLException(CONNECTION_CLOSED_MESSAGE)),
+                Arguments.of(SQLException(DUMMY_MESSAGE, "08001")),
+                Arguments.of(SQLException(DUMMY_MESSAGE, "08003")),
+                Arguments.of(SQLException(DUMMY_MESSAGE, "08004")),
+                Arguments.of(SQLException(DUMMY_MESSAGE, "08006")),
+                Arguments.of(SQLException(DUMMY_MESSAGE, "08007")),
+                Arguments.of(SQLException(DUMMY_MESSAGE, "58030")),
             )
         }
 
@@ -67,6 +77,7 @@ class PersistenceExceptionCategorizerImplTest {
                 Arguments.of(NoSuchParameterException(DUMMY_MESSAGE)),
                 Arguments.of(ParameterMisuseException(DUMMY_MESSAGE)),
                 Arguments.of(PropertyAccessException(DUMMY_MESSAGE)),
+                Arguments.of(ConstraintViolationException(DUMMY_MESSAGE, DUMMY_SQL_EXCEPTION, DUMMY_MESSAGE))
             )
         }
 
@@ -98,5 +109,10 @@ class PersistenceExceptionCategorizerImplTest {
     @MethodSource("fatalPersistenceExceptions")
     fun `fatal persistence exceptions`(exception: Exception) {
         assertThat(persistenceExceptionCategorizer.categorize(exception)).isEqualTo(PersistenceExceptionType.FATAL)
+    }
+
+    @Test
+    fun `unknown exceptions are categorized as platform`() {
+        assertThat(persistenceExceptionCategorizer.categorize(Exception())).isEqualTo(PersistenceExceptionType.PLATFORM)
     }
 }

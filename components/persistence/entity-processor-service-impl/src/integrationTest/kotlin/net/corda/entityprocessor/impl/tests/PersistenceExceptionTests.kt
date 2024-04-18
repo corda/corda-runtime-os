@@ -23,6 +23,7 @@ import net.corda.db.persistence.testkit.helpers.SandboxHelper.getDogClass
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.entityprocessor.impl.internal.EntityRequestProcessor
+import net.corda.entityprocessor.impl.tests.helpers.assertEventResponseWithError
 import net.corda.entityprocessor.impl.tests.helpers.assertEventResponseWithoutError
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.flow.utils.toKeyValuePairList
@@ -292,9 +293,8 @@ class PersistenceExceptionTests {
 
         val userDuplicatePersistEntitiesRequest = createDogPersistRequest(dogId)
         // the following should now throw as it is different request that violates PK
-        assertThrows<CordaHTTPServerTransientException> {
-            processor.process(userDuplicatePersistEntitiesRequest)
-        }
+        val violationResponse = processor.process(userDuplicatePersistEntitiesRequest)
+        assertEventResponseWithError(violationResponse)
     }
 
     private fun createDogPersistRequest(dogId: UUID = UUID.randomUUID()): EntityRequest {

@@ -25,7 +25,8 @@ class KafkaCheckerTest {
         val kafkaChecker = KafkaChecker(path)
         val ret = kafkaChecker.check()
 
-        assertEquals(0, ret)
+        assertEquals(1, ret)
+        assertTrue(kafkaChecker.report.toString().contains("Bootstrap servers have not been defined under Kafka: FAILED"))
         assertTrue(kafkaChecker.report.toString().contains("Parse Kafka properties from YAML: PASSED"))
     }
 

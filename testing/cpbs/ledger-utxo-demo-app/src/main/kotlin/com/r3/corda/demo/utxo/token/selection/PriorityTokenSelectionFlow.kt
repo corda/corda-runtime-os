@@ -54,7 +54,7 @@ class PriorityTokenSelectionFlow : ClientStartableFlow {
                 Strategy.PRIORITY
             )
 
-            val tokenClaim = requireNotNull(tokenSelection.tryClaim(queryCriteria))
+            val tokenClaim = requireNotNull(tokenSelection.tryClaim("claim1", queryCriteria))
 
             // Lookup the states that match the returned tokens
             val stateRefList = tokenClaim.claimedTokens.map { it.stateRef }

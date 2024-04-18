@@ -43,6 +43,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup.NOTARY
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
+import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.utxoComponentGroupStructure
 import net.corda.libs.packaging.hash
 import net.corda.orm.utils.transaction
@@ -422,14 +423,15 @@ class UtxoPersistenceServiceImplTest {
         val account = "Account"
         val transactionStatus = VERIFIED
         val signedTransaction = createSignedTransaction(signatures = createSignatures(Instant.now()))
-        val visibleStatesIndexes = listOf(0)
+        val visibleStatesIndexes = listOf(0, 1)
 
         // Persist transaction
         val transactionReader = TestUtxoTransactionReader(
             signedTransaction,
             account,
             transactionStatus,
-            visibleStatesIndexes
+            visibleStatesIndexes,
+            serializer = serializationService
         )
 
         // Create the utxo tokens
@@ -1062,7 +1064,8 @@ class UtxoPersistenceServiceImplTest {
             signedTransaction,
             "account",
             VERIFIED,
-            emptyList()
+            emptyList(),
+            serializer = serializationService
         )
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
 
@@ -1098,7 +1101,8 @@ class UtxoPersistenceServiceImplTest {
             signedTransaction,
             "account",
             VERIFIED,
-            emptyList()
+            emptyList(),
+            serializer = serializationService
         )
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
 
@@ -1122,6 +1126,241 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
+    fun `persist verified signed transaction consuming a filtered transaction when a filtered transaction for the same id exists for the same id updates states as consumed`() {
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction = createSignedTransaction(outputStates = defaultVisibleTransactionOutputs, signatures = signatures)
+        val filteredTransaction = createFilteredTransaction(signedTransaction, indexes = listOf(0, 1))
+        val transactionReader = TestUtxoTransactionReader(
+            signedTransaction,
+            "account",
+            VERIFIED,
+            listOf(0, 1),
+            serializer = serializationService
+        )
+
+        val consumingInput = StateRef(signedTransaction.id, 0)
+        // A successor uses one of the outputs with an index 0 as an input
+        val subsequentSignedTransaction = createSignedTransaction(
+            inputStateRefs = listOf(consumingInput),
+            signatures = signatures
+        )
+        val subsequentTransactionReader = TestUtxoTransactionReader(
+            subsequentSignedTransaction,
+            "account",
+            VERIFIED,
+            listOf(0, 1),
+            listOf(consumingInput),
+            serializer = serializationService
+        )
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+
+        // persist filtered tx as a dependency of subsequent signed tx
+        persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
+
+        entityManagerFactory.transaction { em ->
+            val transaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
+            assertThat(transaction).isNotNull
+            assertThat(transaction.field<Boolean>("isFiltered")).isTrue()
+            assertThat(transaction.field<String>("status")).isEqualTo("V")
+        }
+
+        // persist the subsequent transaction
+        persistenceService.persistTransaction(subsequentTransactionReader, emptyMap())
+
+        entityManagerFactory.transaction { em ->
+            val transactionIdString = filteredTransaction.id.toString()
+            val dbTransactionOutputs = em.createNamedQuery(
+                "UtxoVisibleTransactionOutputEntity.findByTransactionId",
+                entityFactory.utxoVisibleTransactionOutput
+            )
+                .setParameter("transactionId", transactionIdString)
+                .resultList
+
+            // prove that outputs of filtered transaction is invisible
+            assertThat(dbTransactionOutputs).isEmpty()
+
+            val visibleOutputIndexes = listOf(0)
+            // prove that the output of filtered tx with index 0 is used as an input
+            val indexes = repository.findConsumedTransactionSourcesForTransaction(em, transactionIdString, visibleOutputIndexes)
+            assertThat(indexes).contains(0)
+        }
+
+        // persist signed transaction (the same transaction of filtered transaction which finalised later than the subsequent transaction)
+        persistenceService.persistTransaction(transactionReader, emptyMap())
+        assertThat(transactionReader.getVisibleStates()).isNotNull
+        assertThat(transactionReader.visibleStatesIndexes).contains(0, 1)
+
+        // prove that now outputs of the dependency are visible.
+        entityManagerFactory.transaction { em ->
+            val dbTransactionOutputs = em.createNamedQuery(
+                "UtxoVisibleTransactionOutputEntity.findByTransactionId",
+                entityFactory.utxoVisibleTransactionOutput
+            )
+                .setParameter("transactionId", signedTransaction.id.toString())
+                .resultList
+
+            assertThat(dbTransactionOutputs).isNotEmpty()
+
+            val sorted = dbTransactionOutputs
+                .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
+
+            val visibleOutputIndexes = sorted.map { it.field<Int>("leafIndex") }
+            assertThat(visibleOutputIndexes).contains(0, 1)
+
+            // output 0 should be consumed
+            sorted[0].let { row ->
+                assertThat(row.field<Int>("groupIndex")).isEqualTo(8)
+                assertThat(row.field<Int>("leafIndex")).isEqualTo(0)
+                assertThat(row.field<Instant>("consumed")).isNotNull()
+            }
+
+            // output 1 shouldn't be consumed
+            sorted[1].let { row ->
+                assertThat(row.field<Int>("groupIndex")).isEqualTo(8)
+                assertThat(row.field<Int>("leafIndex")).isEqualTo(1)
+                assertThat(row.field<Instant>("consumed")).isNull()
+            }
+
+            val transaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
+            assertThat(transaction).isNotNull
+        }
+    }
+
+    @Test
+    fun `persist verified signed transaction consuming a filtered transaction when an unverified signed transaction exists for the same id updates states as consumed`() {
+        val signatures = createSignatures(Instant.now())
+        val txAIndexes = listOf(0, 1)
+        val txASignedTransaction = createSignedTransaction(
+            outputStates = defaultVisibleTransactionOutputs,
+            signatures = signatures
+        )
+        val txAFilteredTransaction = createFilteredTransaction(txASignedTransaction, indexes = txAIndexes)
+        val txAReaderUnverified = TestUtxoTransactionReader(
+            txASignedTransaction,
+            "account",
+            UNVERIFIED,
+            emptyList(), // visible states of unverified tx is always empty
+            serializer = serializationService
+        )
+        val txAReaderVerified = TestUtxoTransactionReader(
+            txASignedTransaction,
+            "account",
+            VERIFIED,
+            txAIndexes,
+            serializer = serializationService
+        )
+        val consumingInput = StateRef(txASignedTransaction.id, 0)
+        val txBSignedTransaction = createSignedTransaction(inputStateRefs = listOf(consumingInput), signatures = signatures)
+        val txBReader = TestUtxoTransactionReader(
+            txBSignedTransaction,
+            "account",
+            VERIFIED,
+            listOf(0, 1),
+            listOf(consumingInput),
+            serializer = serializationService
+        )
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+
+        // persist unverified signed txA
+        persistenceService.persistTransaction(txAReaderUnverified)
+
+        entityManagerFactory.transaction { em ->
+            val txAId = txASignedTransaction.id.toString()
+            val transaction = em.find(entityFactory.utxoTransaction, txAId)
+            assertThat(transaction).isNotNull
+            assertThat(transaction.field<Boolean>("isFiltered")).isFalse()
+            assertThat(transaction.field<String>("status")).isEqualTo("U")
+
+            val dbTransactionOutputs = em.createNamedQuery(
+                "UtxoVisibleTransactionOutputEntity.findByTransactionId",
+                entityFactory.utxoVisibleTransactionOutput
+            )
+                .setParameter("transactionId", txAId)
+                .resultList
+
+            // prove that outputs of unverified tx is invisible
+            assertThat(dbTransactionOutputs).isEmpty()
+
+            val visibleOutputIndexes = listOf(0, 1)
+            // prove that the output of unverified tx is not consumed in other tx
+            val indexes = repository.findConsumedTransactionSourcesForTransaction(em, txAId, visibleOutputIndexes)
+            assertThat(indexes).isEmpty()
+        }
+
+        // persist verified filtered txA as a dependency of signed txB
+        persistenceService.persistFilteredTransactions(mapOf(txAFilteredTransaction to signatures), "account")
+
+        entityManagerFactory.transaction { em ->
+            val transaction = em.find(entityFactory.utxoTransaction, txASignedTransaction.id.toString())
+            assertThat(transaction).isNotNull
+            assertThat(transaction.field<Boolean>("isFiltered")).isTrue()
+            assertThat(transaction.field<String>("status")).isEqualTo("U")
+        }
+
+        // persist verified signed txB
+        persistenceService.persistTransaction(txBReader, emptyMap())
+
+        entityManagerFactory.transaction { em ->
+            val transactionIdString = txASignedTransaction.id.toString()
+            val dbTransactionOutputs = em.createNamedQuery(
+                "UtxoVisibleTransactionOutputEntity.findByTransactionId",
+                entityFactory.utxoVisibleTransactionOutput
+            )
+                .setParameter("transactionId", transactionIdString)
+                .resultList
+
+            // prove that outputs of filtered transaction is invisible
+            assertThat(dbTransactionOutputs).isEmpty()
+
+            val visibleOutputIndexes = listOf(0)
+            // prove that the output of filtered tx with index 0 is used as an input
+            val indexes = repository.findConsumedTransactionSourcesForTransaction(em, transactionIdString, visibleOutputIndexes)
+            assertThat(indexes).contains(0)
+        }
+
+        // persist verified signed txA
+        persistenceService.persistTransaction(txAReaderVerified, emptyMap())
+        assertThat(txBReader.getVisibleStates()).isNotNull
+        assertThat(txBReader.visibleStatesIndexes).contains(0, 1)
+
+        // prove that now outputs of the dependency are visible.
+        entityManagerFactory.transaction { em ->
+            val txAId = txASignedTransaction.id.toString()
+            val dbTransactionOutputs = em.createNamedQuery(
+                "UtxoVisibleTransactionOutputEntity.findByTransactionId",
+                entityFactory.utxoVisibleTransactionOutput
+            )
+                .setParameter("transactionId", txAId)
+                .resultList
+
+            assertThat(dbTransactionOutputs).isNotEmpty()
+
+            val sorted = dbTransactionOutputs
+                .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
+
+            val visibleOutputIndexes = sorted.map { it.field<Int>("leafIndex") }
+            assertThat(visibleOutputIndexes).contains(0, 1)
+
+            // output 0 should be consumed
+            sorted[0].let { row ->
+                assertThat(row.field<Int>("groupIndex")).isEqualTo(8)
+                assertThat(row.field<Int>("leafIndex")).isEqualTo(0)
+                assertThat(row.field<Instant>("consumed")).isNotNull()
+            }
+
+            // output 1 shouldn't be consumed
+            sorted[1].let { row ->
+                assertThat(row.field<Int>("groupIndex")).isEqualTo(8)
+                assertThat(row.field<Int>("leafIndex")).isEqualTo(1)
+                assertThat(row.field<Instant>("consumed")).isNull()
+            }
+
+            val transaction = em.find(entityFactory.utxoTransaction, txAId)
+            assertThat(transaction).isNotNull
+        }
+    }
+
+    @Test
     fun `persist unverified signed transaction when a filtered transaction exists for the same id sets the status to UNVERIFIED and leaves is_filtered as true`() {
         val signatures = createSignatures(Instant.now())
         val signedTransaction = createSignedTransaction(signatures = signatures)
@@ -1130,7 +1369,8 @@ class UtxoPersistenceServiceImplTest {
             signedTransaction,
             "account",
             UNVERIFIED,
-            emptyList()
+            emptyList(),
+            serializer = serializationService
         )
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
 
@@ -1166,7 +1406,8 @@ class UtxoPersistenceServiceImplTest {
             signedTransaction,
             "account",
             UNVERIFIED,
-            emptyList()
+            emptyList(),
+            serializer = serializationService
         )
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
 
@@ -1198,7 +1439,8 @@ class UtxoPersistenceServiceImplTest {
             signedTransaction,
             "account",
             VERIFIED,
-            emptyList()
+            emptyList(),
+            serializer = serializationService
         )
         persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
         persistenceService.persistTransaction(transactionReader, emptyMap())
@@ -1215,7 +1457,8 @@ class UtxoPersistenceServiceImplTest {
             signedTransaction,
             "account",
             VERIFIED,
-            emptyList()
+            emptyList(),
+            serializer = serializationService
         )
         persistenceService.persistTransaction(transactionReader, emptyMap())
         persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
@@ -1243,7 +1486,8 @@ class UtxoPersistenceServiceImplTest {
             signedTransaction,
             "account",
             UNVERIFIED,
-            emptyList()
+            emptyList(),
+            serializer = serializationService
         )
         persistenceService.persistTransaction(transactionReader, emptyMap())
         assertThat(persistenceService.findSignedTransaction(signedTransaction.id.toString(), VERIFIED).first).isNull()
@@ -1261,7 +1505,8 @@ class UtxoPersistenceServiceImplTest {
             signedTransaction,
             "account",
             UNVERIFIED,
-            emptyList()
+            emptyList(),
+            serializer = serializationService
         )
         persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
         persistenceService.persistTransaction(transactionReader, emptyMap())
@@ -1280,7 +1525,8 @@ class UtxoPersistenceServiceImplTest {
             signedTransaction,
             "account",
             VERIFIED,
-            emptyList()
+            emptyList(),
+            serializer = serializationService
         )
         persistenceService.persistTransaction(transactionReader, emptyMap())
         val loadedFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl)
@@ -1302,7 +1548,8 @@ class UtxoPersistenceServiceImplTest {
             signedTransaction,
             "account",
             UNVERIFIED,
-            emptyList()
+            emptyList(),
+            serializer = serializationService
         )
         persistenceService.persistTransaction(transactionReader, emptyMap())
         val loadedFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl)
@@ -1322,7 +1569,8 @@ class UtxoPersistenceServiceImplTest {
             signedTransaction,
             "account",
             DRAFT,
-            emptyList()
+            emptyList(),
+            serializer = serializationService
         )
         persistenceService.persistTransaction(transactionReader, emptyMap())
         val loadedFilteredTransactions = (persistenceService as UtxoPersistenceServiceImpl)
@@ -1344,7 +1592,8 @@ class UtxoPersistenceServiceImplTest {
             signedTransaction,
             "account",
             UNVERIFIED,
-            emptyList()
+            emptyList(),
+            serializer = serializationService
         )
         persistenceService.persistTransaction(transactionReader, emptyMap())
         persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
@@ -1375,7 +1624,8 @@ class UtxoPersistenceServiceImplTest {
             signedTransaction,
             "account",
             VERIFIED,
-            emptyList()
+            emptyList(),
+            serializer = serializationService
         )
         persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
         persistenceService.persistTransaction(transactionReader, emptyMap())
@@ -1402,7 +1652,8 @@ class UtxoPersistenceServiceImplTest {
             signedTransaction,
             "account",
             VERIFIED,
-            emptyList()
+            emptyList(),
+            serializer = serializationService
         )
         persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
         persistenceService.persistTransaction(transactionReader, emptyMap())
@@ -1436,7 +1687,8 @@ class UtxoPersistenceServiceImplTest {
             signedTransaction,
             "account",
             VERIFIED,
-            emptyList()
+            emptyList(),
+            serializer = serializationService
         )
         persistenceService.persistTransaction(transactionReader, emptyMap())
         persistenceService.persistFilteredTransactions(mapOf(filteredTransaction to signatures), "account")
@@ -1458,6 +1710,224 @@ class UtxoPersistenceServiceImplTest {
         assertThat(filteredOutputStates?.get(1)?.first).isEqualTo(1)
         assertThat(filteredOutputStates?.get(1)?.second).isEqualTo(outputStates[1].toBytes())
         assertThat(foundFilteredTransactions[signedTransaction.id]?.second).isEqualTo(signatures)
+    }
+
+    @Test
+    fun `findTransactionsWithStatusCreatedBetweenTime finds transactions within the specified period and status`() {
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        entityManagerFactory.transaction { em ->
+            em.createNamedQuery("UtxoTransactionEntity.findAll", entityFactory.utxoTransaction)
+                .resultList
+                .forEach { entity ->
+                    em.remove(entity)
+                }
+        }
+        val now = Instant.now()
+        val transaction1 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now)
+        val transaction2 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(5))
+        val transaction3 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(10))
+        val transaction4 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(30))
+        persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(60))
+        persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.minusSeconds(1))
+        persistTransactionViaEntity(entityFactory, VERIFIED, createdTs = now.plusSeconds(5))
+        persistTransactionViaEntity(entityFactory, DRAFT, createdTs = now.plusSeconds(5))
+        persistTransactionViaEntity(entityFactory, INVALID, createdTs = now.plusSeconds(5))
+        val transactionIds = persistenceService.findTransactionsWithStatusCreatedBetweenTime(
+            UNVERIFIED,
+            from = now,
+            until = now.plusSeconds(60),
+            limit = 10
+        )
+        assertThat(transactionIds)
+            .containsExactlyInAnyOrder(transaction1.id, transaction2.id, transaction3.id, transaction4.id)
+    }
+
+    @Test
+    fun `findTransactionsWithStatusCreatedBetweenTime returns nothing if no transactions are within the specified period`() {
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        entityManagerFactory.transaction { em ->
+            em.createNamedQuery("UtxoTransactionEntity.findAll", entityFactory.utxoTransaction)
+                .resultList
+                .forEach { entity ->
+                    em.remove(entity)
+                }
+        }
+        val now = Instant.now()
+        persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(120))
+        persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(65))
+        persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(70))
+        persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(90))
+        persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(60))
+        persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.minusSeconds(1))
+        persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.minusSeconds(10))
+        val transactionIds = persistenceService.findTransactionsWithStatusCreatedBetweenTime(
+            UNVERIFIED,
+            from = now,
+            until = now.plusSeconds(60),
+            limit = 10
+        )
+        assertThat(transactionIds).isEmpty()
+    }
+
+    @Test
+    fun `findTransactionsWithStatusCreatedBetweenTime orders by repair_attempt_count ascending and created time ascending`() {
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        entityManagerFactory.transaction { em ->
+            em.createNamedQuery("UtxoTransactionEntity.findAll", entityFactory.utxoTransaction)
+                .resultList
+                .forEach { entity ->
+                    em.remove(entity)
+                }
+        }
+        val now = Instant.now()
+        val transaction1 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(5), repairAttemptCount = 0)
+        val transaction2 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(10), repairAttemptCount = 0)
+        val transaction3 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now, repairAttemptCount = 1)
+        val transaction4 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(1), repairAttemptCount = 1)
+        val transaction5 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(5), repairAttemptCount = 1)
+        val transaction6 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(6), repairAttemptCount = 1)
+        val transaction7 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(5), repairAttemptCount = 2)
+        val transaction8 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(59), repairAttemptCount = 3)
+        val transaction9 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(30), repairAttemptCount = 4)
+        val transactionIds = persistenceService.findTransactionsWithStatusCreatedBetweenTime(
+            UNVERIFIED,
+            from = now,
+            until = now.plusSeconds(60),
+            limit = 10
+        )
+        assertThat(transactionIds)
+            .containsExactly(
+                transaction1.id,
+                transaction2.id,
+                transaction3.id,
+                transaction4.id,
+                transaction5.id,
+                transaction6.id,
+                transaction7.id,
+                transaction8.id,
+                transaction9.id
+            )
+    }
+
+    @Test
+    fun `findTransactionsWithStatusCreatedBetweenTime only returns results that fit into the limit`() {
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        entityManagerFactory.transaction { em ->
+            em.createNamedQuery("UtxoTransactionEntity.findAll", entityFactory.utxoTransaction)
+                .resultList
+                .forEach { entity ->
+                    em.remove(entity)
+                }
+        }
+        val now = Instant.now()
+        val transaction1 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now)
+        val transaction2 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now)
+        val transaction3 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now)
+        val transaction4 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now)
+        persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(30))
+        persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(30))
+        persistTransactionViaEntity(entityFactory, VERIFIED, createdTs = now.plusSeconds(30))
+        persistTransactionViaEntity(entityFactory, DRAFT, createdTs = now.plusSeconds(30))
+        persistTransactionViaEntity(entityFactory, INVALID, createdTs = now.plusSeconds(30))
+        val transactionIds = persistenceService.findTransactionsWithStatusCreatedBetweenTime(
+            UNVERIFIED,
+            from = now,
+            until = now.plusSeconds(60),
+            limit = 4
+        )
+        assertThat(transactionIds)
+            .containsExactlyInAnyOrder(transaction1.id, transaction2.id, transaction3.id, transaction4.id)
+    }
+
+    @Test
+    fun `incrementTransactionRepairAttemptCount increments the count by 1`() {
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        val transaction1 = persistTransactionViaEntity(entityFactory, UNVERIFIED, repairAttemptCount = 0)
+        val transaction2 = persistTransactionViaEntity(entityFactory, UNVERIFIED, repairAttemptCount = 0)
+
+        persistenceService.incrementTransactionRepairAttemptCount(transaction1.id.toString())
+        entityManagerFactory.transaction { em ->
+            val updated1 = em.find(entityFactory.utxoTransaction, transaction1.id.toString())
+            assertThat(updated1).isNotNull
+            assertThat(updated1.field<Int>("repairAttemptCount")).isOne()
+            val updated2 = em.find(entityFactory.utxoTransaction, transaction2.id.toString())
+            assertThat(updated2).isNotNull
+            assertThat(updated2.field<Int>("repairAttemptCount")).isZero()
+        }
+
+        persistenceService.incrementTransactionRepairAttemptCount(transaction1.id.toString())
+        entityManagerFactory.transaction { em ->
+            val updated1 = em.find(entityFactory.utxoTransaction, transaction1.id.toString())
+            assertThat(updated1).isNotNull
+            assertThat(updated1.field<Int>("repairAttemptCount")).isEqualTo(2)
+            val updated2 = em.find(entityFactory.utxoTransaction, transaction2.id.toString())
+            assertThat(updated2).isNotNull
+            assertThat(updated2.field<Int>("repairAttemptCount")).isZero()
+        }
+    }
+
+    @Test
+    fun `incrementing the repair count removes the need for offset paging when calling findTransactionsWithStatusCreatedBetweenTime`() {
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        entityManagerFactory.transaction { em ->
+            em.createNamedQuery("UtxoTransactionEntity.findAll", entityFactory.utxoTransaction)
+                .resultList
+                .forEach { entity ->
+                    em.remove(entity)
+                }
+        }
+        val now = Instant.now()
+        val transaction1 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(1), repairAttemptCount = 0)
+        val transaction2 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(2), repairAttemptCount = 0)
+        val transaction3 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(3), repairAttemptCount = 0)
+        val transaction4 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(4), repairAttemptCount = 0)
+        val transaction5 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(5), repairAttemptCount = 0)
+        val transaction6 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(6), repairAttemptCount = 0)
+        val transaction7 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(7), repairAttemptCount = 0)
+        val transaction8 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(8), repairAttemptCount = 0)
+        val transaction9 = persistTransactionViaEntity(entityFactory, UNVERIFIED, createdTs = now.plusSeconds(9), repairAttemptCount = 0)
+
+        val transactionIds1 = persistenceService.findTransactionsWithStatusCreatedBetweenTime(
+            UNVERIFIED,
+            from = now,
+            until = now.plusSeconds(60),
+            limit = 3
+        )
+        persistenceService.incrementTransactionRepairAttemptCount(transaction1.id.toString())
+        persistenceService.incrementTransactionRepairAttemptCount(transaction2.id.toString())
+        persistenceService.incrementTransactionRepairAttemptCount(transaction3.id.toString())
+
+        val transactionIds2 = persistenceService.findTransactionsWithStatusCreatedBetweenTime(
+            UNVERIFIED,
+            from = now,
+            until = now.plusSeconds(60),
+            limit = 3
+        )
+        persistenceService.incrementTransactionRepairAttemptCount(transaction4.id.toString())
+        persistenceService.incrementTransactionRepairAttemptCount(transaction5.id.toString())
+        persistenceService.incrementTransactionRepairAttemptCount(transaction6.id.toString())
+
+        val transactionIds3 = persistenceService.findTransactionsWithStatusCreatedBetweenTime(
+            UNVERIFIED,
+            from = now,
+            until = now.plusSeconds(60),
+            limit = 3
+        )
+        persistenceService.incrementTransactionRepairAttemptCount(transaction7.id.toString())
+        persistenceService.incrementTransactionRepairAttemptCount(transaction8.id.toString())
+        persistenceService.incrementTransactionRepairAttemptCount(transaction9.id.toString())
+
+        val transactionIds4 = persistenceService.findTransactionsWithStatusCreatedBetweenTime(
+            UNVERIFIED,
+            from = now,
+            until = now.plusSeconds(60),
+            limit = 3
+        )
+
+        assertThat(transactionIds1).containsExactly(transaction1.id, transaction2.id, transaction3.id)
+        assertThat(transactionIds2).containsExactly(transaction4.id, transaction5.id, transaction6.id)
+        assertThat(transactionIds3).containsExactly(transaction7.id, transaction8.id, transaction9.id)
+        assertThat(transactionIds4).containsExactly(transaction1.id, transaction2.id, transaction3.id)
     }
 
     @Suppress("LongParameterList")
@@ -1485,16 +1955,33 @@ class UtxoPersistenceServiceImplTest {
             )
         }.toMap()
 
+    @Suppress("LongParameterList")
     private fun persistTransactionViaEntity(
         entityFactory: UtxoEntityFactory,
         status: TransactionStatus = UNVERIFIED,
         inputStateRefs: List<StateRef> = defaultInputStateRefs,
         referenceStateRefs: List<StateRef> = defaultReferenceStateRefs,
-        isFiltered: Boolean = false
+        isFiltered: Boolean = false,
+        createdTs: Instant = testClock.instant(),
+        repairAttemptCount: Int = 0
     ): SignedTransactionContainer {
-        val signedTransaction = createSignedTransaction(inputStateRefs = inputStateRefs, referenceStateRefs = referenceStateRefs)
+        val signedTransaction = createSignedTransaction(
+            instant = createdTs,
+            inputStateRefs = inputStateRefs,
+            referenceStateRefs = referenceStateRefs
+        )
         entityManagerFactory.transaction { em ->
-            em.persist(createTransactionEntity(entityFactory, signedTransaction, status = status, isFiltered = isFiltered))
+            em.persist(
+                createTransactionEntity(
+                    entityFactory,
+                    signedTransaction,
+                    status = status,
+                    isFiltered = isFiltered,
+                    createdTs = createdTs,
+//                    createdTs = testClock.instant(),
+                    repairAttemptCount = repairAttemptCount
+                )
+            )
         }
         return signedTransaction
     }
@@ -1506,7 +1993,8 @@ class UtxoPersistenceServiceImplTest {
         account: String = "Account",
         createdTs: Instant = testClock.instant(),
         status: TransactionStatus = UNVERIFIED,
-        isFiltered: Boolean = false
+        isFiltered: Boolean = false,
+        repairAttemptCount: Int = 0
     ): Any {
         val metadataBytes = signedTransaction.wireTransaction.componentGroupLists[0][0]
         val metadata = entityFactory.createOrFindUtxoTransactionMetadataEntity(
@@ -1524,7 +2012,8 @@ class UtxoPersistenceServiceImplTest {
             status.value,
             createdTs,
             metadata,
-            isFiltered
+            isFiltered,
+            repairAttemptCount
         ).also { transaction ->
             transaction.field<MutableCollection<Any>>("components").addAll(
                 signedTransaction.wireTransaction.componentGroupLists.flatMapIndexed { groupIndex, componentGroup ->
@@ -1621,12 +2110,14 @@ class UtxoPersistenceServiceImplTest {
         )
     }
 
+    @Suppress("LongParameterList")
     private fun createSignedTransaction(
         seed: String = seedSequence.incrementAndGet().toString(),
+        instant: Instant = testClock.instant(),
         inputStateRefs: List<StateRef> = defaultInputStateRefs,
         referenceStateRefs: List<StateRef> = defaultReferenceStateRefs,
         outputStates: List<ContractState> = defaultVisibleTransactionOutputs,
-        signatures: List<DigitalSignatureAndMetadata> = createSignatures()
+        signatures: List<DigitalSignatureAndMetadata> = createSignatures(instant),
     ): SignedTransactionContainer {
         val transactionMetadata = utxoTransactionMetadataExample(cpkPackageSeed = seed)
         val timeWindow = Instant.now().plusMillis(Duration.ofDays(1).toMillis())
@@ -1667,11 +2158,14 @@ class UtxoPersistenceServiceImplTest {
         return listOf(getSignatureWithMetadataExample(publicKey, createdTs))
     }
 
+    @Suppress("LongParameterList")
     private class TestUtxoTransactionReader(
         val transactionContainer: SignedTransactionContainer,
         override val account: String,
         override val status: TransactionStatus,
-        override val visibleStatesIndexes: List<Int>
+        override val visibleStatesIndexes: List<Int>,
+        val inputs: List<StateRef> = emptyList(),
+        val serializer: SerializationService
     ) : UtxoTransactionReader {
         override val id: SecureHash
             get() = transactionContainer.id
@@ -1687,10 +2181,16 @@ class UtxoPersistenceServiceImplTest {
             get() = (transactionContainer.wireTransaction.metadata as TransactionMetadataInternal).getCpkMetadata()
 
         override fun getVisibleStates(): Map<Int, StateAndRef<ContractState>> {
-            return mapOf(
-                0 to stateAndRef<TestContract>(TestContractState1(), id, 0),
-                1 to stateAndRef<TestContract>(TestContractState2(), id, 1)
-            )
+            val visibleStatesSet = visibleStatesIndexes.toSet()
+            return rawGroupLists[UtxoComponentGroup.OUTPUTS.ordinal]
+                .zip(rawGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal])
+                .withIndex()
+                .filter { indexed -> visibleStatesSet.contains(indexed.index) }
+                .associate { (index, value) ->
+                    index to UtxoVisibleTransactionOutputDto(id.toString(), index, value.second, value.first).toStateAndRef(
+                        serializer
+                    )
+                }
         }
 
         override fun getConsumedStates(persistenceService: UtxoPersistenceService): List<StateAndRef<ContractState>> {
@@ -1702,7 +2202,7 @@ class UtxoPersistenceServiceImplTest {
         }
 
         override fun getConsumedStateRefs(): List<StateRef> {
-            return listOf(StateRef(SecureHashImpl("SHA-256", ByteArray(12)), 1))
+            return inputs.ifEmpty { listOf(StateRef(SecureHashImpl("SHA-256", ByteArray(12)), 1)) }
         }
 
         private inline fun <reified C : Contract> stateAndRef(

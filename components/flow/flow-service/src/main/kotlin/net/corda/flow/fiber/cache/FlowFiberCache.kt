@@ -23,4 +23,9 @@ interface FlowFiberCache : SandboxedCache {
      * Invalidate and remove a flow fiber from the cache with the given [FlowKey].
      */
     fun remove(key: FlowKey)
+
+    /**
+     * Invalidate and remove all flow fibers from the cache.
+     */
+    fun removeAll()
 }

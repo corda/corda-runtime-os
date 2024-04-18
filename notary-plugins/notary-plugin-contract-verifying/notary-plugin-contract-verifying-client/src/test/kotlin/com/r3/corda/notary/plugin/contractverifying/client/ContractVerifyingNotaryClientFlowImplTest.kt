@@ -11,16 +11,18 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.ledger.notary.plugin.api.NotarizationType
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionBuilder
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertAll
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -51,7 +53,7 @@ class ContractVerifyingNotaryClientFlowImplTest {
     private val mockFilteredTx = mock<UtxoFilteredTransaction>()
     private val mockSignedTx = mock<UtxoSignedTransaction> {
         on { notaryKey } doReturn notaryPublicKey
-        on {inputStateRefs} doReturn listOf(mockStateRef)
+        on { inputStateRefs } doReturn listOf(mockStateRef)
         on { referenceStateRefs } doReturn emptyList()
     }
 
@@ -61,23 +63,25 @@ class ContractVerifyingNotaryClientFlowImplTest {
         DigitalSignatureMetadata(Instant.now(), SignatureSpecImpl("dummySignatureName"), emptyMap())
     )
     private val mockDependency = mock<UtxoSignedTransaction> {
-        on {signatures} doReturn listOf(dummyUniquenessSignature)
+        on { signatures } doReturn listOf(dummyUniquenessSignature)
     }
 
-    @Test
-    fun `Contract verifying notary plugin client creates payload properly`() {
-        val client = createClient(mock())
+    @ParameterizedTest
+    @EnumSource(NotarizationType::class)
+    fun `Contract verifying notary plugin client creates payload properly`(notarizationType: NotarizationType) {
+        val client = createClient(notarizationType, mock())
 
         val payload = client.createPayload()
 
         assertAll({
-            assertThat(payload).isNotNull
-            assertThat(payload.initialTransaction).isEqualTo(mockSignedTx)
-        })
+                      assertThat(payload).isNotNull
+                      assertThat(payload.initialTransaction).isEqualTo(mockSignedTx)
+                  })
     }
 
-    @Test
-    fun `Contract verifying notary plugin client returns signature on successful notarization`() {
+    @ParameterizedTest
+    @EnumSource(NotarizationType::class)
+    fun `Contract verifying notary plugin client returns signature on successful notarization`(notarizationType: NotarizationType) {
         val mockSession = mock<FlowSession> {
             on { sendAndReceive(eq(NotarizationResponse::class.java), any()) } doReturn NotarizationResponse(
                 listOf(dummyUniquenessSignature),
@@ -88,15 +92,16 @@ class ContractVerifyingNotaryClientFlowImplTest {
             on { initiateFlow(any()) } doReturn mockSession
         }
 
-        val client = createClient(mockFlowMessaging)
+        val client = createClient(notarizationType, mockFlowMessaging)
 
         val signatures = client.call()
 
         assertThat(signatures).containsExactly(dummyUniquenessSignature)
     }
 
-    @Test
-    fun `Contract verifying notary plugin client throws error on failed notarization`() {
+    @ParameterizedTest
+    @EnumSource(NotarizationType::class)
+    fun `Contract verifying notary plugin client throws error on failed notarization`(notarizationType: NotarizationType) {
         val mockSession = mock<FlowSession> {
             on { sendAndReceive(eq(NotarizationResponse::class.java), any()) } doReturn NotarizationResponse(
                 emptyList(),
@@ -107,7 +112,7 @@ class ContractVerifyingNotaryClientFlowImplTest {
             on { initiateFlow(any()) } doReturn mockSession
         }
 
-        val client = createClient(mockFlowMessaging)
+        val client = createClient(notarizationType, mockFlowMessaging)
 
         val ex = assertThrows<NotaryExceptionReferenceStateUnknown> {
             client.call()
@@ -116,7 +121,7 @@ class ContractVerifyingNotaryClientFlowImplTest {
         assertThat(ex.txId).isEqualTo(txId)
     }
 
-    private fun createClient(flowMessaging: FlowMessaging): ContractVerifyingNotaryClientFlowImpl {
+    private fun createClient(notarizationType: NotarizationType, flowMessaging: FlowMessaging): ContractVerifyingNotaryClientFlowImpl {
 
         val mockBuilder = mock<UtxoFilteredTransactionBuilder> {
             on { withOutputStates(listOf(0)) } doReturn this.mock
@@ -131,12 +136,13 @@ class ContractVerifyingNotaryClientFlowImplTest {
         }
 
         val digestService = mock<DigestService> {
-            on { hash( mockSignedTx.notaryKey.encoded, DigestAlgorithmName.SHA2_256) } doReturn hashedNotaryKey
+            on { hash(mockSignedTx.notaryKey.encoded, DigestAlgorithmName.SHA2_256) } doReturn hashedNotaryKey
         }
 
         return ContractVerifyingNotaryClientFlowImpl(
             mockSignedTx,
             MemberX500Name("Alice", "Alice Corp", "LDN", "GB"),
+            notarizationType,
             flowMessaging,
             utxoLedgerService,
             digestService

@@ -17,6 +17,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.sql.Timestamp
 import java.time.Instant
+import java.util.Calendar
+import java.util.TimeZone
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
@@ -102,6 +104,8 @@ class RequestsIdsRepositoryTest {
 
     @Test
     fun `deletes older requests`() {
+        val utcCalendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+
         val requestId1 = UUID.randomUUID()
         val requestId2 = UUID.randomUUID()
         dbConfig.dataSource.connection.use { con ->
@@ -113,7 +117,7 @@ class RequestsIdsRepositoryTest {
                 """.trimIndent()
             ).also {
                 it.setString(1, requestId1.toString())
-                it.setTimestamp(2, Timestamp.from(Instant.now().minusSeconds(10)))
+                it.setTimestamp(2, Timestamp.from(Instant.now().minusSeconds(10)), utcCalendar)
             }.executeUpdate()
             con.prepareStatement(
                 """
@@ -122,7 +126,7 @@ class RequestsIdsRepositoryTest {
                 """.trimIndent()
             ).also {
                 it.setString(1, requestId2.toString())
-                it.setTimestamp(2, Timestamp.from(Instant.now().plusSeconds(10)))
+                it.setTimestamp(2, Timestamp.from(Instant.now().plusSeconds(10)), utcCalendar)
             }.executeUpdate()
         }
         var storedRequestIds = getStoredRequestIds()

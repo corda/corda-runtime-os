@@ -48,7 +48,6 @@ dependencies {
     implementation project(':libs:serialization:serialization-internal')
     implementation project(':libs:utilities')
     implementation project(':libs:virtual-node:sandbox-group-context')
-    implementation project(':notary-plugins:notary-plugin-common')
     implementation project(':libs:configuration:configuration-core')
 
     testImplementation project(':testing:test-serialization')
@@ -79,6 +78,7 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
     integrationTestRuntimeOnly project(':libs:membership:membership-impl')
     integrationTestRuntimeOnly project(':libs:state-manager:state-manager-db-impl')
+    integrationTestRuntimeOnly project(':components:ledger:notary-worker-selection-impl')
 
     cpis project(path: ':testing:ledger:ledger-utxo-state-app', configuration: 'cordaCPB')
 }
