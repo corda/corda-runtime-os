@@ -51,7 +51,13 @@ class CachingStateManagerWrapper(val stateManager: StateManager) {
         return stateManager.update(states).apply {
             states.forEach { state ->
                 if (state.key in this) {
-                    cacheState(this[state.key]!!)
+                    val conflictState = this[state.key]
+                    if (conflictState == null) {
+                        // Deleted
+                        cache.invalidate(state.key)
+                    } else {
+                        cacheState(this[state.key]!!)
+                    }
                 } else {
                     cacheState(state.copy(version = state.version + 1))
                 }
@@ -61,7 +67,19 @@ class CachingStateManagerWrapper(val stateManager: StateManager) {
 
     fun delete(states: Collection<State>): Map<String, State> {
         return stateManager.delete(states).apply {
-            this.forEach { cacheState(it.value) }
+            states.forEach { state ->
+                if (state.key in this) {
+                    val conflictState = this[state.key]
+                    if (conflictState == null) {
+                        // Deleted
+                        cache.invalidate(state.key)
+                    } else {
+                        cacheState(this[state.key]!!)
+                    }
+                } else {
+                    cache.invalidate(state.key)
+                }
+            }
         }
     }
 
