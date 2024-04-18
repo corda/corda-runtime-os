@@ -83,6 +83,9 @@ interface ClientRequestContext {
      */
     fun addWwwAuthenticateHeaders(restAuthProvider: RestAuthenticationProvider) {}
 
+    /**
+     * Add warning header value to the response to warn the user that their password will expire soon.
+     */
     fun addPasswordExpiryHeader(expiryStatus: PasswordExpiryStatus) {}
 
     fun getResourceAccessString(): String {

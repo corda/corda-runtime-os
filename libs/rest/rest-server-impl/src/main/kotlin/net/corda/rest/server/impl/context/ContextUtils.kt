@@ -86,7 +86,7 @@ internal object ContextUtils {
                 if (it.expiryStatus == PasswordExpiryStatus.CLOSE_TO_EXPIRY) {
                     ctx.addPasswordExpiryHeader(it.expiryStatus)
                 } else if (it.expiryStatus == PasswordExpiryStatus.EXPIRED) {
-                    "Password has expired".let { passwordExpiredWarning ->
+                    "Password has expired. Please change it to carry on.".let { passwordExpiredWarning ->
                         log.warn(passwordExpiredWarning)
                         throw UnauthorizedResponse(passwordExpiredWarning)
                     }
