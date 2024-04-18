@@ -99,7 +99,7 @@ class DbSchemaGenerator(private val config: SpecConfig = SpecConfig()) {
                 generateSchemaSql.isNullOrEmpty()
             )
         }
-
+        logger.info("Generated sql file $outputFileName")
         Thread.currentThread().contextClassLoader = oldCl
     }
 
