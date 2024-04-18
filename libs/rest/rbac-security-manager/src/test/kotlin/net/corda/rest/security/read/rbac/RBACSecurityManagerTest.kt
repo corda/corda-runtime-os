@@ -1,9 +1,9 @@
 package net.corda.rest.security.read.rbac
 
+import net.corda.data.rest.PasswordExpiryStatus
 import net.corda.libs.permission.PermissionValidator
 import net.corda.libs.permissions.manager.AuthenticationState
 import net.corda.libs.permissions.manager.BasicAuthenticationService
-import net.corda.libs.permissions.manager.ExpiryStatus
 import net.corda.rest.security.read.Password
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -25,7 +25,7 @@ class RBACSecurityManagerTest {
         val passwordCapture = argumentCaptor<CharArray>()
 
         whenever(basicAuthenticationService.authenticateUser(eq("principal1"), passwordCapture.capture())).thenReturn(
-            AuthenticationState(false, null)
+            AuthenticationState(false, PasswordExpiryStatus.ACTIVE)
         )
 
         val e = assertThrows<FailedLoginException> {
@@ -40,7 +40,7 @@ class RBACSecurityManagerTest {
         val passwordCapture = argumentCaptor<CharArray>()
 
         whenever(basicAuthenticationService.authenticateUser(eq("principal1"), passwordCapture.capture())).thenReturn(
-            AuthenticationState(true, ExpiryStatus.ACTIVE)
+            AuthenticationState(true, PasswordExpiryStatus.ACTIVE)
         )
 
         val subject = manager.authenticate("principal1", Password("pass1"))

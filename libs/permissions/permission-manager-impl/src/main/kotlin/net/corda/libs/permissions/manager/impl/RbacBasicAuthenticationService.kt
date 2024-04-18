@@ -1,10 +1,10 @@
 package net.corda.libs.permissions.manager.impl
 
+import net.corda.data.rest.PasswordExpiryStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.libs.permissions.manager.AuthenticationState
 import net.corda.libs.permissions.manager.BasicAuthenticationService
-import net.corda.libs.permissions.manager.ExpiryStatus
 import net.corda.permissions.password.PasswordHash
 import net.corda.permissions.password.PasswordService
 import net.corda.schema.configuration.ConfigKeys
@@ -30,7 +30,7 @@ class RbacBasicAuthenticationService(
 
     private val passwordExpiryWarningWindowDays = rbacConfig.getInt(ConfigKeys.RBAC_PASSWORD_EXPIRY_WARNING_WINDOW)
 
-    private val failedAuthentication = AuthenticationState(false, null)
+    private val failedAuthentication = AuthenticationState(false, PasswordExpiryStatus.ACTIVE)
 
     override fun authenticateUser(loginName: String, password: CharArray): AuthenticationState {
         logger.debug { "Checking authentication for user $loginName." }
@@ -41,7 +41,7 @@ class RbacBasicAuthenticationService(
         val clearTextPassword = String(password)
 
         if (repeatedLogonsCache.verifies(loginName, clearTextPassword)) {
-            return AuthenticationState(true, null)
+            return AuthenticationState(true, PasswordExpiryStatus.ACTIVE)
         }
 
         val user = permissionManagementCache.getUser(loginName) ?: return failedAuthentication
@@ -53,7 +53,7 @@ class RbacBasicAuthenticationService(
         if (passwordService.verifies(clearTextPassword, PasswordHash(user.saltValue, user.hashedPassword))) {
             val expiryStatus = checkExpiryStatus(user.passwordExpiry)
             // Ensure that only active status if cached
-            if (expiryStatus == ExpiryStatus.ACTIVE) {
+            if (expiryStatus == PasswordExpiryStatus.ACTIVE) {
                 repeatedLogonsCache.add(loginName, clearTextPassword)
             } else {
                 repeatedLogonsCache.remove(loginName)
@@ -78,11 +78,11 @@ class RbacBasicAuthenticationService(
         running = false
     }
 
-    private fun checkExpiryStatus(passwordExpiry: Instant?): ExpiryStatus {
+    private fun checkExpiryStatus(passwordExpiry: Instant?): PasswordExpiryStatus {
         val timestamp = clock.instant()
         return when {
             (passwordExpiry == null) -> {
-                ExpiryStatus.ACTIVE
+                PasswordExpiryStatus.ACTIVE
             }
 
             (passwordExpiry >= timestamp) -> {
@@ -92,13 +92,13 @@ class RbacBasicAuthenticationService(
                         ChronoUnit.DAYS
                     )..passwordExpiry
                 ) {
-                    ExpiryStatus.CLOSE_TO_EXPIRY
+                    PasswordExpiryStatus.CLOSE_TO_EXPIRY
                 } else {
-                    ExpiryStatus.ACTIVE
+                    PasswordExpiryStatus.ACTIVE
                 }
             }
 
-            else -> ExpiryStatus.EXPIRED
+            else -> PasswordExpiryStatus.EXPIRED
         }
     }
 }

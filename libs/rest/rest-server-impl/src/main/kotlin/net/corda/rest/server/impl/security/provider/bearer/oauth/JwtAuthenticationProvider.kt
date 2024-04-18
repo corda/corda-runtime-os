@@ -3,6 +3,7 @@ package net.corda.rest.server.impl.security.provider.bearer.oauth
 import com.nimbusds.jose.proc.BadJOSEException
 import com.nimbusds.jwt.JWT
 import com.nimbusds.jwt.JWTParser
+import net.corda.data.rest.PasswordExpiryStatus
 import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.security.read.RestSecurityManager
 import net.corda.rest.server.impl.security.provider.bearer.BearerTokenAuthenticationProvider
@@ -40,7 +41,7 @@ internal open class JwtAuthenticationProvider(
         return try {
             val claims = jwtProcessor.process(jwt)
             val username = claimExtractor.getUsername(claims)
-            restSecurityManagerSupplier.get().buildSubject(username)
+            restSecurityManagerSupplier.get().buildSubject(username, PasswordExpiryStatus.ACTIVE)
         } catch (e: BadJOSEException) {
             throw FailedLoginException("Unable to validate token.")
         }

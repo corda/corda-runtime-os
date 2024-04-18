@@ -4,6 +4,7 @@ import io.javalin.core.util.Header
 import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
 import io.javalin.http.UnauthorizedResponse
+import net.corda.data.rest.PasswordExpiryStatus
 import net.corda.metrics.CordaMetrics
 import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.exception.HttpApiException
@@ -55,6 +56,7 @@ internal object ContextUtils {
         return LoggerFactory.getLogger(ContextUtils::class.java.name + "." + this)
     }
 
+    @Suppress("ThrowsCount")
     fun authenticate(
         ctx: ClientRequestContext,
         restAuthProvider: RestAuthenticationProvider,
@@ -81,6 +83,14 @@ internal object ContextUtils {
                     ),
                     it
                 )
+                if (it.expiryStatus == PasswordExpiryStatus.CLOSE_TO_EXPIRY) {
+                    ctx.addPasswordExpiryHeader(it.expiryStatus)
+                } else if (it.expiryStatus == PasswordExpiryStatus.EXPIRED) {
+                    "Password has expired. Please change it to carry on.".let { passwordExpiredWarning ->
+                        log.warn(passwordExpiredWarning)
+                        throw UnauthorizedResponse(passwordExpiredWarning)
+                    }
+                }
                 CURRENT_REST_CONTEXT.set(restAuthContext)
                 log.trace { """Authenticate user "${it.principal}" completed.""" }
             }
