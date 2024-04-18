@@ -97,8 +97,7 @@ class LimitsChecker(yamlFilePath: String) : BasePreinstallChecker(yamlFilePath) 
                     checkRequestsNotGreaterThanLimits(limit, request, name, requests, limits)
                 }
             }
-
-        } catch(e: IllegalArgumentException) {
+        } catch (e: IllegalArgumentException) {
             report.addEntry(ReportEntry("Parse \"$name\" cpu resource strings", false, e))
         }
     }
@@ -115,7 +114,8 @@ class LimitsChecker(yamlFilePath: String) : BasePreinstallChecker(yamlFilePath) 
         } else {
             report.addEntry(
                 ReportEntry(
-                    "$name cpu requests do not exceed limits", false,
+                    "$name cpu requests do not exceed limits",
+                    false,
                     ResourceLimitsExceededException("Request ($requests.cpu!!) is greater than it's limit ($limits.cpu!!)")
                 )
             )
@@ -146,12 +146,16 @@ class LimitsChecker(yamlFilePath: String) : BasePreinstallChecker(yamlFilePath) 
                 if (limit >= request) {
                     report.addEntry(ReportEntry("$name memory requests do not exceed limits", true))
                 } else {
-                    report.addEntry(ReportEntry("$name memory requests do not exceed limits", false,
-                        ResourceLimitsExceededException("Request ($requests.memory!!) is greater than it's limit ($limits.memory!!)")))
+                    report.addEntry(
+                        ReportEntry(
+                            "$name memory requests do not exceed limits",
+                            false,
+                            ResourceLimitsExceededException("Request ($requests.memory!!) is greater than it's limit ($limits.memory!!)")
+                        )
+                    )
                 }
             }
-
-        } catch(e: IllegalArgumentException) {
+        } catch (e: IllegalArgumentException) {
             report.addEntry(ReportEntry("Parse \"$name\" memory resource strings", false, e))
         }
     }
