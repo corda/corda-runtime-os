@@ -51,9 +51,9 @@ allprojects {
 
     pluginManager.withPlugin('java') {
         java {
-            toolchain {
-                languageVersion = of(javaVersionNumber)
-            }
+//            toolchain {
+//                languageVersion = of(javaVersionNumber)
+//            }
 
             withSourcesJar()
         }
