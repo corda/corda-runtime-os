@@ -4,6 +4,7 @@ import net.corda.sdk.preinstall.data.CordaValues
 import net.corda.sdk.preinstall.data.ResourceValues
 import net.corda.sdk.preinstall.data.Resources
 import net.corda.sdk.preinstall.report.ReportEntry
+import net.corda.utilities.VisibleForTesting
 
 class LimitsChecker(yamlFilePath: String) : BasePreinstallChecker(yamlFilePath) {
 
@@ -12,8 +13,9 @@ class LimitsChecker(yamlFilePath: String) : BasePreinstallChecker(yamlFilePath) 
     private var defaultRequests: ResourceValues? = null
     private var defaultLimits: ResourceValues? = null
 
-    private fun parseMemoryString(memoryString: String): Double {
-        val regex = Regex("(\\d+)([EPTGMKk]?i?[Bb]?)?")
+    @VisibleForTesting
+    internal fun parseMemoryString(memoryString: String): Double {
+        val regex = Regex("(\\d+)([EPTGMKk]i?[Bb]?|[EPTGMKk]?i?[Bb])")
 
         val (value, unit) = regex.matchEntire(memoryString)?.destructured
             ?: throw IllegalArgumentException("Invalid memory string format: $memoryString")

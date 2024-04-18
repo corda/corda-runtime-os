@@ -89,7 +89,7 @@ class PostgresChecker(
         name: String
     ) {
         stateManager.forEach { (type, credentials) ->
-            val storage = yaml.stateManager[type]!!
+            val storage = yaml.stateManager.getValue(type)
             val stateManagerDatabase = yaml.databases.first { it.id == storage.storageId }
             checkConnection(credentials, "worker $name state type $type DB", stateManagerDatabase, storage.storageId)
         }
