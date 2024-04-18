@@ -25,7 +25,7 @@ class RBACSecurityManagerTest {
         val passwordCapture = argumentCaptor<CharArray>()
 
         whenever(basicAuthenticationService.authenticateUser(eq("principal1"), passwordCapture.capture())).thenReturn(
-            AuthenticationState(false, PasswordExpiryStatus.EXPIRED)
+            AuthenticationState(false, PasswordExpiryStatus.ACTIVE)
         )
 
         val e = assertThrows<FailedLoginException> {

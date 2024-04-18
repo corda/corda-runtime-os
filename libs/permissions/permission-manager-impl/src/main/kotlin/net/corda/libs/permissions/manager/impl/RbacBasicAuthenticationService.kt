@@ -30,7 +30,7 @@ class RbacBasicAuthenticationService(
 
     private val passwordExpiryWarningWindowDays = rbacConfig.getInt(ConfigKeys.RBAC_PASSWORD_EXPIRY_WARNING_WINDOW)
 
-    private val failedAuthentication = AuthenticationState(false, PasswordExpiryStatus.EXPIRED)
+    private val failedAuthentication = AuthenticationState(false, PasswordExpiryStatus.ACTIVE)
 
     override fun authenticateUser(loginName: String, password: CharArray): AuthenticationState {
         logger.debug { "Checking authentication for user $loginName." }
