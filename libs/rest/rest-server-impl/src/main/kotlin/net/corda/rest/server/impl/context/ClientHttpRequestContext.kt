@@ -60,7 +60,9 @@ internal class ClientHttpRequestContext(private val ctx: Context) : ClientReques
     }
 
     override fun addPasswordExpiryHeader(expiryStatus: PasswordExpiryStatus) {
-        ctx.res.addHeader("Password-Expiry-Status", "199 - $expiryStatus")
+        ctx.res.addHeader(Header.WARNING, "199 - The password is close to expiry")
+        ctx.res.addHeader("Password-Expiry-Status", "$expiryStatus")
+
     }
 
     private fun addHeaderValues(values: Iterable<String>) {
