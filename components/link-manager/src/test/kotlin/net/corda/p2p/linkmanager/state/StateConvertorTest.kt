@@ -1,4 +1,4 @@
-package net.corda.p2p.linkmanager.sessions
+package net.corda.p2p.linkmanager.state
 
 import net.corda.crypto.client.SessionEncryptionOpsClient
 import net.corda.data.p2p.LinkOutMessage
@@ -8,7 +8,6 @@ import net.corda.data.p2p.crypto.protocol.Session
 import net.corda.libs.statemanager.api.State
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.CheckRevocation
-import net.corda.p2p.linkmanager.state.SessionState
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.crypto.exceptions.CryptoException
 import org.assertj.core.api.Assertions.assertThat

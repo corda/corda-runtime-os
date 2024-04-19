@@ -1,8 +1,7 @@
-package net.corda.p2p.linkmanager.sessions
+package net.corda.p2p.linkmanager.state
 
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
-import net.corda.p2p.linkmanager.state.SessionState
 
 internal class StateFactory(
     private val stateConvertor: StateConvertor,

@@ -20,7 +20,7 @@ import net.corda.p2p.linkmanager.forwarding.gateway.TrustStoresPublisher
 import net.corda.p2p.linkmanager.forwarding.gateway.mtls.ClientCertificatePublisher
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueuesImpl
-import net.corda.p2p.linkmanager.sessions.StateConvertor
+import net.corda.p2p.linkmanager.state.StateConvertor
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService

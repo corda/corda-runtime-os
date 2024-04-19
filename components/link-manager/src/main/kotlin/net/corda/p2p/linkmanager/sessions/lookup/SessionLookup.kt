@@ -27,17 +27,21 @@ import net.corda.p2p.linkmanager.state.SessionState
 
 @Suppress("LongParameterList")
 internal class SessionLookup(
-    commonComponents: CommonComponents,
+    private val commonComponents: CommonComponents,
     private val sessionCache: SessionCache,
     private val sessionWriter: SessionWriter,
     private val sessionExpirationScheduler: SessionExpirationScheduler,
     private val checkRevocation: CheckRevocation,
     private val reEstablishmentMessageSender: ReEstablishmentMessageSender,
 ) : LifecycleWithDominoTile {
-    private val coordinatorFactory = commonComponents.lifecycleCoordinatorFactory
-    private val membershipGroupReaderProvider = commonComponents.membershipGroupReaderProvider
-    private val stateConvertor = commonComponents.stateConvertor
-    private val stateManager = commonComponents.stateManager
+    private val coordinatorFactory
+        get() = commonComponents.lifecycleCoordinatorFactory
+    private val membershipGroupReaderProvider
+        get() = commonComponents.membershipGroupReaderProvider
+    private val stateConvertor
+        get() = commonComponents.stateConvertor
+    private val stateManager
+        get() = commonComponents.stateManager
 
     val name: LifecycleCoordinatorName = stateManager.name
 

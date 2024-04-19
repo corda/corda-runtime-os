@@ -40,6 +40,7 @@ import net.corda.p2p.linkmanager.sessions.utils.OutboundMessageState
 import net.corda.p2p.linkmanager.sessions.utils.getSessionCounterpartiesFromState
 import net.corda.p2p.linkmanager.sessions.writer.SessionWriter
 import net.corda.p2p.linkmanager.state.SessionState
+import net.corda.p2p.linkmanager.state.StateFactory
 import net.corda.schema.Schemas
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger

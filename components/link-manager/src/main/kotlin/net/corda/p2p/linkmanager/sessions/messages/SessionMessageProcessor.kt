@@ -12,10 +12,10 @@ import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.linkmanager.common.CommonComponents
 import net.corda.p2p.linkmanager.membership.calculateOutboundSessionKey
 import net.corda.p2p.linkmanager.sessions.CreateAction
-import net.corda.p2p.linkmanager.sessions.SessionMessageHelper
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.alreadySessionWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.noSessionWarning
-import net.corda.p2p.linkmanager.sessions.StateFactory
+import net.corda.p2p.linkmanager.sessions.SessionMessageHelper
+import net.corda.p2p.linkmanager.state.StateFactory
 import net.corda.p2p.linkmanager.sessions.UpdateAction
 import net.corda.p2p.linkmanager.sessions.lookup.SessionLookup
 import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata
@@ -41,13 +41,15 @@ import java.time.Duration
  * Handler for each type of session messages.
  */
 internal class SessionMessageProcessor(
-    commonComponents: CommonComponents,
+    private val commonComponents: CommonComponents,
     private val sessionMessageHelper: SessionMessageHelper,
     private val sessionLookup: SessionLookup,
     private val stateFactory: StateFactory = StateFactory(commonComponents.stateConvertor),
 ) : LifecycleWithDominoTile {
-    private val coordinatorFactory = commonComponents.lifecycleCoordinatorFactory
-    private val clock = commonComponents.clock
+    private val coordinatorFactory
+        get() = commonComponents.lifecycleCoordinatorFactory
+    private val clock
+        get() = commonComponents.clock
 
     companion object {
         private val SESSION_VALIDITY_PERIOD: Duration = Duration.ofDays(7)
