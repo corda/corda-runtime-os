@@ -90,13 +90,10 @@ interface UtxoRepository {
 
     /** Persists unverified transaction (operation is idempotent) */
     @Suppress("LongParameterList")
-    fun persistFilteredTransaction(
+    fun persistFilteredTransactions(
         entityManager: EntityManager,
-        id: String,
-        privacySalt: ByteArray,
-        account: String,
+        filteredTransactions: List<FilteredTransaction>,
         timestamp: Instant,
-        metadataHash: String,
     )
 
     /** Updates an existing verified transaction */
@@ -150,7 +147,6 @@ interface UtxoRepository {
     /** Persists transaction [signature] (operation is idempotent) */
     fun persistTransactionSignatures(
         entityManager: EntityManager,
-        transactionId: String,
         signatures: List<TransactionSignature>,
         timestamp: Instant
     )
@@ -214,6 +210,10 @@ interface UtxoRepository {
         limit: Int,
     ): List<String>
 
+    fun incrementTransactionRepairAttemptCount(entityManager: EntityManager, id: String)
+
+    fun stateRefsExist(entityManager: EntityManager, stateRefs: List<StateRef>): List<Pair<String, Int>>
+
     data class TransactionComponent(val transactionId: String, val groupIndex: Int, val leafIndex: Int, val leafData: ByteArray)
 
     data class VisibleTransactionOutput(
@@ -224,7 +224,14 @@ interface UtxoRepository {
         val notaryName: String,
     )
 
-    data class TransactionSignature(val index: Int, val signatureBytes: ByteArray, val publicKeyHash: SecureHash)
+    data class TransactionSignature(val transactionId: String, val index: Int, val signatureBytes: ByteArray, val publicKeyHash: SecureHash)
+
+    data class FilteredTransaction(
+        val transactionId: String,
+        val privacySalt: ByteArray,
+        val account: String,
+        val metadataHash: String
+    )
 
     data class TransactionMerkleProof(
         val merkleProofId: String,
@@ -236,6 +243,4 @@ interface UtxoRepository {
     )
 
     data class TransactionMerkleProofLeaf(val merkleProofId: String, val leafIndex: Int)
-
-    fun incrementTransactionRepairAttemptCount(entityManager: EntityManager, id: String)
 }

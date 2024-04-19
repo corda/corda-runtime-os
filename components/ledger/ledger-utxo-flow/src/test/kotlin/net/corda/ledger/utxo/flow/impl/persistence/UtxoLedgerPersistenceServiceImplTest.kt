@@ -233,7 +233,9 @@ class UtxoLedgerPersistenceServiceImplTest {
         val signature = listOf(mock<DigitalSignatureAndMetadata>())
 
         utxoLedgerPersistenceService.persistFilteredTransactionsAndSignatures(
-            listOf(UtxoFilteredTransactionAndSignaturesImpl(filteredTransaction, signature))
+            listOf(UtxoFilteredTransactionAndSignaturesImpl(filteredTransaction, signature)),
+            emptyList(),
+            emptyList()
         )
 
         verify(serializationService).serialize(any<Any>())
