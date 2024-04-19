@@ -10,6 +10,7 @@ import net.corda.crypto.core.concatByteArrays
 import net.corda.crypto.core.toByteArray
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.crypto.merkle.HashDigestConstants
@@ -23,13 +24,19 @@ object TransactionMetadataUtils {
         jsonValidator: JsonValidator,
         jsonMarshallingService: JsonMarshallingService
     ): TransactionMetadataImpl {
-        val json = metadataBytes.decodeToString()
+        // extracting a header and json. change val name _ -> header when implementing marker.
+        val (_, json) = metadataBytes.extractHeaderAndJson()
+
+//        if (header != null) {
+//            TODO("Check network has a MPV >= 50201 if lower than 5.2.1, write JSON without a header.")
+//        }
+
         jsonValidator.validate(json, getMetadataSchema(jsonValidator))
         val metadata = jsonMarshallingService.parse(json, TransactionMetadataImpl::class.java)
 
         check(metadata.digestSettings == WireTransactionDigestSettings.defaultValues) {
             "Only the default digest settings are acceptable now! ${metadata.digestSettings} vs " +
-                "${WireTransactionDigestSettings.defaultValues}"
+                    "${WireTransactionDigestSettings.defaultValues}"
         }
         return metadata
     }
@@ -40,6 +47,22 @@ object TransactionMetadataUtils {
 
     private fun getSchema(path: String) =
         checkNotNull(this::class.java.getResourceAsStream(path)) { "Failed to load JSON schema from $path" }
+}
+
+fun ByteArray.extractHeaderAndJson(): Pair<String?, String> {
+    val braceIndex = this.indexOf('{'.code.toByte())
+
+    if (braceIndex == 0) {
+        return null to this.decodeToString()
+    }
+
+    try {
+        val json = this.copyOfRange(braceIndex, this.lastIndex + 1).decodeToString()
+        val marker = this.copyOfRange(0, braceIndex).decodeToString()
+        return marker to json
+    } catch (e: Exception) {
+        throw CordaRuntimeException("Failed to extract jsob blob from byte array $this")
+    }
 }
 
 private val base64Decoder = Base64.getDecoder()

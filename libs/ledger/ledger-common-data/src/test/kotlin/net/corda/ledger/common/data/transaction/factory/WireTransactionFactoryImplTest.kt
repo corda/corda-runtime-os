@@ -13,6 +13,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
     private val metadataJson = jsonMarshallingService.format(metadata)
     private val canonicalJson = jsonValidator.canonicalize(metadataJson)
     private val privacySalt = mockPrivacySaltProviderService.generatePrivacySalt()
+    private val header = "header"
 
     @Test
     fun `Creating a very simple WireTransaction`() {
@@ -260,5 +261,23 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
         }
             .isInstanceOf(IllegalStateException::class.java)
             .hasMessageContaining("ledgerModel: does not have a value in the enumeration")
+    }
+
+    @Test
+    fun `Creating a WireTransaction parses metadata with a header successfully`() {
+        val metadata = transactionMetadataExample(
+            ledgerModel = "net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl",
+            transactionSubType = "GENERAL",
+            memberShipGroupParametersHash = "Membership group parameters hash"
+        )
+        val metadataJson = jsonMarshallingService.format(metadata)
+        val canonicalJson = jsonValidator.canonicalize(metadataJson)
+        val componentGroupLists = (1..10).map {
+            listOf((header + canonicalJson).toByteArray())
+        }
+        wireTransactionFactory.create(
+            componentGroupLists,
+            privacySalt
+        )
     }
 }
