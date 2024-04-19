@@ -149,7 +149,18 @@ interface UtxoLedgerPersistenceService {
      * Persists a list of filtered transactions and their signatures represented as [UtxoFilteredTransactionAndSignatures]
      * objects.
      *
+     * The [inputStateRefs] and [referenceStateRefs] are passed into this method to optimise the persistence of the input
+     * [filteredTransactionsAndSignatures]. [inputStateRefs] represents the inputs of a transaction and [referenceStateRefs] represents the
+     * references of the same transaction, where [filteredTransactionsAndSignatures] contains the actual state content for those states. The
+     * optimisation allows us to skip persisting reference states and the filtered transactions that originally created them if they are
+     * already stored in the vault. Any filtered transactions that created states contained in [inputStateRefs] must always be persisted and
+     * cannot be optimised further.
+     *
      * @param filteredTransactionsAndSignatures A list containing the filtered transactions and signatures to persist.
+     * @param inputStateRefs A list of input [StateRef]s from a transaction where the states themselves are provided as outputs in
+     * [filteredTransactionsAndSignatures].
+     * @param referenceStateRefs A list of [StateRef]s from a transaction where the states themselves are provided as outputs in
+     * [filteredTransactionsAndSignatures].
      *
      * @throws CordaPersistenceException if an error happens during persist operation.
      */
