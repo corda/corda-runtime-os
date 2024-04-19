@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-class CreateRoleAndPermissions {
+class RoleAndPermissionsCreator {
 
     val logger: Logger = LoggerFactory.getLogger(this::class.java)
 

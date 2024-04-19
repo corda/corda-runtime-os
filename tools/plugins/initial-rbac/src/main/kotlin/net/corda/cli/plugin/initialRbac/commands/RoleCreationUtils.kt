@@ -4,8 +4,8 @@ import net.corda.cli.plugins.common.RestCommand
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
-import net.corda.sdk.bootstrap.rbac.CreateRoleAndPermissions
 import net.corda.sdk.bootstrap.rbac.PermissionTemplate
+import net.corda.sdk.bootstrap.rbac.RoleAndPermissionsCreator
 import net.corda.sdk.rest.RestClientUtils.createRestClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -51,7 +51,7 @@ internal object RoleCreationUtils {
             targetUrl = targetUrl
         )
 
-        val roleId = CreateRoleAndPermissions().createRoleAndPermissions(
+        val roleId = RoleAndPermissionsCreator().createRoleAndPermissions(
             roleRestClient = roleClient,
             permissionRestClient = permissionClient,
             roleToCreate = CreateRoleType(

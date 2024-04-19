@@ -19,13 +19,13 @@ class Spec(private val config: DbSchemaGenerator.SpecConfig = DbSchemaGenerator.
         description = ["Path and filename of the databasechangelog CSV file which is created by Liquibase in offline" +
                 "mode. Defaults to '${DEFAULT_CHANGELOG_PATH}'"]
     )
-    var databaseChangeLogFile = Path.of(DEFAULT_CHANGELOG_PATH)
+    var providedDatabaseChangeLogFile = Path.of(DEFAULT_CHANGELOG_PATH)
 
     @CommandLine.Option(
         names = ["-c", "--clear-change-log"],
         description = ["Automatically delete the changelogCSV to force generation of the sql files"]
     )
-    var clearChangeLog: Boolean? = false
+    var providedClearChangeLog: Boolean? = false
 
     @CommandLine.Option(
         names = ["-s", "--schemas"],
@@ -34,7 +34,7 @@ class Spec(private val config: DbSchemaGenerator.SpecConfig = DbSchemaGenerator.
                 "the Combined Worker. Options are: $SCHEMA_OPTIONS"],
         split = ","
     )
-    var schemasToGenerate: List<String> = DEFAULT_SCHEMA_OPTIONS
+    var providedSchemasToGenerate: List<String> = DEFAULT_SCHEMA_OPTIONS
 
     @CommandLine.Option(
         names = ["-g", "--generate-schema-sql"],
@@ -47,45 +47,46 @@ class Spec(private val config: DbSchemaGenerator.SpecConfig = DbSchemaGenerator.
                 "generate schemas using all default names pass \"\" as the value."],
         split = ","
     )
-    var generateSchemaSql: List<String>? = null
+    var providedGenerateSchemaSql: List<String>? = null
 
     @CommandLine.Option(
         names = ["-l", "--location"],
         description = ["Directory to write all files to"]
     )
-    var outputDir: String = "."
+    var providedOutputDir: String = "."
 
     @CommandLine.Option(
         names = ["--jdbc-url"],
         description = ["JDBC Url of database. If not specified runs in offline mode"]
     )
-    var jdbcUrl: String? = null
+    var providedJdbcUrl: String? = null
 
     @CommandLine.Option(
         names = ["-u", "--user"],
         description = ["Database username"]
     )
-    var user: String? = null
+    var providedUser: String? = null
 
     @CommandLine.Option(
         names = ["-p", "--password"],
         description = ["Database password"]
     )
-    var password: String? = null
+    var providedPassword: String? = null
 
     override fun run() {
-        val generator = DbSchemaGenerator(config = config)
-        generator.jdbcUrl = jdbcUrl
-        generator.user = user
-        generator.password = password
-        generator.clearChangeLog = clearChangeLog ?: false
-        generator.databaseChangeLogFile = databaseChangeLogFile
-        generator.classLoaderWorkaround = DatabaseBootstrapAndUpgrade.classLoader
+        val generator = DbSchemaGenerator(config = config).apply {
+            jdbcUrl = providedJdbcUrl
+            user = providedUser
+            password = providedPassword
+            clearChangeLog = providedClearChangeLog ?: false
+            databaseChangeLogFile = providedDatabaseChangeLogFile
+            classLoaderWorkaround = DatabaseBootstrapAndUpgrade.classLoader
+        }
 
         generator.generateSqlFilesForSchemas(
-            schemasToGenerate = schemasToGenerate,
-            generateSchemaSql = generateSchemaSql,
-            outputDir = outputDir
+            schemasToGenerate = providedSchemasToGenerate,
+            generateSchemaSql = providedGenerateSchemaSql,
+            outputDir = providedOutputDir
         )
     }
 }

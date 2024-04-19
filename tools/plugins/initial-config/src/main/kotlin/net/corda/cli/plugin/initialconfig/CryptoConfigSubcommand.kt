@@ -1,6 +1,7 @@
 package net.corda.cli.plugin.initialconfig
 
 import net.corda.libs.configuration.datamodel.ConfigEntity
+import net.corda.sdk.bootstrap.initial.CryptoConfigParameters
 import net.corda.sdk.bootstrap.initial.SecretsServiceType
 import net.corda.sdk.bootstrap.initial.createDefaultCryptoConfigEntity
 import net.corda.sdk.bootstrap.initial.toInsertStatement
@@ -98,13 +99,10 @@ class CryptoConfigSubcommand : Runnable {
 
     override fun run() {
         if (type == SecretsServiceType.CORDA) {
-            checkParamPassed(passphrase)
-            { "'passphrase' must be set for CORDA type secrets." }
-            checkParamPassed(salt)
-            { "'salt' must be set for CORDA type secrets." }
+            checkParamPassed(passphrase) { "'passphrase' must be set for CORDA type secrets." }
+            checkParamPassed(salt) { "'salt' must be set for CORDA type secrets." }
         } else {
-            checkParamPassed(vaultPath)
-            { "'vaultPath' must be set for VAULT type secrets." }
+            checkParamPassed(vaultPath) { "'vaultPath' must be set for VAULT type secrets." }
             if (vaultWrappingKeySalts.size < numberOfUnmanagedWrappingKeys)
                 throw makeParameterException(
                     "Not enough vault wrapping key salt keys passed in; need " +
@@ -117,7 +115,7 @@ class CryptoConfigSubcommand : Runnable {
                 )
         }
 
-        val entity: ConfigEntity = createDefaultCryptoConfigEntity(
+        val cryptoConfigParameters = CryptoConfigParameters(
             numberOfUnmanagedWrappingKeys = numberOfUnmanagedWrappingKeys,
             type = type,
             passphrase = passphrase,
@@ -127,6 +125,9 @@ class CryptoConfigSubcommand : Runnable {
             vaultPath = vaultPath,
             vaultWrappingKeyPassphrases = vaultWrappingKeyPassphrases,
             vaultWrappingKeySalts = vaultWrappingKeySalts
+        )
+        val entity: ConfigEntity = createDefaultCryptoConfigEntity(
+            cryptoConfigParameters = cryptoConfigParameters
         )
 
         val output = entity.toInsertStatement()

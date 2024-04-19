@@ -13,50 +13,54 @@ import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
 import net.corda.schema.configuration.ConfigKeys
 import java.security.SecureRandom
 import java.time.Instant
-import java.util.Base64
+import java.util.*
 
 enum class SecretsServiceType {
     CORDA, VAULT
 }
 
+data class CryptoConfigParameters(
+    val numberOfUnmanagedWrappingKeys: Int,
+    val type: SecretsServiceType,
+    val passphrase: String?,
+    val salt: String?,
+    val softHsmRootPassphrase: List<String>,
+    val softHsmRootSalt: List<String>,
+    val vaultPath: String?,
+    val vaultWrappingKeySalts: List<String>,
+    val vaultWrappingKeyPassphrases: List<String>
+)
+
 /**
  * Create the initial crypto configuration entity
  */
-@Suppress("LongParameterList")
 fun createDefaultCryptoConfigEntity(
-    numberOfUnmanagedWrappingKeys: Int,
-    type: SecretsServiceType,
-    passphrase: String?,
-    salt: String?,
-    softHsmRootPassphrase: List<String>,
-    softHsmRootSalt: List<String>,
-    vaultPath: String?,
-    vaultWrappingKeySalts: List<String>,
-    vaultWrappingKeyPassphrases: List<String>
+    cryptoConfigParameters: CryptoConfigParameters
 ): ConfigEntity {
-    require(numberOfUnmanagedWrappingKeys >= 1)
-    val wrappingKeys = (1..numberOfUnmanagedWrappingKeys).toList().map { index ->
-        val (wrappingPassphraseSecret, wrappingSaltSecret) = when (type) {
+    require(cryptoConfigParameters.numberOfUnmanagedWrappingKeys >= 1)
+    val wrappingKeys = (1..cryptoConfigParameters.numberOfUnmanagedWrappingKeys).toList().map { index ->
+        val (wrappingPassphraseSecret, wrappingSaltSecret) = when (cryptoConfigParameters.type) {
             SecretsServiceType.CORDA -> {
-                requireNotNull(passphrase)
-                requireNotNull(salt)
+                requireNotNull(cryptoConfigParameters.passphrase)
+                requireNotNull(cryptoConfigParameters.salt)
                 createWrappingPassphraseForCordaSecretService(
                     index = index,
-                    passphrase = passphrase,
-                    salt = salt,
-                    softHsmRootPassphrase = softHsmRootPassphrase,
-                    softHsmRootSalt = softHsmRootSalt
+                    passphrase = cryptoConfigParameters.passphrase,
+                    salt = cryptoConfigParameters.salt,
+                    softHsmRootPassphrase = cryptoConfigParameters.softHsmRootPassphrase,
+                    softHsmRootSalt = cryptoConfigParameters.softHsmRootSalt
                 )
             }
+
             SecretsServiceType.VAULT -> {
-                requireNotNull(vaultPath)
-                require(vaultWrappingKeyPassphrases.size >= numberOfUnmanagedWrappingKeys)
-                require(vaultWrappingKeySalts.size >= numberOfUnmanagedWrappingKeys)
+                requireNotNull(cryptoConfigParameters.vaultPath)
+                require(cryptoConfigParameters.vaultWrappingKeyPassphrases.size >= cryptoConfigParameters.numberOfUnmanagedWrappingKeys)
+                require(cryptoConfigParameters.vaultWrappingKeySalts.size >= cryptoConfigParameters.numberOfUnmanagedWrappingKeys)
                 createWrappingPassphraseForVaultSecretService(
                     index = index,
-                    vaultPath = vaultPath,
-                    vaultWrappingKeyPassphrases = vaultWrappingKeyPassphrases,
-                    vaultWrappingKeySalts = vaultWrappingKeySalts
+                    vaultPath = cryptoConfigParameters.vaultPath,
+                    vaultWrappingKeyPassphrases = cryptoConfigParameters.vaultWrappingKeyPassphrases,
+                    vaultWrappingKeySalts = cryptoConfigParameters.vaultWrappingKeySalts
                 )
             }
         }
