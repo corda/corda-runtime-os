@@ -1,9 +1,8 @@
-package net.corda.p2p.linkmanager.sessions
+package net.corda.p2p.linkmanager.state
 
 import net.corda.crypto.client.SessionEncryptionOpsClient
 import net.corda.libs.statemanager.api.State
 import net.corda.p2p.crypto.protocol.api.CheckRevocation
-import net.corda.p2p.linkmanager.state.SessionState
 import net.corda.p2p.linkmanager.state.SessionState.Companion.toCorda
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
