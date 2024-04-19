@@ -80,17 +80,24 @@ import java.time.Instant
     scope = PROTOTYPE
 )
 class UtxoLedgerPersistenceServiceImpl @Activate constructor(
-    @Reference(service = CurrentSandboxGroupContext::class) private val currentSandboxGroupContext: CurrentSandboxGroupContext,
-    @Reference(service = ExternalEventExecutor::class) private val externalEventExecutor: ExternalEventExecutor,
-    @Reference(service = SerializationService::class) private val serializationService: SerializationService,
-    @Reference(service = UtxoLedgerTransactionFactory::class) private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
-    @Reference(service = UtxoSignedTransactionFactory::class) private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
-    @Reference(service = UtxoFilteredTransactionFactory::class) private val utxoFilteredTransactionFactory: UtxoFilteredTransactionFactory,
-    @Reference(
-        service = NotarySignatureVerificationService::class
-    ) private val notarySignatureVerificationService: NotarySignatureVerificationService,
-    @Reference(service = StateAndRefCache::class) private val stateAndRefCache: StateAndRefCache,
-    @Reference(service = FlowCheckpointService::class) private val flowCheckpointService: FlowCheckpointService
+    @Reference(service = CurrentSandboxGroupContext::class)
+    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
+    @Reference(service = ExternalEventExecutor::class)
+    private val externalEventExecutor: ExternalEventExecutor,
+    @Reference(service = SerializationService::class)
+    private val serializationService: SerializationService,
+    @Reference(service = UtxoLedgerTransactionFactory::class)
+    private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
+    @Reference(service = UtxoSignedTransactionFactory::class)
+    private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
+    @Reference(service = UtxoFilteredTransactionFactory::class)
+    private val utxoFilteredTransactionFactory: UtxoFilteredTransactionFactory,
+    @Reference(service = NotarySignatureVerificationService::class)
+    private val notarySignatureVerificationService: NotarySignatureVerificationService,
+    @Reference(service = StateAndRefCache::class)
+    private val stateAndRefCache: StateAndRefCache,
+    @Reference(service = FlowCheckpointService::class)
+    private val flowCheckpointService: FlowCheckpointService
 ) : UtxoLedgerPersistenceService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
