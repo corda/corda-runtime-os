@@ -21,7 +21,7 @@ dependencies {
     kapt libs.pf4j
     kapt "info.picocli:picocli:$picocliVersion"
 
-    implementation project(":libs:configuration:configuration-core")
+    implementation project(':libs:corda-sdk')
 
     testImplementation libs.bundles.test
     testImplementation libs.pf4j
