@@ -29,6 +29,21 @@ dependencies {
     implementation project(":libs:utilities")
     implementation 'net.corda:corda-config-schema'
 
+    implementation libs.slf4j.api
+    implementation libs.jackson.dataformat.yaml
+    implementation libs.jackson.databind
+    implementation libs.kubernetes.client
+    constraints {
+        implementation(libs.okio) {
+            because 'kubernetes-client uses an older version of Okio library, needs to be at least 3.4.0 to avoid CVE-2023-0833.'
+        }
+        implementation(libs.okHttp) {
+            because 'kubernetes-client uses an older version of okhttp3 library, needs to be at least 4.9.2 to avoid CVE-2023-0833.'
+        }
+    }
+    implementation libs.postgresql.jdbc
+    implementation libs.kafka.client
+
     testImplementation libs.bundles.test
     testImplementation project(':testing:test-utilities')
     testImplementation project(':testing:packaging-test-utilities')
