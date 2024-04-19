@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="INFO">
     <Appenders>
-        <Console name="json" target="SYSTEM_OUT">
+        <Console name="json" target="SYSTEM_OUT" direct="true">
             <JsonTemplateLayout eventTemplateUri="classpath:JsonLayout.json">
                 <EventTemplateAdditionalField
                         key="thrown"

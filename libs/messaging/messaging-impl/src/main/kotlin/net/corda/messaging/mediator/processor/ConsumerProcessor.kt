@@ -219,7 +219,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         // TODO try and commit offsets async
         val readyToCommit = inputsToCommit.drainAll()
         if (readyToCommit.isNotEmpty()) {
-            val allReadyToCommit = readyToCommit.flatMap { it }
+            val allReadyToCommit = readyToCommit.flatten()
             try {
                 metrics.commitTimer.recordCallable {
                     consumer.syncCommitOffsets(allReadyToCommit)
@@ -290,7 +290,11 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             if (retryMessages.isNotEmpty()) consumer.poll(Duration.ZERO) else consumer.poll(pollTimeout)
         val newRecords = polledMessages.groupBy { it.key }
         val retryRecords = retryMessages.groupBy { it.first().key }.mapValues { it.value.flatten() }
-        val states = stateManager.get(newRecords.map { it.toString() }, retryRecords.map { it.toString() }).values
+        val states = if (config.stateCaching) {
+            stateManager.get(newRecords.map { it.toString() } + retryRecords.map { it.toString() }, emptySet()).values
+        } else {
+            stateManager.get(emptySet(), newRecords.map { it.toString() } + retryRecords.map { it.toString() }).values
+        }
         return generateInputs(states, newRecords) to generateInputs(states, retryRecords)
     }
 
@@ -338,40 +342,36 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         }
         return (retryInputs.map { input ->
             val persistFuture = CompletableFuture<Unit>()
+            val inputKey = input.key
+            val inputRecords = input.records
             val future = taskManager.executeShortRunningTask(
-                input.key,
-                input.state?.metadata?.get(PRIORITY_METADATA_PROPERTY) as? Long ?: System.currentTimeMillis(),
-                persistFuture,
-                true
-            ) {
-                val updatedInput =
-                    EventProcessingInput(
-                        input.key,
-                        input.records,
-                        stateManager.get(setOf(input.key.toString())).values.firstOrNull()
-                    )
-                val output = eventProcessor.processEvents(mapOf(input.key to updatedInput)).values.first()
-                output
-            }
-            input.key to (future to persistFuture)
-        } + newInputs.map { input ->
-            val persistFuture = CompletableFuture<Unit>()
-            val future = taskManager.executeShortRunningTask(
-                input.key,
+                inputKey,
                 input.state?.metadata?.get(PRIORITY_METADATA_PROPERTY) as? Long ?: System.currentTimeMillis(),
                 persistFuture,
                 false
             ) {
-                val updatedInput =
-                    EventProcessingInput(
-                        input.key,
-                        input.records,
-                        stateManager.get(setOf(input.key.toString())).values.firstOrNull()
-                    )
-                val output = eventProcessor.processEvents(mapOf(input.key to updatedInput)).values.first()
+                val updatedState = stateManager.get(emptySet(), setOf(inputKey.toString())).values.firstOrNull()
+                val updatedInput = EventProcessingInput(inputKey, inputRecords, updatedState)
+                val output = eventProcessor.processEvents(mapOf(inputKey to updatedInput)).values.first()
                 output
             }
-            input.key to (future to persistFuture)
+            inputKey to (future to persistFuture)
+        } + newInputs.map { input ->
+            val persistFuture = CompletableFuture<Unit>()
+            val inputKey = input.key
+            val inputRecords = input.records
+            val future = taskManager.executeShortRunningTask(
+                inputKey,
+                input.state?.metadata?.get(PRIORITY_METADATA_PROPERTY) as? Long ?: System.currentTimeMillis(),
+                persistFuture,
+                false
+            ) {
+                val updatedState = stateManager.get(setOf(inputKey.toString())).values.firstOrNull()
+                val updatedInput = EventProcessingInput(inputKey, inputRecords, updatedState)
+                val output = eventProcessor.processEvents(mapOf(inputKey to updatedInput)).values.first()
+                output
+            }
+            inputKey to (future to persistFuture)
         } + alreadySeenInputs.map { input ->
             val persistFuture = CompletableFuture<Unit>()
             val result: EventProcessingOutput<K, E> =
@@ -557,16 +557,16 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             value?.let { key to it }
         }.toMap()
         val failedKeys = failedToCreate.keys + failedToUpdate.keys
+        val unsuccessfulStates = failedToCreate + failedToUpdateOptimisticLockFailure
         val successful = outputsMap - failedKeys
         val outputsToSend = successful.values.flatMap { it.first.asyncOutputs }
         sendAsynchronousEvents(outputsToSend)
-        val successfulDelayedActions = successful.map {
+        val successfulDelayedActions = (outputsMap - unsuccessfulStates).map {
             Runnable {
                 writeFutures[it.key]!!.complete(Unit)
                 inputsToCommit.add(it.value.first.processedOffsets)
             }
         }
-        val unsuccessfulStates = failedToCreate + failedToUpdateOptimisticLockFailure
         val unsuccessfulDelayedActions = unsuccessfulStates.map { unsuccessful ->
             Runnable {
                 val output = outputsMap[unsuccessful.key]!!

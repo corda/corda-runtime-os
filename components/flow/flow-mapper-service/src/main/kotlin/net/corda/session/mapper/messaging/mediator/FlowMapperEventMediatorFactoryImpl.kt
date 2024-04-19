@@ -90,6 +90,7 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
         .threadName("flow-mapper-event-mediator")
         .stateManager(stateManager)
         .minGroupSize(messagingConfig.getInt(MEDIATOR_PROCESSING_MIN_POOL_RECORD_COUNT))
+        .stateCaching(true)
         .build()
 
     private fun createMediatorConsumerFactories(messagingConfig: SmartConfig,  bootConfig: SmartConfig): List<MediatorConsumerFactory> {

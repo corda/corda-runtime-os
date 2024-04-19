@@ -7,6 +7,7 @@ import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messaging.api.mediator.MediatorConsumer
 import net.corda.messaging.mediator.processor.TopicOffsetManager
+import org.slf4j.LoggerFactory
 import java.time.Duration
 
 /**
@@ -16,7 +17,11 @@ class MessageBusConsumer<K : Any, V : Any>(
     private val topic: String,
     private val consumer: CordaConsumer<K, V>,
 ) : MediatorConsumer<K, V>, CordaConsumerRebalanceListener {
-    private val offsetManager = TopicOffsetManager()
+    private companion object {
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
+    private val offsetManager = TopicOffsetManager(topic)
 
     override fun subscribe() {
         offsetManager.assigned()
@@ -37,6 +42,7 @@ class MessageBusConsumer<K : Any, V : Any>(
     override fun syncCommitOffsets(records: List<CordaConsumerRecord<K, V>>) {
         if (records.isEmpty()) return
         records.forEach { offsetManager.recordOffsetPreCommit(it.partition, it.offset) }
+        log.info("syncCommitOffsets before $offsetManager")
         val prototype = records.first()
         try {
             consumer.syncCommitOffsets(
@@ -46,6 +52,8 @@ class MessageBusConsumer<K : Any, V : Any>(
         } catch (t: Throwable) {
             offsetManager.rollback()
             throw t
+        } finally {
+            log.info("syncCommitOffsets after $offsetManager")
         }
     }
 
