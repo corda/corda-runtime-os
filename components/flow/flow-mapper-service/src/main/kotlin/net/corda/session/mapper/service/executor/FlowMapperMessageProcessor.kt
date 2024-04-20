@@ -9,6 +9,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.State
+import net.corda.messaging.api.records.FLOW_CREATED_TIMESTAMP_RECORD_HEADER
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.configuration.FlowConfig
@@ -50,6 +51,9 @@ class FlowMapperMessageProcessor(
         val value = event.value ?: return StateAndEventProcessor.Response(state, emptyList())
         val eventType = value.payload?.javaClass?.simpleName ?: "Unknown"
 
+        val flowCreatedTimeStampHeader =
+            event.headers.mapNotNull { if (it.first == "flowSessionStartTime") it.second else null }
+                .firstOrNull()?.let { FLOW_CREATED_TIMESTAMP_RECORD_HEADER to it }
 
         CordaMetrics.Metric.FlowMapperEventLag.builder()
             .withTag(CordaMetrics.Tag.FlowEvent, value.payload::class.java.name)
@@ -78,6 +82,12 @@ class FlowMapperMessageProcessor(
                     StateAndEventProcessor.Response(state, emptyList())
                 }
             }!!
+        }.let {
+            if (flowCreatedTimeStampHeader != null) {
+                it.copy(responseEvents = it.responseEvents.map {
+                    it.copy(headers = it.headers + flowCreatedTimeStampHeader)
+                })
+            } else it
         }
     }
 

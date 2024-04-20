@@ -13,6 +13,7 @@ import net.corda.flow.state.impl.CheckpointMetadataKeys.STATE_META_SESSION_EXPIR
 import net.corda.flow.utils.KeyValueStore
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.messaging.api.records.FLOW_CREATED_TIMESTAMP_RECORD_HEADER
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW
 import net.corda.schema.configuration.FlowConfig.SESSION_FLOW_CLEANUP_TIME
@@ -66,6 +67,9 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     private fun getSessionEvents(context: FlowEventContext<Any>, now: Instant): List<Record<*, FlowMapperEvent>> {
         val checkpoint = context.checkpoint
         val doesCheckpointExist = checkpoint.doesExist
+        val flowCreatedTimeStampHeader =
+            (FLOW_CREATED_TIMESTAMP_RECORD_HEADER to context.checkpoint.flowStartContext.createdTimestamp.toEpochMilli()
+                .toString())
 
         return checkpoint.sessions
             .filter {
@@ -87,7 +91,9 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             .flatMap { (_, events) -> events }
             .map { event ->
                 context.flowMetrics.flowSessionMessageSent(event.payload::class.java.name)
-                flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event)
+                flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event).let {
+                    it.copy(headers = it.headers + flowCreatedTimeStampHeader)
+                }
             }
     }
 

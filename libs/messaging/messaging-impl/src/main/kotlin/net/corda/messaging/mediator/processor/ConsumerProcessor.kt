@@ -13,6 +13,7 @@ import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.config.MediatorConsumerConfig
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
+import net.corda.messaging.api.records.FLOW_CREATED_TIMESTAMP_RECORD_HEADER
 import net.corda.messaging.mediator.GroupAllocator
 import net.corda.messaging.mediator.MediatorSubscriptionState
 import net.corda.messaging.mediator.MultiSourceEventMediatorImpl
@@ -341,51 +342,57 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             input.records.isEmpty()
         }
         return (retryInputs.map { input ->
-            val persistFuture = CompletableFuture<Unit>()
-            val inputKey = input.key
-            val inputRecords = input.records
-            val future = taskManager.executeShortRunningTask(
-                inputKey,
-                input.state?.metadata?.get(PRIORITY_METADATA_PROPERTY) as? Long ?: System.currentTimeMillis(),
-                persistFuture,
-                false
-            ) {
-                val updatedState = stateManager.get(emptySet(), setOf(inputKey.toString())).values.firstOrNull()
-                val updatedInput = EventProcessingInput(inputKey, inputRecords, updatedState)
-                val output = eventProcessor.processEvents(mapOf(inputKey to updatedInput)).values.first()
-                output
-            }
-            inputKey to (future to persistFuture)
+            mapInputToOutput(input, true)
         } + newInputs.map { input ->
-            val persistFuture = CompletableFuture<Unit>()
-            val inputKey = input.key
-            val inputRecords = input.records
-            val future = taskManager.executeShortRunningTask(
-                inputKey,
-                input.state?.metadata?.get(PRIORITY_METADATA_PROPERTY) as? Long ?: System.currentTimeMillis(),
-                persistFuture,
-                false
-            ) {
-                val updatedState = stateManager.get(setOf(inputKey.toString())).values.firstOrNull()
-                val updatedInput = EventProcessingInput(inputKey, inputRecords, updatedState)
-                val output = eventProcessor.processEvents(mapOf(inputKey to updatedInput)).values.first()
-                output
-            }
-            inputKey to (future to persistFuture)
+            mapInputToOutput(input)
         } + alreadySeenInputs.map { input ->
-            val persistFuture = CompletableFuture<Unit>()
-            val result: EventProcessingOutput<K, E> =
-                if (input.state?.metadata?.containsKey(DELETE_LATER_METADATA_PROPERTY) ?: false) {
-                    EventProcessingOutput<K, E>(
-                        listOf(), StateChangeAndOperation.Delete(input.state!!), emptyList()
-                    )
-                } else {
-                    EventProcessingOutput<K, E>(listOf(), StateChangeAndOperation.Noop(input.state), emptyList())
-                }
-            input.key to (CompletableFuture.completedFuture(result) to persistFuture)
+            mapAlreadySeenInputToOutput(input)
         }).toMap().mapKeys { (key, _) ->
             key.toString()
         }
+    }
+
+    private fun mapAlreadySeenInputToOutput(input: EventProcessingInput<K, E>): Pair<K, Pair<CompletableFuture<EventProcessingOutput<K, E>>, CompletableFuture<Unit>>> {
+        val persistFuture = CompletableFuture<Unit>()
+        val result: EventProcessingOutput<K, E> =
+            if (input.state?.metadata?.containsKey(DELETE_LATER_METADATA_PROPERTY) ?: false) {
+                EventProcessingOutput<K, E>(
+                    listOf(), StateChangeAndOperation.Delete(input.state!!), emptyList()
+                )
+            } else {
+                EventProcessingOutput<K, E>(listOf(), StateChangeAndOperation.Noop(input.state), emptyList())
+            }
+        return input.key to (CompletableFuture.completedFuture(result) to persistFuture)
+    }
+
+    private fun mapInputToOutput(
+        input: EventProcessingInput<K, E>,
+        isRetry: Boolean = false
+    ): Pair<K, Pair<CompletableFuture<EventProcessingOutput<K, E>>, CompletableFuture<Unit>>> {
+        val persistFuture = CompletableFuture<Unit>()
+        val inputKey = input.key
+        val inputRecords = input.records
+        val oldestSessionCreateTimestamp = inputRecords.minOf {
+            it.headers.mapNotNull { if (it.first == FLOW_CREATED_TIMESTAMP_RECORD_HEADER) it.second.toLong() else null }
+                .firstOrNull() ?: 0L
+        }
+        val future = taskManager.executeShortRunningTask(
+            inputKey,
+            input.state?.metadata?.get(PRIORITY_METADATA_PROPERTY) as? Long
+                ?: if (oldestSessionCreateTimestamp > 0L) oldestSessionCreateTimestamp else System.currentTimeMillis(),
+            persistFuture,
+            isRetry
+        ) {
+            val updatedState = if (isRetry) {
+                stateManager.get(emptySet(), setOf(inputKey.toString())).values.firstOrNull()
+            } else {
+                stateManager.get(setOf(inputKey.toString())).values.firstOrNull()
+            }
+            val updatedInput = EventProcessingInput(inputKey, inputRecords, updatedState)
+            val output = eventProcessor.processEvents(mapOf(inputKey to updatedInput)).values.first()
+            output
+        }
+        return inputKey to (future to persistFuture)
     }
 
     /**

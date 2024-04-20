@@ -16,3 +16,5 @@ data class Record<K : Any, V : Any>(
     val timestamp: Long = 0,
     val headers: List<Pair<String, String>> = listOf()
 )
+
+const val FLOW_CREATED_TIMESTAMP_RECORD_HEADER = "flowCreatedTimeStamp"
