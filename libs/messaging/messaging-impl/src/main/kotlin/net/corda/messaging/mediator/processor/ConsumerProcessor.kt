@@ -379,7 +379,9 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val future = taskManager.executeShortRunningTask(
             inputKey,
             input.state?.metadata?.get(PRIORITY_METADATA_PROPERTY) as? Long
-                ?: if (oldestSessionCreateTimestamp > 0L) oldestSessionCreateTimestamp else System.currentTimeMillis(),
+                ?: if (oldestSessionCreateTimestamp > 0L) oldestSessionCreateTimestamp else (System.currentTimeMillis() + TimeUnit.DAYS.toMillis(
+                    365
+                )),
             persistFuture,
             isRetry
         ) {
