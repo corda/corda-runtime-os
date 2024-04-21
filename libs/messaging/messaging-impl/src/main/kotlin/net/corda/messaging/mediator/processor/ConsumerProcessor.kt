@@ -372,7 +372,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val persistFuture = CompletableFuture<Unit>()
         val inputKey = input.key
         val inputRecords = input.records
-        val oldestSessionCreateTimestamp = inputRecords.minOf {
+        val oldestSessionCreateTimestamp = inputRecords.maxOf {
             it.headers.mapNotNull { if (it.first == FLOW_CREATED_TIMESTAMP_RECORD_HEADER) it.second.toLong() else null }
                 .firstOrNull() ?: 0L
         }
@@ -565,12 +565,12 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val failedToUpdateOptimisticLockFailure = failedToUpdate.mapNotNull { (key, value) ->
             value?.let { key to it }
         }.toMap()
-        val failedKeys = failedToCreate.keys + failedToUpdate.keys
+        //val failedKeys = failedToCreate.keys + failedToUpdate.keys
         val unsuccessfulStates = failedToCreate + failedToUpdateOptimisticLockFailure
-        val successful = outputsMap - failedKeys
+        val successful = outputsMap - unsuccessfulStates
         val outputsToSend = successful.values.flatMap { it.first.asyncOutputs }
         sendAsynchronousEvents(outputsToSend)
-        val successfulDelayedActions = (outputsMap - unsuccessfulStates).map {
+        val successfulDelayedActions = successful.map {
             Runnable {
                 writeFutures[it.key]!!.complete(Unit)
                 inputsToCommit.add(it.value.first.processedOffsets)

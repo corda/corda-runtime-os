@@ -68,7 +68,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         val checkpoint = context.checkpoint
         val doesCheckpointExist = checkpoint.doesExist
         val flowCreatedTimeStampHeader =
-            (FLOW_CREATED_TIMESTAMP_RECORD_HEADER to context.checkpoint.flowStartContext.createdTimestamp.toEpochMilli()
+            (FLOW_CREATED_TIMESTAMP_RECORD_HEADER to checkpoint.flowStartContext.createdTimestamp.toEpochMilli()
                 .toString())
 
         return checkpoint.sessions
