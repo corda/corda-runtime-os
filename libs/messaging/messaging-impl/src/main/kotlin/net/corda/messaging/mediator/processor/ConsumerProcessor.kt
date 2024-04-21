@@ -372,14 +372,14 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val persistFuture = CompletableFuture<Unit>()
         val inputKey = input.key
         val inputRecords = input.records
-        val oldestSessionCreateTimestamp = inputRecords.maxOf {
+        val oldestSessionCreateTimestamp = inputRecords.minOf {
             it.headers.mapNotNull { if (it.first == FLOW_CREATED_TIMESTAMP_RECORD_HEADER) it.second.toLong() else null }
-                .firstOrNull() ?: 0L
+                .firstOrNull() ?: Long.MAX_VALUE
         }
         val future = taskManager.executeShortRunningTask(
             inputKey,
             input.state?.metadata?.get(PRIORITY_METADATA_PROPERTY) as? Long
-                ?: if (oldestSessionCreateTimestamp > 0L) oldestSessionCreateTimestamp else (System.currentTimeMillis() + TimeUnit.DAYS.toMillis(
+                ?: if (oldestSessionCreateTimestamp != Long.MAX_VALUE) oldestSessionCreateTimestamp else (System.currentTimeMillis() + TimeUnit.DAYS.toMillis(
                     365
                 )),
             persistFuture,
@@ -565,12 +565,12 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val failedToUpdateOptimisticLockFailure = failedToUpdate.mapNotNull { (key, value) ->
             value?.let { key to it }
         }.toMap()
-        //val failedKeys = failedToCreate.keys + failedToUpdate.keys
+        val failedKeys = failedToCreate.keys + failedToUpdate.keys
         val unsuccessfulStates = failedToCreate + failedToUpdateOptimisticLockFailure
-        val successful = outputsMap - unsuccessfulStates
+        val successful = outputsMap - failedKeys
         val outputsToSend = successful.values.flatMap { it.first.asyncOutputs }
         sendAsynchronousEvents(outputsToSend)
-        val successfulDelayedActions = successful.map {
+        val successfulDelayedActions = (outputsMap - unsuccessfulStates).map {
             Runnable {
                 writeFutures[it.key]!!.complete(Unit)
                 inputsToCommit.add(it.value.first.processedOffsets)
