@@ -17,11 +17,9 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRe
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.hibernate.MultiIdentifierLoadAccess
 import org.hibernate.Session
-import org.hibernate.exception.ConstraintViolationException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -34,12 +32,10 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
 import java.sql.Connection
-import java.sql.SQLException
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.UUID
-import javax.persistence.EntityExistsException
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
@@ -47,7 +43,7 @@ import javax.persistence.OptimisticLockException
 import javax.persistence.TypedQuery
 
 //@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class JPABackingStoreImplTest2 {
+class JPABackingStoreImplTest {
 
     private companion object {
         private const val MAX_ATTEMPTS = 10
