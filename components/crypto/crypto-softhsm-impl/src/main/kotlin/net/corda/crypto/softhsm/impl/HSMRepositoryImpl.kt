@@ -9,16 +9,16 @@ import net.corda.crypto.softhsm.HSMRepository
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
+import net.corda.utilities.debug
+import net.corda.utilities.toBytes
 import net.corda.v5.base.util.EncodingUtils.toHex
 import org.slf4j.LoggerFactory
-import java.lang.IllegalStateException
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.PersistenceException
 import javax.persistence.Tuple
-import net.corda.utilities.debug
 
 /**
  * Database operations for HSM.
@@ -133,7 +133,7 @@ class HSMRepositoryImpl(
                     tenantAssociation
                 }
             }
-        } catch(e: PersistenceException) {
+        } catch (e: PersistenceException) {
             val match = e.cause?.message?.contains("ConstraintViolationException") ?: false
             // NOTE: this is not great, but we must be able to detect a constraint violation in case
             //  of a race condition, however, the JPA exception type doesn't give us enough info, so we check
@@ -184,7 +184,7 @@ class HSMRepositoryImpl(
     }
 
     private fun generateRandomShortAlias() =
-        toHex(UUID.randomUUID().toString().toByteArray()).take(12)
+        toHex(UUID.randomUUID().toBytes()).take(12)
 }
 
 // NOTE: this should be on the Entity.
