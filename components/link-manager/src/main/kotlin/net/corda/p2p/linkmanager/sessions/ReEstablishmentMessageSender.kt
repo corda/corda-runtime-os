@@ -10,14 +10,14 @@ import org.slf4j.LoggerFactory
 
 internal class ReEstablishmentMessageSender(
     private val p2pRecordsFactory: P2pRecordsFactory,
-    sessionManagerImpl: SessionManagerImpl,
+    sessionMessageHelper: SessionMessageHelper,
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(ReEstablishmentMessageSender::class.java)
     }
 
     private val publisher by lazy {
-        sessionManagerImpl.publisher
+        sessionMessageHelper.publisher
     }
     fun send(
         state: State,

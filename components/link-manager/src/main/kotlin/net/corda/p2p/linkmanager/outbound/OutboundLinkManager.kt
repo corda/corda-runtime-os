@@ -14,8 +14,9 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.common.CommonComponents
-import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.delivery.DeliveryTracker
+import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
+import net.corda.p2p.linkmanager.sessions.SessionManagerCommonComponents
 import net.corda.p2p.linkmanager.tracker.StatefulDeliveryTracker
 import net.corda.schema.Schemas
 import net.corda.utilities.flags.Features
@@ -25,6 +26,7 @@ import net.corda.utilities.time.Clock
 internal class OutboundLinkManager(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     commonComponents: CommonComponents,
+    sessionComponents: SessionManagerCommonComponents,
     linkManagerHostingMap: LinkManagerHostingMap,
     groupPolicyProvider: GroupPolicyProvider,
     membershipGroupReaderProvider: MembershipGroupReaderProvider,
@@ -39,7 +41,7 @@ internal class OutboundLinkManager(
         private const val OUTBOUND_MESSAGE_PROCESSOR_GROUP = "outbound_message_processor_group"
     }
     private val outboundMessageProcessor = OutboundMessageProcessor(
-        commonComponents.sessionManager,
+        sessionComponents.sessionManager,
         linkManagerHostingMap,
         groupPolicyProvider,
         membershipGroupReaderProvider,
@@ -53,7 +55,7 @@ internal class OutboundLinkManager(
         publisherFactory,
         messagingConfiguration,
         subscriptionFactory,
-        commonComponents.sessionManager,
+        sessionComponents.sessionManager,
         clock = clock
     ) { outboundMessageProcessor.processReplayedAuthenticatedMessage(it) }
 
@@ -104,6 +106,7 @@ internal class OutboundLinkManager(
             dependentChildren = listOf(
                 deliveryTracker.dominoTile.coordinatorName,
                 commonComponents.dominoTile.coordinatorName,
+                sessionComponents.dominoTile.coordinatorName,
             ),
             managedChildren = setOf(deliveryTracker.dominoTile.toNamedLifecycle())
         )

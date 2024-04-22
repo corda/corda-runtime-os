@@ -9,14 +9,21 @@ import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.virtualnode.HoldingIdentity
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 internal interface SessionManager : LifecycleWithDominoTile {
+    private companion object {
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
     fun <T> processOutboundMessages(
         wrappedMessages: Collection<T>,
         getMessage: (T) -> AuthenticatedMessageAndKey,
     ): Collection<Pair<T, SessionState>>
 
-    fun <T> getSessionsById(uuids: Collection<T>, getSessionId: (T) -> String): Collection<Pair<T, SessionDirection>>
+    fun <T> getSessionsById(sessionIdAndMessages: Collection<T>, getSessionId: (T) -> String): Collection<Pair<T, SessionDirection>>
+
     fun <T> processSessionMessages(
         wrappedMessages: Collection<T>,
         getMessage: (T) -> LinkInMessage,
@@ -60,7 +67,11 @@ internal interface SessionManager : LifecycleWithDominoTile {
             val sessionCounterparties: SessionCounterparties,
         ) : SessionState()
 
-        object CannotEstablishSession : SessionState()
+        class CannotEstablishSession(reason: String) : SessionState() {
+            init {
+                logger.warn(reason)
+            }
+        }
     }
 
     sealed class SessionDirection {

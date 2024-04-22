@@ -16,14 +16,14 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.linkmanager.common.CommonComponents
+import net.corda.p2p.linkmanager.sessions.SessionManagerCommonComponents
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock
 
 @Suppress("LongParameterList")
 internal class InboundLinkManager(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    commonComponents: CommonComponents,
+    commonComponents: SessionManagerCommonComponents,
     groupPolicyProvider: GroupPolicyProvider,
     membershipGroupReaderProvider: MembershipGroupReaderProvider,
     subscriptionFactory: SubscriptionFactory,

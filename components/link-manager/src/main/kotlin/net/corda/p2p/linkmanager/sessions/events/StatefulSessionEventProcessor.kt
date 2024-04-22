@@ -1,26 +1,19 @@
 package net.corda.p2p.linkmanager.sessions.events
 
-import java.util.UUID
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Future
 import net.corda.data.p2p.event.SessionCreated
 import net.corda.data.p2p.event.SessionDeleted
 import net.corda.data.p2p.event.SessionDirection
 import net.corda.data.p2p.event.SessionEvent
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.statemanager.api.StateManager
-import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.api.Session
+import net.corda.p2p.linkmanager.common.CommonComponents
 import net.corda.p2p.linkmanager.sessions.SessionCache
 import net.corda.p2p.linkmanager.sessions.SessionManager
-import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
-import net.corda.p2p.linkmanager.sessions.StateConvertor
+import net.corda.p2p.linkmanager.sessions.SessionMessageHelper
 import net.corda.p2p.linkmanager.sessions.metadata.CommonMetadata.Companion.toCommonMetadata
 import net.corda.p2p.linkmanager.sessions.metadata.InboundSessionMetadata.Companion.toInbound
 import net.corda.p2p.linkmanager.sessions.metadata.InboundSessionStatus
@@ -29,17 +22,25 @@ import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
 import net.corda.schema.Schemas
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.UUID
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Future
 
-@Suppress("LongParameterList")
 internal class StatefulSessionEventProcessor(
-    coordinatorFactory: LifecycleCoordinatorFactory,
-    subscriptionFactory: SubscriptionFactory,
-    messagingConfiguration: SmartConfig,
-    private val stateManager: StateManager,
-    private val stateConvertor: StateConvertor,
+    private val commonComponents: CommonComponents,
     val sessionCache: SessionCache,
-    private val sessionManagerImpl: SessionManagerImpl,
+    private val sessionMessageHelper: SessionMessageHelper,
 ): LifecycleWithDominoTile {
+    private val coordinatorFactory
+        get() = commonComponents.lifecycleCoordinatorFactory
+    private val messagingConfiguration
+        get() = commonComponents.messagingConfiguration
+    private val subscriptionFactory
+        get() = commonComponents.subscriptionFactory
+    private val stateConvertor
+        get() = commonComponents.stateConvertor
+    private val stateManager
+        get() = commonComponents.stateManager
 
     private companion object {
         val CONSUMER_GROUP_ID = "session-events" + UUID.randomUUID().toString()
@@ -86,7 +87,7 @@ internal class StatefulSessionEventProcessor(
                 }
                 val session = stateConvertor.toCordaSessionState(
                     state,
-                    sessionManagerImpl.revocationCheckerClient::checkRevocation,
+                    sessionMessageHelper.revocationCheckerClient::checkRevocation,
                 )?.sessionData as? Session
                 if (session == null) {
                     logger.error("Received a ${event.direction} session created event for ${event.stateManagerKey} but could not " +
