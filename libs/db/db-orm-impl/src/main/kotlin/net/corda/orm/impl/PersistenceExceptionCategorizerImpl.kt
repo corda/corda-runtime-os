@@ -7,20 +7,28 @@ import net.corda.orm.PersistenceExceptionType.DATA_RELATED
 import net.corda.orm.PersistenceExceptionType.FATAL
 import net.corda.orm.PersistenceExceptionType.TRANSIENT
 import net.corda.orm.PersistenceExceptionType.UNCATEGORIZED
+import org.hibernate.QueryException
 import org.hibernate.ResourceClosedException
 import org.hibernate.SessionException
 import org.hibernate.TransactionException
 import org.hibernate.cache.CacheException
 import org.hibernate.exception.ConstraintViolationException
+import org.hibernate.exception.GenericJDBCException
 import org.hibernate.exception.JDBCConnectionException
 import org.hibernate.exception.LockAcquisitionException
+import org.hibernate.exception.SQLGrammarException
+import org.hibernate.procedure.NoSuchParameterException
+import org.hibernate.procedure.ParameterMisuseException
+import org.hibernate.property.access.spi.PropertyAccessException
 import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
 import java.net.SocketException
 import java.sql.SQLException
 import java.sql.SQLTransientConnectionException
 import javax.persistence.EntityExistsException
+import javax.persistence.EntityNotFoundException
 import javax.persistence.LockTimeoutException
+import javax.persistence.NonUniqueResultException
 import javax.persistence.OptimisticLockException
 import javax.persistence.PessimisticLockException
 import javax.persistence.QueryTimeoutException
@@ -38,7 +46,7 @@ class PersistenceExceptionCategorizerImpl : PersistenceExceptionCategorizer {
     override fun categorize(exception: Exception): PersistenceExceptionType {
         return when {
             isFatal(exception) -> FATAL
-            isPlatform(exception) -> DATA_RELATED
+            isDataRelated(exception) -> DATA_RELATED
             isTransient(exception) -> TRANSIENT
             else -> UNCATEGORIZED
         }.also {
@@ -55,10 +63,18 @@ class PersistenceExceptionCategorizerImpl : PersistenceExceptionCategorizer {
         return checks.any { it.meetsCriteria(exception) }
     }
 
-    private fun isPlatform(exception: Exception): Boolean {
+    private fun isDataRelated(exception: Exception): Boolean {
         val checks = listOf(
-            criteria<ConstraintViolationException>(),
-            criteria< EntityExistsException>()
+            criteria<EntityExistsException>(),
+            criteria<EntityNotFoundException>(),
+            criteria<NonUniqueResultException>(),
+            criteria<SQLGrammarException>(),
+            criteria<GenericJDBCException>(),
+            criteria<QueryException>(),
+            criteria<NoSuchParameterException>(),
+            criteria<ParameterMisuseException>(),
+            criteria<PropertyAccessException>(),
+            criteria<ConstraintViolationException>()
         )
         return checks.any { it.meetsCriteria(exception) }
     }

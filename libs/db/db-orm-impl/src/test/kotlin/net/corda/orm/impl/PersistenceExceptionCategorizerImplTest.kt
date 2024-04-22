@@ -67,7 +67,7 @@ class PersistenceExceptionCategorizerImplTest {
         }
 
         @JvmStatic
-        fun platformPersistenceExceptions(): Stream<Arguments> {
+        fun dataRelatedPersistenceExceptions(): Stream<Arguments> {
             return Stream.of(
                 Arguments.of(EntityExistsException()),
                 Arguments.of(EntityNotFoundException()),
@@ -100,8 +100,8 @@ class PersistenceExceptionCategorizerImplTest {
         assertThat(persistenceExceptionCategorizer.categorize(exception)).isEqualTo(PersistenceExceptionType.TRANSIENT)
     }
 
-    @ParameterizedTest(name = "{0} is categorized as a platform persistence exception")
-    @MethodSource("platformPersistenceExceptions")
+    @ParameterizedTest(name = "{0} is categorized as a data related persistence exception")
+    @MethodSource("dataRelatedPersistenceExceptions")
     fun `platform persistence exceptions`(exception: Exception) {
         assertThat(persistenceExceptionCategorizer.categorize(exception)).isEqualTo(PersistenceExceptionType.DATA_RELATED)
     }

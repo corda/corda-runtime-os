@@ -42,7 +42,6 @@ import javax.persistence.EntityTransaction
 import javax.persistence.OptimisticLockException
 import javax.persistence.TypedQuery
 
-//@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JPABackingStoreImplTest {
 
     private companion object {
@@ -142,6 +141,7 @@ class JPABackingStoreImplTest {
     }
 
     @Test
+    @Suppress("TooGenericExceptionThrown")
     fun `Session closes entity manager even when exception occurs`() {
         assertThrows<RuntimeException> {
             backingStore.session(notaryRepIdentity) { throw RuntimeException("test exception") }
