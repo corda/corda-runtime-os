@@ -56,7 +56,7 @@ class CachingStateManagerWrapper(val stateManager: StateManager) {
                         // Deleted
                         cache.invalidate(state.key)
                     } else {
-                        cacheState(this[state.key]!!)
+                        cacheState(conflictState)
                     }
                 } else {
                     cacheState(state.copy(version = state.version + 1))
@@ -74,7 +74,7 @@ class CachingStateManagerWrapper(val stateManager: StateManager) {
                         // Deleted
                         cache.invalidate(state.key)
                     } else {
-                        cacheState(this[state.key]!!)
+                        cacheState(conflictState)
                     }
                 } else {
                     cache.invalidate(state.key)
