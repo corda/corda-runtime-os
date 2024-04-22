@@ -10,6 +10,7 @@ import net.corda.db.testkit.TestDbInfo
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
+import net.corda.orm.impl.PersistenceExceptionCategorizerImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.datamodel.common.UniquenessConstants
@@ -35,6 +36,7 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.hibernate.Session
+import org.hibernate.exception.ConstraintViolationException
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
@@ -56,6 +58,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
+import java.sql.SQLException
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -111,8 +114,6 @@ class JPABackingStoreImplIntegrationTests {
         private const val MAX_ATTEMPTS = 10
     }
 
-    class DummyException(message: String) : Exception(message)
-
     private fun generateRequestInternal(txId: SecureHash = SecureHashUtils.randomSecureHash()) =
         UniquenessCheckRequestInternal(
             txId,
@@ -133,7 +134,6 @@ class JPABackingStoreImplIntegrationTests {
     }
 
     private fun createBackingStoreImpl(emFactory: EntityManagerFactory): JPABackingStoreImpl {
-        val jpaEntitiesRegistry = JpaEntitiesRegistryImpl()
         val dbConnectionManager = mock<DbConnectionManager>().apply {
             whenever(getOrCreateEntityManagerFactory(eq(notaryVNodeIdentityDbId), any(), any())) doReturn emFactory
             whenever(getClusterDataSource()) doReturn dbConfig.dataSource
@@ -149,60 +149,18 @@ class JPABackingStoreImplIntegrationTests {
             )
             )
         }
-        return JPABackingStoreImpl(jpaEntitiesRegistry, dbConnectionManager, virtualNodeInfoReadService)
+        return JPABackingStoreImpl(
+            JpaEntitiesRegistryImpl(),
+            dbConnectionManager,
+            PersistenceExceptionCategorizerImpl(),
+            virtualNodeInfoReadService
+        )
     }
 
     private fun createEntityManagerFactory(persistenceUnitName: String = "uniqueness"): EntityManagerFactory {
         return EntityManagerFactoryFactoryImpl().create(
             persistenceUnitName, JPABackingStoreEntities.classes.toList(), dbConfig
         )
-    }
-
-    @Nested
-    inner class ExecutingTransactionRetryTests {
-        @Test
-        fun `Executing transaction retries upon expected exceptions`() {
-            var execCounter = 0
-            assertThrows<IllegalStateException> {
-                backingStoreImpl.session(notaryVNodeIdentity) { session ->
-                    session.executeTransaction { _, _ ->
-                        execCounter++
-                        throw EntityExistsException()
-                    }
-                }
-            }
-            assertThat(execCounter).isEqualTo(MAX_ATTEMPTS)
-        }
-
-        @Test
-        fun `Executing transaction does not retry upon unexpected exception`() {
-            var execCounter = 0
-            assertThrows<DummyException> {
-                backingStoreImpl.session(notaryVNodeIdentity) { session ->
-                    session.executeTransaction { _, _ ->
-                        execCounter++
-                        throw DummyException("dummy exception")
-                    }
-                }
-            }
-            assertThat(execCounter).isEqualTo(1)
-        }
-
-        @Test
-        fun `Executing transaction succeeds after transient failures`() {
-            val retryCnt = 3
-            var execCounter = 0
-            assertDoesNotThrow {
-                backingStoreImpl.session(notaryVNodeIdentity) { session ->
-                    session.executeTransaction { _, _ ->
-                        execCounter++
-                        if (execCounter < retryCnt)
-                            throw OptimisticLockException()
-                    }
-                }
-            }
-            assertThat(execCounter).isEqualTo(retryCnt)
-        }
     }
 
     @Nested
@@ -787,4 +745,6 @@ class JPABackingStoreImplIntegrationTests {
             assertThat(e.cause).isInstanceOf(RollbackException::class.java)
         }
     }
+
+    class DummyException(message: String) : Exception(message)
 }

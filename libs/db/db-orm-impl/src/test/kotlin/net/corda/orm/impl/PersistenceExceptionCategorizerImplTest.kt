@@ -1,6 +1,7 @@
-package net.corda.persistence.common
+package net.corda.orm.impl
 
-import net.corda.persistence.common.PersistenceExceptionCategorizerImpl.Companion.CONNECTION_CLOSED_MESSAGE
+import net.corda.orm.impl.PersistenceExceptionCategorizerImpl.Companion.CONNECTION_CLOSED_MESSAGE
+import net.corda.orm.PersistenceExceptionType
 import org.assertj.core.api.Assertions.assertThat
 import org.hibernate.QueryException
 import org.hibernate.ResourceClosedException
@@ -102,7 +103,7 @@ class PersistenceExceptionCategorizerImplTest {
     @ParameterizedTest(name = "{0} is categorized as a platform persistence exception")
     @MethodSource("platformPersistenceExceptions")
     fun `platform persistence exceptions`(exception: Exception) {
-        assertThat(persistenceExceptionCategorizer.categorize(exception)).isEqualTo(PersistenceExceptionType.PLATFORM)
+        assertThat(persistenceExceptionCategorizer.categorize(exception)).isEqualTo(PersistenceExceptionType.DATA_RELATED)
     }
 
     @ParameterizedTest(name = "{0} is categorized as a fatal persistence exception")
@@ -113,6 +114,6 @@ class PersistenceExceptionCategorizerImplTest {
 
     @Test
     fun `unknown exceptions are categorized as platform`() {
-        assertThat(persistenceExceptionCategorizer.categorize(Exception())).isEqualTo(PersistenceExceptionType.PLATFORM)
+        assertThat(persistenceExceptionCategorizer.categorize(Exception())).isEqualTo(PersistenceExceptionType.UNCATEGORIZED)
     }
 }

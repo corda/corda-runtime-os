@@ -7,6 +7,8 @@ import net.corda.db.schema.CordaDb
 import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
 import net.corda.metrics.CordaMetrics
 import net.corda.orm.JpaEntitiesRegistry
+import net.corda.orm.PersistenceExceptionCategorizer
+import net.corda.orm.PersistenceExceptionType
 import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.HIBERNATE_JDBC_BATCH_SIZE
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.RESULT_ACCEPTED_REPRESENTATION
@@ -35,8 +37,6 @@ import org.slf4j.LoggerFactory
 import java.time.Duration
 import javax.persistence.EntityExistsException
 import javax.persistence.EntityManager
-import javax.persistence.OptimisticLockException
-import javax.persistence.RollbackException
 
 @Suppress("ForbiddenComment")
 /**
@@ -48,6 +48,8 @@ open class JPABackingStoreImpl @Activate constructor(
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = DbConnectionManager::class)
     private val dbConnectionManager: DbConnectionManager,
+    @Reference(service = PersistenceExceptionCategorizer::class)
+    private val persistenceExceptionCategorizer: PersistenceExceptionCategorizer,
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService
 ) : BackingStore {
@@ -135,10 +137,9 @@ open class JPABackingStoreImpl @Activate constructor(
 
                         return
                     } catch (e: Exception) {
-                        when (e) {
-                            is EntityExistsException,
-                            is RollbackException,
-                            is OptimisticLockException -> {
+                        when (persistenceExceptionCategorizer.categorize(e)) {
+                            PersistenceExceptionType.DATA_RELATED,
+                            PersistenceExceptionType.TRANSIENT -> {
                                 // [EntityExistsException] Occurs when another worker committed a
                                 // request with conflicting input states. Retry (by not re-throwing the
                                 // exception), because the requests with conflicts are removed from the
@@ -164,22 +165,17 @@ open class JPABackingStoreImpl @Activate constructor(
                                     log.warn(
                                         "Retrying DB operation. The request might have been " +
                                                 "handled by a different notary worker or a DB error " +
-                                                "occurred when attempting to commit.",
-                                        e
+                                                "occurred when attempting to commit. Message: ${e.message}."
                                     )
                                 } else {
                                     throw IllegalStateException(
                                         "Failed to execute transaction after the maximum number of " +
-                                                "attempts ($MAX_ATTEMPTS).",
-                                        e
+                                                "attempts ($MAX_ATTEMPTS). Message: ${e.message}."
                                     )
                                 }
                             }
-
-                            else -> {
-                                // TODO: Revisit handled exceptions, this is a subset of what
-                                // we handled in C4
-                                log.warn("Unexpected error occurred", e)
+                            PersistenceExceptionType.UNCATEGORIZED, PersistenceExceptionType.FATAL -> {
+                                log.warn("Unexpected error occurred. Message: ${e.message}")
                                 // We potentially leak a database connection, if we don't rollback. When
                                 // the HSM signing operation throws an exception this code path is
                                 // triggered.

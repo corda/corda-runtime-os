@@ -1,9 +1,12 @@
-package net.corda.persistence.common
+package net.corda.orm.impl
 
 import net.corda.flow.external.events.responses.exceptions.criteria
-import net.corda.persistence.common.PersistenceExceptionType.FATAL
-import net.corda.persistence.common.PersistenceExceptionType.PLATFORM
-import net.corda.persistence.common.PersistenceExceptionType.TRANSIENT
+import net.corda.orm.PersistenceExceptionCategorizer
+import net.corda.orm.PersistenceExceptionType
+import net.corda.orm.PersistenceExceptionType.DATA_RELATED
+import net.corda.orm.PersistenceExceptionType.FATAL
+import net.corda.orm.PersistenceExceptionType.TRANSIENT
+import net.corda.orm.PersistenceExceptionType.UNCATEGORIZED
 import org.hibernate.ResourceClosedException
 import org.hibernate.SessionException
 import org.hibernate.TransactionException
@@ -11,10 +14,12 @@ import org.hibernate.cache.CacheException
 import org.hibernate.exception.ConstraintViolationException
 import org.hibernate.exception.JDBCConnectionException
 import org.hibernate.exception.LockAcquisitionException
+import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
 import java.net.SocketException
 import java.sql.SQLException
 import java.sql.SQLTransientConnectionException
+import javax.persistence.EntityExistsException
 import javax.persistence.LockTimeoutException
 import javax.persistence.OptimisticLockException
 import javax.persistence.PessimisticLockException
@@ -22,7 +27,8 @@ import javax.persistence.QueryTimeoutException
 import javax.persistence.RollbackException
 import javax.persistence.TransactionRequiredException
 
-internal class PersistenceExceptionCategorizerImpl : PersistenceExceptionCategorizer {
+@Component(service = [PersistenceExceptionCategorizer::class])
+class PersistenceExceptionCategorizerImpl : PersistenceExceptionCategorizer {
 
     companion object {
         internal const val CONNECTION_CLOSED_MESSAGE = "Connection is closed"
@@ -32,9 +38,9 @@ internal class PersistenceExceptionCategorizerImpl : PersistenceExceptionCategor
     override fun categorize(exception: Exception): PersistenceExceptionType {
         return when {
             isFatal(exception) -> FATAL
-            isPlatform(exception) -> PLATFORM
+            isPlatform(exception) -> DATA_RELATED
             isTransient(exception) -> TRANSIENT
-            else -> PLATFORM
+            else -> UNCATEGORIZED
         }.also {
             logger.warn("Categorized exception as $it: $exception", exception)
         }
@@ -51,7 +57,8 @@ internal class PersistenceExceptionCategorizerImpl : PersistenceExceptionCategor
 
     private fun isPlatform(exception: Exception): Boolean {
         val checks = listOf(
-            criteria<ConstraintViolationException>()
+            criteria<ConstraintViolationException>(),
+            criteria< EntityExistsException>()
         )
         return checks.any { it.meetsCriteria(exception) }
     }
