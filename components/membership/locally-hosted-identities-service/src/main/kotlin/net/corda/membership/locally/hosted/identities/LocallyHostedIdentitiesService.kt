@@ -1,9 +1,11 @@
 package net.corda.membership.locally.hosted.identities
 
+import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.lifecycle.Lifecycle
+import net.corda.reconciliation.ReconcilerReader
 import net.corda.virtualnode.HoldingIdentity
 
-interface LocallyHostedIdentitiesService : Lifecycle {
+interface LocallyHostedIdentitiesService : ReconcilerReader<HoldingIdentity, HostedIdentityEntry>, Lifecycle {
     /**
      * Returns [true] if an identity is locally hosted. This shouldn't be used before the [identity] has been registered.
      */
