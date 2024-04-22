@@ -2005,7 +2005,6 @@ class UtxoPersistenceServiceImplTest {
                     status = status,
                     isFiltered = isFiltered,
                     createdTs = createdTs,
-//                    createdTs = testClock.instant(),
                     repairAttemptCount = repairAttemptCount
                 )
             )
