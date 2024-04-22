@@ -6,6 +6,7 @@ import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.flow.utils.toMap
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
+import net.corda.ledger.verification.processor.VerificationErrorType
 import net.corda.ledger.verification.processor.VerificationExceptionCategorizer
 import net.corda.ledger.verification.processor.VerificationRequestHandler
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
@@ -58,12 +59,13 @@ class VerificationRequestProcessor(
                     requestHandler.handleRequest(sandbox, request)
                 } catch (e: Exception) {
                     return@withMDC when (exceptionCategorizer.categorize(e)) {
-                        ExternalEventResponseErrorType.FATAL -> fatalErrorResponse(request.flowExternalEventContext, e)
-                        ExternalEventResponseErrorType.PLATFORM -> platformErrorResponse(request.flowExternalEventContext, e)
-                        ExternalEventResponseErrorType.TRANSIENT -> throw CordaHTTPServerTransientException(
+                        VerificationErrorType.FATAL -> fatalErrorResponse(request.flowExternalEventContext, e)
+                        VerificationErrorType.PLATFORM -> platformErrorResponse(request.flowExternalEventContext, e)
+                        VerificationErrorType.TRANSIENT -> throw CordaHTTPServerTransientException(
                             request.flowExternalEventContext.requestId,
                             e
                         )
+                        VerificationErrorType.RETRYABLE -> throw e
                     }
                 } finally {
                     currentSandboxGroupContext.remove()

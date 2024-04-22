@@ -3,13 +3,13 @@ package net.corda.ledger.verification.processor.impl
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.NotAllowedCpkException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.utxo.verification.CordaPackageSummary
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
+import net.corda.ledger.verification.processor.VerificationErrorType
 import net.corda.ledger.verification.processor.VerificationRequestHandler
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.messaging.api.records.Record
@@ -20,6 +20,7 @@ import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
@@ -57,9 +58,9 @@ class VerificationRequestProcessorTest {
         responseFactory
     ) {
         if (it is CpkNotAvailableException) {
-            ExternalEventResponseErrorType.FATAL
+            VerificationErrorType.RETRYABLE
         } else {
-            ExternalEventResponseErrorType.PLATFORM
+            VerificationErrorType.PLATFORM
         }
     }
 
@@ -148,10 +149,9 @@ class VerificationRequestProcessorTest {
 
         whenever(verificationSandboxService.get(cordaHoldingIdentity, cpkSummaries)).thenThrow(response)
         whenever(responseFactory.fatalError(request.flowExternalEventContext, response)).thenReturn(failureResponseRecord)
-        val results = verificationRequestProcessor.process(request)
-
-        assertThat(results).isNotNull
-        assertThat(results).isEqualTo(failureResponseRecord.value)
+        assertThrows<CpkNotAvailableException> {
+            verificationRequestProcessor.process(request)
+        }
 
         verify(currentSandboxGroupContext, times(0)).set(any())
         verify(currentSandboxGroupContext, times(1)).remove()

@@ -1,20 +1,19 @@
 package net.corda.ledger.verification.processor.impl
 
-import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.NotAllowedCpkException
 import net.corda.flow.external.events.responses.exceptions.criteria
+import net.corda.ledger.verification.processor.VerificationErrorType
 import net.corda.ledger.verification.processor.VerificationExceptionCategorizer
 import java.io.NotSerializableException
 
 class VerificationExceptionCategorizerImpl : VerificationExceptionCategorizer {
-    override fun categorize(exception: Throwable): ExternalEventResponseErrorType {
+    override fun categorize(exception: Throwable): VerificationErrorType {
         return when {
-            // Rethrow things where we know it might fail, but we want some retry.
-            isPossiblyFatal(exception) -> throw exception
-            isPlatform(exception) -> ExternalEventResponseErrorType.PLATFORM
-            // Add transient here when some exist.
-            else -> ExternalEventResponseErrorType.PLATFORM
+            isPossiblyFatal(exception) -> VerificationErrorType.RETRYABLE
+            isPlatform(exception) -> VerificationErrorType.PLATFORM
+            // Add transient and fatal here when some exist.
+            else -> VerificationErrorType.PLATFORM
         }
     }
 

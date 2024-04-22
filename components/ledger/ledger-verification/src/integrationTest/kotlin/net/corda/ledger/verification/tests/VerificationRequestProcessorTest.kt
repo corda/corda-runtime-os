@@ -12,7 +12,6 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
-import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
@@ -25,6 +24,7 @@ import net.corda.ledger.utxo.verification.CordaPackageSummary
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.utxo.verification.TransactionVerificationResponse
 import net.corda.ledger.utxo.verification.TransactionVerificationStatus
+import net.corda.ledger.verification.processor.VerificationErrorType
 import net.corda.ledger.verification.processor.impl.VerificationRequestHandlerImpl
 import net.corda.ledger.verification.processor.impl.VerificationRequestProcessor
 import net.corda.ledger.verification.tests.helpers.VirtualNodeService
@@ -56,6 +56,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
@@ -160,7 +161,7 @@ class VerificationRequestProcessorTest {
             verificationSandboxService,
             VerificationRequestHandlerImpl(externalEventResponseFactory),
             externalEventResponseFactory
-        ) { _ -> ExternalEventResponseErrorType.FATAL }
+        ) { _ -> VerificationErrorType.FATAL }
 
         // Send request to message processor
         val flowEvent = processor.process(request)
@@ -192,7 +193,7 @@ class VerificationRequestProcessorTest {
             verificationSandboxService,
             VerificationRequestHandlerImpl(externalEventResponseFactory),
             externalEventResponseFactory
-        ) { _ -> ExternalEventResponseErrorType.FATAL }
+        ) { _ -> VerificationErrorType.FATAL }
 
         // Send request to message processor
         val flowEvent = processor.process(request)
@@ -229,15 +230,15 @@ class VerificationRequestProcessorTest {
             externalEventResponseFactory
         ) { exception: Throwable ->
             if (exception is CpkNotAvailableException) {
-                ExternalEventResponseErrorType.FATAL
+                VerificationErrorType.RETRYABLE
             } else {
-                ExternalEventResponseErrorType.TRANSIENT
+                VerificationErrorType.FATAL
             }
         }
 
-        val result = processor.process(request)
-        val response = result.payload as ExternalEventResponse
-        assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.FATAL)
+        assertThrows<CpkNotAvailableException> {
+            processor.process(request)
+        }
     }
 
     private fun createTestTransaction(ctx: SandboxGroupContext, isValid: Boolean): UtxoLedgerTransactionContainer {

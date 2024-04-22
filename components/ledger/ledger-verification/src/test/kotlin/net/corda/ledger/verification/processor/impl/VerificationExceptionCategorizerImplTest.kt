@@ -1,11 +1,10 @@
 package net.corda.ledger.verification.processor.impl
 
-import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.NotAllowedCpkException
+import net.corda.ledger.verification.processor.VerificationErrorType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -35,9 +34,8 @@ class VerificationExceptionCategorizerImplTest {
     @MethodSource("possiblyFatalExceptions")
     fun `fatal errors are correctly categorized`(exception: Exception) {
         val categorizer = VerificationExceptionCategorizerImpl()
-        assertThrows<Exception> {
-            categorizer.categorize(exception)
-        }
+        val result = categorizer.categorize(exception)
+        assertThat(result).isEqualTo(VerificationErrorType.RETRYABLE)
     }
 
     @ParameterizedTest(name = "{0} is categorized as a platform exception")
@@ -45,13 +43,13 @@ class VerificationExceptionCategorizerImplTest {
     fun `platform errors are correctly categorized`(exception: Exception) {
         val categorizer = VerificationExceptionCategorizerImpl()
         val result = categorizer.categorize(exception)
-        assertThat(result).isEqualTo(ExternalEventResponseErrorType.PLATFORM)
+        assertThat(result).isEqualTo(VerificationErrorType.PLATFORM)
     }
 
     @Test
     fun `error categorization defaults to platform`() {
         val categorizer = VerificationExceptionCategorizerImpl()
         val result = categorizer.categorize(IllegalStateException())
-        assertThat(result).isEqualTo(ExternalEventResponseErrorType.PLATFORM)
+        assertThat(result).isEqualTo(VerificationErrorType.PLATFORM)
     }
 }
