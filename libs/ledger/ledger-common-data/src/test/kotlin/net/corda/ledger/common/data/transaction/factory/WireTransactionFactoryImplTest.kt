@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonMappingException
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.test.CommonLedgerTest
 import net.corda.ledger.common.testkit.transactionMetadataExample
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 
@@ -59,8 +60,8 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
                 privacySalt
             )
         }
-            .isInstanceOf(IllegalStateException::class.java)
-            .hasMessageStartingWith("JSON validation failed due to:")
+            .isInstanceOf(CordaRuntimeException::class.java)
+            .hasMessageContaining("Failed to extract jsob blob from byte array")
     }
 
     @Test
