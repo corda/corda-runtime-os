@@ -50,7 +50,7 @@ class PlatformMigrationTest {
 
     private val liquibaseSchemaUpdater = LiquibaseSchemaUpdaterImpl(commandScopeFactory)
 
-    val pmConfig = PlatformMigration.PlatformMigrationConfig(
+    val pmConfig = PlatformMigration.PlatformMigrationConfig( // TODO move the test to SDK
         lineReader = mockLineReader,
         writerFactory = mockWriterFactory,
         liquibaseFactory = mockLiquibaseFactory,
@@ -68,7 +68,8 @@ class PlatformMigrationTest {
         val validHoldingIds = listOf("30f232111e9a", "25ab40d125a6", "ebf080aaeb79")
     }
 
-    private fun createPlatformMigration() = PlatformMigration(pmConfig, liquibaseSchemaUpdater).apply {
+//    private fun createPlatformMigration() = PlatformMigration(pmConfig, liquibaseSchemaUpdater).apply {
+    private fun createPlatformMigration() = PlatformMigration().apply {
         jdbcUrl = JDBC_URL
         user = USER
         password = PASSWORD

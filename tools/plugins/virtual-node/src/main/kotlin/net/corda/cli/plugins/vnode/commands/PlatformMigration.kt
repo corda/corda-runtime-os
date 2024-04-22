@@ -8,6 +8,7 @@ import liquibase.resource.ClassLoaderResourceAccessor
 import net.corda.cli.plugins.vnode.withPluginClassLoader
 import net.corda.db.admin.LiquibaseSchemaUpdater
 import net.corda.db.admin.impl.LiquibaseSchemaUpdaterImpl
+import net.corda.sdk.vnode.VNodeDbSchemaGenerator
 import picocli.CommandLine
 import java.io.File
 import java.io.FileWriter
@@ -22,10 +23,7 @@ import java.sql.DriverManager
     ],
     mixinStandardHelpOptions = true
 )
-class PlatformMigration(
-    private val config: PlatformMigrationConfig = PlatformMigrationConfig(),
-    private val liquibaseSchemaUpdater: LiquibaseSchemaUpdater = LiquibaseSchemaUpdaterImpl()
-) : Runnable {
+class PlatformMigration : Runnable {
     @CommandLine.Option(
         names = ["--jdbc-url"],
         description = [
@@ -33,13 +31,13 @@ class PlatformMigration(
                 "to determine what the current version of platform schemas each virtual node is currently at."
         ]
     )
-    var jdbcUrl: String? = null
+    lateinit var jdbcUrl: String
 
     @CommandLine.Option(
         names = ["-u", "--user"],
         description = ["Database username"]
     )
-    var user: String? = null
+    lateinit var user: String
 
     @CommandLine.Option(
         names = ["-p", "--password"],
@@ -67,26 +65,7 @@ class PlatformMigration(
         private const val SQL_FILENAME = "./vnodes.sql"
     }
 
-    /**
-     * Lazy because we don't want the list generated until run() is called, to ensure all the parameters are set
-     */
-    private val holdingIdsToMigrate: List<String> by lazy {
-        mutableListOf<String>().apply {
-            // Regex checks holdingId matches expected format and is one per line
-            val regex = Regex("^[a-f0-9]{12}\$")
-            config.lineReader(holdingIdFilename) {
-                if (regex.matches(it)) {
-                    add(it)
-                } else if (it.isNotEmpty()) { // allow and ignore empty lines
-                    throw IllegalArgumentException("Found invalid holding Id: $it")
-                }
-            }
-        }
-    }
-
-    private data class LiquibaseFileAndSchema(val filename: String, val schemaPrefix: String)
-
-    data class PlatformMigrationConfig(
+    data class PlatformMigrationConfig( // TODO used in the tests only, to be moved to SDK
         val writerFactory: (String) -> FileWriter = { file -> FileWriter(File(file)) },
         val lineReader: (String, (String) -> Unit) -> Unit = { filename, block ->
             File(filename).forEachLine { block(it) }
@@ -103,32 +82,11 @@ class PlatformMigration(
     )
 
     override fun run() {
-        config.writerFactory(outputFilename).use { fileWriter ->
-            listOf(
-                LiquibaseFileAndSchema("net/corda/db/schema/vnode-crypto/db.changelog-master.xml", "vnode_crypto_"),
-                LiquibaseFileAndSchema("net/corda/db/schema/vnode-uniqueness/db.changelog-master.xml", "vnode_uniq_"),
-                LiquibaseFileAndSchema("net/corda/db/schema/vnode-vault/db.changelog-master.xml", "vnode_vault_")
-            ).forEach { fileAndSchema ->
-                holdingIdsToMigrate.forEach { holdingId ->
-                    generateSql(fileWriter, holdingId, fileAndSchema)
-                }
-            }
-        }
-    }
+        val generator = VNodeDbSchemaGenerator()
+        val jdbcConnectionParams = VNodeDbSchemaGenerator.JdbcConnectionParams(jdbcUrl, user, password)
 
-    private fun generateSql(fileWriter: FileWriter, holdingId: String, fileAndSchema: LiquibaseFileAndSchema) {
-        withPluginClassLoader {
-            val connection = config.jdbcConnectionFactory(jdbcUrl, user, password)
-            val database = config.jdbcDatabaseFactory(connection).apply {
-                val schemaName = fileAndSchema.schemaPrefix + holdingId
-                defaultSchemaName = schemaName // our tables
-                liquibaseSchemaName = schemaName // liquibase tracking tables
-            }
-
-            connection.use {
-                val lb = config.liquibaseFactory(fileAndSchema.filename, database)
-                liquibaseSchemaUpdater.update(lb, fileWriter)
-            }
+        withPluginClassLoader { // TODO or pass the classloader to the SDK?
+            generator.generateVNodeMigrationSqlFile(holdingIdFilename, outputFilename, jdbcConnectionParams)
         }
     }
 }
