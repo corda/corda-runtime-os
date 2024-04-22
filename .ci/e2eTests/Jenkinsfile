@@ -2,6 +2,7 @@
 
 endToEndPipeline(
     assembleAndCompile: false,
+    dailyBuildCron: '0 */3 * * *',
     dailyBuildCron: '',
     multiCluster: false,
     gradleTestTargetsToExecute: ['smokeTest', 'e2eTest'],

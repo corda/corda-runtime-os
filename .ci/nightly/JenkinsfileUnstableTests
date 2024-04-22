@@ -5,6 +5,7 @@ cordaPipelineKubernetesAgent(
     runIntegrationTests: true,
     createPostgresDb: true,
     gradleAdditionalArgs: '-PrunUnstableTests',
+    dailyBuildCron: '0 */3 * * *',
     publishRepoPrefix: '',
     runE2eTests: false,
     javaVersion: '17'
