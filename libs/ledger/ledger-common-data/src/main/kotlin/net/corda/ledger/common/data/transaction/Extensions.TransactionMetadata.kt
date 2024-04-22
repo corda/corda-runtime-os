@@ -36,7 +36,7 @@ object TransactionMetadataUtils {
 
         check(metadata.digestSettings == WireTransactionDigestSettings.defaultValues) {
             "Only the default digest settings are acceptable now! ${metadata.digestSettings} vs " +
-                    "${WireTransactionDigestSettings.defaultValues}"
+                "${WireTransactionDigestSettings.defaultValues}"
         }
         return metadata
     }
