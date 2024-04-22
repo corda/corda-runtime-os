@@ -588,6 +588,19 @@ class FilteredTransactionImplTest {
         }
     }
 
+    @Test
+    fun `Accessing metadata parses metadata with a header successfully`() {
+        filteredTransaction = filteredTransaction(filteredComponentGroups = mapOf(0 to filteredComponentGroup0))
+        val jsonBlobWithHeader = ("header$metadataJson").encodeToByteArray()
+        componentGroupMerkleProofVerifies(listOf(indexedMerkleLeaf(0)))
+
+        whenever(filteredComponentGroup0Proof.treeSize).thenReturn(1)
+        whenever(filteredComponentGroup0Proof.leaves).thenReturn(listOf(indexedMerkleLeaf(0, jsonBlobWithHeader)))
+
+        assertDoesNotThrow { filteredTransaction.metadata }
+        assertDoesNotThrow { filteredTransaction.verify() }
+    }
+
     private fun componentGroupMerkleProofVerifies(indexedMerkleLeaves: List<IndexedMerkleLeaf>) {
         whenever(componentGroupMerkleProof.leaves).thenReturn(indexedMerkleLeaves)
         whenever(componentGroupMerkleProof.verify(any(), any())).thenReturn(true)

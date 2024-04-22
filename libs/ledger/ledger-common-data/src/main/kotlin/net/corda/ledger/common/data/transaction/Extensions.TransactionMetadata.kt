@@ -24,12 +24,12 @@ object TransactionMetadataUtils {
         jsonValidator: JsonValidator,
         jsonMarshallingService: JsonMarshallingService
     ): TransactionMetadataImpl {
-        // extracting a header and json. change val name _ -> header when implementing marker.
-        val (_, json) = metadataBytes.extractHeaderAndJson()
+        // extracting a header and json.
+        val (header, json) = metadataBytes.extractHeaderAndJson()
 
-//        if (header != null) {
+        if (header != null) {
 //            TODO("Check network has a MPV >= 50201 if lower than 5.2.1, write JSON without a header.")
-//        }
+        }
 
         jsonValidator.validate(json, getMetadataSchema(jsonValidator))
         val metadata = jsonMarshallingService.parse(json, TransactionMetadataImpl::class.java)
