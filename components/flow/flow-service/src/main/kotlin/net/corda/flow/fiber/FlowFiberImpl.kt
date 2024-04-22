@@ -80,6 +80,7 @@ class FlowFiberImpl(
             // consumed by that too, so if they are rethrown from here we do not get process termination or any other form
             // of critical error handling for free, only undefined behaviour.
             try {
+                // CORE-20281: Adding for debugging purposes to diagnose issue.
                 try {
                     getExecutionContext().currentSandboxGroupContext.get()
                 } catch (e: IllegalStateException) {
