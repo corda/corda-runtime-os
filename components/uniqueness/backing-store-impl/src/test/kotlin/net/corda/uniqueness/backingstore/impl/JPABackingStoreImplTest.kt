@@ -4,7 +4,10 @@ import net.corda.crypto.core.bytes
 import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
+import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.PersistenceExceptionCategorizer
@@ -25,6 +28,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
+import org.mockito.Mockito.verify
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -48,22 +52,25 @@ class JPABackingStoreImplTest {
         private const val MAX_ATTEMPTS = 10
     }
 
-    private lateinit var backingStore: BackingStore
-
     private val entityManager = mock<EntityManager>()
     private val entityTransaction = mock<EntityTransaction>()
     private val entityManagerFactory = mock<EntityManagerFactory>()
     private val dummyDataSource = mock<CloseableDataSource>()
     private val jpaEntitiesRegistry = mock<JpaEntitiesRegistry>()
+    private val dbConnectionManager = mock<DbConnectionManager>()
+    private val persistenceExceptionCategorizer = mock<PersistenceExceptionCategorizer>()
+    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
+    private val backingStore = JPABackingStoreImpl(
+        jpaEntitiesRegistry,
+        dbConnectionManager,
+        persistenceExceptionCategorizer,
+        virtualNodeInfoReadService
+    )
 
     /* These lists act as the database, the data added to these lists will be returned by the multi loads */
     private val txnDetails = mutableListOf<UniquenessTransactionDetailEntity>()
     private val stateEntities = mutableListOf<UniquenessStateDetailEntity>()
     private val errorEntities = mutableListOf<UniquenessRejectedTransactionEntity>()
-
-    private val dbConnectionManager = mock<DbConnectionManager>()
-    private val persistenceExceptionCategorizer = mock<PersistenceExceptionCategorizer>()
-    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
 
     private val groupId = UUID.randomUUID().toString()
     private val notaryRepIdentity = createTestHoldingIdentity("C=GB, L=London, O=NotaryRep1", groupId)
@@ -125,19 +132,18 @@ class JPABackingStoreImplTest {
                 timestamp = Instant.now()
             )
         )
+    }
 
-        backingStore = JPABackingStoreImpl(
-            jpaEntitiesRegistry,
-            dbConnectionManager,
-            persistenceExceptionCategorizer,
-            virtualNodeInfoReadService
-        )
+    @Test
+    fun `Registers jpa entries on init`() {
+        // backing store is created outside this method, so test seems empty
+        verify(jpaEntitiesRegistry, times(1)).register(any(), any())
     }
 
     @Test
     fun `Session always closes entity manager after use`() {
         backingStore.session(notaryRepIdentity) { }
-        Mockito.verify(entityManager, times(1)).close()
+        verify(entityManager, times(1)).close()
     }
 
     @Test
@@ -146,7 +152,7 @@ class JPABackingStoreImplTest {
         assertThrows<RuntimeException> {
             backingStore.session(notaryRepIdentity) { throw RuntimeException("test exception") }
         }
-        Mockito.verify(entityManager, times(1)).close()
+        verify(entityManager, times(1)).close()
     }
 
     @Test
@@ -155,9 +161,9 @@ class JPABackingStoreImplTest {
             session.executeTransaction { _, _ -> }
         }
 
-        Mockito.verify(entityTransaction, times(1)).begin()
-        Mockito.verify(entityTransaction, times(1)).commit()
-        Mockito.verify(entityManager, times(1)).close()
+        verify(entityTransaction, times(1)).begin()
+        verify(entityTransaction, times(1)).commit()
+        verify(entityManager, times(1)).close()
     }
 
     @Test

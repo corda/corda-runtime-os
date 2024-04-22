@@ -15,93 +15,80 @@ import net.corda.orm.JpaEntitiesSet
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import org.mockito.Mockito
+import org.mockito.Mockito.verify
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
-import java.util.UUID
 
 class JPABackingStoreImplLifecycleTests {
-    private lateinit var backingStoreImpl: JPABackingStoreLifecycleImpl
 
-    private lateinit var lifecycleCoordinator: LifecycleCoordinator
-    private lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
-    private lateinit var jpaEntitiesRegistry: JpaEntitiesRegistry
-
-    private lateinit var dbConnectionManager: DbConnectionManager
-
-    private val groupId = UUID.randomUUID().toString()
+    private val lifecycleCoordinator = mock<LifecycleCoordinator>()
+    private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
+    private val jpaEntitiesRegistry = mock<JpaEntitiesRegistry>()
+    private val dbConnectionManager = mock<DbConnectionManager>()
+    private lateinit var backingStore: JPABackingStoreLifecycleImpl
 
     inner class DummyLifecycle : LifecycleEvent
 
-    @Suppress("ComplexMethod")
     @BeforeEach
     fun init() {
-        lifecycleCoordinator = mock()
-        lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>().apply {
-            whenever(createCoordinator(any(), any())) doReturn lifecycleCoordinator
-        }
-
-        jpaEntitiesRegistry = mock<JpaEntitiesRegistry>().apply {
-            whenever(get(any())) doReturn mock<JpaEntitiesSet>()
-        }
-
-        backingStoreImpl = JPABackingStoreLifecycleImpl(
+        whenever(lifecycleCoordinatorFactory.createCoordinator(any(), any())).thenReturn(lifecycleCoordinator)
+        whenever(jpaEntitiesRegistry.get(any())) doReturn mock<JpaEntitiesSet>()
+        backingStore = JPABackingStoreLifecycleImpl(
             lifecycleCoordinatorFactory,
             jpaEntitiesRegistry,
-            mock(),
+            dbConnectionManager,
             mock()
         )
     }
 
     @Test
     fun `Starting backing store starts life cycle coordinator`() {
-        backingStoreImpl.start()
-        Mockito.verify(lifecycleCoordinator, times(1)).start()
+        backingStore.start()
+        verify(lifecycleCoordinator, times(1)).start()
     }
 
     @Test
     fun `Stopping backing store stops life cycle coordinator`() {
-        backingStoreImpl.stop()
-        Mockito.verify(lifecycleCoordinator, times(1)).stop()
+        backingStore.stop()
+        verify(lifecycleCoordinator, times(1)).stop()
     }
 
     @Test
     fun `Getting running life cycle status returns life cycle running status`() {
-        backingStoreImpl.isRunning
-        Mockito.verify(lifecycleCoordinator, times(1)).isRunning
+        backingStore.isRunning
+        verify(lifecycleCoordinator, times(1)).isRunning
     }
 
     @Test
     fun `Start event starts following the statuses of the required dependencies`() {
-        backingStoreImpl.eventHandler(StartEvent(), lifecycleCoordinator)
-        Mockito.verify(lifecycleCoordinator).followStatusChangesByName(
+        backingStore.eventHandler(StartEvent(), lifecycleCoordinator)
+        verify(lifecycleCoordinator).followStatusChangesByName(
             eq(setOf(LifecycleCoordinatorName.forComponent<DbConnectionManager>()))
         )
-        Mockito.verify(dbConnectionManager, times(1)).start()
+        verify(dbConnectionManager, times(1)).start()
     }
 
     @Test
     fun `Stop event stops the required dependency`() {
-        backingStoreImpl.eventHandler(StopEvent(), lifecycleCoordinator)
-        Mockito.verify(dbConnectionManager, times(1)).stop()
+        backingStore.eventHandler(StopEvent(), lifecycleCoordinator)
+        verify(dbConnectionManager, times(1)).stop()
     }
 
     @Test
     fun `Registration status change event registers jpa entries`() {
         val lifeCycleStatus = LifecycleStatus.UP
-        backingStoreImpl.eventHandler(RegistrationStatusChangeEvent(mock(), lifeCycleStatus), lifecycleCoordinator)
+        backingStore.eventHandler(RegistrationStatusChangeEvent(mock(), lifeCycleStatus), lifecycleCoordinator)
 
-        Mockito.verify(jpaEntitiesRegistry, times(1)).register(any(), any())
-        Mockito.verify(jpaEntitiesRegistry, times(1)).get(CordaDb.Uniqueness.persistenceUnitName)
-        Mockito.verify(lifecycleCoordinator, times(1)).updateStatus(lifeCycleStatus)
+        verify(jpaEntitiesRegistry, times(1)).get(CordaDb.Uniqueness.persistenceUnitName)
+        verify(lifecycleCoordinator, times(1)).updateStatus(lifeCycleStatus)
     }
 
     @Test
     fun `Unknown life cycle event does not throw exception`() {
-        assertDoesNotThrow { backingStoreImpl.eventHandler(DummyLifecycle(), mock()) }
+        assertDoesNotThrow { backingStore.eventHandler(DummyLifecycle(), mock()) }
     }
 }
