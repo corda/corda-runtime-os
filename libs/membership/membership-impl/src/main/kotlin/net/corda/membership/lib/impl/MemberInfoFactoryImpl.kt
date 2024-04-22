@@ -96,8 +96,9 @@ class MemberInfoFactoryImpl @Activate constructor(
         }
     }
 
-    override fun createMemberInfo(memberContext: ByteArray, mgmContext: ByteArray): MemberInfo =
-        createMemberInfo(deserialize(memberContext).toSortedMap(), deserialize(mgmContext).toSortedMap())
+    override fun createMemberInfo(memberContext: ByteArray, mgmContext: ByteArray): MemberInfo {
+        return createMemberInfo(deserialize(memberContext).toSortedMap(), deserialize(mgmContext).toSortedMap())
+    }
 
     override fun createPersistentMemberInfo(
         viewOwningMember: HoldingIdentity,
@@ -169,6 +170,18 @@ class MemberInfoFactoryImpl @Activate constructor(
         )
         .setSerializedMgmContext(serialize(memberInfo.mgmProvidedContext.toAvro()).toByteBuffer())
         .build()
+
+    override fun createStaticSelfSignedMemberInfo(
+        memberInfo: MemberInfo,
+        memberSignature: CryptoSignatureWithKey,
+        memberSignatureSpec: CryptoSignatureSpec
+    ) = SelfSignedMemberInfoImpl(
+        serialize(memberInfo.memberProvidedContext.toAvro()),
+        serialize(memberInfo.mgmProvidedContext.toAvro()),
+        memberSignature,
+        memberSignatureSpec,
+        this,
+    )
 
     override fun createSelfSignedMemberInfo(
         memberContext: ByteArray,

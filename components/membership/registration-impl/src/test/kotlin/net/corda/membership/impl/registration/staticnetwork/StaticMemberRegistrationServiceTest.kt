@@ -71,6 +71,7 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.UnsignedGroupParameters
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
+import net.corda.membership.lib.impl.SelfSignedMemberInfoImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.membership.lib.notary.MemberNotaryDetails
@@ -124,7 +125,6 @@ import org.mockito.kotlin.spy
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.lang.StringBuilder
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.PublicKey
@@ -270,6 +270,7 @@ class StaticMemberRegistrationServiceTest {
         on { persistGroupParameters(any(), any()) } doReturn SuccessOperation(mockSignedGroupParameters)
         on { persistRegistrationRequest(any(), any()) } doReturn persistRegistrationRequestOperation
         on { updateStaticNetworkInfo(any()) } doAnswer { SuccessOperation(it.getArgument(0)) }
+        on { persistMemberInfo(any(), any()) } doReturn mock()
     }
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
         on { serialize(any()) } doReturn byteArrayOf(1, 2, 3)
@@ -386,9 +387,23 @@ class StaticMemberRegistrationServiceTest {
     inner class SuccessfulRegistrationTests {
         @Test
         fun `during registration, the registering static member inside the GroupPolicy file gets parsed and published`() {
+            val memberInfoToPersist = mock<SelfSignedMemberInfoImpl>()
+            doReturn(memberInfoToPersist)
+                .`when`(memberInfoFactory)
+                .createStaticSelfSignedMemberInfo(any(), any(), any())
+            whenever(persistenceClient.persistMemberInfo(eq(alice), eq(listOf(memberInfoToPersist)))).thenReturn(
+                mock()
+            )
+            whenever(persistenceClient.persistMemberInfo(eq(bob), eq(listOf(memberInfoToPersist)))).thenReturn(
+                mock()
+            )
+            whenever(persistenceClient.persistMemberInfo(eq(charlie), eq(listOf(memberInfoToPersist)))).thenReturn(
+                mock()
+            )
             setUpPublisher()
             registrationService.start()
             val capturedMemberInfos = argumentCaptor<MemberInfo>()
+            val capturedMemberInfosToPersist = argumentCaptor<MemberInfo>()
             val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
             registrationService.register(registrationId, alice, mockContext)
             verify(mockPublisher).publish(capturedPublishedList.capture())
@@ -396,6 +411,8 @@ class StaticMemberRegistrationServiceTest {
             verify(cryptoOpsClient).generateKeyPair(any(), eq(LEDGER), any(), any(), any<Map<String, String>>())
             verify(memberInfoFactory, times(3))
                 .createMgmOrStaticPersistentMemberInfo(any(), capturedMemberInfos.capture(), any(), any())
+            verify(memberInfoFactory, times(3))
+                .createStaticSelfSignedMemberInfo(capturedMemberInfosToPersist.capture(), any(), any())
 
             (CryptoConsts.Categories.all.minus(listOf(LEDGER))).forEach {
                 verify(hsmRegistrationClient, never()).assignSoftHSM(aliceId.value, it)
@@ -409,6 +426,7 @@ class StaticMemberRegistrationServiceTest {
             }
             registrationService.stop()
 
+            assertThat(capturedMemberInfos.allValues).isEqualTo(capturedMemberInfosToPersist.allValues)
             val publishedList = capturedPublishedList.firstValue
             assertEquals(4, publishedList.size)
 
@@ -460,6 +478,9 @@ class StaticMemberRegistrationServiceTest {
         fun `during registration, distinct keys are generated for session and ledger if configured that way in the group policy`() {
             whenever(groupPolicyProvider.getGroupPolicy(eq(alice)))
                 .doReturn(groupPolicyWithStaticNetworkAndDistinctKeys)
+            doReturn(mock<SelfSignedMemberInfoImpl>())
+                .`when`(memberInfoFactory)
+                .createStaticSelfSignedMemberInfo(any(), any(), any())
             setUpPublisher()
             registrationService.start()
             registrationService.register(registrationId, alice, mockContext)
@@ -483,6 +504,9 @@ class StaticMemberRegistrationServiceTest {
 
         @Test
         fun `registration persist the status`() {
+            doReturn(mock<SelfSignedMemberInfoImpl>())
+                .`when`(memberInfoFactory)
+                .createStaticSelfSignedMemberInfo(any(), any(), any())
             val capturedRequest = argumentCaptor<RegistrationRequest>()
             whenever(
                 persistenceClient.persistRegistrationRequest(
@@ -512,6 +536,9 @@ class StaticMemberRegistrationServiceTest {
             ).doReturn(SuccessOperation(mock()))
             whenever(groupPolicyProvider.getGroupPolicy(knownIdentity)).thenReturn(groupPolicyWithStaticNetwork)
             whenever(virtualNodeInfoReadService.get(knownIdentity)).thenReturn(buildTestVirtualNodeInfo(knownIdentity))
+            doReturn(mock<SelfSignedMemberInfoImpl>())
+                .`when`(memberInfoFactory)
+                .createStaticSelfSignedMemberInfo(any(), any(), any())
             setUpPublisher()
             registrationService.start()
 
@@ -529,6 +556,9 @@ class StaticMemberRegistrationServiceTest {
                     listOf(RegistrationStatus.APPROVED),
                 )
             ).doReturn(MembershipQueryResult.Success(emptyList()))
+            doReturn(mock<SelfSignedMemberInfoImpl>())
+                .`when`(memberInfoFactory)
+                .createStaticSelfSignedMemberInfo(any(), any(), any())
             setUpPublisher()
             registrationService.start()
 
@@ -539,6 +569,9 @@ class StaticMemberRegistrationServiceTest {
 
         @Test
         fun `registration pass when role is set to notary and notary service name already exists with the same name`() {
+            doReturn(mock<SelfSignedMemberInfoImpl>())
+                .`when`(memberInfoFactory)
+                .createStaticSelfSignedMemberInfo(any(), any(), any())
             setUpPublisher()
             registrationService.start()
             val context = mapOf(
@@ -574,6 +607,9 @@ class StaticMemberRegistrationServiceTest {
 
         @Test
         fun `registration successfully adds custom fields from context to member info`() {
+            doReturn(mock<SelfSignedMemberInfoImpl>())
+                .`when`(memberInfoFactory)
+                .createStaticSelfSignedMemberInfo(any(), any(), any())
             val mockContextWithCustomFields = mockContext + mapOf(
                 "$CUSTOM_KEY_PREFIX.key1" to "value1",
                 "$CUSTOM_KEY_PREFIX.key2" to "value2",
@@ -627,6 +663,25 @@ class StaticMemberRegistrationServiceTest {
             assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationId, alice, mockContext)
             }
+        }
+
+        @Test
+        fun `registration fails when publishing the member info fails`() {
+            val memberInfoToPersist = mock<SelfSignedMemberInfoImpl>()
+            doReturn(memberInfoToPersist)
+                .`when`(memberInfoFactory)
+                .createStaticSelfSignedMemberInfo(any(), any(), any())
+            val operation = mock<MembershipPersistenceOperation<Unit>> {
+                on { execute() } doReturn MembershipPersistenceResult.Failure("error")
+            }
+            whenever(persistenceClient.persistMemberInfo(any(), eq(listOf(memberInfoToPersist)))).thenReturn(operation)
+            setUpPublisher()
+            registrationService.start()
+
+            val exception = assertThrows<NotReadyMembershipRegistrationException> {
+                registrationService.register(registrationId, alice, mockContext)
+            }
+            assertThat(exception).hasMessageContaining("Persistence error happened")
         }
 
         @Test
@@ -726,9 +781,10 @@ class StaticMemberRegistrationServiceTest {
                 "corda.roles.0" to "notary",
             )
 
-            assertThrows<InvalidMembershipRegistrationException> {
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationId, alice, context)
             }
+            assertThat(exception).hasMessageContaining("Notary must have a non-empty service name.")
         }
 
         @Test
@@ -759,9 +815,10 @@ class StaticMemberRegistrationServiceTest {
             }
             whenever(groupReader.lookup()).thenReturn(listOf(mockNotaryMember))
 
-            assertThrows<InvalidMembershipRegistrationException> {
+             val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationId, alice, context)
             }
+            assertThat(exception).hasMessageContaining("already exists")
         }
 
         @Test
@@ -822,7 +879,8 @@ class StaticMemberRegistrationServiceTest {
                 registrationService.register(registrationId, alice, invalidContext)
             }
 
-            assertThat(exception).hasMessageContaining("Failed to validate the registration context")
+            assertThat(exception).hasMessageContaining("Failed to validate the registration context with the following errors:\n" +
+                    "The key: ext.aaaaaaaaaaaaaa")
         }
     }
 
@@ -839,6 +897,9 @@ class StaticMemberRegistrationServiceTest {
                 NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
                 String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1"
             )
+            doReturn(mock<SelfSignedMemberInfoImpl>())
+                .`when`(memberInfoFactory)
+                .createStaticSelfSignedMemberInfo(any(), any(), any())
 
             assertDoesNotThrow {
                 registrationService.register(registrationId, alice, context)
@@ -864,6 +925,9 @@ class StaticMemberRegistrationServiceTest {
             val capturedMemberInfos = argumentCaptor<MemberInfo>()
             val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
             whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(emptyList())
+            doReturn(mock<SelfSignedMemberInfoImpl>())
+                .`when`(memberInfoFactory)
+                .createStaticSelfSignedMemberInfo(any(), any(), any())
             setUpPublisher()
             registrationService.start()
             val context = mapOf(
@@ -911,6 +975,9 @@ class StaticMemberRegistrationServiceTest {
             val capturedMemberInfos = argumentCaptor<MemberInfo>()
             val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
             whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(emptyList())
+            doReturn(mock<SelfSignedMemberInfoImpl>())
+                .`when`(memberInfoFactory)
+                .createStaticSelfSignedMemberInfo(any(), any(), any())
             setUpPublisher()
             registrationService.start()
             val context = mapOf(
@@ -945,6 +1012,9 @@ class StaticMemberRegistrationServiceTest {
                     any()
                 )
             ).doReturn(SuccessOperation(mockSignedGroupParameters))
+            doReturn(mock<SelfSignedMemberInfoImpl>())
+                .`when`(memberInfoFactory)
+                .createStaticSelfSignedMemberInfo(any(), any(), any())
             whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithStaticNetwork)
             whenever(virtualNodeInfoReadService.get(bob)).thenReturn(buildTestVirtualNodeInfo(bob))
             setUpPublisher()
@@ -1067,6 +1137,9 @@ class StaticMemberRegistrationServiceTest {
                     }
                     FailedOperation()
                 }
+            doReturn(mock<SelfSignedMemberInfoImpl>())
+                .`when`(memberInfoFactory)
+                .createStaticSelfSignedMemberInfo(any(), any(), any())
 
             setUpPublisher()
             registrationService.start()
@@ -1100,6 +1173,9 @@ class StaticMemberRegistrationServiceTest {
                     }
                     FailedOperation()
                 }
+            doReturn(mock<SelfSignedMemberInfoImpl>())
+                .`when`(memberInfoFactory)
+                .createStaticSelfSignedMemberInfo(any(), any(), any())
 
             setUpPublisher()
             registrationService.start()
@@ -1126,6 +1202,9 @@ class StaticMemberRegistrationServiceTest {
                 .doAnswer {
                     FailedOperation()
                 }
+            doReturn(mock<SelfSignedMemberInfoImpl>())
+                .`when`(memberInfoFactory)
+                .createStaticSelfSignedMemberInfo(any(), any(), any())
 
             setUpPublisher()
             registrationService.start()

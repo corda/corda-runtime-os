@@ -516,19 +516,36 @@ class StaticMemberRegistrationService(
             )
         )
 
+        val signature = CryptoSignatureWithKey(
+            ByteBuffer.wrap(byteArrayOf()),
+            ByteBuffer.wrap(byteArrayOf()),
+        )
+        val signatureSpec = CryptoSignatureSpec("", null, null)
+
         return memberInfo to staticMemberList.map {
             val owningMemberHoldingIdentity = HoldingIdentity(MemberX500Name.parse(it.name!!), groupPolicy.groupId)
+            val memberInfoToPersist = memberInfoFactory.createStaticSelfSignedMemberInfo(
+                memberInfo,
+                signature,
+                signatureSpec,
+            )
+            val persistenceResult = persistenceClient.persistMemberInfo(
+                owningMemberHoldingIdentity,
+                listOf(memberInfoToPersist)
+            ).execute()
+            if (persistenceResult is MembershipPersistenceResult.Failure) {
+                throw CordaRuntimeException("Persistence error happened when view owner " +
+                        "${owningMemberHoldingIdentity.shortHash} persisted the information of " +
+                        "${memberInfo.holdingIdentity.shortHash}.")
+            }
             Record(
                 MEMBER_LIST_TOPIC,
                 "${owningMemberHoldingIdentity.shortHash}-$memberId",
                 memberInfoFactory.createMgmOrStaticPersistentMemberInfo(
                     owningMemberHoldingIdentity.toAvro(),
                     memberInfo,
-                    CryptoSignatureWithKey(
-                        ByteBuffer.wrap(byteArrayOf()),
-                        ByteBuffer.wrap(byteArrayOf()),
-                    ),
-                    CryptoSignatureSpec("", null, null),
+                    signature,
+                    signatureSpec,
                 )
             )
         }
