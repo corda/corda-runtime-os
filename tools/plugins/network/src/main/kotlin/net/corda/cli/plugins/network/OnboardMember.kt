@@ -1,29 +1,23 @@
 package net.corda.cli.plugins.network
 
-import net.corda.cli.plugins.common.RestClientUtils.createRestClient
-import net.corda.cli.plugins.network.enums.MemberRole
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.cli.plugins.network.utils.inferCpiName
-import net.corda.cli.plugins.packaging.CreateCpiV2
+import net.corda.crypto.core.CryptoConsts.Categories.KeyCategory
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
-import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
-import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_ID
-import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_SIGNATURE_SPEC
-import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEYS_ID
-import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
-import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_BACKCHAIN_REQUIRED
-import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
-import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_ID
-import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
-import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
-import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_SIGNATURE_SPEC
-import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
+import net.corda.sdk.data.Checksum
+import net.corda.sdk.network.MemberRole
+import net.corda.sdk.network.RegistrationRequest
+import net.corda.sdk.packaging.CpiAttributes
+import net.corda.sdk.packaging.CpiUploader
+import net.corda.sdk.packaging.CpiV2Creator
+import net.corda.sdk.rest.RestClientUtils
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.Path
+import kotlin.time.Duration.Companion.seconds
 
 @Command(
     name = "onboard-member",
@@ -91,7 +85,7 @@ class OnboardMember : Runnable, BaseOnboard() {
 
     override val cpiFileChecksum by lazy {
         if (cpiHash != null) {
-            return@lazy cpiHash!!
+            return@lazy Checksum(cpiHash!!)
         }
         if (cpbFile?.canRead() != true) {
             throw OnboardException("Please set either CPB file or CPI hash")
@@ -114,104 +108,84 @@ class OnboardMember : Runnable, BaseOnboard() {
         )
     }
 
-    private fun uploadCpb(cpbFile: File): String {
+    private fun uploadCpb(cpbFile: File): Checksum {
         val cpiName = inferCpiName(cpbFile, groupPolicyFile)
         val cpiFile = File(cpisRoot, "$cpiName.cpi")
         println("Creating and uploading CPI using CPB '${cpbFile.name}'")
-        val cpisFromCluster = createRestClient(CpiUploadRestResource::class).use { client ->
-            client.start().proxy.getAllCpis().cpis
-        }
+
+        val restClient = RestClientUtils.createRestClient(
+            CpiUploadRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        val cpisFromCluster = CpiUploader().getAllCpis(restClient = restClient, wait = waitDurationSeconds.seconds).cpis
         cpisFromCluster.firstOrNull { it.id.cpiName == cpiName && it.id.cpiVersion == CPI_VERSION }?.let {
             println("CPI already exists, using CPI ${it.id}")
-            return it.cpiFileChecksum
+            return Checksum(it.cpiFileChecksum)
         }
         if (!cpiFile.exists()) {
-            val exitCode = createCpi(cpbFile, cpiFile)
-            if (exitCode != 0) {
-                throw CordaRuntimeException("Create CPI returned non-zero exit code")
+            runCatching { createCpi(cpbFile, cpiFile) }.onFailure { e ->
+                throw CordaRuntimeException("Create CPI failed: ${e.message}", e)
             }
             println("CPI file saved as ${cpiFile.absolutePath}")
         }
         uploadSigningCertificates()
-        return uploadCpi(cpiFile.inputStream(), cpiFile.name)
+        return uploadCpi(cpiFile, cpiFile.name)
     }
 
-    private fun createCpi(cpbFile: File, cpiFile: File): Int {
+    private fun createCpi(cpbFile: File, cpiFile: File) {
         println(
             "Using the cpb file is not recommended." +
                 " It is advised to create CPI using the package create-cpi command.",
         )
         cpiFile.parentFile.mkdirs()
-        val creator = CreateCpiV2()
-        creator.cpbFileName = cpbFile.absolutePath
-        creator.groupPolicyFileName = groupPolicyFile.absolutePath
-        creator.cpiName = cpiFile.nameWithoutExtension
-        creator.cpiVersion = CPI_VERSION
-        creator.cpiUpgrade = false
-        creator.outputFileName = cpiFile.absolutePath
-        creator.signingOptions = createDefaultSingingOptions()
-        return creator.call()
+
+        CpiV2Creator.createCpi(
+            cpbFile.toPath(),
+            cpiFile.toPath(),
+            readGroupPolicy(),
+            CpiAttributes(cpiFile.nameWithoutExtension, CPI_VERSION, false),
+            createDefaultSingingOptions().asSigningOptionsSdk
+        )
+    }
+
+    private fun readGroupPolicy(): String {
+        val path = Path.of(groupPolicyFile.absolutePath)
+        require(Files.isReadable(path)) { "\"${groupPolicyFile.absolutePath}\" does not exist or is not readable" }
+        return path.toFile().readText(Charsets.UTF_8)
     }
 
     private val ledgerKeyId by lazy {
-        assignSoftHsmAndGenerateKey("LEDGER")
+        assignSoftHsmAndGenerateKey(KeyCategory.LEDGER_KEY)
     }
 
     private val notaryKeyId by lazy {
-        assignSoftHsmAndGenerateKey("NOTARY")
+        assignSoftHsmAndGenerateKey(KeyCategory.NOTARY_KEY)
     }
 
-    override val registrationContext by lazy {
-        val preAuth = preAuthToken?.let { mapOf("corda.auth.token" to it) } ?: emptyMap()
-        val roleProperty: Map<String, String> = roles.mapIndexed { index: Int, memberRole: MemberRole ->
-            "$ROLES_PREFIX.$index" to memberRole.value
-        }.toMap()
-
-        val extProperties = customProperties.filterKeys { it.startsWith("$CUSTOM_KEY_PREFIX.") }
-
-        val notaryProperties = if (roles.contains(MemberRole.NOTARY)) {
-            val notaryServiceName = customProperties[NOTARY_SERVICE_NAME]
-                ?: throw IllegalArgumentException(
-                    "When specifying a NOTARY role, " +
-                        "you also need to specify a custom property for its name under $NOTARY_SERVICE_NAME.",
-                )
-            val isBackchainRequired = customProperties[NOTARY_SERVICE_BACKCHAIN_REQUIRED] ?: true
-            val notaryProtocol = customProperties[NOTARY_SERVICE_PROTOCOL] ?: "com.r3.corda.notary.plugin.nonvalidating"
-            mapOf(
-                NOTARY_SERVICE_NAME to notaryServiceName,
-                NOTARY_SERVICE_BACKCHAIN_REQUIRED to "$isBackchainRequired",
-                NOTARY_SERVICE_PROTOCOL to notaryProtocol,
-                NOTARY_SERVICE_PROTOCOL_VERSIONS.format("0") to "1",
-                NOTARY_KEYS_ID.format("0") to notaryKeyId,
-                NOTARY_KEY_SPEC.format("0") to "SHA256withECDSA",
+    override val memberRegistrationRequest by lazy {
+        if (roles.contains(MemberRole.NOTARY)) {
+            RegistrationRequest().createNotaryRegistrationRequest(
+                preAuthToken = preAuthToken,
+                roles = roles,
+                customProperties = customProperties,
+                p2pGatewayUrls = p2pGatewayUrls,
+                sessionKey = sessionKeyId,
+                notaryKey = notaryKeyId
             )
         } else {
-            emptyMap()
-        }
-
-        val endpoints: Map<String, String> = p2pGatewayUrls
-            .flatMapIndexed { index, url ->
-                listOf(
-                    URL_KEY.format(index) to url,
-                    PROTOCOL_VERSION.format(index) to "1",
-                )
-            }
-            .toMap()
-
-        val sessionKeys = mapOf(
-            PARTY_SESSION_KEYS_ID.format(0) to sessionKeyId,
-            SESSION_KEYS_SIGNATURE_SPEC.format(0) to "SHA256withECDSA",
-        )
-        val ledgerKeys = if (roles.contains(MemberRole.NOTARY)) {
-            emptyMap()
-        } else {
-            mapOf(
-                LEDGER_KEYS_ID.format(0) to ledgerKeyId,
-                LEDGER_KEY_SIGNATURE_SPEC.format(0) to "SHA256withECDSA",
+            RegistrationRequest().createMemberRegistrationRequest(
+                preAuthToken = preAuthToken,
+                roles = roles,
+                customProperties = customProperties,
+                p2pGatewayUrls = p2pGatewayUrls,
+                sessionKey = sessionKeyId,
+                ledgerKey = ledgerKeyId
             )
         }
-
-        sessionKeys + ledgerKeys + endpoints + preAuth + roleProperty + notaryProperties + extProperties
     }
 
     override fun run() {
@@ -233,7 +207,7 @@ class OnboardMember : Runnable, BaseOnboard() {
             setupNetwork()
 
             println("Provided registration context: ")
-            println(registrationContext)
+            println(memberRegistrationRequest)
 
             register(waitForFinalStatus)
 

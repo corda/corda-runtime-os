@@ -61,7 +61,8 @@ abstract class FunctionalBaseTest : Javalin() {
                 cordaClusterURL = "$restProtocol://$restHostnameWithPort"
                 cordaRestUser = "admin"
                 cordaRestPasswd ="admin"
-                notaryVersion = "5.2.0.0-beta-1706865687074"
+                notaryVersion = "5.2.0.0-beta-1711530608468"
+                runtimeVersion = "5.2.0.0-beta-1711530608468"
                 composeFilePath = "config/combined-worker-compose.yml"
                 networkConfigFile = "config/static-network-config.json"
                 r3RootCertFile = "config/r3-ca-key.pem"
@@ -102,6 +103,13 @@ abstract class FunctionalBaseTest : Javalin() {
             """.trimIndent()
         }
         buildFile.writeText(newContent)
+    }
+
+    /**
+     * Allow tests to edit the network config file
+     */
+    fun getNetworkConfigFile() : File {
+        return File("$projectDir/config/static-network-config.json")
     }
 
     fun executeWithRunner(vararg args: String): BuildResult {

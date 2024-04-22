@@ -1,11 +1,8 @@
 package net.corda.p2p.linkmanager.outbound
 
 import net.corda.data.identity.HoldingIdentity
-import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.messaging.api.records.EventLogRecord
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.LinkOutMessage
-import net.corda.data.p2p.SessionPartitions
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
@@ -14,19 +11,24 @@ import net.corda.data.p2p.app.InboundUnauthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
 import net.corda.data.p2p.app.OutboundUnauthenticatedMessageHeader
+import net.corda.data.p2p.markers.AppMessageMarker
+import net.corda.data.p2p.markers.LinkManagerDiscardedMarker
+import net.corda.data.p2p.markers.LinkManagerProcessedMarker
+import net.corda.data.p2p.markers.LinkManagerReceivedMarker
+import net.corda.data.p2p.markers.TtlExpiredMarker
+import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import net.corda.messaging.api.records.EventLogRecord
+import net.corda.messaging.api.records.Record
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationResult
+import net.corda.p2p.linkmanager.TraceableItem
+import net.corda.p2p.linkmanager.common.MessageConverter
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
-import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
+import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueues
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.mockMembersAndGroups
-import net.corda.data.p2p.markers.AppMessageMarker
-import net.corda.data.p2p.markers.LinkManagerDiscardedMarker
-import net.corda.data.p2p.markers.LinkManagerReceivedMarker
-import net.corda.data.p2p.markers.LinkManagerProcessedMarker
-import net.corda.data.p2p.markers.TtlExpiredMarker
-import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.schema.Schemas
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.MockTimeFacilitiesProvider
@@ -37,19 +39,15 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
-import net.corda.membership.lib.exceptions.BadGroupPolicyException
-import net.corda.messaging.api.records.Record
-import net.corda.p2p.linkmanager.TraceableItem
-import net.corda.p2p.linkmanager.common.MessageConverter
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doThrow
 
 class OutboundMessageProcessorTest {
     private val myIdentity = createTestHoldingIdentity("CN=PartyA, O=Corp, L=LDN, C=GB", "Group")
@@ -61,9 +59,6 @@ class OutboundMessageProcessorTest {
     private val hostingMap = mock<LinkManagerHostingMap> {
         whenever(it.isHostedLocally(myIdentity)).thenReturn(true)
         whenever(it.isHostedLocally(localIdentity)).thenReturn(true)
-    }
-    private val assignedListener = mock<InboundAssignmentListener> {
-        on { getCurrentlyAssignedPartitions() } doReturn setOf(1)
     }
     private val mockTimeFacilitiesProvider = MockTimeFacilitiesProvider()
     private val sessionManager = mock<SessionManager>()
@@ -92,7 +87,6 @@ class OutboundMessageProcessorTest {
         hostingMap,
         membersAndGroups.second,
         membersAndGroups.first,
-        assignedListener,
         messagesPendingSession,
         mockTimeFacilitiesProvider.clock,
         messageConverter,
@@ -600,7 +594,6 @@ class OutboundMessageProcessorTest {
             hostingMap,
             groupPolicyProvider,
             membersAndGroups.first,
-            assignedListener,
             messagesPendingSession,
             mockTimeFacilitiesProvider.clock,
             messageConverter,
@@ -645,7 +638,6 @@ class OutboundMessageProcessorTest {
             hostingMap,
             groupPolicyProvider,
             membersAndGroups.first,
-            assignedListener,
             messagesPendingSession,
             mockTimeFacilitiesProvider.clock,
             messageConverter,
@@ -870,7 +862,7 @@ class OutboundMessageProcessorTest {
     }
 
     @Test
-    fun `onNext produces session init messages, a LinkManagerProcessed marker and lists of partitions if NewSessionsNeeded`() {
+    fun `onNext produces session init messages, a LinkManagerProcessed marker if NewSessionsNeeded`() {
         val firstSessionInitMessage = mock<LinkOutMessage>()
         val secondSessionInitMessage = mock<LinkOutMessage>()
         val state = SessionManager.SessionState.NewSessionsNeeded(
@@ -881,8 +873,6 @@ class OutboundMessageProcessorTest {
             sessionCounterparties
         )
         setupSessionManager(state)
-        val inboundSubscribedTopics = setOf(1, 5, 9)
-        whenever(assignedListener.getCurrentlyAssignedPartitions()).doReturn(inboundSubscribedTopics)
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
                 remoteIdentity.toAvro(),
@@ -897,25 +887,12 @@ class OutboundMessageProcessorTest {
         val records = processor.onNext(messages)
 
         assertSoftly { softly ->
-            softly.assertThat(records).hasSize(2 * state.messages.size + messages.size)
+            softly.assertThat(records).hasSize(state.messages.size + messages.size)
             softly.assertThat(records)
                 .filteredOn { it.topic == Schemas.P2P.LINK_OUT_TOPIC }
                 .hasSize(state.messages.size)
                 .extracting<LinkOutMessage> { it.value as LinkOutMessage }
                 .containsExactlyInAnyOrderElementsOf(listOf(firstSessionInitMessage, secondSessionInitMessage))
-            softly.assertThat(records).filteredOn { it.topic == Schemas.P2P.SESSION_OUT_PARTITIONS }
-                .hasSize(state.messages.size)
-                .extracting<SessionPartitions> { it.value as SessionPartitions }
-                .allSatisfy {
-                    assertThat(it.partitions.toIntArray())
-                        .isEqualTo(inboundSubscribedTopics.toIntArray())
-                }
-            softly.assertThat(records).filteredOn { it.topic == Schemas.P2P.SESSION_OUT_PARTITIONS }
-                .hasSize(state.messages.size)
-                .extracting<String> { it.key }.containsExactlyInAnyOrder(
-                    "session-id",
-                    "another-session-id"
-                )
             softly.assertThat(records).filteredOn { it.topic == Schemas.P2P.P2P_OUT_MARKERS }
                 .hasSize(messages.size)
                 .allSatisfy { assertThat(it.key).isEqualTo("message-id") }
@@ -937,8 +914,6 @@ class OutboundMessageProcessorTest {
                 sessionCounterparties
             )
         )
-        val inboundSubscribedTopics = setOf(1, 5, 9)
-        whenever(assignedListener.getCurrentlyAssignedPartitions()).doReturn(inboundSubscribedTopics)
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
                 remoteIdentity.toAvro(),
@@ -952,13 +927,10 @@ class OutboundMessageProcessorTest {
         val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
 
         assertSoftly { softly ->
-            softly.assertThat(records).hasSize(4)
+            softly.assertThat(records).hasSize(2)
             softly.assertThat(records).filteredOn { it.topic == Schemas.P2P.LINK_OUT_TOPIC }.hasSize(2)
                 .extracting<LinkOutMessage> { it.value as LinkOutMessage }
                 .containsExactlyInAnyOrderElementsOf(listOf(firstSessionInitMessage, secondSessionInitMessage))
-            softly.assertThat(records).filteredOn { it.topic == Schemas.P2P.SESSION_OUT_PARTITIONS }.hasSize(2)
-                .extracting<SessionPartitions> { it.value as SessionPartitions }
-                .allSatisfy { assertThat(it.partitions.toIntArray()).isEqualTo(inboundSubscribedTopics.toIntArray()) }
         }
     }
 
@@ -975,8 +947,6 @@ class OutboundMessageProcessorTest {
                 sessionCounterparties
             )
         )
-        val inboundSubscribedTopics = setOf(1, 5, 9)
-        whenever(assignedListener.getCurrentlyAssignedPartitions()).doReturn(inboundSubscribedTopics)
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
                 remoteIdentity.toAvro(),
@@ -1152,7 +1122,7 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `onNext produces only a LinkManagerProcessedMarker if CannotEstablishSession`() {
-        setupSessionManager(SessionManager.SessionState.CannotEstablishSession)
+        setupSessionManager(SessionManager.SessionState.CannotEstablishSession(""))
         val messages = listOf(
             EventLogRecord(
                 Schemas.P2P.P2P_OUT_TOPIC,
@@ -1184,7 +1154,7 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `processReplayedAuthenticatedMessage doesn't queue messages when CannotEstablishSession`() {
-        setupSessionManager(SessionManager.SessionState.CannotEstablishSession)
+        setupSessionManager(SessionManager.SessionState.CannotEstablishSession(""))
         val records = processor.processReplayedAuthenticatedMessage(
             AuthenticatedMessageAndKey(
                 AuthenticatedMessage(

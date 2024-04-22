@@ -1,20 +1,20 @@
 package net.corda.libs.configuration.endpoints.v1
 
-import net.corda.rest.RestResource
-import net.corda.rest.annotations.HttpGET
-import net.corda.rest.annotations.HttpPUT
-import net.corda.rest.annotations.RestPathParameter
-import net.corda.rest.annotations.ClientRequestBodyParameter
-import net.corda.rest.annotations.HttpRestResource
-import net.corda.rest.exception.ResourceNotFoundException
-import net.corda.rest.response.ResponseEntity
 import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
+import net.corda.rest.RestResource
+import net.corda.rest.annotations.ClientRequestBodyParameter
+import net.corda.rest.annotations.HttpGET
+import net.corda.rest.annotations.HttpPUT
+import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.annotations.RestPathParameter
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.response.ResponseEntity
 
 /** Rest operations for cluster configuration management. */
 @HttpRestResource(
-    name = "Configuration API",
+    name = "Configuration",
     description = "The Configuration API consists of a number of endpoints used to manage the configuration of Corda clusters.",
     path = "config"
 )

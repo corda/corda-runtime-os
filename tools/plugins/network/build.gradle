@@ -30,14 +30,18 @@ dependencies {
     implementation libs.pf4j
     kapt libs.pf4j
 
-    implementation project(":tools:plugins:package")
-    implementation project(':tools:plugins:plugins-rest')
     implementation project(':components:membership:membership-rest')
+    implementation project(':libs:configuration:configuration-endpoints')
+    implementation project(':libs:corda-sdk')
+    implementation project(':libs:membership:membership-common')
+    implementation project(':libs:rest:json-serialization')
     implementation project(':libs:virtual-node:cpi-upload-endpoints')
     implementation project(':libs:virtual-node:virtual-node-endpoints')
     implementation project(':libs:virtual-node:virtual-node-info')
-    implementation project(':libs:configuration:configuration-endpoints')
-    implementation project(':libs:membership:membership-common')
+    implementation 'net.corda:corda-config-schema'
+    implementation project(":tools:plugins:package")
+    implementation project(':tools:plugins:plugins-rest')
+    implementation project(':tools:plugins:common-utils')
 
     testImplementation libs.bundles.test
     testImplementation "net.corda.cli.host:api:$pluginHostVersion"

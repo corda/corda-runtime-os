@@ -503,6 +503,15 @@ class RestServerOpenApiTest : RestServerTestBase() {
     }
 
     @Test
+    fun `GET swagger UI with trailing slash in path should return html with reference to swagger json without trailing slash`() {
+        val apiSpec = client.call(GET, WebRequest<Any>("swagger/"))
+        assertEquals(HttpStatus.SC_OK, apiSpec.responseStatus)
+        assertEquals("text/html", apiSpec.headers["Content-Type"])
+        val expected = """url: "/${context.basePath}/${apiVersion.versionPath}/swagger.json""""
+        assertTrue(apiSpec.body!!.contains(expected))
+    }
+
+    @Test
     fun `GET swagger UI dependencies should return non empty result`() {
         val baseClient = TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${server.port}/")
         val swaggerUIversion = OptionalDependency.SWAGGERUI.version

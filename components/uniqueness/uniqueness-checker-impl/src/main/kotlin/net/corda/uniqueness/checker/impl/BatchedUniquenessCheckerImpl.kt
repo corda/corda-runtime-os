@@ -344,25 +344,17 @@ class BatchedUniquenessCheckerImpl(
                         }
                         // Input state conflict check
                         inputStateConflicts.isNotEmpty() -> {
+                            val conflicts = inputStateConflicts.map { stateDetailsCache[it]!! }
                             log.info("Request for transaction ${request.txId} failed due to conflicting " +
-                                    "input states $inputStateConflicts")
-                            handleRejectedRequest(
-                                request,
-                                UniquenessCheckErrorInputStateConflictImpl(
-                                    inputStateConflicts.map { stateDetailsCache[it]!! }
-                                )
-                            )
+                                    "input states $conflicts")
+                            handleRejectedRequest(request, UniquenessCheckErrorInputStateConflictImpl(conflicts))
                         }
                         // Reference state conflict check
                         referenceStateConflicts.isNotEmpty() -> {
+                            val conflicts = referenceStateConflicts.map { stateDetailsCache[it]!! }
                             log.info("Request for transaction ${request.txId} failed due to conflicting " +
-                                    "reference states $referenceStateConflicts")
-                            handleRejectedRequest(
-                                request,
-                                UniquenessCheckErrorReferenceStateConflictImpl(
-                                    referenceStateConflicts.map { stateDetailsCache[it]!! }
-                                )
-                            )
+                                    "reference states $conflicts")
+                            handleRejectedRequest(request, UniquenessCheckErrorReferenceStateConflictImpl(conflicts))
                         }
                         // Time window check
                         !isTimeWindowValid(

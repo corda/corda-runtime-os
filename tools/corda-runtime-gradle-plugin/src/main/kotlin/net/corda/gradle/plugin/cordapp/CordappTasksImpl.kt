@@ -1,10 +1,21 @@
+@file:Suppress("DEPRECATION")
+// used for CertificatesRestResource
+
 package net.corda.gradle.plugin.cordapp
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.data.certificates.CertificateUsage
 import net.corda.gradle.plugin.configuration.ProjectContext
 import net.corda.gradle.plugin.dtos.GroupPolicyDTO
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
+import net.corda.membership.rest.v1.CertificatesRestResource
+import net.corda.sdk.network.ClientCertificates
+import net.corda.sdk.packaging.KeyStoreHelper
+import net.corda.sdk.rest.RestClientUtils
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
+import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
+import net.corda.v5.base.types.MemberX500Name
 import java.io.File
 import java.io.FileInputStream
 
@@ -17,19 +28,14 @@ class CordappTasksImpl(var pc: ProjectContext) {
         val groupPolicyFile = File(pc.groupPolicyFilePath)
         val networkConfigFile = File("${pc.project.rootDir}${pc.networkConfig.configFilePath}")
 
-        val pluginsDir = "${pc.cordaCliBinDir}/plugins/"
-
         if (!groupPolicyFile.exists() || groupPolicyFile.lastModified() < networkConfigFile.lastModified()) {
 
             pc.logger.quiet("Creating the Group policy.")
-            val configX500Ids = pc.networkConfig.x500Names
+            val configX500Names = pc.networkConfig.x500Names.filterNotNull().map { MemberX500Name.parse(it) }
 
             GroupPolicyHelper().createStaticGroupPolicy(
                 groupPolicyFile,
-                configX500Ids,
-                pc.javaBinDir,
-                pluginsDir,
-                pc.cordaCliBinDir
+                configX500Names,
             )
         } else {
             pc.logger.quiet("Group policy up to date.")
@@ -45,12 +51,7 @@ class CordappTasksImpl(var pc: ProjectContext) {
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             mapper.readValue(fis, GroupPolicyDTO::class.java)
         } catch (e: Exception) {
-            val firstLine = groupPolicyFile.useLines { it.firstOrNull() }
-            if ((firstLine != null) && firstLine.contains("Unable to access jarfile \\S*corda-cli.jar".toRegex())) {
-                throw CordaRuntimeGradlePluginException("Unable to find the Corda CLI, has it been installed?")
-            }
-
-            throw CordaRuntimeGradlePluginException("Failed to read GroupPolicy from group policy file with exception: $e.")
+            throw CordaRuntimeGradlePluginException("Failed to read GroupPolicy from group policy file with exception: $e.", e)
         }
         validateGroupPolicyHasAllMembers(groupPolicy)
     }
@@ -80,34 +81,31 @@ class CordappTasksImpl(var pc: ProjectContext) {
         val keystoreFile = File(pc.keystoreFilePath)
         if (!keystoreFile.exists()) {
             pc.logger.quiet("Creating a keystore and signing certificate.")
-            KeyStoreHelper().generateKeyPair(
-                pc.javaBinDir,
-                pc.keystoreAlias,
-                pc.keystorePassword,
-                pc.keystoreFilePath
+            KeyStoreHelper().generateKeyStore(
+                keyStoreFile = keystoreFile,
+                alias = pc.keystoreAlias,
+                password = pc.keystorePassword
             )
-
             pc.logger.quiet("Importing default gradle certificate")
-            KeyStoreHelper().importKeystoreCert(
-                pc.javaBinDir,
-                pc.keystorePassword,
-                pc.keystoreFilePath,
-                pc.gradleDefaultCertAlias,
-                pc.gradleDefaultCertFilePath
+            KeyStoreHelper().importCertificateIntoKeyStore(
+                keyStoreFile = keystoreFile,
+                keyStorePassword = pc.keystorePassword,
+                certificateInputStream = File(pc.gradleDefaultCertFilePath).inputStream(),
+                certificateAlias = pc.gradleDefaultCertAlias
             )
             pc.logger.quiet("Importing R3 signing certificate")
-            KeyStoreHelper().importKeystoreCert(
-                pc.javaBinDir,
-                pc.keystorePassword,
-                pc.keystoreFilePath,
-                pc.r3RootCertKeyAlias,
-                pc.r3RootCertFile
+            KeyStoreHelper().importCertificateIntoKeyStore(
+                keyStoreFile = keystoreFile,
+                keyStorePassword = pc.keystorePassword,
+                certificateInputStream = File(pc.r3RootCertFile).inputStream(),
+                certificateAlias = pc.r3RootCertKeyAlias
             )
-            KeyStoreHelper().exportCert(
-                pc.javaBinDir,
-                pc.keystoreAlias,
-                pc.keystoreFilePath,
-                pc.keystoreCertFilePath
+
+            KeyStoreHelper().exportCertificateFromKeyStore(
+                keyStoreFile = keystoreFile,
+                keyStorePassword = pc.keystorePassword,
+                certificateAlias = pc.keystoreAlias,
+                exportedCertFile = File(pc.keystoreCertFilePath)
             )
         } else {
             pc.logger.quiet("Keystore and signing certificate already created.")
@@ -120,8 +118,6 @@ class CordappTasksImpl(var pc: ProjectContext) {
     fun buildCPIs() {
         pc.logger.quiet("Creating ${pc.corDappCpiName} CPI.")
         BuildCpiHelper().createCPI(
-            pc.javaBinDir,
-            pc.cordaCliBinDir,
             pc.groupPolicyFilePath,
             pc.keystoreFilePath,
             pc.keystoreAlias,
@@ -131,15 +127,19 @@ class CordappTasksImpl(var pc: ProjectContext) {
             pc.corDappCpiName,
             pc.project.version.toString()
         )
+
         pc.logger.quiet("Creating ${pc.notaryCpiName} CPI.")
+        val notaryCpb = if (pc.isNotaryNonValidating) {
+            pc.nonValidatingNotaryCpbFilePath
+        } else {
+            pc.contractVerifyingNotaryCpbFilePath
+        }
         BuildCpiHelper().createCPI(
-            pc.javaBinDir,
-            pc.cordaCliBinDir,
             pc.groupPolicyFilePath,
             pc.keystoreFilePath,
             pc.keystoreAlias,
             pc.keystorePassword,
-            pc.notaryCpbFilePath,
+            notaryCpb,
             pc.notaryCpiFilePath,
             pc.notaryCpiName,
             pc.project.version.toString()
@@ -151,51 +151,74 @@ class CordappTasksImpl(var pc: ProjectContext) {
      */
     fun deployCPIs() {
         val helper = DeployCpiHelper()
-        helper.uploadCertificate(
-            pc.cordaClusterURL,
-            pc.cordaRestUser,
-            pc.cordaRestPassword,
-            pc.gradleDefaultCertAlias,
-            pc.gradleDefaultCertFilePath
+        val clientCertificate = ClientCertificates()
+        val certificateRestClient = RestClientUtils.createRestClient(
+            CertificatesRestResource::class,
+            insecure = true,
+            username = pc.cordaRestUser,
+            password = pc.cordaRestPassword,
+            targetUrl = pc.cordaClusterURL
+        )
+        clientCertificate.uploadCertificate(
+            restClient = certificateRestClient,
+            certificate = File(pc.gradleDefaultCertFilePath).inputStream(),
+            usage = CertificateUsage.CODE_SIGNER,
+            alias = pc.gradleDefaultCertAlias
         )
         pc.logger.quiet("Certificate '${pc.gradleDefaultCertAlias}' uploaded.")
-        helper.uploadCertificate(
-            pc.cordaClusterURL,
-            pc.cordaRestUser,
-            pc.cordaRestPassword,
-            pc.keystoreAlias,
-            pc.keystoreCertFilePath
+
+        clientCertificate.uploadCertificate(
+            restClient = certificateRestClient,
+            certificate = File(pc.keystoreCertFilePath).inputStream(),
+            usage = CertificateUsage.CODE_SIGNER,
+            alias = pc.keystoreAlias
         )
         pc.logger.quiet("Certificate '${pc.keystoreAlias}' uploaded.")
-        helper.uploadCertificate(
-            pc.cordaClusterURL,
-            pc.cordaRestUser,
-            pc.cordaRestPassword,
-            pc.r3RootCertKeyAlias,
-            pc.r3RootCertFile
+
+        clientCertificate.uploadCertificate(
+            restClient = certificateRestClient,
+            certificate = File(pc.r3RootCertFile).inputStream(),
+            usage = CertificateUsage.CODE_SIGNER,
+            alias = pc.r3RootCertKeyAlias
         )
         pc.logger.quiet("Certificate '${pc.r3RootCertKeyAlias}' uploaded.")
-        val cpiUploadStatus = helper.uploadCpi(
-            pc.cordaClusterURL,
-            pc.cordaRestUser,
-            pc.cordaRestPassword,
+        certificateRestClient.close()
+
+        val uploaderRestClient = RestClientUtils.createRestClient(
+            CpiUploadRestResource::class,
+            insecure = true,
+            username = pc.cordaRestUser,
+            password = pc.cordaRestPassword,
+            targetUrl = pc.cordaClusterURL
+        )
+        val forceUploaderRestClient = RestClientUtils.createRestClient(
+            VirtualNodeMaintenanceRestResource::class,
+            insecure = true,
+            username = pc.cordaRestUser,
+            password = pc.cordaRestPassword,
+            targetUrl = pc.cordaClusterURL
+        )
+        val cpiChecksum = helper.uploadCpi(
+            uploaderRestClient,
+            forceUploaderRestClient,
             pc.corDappCpiFilePath,
             pc.corDappCpiName,
             pc.project.version.toString(),
-            pc.corDappCpiUploadStatusFilePath,
+            pc.corDappCpiChecksumFilePath,
             pc.cpiUploadTimeout
         )
-        pc.logger.quiet("CPI ${pc.corDappCpiName} uploaded: ${cpiUploadStatus.cpiFileChecksum}")
-        val notaryUploadStatus = helper.uploadCpi(
-            pc.cordaClusterURL,
-            pc.cordaRestUser,
-            pc.cordaRestPassword,
+        pc.logger.quiet("CPI ${pc.corDappCpiName} uploaded: ${cpiChecksum.value}")
+        val notaryChecksum = helper.uploadCpi(
+            uploaderRestClient,
+            forceUploaderRestClient,
             pc.notaryCpiFilePath,
             pc.notaryCpiName,
             pc.project.version.toString(),
-            pc.notaryCpiUploadStatusFilePath,
+            pc.notaryCpiChecksumFilePath,
             pc.cpiUploadTimeout
         )
-        pc.logger.quiet("CPI ${pc.notaryCpiName} uploaded: ${notaryUploadStatus.cpiFileChecksum}")
+        pc.logger.quiet("CPI ${pc.notaryCpiName} uploaded: ${notaryChecksum.value}")
+        uploaderRestClient.close()
+        forceUploaderRestClient.close()
     }
 }

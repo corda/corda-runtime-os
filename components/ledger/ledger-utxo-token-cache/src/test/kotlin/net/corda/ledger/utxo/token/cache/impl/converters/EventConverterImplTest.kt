@@ -13,6 +13,7 @@ import net.corda.ledger.utxo.token.cache.entities.ForceClaimRelease
 import net.corda.ledger.utxo.token.cache.entities.LedgerChange
 import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY
 import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
+import net.corda.v5.ledger.utxo.token.selection.Strategy
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatIllegalStateException
 import org.junit.jupiter.api.BeforeEach
@@ -25,7 +26,7 @@ import java.math.BigDecimal
 class EventConverterImplTest {
 
     private val entityConverter = mock<EntityConverter>()
-    private val claimQuery = ClaimQuery("", "", BigDecimal(0), "", "", POOL_KEY)
+    private val claimQuery = ClaimQuery("", "", BigDecimal(0), "", "", POOL_KEY, Strategy.RANDOM)
     private val claimRelease = ClaimRelease("", "", "", setOf(), POOL_KEY)
     private val forceClaimRelease = ForceClaimRelease("", POOL_KEY)
     private val ledgerChange = LedgerChange(POOL_KEY, "", "", "", listOf(), listOf())

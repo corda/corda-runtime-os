@@ -58,7 +58,7 @@ import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
-@Suppress("LongParameterList", "TooManyFunctions")
+@Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
 class UtxoPersistenceServiceImpl(
     private val entityManagerFactory: EntityManagerFactory,
     private val repository: UtxoRepository,
@@ -125,19 +125,12 @@ class UtxoPersistenceServiceImpl(
 
         return entityManagerFactory.transaction { em ->
             txIdToIndexesMap.keys.forEach { transactionId ->
-
-                require(txIdToFilteredTxAndSignature.containsKey(transactionId)) { "transaction Id $transactionId is not found." }
-
                 val signedTransactionContainer = findSignedTransaction(transactionId.toString(), TransactionStatus.VERIFIED, em).first
                 val wireTransaction = signedTransactionContainer?.wireTransaction
                 val signatures = signedTransactionContainer?.signatures ?: emptyList()
-                val indexesOfTxId = requireNotNull(txIdToIndexesMap[transactionId])
+                val indexesOfTxId = txIdToIndexesMap[transactionId]!!
 
                 if (wireTransaction != null) {
-                    if (wireTransaction.id != transactionId) {
-                        return@forEach
-                    }
-
                     /** filter wire transaction that is equivalent to:
                      * var filteredTxBuilder = filteredTransactionBuilder
                      *   .withTimeWindow()
@@ -302,6 +295,7 @@ class UtxoPersistenceServiceImpl(
 
         val transactionSignatures = transaction.signatures.mapIndexed { index, signature ->
             UtxoRepository.TransactionSignature(
+                transactionIdString,
                 index,
                 serializationService.serialize(signature).bytes,
                 signature.by
@@ -418,7 +412,6 @@ class UtxoPersistenceServiceImpl(
             // Insert the Transactions signatures
             repository.persistTransactionSignatures(
                 em,
-                transactionIdString,
                 transactionSignatures,
                 nowUtc
             )
@@ -431,6 +424,7 @@ class UtxoPersistenceServiceImpl(
         val transactionSignatures = signatures.mapIndexed { index, bytes ->
             val signature = serializationService.deserialize<DigitalSignatureAndMetadata>(bytes)
             UtxoRepository.TransactionSignature(
+                id,
                 startingIndex + index,
                 serializationService.serialize(signature).bytes,
                 signature.by
@@ -440,7 +434,6 @@ class UtxoPersistenceServiceImpl(
         entityManagerFactory.transaction { em ->
             repository.persistTransactionSignatures(
                 em,
-                id,
                 transactionSignatures,
                 utcClock.instant()
             )
@@ -518,120 +511,180 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
+    @Suppress("LongMethod")
     override fun persistFilteredTransactions(
         filteredTransactionsAndSignatures: Map<FilteredTransaction, List<DigitalSignatureAndMetadata>>,
+        inputStateRefs: List<StateRef>,
+        referenceStateRefs: List<StateRef>,
         account: String
     ) {
         entityManagerFactory.transaction { em ->
-            filteredTransactionsAndSignatures.forEach { (filteredTransaction, signatures) ->
 
-                val nowUtc = utcClock.instant()
+            val seenMetadata = mutableSetOf<SecureHash>()
+            val transactionsToSkip = findFilteredTransactionsToSkipPersisting(em, inputStateRefs, referenceStateRefs)
 
-                // 1. Get the metadata bytes from the 0th component group merkle proof and create the hash
-                val metadataBytes = filteredTransaction.filteredComponentGroups[0]
-                    ?.merkleProof
-                    ?.leaves
-                    ?.get(0)
-                    ?.leafData
-
-                requireNotNull(metadataBytes) {
-                    "Could not find metadata in the filtered transaction with id: ${filteredTransaction.id}"
+            val filteredTransactionsToPersist = filteredTransactionsAndSignatures
+                .filterNot { (filteredTransaction, _) -> filteredTransaction.id in transactionsToSkip }
+                .map { (filteredTransaction, signatures) ->
+                    val metadataHash = persistTransactionMetadataIfNotAlreadySeen(em, filteredTransaction, seenMetadata)
+                    createFilteredTransactionToPersist(filteredTransaction, signatures, account, metadataHash)
                 }
 
-                val metadata = filteredTransaction.metadata as TransactionMetadataInternal
+            val nowUtc = utcClock.instant()
 
-                val metadataHash = sandboxDigestService.hash(
-                    metadataBytes,
-                    DigestAlgorithmName.SHA2_256
-                ).toString()
+            // If the same id of UNVERIFIED or DRAFT stx exists, leaving the status as it is.
+            repository.persistFilteredTransactions(
+                em,
+                filteredTransactionsToPersist.map { it.filteredTransaction },
+                nowUtc
+            )
 
-                // 2. Persist the transaction metadata
-                repository.persistTransactionMetadata(
-                    em,
-                    metadataHash,
-                    metadataBytes,
-                    requireNotNull(metadata.getMembershipGroupParametersHash()) {
-                        "Metadata without membership group parameters hash"
-                    },
-                    requireNotNull(metadata.getCpiMetadata()) {
-                        "Metadata without CPI metadata"
-                    }.fileChecksum
-                )
+            repository.persistTransactionSignatures(
+                em,
+                filteredTransactionsToPersist.flatMap { it.signatures },
+                nowUtc
+            )
 
-                // 3. Persist the transaction itself to the utxo_transaction table
-                // if the same id of UNVERIFIED or DRAFT stx exists, leaving the status as it is.
-                repository.persistFilteredTransaction(
-                    em,
-                    filteredTransaction.id.toString(),
-                    filteredTransaction.privacySalt.bytes,
-                    account,
-                    nowUtc,
-                    metadataHash,
-                )
+            // No need to persist the leaf data for the top level merkle proof as we can reconstruct that
+            val topLevelProofs = filteredTransactionsToPersist.map(FilteredTransactionToPersist::topLevelProof)
+            val componentGroupProofs = filteredTransactionsToPersist
+                .flatMap(FilteredTransactionToPersist::componentGroupProofs)
+                .map(TransactionMerkleProofToPersist::proof)
 
-                // 4. Persist the signatures
-                repository.persistTransactionSignatures(
-                    em,
-                    filteredTransaction.id.toString(),
-                    signatures.mapIndexed { index, signature ->
-                        UtxoRepository.TransactionSignature(
-                            index,
-                            serializationService.serialize(signature).bytes,
-                            signature.by
-                        )
-                    },
-                    nowUtc
-                )
+            repository.persistMerkleProofs(em, topLevelProofs + componentGroupProofs)
 
-                val topLevelTransactionMerkleProof = createTransactionMerkleProof(
-                    filteredTransaction.id.toString(),
-                    TOP_LEVEL_MERKLE_PROOF_GROUP_INDEX,
-                    filteredTransaction.topLevelMerkleProof.treeSize,
-                    filteredTransaction.topLevelMerkleProof.leaves.map { it.index },
-                    filteredTransaction.topLevelMerkleProof.hashes.map { it.toString() }
-                )
+            repository.persistMerkleProofLeaves(
+                em,
+                filteredTransactionsToPersist
+                    .flatMap(FilteredTransactionToPersist::componentGroupProofs)
+                    .flatMap(TransactionMerkleProofToPersist::leaves)
+            )
 
-                val componentGroupTransactionMerkleProofs = filteredTransaction.filteredComponentGroups.map { (groupIndex, groupData) ->
-                    val proof = createTransactionMerkleProof(
-                        filteredTransaction.id.toString(),
-                        groupIndex,
-                        groupData.merkleProof.treeSize,
-                        groupData.merkleProof.leaves.map { it.index },
-                        groupData.merkleProof.hashes.map { it.toString() }
-                    )
-                    val leaves = groupData.merkleProof.leaves.map { leaf ->
-                        UtxoRepository.TransactionMerkleProofLeaf(
-                            proof.merkleProofId,
-                            leaf.index
-                        )
-                    }
-                    val components = groupData.merkleProof.leaves.map { leaf ->
-                        UtxoRepository.TransactionComponent(
-                            filteredTransaction.id.toString(),
-                            groupIndex,
-                            leaf.index,
-                            leaf.leafData
-                        )
-                    }
-                    TransactionMerkleProofToPersist(proof, leaves, components)
-                }
+            repository.persistTransactionComponents(
+                em,
+                filteredTransactionsToPersist
+                    .flatMap(FilteredTransactionToPersist::componentGroupProofs)
+                    .flatMap(TransactionMerkleProofToPersist::components),
+                this::hash
+            )
+        }
+    }
 
-                // 6. Persist the top level and component group merkle proofs
-                // No need to persist the leaf data for the top level merkle proof as we can reconstruct that
-                repository.persistMerkleProofs(
-                    em,
-                    listOf(topLevelTransactionMerkleProof) + componentGroupTransactionMerkleProofs.map { it.proof }
-                )
+    private fun findFilteredTransactionsToSkipPersisting(
+        em: EntityManager,
+        inputStateRefs: List<StateRef>,
+        referenceStateRefs: List<StateRef>
+    ): Set<SecureHash> {
+        return if (referenceStateRefs.isNotEmpty()) {
+            val existingReferenceStates = repository.stateRefsExist(em, referenceStateRefs).map { (transactionId, index) ->
+                StateRef(digestService.parseSecureHash(transactionId), index)
+            }
+            val missingReferenceStates = referenceStateRefs - existingReferenceStates.toSet()
+            val missingReferenceStateTransactions = missingReferenceStates.distinctTransactionIds()
+            val existingReferenceStateTransactions = existingReferenceStates.distinctTransactionIds()
+            val inputStateTransactions = inputStateRefs.distinctTransactionIds()
 
-                // 7. Persist the leaf data for each component group
-                repository.persistMerkleProofLeaves(em, componentGroupTransactionMerkleProofs.map { it.leaves }.flatten())
-                repository.persistTransactionComponents(
-                    em,
-                    componentGroupTransactionMerkleProofs.map { it.components }.flatten(),
-                    this::hash
+            existingReferenceStateTransactions - (missingReferenceStateTransactions + inputStateTransactions)
+        } else {
+            emptySet()
+        }
+    }
+
+    private fun persistTransactionMetadataIfNotAlreadySeen(
+        em: EntityManager,
+        filteredTransaction: FilteredTransaction,
+        seenMetadata: MutableSet<SecureHash>
+    ): SecureHash {
+        // 1. Get the metadata bytes from the 0th component group merkle proof and create the hash
+        val metadataBytes = filteredTransaction.filteredComponentGroups[0]
+            ?.merkleProof
+            ?.leaves
+            ?.get(0)
+            ?.leafData
+
+        requireNotNull(metadataBytes) {
+            "Could not find metadata in the filtered transaction with id: ${filteredTransaction.id}"
+        }
+
+        val metadata = filteredTransaction.metadata as TransactionMetadataInternal
+        val metadataHash = sandboxDigestService.hash(metadataBytes, DigestAlgorithmName.SHA2_256)
+
+        if (seenMetadata.add(metadataHash)) {
+            repository.persistTransactionMetadata(
+                em,
+                metadataHash.toString(),
+                metadataBytes,
+                requireNotNull(metadata.getMembershipGroupParametersHash()) {
+                    "Metadata without membership group parameters hash"
+                },
+                requireNotNull(metadata.getCpiMetadata()) {
+                    "Metadata without CPI metadata"
+                }.fileChecksum
+            )
+        }
+        return metadataHash
+    }
+
+    private fun createFilteredTransactionToPersist(
+        filteredTransaction: FilteredTransaction,
+        signatures: List<DigitalSignatureAndMetadata>,
+        account: String,
+        metadataHash: SecureHash
+    ): FilteredTransactionToPersist {
+        val filteredTransactionId = filteredTransaction.id.toString()
+        val transactionSignatures = signatures.mapIndexed { index, signature ->
+            UtxoRepository.TransactionSignature(
+                filteredTransactionId,
+                index,
+                serializationService.serialize(signature).bytes,
+                signature.by
+            )
+        }
+
+        val topLevelTransactionMerkleProof = createTransactionMerkleProof(
+            filteredTransactionId,
+            TOP_LEVEL_MERKLE_PROOF_GROUP_INDEX,
+            filteredTransaction.topLevelMerkleProof.treeSize,
+            filteredTransaction.topLevelMerkleProof.leaves.map { it.index },
+            filteredTransaction.topLevelMerkleProof.hashes.map { it.toString() }
+        )
+
+        val componentGroupTransactionMerkleProofs = filteredTransaction.filteredComponentGroups.map { (groupIndex, groupData) ->
+            val proof = createTransactionMerkleProof(
+                filteredTransactionId,
+                groupIndex,
+                groupData.merkleProof.treeSize,
+                groupData.merkleProof.leaves.map { it.index },
+                groupData.merkleProof.hashes.map { it.toString() }
+            )
+            val leaves = groupData.merkleProof.leaves.map { leaf ->
+                UtxoRepository.TransactionMerkleProofLeaf(
+                    proof.merkleProofId,
+                    leaf.index
                 )
             }
+            val components = groupData.merkleProof.leaves.map { leaf ->
+                UtxoRepository.TransactionComponent(
+                    filteredTransactionId,
+                    groupIndex,
+                    leaf.index,
+                    leaf.leafData
+                )
+            }
+            TransactionMerkleProofToPersist(proof, leaves, components)
         }
+
+        return FilteredTransactionToPersist(
+            UtxoRepository.FilteredTransaction(
+                filteredTransactionId,
+                filteredTransaction.privacySalt.bytes,
+                account,
+                metadataHash.toString()
+            ),
+            topLevelTransactionMerkleProof,
+            componentGroupTransactionMerkleProofs,
+            transactionSignatures
+        )
     }
 
     @VisibleForTesting
@@ -803,6 +856,17 @@ class UtxoPersistenceServiceImpl(
             leafHashes
         )
     }
+
+    private fun List<StateRef>.distinctTransactionIds(): Set<SecureHash> {
+        return map { stateRef -> stateRef.transactionId }.toSet()
+    }
+
+    private data class FilteredTransactionToPersist(
+        val filteredTransaction: UtxoRepository.FilteredTransaction,
+        val topLevelProof: UtxoRepository.TransactionMerkleProof,
+        val componentGroupProofs: List<TransactionMerkleProofToPersist>,
+        val signatures: List<UtxoRepository.TransactionSignature>
+    )
 
     private data class TransactionMerkleProofToPersist(
         val proof: UtxoRepository.TransactionMerkleProof,

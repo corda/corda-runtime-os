@@ -1,5 +1,6 @@
 package net.corda.p2p.fake.ca
 
+import net.corda.crypto.test.certificates.generation.CertificateAuthority
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.p2p.fake.ca.Ca.Companion.CA_NAME
 import net.corda.utilities.crypto.publicKeyFactory
@@ -38,6 +39,12 @@ class CreateCertificate : Runnable {
     )
     private var publicKeyFile: File? = null
 
+    @Option(
+        names = ["-i", "--intermediate-cas-count"],
+        description = ["Number of intermediate CAs"],
+    )
+    private var intermediateCasCount: Int = 0
+
     @ParentCommand
     private lateinit var ca: Ca
 
@@ -52,16 +59,19 @@ class CreateCertificate : Runnable {
         val dir = File(ca.home, actualName).also {
             it.mkdirs()
         }
+        val authority = (1..intermediateCasCount).fold(ca.authority) { authority: CertificateAuthority, _ ->
+            authority.createIntermediateCertificateAuthority()
+        }
 
         val certificate = if (publicKeyFile == null) {
-            val keysAndCertificate = ca.authority.generateKeyAndCertificates(dnsNames)
+            val keysAndCertificate = authority.generateKeyAndCertificates(dnsNames)
             File(dir, "keys.pem").also {
                 it.writeText(keysAndCertificate.privateKey.toPem())
                 println("Wrote keys to $it")
             }
-            keysAndCertificate.certificates.first()
+            keysAndCertificate.certificates
         } else {
-            ca.authority.generateCertificates(dnsNames, readPemPublicKey(publicKeyFile!!)).first()
+            authority.generateCertificates(dnsNames, readPemPublicKey(publicKeyFile!!))
         }
 
         // Save the authority because the serial number had changed.

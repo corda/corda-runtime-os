@@ -4,10 +4,8 @@ import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.core.parseSecureHash
+import net.corda.flow.application.services.FlowCheckpointService
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.fiber.FlowFiber
-import net.corda.flow.fiber.FlowFiberExecutionContext
-import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
@@ -103,9 +101,7 @@ class UtxoLedgerPersistenceServiceImplTest {
     private val virtualNodeContext = mock<VirtualNodeContext>()
     private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
     private val stateAndRefCache = mock<StateAndRefCache>()
-    private val flowFiberService = mock<FlowFiberService>()
-    private val flowFiber = mock<FlowFiber>()
-    private val flowFiberExecutionContext = mock<FlowFiberExecutionContext>()
+    private val flowCheckpointService = mock<FlowCheckpointService>()
     private val flowCheckpoint = mock<FlowCheckpoint>()
 
     private val notaryServiceKey = mock<CompositeKey>()
@@ -130,7 +126,7 @@ class UtxoLedgerPersistenceServiceImplTest {
             utxoFilteredTransactionFactory,
             notarySignatureVerificationService,
             stateAndRefCache,
-            flowFiberService
+            flowCheckpointService
         )
 
         whenever(serializationService.serialize(any<Any>())).thenReturn(serializedBytes)
@@ -146,9 +142,7 @@ class UtxoLedgerPersistenceServiceImplTest {
         whenever(currentSandboxGroupContext.get()).thenReturn(sandbox)
         whenever(stateAndRefCache.putAll(any())).doAnswer {}
 
-        whenever(flowFiberService.getExecutingFiber()).thenReturn(flowFiber)
-        whenever(flowFiber.getExecutionContext()).thenReturn(flowFiberExecutionContext)
-        whenever(flowFiberExecutionContext.flowCheckpoint).thenReturn(flowCheckpoint)
+        whenever(flowCheckpointService.getCheckpoint()).thenReturn(flowCheckpoint)
 
         // Composite key containing both of the notary VNode keys
         whenever(notaryServiceKey.leafKeys).thenReturn(setOf(publicKeyNotaryVNode1, publicKeyNotaryVNode2))
@@ -239,7 +233,9 @@ class UtxoLedgerPersistenceServiceImplTest {
         val signature = listOf(mock<DigitalSignatureAndMetadata>())
 
         utxoLedgerPersistenceService.persistFilteredTransactionsAndSignatures(
-            listOf(UtxoFilteredTransactionAndSignaturesImpl(filteredTransaction, signature))
+            listOf(UtxoFilteredTransactionAndSignaturesImpl(filteredTransaction, signature)),
+            emptyList(),
+            emptyList()
         )
 
         verify(serializationService).serialize(any<Any>())

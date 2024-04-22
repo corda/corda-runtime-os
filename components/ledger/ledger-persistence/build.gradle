@@ -58,7 +58,6 @@ dependencies {
     implementation 'org.slf4j:slf4j-api'
     implementation "org.hibernate:hibernate-core:$hibernateVersion"
 
-    testImplementation project(':libs:ledger:ledger-utxo-data')
     testImplementation project(':testing:db-testkit')
     testImplementation project(':testing:persistence-testkit')
 

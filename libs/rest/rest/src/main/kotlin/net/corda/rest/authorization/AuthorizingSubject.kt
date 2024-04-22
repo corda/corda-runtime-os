@@ -1,5 +1,7 @@
 package net.corda.rest.authorization
 
+import net.corda.data.rest.PasswordExpiryStatus
+
 /**
  * Provides permission checking for the subject identified by the given [principal].
  */
@@ -9,6 +11,8 @@ interface AuthorizingSubject {
      * Identity of underlying subject
      */
     val principal: String
+
+    val expiryStatus: PasswordExpiryStatus
 
     /**
      * Determines if the underlying subject is entitled to perform a certain action,

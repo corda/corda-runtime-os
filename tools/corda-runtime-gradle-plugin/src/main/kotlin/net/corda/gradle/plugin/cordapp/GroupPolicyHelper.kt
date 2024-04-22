@@ -1,41 +1,30 @@
 package net.corda.gradle.plugin.cordapp
 
+import net.corda.gradle.plugin.cordapp.PrintHelper.writeGroupPolicyToFile
+import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
+import net.corda.sdk.network.GenerateStaticGroupPolicy
+import net.corda.v5.base.types.MemberX500Name
 import java.io.File
 
 class GroupPolicyHelper {
+    companion object {
+        private val groupPolicyGenerator = GenerateStaticGroupPolicy()
 
-    fun createStaticGroupPolicy(
-        targetPolicyFile: File,
-        x500Names: List<String?>,
-        javaBinDir: String,
-        pluginsDir: String,
-        cordaCliBinDir: String
-    ) {
-        val cmdList = mutableListOf(
-            "$javaBinDir/java",
-            "-Dpf4j.pluginsDir=$pluginsDir",
-            "-jar",
-            "$cordaCliBinDir/corda-cli.jar",
-            "mgm",
-            "groupPolicy",
-            "--endpoint-protocol=1",
-            "--endpoint=http://localhost:1080"
-        )
+        private const val ENDPOINT_URL = "http://localhost:1080"
+        private const val ENDPOINT_PROTOCOL = 1
+    }
 
-        for (id in x500Names) {
-            cmdList.add("--name")
-            cmdList.add(id!!)
-        }
-
-        val pb = ProcessBuilder(cmdList)
-        pb.redirectErrorStream(true)
-        val proc = pb.start()
-
-        proc.inputStream.use { input ->
-            targetPolicyFile.outputStream().use {
-                    output ->
-                input.copyTo(output)
-            }
+    fun createStaticGroupPolicy(targetPolicyFile: File, x500Names: List<MemberX500Name>) {
+        try {
+            val members = groupPolicyGenerator.createMembersListFromListOfX500Names(
+                x500Names,
+                ENDPOINT_URL,
+                ENDPOINT_PROTOCOL,
+            )
+            val groupPolicy = groupPolicyGenerator.generateStaticGroupPolicy(members)
+            writeGroupPolicyToFile(targetPolicyFile, groupPolicy)
+        } catch (e: Exception) {
+            throw CordaRuntimeGradlePluginException("Unable to create group policy: ${e.message}", e)
         }
     }
 }

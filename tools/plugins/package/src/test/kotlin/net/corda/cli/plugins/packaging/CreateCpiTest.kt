@@ -246,7 +246,7 @@ class CreateCpiTest {
 Usage: create-cpi [-hV] [-c=<cpbFileName>] --cpi-name=<cpiName>
                   --cpi-version=<cpiVersion> [-f=<outputFileName>]
                   -g=<groupPolicyFileName> -k=<keyAlias> -p=<keyStorePass>
-                  -s=<keyStoreFileName> [--sig-file=<_sigFile>] [-t=<tsaUrl>]
+                  -s=<keyStoreFileName> [--sig-file=<sigFile>] [-t=<tsaUrl>]
                   [--upgrade=<cpiUpgrade>]
 Creates a CPI v2 from a CPB and GroupPolicy.json file.
   -c, --cpb=<cpbFileName>    CPB file to convert into CPI
@@ -266,7 +266,7 @@ Creates a CPI v2 from a CPB and GroupPolicy.json file.
                              Keystore password
   -s, --keystore=<keyStoreFileName>
                              Keystore holding signing keys
-      --sig-file=<_sigFile>  Base file name for signature related files
+      --sig-file=<sigFile>   Base file name for signature related files
   -t, --tsa=<tsaUrl>         Time Stamping Authority (TSA) URL
       --upgrade=<cpiUpgrade> Allow upgrade without flow draining
   -V, --version              Print version information and exit.

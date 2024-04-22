@@ -19,12 +19,15 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.client.CouldNotFindEntityException
 import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
+import net.corda.membership.client.ServiceNotReadyException
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
 import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.deserializeContext
+import net.corda.membership.lib.exceptions.ConflictPersistenceException
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.exceptions.NotFoundEntityPersistenceException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.verifiers.GroupParametersUpdateVerifier
 import net.corda.membership.rest.v1.MGMRestResource
@@ -42,9 +45,11 @@ import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.InvalidStateChangeException
+import net.corda.rest.exception.ResourceAlreadyExistsException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.utilities.time.Clock
@@ -498,16 +503,12 @@ class MGMRestResourceImpl internal constructor(
             remarks: String?
         ): PreAuthToken {
             val tokenId = parsePreAuthTokenId(preAuthTokenId)
-            return try {
-                handleCommonErrors(holdingIdentityShortHash) {
-                    mgmResourceClient.revokePreAuthToken(
-                        it,
-                        tokenId,
-                        remarks
-                    ).fromAvro()
-                }
-            } catch (e: MembershipPersistenceException) {
-                throw ResourceNotFoundException("${e.message}")
+            return handleCommonErrors(holdingIdentityShortHash) {
+                mgmResourceClient.revokePreAuthToken(
+                    it,
+                    tokenId,
+                    remarks
+                ).fromAvro()
             }
         }
 
@@ -527,16 +528,12 @@ class MGMRestResourceImpl internal constructor(
             ruleType: ApprovalRuleType
         ): ApprovalRuleInfo {
             validateRegex(ruleInfo.ruleRegex)
-            return try {
-                handleCommonErrors(holdingIdentityShortHash) {
-                    mgmResourceClient.addApprovalRule(
-                        it,
-                        ApprovalRuleParams(ruleInfo.ruleRegex, ruleType, ruleInfo.ruleLabel)
-                    )
-                }.toHttpType()
-            } catch (e: MembershipPersistenceException) {
-                throw BadRequestException("${e.message}")
-            }
+            return handleCommonErrors(holdingIdentityShortHash) {
+                mgmResourceClient.addApprovalRule(
+                    it,
+                    ApprovalRuleParams(ruleInfo.ruleRegex, ruleType, ruleInfo.ruleLabel)
+                )
+            }.toHttpType()
         }
 
         override fun getGroupApprovalRules(
@@ -581,7 +578,10 @@ class MGMRestResourceImpl internal constructor(
                     )
                 }.map { it.toRest() }
             } catch (e: ContextDeserializationException) {
-                throw InternalServerException("${e.message}")
+                throw InternalServerException(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
+                )
             }
         }
 
@@ -598,10 +598,11 @@ class MGMRestResourceImpl internal constructor(
                         true
                     )
                 }
-            } catch (e: IllegalArgumentException) {
-                throw BadRequestException("${e.message}")
             } catch (e: ContextDeserializationException) {
-                throw InternalServerException("${e.message}")
+                throw InternalServerException(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
+                )
             }
         }
 
@@ -611,17 +612,13 @@ class MGMRestResourceImpl internal constructor(
             reason: ManualDeclinationReason
         ) {
             val registrationId = parseRegistrationRequestId(requestId)
-            try {
-                handleCommonErrors(holdingIdentityShortHash) {
-                    mgmResourceClient.reviewRegistrationRequest(
-                        it,
-                        registrationId,
-                        false,
-                        reason
-                    )
-                }
-            } catch (e: IllegalArgumentException) {
-                throw BadRequestException("${e.message}")
+            handleCommonErrors(holdingIdentityShortHash) {
+                mgmResourceClient.reviewRegistrationRequest(
+                    it,
+                    registrationId,
+                    false,
+                    reason
+                )
             }
         }
 
@@ -636,14 +633,11 @@ class MGMRestResourceImpl internal constructor(
                         suspensionParams.reason,
                     )
                 }
-            } catch (e: IllegalArgumentException) {
-                throw BadRequestException("${e.message}")
-            } catch (e: NoSuchElementException) {
-                throw ResourceNotFoundException("${e.message}")
             } catch (e: PessimisticLockException) {
-                throw InvalidStateChangeException("${e.message}")
-            } catch (e: InvalidEntityUpdateException) {
-                throw InvalidStateChangeException("${e.message}")
+                throw InvalidStateChangeException(
+                    e::class.java.simpleName,
+                    ExceptionDetails(e::class.java.name, "${e.message}")
+                )
             }
         }
         override fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters) {
@@ -657,14 +651,11 @@ class MGMRestResourceImpl internal constructor(
                         activationParams.reason,
                     )
                 }
-            } catch (e: IllegalArgumentException) {
-                throw BadRequestException("${e.message}")
-            } catch (e: NoSuchElementException) {
-                throw ResourceNotFoundException("${e.message}")
             } catch (e: PessimisticLockException) {
-                throw InvalidStateChangeException("${e.message}")
-            } catch (e: InvalidEntityUpdateException) {
-                throw InvalidStateChangeException("${e.message}")
+                throw InvalidStateChangeException(
+                    e::class.java.simpleName,
+                    ExceptionDetails(e::class.java.name, "${e.message}")
+                )
             }
         }
 
@@ -679,7 +670,10 @@ class MGMRestResourceImpl internal constructor(
                     RestGroupParameters(mgmResourceClient.updateGroupParameters(it, newParametersMap).toMap())
                 }
             } catch (e: PessimisticLockException) {
-                throw InvalidStateChangeException("${e.message}")
+                throw InvalidStateChangeException(
+                    e::class.java.simpleName,
+                    ExceptionDetails(e.javaClass.name, "${e.message}")
+                )
             }
         }
 
@@ -723,18 +717,14 @@ class MGMRestResourceImpl internal constructor(
             holdingIdentityShortHash: String,
             ruleId: String,
             ruleType: ApprovalRuleType
-        ) = try {
-            handleCommonErrors(holdingIdentityShortHash) {
-                mgmResourceClient.deleteApprovalRule(it, ruleId, ruleType)
-            }
-        } catch (e: MembershipPersistenceException) {
-            throw ResourceNotFoundException("${e.message}")
+        ) = handleCommonErrors(holdingIdentityShortHash) {
+            mgmResourceClient.deleteApprovalRule(it, ruleId, ruleType)
         }
 
         private fun notAnMgmError(holdingIdentityShortHash: String): Nothing =
             throw InvalidInputDataException(
+                title = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
                 details = mapOf("holdingIdentityShortHash" to holdingIdentityShortHash),
-                message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
             )
 
         private fun parsePreAuthTokenId(preAuthTokenId: String): UUID {
@@ -742,8 +732,9 @@ class MGMRestResourceImpl internal constructor(
                 UUID.fromString(preAuthTokenId)
             } catch (e: IllegalArgumentException) {
                 throw InvalidInputDataException(
+                    title = "tokenId is not a valid pre auth token.",
                     details = mapOf("preAuthTokenId" to preAuthTokenId),
-                    message = "tokenId is not a valid pre auth token."
+                    exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
                 )
             }
         }
@@ -753,8 +744,9 @@ class MGMRestResourceImpl internal constructor(
                 MemberX500Name.parse(x500Name)
             } catch (e: IllegalArgumentException) {
                 throw InvalidInputDataException(
+                    title = "$keyName is not a valid X500 name",
                     details = mapOf(keyName to x500Name),
-                    message = "$keyName is not a valid X500 name: ${e.message}",
+                    exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
                 )
             }
         }
@@ -783,7 +775,13 @@ class MGMRestResourceImpl internal constructor(
             try {
                 expression.toRegex()
             } catch (e: PatternSyntaxException) {
-                throw BadRequestException("The regular expression's syntax is invalid.\n${e.message}")
+                throw BadRequestException(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(
+                        e::class.java.name,
+                        "The regular expression's syntax is invalid.\n${e.message}"
+                    )
+                )
             }
         }
 
@@ -792,7 +790,7 @@ class MGMRestResourceImpl internal constructor(
         private fun verifyMutualTlsIsRunning() {
             if (TlsType.getClusterType(configurationGetService::getSmartConfig) != TlsType.MUTUAL) {
                 throw BadRequestException(
-                    message = "This cluster is configure to use one way TLS. Mutual TLS APIs can not be called.",
+                    title = "This cluster is configure to use one way TLS. Mutual TLS APIs can not be called.",
                 )
             }
         }
@@ -800,6 +798,7 @@ class MGMRestResourceImpl internal constructor(
         /**
          * Invoke a function with handling for common exceptions across all endpoints.
          */
+        @Suppress("ThrowsCount")
         private fun <T> handleCommonErrors(
             holdingIdentityShortHash: String,
             func: (ShortHash) -> T
@@ -807,11 +806,59 @@ class MGMRestResourceImpl internal constructor(
             return try {
                 func.invoke(ShortHash.parseOrThrow(holdingIdentityShortHash))
             } catch (e: CouldNotFindEntityException) {
-                throw ResourceNotFoundException(e.entity, holdingIdentityShortHash)
+                throw ResourceNotFoundException(
+                    e.entity,
+                    holdingIdentityShortHash,
+                    ExceptionDetails(e::class.java.name, "${e.message}")
+                )
             } catch (e: MemberNotAnMgmException) {
                 notAnMgmError(holdingIdentityShortHash)
+            } catch (e: NotFoundEntityPersistenceException) {
+                throw ResourceNotFoundException(
+                    e::class.java.simpleName,
+                    ExceptionDetails(e::class.java.name, "${e.message}")
+                )
+            } catch (e: ConflictPersistenceException) {
+                throw ResourceAlreadyExistsException(
+                    e::class.java.simpleName,
+                    ExceptionDetails(e::class.java.name, "${e.message}")
+                )
             } catch (e: CordaRPCAPIPartitionException) {
-                throw ServiceUnavailableException("Could not perform operation for $holdingIdentityShortHash: Repartition Event!")
+                throw ServiceUnavailableException(
+                    e::class.java.simpleName,
+                    ExceptionDetails(
+                        e::class.java.name,
+                        "Could not perform operation for $holdingIdentityShortHash: Repartition Event!"
+                    )
+                )
+            } catch (e: NoSuchElementException) {
+                throw ResourceNotFoundException(
+                    e::class.java.simpleName,
+                    ExceptionDetails(e::class.java.name, "${e.message}")
+                )
+            } catch (e: IllegalArgumentException) {
+                throw BadRequestException(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
+                )
+            } catch (e: InvalidEntityUpdateException) {
+                throw InvalidStateChangeException(
+                    e::class.java.simpleName,
+                    ExceptionDetails(e::class.java.name, "${e.message}")
+                )
+            } catch (e: ServiceNotReadyException) {
+                throw ServiceUnavailableException(
+                    e::class.java.simpleName,
+                    ExceptionDetails(
+                        e::class.java.name,
+                        "Could not perform operation for $holdingIdentityShortHash. Service not ready."
+                    )
+                )
+            } catch (e: MembershipPersistenceException) {
+                throw InternalServerException(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
+                )
             }
         }
     }
