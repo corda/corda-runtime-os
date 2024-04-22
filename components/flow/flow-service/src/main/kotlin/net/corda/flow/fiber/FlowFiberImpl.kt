@@ -75,16 +75,16 @@ class FlowFiberImpl(
 
         try {
             setCurrentSandboxGroupContext()
-            try {
-                getExecutionContext().currentSandboxGroupContext.get()
-            } catch (e: IllegalStateException) {
-                log.warn("Cannot get SandboxGroupContext in thread ${Thread.currentThread().name}")
-            }
             // Ensure run() does not exit via any means without completing the future, in order not to indefinitely block
             // the flow event pipeline. Note that this is executed in a Quasar concurrent executor thread and Throwables are
             // consumed by that too, so if they are rethrown from here we do not get process termination or any other form
             // of critical error handling for free, only undefined behaviour.
             try {
+                try {
+                    getExecutionContext().currentSandboxGroupContext.get()
+                } catch (e: IllegalStateException) {
+                    log.warn("Cannot get SandboxGroupContext in thread ${Thread.currentThread().name}")
+                }
                 runFlow()
             } catch (e: FlowContinuationErrorException) {
                 // This exception happened because the flow fiber discovered it had failed for some already handled reason
