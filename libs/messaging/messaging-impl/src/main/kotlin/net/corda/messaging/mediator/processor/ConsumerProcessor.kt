@@ -365,6 +365,15 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         return input.key to (CompletableFuture.completedFuture(result) to persistFuture)
     }
 
+    private fun List<CordaConsumerRecord<K, E>>.priority(defaultOffset: Long = 0): Long {
+        val fromInputs = this.minOf {
+            it.headers.mapNotNull { if (it.first == FLOW_CREATED_TIMESTAMP_RECORD_HEADER) it.second.toLong() else null }
+                .firstOrNull() ?: Long.MAX_VALUE
+        }
+        return if (fromInputs != Long.MAX_VALUE) fromInputs
+        else (System.currentTimeMillis() + defaultOffset)
+    }
+
     private fun mapInputToOutput(
         input: EventProcessingInput<K, E>,
         isRetry: Boolean = false
@@ -372,16 +381,10 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val persistFuture = CompletableFuture<Unit>()
         val inputKey = input.key
         val inputRecords = input.records
-        val oldestSessionCreateTimestamp = inputRecords.minOf {
-            it.headers.mapNotNull { if (it.first == FLOW_CREATED_TIMESTAMP_RECORD_HEADER) it.second.toLong() else null }
-                .firstOrNull() ?: Long.MAX_VALUE
-        }
+        val oldestSessionCreateTimestamp = inputRecords.priority(TimeUnit.DAYS.toMillis(365))
         val future = taskManager.executeShortRunningTask(
             inputKey,
-            input.state?.metadata?.get(PRIORITY_METADATA_PROPERTY) as? Long
-                ?: if (oldestSessionCreateTimestamp != Long.MAX_VALUE) oldestSessionCreateTimestamp else (System.currentTimeMillis() + TimeUnit.DAYS.toMillis(
-                    365
-                )),
+            input.state?.metadata?.get(PRIORITY_METADATA_PROPERTY) as? Long ?: oldestSessionCreateTimestamp,
             persistFuture,
             isRetry
         ) {
@@ -599,7 +602,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 }
             }
         }
-        result.putIfAbsent(PRIORITY_METADATA_PROPERTY, System.currentTimeMillis())
+        result.putIfAbsent(PRIORITY_METADATA_PROPERTY, processedOffsets.priority())
         return Metadata(result)
     }
 

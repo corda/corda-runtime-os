@@ -52,7 +52,7 @@ class FlowMapperMessageProcessor(
         val eventType = value.payload?.javaClass?.simpleName ?: "Unknown"
 
         val flowCreatedTimeStampHeader =
-            event.headers.mapNotNull { if (it.first == "flowSessionStartTime") it.second else null }
+            event.headers.mapNotNull { if (it.first == FLOW_CREATED_TIMESTAMP_RECORD_HEADER) it.second else null }
                 .firstOrNull()?.let { FLOW_CREATED_TIMESTAMP_RECORD_HEADER to it }
 
         CordaMetrics.Metric.FlowMapperEventLag.builder()
