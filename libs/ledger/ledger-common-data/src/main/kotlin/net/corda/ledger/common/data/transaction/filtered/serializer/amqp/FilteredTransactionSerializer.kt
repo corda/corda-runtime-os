@@ -1,5 +1,6 @@
 package net.corda.ledger.common.data.transaction.filtered.serializer.amqp
 
+import net.corda.common.json.validation.JsonValidator
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.filtered.FilteredComponentGroup
@@ -28,6 +29,8 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 class FilteredTransactionSerializer @Activate constructor(
     @Reference(service = JsonMarshallingService::class, scope = PROTOTYPE_REQUIRED)
     private val jsonMarshallingService: JsonMarshallingService,
+    @Reference(service = JsonValidator::class)
+    private val jsonValidator: JsonValidator,
     @Reference(service = MerkleTreeProvider::class)
     private val merkleTreeProvider: MerkleTreeProvider
 ) : BaseProxySerializer<FilteredTransaction, FilteredTransactionProxy>(), UsedByFlow, UsedByVerification, UsedByPersistence {
@@ -53,6 +56,7 @@ class FilteredTransactionSerializer @Activate constructor(
             proxy.filteredComponentGroups,
             proxy.privacySalt,
             jsonMarshallingService,
+            jsonValidator,
             merkleTreeProvider
         )
     }

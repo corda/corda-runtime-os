@@ -3,6 +3,7 @@ package net.corda.ledger.common.data.transaction.filtered.impl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
+import net.corda.common.json.validation.JsonValidator
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.merkle.impl.IndexedMerkleLeafImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
@@ -52,6 +53,7 @@ class FilteredTransactionImplTest {
 
     private val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
     private val jsonMarshallingService = mock<JsonMarshallingService>()
+    private val jsonValidator = mock<JsonValidator>()
 
     private val merkleTreeHashDigestCaptor = argumentCaptor<MerkleTreeHashDigest>()
 
@@ -612,6 +614,7 @@ class FilteredTransactionImplTest {
             filteredComponentGroups,
             mock(),
             jsonMarshallingService,
+            jsonValidator,
             merkleTreeProvider
         )
     }
