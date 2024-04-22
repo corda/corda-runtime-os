@@ -6,8 +6,6 @@ import liquibase.database.DatabaseFactory
 import liquibase.database.jvm.JdbcConnection
 import liquibase.resource.ClassLoaderResourceAccessor
 import net.corda.cli.plugins.vnode.withPluginClassLoader
-import net.corda.db.admin.LiquibaseSchemaUpdater
-import net.corda.db.admin.impl.LiquibaseSchemaUpdaterImpl
 import net.corda.sdk.vnode.VNodeDbSchemaGenerator
 import picocli.CommandLine
 import java.io.File

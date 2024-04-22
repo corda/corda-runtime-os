@@ -74,20 +74,25 @@ class VNodeDbSchemaGenerator(
         }
     }
 
-    private fun generateSql(fileWriter: FileWriter, holdingId: String, fileAndSchema: LiquibaseFileAndSchema, jdbcConnectionParams: JdbcConnectionParams) {
+    private fun generateSql(
+        fileWriter: FileWriter,
+        holdingId: String,
+        fileAndSchema: LiquibaseFileAndSchema,
+        jdbcConnectionParams: JdbcConnectionParams
+    ) {
         val (jdbcUrl, user, password) = jdbcConnectionParams
 //        withPluginClassLoader { TODO wrap inside the run()
-            val connection = config.jdbcConnectionFactory(jdbcUrl, user, password)
-            val database = config.jdbcDatabaseFactory(connection).apply {
-                val schemaName = fileAndSchema.schemaPrefix + holdingId
-                defaultSchemaName = schemaName // our tables
-                liquibaseSchemaName = schemaName // liquibase tracking tables
-            }
+        val connection = config.jdbcConnectionFactory(jdbcUrl, user, password)
+        val database = config.jdbcDatabaseFactory(connection).apply {
+            val schemaName = fileAndSchema.schemaPrefix + holdingId
+            defaultSchemaName = schemaName // our tables
+            liquibaseSchemaName = schemaName // liquibase tracking tables
+        }
 
-            connection.use {
-                val lb = config.liquibaseFactory(fileAndSchema.filename, database)
-                liquibaseSchemaUpdater.update(lb, fileWriter)
-            }
+        connection.use {
+            val lb = config.liquibaseFactory(fileAndSchema.filename, database)
+            liquibaseSchemaUpdater.update(lb, fileWriter)
+        }
 //        }
     }
 }
