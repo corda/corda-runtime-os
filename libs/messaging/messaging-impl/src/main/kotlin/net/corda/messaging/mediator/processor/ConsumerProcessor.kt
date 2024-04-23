@@ -164,6 +164,8 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 } catch (e: Exception) {
                     log.warn("Error trying to commit produced outputs", e)
                 }
+            } else {
+                outputs = null
             }
         }
     }
