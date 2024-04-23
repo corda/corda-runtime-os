@@ -32,22 +32,6 @@ internal class OutboundLinkManager(
         commonComponents.clock,
         commonComponents.messageConverter,
     )
-    private val deliveryTracker = DeliveryTracker(
-        commonComponents,
-        messagingConfiguration,
-        sessionComponents.sessionManager,
-    ) { outboundMessageProcessor.processReplayedAuthenticatedMessage(it) }
-
-    private val subscriptionConfig = SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schemas.P2P.P2P_OUT_TOPIC)
-
-    private val outboundMessageSubscription = {
-        commonComponents.subscriptionFactory.createEventLogSubscription(
-            subscriptionConfig,
-            outboundMessageProcessor,
-            messagingConfiguration,
-            partitionAssignmentListener = null
-        )
-    }
 
     override val dominoTile = if (features.enableP2PStatefulDeliveryTracker) {
         val publisher = PublisherWithDominoLogic(
@@ -78,6 +62,23 @@ internal class OutboundLinkManager(
             ),
         )
     } else {
+        val deliveryTracker = DeliveryTracker(
+            commonComponents,
+            messagingConfiguration,
+            sessionComponents.sessionManager,
+        ) { outboundMessageProcessor.processReplayedAuthenticatedMessage(it) }
+
+        val subscriptionConfig = SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schemas.P2P.P2P_OUT_TOPIC)
+
+        val outboundMessageSubscription = {
+            commonComponents.subscriptionFactory.createEventLogSubscription(
+                subscriptionConfig,
+                outboundMessageProcessor,
+                messagingConfiguration,
+                partitionAssignmentListener = null
+            )
+        }
+
         SubscriptionDominoTile(
             commonComponents.lifecycleCoordinatorFactory,
             outboundMessageSubscription,
