@@ -210,7 +210,7 @@ internal class InboundMessageProcessor(
                 is SessionManager.SessionDirection.Outbound -> processOutboundDataMessage(sessionIdAndMessage, sessionDirection)?.let {
                     ItemWithSource(
                         InboundResponse(
-                            listOf(it),
+                            it,
                         ),
                         sessionIdAndMessage.message.source,
                     )
@@ -244,7 +244,7 @@ internal class InboundMessageProcessor(
     private fun <T: InboundMessage> processOutboundDataMessage(
         sessionIdAndMessage: SessionIdAndMessage<T>,
         sessionDirection: SessionManager.SessionDirection.Outbound
-    ): Record<*, *>?  {
+    ): List<Record<*, *>>?  {
         return if (isCommunicationAllowed(sessionDirection.counterparties)) {
             MessageConverter.extractPayload(
                 sessionDirection.session,
@@ -256,8 +256,7 @@ internal class InboundMessageProcessor(
                     is AuthenticatedMessageAck -> {
                         logger.debug { "Processing ack for message ${ack.messageId} from session $sessionIdAndMessage." }
                         sessionManager.messageAcknowledged(sessionIdAndMessage.sessionId)
-                        val record = makeMarkerForAckMessage(ack)
-                        record
+                        makeMarkerForAckMessage(ack)
                     }
                     else -> {
                         logger.warn("Received an inbound message with unexpected type for SessionId = $sessionIdAndMessage.")
@@ -370,20 +369,24 @@ internal class InboundMessageProcessor(
         }
     }
 
-    private fun makeMarkerForAckMessage(message: AuthenticatedMessageAck): Record<*, *> {
-        return if (features.enableP2PStatefulDeliveryTracker) {
-            Record(
-                LINK_ACK_IN_TOPIC,
-                message.messageId,
-                null
-            )
-        } else {
+    private fun makeMarkerForAckMessage(message: AuthenticatedMessageAck):
+            List<Record<*, *>> {
+        return listOf(
             Record(
                 Schemas.P2P.P2P_OUT_MARKERS,
                 message.messageId,
-                AppMessageMarker(LinkManagerReceivedMarker(), clock.instant().toEpochMilli())
+                AppMessageMarker(LinkManagerReceivedMarker(), clock.instant().toEpochMilli()),
             )
-
+        ) + if (features.enableP2PStatefulDeliveryTracker) {
+            listOf(
+                Record(
+                    LINK_ACK_IN_TOPIC,
+                    message.messageId,
+                    null,
+                )
+            )
+        } else {
+            emptyList()
         }
     }
 

@@ -34,6 +34,10 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.DELIVERY_TRACKER_MAX_CACHE_OFFSET_AGE
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.DELIVERY_TRACKER_MAX_NUMBER_OF_PERSISTENCE_RETRIES
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.DELIVERY_TRACKER_OUTBOUND_BATCH_PROCESSING_TIMEOUT_SECONDS
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.DELIVERY_TRACKER_STATE_PERSISTENCE_PERIOD_SECONDS
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.INBOUND_SESSIONS_CACHE_SIZE
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER
@@ -624,6 +628,22 @@ class P2PLayerEndToEndTest {
                         replayConfig.root()
                     ).root())
                 .withValue(REVOCATION_CHECK_KEY, ConfigValueFactory.fromAnyRef(RevocationCheckMode.OFF.toString()))
+                .withValue(
+                    DELIVERY_TRACKER_MAX_CACHE_OFFSET_AGE,
+                    ConfigValueFactory.fromAnyRef(Duration.ofSeconds(300)),
+                )
+                .withValue(
+                    DELIVERY_TRACKER_STATE_PERSISTENCE_PERIOD_SECONDS,
+                    ConfigValueFactory.fromAnyRef(Duration.ofSeconds(300)),
+                )
+                .withValue(
+                    DELIVERY_TRACKER_OUTBOUND_BATCH_PROCESSING_TIMEOUT_SECONDS,
+                    ConfigValueFactory.fromAnyRef(Duration.ofSeconds(300)),
+                )
+                .withValue(
+                    DELIVERY_TRACKER_MAX_NUMBER_OF_PERSISTENCE_RETRIES,
+                    ConfigValueFactory.fromAnyRef(Duration.ofSeconds(20)),
+                )
         }
         private val replayConfig by lazy {
             ConfigFactory.empty()

@@ -83,8 +83,8 @@ class PartitionStateTest {
             val partitionState = fromState(3, null)
 
             assertSoftly {
-                it.assertThat(partitionState.readRecordsFromOffset).isEqualTo(0)
-                it.assertThat(partitionState.processRecordsFromOffset).isEqualTo(0)
+                it.assertThat(partitionState.readRecordsFromOffset).isEqualTo(-1)
+                it.assertThat(partitionState.processRecordsFromOffset).isEqualTo(-1)
                 it.assertThat(partitionState.counterpartiesToMessages()).hasSize(0)
             }
         }

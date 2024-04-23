@@ -48,8 +48,8 @@ internal class PartitionState(
 
     @JsonProperty("version")
     private val savedVersion = AtomicInteger(State.VERSION_INITIAL_VALUE)
-    private val _readRecordsFromOffset = AtomicLong(0)
-    private val _processRecordsFromOffset = AtomicLong(0)
+    private val _readRecordsFromOffset = AtomicLong(-1)
+    private val _processRecordsFromOffset = AtomicLong(-1)
 
     var readRecordsFromOffset: Long
         get() { return _readRecordsFromOffset.get() }

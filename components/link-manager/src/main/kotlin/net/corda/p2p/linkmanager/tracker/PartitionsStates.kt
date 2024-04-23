@@ -42,7 +42,7 @@ internal class PartitionsStates(
         return records.groupBy {
             it.partition
         }.flatMap { (partition, records) ->
-            val processRecordsFromOffset = partitions[partition]?.processRecordsFromOffset ?: 0
+            val processRecordsFromOffset = partitions[partition]?.processRecordsFromOffset ?: -1
             records.filter {
                 it.offset > processRecordsFromOffset
             }

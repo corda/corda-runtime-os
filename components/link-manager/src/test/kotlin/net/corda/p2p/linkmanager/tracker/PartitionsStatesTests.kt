@@ -718,12 +718,12 @@ class PartitionsStatesTests {
             .anySatisfy { index, state ->
                 assertThat(index)
                     .isEqualTo(1)
-                assertThat(state.readRecordsFromOffset).isEqualTo(0)
+                assertThat(state.readRecordsFromOffset).isEqualTo(-1)
             }
             .anySatisfy { index, state ->
                 assertThat(index)
                     .isEqualTo(12)
-                assertThat(state.readRecordsFromOffset).isEqualTo(0)
+                assertThat(state.readRecordsFromOffset).isEqualTo(-1)
             }
             .anySatisfy { index, state ->
                 assertThat(index)
