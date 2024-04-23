@@ -83,7 +83,7 @@ class PlatformMigrationTest {
             }
         }
 
-        assertThrows<IllegalArgumentException> { createPlatformMigration().run() }
+        assertThrows<IllegalArgumentException> { createPlatformMigration().call() }
     }
 
     @Test
@@ -95,14 +95,17 @@ class PlatformMigrationTest {
             }
         }
 
-        createPlatformMigration().run()
+        createPlatformMigration().call()
         verifyFactoryCalls()
     }
 
     @Test
     fun `pass filenames`() {
+
+
         val sqlFilename = "my-sql-file"
-        val holdingIdFilename = "my-holding-ids-file"
+//        val holdingIdFilename = "my-holding-ids-file"
+        val holdingIdFilename = "/Users/anton.subbotin/values.yaml"
 
         whenever(mockWriterFactory.invoke(sqlFilename)).thenReturn(mockFileWriter)
         whenever(mockLineReader.invoke(eq(holdingIdFilename), any())).thenAnswer {
@@ -116,7 +119,7 @@ class PlatformMigrationTest {
         pm.outputFilename = sqlFilename
         pm.holdingIdFilename = holdingIdFilename
 
-        pm.run()
+        pm.call()
         verifyFactoryCalls()
     }
 

@@ -8,10 +8,15 @@ import liquibase.resource.ClassLoaderResourceAccessor
 import net.corda.cli.plugins.vnode.withPluginClassLoader
 import net.corda.sdk.vnode.VNodeDbSchemaGenerator
 import picocli.CommandLine
+import picocli.CommandLine.ExitCode
 import java.io.File
 import java.io.FileWriter
+import java.nio.file.Files
+import java.nio.file.Path
 import java.sql.Connection
 import java.sql.DriverManager
+import java.util.concurrent.Callable
+import kotlin.io.path.readText
 
 @CommandLine.Command(
     name = "platform-migration",
@@ -21,7 +26,7 @@ import java.sql.DriverManager
     ],
     mixinStandardHelpOptions = true
 )
-class PlatformMigration : Runnable {
+class PlatformMigration : Callable<Int> {
     @CommandLine.Option(
         names = ["--jdbc-url"],
         description = [
@@ -79,12 +84,14 @@ class PlatformMigration : Runnable {
         }
     )
 
-    override fun run() {
+    override fun call(): Int {
         val generator = VNodeDbSchemaGenerator()
         val jdbcConnectionParams = VNodeDbSchemaGenerator.JdbcConnectionParams(jdbcUrl, user, password)
 
         withPluginClassLoader { // TODO or pass the classloader to the SDK?
             generator.generateVNodeMigrationSqlFile(holdingIdFilename, outputFilename, jdbcConnectionParams)
         }
+
+        return ExitCode.OK
     }
 }
