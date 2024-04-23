@@ -61,7 +61,7 @@ snykVersion = "0.5.1"
 cyclonedxVersion = "1.8.2"
 dokkaVersion = "1.9.10"
 testLoggerVersion = "4.0.0"
-sonarVersion = "4.4.1.3373"
+sonarVersion = "5.0.0.4638"
 
 [libraries]
 apache-commons-codec = { group = "commons-codec", name = "commons-codec", version.ref = "apacheCommonsCodecVersion" }
