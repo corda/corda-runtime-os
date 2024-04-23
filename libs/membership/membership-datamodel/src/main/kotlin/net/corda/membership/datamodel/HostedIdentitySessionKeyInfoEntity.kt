@@ -14,7 +14,7 @@ import javax.persistence.Table
  * An entity representing the session key and certificate information for locally-hosted identities.
  */
 @Entity
-@Table(name = DbSchema.VNODE_SESSION_KEY_INFO)
+@Table(name = DbSchema.HOSTED_IDENTITY_SESSION_KEY_INFO)
 @IdClass(HostedIdentitySessionKeyInfoEntityId::class)
 class HostedIdentitySessionKeyInfoEntity(
     @Id

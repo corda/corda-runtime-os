@@ -11,7 +11,7 @@ import javax.persistence.Table
  * An entity representing a locally-hosted identity.
  */
 @Entity
-@Table(name = DbSchema.VNODE_HOSTED_IDENTITY)
+@Table(name = DbSchema.HOSTED_IDENTITY)
 class HostedIdentityEntity(
     @Id
     @Column(name = "holding_identity_id", nullable = false, updatable = false)
