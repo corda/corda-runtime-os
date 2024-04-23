@@ -407,7 +407,6 @@ class CryptoProcessorImpl @Activate constructor(
             messagingConfig,
             stateManager,
             cordaAvroSerializationFactory,
-            defaultUnmanagedWrappingKeyName,
             cryptoService
         )
         createSessionEncryptionSubscription(coordinator, retryingConfig, cryptoService)
@@ -468,14 +467,12 @@ class CryptoProcessorImpl @Activate constructor(
         messagingConfig: SmartConfig,
         stateManager: StateManager,
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-        defaultUnmanagedWrappingKeyName: String,
         cryptoService: CryptoService
     ) {
         val rewrapProcessor = CryptoRewrapBusProcessor(
             cryptoService,
             stateManager,
             cordaAvroSerializationFactory,
-            defaultUnmanagedWrappingKeyName,
         )
         val rewrapGroupName = "crypto.key.rotation.individual"
         coordinator.createManagedResource(REWRAP_SUBSCRIPTION) {
