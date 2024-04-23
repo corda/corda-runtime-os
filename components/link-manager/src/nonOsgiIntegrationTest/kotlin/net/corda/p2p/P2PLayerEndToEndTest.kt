@@ -298,9 +298,9 @@ class P2PLayerEndToEndTest {
     }
 
     @Test
-    @Timeout(60)
+    @Timeout(200)
     fun `two hosts can exchange data messages over p2p with ECDSA keys`() {
-        val numberOfMessages = 10
+        val numberOfMessages = 100
         val receiverId = Identity("O=Alice, L=London, C=GB", GROUP_ID, Certificates.receiverKeyStoreFile)
         val senderId = Identity("O=Chip, L=London, C=GB", GROUP_ID, Certificates.senderKeyStoreFile)
         Host(

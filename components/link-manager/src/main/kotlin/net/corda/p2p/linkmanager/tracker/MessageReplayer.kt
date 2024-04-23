@@ -17,6 +17,7 @@ internal class MessageReplayer(
         messageId: String,
         key: String,
     ) {
+        println("TTT replaying: $messageId")
         logger.debug("Replaying message '$messageId' with key: '$key'")
         val authenticatedMessage = cache.get(key)
         if (authenticatedMessage == null) {
