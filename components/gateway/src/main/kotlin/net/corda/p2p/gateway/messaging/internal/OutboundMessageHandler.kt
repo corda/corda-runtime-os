@@ -6,6 +6,8 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.NetworkType
+import net.corda.data.p2p.crypto.AuthenticatedDataMessage
+import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfig
@@ -41,6 +43,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 
 /**
  * This is an implementation of an [PubSubProcessor] used to consume messages from a P2P message subscription. The received
@@ -117,6 +120,15 @@ internal class OutboundMessageHandler(
 
             val peerMessage = event.value
             try {
+                if ((peerMessage?.payload is AuthenticatedEncryptedDataMessage) || (peerMessage?.payload is AuthenticatedDataMessage)) {
+                    println("QQQ Got data message with key: ${event.key}")
+                    if (Random.nextInt(10) == 2) {
+                        println("QQQ Dropping the message")
+                        return@withLifecycleLock CompletableFuture.completedFuture(Unit)
+                    } else {
+                        println("QQQ Not dropping the message")
+                    }
+                }
                 sendMessage(peerMessage)
             } catch (e: IllegalArgumentException) {
                 logger.warn("Can't send message to destination ${peerMessage?.header?.address}. ${e.message}")
