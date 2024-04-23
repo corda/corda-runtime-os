@@ -1,6 +1,7 @@
 package net.corda.gradle.plugin.cordapp
 
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
+import net.corda.sdk.network.MGM_GROUP_POLICY
 import net.corda.sdk.packaging.CpiAttributes
 import net.corda.sdk.packaging.CpiV2Creator
 import net.corda.sdk.packaging.signing.SigningOptions
@@ -50,4 +51,37 @@ class BuildCpiHelper {
                 if (!it.exists()) throw CordaRuntimeGradlePluginException("File not found: $it")
             }
         }
+
+    @Suppress("LongParameterList")
+    fun createMgmCpi(
+        keystoreFilePath: String,
+        keystoreAlias: String,
+        keystorePassword: String,
+        cpiFilePath: String,
+        cpiName: String,
+        cpiVersion: String,
+    ) {
+        if (Path.of(cpiFilePath).exists()) {
+            return // reuse existing file
+        }
+
+        try {
+            val (keyStoreFile) = requireFilesExist(keystoreFilePath)
+            CpiV2Creator.createCpi(
+                cpbPath = null,
+                outputFilePath = Path.of(cpiFilePath),
+                groupPolicy = MGM_GROUP_POLICY,
+                cpiAttributes = CpiAttributes(cpiName, cpiVersion),
+                signingOptions = SigningOptions(
+                    keyStoreFile,
+                    keystorePassword,
+                    keystoreAlias
+                )
+            )
+
+        } catch (e: Exception) {
+            throw CordaRuntimeGradlePluginException("Unable to create CPI: ${e.message}", e)
+        }
+
+    }
 }

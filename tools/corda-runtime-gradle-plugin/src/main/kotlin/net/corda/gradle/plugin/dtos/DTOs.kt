@@ -8,6 +8,7 @@ data class VNode(
     var serviceX500Name : String? = null,
     var flowProtocolName: String? = null,
     var backchainRequired: String? = null,
+    var mgmNode: String? = null,
 )
 
 data class GroupPolicyDTO(

@@ -18,6 +18,8 @@ const val CREATE_GROUP_POLICY_TASK_NAME = "createGroupPolicy"
 const val CREATE_KEYSTORE_TASK_NAME = "createKeystore"
 const val BUILD_CPIS_TASK_NAME = "buildCpis"
 const val DEPLOY_CPIS_TASK_NAME = "deployCpis"
+const val DEPLOY_MGMS_TASK_NAME = "deployMGM"
+const val EXTRACT_DYNAMIC_NETWORK_POLICY_TASK_NAME = "extractGroupPolicyFromMgm"
 const val WORKFLOW_BUILD_COMMAND = ":workflows:build"
 const val NOTARY_CPB_COMMAND = ":notary:cpb"
 
@@ -35,16 +37,34 @@ fun createCordappTasks(project: Project, pluginConfiguration: PluginConfiguratio
             it.pluginConfig.set(pluginConfiguration)
         }
 
+        project.tasks.create(DEPLOY_MGMS_TASK_NAME, DeployMgmCPITask::class.java) {
+            it.group = CORDAPP_BUILD_GROUP
+            it.dependsOn(CREATE_KEYSTORE_TASK_NAME)
+            it.pluginConfig.set(pluginConfiguration)
+        }
+
+        project.tasks.create(EXTRACT_DYNAMIC_NETWORK_POLICY_TASK_NAME, ExtractDynamicGroupPolicyTask::class.java) {
+            it.group = CORDAPP_BUILD_GROUP
+            it.dependsOn(DEPLOY_MGMS_TASK_NAME)
+            it.pluginConfig.set(pluginConfiguration)
+        }
+
+
         project.tasks.create(BUILD_CPIS_TASK_NAME, BuildCPIsTask::class.java) {
             it.group = CORDAPP_BUILD_GROUP
             it.dependsOn(
                 CREATE_KEYSTORE_TASK_NAME,
                 getWorkflowsModuleTaskName(pluginConfiguration)
             )
-            if (ProjectContext(project, pluginConfiguration).isNotaryNonValidating) {
+            val pc = ProjectContext(project, pluginConfiguration)
+            if (pc.isNotaryNonValidating) {
                 it.dependsOn(GET_NOTARY_SERVER_CPB_TASK_NAME)
             } else {
                 it.dependsOn(NOTARY_CPB_COMMAND.replace("notary", pluginConfiguration.notaryModuleName.get()))
+            }
+
+            if (pc.networkConfig.mgmNodeIsPresentInNetworkDefinition) {
+                it.dependsOn(EXTRACT_DYNAMIC_NETWORK_POLICY_TASK_NAME)
             }
             it.pluginConfig.set(pluginConfiguration)
         }
@@ -54,6 +74,8 @@ fun createCordappTasks(project: Project, pluginConfiguration: PluginConfiguratio
             it.dependsOn(BUILD_CPIS_TASK_NAME)
             it.pluginConfig.set(pluginConfiguration)
         }
+
+
     }
 }
 
@@ -66,7 +88,7 @@ private fun getWorkflowsModuleTaskName(pluginConfiguration: PluginConfiguration)
     return workflowsModuleTaskName
 }
 
-open class CreateGroupPolicyTask @Inject constructor(objects: ObjectFactory): DefaultTask() {
+open class CreateGroupPolicyTask @Inject constructor(objects: ObjectFactory) : DefaultTask() {
     @get:Input
     val pluginConfig: Property<PluginConfiguration> = objects.property(PluginConfiguration::class.java)
 
@@ -77,7 +99,7 @@ open class CreateGroupPolicyTask @Inject constructor(objects: ObjectFactory): De
     }
 }
 
-open class CreateKeystoreTask @Inject constructor(objects: ObjectFactory): DefaultTask() {
+open class CreateKeystoreTask @Inject constructor(objects: ObjectFactory) : DefaultTask() {
     @get:Input
     val pluginConfig: Property<PluginConfiguration> = objects.property(PluginConfiguration::class.java)
 
@@ -88,9 +110,10 @@ open class CreateKeystoreTask @Inject constructor(objects: ObjectFactory): Defau
     }
 }
 
-open class BuildCPIsTask @Inject constructor(objects: ObjectFactory): DefaultTask() {
+open class BuildCPIsTask @Inject constructor(objects: ObjectFactory) : DefaultTask() {
     @get:Input
     val pluginConfig: Property<PluginConfiguration> = objects.property(PluginConfiguration::class.java)
+
     @TaskAction
     fun buildCPIs() {
         val pc = ProjectContext(project, pluginConfig.get())
@@ -98,12 +121,35 @@ open class BuildCPIsTask @Inject constructor(objects: ObjectFactory): DefaultTas
     }
 }
 
-open class DeployCPIsTask @Inject constructor(objects: ObjectFactory): DefaultTask() {
+open class DeployCPIsTask @Inject constructor(objects: ObjectFactory) : DefaultTask() {
     @get:Input
     val pluginConfig: Property<PluginConfiguration> = objects.property(PluginConfiguration::class.java)
+
     @TaskAction
     fun deployCPIs() {
         val pc = ProjectContext(project, pluginConfig.get())
         CordappTasksImpl(pc).deployCPIs()
+    }
+}
+
+open class DeployMgmCPITask @Inject constructor(objects: ObjectFactory) : DefaultTask() {
+    @get:Input
+    val pluginConfig: Property<PluginConfiguration> = objects.property(PluginConfiguration::class.java)
+
+    @TaskAction
+    fun deployMgmCPI() {
+        val pc = ProjectContext(project, pluginConfig.get())
+        CordappTasksImpl(pc).deployMgmCpi()
+    }
+}
+
+open class ExtractDynamicGroupPolicyTask @Inject constructor(objects: ObjectFactory) : DefaultTask() {
+    @get:Input
+    val pluginConfig: Property<PluginConfiguration> = objects.property(PluginConfiguration::class.java)
+
+    @TaskAction
+    fun extractPolicyFromMgm() {
+        val pc = ProjectContext(project, pluginConfig.get())
+        CordappTasksImpl(pc).extractGroupPolicyFromMgm()
     }
 }

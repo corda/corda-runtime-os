@@ -21,18 +21,19 @@ class BuildCpiHelperTest : FunctionalBaseTest() {
     private val keyStoreFilePath = resourcesDir.resolve("signingkeys.pfx").absolutePathString()
     private val groupPolicyFilePath = resourcesDir.resolve("TestGroupPolicy.json").absolutePathString()
 
-    private val outputCpiFile =  createTempFile("test-cpi", ".cpi").also {
+    private val outputCpiFile = createTempFile("test-cpi", ".cpi").also {
         it.deleteIfExists()
         it.toFile().deleteOnExit()
     }
 
     private val keystorePassword = "keystore password"
     private val signingKeyAlias = "signing key 1"
-    private val cpiName = "test-cpi"
 
     @Test
     fun cpiIsCreated() {
         require(!outputCpiFile.exists()) { "Output CPI file should not exist" }
+
+        val cpiName = "test-cpi"
 
         assertDoesNotThrow {
             BuildCpiHelper().createCPI(
@@ -61,4 +62,29 @@ class BuildCpiHelperTest : FunctionalBaseTest() {
         generateSequence { nextJarEntry }
             .map { it.name.substringAfter("/") }
             .toList()
+
+    @Test
+    fun mgmCpiIsCreated() {
+        require(!outputCpiFile.exists()) { "Output CPI file should not exist" }
+        val cpiName = "MGM"
+
+        assertDoesNotThrow {
+            BuildCpiHelper().createMgmCpi(
+                keyStoreFilePath,
+                signingKeyAlias,
+                keystorePassword,
+                outputCpiFile.absolutePathString(),
+                cpiName,
+                "1.0"
+            )
+        }
+        assertTrue(outputCpiFile.exists())
+
+        JarInputStream(Files.newInputStream(outputCpiFile)).use { jar ->
+            assertEquals(cpiName, jar.manifest.mainAttributes[Attributes.Name("Corda-CPI-Name")])
+            val entries = jar.entryFileNames()
+            assertTrue(entries.contains("GroupPolicy.json"))
+        }
+
+    }
 }

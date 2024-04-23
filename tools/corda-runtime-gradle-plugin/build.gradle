@@ -23,9 +23,12 @@ dependencies {
     implementation libs.unirest.java
     implementation libs.unirest.objectmapper.jackson
     implementation project(':components:membership:membership-rest')
+    implementation project(':libs:crypto:certificate-generation')
+    implementation project(':libs:configuration:configuration-endpoints')
     implementation project(':libs:corda-sdk')
     implementation project(':libs:external-messaging')
     implementation project(':libs:membership:certificates-common')
+    implementation project(':libs:membership:membership-common')
     implementation project(':libs:rest:json-serialization')
     implementation project(':libs:rest:rest-client')
     implementation project(':libs:virtual-node:cpi-upload-endpoints')
@@ -33,6 +36,7 @@ dependencies {
     implementation project(':libs:virtual-node:virtual-node-endpoints-maintenance')
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-config-schema'
 
     testImplementation libs.bundles.test
     testImplementation libs.javalin

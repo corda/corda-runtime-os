@@ -11,17 +11,35 @@ import java.io.FileInputStream
  */
 class NetworkConfig(val configFilePath: String) {
 
+    companion object {
+        const val MULTIPLE_MGM_ERROR_MESSAGE = "Invalid number of MGM nodes defined, can only specify one."
+    }
+
     var vNodes: List<VNode>
 
     init {
         val mapper = ObjectMapper()
         vNodes = try {
             val fis = FileInputStream(configFilePath)
-            mapper.readValue(fis, object : TypeReference<List<VNode>>(){})
+            mapper.readValue(fis, object : TypeReference<List<VNode>>() {})
         } catch (e: Exception) {
-            throw CordaRuntimeGradlePluginException("Failed to read static network configuration file, with exception: $e")
+            throw CordaRuntimeGradlePluginException("Failed to read network configuration file, with exception: $e")
         }
     }
 
     var x500Names = vNodes.map { it.x500Name }
+
+    fun getMgmNode(): VNode? {
+        val mgmNodes = vNodes.filter { it.mgmNode.toBoolean() }
+        if (mgmNodes.size > 1) {
+            throw CordaRuntimeGradlePluginException(MULTIPLE_MGM_ERROR_MESSAGE)
+        }
+        return mgmNodes.singleOrNull()
+    }
+
+    fun getVNodesWhoAreNotMgm(): List<VNode> {
+        return vNodes.filter { it != getMgmNode() }
+    }
+
+    var mgmNodeIsPresentInNetworkDefinition: Boolean = getMgmNode() != null
 }
