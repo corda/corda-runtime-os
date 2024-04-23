@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager.tracker
 
 import net.corda.messaging.api.subscription.listener.ConsumerOffsetProvider
+import kotlin.math.max
 
 internal class DeliveryTrackerOffsetProvider(
     private val partitionStates: PartitionsStates,
@@ -11,7 +12,7 @@ internal class DeliveryTrackerOffsetProvider(
         val topic = topicPartitions.map { it.first }.firstOrNull() ?: return emptyMap()
         val partitionsIndices = topicPartitions.map { it.second }.toSet()
         return partitionStates.loadPartitions(partitionsIndices).mapValues { (_, state) ->
-            state.readRecordsFromOffset
+            max(state.readRecordsFromOffset, 0)
         }.mapKeys { (partition, _) ->
             topic to partition
         }
