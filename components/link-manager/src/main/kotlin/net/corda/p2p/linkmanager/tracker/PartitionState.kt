@@ -5,11 +5,13 @@ import com.fasterxml.jackson.core.JacksonException
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateOperationGroup
-import net.corda.messaging.api.records.EventLogRecord
+import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.virtualnode.HoldingIdentity
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
@@ -41,29 +43,42 @@ internal class PartitionState(
     }
 
     @JsonProperty("messages")
-    private val trackedMessages = ConcurrentHashMap<String, TrackedMessageState>()
+    private val trackedMessages =
+        GroupToMessages()
 
     @JsonProperty("version")
     private val savedVersion = AtomicInteger(State.VERSION_INITIAL_VALUE)
-    private val _restartOffset = AtomicLong(0)
-    private val _lastSentOffset = AtomicLong(0)
+    private val _readRecordsFromOffset = AtomicLong(0)
+    private val _processRecordsFromOffset = AtomicLong(0)
 
-    var restartOffset: Long
-        get() { return _restartOffset.get() }
-        set(l) { _restartOffset.set(l) }
-    var lastSentOffset: Long
-        get() { return _lastSentOffset.get() }
-        set(l) { _lastSentOffset.set(l) }
+    var readRecordsFromOffset: Long
+        get() { return _readRecordsFromOffset.get() }
+        set(l) { _readRecordsFromOffset.set(l) }
+    var processRecordsFromOffset: Long
+        get() { return _processRecordsFromOffset.get() }
+        set(l) { _processRecordsFromOffset.set(l) }
 
-    fun addMessage(message: TrackedMessageState) {
-        trackedMessages[message.messageId] = message
+    fun counterpartiesToMessages(): Collection<Pair<SessionManager.Counterparties, Collection<TrackedMessageState>>> {
+        return trackedMessages.flatMap { (groupId, ourNameToMessages) ->
+            ourNameToMessages.flatMap { (ourName, theirNameToMessages) ->
+                val ourId = HoldingIdentity(
+                    MemberX500Name.parse(ourName),
+                    groupId,
+                )
+                theirNameToMessages.map { (theirName, messages) ->
+                    val theirId = HoldingIdentity(
+                        MemberX500Name.parse(theirName),
+                        groupId,
+                    )
+                    val counterparties = SessionManager.Counterparties(
+                        ourId = ourId,
+                        counterpartyId = theirId,
+                    )
+                    counterparties to messages.values
+                }
+            }
+        }
     }
-
-    fun untrackMessage(messageId: String) {
-        trackedMessages.remove(messageId)
-    }
-
-    fun getTrackMessage(messageId: String): TrackedMessageState? = trackedMessages[messageId]
 
     fun addToOperationGroup(group: StateOperationGroup) {
         val value = jsonParser.writeValueAsBytes(this)
@@ -83,36 +98,50 @@ internal class PartitionState(
 
     fun read(
         now: Instant,
-        records: List<EventLogRecord<String, AppMessage>>,
-    ) {
-        val offset = records.onEach { record ->
-            val id = record.value?.id
-            if (id != null) {
-                trackedMessages[id] = TrackedMessageState(
+        records: Collection<MessageRecord>,
+    ): Collection<MessageRecord> {
+        return records.filter { record ->
+            val id = record.message.header.messageId
+            trackedMessages.getOrPut(record.message.header.source.groupId) {
+                OurNameToMessages()
+            }.getOrPut(record.message.header.source.x500Name) {
+                TheirNameToMessages()
+            }.getOrPut(record.message.header.destination.x500Name) {
+                MessageIdToMessage()
+            }.putIfAbsent(
+                id,
+                TrackedMessageState(
                     messageId = id,
                     timeStamp = now,
-                    persisted = false,
-                )
-            }
-        }.maxOfOrNull { record ->
-            record.offset
-        } ?: return
-        if (offset > lastSentOffset) {
-            lastSentOffset = offset
-        }
-    }
-    fun sent(
-        records: List<EventLogRecord<String, *>>,
-    ) {
-        val offset = records.maxOfOrNull {
-            it.offset
-        } ?: return
-        if (offset > restartOffset) {
-            restartOffset = offset
+                ),
+            ) == null
         }
     }
 
     fun saved() {
         savedVersion.incrementAndGet()
     }
+
+    fun trim() {
+        trackedMessages.entries.removeIf { (_, group) ->
+            group.entries.removeIf { (_, source) ->
+                source.entries.removeIf { (_, destination) ->
+                    destination.isEmpty()
+                }
+                source.isEmpty()
+            }
+            group.isEmpty()
+        }
+    }
+
+    fun forget(message: AuthenticatedMessage) {
+        trackedMessages[message.header.source.groupId]
+            ?.get(message.header.source.x500Name)
+            ?.get(message.header.destination.x500Name)
+            ?.remove(message.header.messageId)
+    }
 }
+private typealias MessageIdToMessage = ConcurrentHashMap<String, TrackedMessageState>
+private typealias TheirNameToMessages = ConcurrentHashMap<String, MessageIdToMessage>
+private typealias OurNameToMessages = ConcurrentHashMap<String, TheirNameToMessages>
+private typealias GroupToMessages = ConcurrentHashMap<String, OurNameToMessages>

@@ -19,6 +19,8 @@ import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerProcessedMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
+import net.corda.p2p.linkmanager.common.CommonComponents
+import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.junit.jupiter.api.AfterEach
@@ -131,34 +133,36 @@ class DeliveryTrackerTest {
         StateAndEventProcessor<String, AuthenticatedMessageDeliveryState, AppMessageMarker>,
         StateAndEventListener<String, AuthenticatedMessageDeliveryState>
     > {
-        val publisherFactory = Mockito.mock(PublisherFactory::class.java)
-
-        val subscriptionFactory = Mockito.mock(SubscriptionFactory::class.java)
+        val mockPublisherFactory = mock<PublisherFactory>()
         val mockSubscription = MockStateAndEventSubscription<String, AuthenticatedMessageDeliveryState, AppMessageMarker>()
-        Mockito.`when`(subscriptionFactory
-            .createStateAndEventSubscription<String, AuthenticatedMessageDeliveryState, AppMessageMarker>(any(), any(), any(), any()))
-            .thenReturn(mockSubscription)
+        val mockSubscriptionFactory = mock<SubscriptionFactory> {
+            on {
+                createStateAndEventSubscription<String, AuthenticatedMessageDeliveryState, AppMessageMarker>(any(), any(), any(), any())
+            } doReturn mockSubscription
+        }
+        val mockDominoTile = mock<ComplexDominoTile> {
+            on { coordinatorName } doReturn mock()
+        }
+        val mockSessionManager = mock<StatefulSessionManagerImpl> {
+            on { dominoTile } doReturn mockDominoTile
+        }
+        val commonComponents = mock<CommonComponents> {
+            on { publisherFactory } doReturn mockPublisherFactory
+            on { subscriptionFactory } doReturn mockSubscriptionFactory
+            on { lifecycleCoordinatorFactory } doReturn mock()
+        }
 
         val tracker = DeliveryTracker(
+            commonComponents,
             mock(),
-            mock(),
-            publisherFactory,
-            mock(),
-            subscriptionFactory,
-            mock {
-                val mockDominoTile = mock<ComplexDominoTile> {
-                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
-                }
-                whenever(it.dominoTile).thenReturn(mockDominoTile)
-            },
-            mock(),
+            mockSessionManager,
             ::processAuthenticatedMessage
         )
 
         val processorCaptor = argumentCaptor<StateAndEventProcessor<String, AuthenticatedMessageDeliveryState, AppMessageMarker>>()
         val listenerCaptor = argumentCaptor<StateAndEventListener<String, AuthenticatedMessageDeliveryState>>()
 
-        Mockito.verify(subscriptionFactory)
+        Mockito.verify(mockSubscriptionFactory)
             .createStateAndEventSubscription(anyOrNull(), processorCaptor.capture(), anyOrNull(), listenerCaptor.capture())
         return Triple(tracker, processorCaptor.firstValue , listenerCaptor.firstValue)
     }

@@ -40,8 +40,8 @@ internal class CommonComponents(
     membershipQueryClient: MembershipQueryClient,
     groupParametersReaderService: GroupParametersReaderService,
     internal val clock: Clock,
-    internal val schemaRegistry: AvroSchemaRegistry,
     internal val stateManager: StateManager,
+    internal val schemaRegistry: AvroSchemaRegistry,
     sessionEncryptionOpsClient: SessionEncryptionOpsClient,
 ) : LifecycleWithDominoTile {
     private companion object {

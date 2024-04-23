@@ -85,17 +85,9 @@ class LinkManager(
         commonComponents,
     )
     private val outboundLinkManager = OutboundLinkManager(
-        lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,
         commonComponents = commonComponents,
-        sessionComponents = sessionManagerCommonComponents,
-        linkManagerHostingMap = linkManagerHostingMap,
-        groupPolicyProvider = groupPolicyProvider,
-        membershipGroupReaderProvider = membershipGroupReaderProvider,
-        configurationReaderService = configurationReaderService,
-        subscriptionFactory = subscriptionFactory,
-        publisherFactory = publisherFactory,
         messagingConfiguration = messagingConfiguration,
-        clock = clock,
+        sessionComponents = sessionManagerCommonComponents,
     )
     private val inboundLinkManager = InboundLinkManager(
         lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,

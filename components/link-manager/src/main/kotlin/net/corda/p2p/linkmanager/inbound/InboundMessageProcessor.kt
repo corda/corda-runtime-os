@@ -36,6 +36,7 @@ import net.corda.p2p.linkmanager.metrics.recordInboundSessionMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
 import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl.Companion.LINK_MANAGER_SUBSYSTEM
 import net.corda.schema.Schemas
+import net.corda.schema.Schemas.P2P.LINK_ACK_IN_TOPIC
 import net.corda.tracing.traceEventProcessing
 import net.corda.utilities.Either
 import net.corda.utilities.debug
@@ -369,12 +370,21 @@ internal class InboundMessageProcessor(
         }
     }
 
-    private fun makeMarkerForAckMessage(message: AuthenticatedMessageAck): Record<String, AppMessageMarker> {
-        return Record(
-            Schemas.P2P.P2P_OUT_MARKERS,
-            message.messageId,
-            AppMessageMarker(LinkManagerReceivedMarker(), clock.instant().toEpochMilli())
-        )
+    private fun makeMarkerForAckMessage(message: AuthenticatedMessageAck): Record<*, *> {
+        return if (features.enableP2PStatefulDeliveryTracker) {
+            Record(
+                LINK_ACK_IN_TOPIC,
+                message.messageId,
+                null
+            )
+        } else {
+            Record(
+                Schemas.P2P.P2P_OUT_MARKERS,
+                message.messageId,
+                AppMessageMarker(LinkManagerReceivedMarker(), clock.instant().toEpochMilli())
+            )
+
+        }
     }
 
     private fun isCommunicationAllowed(

@@ -1,6 +1,5 @@
 package net.corda.p2p.linkmanager.delivery
 
-import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.AuthenticatedMessageDeliveryState
@@ -25,49 +24,41 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.metrics.CordaMetrics
+import net.corda.p2p.linkmanager.common.CommonComponents
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.schema.Schemas.P2P.P2P_OUT_MARKERS
 import net.corda.utilities.debug
-import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 
-@Suppress("LongParameterList")
 internal class DeliveryTracker(
-    coordinatorFactory: LifecycleCoordinatorFactory,
-    configReadService: ConfigurationReadService,
-    publisherFactory: PublisherFactory,
+    commonComponents: CommonComponents,
     messagingConfiguration: SmartConfig,
-    subscriptionFactory: SubscriptionFactory,
     sessionManager: SessionManager,
-    clock: Clock,
     processAuthenticatedMessage: (message: AuthenticatedMessageAndKey) -> List<Record<String, *>>,
-    ): LifecycleWithDominoTile {
+): LifecycleWithDominoTile {
 
     private val appMessageReplayer = AppMessageReplayer(
-        coordinatorFactory,
-        publisherFactory,
+        commonComponents.lifecycleCoordinatorFactory,
+        commonComponents.publisherFactory,
         messagingConfiguration,
         processAuthenticatedMessage
     )
     private val replayScheduler = ReplayScheduler<SessionManager.Counterparties, AuthenticatedMessageAndKey>(
-        coordinatorFactory,
-        configReadService,
+        commonComponents,
         true,
         appMessageReplayer::replayMessage,
-        clock = clock
     )
 
     private val messageTracker = MessageTracker(replayScheduler)
     private val subscriptionConfig = SubscriptionConfig("message-tracker-group", P2P_OUT_MARKERS)
     private val messageTrackerSubscription = {
-        subscriptionFactory.createStateAndEventSubscription(
+        commonComponents.subscriptionFactory.createStateAndEventSubscription(
             subscriptionConfig,
             messageTracker.processor,
             messagingConfiguration,
@@ -75,7 +66,7 @@ internal class DeliveryTracker(
         )
     }
     private val messageTrackerSubscriptionTile = StateAndEventSubscriptionDominoTile(
-        coordinatorFactory,
+        commonComponents.lifecycleCoordinatorFactory,
         messageTrackerSubscription,
         subscriptionConfig,
         setOf(
@@ -92,7 +83,9 @@ internal class DeliveryTracker(
         )
     )
 
-    override val dominoTile = ComplexDominoTile(this::class.java.simpleName, coordinatorFactory,
+    override val dominoTile = ComplexDominoTile(
+        this::class.java.simpleName,
+        commonComponents.lifecycleCoordinatorFactory,
         dependentChildren = setOf(messageTrackerSubscriptionTile.coordinatorName),
         managedChildren = setOf(messageTrackerSubscriptionTile.toNamedLifecycle())
     )

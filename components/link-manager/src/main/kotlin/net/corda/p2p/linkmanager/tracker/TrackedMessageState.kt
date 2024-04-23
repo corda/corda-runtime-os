@@ -8,6 +8,4 @@ internal data class TrackedMessageState(
     val messageId: String,
     @JsonProperty("ts")
     val timeStamp: Instant,
-    @JsonProperty("p")
-    val persisted: Boolean,
 )

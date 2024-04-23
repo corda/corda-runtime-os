@@ -6,21 +6,13 @@ import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.linkmanager.outbound.OutboundMessageProcessor
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import java.util.concurrent.CompletableFuture
 
 class DeliveryTrackerProcessorTest {
-    private val outboundMessageProcessor = mock<OutboundMessageProcessor> {}
-    private val partitionsStates = mock<PartitionsStates> {}
-    private val publisher = mock<PublisherWithDominoLogic> {}
-    private val processor = DeliveryTrackerProcessor(
-        outboundMessageProcessor,
-        partitionsStates,
-        publisher,
-    )
     private val records = listOf(
         EventLogRecord(
             topic = "topic",
@@ -37,47 +29,78 @@ class DeliveryTrackerProcessorTest {
             offset = 3003,
         ),
     )
+    private val recordsToForward = listOf(
+        EventLogRecord(
+            topic = "topic",
+            key = "key-2",
+            value = mock<AppMessage>(),
+            partition = 4,
+            offset = 104,
+        ),
+        EventLogRecord(
+            topic = "topic",
+            key = "key-3",
+            value = mock<AppMessage>(),
+            partition = 5,
+            offset = 3002,
+        ),
+    )
+    private val recordsToPublish = listOf(
+        Record(
+            topic = "topic",
+            key = "key-4",
+            value = 1000,
+        ),
+    )
+    private val outboundMessageProcessor = mock<OutboundMessageProcessor> {
+        on { onNext(any()) } doReturn recordsToPublish
+    }
+    private val future = mock<CompletableFuture<Unit>> {}
+    private val publisher = mock<PublisherWithDominoLogic> {
+        on { publish(any()) } doReturn listOf(future)
+    }
+    private val handler = mock<MessagesHandler> {
+        on { handleMessagesAndFilterRecords(any()) } doReturn recordsToForward
+    }
+
+    private val processor = DeliveryTrackerProcessor(
+        outboundMessageProcessor,
+        handler,
+        publisher,
+    )
 
     @Test
-    fun `onNext will send the messages to the outbound processor`() {
+    fun `onNext will send the messages to the handler`() {
         processor.onNext(records)
 
-        verify(outboundMessageProcessor).onNext(records)
+        verify(handler).handleMessagesAndFilterRecords(records)
     }
 
     @Test
-    fun `onNext will update the states before sending`() {
+    fun `onNext will send the messages to the processor`() {
         processor.onNext(records)
 
-        verify(partitionsStates).read(records)
+        verify(outboundMessageProcessor).onNext(recordsToForward)
     }
 
     @Test
-    fun `onNext will update the states after sending`() {
+    fun `onNext will publish the records`() {
         processor.onNext(records)
 
-        verify(partitionsStates).sent(records)
+        verify(publisher).publish(recordsToPublish)
     }
 
     @Test
-    fun `onNext will publish the records and wait publication`() {
-        val replies = listOf(
-            Record(
-                topic = "topic",
-                key = "key",
-                value = "",
-            ),
-            Record(
-                topic = "topic",
-                key = "key",
-                value = "another",
-            ),
-        )
-        val future = mock<CompletableFuture<Unit>>()
-        whenever(outboundMessageProcessor.onNext(records)).doReturn(replies)
-        whenever(publisher.publish(replies)).doReturn(listOf(future))
+    fun `onNext will wait for published records`() {
         processor.onNext(records)
 
         verify(future).join()
+    }
+
+    @Test
+    fun `onNext will notify that it handled the messages`() {
+        processor.onNext(records)
+
+        verify(handler).handled(records)
     }
 }

@@ -1,514 +1,400 @@
 package net.corda.p2p.linkmanager.tracker
 
-import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
-import net.corda.data.p2p.app.InboundUnauthenticatedMessage
-import net.corda.data.p2p.app.InboundUnauthenticatedMessageHeader
-import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
-import net.corda.data.p2p.app.OutboundUnauthenticatedMessageHeader
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateOperationGroup
-import net.corda.messaging.api.records.EventLogRecord
+import net.corda.p2p.linkmanager.sessions.SessionManager
+import net.corda.p2p.linkmanager.tracker.PartitionState.Companion.fromState
 import net.corda.p2p.linkmanager.tracker.PartitionState.Companion.stateKey
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import java.time.Instant
+import net.corda.data.identity.HoldingIdentity as AvroHoldingIdentity
 
 class PartitionStateTest {
-    @Test
-    fun `restartOffset set works as expected`() {
-        val state = PartitionState(1)
+    @Nested
+    inner class FromState {
+        @Test
+        fun `it reads the state correctly`() {
+            val json = """
+{
+    "processRecordsFromOffset": 300,
+    "readRecordsFromOffset": 204,
+    "messages": {
+        "group-2": {
+            "CN=Alice, O=Alice Corp, L=LDN, C=GB": {
+                "CN=Bob, O=Bob Corp, L=LDN, C=GB": {
+                    "id-2": {
+                        "id": "id-2",
+                        "ts": 10.231
+                    }
+                }
+            }
+        },
+        "group": {
+            "CN=Alice, O=Alice Corp, L=LDN, C=GB": {
+                "CN=Carol, O=Carol Corp, L=LDN, C=GB": {
+                    "id-3": {
+                        "id": "id-3",
+                        "ts": 10.231
+                    }
+                },
+                "CN=Bob, O=Bob Corp, L=LDN, C=GB": {
+                    "id-1": {
+                        "id": "id-1",
+                        "ts": 10.231
+                    }
+                }
+            }
+        }
+    },
+    "version": 12
+}
+    """
+            val state =
+                State(
+                    key = stateKey(1),
+                    value = json.toByteArray(),
+                )
 
-        state.restartOffset = 400
+            val partitionState = fromState(3, state)
 
-        assertThat(state.restartOffset).isEqualTo(400)
+            assertSoftly {
+                it.assertThat(partitionState.readRecordsFromOffset).isEqualTo(204)
+                it.assertThat(partitionState.processRecordsFromOffset).isEqualTo(300)
+                it.assertThat(partitionState.counterpartiesToMessages()).hasSize(3)
+            }
+        }
+
+        @Test
+        fun `it reads null state correctly`() {
+            val partitionState = fromState(3, null)
+
+            assertSoftly {
+                it.assertThat(partitionState.readRecordsFromOffset).isEqualTo(0)
+                it.assertThat(partitionState.processRecordsFromOffset).isEqualTo(0)
+                it.assertThat(partitionState.counterpartiesToMessages()).hasSize(0)
+            }
+        }
+
+        @Test
+        fun `it throws expcetion for invalid JSON`() {
+            val json = "{"
+            val state =
+                State(
+                    key = stateKey(1),
+                    value = json.toByteArray(),
+                )
+
+            assertThatThrownBy {
+                fromState(3, state)
+            }.isInstanceOf(CordaRuntimeException::class.java)
+        }
     }
 
     @Test
-    fun `lastSentOffset set works as expected`() {
+    fun `readRecordsFromOffset can be updated`() {
         val state = PartitionState(1)
 
-        state.lastSentOffset = 420
+        state.readRecordsFromOffset = 132
 
-        assertThat(state.lastSentOffset).isEqualTo(420)
+        assertThat(state.readRecordsFromOffset).isEqualTo(132)
     }
 
     @Test
-    fun `addMessage works as expected`() {
+    fun `processRecordsFromOffset can be updated`() {
         val state = PartitionState(1)
-        val message = TrackedMessageState(
-            messageId = "id",
-            timeStamp = mock(),
-            persisted = false,
+
+        state.processRecordsFromOffset = 132
+
+        assertThat(state.processRecordsFromOffset).isEqualTo(132)
+    }
+
+    @Test
+    fun `counterpartiesToMessages returns all the messages`() {
+        val state = PartitionState(1)
+        state.read(
+            Instant.ofEpochMilli(100),
+            (1..4).flatMap { i ->
+                val source = "CN=Alice-$i, O=Alice Corp, L=LDN, C=GB"
+                (1..3).flatMap { j ->
+                    val target = "CN=Bob-$j, O=Bob Corp, L=LDN, C=GB"
+                    (1..2).map { k ->
+                        MessageRecord(
+                            offset = i * 1000L + j * 100 + k,
+                            partition = 1,
+                            message = createMessage(
+                                id = "id-$i-$j-$k",
+                                group = "group-$i",
+                                from = source,
+                                to = target,
+                            ),
+                        )
+                    }
+                }
+            },
         )
 
-        state.addMessage(message)
+        val counterpartiesToMessages = state.counterpartiesToMessages()
 
-        assertThat(state.getTrackMessage("id")).isEqualTo(message)
-    }
-
-    @Test
-    fun `untrackMessage removes message from list`() {
-        val state = PartitionState(1)
-        val message = TrackedMessageState(
-            messageId = "id",
-            timeStamp = mock(),
-            persisted = false,
-        )
-        state.addMessage(message)
-
-        state.untrackMessage(message.messageId)
-
-        assertThat(state.getTrackMessage("id")).isNull()
+        assertThat(counterpartiesToMessages)
+            .anyMatch { (counterParties, messages) ->
+                counterParties == SessionManager.Counterparties(
+                    ourId = HoldingIdentity(
+                        groupId = "group-1",
+                        x500Name = MemberX500Name.parse("CN=Alice-1, O=Alice Corp, L=LDN, C=GB"),
+                    ),
+                    counterpartyId = HoldingIdentity(
+                        groupId = "group-1",
+                        x500Name = MemberX500Name.parse("CN=Bob-2, O=Bob Corp, L=LDN, C=GB"),
+                    ),
+                ) && messages.contains(
+                    TrackedMessageState(messageId = "id-1-2-1", timeStamp = Instant.ofEpochMilli(100)),
+                ) && messages.contains(
+                    TrackedMessageState(messageId = "id-1-2-2", timeStamp = Instant.ofEpochMilli(100)),
+                ) && messages.size == 2
+            }
+            .hasSize(12)
     }
 
     @Nested
-    inner class FromStateTests {
+    inner class AddToOperationGroupTest {
         @Test
-        fun `init happy path`() {
-            val json = """
-{
-    "partition": 1,
-    "restartOffset": 100000,
-    "lastSentOffset": 200000,
-    "messages": {
-        "id1": {
-            "id": "id1",
-            "ts": 10,
-            "p": true
-        }, "id2": {
-            "id": "id2",
-            "ts": 10.002,
-            "p": false
-        }
-    }
-}
-            """.trimIndent()
-            val state = State(
-                key = "",
-                value = json.toByteArray(),
-                version = 100,
+        fun `it create the correct JSON`() {
+            val state = PartitionState(1)
+            state.read(
+                Instant.ofEpochMilli(100),
+                (1..4).flatMap { i ->
+                    val source = "CN=Alice-$i, O=Alice Corp, L=LDN, C=GB"
+                    (1..3).flatMap { j ->
+                        val target = "CN=Bob-$j, O=Bob Corp, L=LDN, C=GB"
+                        (1..2).map { k ->
+                            MessageRecord(
+                                offset = i * 1000L + j * 100 + k,
+                                partition = 1,
+                                message = createMessage(
+                                    id = "id-$i-$j-$k",
+                                    group = "group-$i",
+                                    from = source,
+                                    to = target,
+                                ),
+                            )
+                        }
+                    }
+                },
             )
+            state.readRecordsFromOffset = 2003
+            state.processRecordsFromOffset = 2001
+            val captureState = argumentCaptor<State>()
+            val group = mock<StateOperationGroup> {
+                on { create(captureState.capture()) } doReturn mock
+            }
 
-            val partitionState = PartitionState.fromState(3, state)
+            state.addToOperationGroup(group)
 
-            assertSoftly {
-                it.assertThat(partitionState.restartOffset).isEqualTo(100000)
-                it.assertThat(partitionState.lastSentOffset).isEqualTo(200000)
-                it.assertThat(partitionState.getTrackMessage("id1")).isEqualTo(
-                    TrackedMessageState(
-                        messageId = "id1",
-                        timeStamp = Instant.ofEpochMilli(10000),
-                        persisted = true,
-                    ),
+            val savedState = fromState(1, captureState.firstValue)
+
+            assertSoftly { softly ->
+                softly.assertThat(savedState.readRecordsFromOffset).isEqualTo(state.readRecordsFromOffset)
+                softly.assertThat(savedState.processRecordsFromOffset).isEqualTo(state.processRecordsFromOffset)
+                softly.assertThat(
+                    savedState.counterpartiesToMessages()
+                        .toMap()
+                        .mapValues {
+                            it.value.toSet()
+                        },
                 )
-                it.assertThat(partitionState.getTrackMessage("id2")).isEqualTo(
-                    TrackedMessageState(
-                        messageId = "id2",
-                        timeStamp = Instant.ofEpochMilli(10002),
-                        persisted = false,
-                    ),
-                )
+                    .containsAllEntriesOf(
+                        state.counterpartiesToMessages()
+                            .toMap()
+                            .mapValues {
+                                it.value.toSet()
+                            },
+                    )
             }
         }
 
         @Test
-        fun `init works find for null state`() {
-            val partitionState = PartitionState.fromState(3, null)
-
-            assertSoftly {
-                it.assertThat(partitionState.restartOffset).isEqualTo(0)
-                it.assertThat(partitionState.lastSentOffset).isEqualTo(0)
-            }
-        }
-
-        @Nested
-        inner class FailedInitTests {
-            @Test
-            fun `init fails with invalid JSON`() {
-                val json = """{"restartOffset": 100000,"""
-                val state = State(
-                    key = "",
-                    value = json.toByteArray(),
-                    version = 100,
-                )
-
-                assertThrows<CordaRuntimeException> {
-                    PartitionState.fromState(3, state)
-                }
+        fun `it create a new state when needed`() {
+            val state = PartitionState(1)
+            val group = mock<StateOperationGroup> {
+                on { create(any<State>()) } doReturn mock
             }
 
-            @Test
-            fun `init fails with invalid field`() {
-                val json = """
-{
-    "partition": "1",
-}
-                """.trimIndent()
-                val state = State(
-                    key = "",
-                    value = json.toByteArray(),
-                    version = 100,
-                )
+            state.addToOperationGroup(group)
 
-                assertThrows<CordaRuntimeException> {
-                    PartitionState.fromState(3, state)
-                }
+            verify(group).create(any<State>())
+        }
+
+        @Test
+        fun `it update a state when needed`() {
+            val state = PartitionState(1)
+            state.saved()
+            val group = mock<StateOperationGroup> {
+                on { update(any<State>()) } doReturn mock
             }
+
+            state.addToOperationGroup(group)
+
+            verify(group).update(any<State>())
         }
     }
 
     @Test
-    fun `addToOperationGroup add the correct state to the created group`() {
-        val partitionState = PartitionState.fromState(
-            1,
-            null,
-        )
-        partitionState.restartOffset = 100
-        partitionState.lastSentOffset = 400
-        partitionState.addMessage(
-            TrackedMessageState(
-                messageId = "id1",
-                timeStamp = Instant.ofEpochMilli(401),
-                persisted = false,
-            ),
-        )
-        partitionState.addMessage(
-            TrackedMessageState(
-                messageId = "id2",
-                timeStamp = Instant.ofEpochMilli(402),
-                persisted = false,
-            ),
-        )
-        val state = argumentCaptor<State>()
-        val group = mock<StateOperationGroup> {
-            on { create(state.capture()) } doReturn mock
-        }
-
-        partitionState.addToOperationGroup(group)
-
-        assertSoftly {
-            it.assertThat(state.firstValue.version).isEqualTo(State.VERSION_INITIAL_VALUE)
-            it.assertThat(state.firstValue.key).isEqualTo(stateKey(1))
-            val created = PartitionState.fromState(1, state.firstValue)
-            it.assertThat(created.restartOffset).isEqualTo(partitionState.restartOffset)
-            it.assertThat(created.lastSentOffset).isEqualTo(partitionState.lastSentOffset)
-            it.assertThat(created.getTrackMessage("id1")).isEqualTo(partitionState.getTrackMessage("id1"))
-            it.assertThat(created.getTrackMessage("id2")).isEqualTo(partitionState.getTrackMessage("id2"))
-        }
-    }
-
-    @Test
-    fun `addToOperationGroup add the correct state to the updated group`() {
-        val partitionState = PartitionState.fromState(
-            1,
-            null,
-        )
-        partitionState.restartOffset = 100
-        partitionState.lastSentOffset = 400
-        partitionState.addMessage(
-            TrackedMessageState(
-                messageId = "id1",
-                timeStamp = Instant.ofEpochMilli(401),
-                persisted = false,
-            ),
-        )
-        partitionState.addMessage(
-            TrackedMessageState(
-                messageId = "id2",
-                timeStamp = Instant.ofEpochMilli(402),
-                persisted = false,
-            ),
-        )
-        val state = argumentCaptor<State>()
-        val group = mock<StateOperationGroup> {
-            on { update(state.capture()) } doReturn mock
-        }
-        partitionState.saved()
-
-        partitionState.addToOperationGroup(group)
-
-        assertSoftly {
-            it.assertThat(state.firstValue.version).isEqualTo(State.VERSION_INITIAL_VALUE + 1)
-            it.assertThat(state.firstValue.key).isEqualTo(stateKey(1))
-            val created = PartitionState.fromState(1, state.firstValue)
-            it.assertThat(created.restartOffset).isEqualTo(partitionState.restartOffset)
-            it.assertThat(created.lastSentOffset).isEqualTo(partitionState.lastSentOffset)
-            it.assertThat(created.getTrackMessage("id1")).isEqualTo(partitionState.getTrackMessage("id1"))
-            it.assertThat(created.getTrackMessage("id2")).isEqualTo(partitionState.getTrackMessage("id2"))
-        }
-    }
-
-    @Test
-    fun `read will update the offset`() {
-        val now = Instant.ofEpochMilli(1000)
-        val records = listOf(
-            EventLogRecord(
-                partition = 1,
-                offset = 200,
-                key = "",
-                value = mock<AppMessage>(),
-                topic = "",
-            ),
-            EventLogRecord(
-                partition = 1,
-                offset = 201,
-                key = "",
-                value = mock<AppMessage>(),
-                topic = "",
-            ),
-            EventLogRecord(
-                partition = 1,
-                offset = 202,
-                key = "",
-                value = mock<AppMessage>(),
-                topic = "",
-            ),
-            EventLogRecord(
-                partition = 1,
-                offset = 100,
-                key = "",
-                value = mock<AppMessage>(),
-                topic = "",
-            ),
-        )
+    fun `read return only the new messages`() {
         val state = PartitionState(1)
+        state.read(
+            Instant.ofEpochMilli(100),
+            listOf(
+                MessageRecord(
+                    offset = 3,
+                    partition = 3,
+                    message = createMessage(
+                        id = "id-3",
+                        group = "group-1",
+                        from = "CN=Alice, O=Alice Corp, L=LDN, C=GB",
+                        to = "CN=Bob, O=Bob Corp, L=LDN, C=GB",
+                    ),
+                ),
+                MessageRecord(
+                    offset = 4,
+                    partition = 4,
+                    message = createMessage(
+                        id = "id-4",
+                        group = "group-1",
+                        from = "CN=Alice, O=Alice Corp, L=LDN, C=GB",
+                        to = "CN=Bob, O=Bob Corp, L=LDN, C=GB",
+                    ),
+                ),
+            ),
+        )
 
-        state.read(now, records)
+        val newMessages = state.read(
+            Instant.ofEpochMilli(100),
+            listOf(
+                MessageRecord(
+                    offset = 1,
+                    partition = 1,
+                    message = createMessage(
+                        id = "id-1",
+                        group = "group-1",
+                        from = "CN=Alice, O=Alice Corp, L=LDN, C=GB",
+                        to = "CN=Bob, O=Bob Corp, L=LDN, C=GB",
+                    ),
+                ),
+                MessageRecord(
+                    offset = 2,
+                    partition = 2,
+                    message = createMessage(
+                        id = "id-2",
+                        group = "group-1",
+                        from = "CN=Alice, O=Alice Corp, L=LDN, C=GB",
+                        to = "CN=Bob, O=Bob Corp, L=LDN, C=GB",
+                    ),
+                ),
+                MessageRecord(
+                    offset = 3,
+                    partition = 3,
+                    message = createMessage(
+                        id = "id-3",
+                        group = "group-1",
+                        from = "CN=Alice, O=Alice Corp, L=LDN, C=GB",
+                        to = "CN=Bob, O=Bob Corp, L=LDN, C=GB",
+                    ),
+                ),
+                MessageRecord(
+                    offset = 4,
+                    partition = 4,
+                    message = createMessage(
+                        id = "id-4",
+                        group = "group-1",
+                        from = "CN=Alice, O=Alice Corp, L=LDN, C=GB",
+                        to = "CN=Bob, O=Bob Corp, L=LDN, C=GB",
+                    ),
+                ),
+            ),
+        )
 
-        assertThat(state.lastSentOffset).isEqualTo(202)
+        assertThat(newMessages.map { it.offset })
+            .contains(
+                1,
+                2,
+            )
+            .hasSize(2)
     }
 
     @Test
-    fun `read will not update the offset if not more then the max`() {
-        val now = Instant.ofEpochMilli(1000)
-        val records = listOf(
-            EventLogRecord(
-                partition = 1,
-                offset = 200,
-                key = "",
-                value = mock<AppMessage>(),
-                topic = "",
-            ),
-            EventLogRecord(
-                partition = 1,
-                offset = 201,
-                key = "",
-                value = mock<AppMessage>(),
-                topic = "",
-            ),
-            EventLogRecord(
-                partition = 1,
-                offset = 202,
-                key = "",
-                value = mock<AppMessage>(),
-                topic = "",
-            ),
-            EventLogRecord(
-                partition = 1,
-                offset = 100,
-                key = "",
-                value = mock<AppMessage>(),
-                topic = "",
+    fun `forget will remove the messages`() {
+        val state = PartitionState(1)
+        val message = createMessage(
+            id = "id-3",
+            group = "group-1",
+            from = "CN=Alice, O=Alice Corp, L=LDN, C=GB",
+            to = "CN=Bob, O=Bob Corp, L=LDN, C=GB",
+        )
+        state.read(
+            Instant.ofEpochMilli(100),
+            listOf(
+                MessageRecord(
+                    offset = 3,
+                    partition = 3,
+                    message = message,
+                ),
+                MessageRecord(
+                    offset = 4,
+                    partition = 4,
+                    message = createMessage(
+                        id = "id-4",
+                        group = "group-1",
+                        from = "CN=Alice, O=Alice Corp, L=LDN, C=GB",
+                        to = "CN=Bob, O=Bob Corp, L=LDN, C=GB",
+                    ),
+                ),
             ),
         )
-        val state = PartitionState(1)
-        state.lastSentOffset = 1000
 
-        state.read(now, records)
+        state.forget(message)
 
-        assertThat(state.lastSentOffset).isEqualTo(1000)
+        assertThat(
+            state.counterpartiesToMessages()
+                .flatMap {
+                    it.second
+                },
+        ).hasSize(1)
     }
 
-    @Test
-    fun `read will save the messages if the message is AuthenticatedMessage`() {
-        val now = Instant.ofEpochMilli(1000)
-        val messageHeader = mock<AuthenticatedMessageHeader> {
-            on { messageId } doReturn "message ID"
+    private fun createMessage(
+        id: String,
+        group: String,
+        from: String,
+        to: String,
+    ): AuthenticatedMessage {
+        val headers = mock<AuthenticatedMessageHeader> {
+            on { messageId } doReturn id
+            on { source } doReturn AvroHoldingIdentity(
+                from,
+                group,
+            )
+            on { destination } doReturn AvroHoldingIdentity(
+                to,
+                group,
+            )
         }
-        val authenticatedMessage = mock<AuthenticatedMessage> {
-            on { header } doReturn messageHeader
+
+        return mock {
+            on { header } doReturn headers
         }
-        val value = mock<AppMessage> {
-            on { message } doReturn authenticatedMessage
-        }
-        val records = listOf(
-            EventLogRecord(
-                partition = 1,
-                offset = 200,
-                key = "a",
-                value = value,
-                topic = "",
-            ),
-        )
-        val state = PartitionState(1)
-        state.lastSentOffset = 1000
-
-        state.read(now, records)
-
-        assertThat(state.getTrackMessage("message ID")).isEqualTo(
-            TrackedMessageState(
-                "message ID",
-                now,
-                false,
-            ),
-        )
-    }
-
-    @Test
-    fun `read will save the messages if the message is OutboundUnauthenticatedMessage`() {
-        val now = Instant.ofEpochMilli(1000)
-        val messageHeader = mock<OutboundUnauthenticatedMessageHeader> {
-            on { messageId } doReturn "message ID"
-        }
-        val outboundUnauthenticatedMessage = mock<OutboundUnauthenticatedMessage> {
-            on { header } doReturn messageHeader
-        }
-        val value = mock<AppMessage> {
-            on { message } doReturn outboundUnauthenticatedMessage
-        }
-        val records = listOf(
-            EventLogRecord(
-                partition = 1,
-                offset = 200,
-                key = "a",
-                value = value,
-                topic = "",
-            ),
-        )
-        val state = PartitionState(1)
-        state.lastSentOffset = 1000
-
-        state.read(now, records)
-
-        assertThat(state.getTrackMessage("message ID")).isEqualTo(
-            TrackedMessageState(
-                "message ID",
-                now,
-                false,
-            ),
-        )
-    }
-
-    @Test
-    fun `read will save the messages if the message is InboundUnauthenticatedMessage`() {
-        val now = Instant.ofEpochMilli(1000)
-        val messageHeader = mock<InboundUnauthenticatedMessageHeader> {
-            on { messageId } doReturn "message ID"
-        }
-        val inboundUnauthenticatedMessage = mock<InboundUnauthenticatedMessage> {
-            on { header } doReturn messageHeader
-        }
-        val value = mock<AppMessage> {
-            on { message } doReturn inboundUnauthenticatedMessage
-        }
-        val records = listOf(
-            EventLogRecord(
-                partition = 1,
-                offset = 200,
-                key = "a",
-                value = value,
-                topic = "",
-            ),
-        )
-        val state = PartitionState(1)
-        state.lastSentOffset = 1000
-
-        state.read(now, records)
-
-        assertThat(state.getTrackMessage("message ID")).isEqualTo(
-            TrackedMessageState(
-                "message ID",
-                now,
-                false,
-            ),
-        )
-    }
-
-    @Test
-    fun `sent will update the offset`() {
-        val records = listOf(
-            EventLogRecord(
-                partition = 1,
-                offset = 200,
-                key = "",
-                value = mock<AppMessage>(),
-                topic = "",
-            ),
-            EventLogRecord(
-                partition = 1,
-                offset = 201,
-                key = "",
-                value = mock<AppMessage>(),
-                topic = "",
-            ),
-            EventLogRecord(
-                partition = 1,
-                offset = 202,
-                key = "",
-                value = mock<AppMessage>(),
-                topic = "",
-            ),
-            EventLogRecord(
-                partition = 1,
-                offset = 100,
-                key = "",
-                value = mock<AppMessage>(),
-                topic = "",
-            ),
-        )
-        val state = PartitionState(1)
-
-        state.sent(records)
-
-        assertThat(state.restartOffset).isEqualTo(202)
-    }
-
-    @Test
-    fun `sent will not update the offset if not more then the max`() {
-        val records = listOf(
-            EventLogRecord(
-                partition = 1,
-                offset = 200,
-                key = "",
-                value = mock<AppMessage>(),
-                topic = "",
-            ),
-            EventLogRecord(
-                partition = 1,
-                offset = 201,
-                key = "",
-                value = mock<AppMessage>(),
-                topic = "",
-            ),
-            EventLogRecord(
-                partition = 1,
-                offset = 202,
-                key = "",
-                value = mock<AppMessage>(),
-                topic = "",
-            ),
-            EventLogRecord(
-                partition = 1,
-                offset = 100,
-                key = "",
-                value = mock<AppMessage>(),
-                topic = "",
-            ),
-        )
-        val state = PartitionState(1)
-        state.restartOffset = 1000
-
-        state.sent(records)
-
-        assertThat(state.restartOffset).isEqualTo(1000)
     }
 }

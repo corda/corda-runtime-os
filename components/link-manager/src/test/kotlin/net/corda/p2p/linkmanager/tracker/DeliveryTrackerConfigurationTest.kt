@@ -3,7 +3,6 @@ package net.corda.p2p.linkmanager.tracker
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.DELIVERY_TRACKER_MAX_CACHE_OFFSET_AGE
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.DELIVERY_TRACKER_MAX_CACHE_SIZE_MEGABYTES
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.DELIVERY_TRACKER_MAX_NUMBER_OF_PERSISTENCE_RETRIES
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.DELIVERY_TRACKER_OUTBOUND_BATCH_PROCESSING_TIMEOUT_SECONDS
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.DELIVERY_TRACKER_STATE_PERSISTENCE_PERIOD_SECONDS
@@ -25,7 +24,6 @@ class DeliveryTrackerConfigurationTest {
 
         assertThat(config).isEqualTo(
             DeliveryTrackerConfiguration.Configuration(
-                maxCacheSizeMegabytes = 100,
                 maxCacheOffsetAge = 50000,
                 statePersistencePeriodSeconds = 1.0,
                 outboundBatchProcessingTimeoutSeconds = 30.0,
@@ -37,7 +35,6 @@ class DeliveryTrackerConfigurationTest {
     @Test
     fun `applyNewConfiguration will change the configuration`() {
         val config = DeliveryTrackerConfiguration.Configuration(
-            maxCacheSizeMegabytes = 200,
             maxCacheOffsetAge = 300,
             statePersistencePeriodSeconds = 400.0,
             outboundBatchProcessingTimeoutSeconds = 500.0,
@@ -56,7 +53,6 @@ class DeliveryTrackerConfigurationTest {
     @Test
     fun `applyNewConfiguration will complete the future`() {
         val config = DeliveryTrackerConfiguration.Configuration(
-            maxCacheSizeMegabytes = 200,
             maxCacheOffsetAge = 300,
             statePersistencePeriodSeconds = 400.0,
             outboundBatchProcessingTimeoutSeconds = 500.0,
@@ -77,7 +73,6 @@ class DeliveryTrackerConfigurationTest {
         val listener = mock<DeliveryTrackerConfiguration.ConfigurationChanged>()
         configurationTile.lister(listener)
         val config = DeliveryTrackerConfiguration.Configuration(
-            maxCacheSizeMegabytes = 200,
             maxCacheOffsetAge = 300,
             statePersistencePeriodSeconds = 400.0,
             outboundBatchProcessingTimeoutSeconds = 500.0,
@@ -110,10 +105,6 @@ class DeliveryTrackerConfigurationTest {
     fun `fromConfig returns the correct configuration`() {
         val config = ConfigFactory.empty()
             .withValue(
-                DELIVERY_TRACKER_MAX_CACHE_SIZE_MEGABYTES,
-                ConfigValueFactory.fromAnyRef(101),
-            )
-            .withValue(
                 DELIVERY_TRACKER_MAX_CACHE_OFFSET_AGE,
                 ConfigValueFactory.fromAnyRef(202),
             )
@@ -134,7 +125,6 @@ class DeliveryTrackerConfigurationTest {
 
         assertThat(configuration).isEqualTo(
             DeliveryTrackerConfiguration.Configuration(
-                maxCacheSizeMegabytes = 101,
                 maxCacheOffsetAge = 202,
                 statePersistencePeriodSeconds = 303.0,
                 outboundBatchProcessingTimeoutSeconds = 404.0,

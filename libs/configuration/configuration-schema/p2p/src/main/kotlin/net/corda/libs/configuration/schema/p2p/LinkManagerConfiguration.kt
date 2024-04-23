@@ -13,7 +13,6 @@ class LinkManagerConfiguration {
         const val REVOCATION_CHECK_KEY = "revocationCheck.mode"
         const val INBOUND_SESSIONS_CACHE_SIZE = "sessionCache.inboundSessionsCacheSize"
         const val OUTBOUND_SESSIONS_CACHE_SIZE = "sessionCache.outboundSessionsCacheSize"
-        const val DELIVERY_TRACKER_MAX_CACHE_SIZE_MEGABYTES = "deliveryTracker.maxCacheSizeMegabytes"
         const val DELIVERY_TRACKER_MAX_CACHE_OFFSET_AGE = "deliveryTracker.maxCacheOffsetAge"
         const val DELIVERY_TRACKER_STATE_PERSISTENCE_PERIOD_SECONDS = "deliveryTracker.statePersistencePeriodSeconds"
         const val DELIVERY_TRACKER_OUTBOUND_BATCH_PROCESSING_TIMEOUT_SECONDS = "deliveryTracker.outboundBatchProcessingTimeoutSeconds"

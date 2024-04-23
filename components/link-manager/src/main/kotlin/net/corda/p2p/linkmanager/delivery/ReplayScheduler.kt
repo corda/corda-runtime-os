@@ -2,22 +2,20 @@ package net.corda.p2p.linkmanager.delivery
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException
-import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.BASE_REPLAY_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_ALGORITHM_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_PERIOD_CUTOFF_KEY
-import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.p2p.linkmanager.common.CommonComponents
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.VisibleForTesting
-import net.corda.utilities.time.Clock
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
@@ -31,19 +29,16 @@ import java.util.concurrent.atomic.AtomicReference
 /**
  * This class keeps track of messages which may need to be replayed.
  */
-@Suppress("LongParameterList")
 internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
-    coordinatorFactory: LifecycleCoordinatorFactory,
-    private val configReadService: ConfigurationReadService,
+    private val commonComponents: CommonComponents,
     private val limitTotalReplays: Boolean,
     private val replayMessage: (message: M, messageId: MessageId) -> Unit,
     executorServiceFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() },
-    private val clock: Clock
-    ) : LifecycleWithDominoTile {
+) : LifecycleWithDominoTile {
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
-        coordinatorFactory,
+        commonComponents.lifecycleCoordinatorFactory,
         onClose = { executorService.shutdownNow() },
         configurationChangeHandler = ReplaySchedulerConfigurationChangeHandler()
     )
@@ -132,7 +127,8 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
         }
     }
 
-    inner class ReplaySchedulerConfigurationChangeHandler: ConfigurationChangeHandler<ReplaySchedulerConfig>(configReadService,
+    inner class ReplaySchedulerConfigurationChangeHandler: ConfigurationChangeHandler<ReplaySchedulerConfig>(
+        commonComponents.configurationReaderService,
         ConfigKeys.P2P_LINK_MANAGER_CONFIG,
         ::fromConfig) {
         override fun applyNewConfiguration(
@@ -242,7 +238,7 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
         replayInfoPerMessageId.compute(messageId) { _, replayInfo ->
             replayInfo?.future?.cancel(false)
             val firstReplayPeriod = replayCalculator.get().calculateReplayInterval()
-            val delay = firstReplayPeriod.toMillis() + originalAttemptTimestamp - clock.instant().toEpochMilli()
+            val delay = firstReplayPeriod.toMillis() + originalAttemptTimestamp - commonComponents.clock.instant().toEpochMilli()
             val future = executorService.schedule({ replay(message, messageId) }, delay, TimeUnit.MILLISECONDS)
             ReplayInfo(firstReplayPeriod, future)
         }
