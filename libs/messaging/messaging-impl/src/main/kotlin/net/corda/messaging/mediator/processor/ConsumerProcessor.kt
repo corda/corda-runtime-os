@@ -78,7 +78,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val failureCounts = mutableMapOf<String, Int>()
         val deleteLater = mutableMapOf<String, State>()
         val outputsToProcess =
-            LinkedBlockingDeque<Pair<String, Pair<EventProcessingOutput<K, E>, CompletableFuture<Unit>>>>()
+            LinkedBlockingDeque<Pair<String, Pair<EventProcessingOutput<K, E>, CompletableFuture<Unit>>>>(config.threads)
         val inputsToCommit = LinkedBlockingDeque<List<CordaConsumerRecord<K, E>>>()
         val inputsToRetry = LinkedBlockingQueue<List<CordaConsumerRecord<K, E>>>()
         val assignedPartitions: MutableSet<CordaTopicPartition> = ConcurrentHashMap.newKeySet()
