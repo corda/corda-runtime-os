@@ -8,6 +8,7 @@ import liquibase.database.core.PostgresDatabase
 import liquibase.database.jvm.JdbcConnection
 import liquibase.resource.ClassLoaderResourceAccessor
 import net.corda.db.admin.LiquibaseSchemaUpdater
+import net.corda.db.admin.impl.LiquibaseSchemaUpdaterImpl
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -55,6 +56,7 @@ class DbSchemaGenerator(
             DatabaseFactory.getInstance().findCorrectDatabaseImplementation(JdbcConnection(connection))
         }
     )
+
     var clearChangeLog: Boolean = false
     var databaseChangeLogFile = Path.of(DEFAULT_CHANGELOG_PATH)
     var jdbcUrl: String? = null
@@ -73,8 +75,7 @@ class DbSchemaGenerator(
             config.deleteFile(databaseChangeLogFile)
         }
 
-        LIQUIBASEFILES.filter {
-                file ->
+        LIQUIBASEFILES.filter { file ->
             schemasToGenerate.any { schemaName ->
                 file.contains(schemaName)
             }
