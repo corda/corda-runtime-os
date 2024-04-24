@@ -96,9 +96,8 @@ class MemberInfoFactoryImpl @Activate constructor(
         }
     }
 
-    override fun createMemberInfo(memberContext: ByteArray, mgmContext: ByteArray): MemberInfo {
-        return createMemberInfo(deserialize(memberContext).toSortedMap(), deserialize(mgmContext).toSortedMap())
-    }
+    override fun createMemberInfo(memberContext: ByteArray, mgmContext: ByteArray): MemberInfo =
+        createMemberInfo(deserialize(memberContext).toSortedMap(), deserialize(mgmContext).toSortedMap())
 
     override fun createPersistentMemberInfo(
         viewOwningMember: HoldingIdentity,
