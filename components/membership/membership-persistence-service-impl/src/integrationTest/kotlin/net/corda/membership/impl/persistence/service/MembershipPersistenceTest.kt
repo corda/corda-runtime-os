@@ -21,6 +21,7 @@ import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.v2.RegistrationStatus
+import net.corda.data.membership.db.request.command.SessionKeyAndCertificate
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
@@ -421,6 +422,22 @@ class MembershipPersistenceTest {
                 newGroupParameters: Map<String, String>
             ) = safeCall {
                 membershipPersistenceClient.updateGroupParameters(viewOwningIdentity, newGroupParameters)
+            }
+
+            override fun persistHostedIdentity(
+                holdingIdentity: HoldingIdentity,
+                p2pTlsCertificateChainAlias: String,
+                useClusterLevelTlsCertificateAndKey: Boolean,
+                preferredSessionKeyAndCertificate: SessionKeyAndCertificate,
+                alternateSessionKeyAndCertificates: List<SessionKeyAndCertificate>
+            ) = safeCall {
+                membershipPersistenceClient.persistHostedIdentity(
+                    holdingIdentity,
+                    p2pTlsCertificateChainAlias,
+                    useClusterLevelTlsCertificateAndKey,
+                    preferredSessionKeyAndCertificate,
+                    alternateSessionKeyAndCertificates,
+                )
             }
 
             fun <T> safeCall(func: () -> T): T {

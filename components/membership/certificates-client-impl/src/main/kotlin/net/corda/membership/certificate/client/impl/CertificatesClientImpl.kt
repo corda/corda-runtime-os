@@ -14,6 +14,7 @@ import net.corda.data.certificates.rpc.response.CertificateImportedRpcResponse
 import net.corda.data.certificates.rpc.response.CertificateRetrievalRpcResponse
 import net.corda.data.certificates.rpc.response.CertificateRpcResponse
 import net.corda.data.certificates.rpc.response.ListCertificateAliasRpcResponse
+import net.corda.data.membership.db.request.command.SessionKeyAndCertificate
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -40,6 +41,7 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -64,7 +66,7 @@ class CertificatesClientImpl @Activate constructor(
     @Reference(service = MembershipGroupReaderProvider::class)
     membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = MembershipPersistenceClient::class)
-    membershipPersistenceClient: MembershipPersistenceClient,
+    private val membershipPersistenceClient: MembershipPersistenceClient,
     @Reference(service = MembershipQueryClient::class)
     membershipQueryClient: MembershipQueryClient,
     @Reference(service = LayeredPropertyMapFactory::class)
@@ -129,6 +131,17 @@ class CertificatesClientImpl @Activate constructor(
             preferredSessionKeyAndCertificate = preferredSessionKeyAndCertificate,
             alternativeSessionKeyAndCertificates = alternativeSessionKeyAndCertificates,
         )
+
+        val version = membershipPersistenceClient.persistHostedIdentity(
+            record.value!!.holdingIdentity.toCorda(),
+            p2pTlsCertificateChainAlias,
+            useClusterLevelTlsCertificateAndKey,
+            preferredSessionKeyAndCertificate.toAvro(preferred = true),
+            alternativeSessionKeyAndCertificates.map { it.toAvro(preferred = false) }
+        ).getOrThrow()
+
+        // Set version as the persisted entity version
+        record.value?.version = version
 
         val futures = publisher?.publish(
             listOf(
@@ -285,4 +298,7 @@ class CertificatesClientImpl @Activate constructor(
             }
         }
     }
+
+    private fun CertificatesClient.SessionKeyAndCertificate.toAvro(preferred: Boolean) =
+        SessionKeyAndCertificate(sessionKeyId.toString(), sessionCertificateChainAlias, preferred)
 }

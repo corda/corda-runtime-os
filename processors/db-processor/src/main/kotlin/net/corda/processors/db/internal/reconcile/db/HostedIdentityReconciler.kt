@@ -34,13 +34,15 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.StringWriter
 import java.util.stream.Stream
+import javax.persistence.EntityManager
 
+@Suppress("LongParameterList")
 class HostedIdentityReconciler(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     dbConnectionManager: DbConnectionManager,
     private val reconcilerFactory: ReconcilerFactory,
-    private val reconcilerReader: ReconcilerReader<HoldingIdentity, HostedIdentityEntry>,
-    private val reconcilerWriter: ReconcilerWriter<HoldingIdentity, HostedIdentityEntry>,
+    private val reconcilerReader: ReconcilerReader<String, HostedIdentityEntry>,
+    private val reconcilerWriter: ReconcilerWriter<String, HostedIdentityEntry>,
     private val dbClient: DbCertificateClient,
     private val cryptoOpsClient: CryptoOpsClient,
     private val keyEncodingService: KeyEncodingService,
@@ -53,7 +55,7 @@ class HostedIdentityReconciler(
         )
     }
 
-    private var dbReconciler: DbReconcilerReader<HoldingIdentity, HostedIdentityEntry>? = null
+    private var dbReconciler: DbReconcilerReader<String, HostedIdentityEntry>? = null
     private var reconciler: Reconciler? = null
 
     private val reconciliationContextFactory = {
@@ -67,7 +69,7 @@ class HostedIdentityReconciler(
             dbReconciler =
                 DbReconcilerReader(
                     coordinatorFactory,
-                    HoldingIdentity::class.java,
+                    String::class.java,
                     HostedIdentityEntry::class.java,
                     dependencies,
                     reconciliationContextFactory,
@@ -82,13 +84,13 @@ class HostedIdentityReconciler(
                 dbReader = dbReconciler!!,
                 kafkaReader = reconcilerReader,
                 writer = reconcilerWriter,
-                keyClass = HoldingIdentity::class.java,
+                keyClass = String::class.java,
                 valueClass = HostedIdentityEntry::class.java,
                 reconciliationIntervalMs = intervalMillis,
                 forceInitialReconciliation = true,
             ).also { it.start() }
         } else {
-            logger.info("Updating Config ${Reconciler::class.java.name}")
+            logger.info("Updating Hosted Identity ${Reconciler::class.java.name}")
             reconciler!!.updateInterval(intervalMillis)
         }
     }
@@ -100,53 +102,57 @@ class HostedIdentityReconciler(
         reconciler = null
     }
 
-    private fun getAllHostedIdentities(context: ReconciliationContext): Stream<VersionedRecord<HoldingIdentity, HostedIdentityEntry>> {
+    private fun getAllHostedIdentities(context: ReconciliationContext): Stream<VersionedRecord<String, HostedIdentityEntry>> {
         val entityManager = context.getOrCreateEntityManager()
         val identityQuery = entityManager.criteriaBuilder.createQuery(HostedIdentityEntity::class.java)
         val identityRoot = identityQuery.from(HostedIdentityEntity::class.java)
         identityQuery.select(identityRoot)
         val hostedIdentityEntities = entityManager.createQuery(identityQuery).resultList.map {
-            val holdingId = ShortHash.of(it.holdingIdentityShortHash)
-            val preferredKey = entityManager.find(
-                HostedIdentitySessionKeyInfoEntity::class.java, HostedIdentitySessionKeyInfoEntityId(
-                    it.holdingIdentityShortHash, it.preferredSessionKeyAndCertificate
-                )
-            ).toSessionKeyAndCertificate()
-            val keysQuery = entityManager.criteriaBuilder.createQuery(HostedIdentitySessionKeyInfoEntity::class.java)
-            val keysRoot = keysQuery.from(HostedIdentitySessionKeyInfoEntity::class.java)
-            keysQuery
-                .select(keysRoot)
-                .where(
-                    entityManager.criteriaBuilder.equal(keysRoot.get<String>("holding_identity_id"), it.holdingIdentityShortHash)
-                )
-            val alternateKeys = entityManager.createQuery(keysQuery).resultList.map { entity ->
-                entity.toSessionKeyAndCertificate()
-            }
-
-            val (tlsKeyTenantId, tlsCertificateHoldingId) = when (it.useClusterLevelTlsCertificateAndKey) {
-                true -> P2P to null
-                false -> it.holdingIdentityShortHash to holdingId
-            }
-            val tlsCertificates = getCertificates(
-                tlsCertificateHoldingId, CertificateUsage.P2P_TLS, it.tlsCertificateChainAlias
-            )
-            val hostedIdentityBuilder = HostedIdentityEntry.newBuilder()
-                .setHoldingIdentity(getHoldingIdentity(holdingId).toAvro())
-                .setTlsCertificates(tlsCertificates)
-                .setTlsTenantId(tlsKeyTenantId)
-                .setPreferredSessionKeyAndCert(preferredKey)
-                .setAlternativeSessionKeysAndCerts(alternateKeys)
-            hostedIdentityBuilder.build()
+            it.toHostedIdentityEntry(entityManager)
         }
         return hostedIdentityEntities.stream().toVersionedRecords()
     }
 
-    private fun Stream<HostedIdentityEntry>.toVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, HostedIdentityEntry>> {
+    private fun HostedIdentityEntity.toHostedIdentityEntry(em: EntityManager): HostedIdentityEntry {
+        val holdingId = ShortHash.of(holdingIdentityShortHash)
+        val preferredKey = em.find(
+            HostedIdentitySessionKeyInfoEntity::class.java, HostedIdentitySessionKeyInfoEntityId(
+                holdingIdentityShortHash, preferredSessionKeyAndCertificate
+            )
+        ).toSessionKeyAndCertificate()
+        val keysQuery = em.criteriaBuilder.createQuery(HostedIdentitySessionKeyInfoEntity::class.java)
+        val keysRoot = keysQuery.from(HostedIdentitySessionKeyInfoEntity::class.java)
+        keysQuery
+            .select(keysRoot)
+            .where(
+                em.criteriaBuilder.equal(keysRoot.get<String>("holding_identity_id"), holdingIdentityShortHash)
+            )
+        val alternateKeys = em.createQuery(keysQuery).resultList.map { entity ->
+            entity.toSessionKeyAndCertificate()
+        }
+
+        val (tlsKeyTenantId, tlsCertificateHoldingId) = when (useClusterLevelTlsCertificateAndKey) {
+            true -> P2P to null
+            false -> holdingIdentityShortHash to holdingId
+        }
+        val tlsCertificates = getCertificates(
+            tlsCertificateHoldingId, CertificateUsage.P2P_TLS, tlsCertificateChainAlias
+        )
+        return HostedIdentityEntry.newBuilder()
+            .setHoldingIdentity(getHoldingIdentity(holdingId).toAvro())
+            .setTlsCertificates(tlsCertificates)
+            .setTlsTenantId(tlsKeyTenantId)
+            .setPreferredSessionKeyAndCert(preferredKey)
+            .setAlternativeSessionKeysAndCerts(alternateKeys)
+            .build()
+    }
+
+    private fun Stream<HostedIdentityEntry>.toVersionedRecords(): Stream<VersionedRecord<String, HostedIdentityEntry>> {
         return map {
-            object : VersionedRecord<HoldingIdentity, HostedIdentityEntry> {
+            object : VersionedRecord<String, HostedIdentityEntry> {
                 override val version = it.version
                 override val isDeleted = false
-                override val key = it.holdingIdentity.toCorda()
+                override val key = it.holdingIdentity.toCorda().shortHash.value
                 override val value = it
             }
         }

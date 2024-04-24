@@ -22,8 +22,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.debug
-import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
@@ -32,7 +30,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
-import net.corda.data.identity.HoldingIdentity as HoldingIdentityAvro
 
 /**
  * Locally-hosted Identities writer to [put] and [remove] records from Kafka.
@@ -45,7 +42,7 @@ class LocallyHostedIdentitiesWriterImpl@Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-): LocallyHostedIdentitiesWriter {
+) : LocallyHostedIdentitiesWriter {
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val CLIENT_ID = "LOCALLY_HOSTED_IDENTITIES_WRITER"
@@ -57,31 +54,36 @@ class LocallyHostedIdentitiesWriterImpl@Activate constructor(
     private var registration: RegistrationHandle? = null
     private var configSubscription: AutoCloseable? = null
 
-    override fun put(recordKey: HoldingIdentity, recordValue: HostedIdentityEntry) {
+    override fun put(recordKey: String, recordValue: HostedIdentityEntry) {
         publish(
             listOf(
                 Record(
-                    Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC, recordKey.toAvro(), recordValue
+                    Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC,
+                    recordKey,
+                    recordValue
                 )
             )
         )
     }
 
-    override fun remove(recordKey: HoldingIdentity) {
+    override fun remove(recordKey: String) {
         publish(
             listOf(
                 Record(
-                    Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC, recordKey.toAvro(), null
+                    Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC,
+                    recordKey,
+                    null
                 )
             )
         )
     }
 
-    private fun publish(records: List<Record<HoldingIdentityAvro, HostedIdentityEntry>>) {
+    private fun publish(records: List<Record<String, HostedIdentityEntry>>) {
         lock.withLock {
             publisher?.let {
                 it.publish(records).forEach { future ->
-                    future.get() }
+                    future.get()
+                }
             } ?: logger.error("Publisher is null, not publishing")
         }
     }

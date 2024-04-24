@@ -34,7 +34,7 @@ class HostedIdentityEntity(
         if (other == null) return false
         if (other !is HostedIdentityEntity) return false
         return other.holdingIdentityShortHash == this.holdingIdentityShortHash &&
-                other.preferredSessionKeyAndCertificate == this.preferredSessionKeyAndCertificate
+            other.preferredSessionKeyAndCertificate == this.preferredSessionKeyAndCertificate
     }
 
     override fun hashCode(): Int {

@@ -560,7 +560,8 @@ class StaticMemberRegistrationService(
                 keyEncodingService.encodeAsString(registeringMember.sessionInitiationKeys.first()),
                 null
             ),
-            emptyList()
+            emptyList(),
+            1
         )
 
         return Record(

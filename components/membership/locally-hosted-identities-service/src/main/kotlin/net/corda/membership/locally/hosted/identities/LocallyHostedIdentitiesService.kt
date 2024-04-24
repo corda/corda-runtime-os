@@ -5,7 +5,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.virtualnode.HoldingIdentity
 
-interface LocallyHostedIdentitiesService : ReconcilerReader<HoldingIdentity, HostedIdentityEntry>, Lifecycle {
+interface LocallyHostedIdentitiesService : ReconcilerReader<String, HostedIdentityEntry>, Lifecycle {
     /**
      * Returns [true] if an identity is locally hosted. This shouldn't be used before the [identity] has been registered.
      */

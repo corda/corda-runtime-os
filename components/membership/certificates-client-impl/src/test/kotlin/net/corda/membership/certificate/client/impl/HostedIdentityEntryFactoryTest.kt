@@ -196,6 +196,7 @@ class HostedIdentityEntryFactoryTest {
                         listOf(certificatePem)
                     ),
                     emptyList(),
+                    1
                 )
             )
         }

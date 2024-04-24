@@ -33,7 +33,7 @@ class HostedIdentitySessionKeyInfoEntity(
         if (other == null) return false
         if (other !is HostedIdentitySessionKeyInfoEntity) return false
         return other.holdingIdentityShortHash == this.holdingIdentityShortHash &&
-                other.sessionKeyId == this.sessionKeyId
+            other.sessionKeyId == this.sessionKeyId
     }
 
     override fun hashCode(): Int {

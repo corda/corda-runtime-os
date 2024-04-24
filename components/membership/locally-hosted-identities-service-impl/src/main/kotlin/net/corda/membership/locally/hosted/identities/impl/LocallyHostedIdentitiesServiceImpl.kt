@@ -217,13 +217,13 @@ class LocallyHostedIdentitiesServiceImpl(
     override fun pollForIdentityInfo(identity: HoldingIdentity): IdentityInfo? =
         pollForIdentityInfo(identity, defaultRetries)
 
-    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, HostedIdentityEntry>> =
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<String, HostedIdentityEntry>> =
         identities.values.stream()
             .map {
-                object : VersionedRecord<HoldingIdentity, HostedIdentityEntry> {
+                object : VersionedRecord<String, HostedIdentityEntry> {
                     override val version = it.version
                     override val isDeleted = false
-                    override val key = it.holdingIdentity.toCorda()
+                    override val key = it.holdingIdentity.toCorda().shortHash.value
                     override val value = it
                 }
             }
