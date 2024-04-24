@@ -25,7 +25,7 @@ class HostedIdentitySessionKeyInfoEntity(
     @Column(name = "session_key_id", nullable = false, updatable = false)
     var sessionKeyId: String,
 
-    @Column(name = "session_certificate_alias", nullable = true, updatable = false)
+    @Column(name = "session_certificate_alias", nullable = true)
     var sessionCertificateAlias: String?,
 ) {
     override fun equals(other: Any?): Boolean {

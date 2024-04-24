@@ -17,16 +17,16 @@ class HostedIdentityEntity(
     @Column(name = "holding_identity_id", nullable = false, updatable = false)
     var holdingIdentityShortHash: String,
 
-    @Column(name = "preferred_session_key_id", nullable = false, updatable = false)
+    @Column(name = "preferred_session_key_id", nullable = false)
     var preferredSessionKeyAndCertificate: String,
 
-    @Column(name = "tls_certificate_alias", nullable = false, updatable = false)
+    @Column(name = "tls_certificate_alias", nullable = false)
     var tlsCertificateChainAlias: String,
 
-    @Column(name = "use_cluster_level_tls", nullable = false, updatable = false)
+    @Column(name = "use_cluster_level_tls", nullable = false)
     var useClusterLevelTlsCertificateAndKey: Boolean,
 
-    @Column(name = "version", nullable = false, updatable = false)
+    @Column(name = "version", nullable = false)
     var version: Int
 ) {
     override fun equals(other: Any?): Boolean {
