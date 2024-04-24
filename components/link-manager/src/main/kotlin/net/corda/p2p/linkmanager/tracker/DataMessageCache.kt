@@ -53,7 +53,6 @@ internal class DataMessageCache(
 
     fun remove(key: String): MessageRecord? {
         val record = messageCache.remove(key)
-        logger.info("YYY in remove($key) we have ${record?.offset}")
         return if (record == null) {
             logger.trace("Deleting delivery tracker entry from state manager for '{}'.", key)
             commonComponents.stateManager.deleteIfPresent(key)
