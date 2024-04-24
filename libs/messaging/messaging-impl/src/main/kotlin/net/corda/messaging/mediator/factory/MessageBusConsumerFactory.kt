@@ -24,7 +24,7 @@ import net.corda.messaging.subscription.consumer.listener.LoggingConsumerRebalan
  */
 @Suppress("LongParameterList")
 class MessageBusConsumerFactory(
-    private val topicName: String,
+    override val topicName: String,
     private val groupName: String,
     private val messageBusConfig: SmartConfig,
     private val cordaConsumerBuilder: CordaConsumerBuilder,

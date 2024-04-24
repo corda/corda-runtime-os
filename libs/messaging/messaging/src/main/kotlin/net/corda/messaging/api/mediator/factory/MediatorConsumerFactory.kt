@@ -8,6 +8,7 @@ import net.corda.messaging.api.mediator.config.MediatorConsumerConfig
  * Factory for creating multi-source event mediator consumers.
  */
 interface MediatorConsumerFactory {
+    val topicName: String
 
     /**
      * Creates a multi-source event mediator consumer.

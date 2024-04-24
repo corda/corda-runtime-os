@@ -13,6 +13,7 @@ class EventMediatorMetrics(
         .build()
 
     val pollTimer = CordaMetrics.Metric.Messaging.ConsumerPollTime.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.EVENT_MEDIATOR_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, mediatorName)
         .build()
 

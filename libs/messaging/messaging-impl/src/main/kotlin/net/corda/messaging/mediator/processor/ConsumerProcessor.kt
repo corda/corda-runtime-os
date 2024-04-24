@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Class to construct a message bus consumer and begin processing its subscribed topic(s).
@@ -201,6 +202,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 transferOutputs(retriedOutputs, outputsToProcess)
                 val outputs = processInputs(inputs, emptyList(), inputsToCommit)
                 transferOutputs(outputs, outputsToProcess)
+                inputQueueLoggingAction.periodically { log.info("input queue size = ${queuedTasks.get()}") }
                 commitConsumerOffsets(consumer, inputsToCommit)
             } catch (e: Exception) {
                 log.warn("Retrying poll processing: ${e.message}.")
@@ -209,27 +211,26 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         }
     }
 
-    private var lastCommitTime: Long = System.nanoTime()
-    private val commitInterval: Long = Duration.ofSeconds(5).toNanos()
+    private val inputQueueLoggingAction = PeriodicAction(Duration.ofSeconds(15))
+    private val commitInterval = PeriodicAction(Duration.ofSeconds(5))
 
     private fun commitConsumerOffsets(
         consumer: MediatorConsumer<K, E>,
         inputsToCommit: BlockingDeque<List<CordaConsumerRecord<K, E>>>
     ) {
-        val now = System.nanoTime()
-        if ((now - lastCommitTime) < commitInterval) return
-        lastCommitTime = now
-        // TODO try and commit offsets async
-        val readyToCommit = inputsToCommit.drainAll()
-        if (readyToCommit.isNotEmpty()) {
-            val allReadyToCommit = readyToCommit.flatten()
-            try {
-                metrics.commitTimer.recordCallable {
-                    consumer.syncCommitOffsets(allReadyToCommit)
+        commitInterval.periodically {
+            // TODO try and commit offsets async
+            val readyToCommit = inputsToCommit.drainAll()
+            if (readyToCommit.isNotEmpty()) {
+                val allReadyToCommit = readyToCommit.flatten()
+                try {
+                    metrics.commitTimer.recordCallable {
+                        consumer.syncCommitOffsets(allReadyToCommit)
+                    }
+                } catch (e: Exception) {
+                    // Failure to commit not a big deal, but need to process the records again
+                    inputsToCommit.putBackAll(listOf(allReadyToCommit))
                 }
-            } catch (e: Exception) {
-                // Failure to commit not a big deal, but need to process the records again
-                inputsToCommit.putBackAll(listOf(allReadyToCommit))
             }
         }
     }
@@ -289,8 +290,9 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val retryMessages = inputsToRetry.drainAll()
             .map { it.filter { CordaTopicPartition(it.topic, it.partition) in assignedPartitions } }
             .filter { it.isNotEmpty() }
-        val polledMessages =
+        val polledMessages = metrics.pollTimer.recordCallable {
             if (retryMessages.isNotEmpty()) consumer.poll(Duration.ZERO) else consumer.poll(pollTimeout)
+        }!!
         val newRecords = polledMessages.groupBy { it.key }
         val retryRecords = retryMessages.groupBy { it.first().key }.mapValues { it.value.flatten() }
         val states = if (config.stateCaching) {
@@ -376,6 +378,8 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         else (System.currentTimeMillis() + defaultOffset)
     }
 
+    private val queuedTasks = AtomicInteger(0)
+
     private fun mapInputToOutput(
         input: EventProcessingInput<K, E>,
         isRetry: Boolean = false
@@ -384,12 +388,14 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val inputKey = input.key
         val inputRecords = input.records
         val oldestSessionCreateTimestamp = inputRecords.priority(TimeUnit.DAYS.toMillis(365))
+        queuedTasks.incrementAndGet()
         val future = taskManager.executeShortRunningTask(
             inputKey,
             input.state?.metadata?.get(PRIORITY_METADATA_PROPERTY) as? Long ?: oldestSessionCreateTimestamp,
             persistFuture,
             isRetry
         ) {
+            queuedTasks.decrementAndGet()
             val updatedState = if (isRetry) {
                 stateManager.get(emptySet(), setOf(inputKey.toString())).values.firstOrNull()
             } else {

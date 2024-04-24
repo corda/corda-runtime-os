@@ -12,7 +12,7 @@ object MetricsConstants {
     // Operation types, to use with OperationName tag
     const val ON_NEXT_OPERATION = "onNext"
     const val ON_SNAPSHOT_OPERATION = "onSnapshot"
-    const val BATCH_PROCESS_OPERATION = "batchProcess"
+    const val BATCH_PROCESS_OPERATION = "pollLoop"
     const val RPC_SENDER_OPERATION = "rpcSender"
     const val RPC_RESPONDER_OPERATION = "rpcResponder"
     const val EVENT_POLL_OPERATION = "eventPoll"

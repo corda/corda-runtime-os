@@ -51,7 +51,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
             taskManager.executeLongRunningTask {
                 val consumerProcessor =
                     mediatorComponentFactory.createConsumerProcessor(
-                        config,
+                        config.copy(name = config.name + "." + consumerFactory.topicName),
                         taskManager,
                         messageRouter,
                         mediatorSubscriptionState,
