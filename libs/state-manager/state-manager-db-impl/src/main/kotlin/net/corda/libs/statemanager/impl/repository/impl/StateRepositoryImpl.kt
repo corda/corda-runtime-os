@@ -67,8 +67,10 @@ class StateRepositoryImpl(
     override fun update(connection: Connection, states: Collection<State>): StateRepository.StateUpdateSummary {
         if (states.isEmpty()) return StateRepository.StateUpdateSummary(emptyList(), emptyList())
         val indices = generateSequence(1) { it + 1 }.iterator()
+        println("AAA update: ${states.size}")
         val updatedKeys = mutableListOf<String>()
         connection.prepareStatement(queryProvider.updateStates(states.size)).use { stmt ->
+            println("AAA stmt: $stmt")
             states.forEach { state ->
                 stmt.setString(indices.next(), state.key)
                 stmt.setBytes(indices.next(), compressionService.writeBytes(state.value, compressionType))

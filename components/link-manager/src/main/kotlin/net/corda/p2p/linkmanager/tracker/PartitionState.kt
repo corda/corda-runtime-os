@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.tracker
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.core.JacksonException
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
@@ -14,12 +15,15 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 
 internal class PartitionState(
     @JsonProperty("partition")
     private val partition: Int,
+    @JsonIgnore
+    private val toCreate: AtomicBoolean = AtomicBoolean(false)
 ) {
     companion object {
         private val jsonParser = jacksonObjectMapper()
@@ -37,7 +41,10 @@ internal class PartitionState(
                     throw CordaRuntimeException("Can not read state json.", e)
                 }
             } else {
-                PartitionState(partition)
+                PartitionState(
+                    partition,
+                    AtomicBoolean(true)
+                )
             }
         }
     }
@@ -91,7 +98,7 @@ internal class PartitionState(
         )
         println("YYY addToOperationGroup key: $key, version: $version")
         println("YYY addToOperationGroup \t ${String(value)}")
-        if (version == State.VERSION_INITIAL_VALUE) {
+        if (toCreate.get()) {
             println("YYY addToOperationGroup \t create")
             group.create(state)
         } else {
@@ -124,7 +131,9 @@ internal class PartitionState(
 
     fun saved() {
         println("YYY In partition: $partition version was $savedVersion")
-        savedVersion.incrementAndGet()
+        if (!toCreate.getAndSet(false)) {
+            savedVersion.incrementAndGet()
+        }
         println("\t now $savedVersion")
     }
 
