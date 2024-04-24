@@ -147,7 +147,9 @@ class RecordFactoryImpl @Activate constructor(
                 Record(outputTopic, sessionEvent.sessionId, FlowMapperEvent(sessionEvent))
             }
             Schemas.P2P.P2P_OUT_TOPIC -> {
+                println("RRR RecordFactoryImpl::buildSessionRecord creating app message...")
                 val appMessage = generateAppMessage(sessionEvent, config)
+                println("RRR RecordFactoryImpl::buildSessionRecord \t sessionId: $sessionId")
                 Record(outputTopic, sessionId, appMessage)
             }
             else -> {
@@ -204,6 +206,7 @@ class RecordFactoryImpl @Activate constructor(
             Constants.FLOW_SESSION_SUBSYSTEM,
             MembershipStatusFilter.ACTIVE
         )
+        println("RRR RecordFactoryImpl::generateAppMessage \t messageId: ${header.messageId}")
         return AppMessage(AuthenticatedMessage(header, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
     }
 

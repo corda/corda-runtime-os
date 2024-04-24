@@ -40,10 +40,15 @@ class FlowP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializati
         events: List<Record<String, AppMessage>>
     ): List<Record<*, *>> {
         val outputEvents = mutableListOf<Record<*, *>>()
+        logger.info("FlowP2PFilterProcessor::onNext")
         events.forEach { appMessage ->
+            logger.info("FlowP2PFilterProcessor::onNext \t key: ${appMessage.key}")
             val authMessage = appMessage.value?.message
+            logger.info("FlowP2PFilterProcessor::onNext \t authMessage: ${authMessage?.javaClass?.simpleName}")
+            logger.info("FlowP2PFilterProcessor::onNext \t messageId: ${(authMessage as? AuthenticatedMessage)?.header?.messageId}")
+            logger.info("FlowP2PFilterProcessor::onNext \t subsystem: ${(authMessage as? AuthenticatedMessage)?.header?.subsystem}")
             if (authMessage != null && authMessage is AuthenticatedMessage && authMessage.header.subsystem == FLOW_SESSION_SUBSYSTEM) {
-
+                logger.info("FlowP2PFilterProcessor::onNext \t passed filter")
                 traceEventProcessingNullableSingle(appMessage, "Flow P2P Filter Event") {
                     getOutputRecord(authMessage.payload, appMessage.key)
                 }?.let {
@@ -65,11 +70,13 @@ class FlowP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializati
         key: String
     ): Record<String, FlowMapperEvent>? {
         val sessionEvent = cordaAvroDeserializer.deserialize(payload.array())
+        logger.info("FlowP2PFilterProcessor::getOutputRecord \t key: $key, sessionEvent: ${sessionEvent?.sessionId}")
         logger.debug { "Processing message from p2p.in with subsystem $FLOW_SESSION_SUBSYSTEM. Key: $key, Event: $sessionEvent" }
 
         return if (sessionEvent != null) {
             sessionEvent.messageDirection = MessageDirection.INBOUND
             val sessionId = toggleSessionId(key)
+            logger.info("FlowP2PFilterProcessor::getOutputRecord new sessionId = $sessionId")
             sessionEvent.sessionId = sessionId
             Record(FLOW_MAPPER_SESSION_IN, sessionId, FlowMapperEvent(sessionEvent))
         } else {
