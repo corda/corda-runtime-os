@@ -11,12 +11,9 @@ import picocli.CommandLine
 import picocli.CommandLine.ExitCode
 import java.io.File
 import java.io.FileWriter
-import java.nio.file.Files
-import java.nio.file.Path
 import java.sql.Connection
 import java.sql.DriverManager
 import java.util.concurrent.Callable
-import kotlin.io.path.readText
 
 @CommandLine.Command(
     name = "platform-migration",

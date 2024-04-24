@@ -101,11 +101,8 @@ class PlatformMigrationTest {
 
     @Test
     fun `pass filenames`() {
-
-
         val sqlFilename = "my-sql-file"
-//        val holdingIdFilename = "my-holding-ids-file"
-        val holdingIdFilename = "/Users/anton.subbotin/values.yaml"
+        val holdingIdFilename = "my-holding-ids-file"
 
         whenever(mockWriterFactory.invoke(sqlFilename)).thenReturn(mockFileWriter)
         whenever(mockLineReader.invoke(eq(holdingIdFilename), any())).thenAnswer {
