@@ -68,6 +68,7 @@ dependencies {
     runtimeOnly project(':components:chunking:chunk-db-write-impl')
     runtimeOnly project(':components:configuration:configuration-write-service-impl')
     runtimeOnly project(':components:configuration:configuration-read-service-impl')
+    runtimeOnly project(":components:crypto:crypto-client-impl")
     runtimeOnly project(':components:db:db-connection-manager-impl')
     runtimeOnly project(':components:reconciliation:reconciliation-impl')
     runtimeOnly project(':components:uniqueness:uniqueness-checker-impl')
@@ -82,6 +83,7 @@ dependencies {
     runtimeOnly project(':components:virtual-node:virtual-node-write-service-impl')
     runtimeOnly project(':components:membership:certificates-service-impl')
     runtimeOnly project(':components:membership:group-policy-configuration-validation-impl')
+    runtimeOnly project(':components:membership:locally-hosted-identities-service-impl')
     runtimeOnly project(':components:membership:membership-client-impl')
     runtimeOnly project(':components:membership:membership-persistence-client-impl')
 
