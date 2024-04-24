@@ -307,6 +307,10 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         return "$TOPIC_OFFSET_METADATA_PREFIX.${topic}.${partition}"
     }
 
+    private fun State?.priority(): Long? {
+        return (this?.metadata?.get(PRIORITY_METADATA_PROPERTY) as? Number)?.toLong()
+    }
+
     private fun String.toTopicAndPartition(): Pair<String, Int>? {
         return if (startsWith(TOPIC_OFFSET_METADATA_PREFIX)) {
             val topicAndPartition = substring(TOPIC_OFFSET_METADATA_PREFIX.length + 1)
@@ -391,7 +395,10 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         queuedTasks.incrementAndGet()
         val future = taskManager.executeShortRunningTask(
             inputKey,
-            input.state?.metadata?.get(PRIORITY_METADATA_PROPERTY) as? Long ?: oldestSessionCreateTimestamp,
+            minOf(
+                input.state?.metadata?.get(PRIORITY_METADATA_PROPERTY) as? Long ?: oldestSessionCreateTimestamp,
+                oldestSessionCreateTimestamp
+            ),
             persistFuture,
             isRetry
         ) {
@@ -579,7 +586,8 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val failedKeys = failedToCreate.keys + failedToUpdate.keys
         val unsuccessfulStates = failedToCreate + failedToUpdateOptimisticLockFailure
         val successful = outputsMap - failedKeys
-        val outputsToSend = successful.values.flatMap { it.first.asyncOutputs }
+        val outputsToSend =
+            successful.values.flatMap { it.first.asyncOutputs.map { message -> message.overridePriorityIfSet(it.first.stateChangeAndOperation.outputState.priority()) } }
         sendAsynchronousEvents(outputsToSend)
         val successfulDelayedActions = (outputsMap - unsuccessfulStates).map {
             Runnable {
@@ -594,6 +602,17 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             }
         }
         return statesToDelete to (successfulDelayedActions + unsuccessfulDelayedActions)
+    }
+
+    private fun <T : Any> MediatorMessage<T>.overridePriorityIfSet(priority: Long?): MediatorMessage<T> {
+        return MediatorMessage(this.payload, this.properties.apply {
+            if (priority != null) {
+                val currentPriority = (this[FLOW_CREATED_TIMESTAMP_RECORD_HEADER] as? String)?.toLong() ?: 0L
+                if (priority > currentPriority) {
+                    this[FLOW_CREATED_TIMESTAMP_RECORD_HEADER] = priority.toString()
+                }
+            }
+        })
     }
 
     private fun calculateMaxOffsets(

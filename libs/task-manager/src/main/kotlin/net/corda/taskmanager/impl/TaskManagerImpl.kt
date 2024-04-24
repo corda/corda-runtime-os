@@ -50,7 +50,7 @@ internal class TaskManagerImpl(
         val persistedFuture: CompletableFuture<Unit>
     )
 
-    inner class Batch(private val key: Any, val priority: Long) : Runnable {
+    inner class Batch(private val key: Any, var priority: Long) : Runnable {
         private val queue = LinkedBlockingDeque<Step>()
         private var started = false
         private var closed = false
@@ -60,6 +60,7 @@ internal class TaskManagerImpl(
         fun <T : Any> addToBatch(
             persistedFuture: CompletableFuture<Unit>,
             forceFirst: Boolean,
+            priority: Long,
             command: () -> T
         ): CompletableFuture<T> {
             val future = CompletableFuture<Any>()
@@ -75,6 +76,7 @@ internal class TaskManagerImpl(
                     started = true
                     executorService.execute(this)
                 }
+                if (this.priority > priority) this.priority = priority
             }
             return future as CompletableFuture<T>
         }
@@ -132,7 +134,7 @@ internal class TaskManagerImpl(
                 Batch(key, priority)
             }
             try {
-                return batch.addToBatch(persistedFuture, forceFirst) {
+                return batch.addToBatch(persistedFuture, forceFirst, priority) {
                     try {
                         command().also {
                             recordCompletion(start, Type.SHORT_RUNNING)
