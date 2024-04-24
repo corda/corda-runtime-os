@@ -15,5 +15,5 @@ jobs:
           days-before-branch-delete: 14
           stale-branch-message: "@{author} The branch [{branchName}]({branchUrl}) hasn't been updated in the last 30 days and is marked as stale. It will be removed in 14 days.\r\nIf you want to keep this branch around, delete this comment or add new commits to this branch."
           exempt-protected-branches: true
-          exempt-branches-regex: "^(release\\/|feature\\/|poc\\/).*"
+          exempt-branches-regex: "^(release\\/|feature\\/|poc\\/|merge-release\\/).*"
           operations-per-run: 30

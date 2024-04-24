@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityFlow
@@ -67,7 +68,8 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Reference(service = ExternalEventExecutor::class) private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = ResultSetFactory::class) private val resultSetFactory: ResultSetFactory,
     @Reference(service = UtxoLedgerTransactionVerificationService::class)
-    private val transactionVerificationService: UtxoLedgerTransactionVerificationService
+    private val transactionVerificationService: UtxoLedgerTransactionVerificationService,
+    @Reference(service = FlowFiberService::class) private val flowFiberService: FlowFiberService
 ) : UtxoLedgerService, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
@@ -200,7 +202,8 @@ class UtxoLedgerServiceImpl @Activate constructor(
             limit = Int.MAX_VALUE,
             offset = 0,
             resultClass,
-            clock
+            clock,
+            flowFiberService
         )
     }
 

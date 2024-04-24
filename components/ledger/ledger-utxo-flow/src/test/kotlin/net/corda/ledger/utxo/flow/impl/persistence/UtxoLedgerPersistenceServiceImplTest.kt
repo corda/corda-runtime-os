@@ -5,8 +5,11 @@ import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.core.parseSecureHash
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.flow.fiber.FlowFiber
+import net.corda.flow.fiber.FlowFiberExecutionContext
+import net.corda.flow.fiber.FlowFiberService
+import net.corda.flow.state.FlowCheckpoint
 import net.corda.internal.serialization.SerializedBytesImpl
-import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
@@ -16,6 +19,7 @@ import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInter
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionAndSignaturesImpl
+import net.corda.ledger.utxo.data.transaction.UtxoLedgerLastPersistedTimestamp
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
@@ -44,7 +48,6 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.CompositeKey
-import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -54,6 +57,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.ArgumentMatchers.eq
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -70,6 +75,21 @@ class UtxoLedgerPersistenceServiceImplTest {
     private companion object {
         private val byteBuffer = ByteBuffer.wrap("bytes".toByteArray())
         private val serializedBytes = SerializedBytesImpl<Any>(byteBuffer.array())
+
+        private val now = Instant.ofEpochSecond(3600)
+        private val past = now.minusSeconds(1)
+        private val future = now.plusSeconds(1)
+
+        @JvmStatic
+        private fun provideTimeArguments(): Array<TimeArguments> {
+            return arrayOf(
+                TimeArguments(null, now),
+                TimeArguments(past, now),
+                TimeArguments(future, null),
+                TimeArguments(now, null)
+
+            )
+        }
     }
 
     private val externalEventExecutor = mock<ExternalEventExecutor>()
@@ -83,6 +103,10 @@ class UtxoLedgerPersistenceServiceImplTest {
     private val virtualNodeContext = mock<VirtualNodeContext>()
     private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
     private val stateAndRefCache = mock<StateAndRefCache>()
+    private val flowFiberService = mock<FlowFiberService>()
+    private val flowFiber = mock<FlowFiber>()
+    private val flowFiberExecutionContext = mock<FlowFiberExecutionContext>()
+    private val flowCheckpoint = mock<FlowCheckpoint>()
 
     private val notaryServiceKey = mock<CompositeKey>()
     private val publicKeyNotaryVNode1 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x01)) }
@@ -105,7 +129,8 @@ class UtxoLedgerPersistenceServiceImplTest {
             utxoSignedTransactionFactory,
             utxoFilteredTransactionFactory,
             notarySignatureVerificationService,
-            stateAndRefCache
+            stateAndRefCache,
+            flowFiberService
         )
 
         whenever(serializationService.serialize(any<Any>())).thenReturn(serializedBytes)
@@ -121,71 +146,84 @@ class UtxoLedgerPersistenceServiceImplTest {
         whenever(currentSandboxGroupContext.get()).thenReturn(sandbox)
         whenever(stateAndRefCache.putAll(any())).doAnswer {}
 
+        whenever(flowFiberService.getExecutingFiber()).thenReturn(flowFiber)
+        whenever(flowFiber.getExecutionContext()).thenReturn(flowFiberExecutionContext)
+        whenever(flowFiberExecutionContext.flowCheckpoint).thenReturn(flowCheckpoint)
+
         // Composite key containing both of the notary VNode keys
         whenever(notaryServiceKey.leafKeys).thenReturn(setOf(publicKeyNotaryVNode1, publicKeyNotaryVNode2))
         whenever(notaryServiceKey.isFulfilledBy(publicKeyNotaryVNode1)).thenReturn(true)
         whenever(notaryServiceKey.isFulfilledBy(publicKeyNotaryVNode2)).thenReturn(true)
     }
 
-    @Test
-    fun `persist executes successfully`() {
-        val expectedObj = mock<CordaPackageSummaryImpl>()
-        whenever(serializationService.deserialize<CordaPackageSummaryImpl>(any<ByteArray>(), any())).thenReturn(expectedObj)
+    data class TimeArguments(val previousPersist: Instant?, val verifyPutWith: Instant?)
+
+    @ParameterizedTest
+    @MethodSource("provideTimeArguments")
+    fun `persist executes successfully and updates timestamp in flow checkpoing when required`(args: TimeArguments) {
+        val expectedObj = now
+        whenever(serializationService.deserialize<Instant>(any<ByteArray>(), any())).thenReturn(expectedObj)
         val transaction = mock<UtxoSignedTransactionInternal>()
         whenever(transaction.wireTransaction).thenReturn(mock())
         whenever(transaction.signatures).thenReturn(mock())
+
+        whenever(flowCheckpoint.readCustomState(UtxoLedgerLastPersistedTimestamp::class.java))
+            .then { args.previousPersist?.let { UtxoLedgerLastPersistedTimestamp(it) } }
 
         assertThat(
             utxoLedgerPersistenceService.persist(
                 transaction,
                 VERIFIED
             )
-        ).isEqualTo(listOf(expectedObj))
+        ).isEqualTo(expectedObj)
 
         verify(serializationService).serialize(any<Any>())
-        verify(serializationService).deserialize<CordaPackageSummaryImpl>(any<ByteArray>(), any())
+        verify(serializationService).deserialize<Instant>(any<ByteArray>(), any())
         assertThat(argumentCaptor.firstValue).isEqualTo(PersistTransactionExternalEventFactory::class.java)
+        args.verifyPutWith?.let {
+            verify(flowCheckpoint).writeCustomState(UtxoLedgerLastPersistedTimestamp(it))
+        }
     }
 
     @Test
     fun `persistIfDoesNotExist returns a status of DOES_NOT_EXIST when null is returned from the external event factory`() {
-        persistIfDoesNotExist(returnedStatus = null) { transaction, packageSummary ->
+        persistIfDoesNotExist(returnedStatus = "") { transaction ->
             assertThat(
                 utxoLedgerPersistenceService.persistIfDoesNotExist(
                     transaction,
                     VERIFIED
                 )
-            ).isEqualTo(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(packageSummary))
+            ).isEqualTo(TransactionExistenceStatus.DOES_NOT_EXIST)
         }
     }
 
     @Test
     fun `persistIfDoesNotExist returns a status of UNVERIFIED when UNVERIFIED is returned from the external event factory`() {
-        persistIfDoesNotExist(UNVERIFIED.value) { transaction, packageSummary ->
+        persistIfDoesNotExist(UNVERIFIED.value) { transaction ->
             assertThat(
                 utxoLedgerPersistenceService.persistIfDoesNotExist(
                     transaction,
                     VERIFIED
                 )
-            ).isEqualTo(TransactionExistenceStatus.UNVERIFIED to listOf(packageSummary))
+            ).isEqualTo(TransactionExistenceStatus.UNVERIFIED)
         }
     }
 
     @Test
     fun `persistIfDoesNotExist returns a status of VERIFIED when VERIFIED is returned from the external event factory`() {
-        persistIfDoesNotExist(VERIFIED.value) { transaction, packageSummary ->
+        persistIfDoesNotExist(VERIFIED.value) { transaction ->
             assertThat(
                 utxoLedgerPersistenceService.persistIfDoesNotExist(
                     transaction,
                     VERIFIED
                 )
-            ).isEqualTo(TransactionExistenceStatus.VERIFIED to listOf(packageSummary))
+            ).isEqualTo(TransactionExistenceStatus.VERIFIED)
         }
     }
 
     @Test
     fun `persistIfDoesNotExist throws an exception when an invalid status is returned from the external event factory`() {
-        persistIfDoesNotExist("Invalid") { transaction, _ ->
+        persistIfDoesNotExist("Invalid") { transaction ->
             assertThatThrownBy {
                 utxoLedgerPersistenceService.persistIfDoesNotExist(
                     transaction,
@@ -364,23 +402,22 @@ class UtxoLedgerPersistenceServiceImplTest {
 
     private fun persistIfDoesNotExist(
         returnedStatus: String?,
-        test: (transaction: UtxoSignedTransaction, packageSummary: CordaPackageSummary) -> Unit
+        test: (transaction: UtxoSignedTransaction) -> Unit
     ) {
-        val packageSummary = mock<CordaPackageSummaryImpl>()
         whenever(
-            serializationService.deserialize<Pair<String?, List<CordaPackageSummary>>>(
+            serializationService.deserialize<String>(
                 any<ByteArray>(),
                 any()
             )
-        ).thenReturn(returnedStatus to listOf(packageSummary))
+        ).thenReturn(returnedStatus)
         val transaction = mock<UtxoSignedTransactionInternal>()
         whenever(transaction.wireTransaction).thenReturn(mock())
         whenever(transaction.signatures).thenReturn(mock())
 
-        test(transaction, packageSummary)
+        test(transaction)
 
         verify(serializationService).serialize(any<Any>())
-        verify(serializationService).deserialize<Pair<String?, List<CordaPackageSummary>>>(any<ByteArray>(), any())
+        verify(serializationService).deserialize<String>(any<ByteArray>(), any())
         assertThat(argumentCaptor.firstValue).isEqualTo(PersistTransactionIfDoesNotExistExternalEventFactory::class.java)
     }
 }
