@@ -17,7 +17,7 @@ internal class MessageReplayer(
         messageId: String,
         key: String,
     ) {
-        println("TTT replaying: $messageId")
+        logger.info("TTT replaying: $messageId")
         logger.debug("Replaying message '$messageId' with key: '$key'")
         val authenticatedMessage = cache.get(key)
         if (authenticatedMessage == null) {
@@ -30,6 +30,9 @@ internal class MessageReplayer(
             key,
         )
         val records = outboundMessageProcessor.processReplayedAuthenticatedMessage(messageAndKey)
+        records.forEach {
+            logger.info("TTT \t sending replaying: ${it.key} to ${it.topic}")
+        }
         publisher.publish(
             records,
         ).forEach {

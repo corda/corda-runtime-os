@@ -53,6 +53,7 @@ internal class DataMessageCache(
 
     fun remove(key: String): MessageRecord? {
         val record = messageCache.remove(key)
+        logger.info("YYY in remove($key) we have ${record?.offset}")
         return if (record == null) {
             logger.trace("Deleting delivery tracker entry from state manager for '{}'.", key)
             commonComponents.stateManager.deleteIfPresent(key)
@@ -111,7 +112,9 @@ internal class DataMessageCache(
             logger.warn("Failed to delete tracking state for '{}' after '{}' attempts.", key, MAX_RETRIES)
             return null
         }
+        logger.info("YYY Looking for key: $key")
         val stateToDelete = get(setOf(key)).values.firstOrNull() ?: return null
+        logger.info("YYY Got it: ${stateToDelete.key}")
         val failedDeletes = try {
             delete(setOf(stateToDelete))
         } catch (e: Exception) {
@@ -121,7 +124,9 @@ internal class DataMessageCache(
         return if (failedDeletes.isNotEmpty()) {
             deleteIfPresent(key, remainingAttempts - 1)
         } else {
-            MessageRecord.fromState(stateToDelete, commonComponents.schemaRegistry)
+            MessageRecord.fromState(stateToDelete, commonComponents.schemaRegistry).also {
+                logger.info("YYY returning record ${it?.partition}")
+            }
         }
     }
 

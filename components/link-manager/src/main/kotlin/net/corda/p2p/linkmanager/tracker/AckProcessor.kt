@@ -15,9 +15,11 @@ internal class AckProcessor(
 ) : PubSubProcessor<String, String> {
 
     override fun onNext(event: Record<String, String>): Future<Unit> {
+        println("YYY Got ack for ${event.key} -> ${event.value}")
         val future = CompletableFuture.completedFuture(Unit)
         val messageId = event.key
         val messageRecord = cache.remove(messageId) ?: return future
+        println("YYY \t messageRecord -> ${messageRecord.message.header.messageId}, messageId = $messageId")
         partitionsStates.forget(messageRecord)
         val counterparties = SessionManager.Counterparties(
             ourId = messageRecord.message.header.source.toCorda(),
@@ -27,6 +29,7 @@ internal class AckProcessor(
             messageId,
             counterparties,
         )
+        println("YYY \t Removed $messageId")
         return CompletableFuture.completedFuture(Unit)
     }
 
