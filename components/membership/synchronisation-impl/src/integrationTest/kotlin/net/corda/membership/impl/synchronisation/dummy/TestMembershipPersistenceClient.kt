@@ -33,6 +33,8 @@ import java.util.*
  */
 interface TestMembershipPersistenceClient : MembershipPersistenceClient {
     fun getPersistedGroupParameters(): InternalGroupParameters?
+
+    fun getPersistedMemberInfos(): Collection<SelfSignedMemberInfo>?
 }
 
 @Suppress("TooManyFunctions")
@@ -48,6 +50,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     }
 
     private var persistedGroupParameters: InternalGroupParameters? = null
+    private var persistedMemberInfos: Collection<SelfSignedMemberInfo>? = null
 
     private val coordinator =
         coordinatorFactory.createCoordinator(LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>()) { event, coordinator ->
@@ -58,13 +61,19 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
 
     override fun getPersistedGroupParameters(): InternalGroupParameters? = persistedGroupParameters
 
+    override fun getPersistedMemberInfos(): Collection<SelfSignedMemberInfo>? = persistedMemberInfos
+
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         memberInfos: Collection<SelfSignedMemberInfo>
     ): MembershipPersistenceOperation<Unit> {
-        with(UNIMPLEMENTED_FUNCTION) {
-            logger.warn(this)
-            throw UnsupportedOperationException(this)
+        persistedMemberInfos = memberInfos
+        return object : MembershipPersistenceOperation<Unit> {
+            override fun execute() = MembershipPersistenceResult.success()
+
+            override fun createAsyncCommands(): Collection<Record<*, *>> {
+                return emptyList()
+            }
         }
     }
 
