@@ -4,16 +4,12 @@ import net.corda.crypto.core.bytes
 import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
-import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.PersistenceExceptionCategorizer
 import net.corda.orm.PersistenceExceptionType
 import net.corda.test.util.identity.createTestHoldingIdentity
-import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.datamodel.common.UniquenessConstants
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRequest
@@ -27,7 +23,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
-import org.mockito.Mockito
 import org.mockito.Mockito.verify
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
