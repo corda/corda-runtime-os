@@ -1,6 +1,5 @@
 package net.corda.sdk.bootstrap.dbconfig
 
-import liquibase.Contexts
 import liquibase.Liquibase
 import liquibase.database.Database
 import liquibase.database.DatabaseFactory
@@ -8,6 +7,7 @@ import liquibase.database.OfflineConnection
 import liquibase.database.core.PostgresDatabase
 import liquibase.database.jvm.JdbcConnection
 import liquibase.resource.ClassLoaderResourceAccessor
+import net.corda.db.admin.LiquibaseSchemaUpdater
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -17,7 +17,10 @@ import java.nio.file.Path
 import java.sql.Connection
 import java.sql.DriverManager
 
-class DbSchemaGenerator(private val config: SpecConfig = SpecConfig()) {
+class DbSchemaGenerator(
+    private val config: SpecConfig = SpecConfig(),
+    private val liquibaseSchemaUpdater: LiquibaseSchemaUpdater = LiquibaseSchemaUpdaterImpl()
+) {
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java)
@@ -147,7 +150,8 @@ class DbSchemaGenerator(private val config: SpecConfig = SpecConfig()) {
                 outputFile.write(System.lineSeparator())
             }
 
-            config.liquibaseFactory(filename, database).update(Contexts(), outputFile)
+            val lb = config.liquibaseFactory(filename, database)
+            liquibaseSchemaUpdater.update(lb, outputFile)
         }
     }
 

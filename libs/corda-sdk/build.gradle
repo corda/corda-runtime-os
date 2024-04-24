@@ -39,6 +39,7 @@ dependencies {
     implementation project(':libs:configuration:configuration-datamodel')
     implementation project(':libs:configuration:configuration-endpoints')
     implementation project(':libs:crypto:crypto-config-impl')
+    implementation project(":libs:db:db-admin-impl")
     implementation project(':libs:membership:certificates-common')
     implementation project(':libs:membership:membership-common')
     implementation project(':libs:membership:schema-validation')
