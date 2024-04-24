@@ -68,7 +68,7 @@ class CryptoRekeyBusProcessor(
                 }
                 processEvent(request, timestamp)
             } catch (ex: Exception) {
-                logger.warn("A KeyRotationRequest event could not be processed:", ex)
+                logger.warn("A KeyRotationRequest event could not be processed: ${ex.message}", ex)
             }
         }
 

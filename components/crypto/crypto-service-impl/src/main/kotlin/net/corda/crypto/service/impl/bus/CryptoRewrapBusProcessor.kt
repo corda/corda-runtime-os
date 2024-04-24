@@ -54,7 +54,7 @@ class CryptoRewrapBusProcessor(
             try {
                 processEvent(request)
             } catch (ex: Exception) {
-                logger.warn("A IndividualKeyRotationRequest event could not be processed:", ex)
+                logger.warn("A IndividualKeyRotationRequest event could not be processed: ${ex.message}", ex)
             }
         }
         return emptyList()
