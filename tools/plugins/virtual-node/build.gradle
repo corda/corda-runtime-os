@@ -47,6 +47,7 @@ dependencies {
     testImplementation libs.bundles.test
     testImplementation libs.pf4j
     testCompileOnly "net.corda.cli.host:api:$pluginHostVersion"
+    testImplementation "info.picocli:picocli:$picocliVersion"
 }
 
 cliPlugin {
