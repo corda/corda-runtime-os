@@ -41,6 +41,7 @@ import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.crypto.softhsm.impl.infra.makeTenantInfoService
 import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
+import net.corda.utilities.toByteArray
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
@@ -398,7 +399,7 @@ class SoftCryptoServiceGeneralTests {
             on { findKey(any<PublicKey>()) } doThrow exception
         }
         val publicKey = mock<PublicKey> {
-            on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+            on { encoded } doReturn UUID.randomUUID().toByteArray()
         }
         val data = ByteArray(2)
         val signatureSpec = SignatureSpecImpl("NONE")
@@ -429,7 +430,7 @@ class SoftCryptoServiceGeneralTests {
         }
         val cryptoService = makeSoftCryptoService(signingRepository = repo)
         val publicKey = mock<PublicKey> {
-            on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+            on { encoded } doReturn UUID.randomUUID().toByteArray()
         }
         val exception = assertThrows<IllegalArgumentException> {
             cryptoService.sign(
@@ -451,7 +452,7 @@ class SoftCryptoServiceGeneralTests {
         }
         val cryptoService = makeSoftCryptoService(signingRepository = repo)
         val publicKey = mock<PublicKey> {
-            on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+            on { encoded } doReturn UUID.randomUUID().toByteArray()
         }
         assertThrows<IllegalArgumentException> {
             cryptoService.sign(
@@ -486,10 +487,10 @@ class SoftCryptoServiceGeneralTests {
             cryptoService.deriveSharedSecret(
                 tenantId = UUID.randomUUID().toString(),
                 publicKey = mock {
-                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+                    on { encoded } doReturn UUID.randomUUID().toByteArray()
                 },
                 otherPublicKey = mock {
-                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+                    on { encoded } doReturn UUID.randomUUID().toByteArray()
                 },
                 context = emptyMap()
             )
@@ -509,10 +510,10 @@ class SoftCryptoServiceGeneralTests {
             cryptoService.deriveSharedSecret(
                 tenantId = UUID.randomUUID().toString(),
                 publicKey = mock {
-                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+                    on { encoded } doReturn UUID.randomUUID().toByteArray()
                 },
                 otherPublicKey = mock {
-                    on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+                    on { encoded } doReturn UUID.randomUUID().toByteArray()
                 },
                 context = emptyMap()
             )
@@ -531,7 +532,7 @@ class SoftCryptoServiceGeneralTests {
             alias = "alias1",
             hsmAlias = null,
             publicKey = mock(),
-            keyMaterial = UUID.randomUUID().toString().toByteArray(),
+            keyMaterial = UUID.randomUUID().toByteArray(),
             wrappingKeyAlias = masterKeyAlias,
             externalId = null,
             schemeCodeName = ECDSA_SECP256R1_CODE_NAME,
