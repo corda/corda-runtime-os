@@ -96,13 +96,9 @@ internal class PartitionState(
             key = key,
             version = version,
         )
-        println("YYY addToOperationGroup key: $key, version: $version")
-        println("YYY addToOperationGroup \t ${String(value)}")
         if (toCreate.get()) {
-            println("YYY addToOperationGroup \t create")
             group.create(state)
         } else {
-            println("YYY addToOperationGroup \t update")
             group.update(state)
         }
     }
@@ -130,11 +126,9 @@ internal class PartitionState(
     }
 
     fun saved() {
-        println("YYY In partition: $partition version was $savedVersion")
         if (!toCreate.getAndSet(false)) {
             savedVersion.incrementAndGet()
         }
-        println("\t now $savedVersion")
     }
 
     fun trim() {

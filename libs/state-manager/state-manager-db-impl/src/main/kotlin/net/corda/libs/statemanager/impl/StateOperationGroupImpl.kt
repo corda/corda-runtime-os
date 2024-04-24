@@ -52,8 +52,6 @@ class StateOperationGroupImpl(
             throw IllegalStateException("Attempted to execute a group that has already been executed")
         }
         return dataSource.connection.transaction { connection ->
-            println("AAA in transaction $connection")
-            println("AAA \t creates - ${creates.size}")
             val createFailures = repository.create(
                 connection,
                 creates
@@ -61,12 +59,10 @@ class StateOperationGroupImpl(
                 (creates.map { it.key }.toSet() - successes.toSet()).toList()
             }
 
-            println("AAA \t updates - ${updates.size}")
             val updateFailures = repository.update(
                 connection,
                 updates
             ).failedKeys
-            println("AAA \t updateFailures - $updateFailures")
 
             val deleteFailures = repository.delete(
                 connection,
