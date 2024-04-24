@@ -89,9 +89,13 @@ internal class PartitionState(
             key = key,
             version = version,
         )
+        println("YYY addToOperationGroup key: $key, version: $version")
+        println("YYY addToOperationGroup \t ${String(value)}")
         if (version == State.VERSION_INITIAL_VALUE) {
+            println("YYY addToOperationGroup \t create")
             group.create(state)
         } else {
+            println("YYY addToOperationGroup \t update")
             group.update(state)
         }
     }
