@@ -536,9 +536,11 @@ class StaticMemberRegistrationService(
                 listOf(memberInfoToPersist)
             ).execute()
             if (persistenceResult is MembershipPersistenceResult.Failure) {
-                throw CordaRuntimeException("Persistence error happened when view owner " +
+                throw CordaRuntimeException(
+                    "Persistence error happened when view owner " +
                         "${owningMemberHoldingIdentity.shortHash} persisted the information of " +
-                        "${memberInfo.holdingIdentity.shortHash}.")
+                        "${memberInfo.holdingIdentity.shortHash}."
+                )
             }
             Record(
                 MEMBER_LIST_TOPIC,

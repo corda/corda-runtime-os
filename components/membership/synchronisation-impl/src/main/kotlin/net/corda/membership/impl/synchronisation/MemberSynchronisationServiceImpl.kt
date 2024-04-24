@@ -323,8 +323,10 @@ class MemberSynchronisationServiceImpl internal constructor(
                     updateMembersInfo.values,
                 ).execute()
                 if (memberListPersistenceResult is MembershipPersistenceResult.Failure) {
-                    throw CordaRuntimeException("Persistence error happened when view owner " +
-                            "${viewOwningMember} persisted the member list.")
+                    throw CordaRuntimeException(
+                        "Persistence error happened when view owner " +
+                            "$viewOwningMember persisted the member list."
+                    )
                 }
 
                 val persistentMemberInfoRecords = updateMembersInfo.map { (_, memberInfo) ->

@@ -815,7 +815,7 @@ class StaticMemberRegistrationServiceTest {
             }
             whenever(groupReader.lookup()).thenReturn(listOf(mockNotaryMember))
 
-             val exception = assertThrows<InvalidMembershipRegistrationException> {
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationId, alice, context)
             }
             assertThat(exception).hasMessageContaining("already exists")
@@ -879,8 +879,10 @@ class StaticMemberRegistrationServiceTest {
                 registrationService.register(registrationId, alice, invalidContext)
             }
 
-            assertThat(exception).hasMessageContaining("Failed to validate the registration context with the following errors:\n" +
-                    "The key: ext.aaaaaaaaaaaaaa")
+            assertThat(exception).hasMessageContaining(
+                "Failed to validate the registration context with the following errors:\n" +
+                    "The key: ext.aaaaaaaaaaaaaa"
+            )
         }
     }
 
