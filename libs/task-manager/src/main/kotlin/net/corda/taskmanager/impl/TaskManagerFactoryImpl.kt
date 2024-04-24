@@ -23,7 +23,7 @@ internal object TaskManagerFactoryImpl : TaskManagerFactory {
             executorService = ThreadPoolExecutor(
                 threads, threads,
                 0L, TimeUnit.MILLISECONDS,
-                PriorityBlockingQueue<Runnable>(threads, TaskManagerImpl.BatchComparator()),
+                PriorityBlockingQueue<Runnable>(threads * 4, TaskManagerImpl.BatchComparator()),
                 threadFactory(threadName)
             )
         )
