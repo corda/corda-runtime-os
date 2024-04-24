@@ -123,7 +123,9 @@ internal class PartitionState(
     }
 
     fun saved() {
+        println("YYY In partition: $partition version was $savedVersion")
         savedVersion.incrementAndGet()
+        println("\t now $savedVersion")
     }
 
     fun trim() {

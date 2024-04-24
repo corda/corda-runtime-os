@@ -110,11 +110,14 @@ internal class PartitionsStates(
         }
 
         val group = stateManager.createOperationGroup()
+        logger.info("YYY In persist - thread ID - ${Thread.currentThread().id} partitions size: ${partitions.size}...")
         partitions.values.forEach { stateToPersist ->
             stateToPersist.trim()
+            logger.info("YYY \t adding partition to group...")
             stateToPersist.addToOperationGroup(group)
         }
         val failedUpdates = try {
+            logger.info("YYY Going to execute...")
             group.execute().also {
                 numberOfFailedRetries.set(0)
             }
@@ -139,6 +142,7 @@ internal class PartitionsStates(
         }
 
         partitions.values.forEach {
+            logger.info("YYY saved...")
             it.saved()
         }
     }
