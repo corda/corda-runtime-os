@@ -12,6 +12,7 @@ ext {
 }
 
 dependencies {
+    compileOnly "net.corda.cli.host:api:$pluginHostVersion"
     implementation project(':components:membership:membership-rest')
     implementation libs.jackson.module.kotlin
     implementation libs.kotlin.stdlib
@@ -29,7 +30,10 @@ dependencies {
     implementation project(':libs:virtual-node:virtual-node-endpoints')
     implementation project(':libs:virtual-node:virtual-node-endpoints-maintenance')
     implementation project(":libs:utilities")
+    implementation project(":libs:configuration:configuration-core")
     implementation 'net.corda:corda-config-schema'
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
 
     implementation libs.slf4j.api
     implementation libs.jackson.dataformat.yaml

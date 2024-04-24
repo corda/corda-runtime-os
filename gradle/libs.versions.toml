@@ -3,8 +3,8 @@ kotlinVersion = "1.8.21"
 
 apacheCommonsCodecVersion="1.16.1"
 apacheCommonsCompressVersion = "1.26.1"
-bouncycastleVersion = "1.77"
-braveVersion = "6.0.2"
+bouncycastleVersion = "1.78.1"
+braveVersion = "6.0.3"
 caffeineVersion = "3.1.8"
 guavaVersion = "33.1.0-jre"
 hikariCpVersion = "5.1.0"
@@ -32,7 +32,7 @@ slf4jVersion = { strictly = "1.7.36" }
 slf4jV2Version = { strictly = "2.0.6" }
 snakeyamlVersion = "2.2"
 # Please also update SWAGGERUI.version in net.corda.rest.server.impl.internal.OptionalDependency
-swaggeruiVersion = "5.13.0"
+swaggeruiVersion = "5.15.1"
 # Note: We cannot go to the higher versions as they transitively depend on SLF4J 2.X
 swaggerVersion = "2.2.16"
 #Snappy used for compression
@@ -50,7 +50,7 @@ nettyVersion = "4.1.109.Final"
 assertjVersion = "3.25.3"
 junitVersion = "5.10.2"
 mockitoVersion = "5.10.0"
-mockitoKotlinVersion = "5.2.1"
+mockitoKotlinVersion = "5.3.1"
 
 # Plugins
 gradleDataVersion = "2"
@@ -61,7 +61,7 @@ snykVersion = "0.5.1"
 cyclonedxVersion = "1.8.2"
 dokkaVersion = "1.9.10"
 testLoggerVersion = "4.0.0"
-sonarVersion = "4.4.1.3373"
+sonarVersion = "5.0.0.4638"
 
 [libraries]
 apache-commons-codec = { group = "commons-codec", name = "commons-codec", version.ref = "apacheCommonsCodecVersion" }
