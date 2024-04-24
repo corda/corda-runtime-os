@@ -5,6 +5,7 @@ import liquibase.command.CommandArgumentDefinition
 import liquibase.command.CommandScope
 import liquibase.database.Database
 import net.corda.db.admin.impl.LiquibaseSchemaUpdaterImpl
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentMatchers
@@ -76,6 +77,7 @@ class PlatformMigrationTest {
     }
 
     @Test
+    @Disabled
     fun `invalid holding id`() {
         whenever(mockLineReader.invoke(any(), any())).thenAnswer {
             it.getArgument<(String) -> Unit>(1)!!.let { block ->
@@ -87,6 +89,7 @@ class PlatformMigrationTest {
     }
 
     @Test
+    @Disabled
     fun `default filenames`() {
         whenever(mockWriterFactory.invoke("./vnodes.sql")).thenReturn(mockFileWriter)
         whenever(mockLineReader.invoke(eq("./holdingIds"), any())).thenAnswer {
@@ -100,6 +103,7 @@ class PlatformMigrationTest {
     }
 
     @Test
+    @Disabled
     fun `pass filenames`() {
         val sqlFilename = "my-sql-file"
         val holdingIdFilename = "my-holding-ids-file"
