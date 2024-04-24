@@ -214,7 +214,7 @@ class CryptoOpsBusProcessorTests {
 //
 //    @Test
 //    fun `Should generate key pair and be able to find and lookup and then sign using default and custom schemes`() {
-//        val data = UUID.randomUUID().toBytes()
+//        val data = UUID.randomUUID().toByteArray()
 //        val alias = newAlias()
 //        // generate
 //        val command = GenerateKeyPairCommand(LEDGER, alias, null, ECDSA_SECP256R1_CODE_NAME, basicContext)
@@ -259,7 +259,7 @@ class CryptoOpsBusProcessorTests {
 //    fun `Should generate key pair and be able to find and lookup and then sign with parameterised signature params`() {
 //        val spec4 = PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 32, 1)
 //        val signatureSpec4 = ParameterizedSignatureSpec("RSASSA-PSS", spec4)
-//        val data = UUID.randomUUID().toBytes()
+//        val data = UUID.randomUUID().toByteArray()
 //        val alias = newAlias()
 //        // generate
 //        val makeKeyCommand = GenerateKeyPairCommand(LEDGER, alias, null, RSA_CODE_NAME, basicContext)
@@ -299,7 +299,7 @@ class CryptoOpsBusProcessorTests {
 //        assertNotNull(info)
 //        assertNull(info.alias)
 //        assertNull(info.externalId)
-//        testSigning(publicKey, UUID.randomUUID().toBytes())
+//        testSigning(publicKey, UUID.randomUUID().toByteArray())
 //    }
 //
 //    @Test
@@ -319,7 +319,7 @@ class CryptoOpsBusProcessorTests {
 //
 //    @Test
 //    fun `Should generate fresh key pair with external id and be able to sign using default and custom schemes`() {
-//        val data = UUID.randomUUID().toBytes()
+//        val data = UUID.randomUUID().toByteArray()
 //        // generate
 //        val externalId = UUID.randomUUID().toString()
 //        val key = process<CryptoPublicKey>(GenerateFreshKeyRpcCommand(CI, externalId, ECDSA_SECP256R1_CODE_NAME, basicContext))
@@ -389,7 +389,7 @@ class CryptoOpsBusProcessorTests {
 //
 //    @Test
 //    fun `Should complete future exceptionally in case of service failure`() {
-//        val data = UUID.randomUUID().toBytes()
+//        val data = UUID.randomUUID().toByteArray()
 //        val alias = newAlias()
 //        // generate
 //        val key1 = process<CryptoPublicKey>(GenerateKeyPairCommand(LEDGER, alias, null, ECDSA_SECP256R1_CODE_NAME, basicContext))
