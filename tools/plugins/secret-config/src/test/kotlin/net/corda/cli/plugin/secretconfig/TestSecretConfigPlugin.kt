@@ -23,7 +23,8 @@ class TestSecretConfigPlugin {
         }
 
         println(outText)
-        assertThat(outText.startsWith("{\"configSecret\":{\"encryptedSecret\")"))
+        assertThat(outText.startsWith("{\"configSecret\":{\"encryptedSecret\"")).isTrue()
+
     }
 
     @Test
@@ -38,7 +39,8 @@ class TestSecretConfigPlugin {
         }
 
         println(outText)
-        assertThat(outText.startsWith("{\"configSecret\":{\"vaultKey\":\"passwordKey\",\"vaultPath\":\"myPath\"}}"))
+        val resultMatch = """(?s)\{"configSecret":\{"vaultKey":".*","vaultPath":"myPath"}}.*""".toRegex()
+        assertThat(resultMatch.matches(outText)).isTrue()
     }
 
     @Test
@@ -113,7 +115,7 @@ class TestSecretConfigPlugin {
                 ), Arguments.of(
                     "vaultPath missing create, VAULT type",
                     arrayOf("value", "-t", "VAULT", "create"),
-                    "'vaultPath' must be set for VAULT type secrets"
+                    "'vault-path' must be set for VAULT type secrets"
                 ), Arguments.of(
                     "command missing, VAULT type",
                     arrayOf("value", "-t", "VAULT", "-v", "vaultPath"),
