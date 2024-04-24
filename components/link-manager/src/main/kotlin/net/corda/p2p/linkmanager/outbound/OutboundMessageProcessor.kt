@@ -43,6 +43,8 @@ import net.corda.metrics.CordaMetrics
 import net.corda.p2p.linkmanager.TraceableItem
 import net.corda.p2p.linkmanager.metrics.recordOutboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
+import net.corda.schema.Schemas.P2P.LINK_ACK_IN_TOPIC
+import net.corda.utilities.flags.Features
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class OutboundMessageProcessor(
@@ -55,6 +57,7 @@ internal class OutboundMessageProcessor(
     private val messageConverter: MessageConverter,
     private val networkMessagingValidator: NetworkMessagingValidator =
         NetworkMessagingValidator(membershipGroupReaderProvider),
+    private val features: Features = Features(),
 ) : EventLogProcessor<String, AppMessage> {
 
     override val keyClass = String::class.java
@@ -301,12 +304,12 @@ internal class OutboundMessageProcessor(
         }
 
         if (ttlExpired(messageAndKey.message.header.ttl)) {
-            val expiryMarker = recordForTTLExpiredMarker(messageAndKey.message.header.messageId)
+            val expiryMarkers = recordForTTLExpiredMarker(messageAndKey.message.header.messageId)
             return if (isReplay) {
-                ValidateAuthenticatedMessageResult.NoSessionNeeded(listOf(expiryMarker))
+                ValidateAuthenticatedMessageResult.NoSessionNeeded(expiryMarkers)
             } else {
                 ValidateAuthenticatedMessageResult.NoSessionNeeded(
-                    listOf(recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId), expiryMarker)
+                    expiryMarkers + recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId)
                 )
             }
         }
@@ -331,18 +334,16 @@ internal class OutboundMessageProcessor(
             recordInboundMessagesMetric(messageAndKey.message)
             return if (isReplay) {
                 ValidateAuthenticatedMessageResult.NoSessionNeeded(
-                    listOf(
-                        Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
-                        recordForLMReceivedMarker(messageAndKey.message.header.messageId)
-                    )
+                    recordForLMReceivedMarker(messageAndKey.message.header.messageId) +
+                            Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message))
                 )
             } else {
                 ValidateAuthenticatedMessageResult.NoSessionNeeded(
-                    listOf(
-                        Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
-                        recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId),
-                        recordForLMReceivedMarker(messageAndKey.message.header.messageId)
-                    )
+                    recordForLMReceivedMarker(messageAndKey.message.header.messageId) +
+                            listOf(
+                                Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
+                                recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId),
+                            )
                 )
             }
         } else {
@@ -416,14 +417,43 @@ internal class OutboundMessageProcessor(
         return Record(Schemas.P2P.P2P_OUT_MARKERS, messageId, marker)
     }
 
-    private fun recordForLMReceivedMarker(messageId: String): Record<String, AppMessageMarker> {
+    private fun recordForLMReceivedMarker(messageId: String): List<Record<String, *>> {
         val marker = AppMessageMarker(LinkManagerReceivedMarker(), clock.instant().toEpochMilli())
-        return Record(Schemas.P2P.P2P_OUT_MARKERS, messageId, marker)
+        val markerRecord = listOf(
+            Record(Schemas.P2P.P2P_OUT_MARKERS, messageId, marker)
+        )
+        val linkInRecords = if (features.enableP2PStatefulDeliveryTracker) {
+            listOf(
+                Record(
+                    LINK_ACK_IN_TOPIC,
+                    messageId,
+                    null,
+                )
+            )
+        } else {
+            emptyList()
+        }
+        return markerRecord + linkInRecords
     }
 
-    private fun recordForTTLExpiredMarker(messageId: String): Record<String, AppMessageMarker> {
+    private fun recordForTTLExpiredMarker(messageId: String):
+            List<Record<String, *>> {
         val marker = AppMessageMarker(TtlExpiredMarker(Component.LINK_MANAGER), clock.instant().toEpochMilli())
-        return Record(Schemas.P2P.P2P_OUT_MARKERS, messageId, marker)
+        val markerRecords = listOf(
+            Record(Schemas.P2P.P2P_OUT_MARKERS, messageId, marker)
+        )
+        val linkInRecords = if (features.enableP2PStatefulDeliveryTracker) {
+            listOf(
+                Record(
+                    LINK_ACK_IN_TOPIC,
+                    messageId,
+                    null,
+                )
+            )
+        } else {
+            emptyList()
+        }
+        return markerRecords + linkInRecords
     }
 
     private fun recordForLMDiscardedMarker(message: AuthenticatedMessageAndKey,
