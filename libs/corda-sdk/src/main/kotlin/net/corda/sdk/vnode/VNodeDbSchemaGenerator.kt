@@ -43,7 +43,7 @@ class VNodeDbSchemaGenerator(
         val writerFactory: (String) -> FileWriter = { file -> FileWriter(File(file)) },
         val lineReader: (String, (String) -> Unit) -> Unit = { filename, block ->
             File(filename).forEachLine { block(it) }
-        },
+        }, // TODO consider passing holdingIds as List<String>
         val liquibaseFactory: (String, Database) -> Liquibase = { file: String, database: Database ->
             Liquibase(file, ClassLoaderResourceAccessor(), database)
         },
