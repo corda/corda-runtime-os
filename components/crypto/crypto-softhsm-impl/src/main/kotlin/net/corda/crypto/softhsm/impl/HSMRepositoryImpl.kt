@@ -10,7 +10,7 @@ import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.utilities.debug
-import net.corda.utilities.toBytes
+import net.corda.utilities.toByteArray
 import net.corda.v5.base.util.EncodingUtils.toHex
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -184,7 +184,7 @@ class HSMRepositoryImpl(
     }
 
     private fun generateRandomShortAlias() =
-        toHex(UUID.randomUUID().toBytes()).take(12)
+        toHex(UUID.randomUUID().toByteArray()).take(12)
 }
 
 // NOTE: this should be on the Entity.

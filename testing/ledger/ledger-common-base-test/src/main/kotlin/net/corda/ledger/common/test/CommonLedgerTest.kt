@@ -24,6 +24,7 @@ import net.corda.ledger.common.testkit.FakePlatformInfoProvider
 import net.corda.ledger.common.testkit.fakePlatformInfoProvider
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.utilities.toByteArray
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -53,7 +54,7 @@ abstract class CommonLedgerTest {
 
     val mockPrivacySaltProviderService = mock<PrivacySaltProviderService>().apply {
         whenever(generatePrivacySalt()).thenAnswer {
-            PrivacySaltImpl(UUID.randomUUID().toString().toByteArray())
+            PrivacySaltImpl(UUID.randomUUID().toByteArray())
         }
     }
 
