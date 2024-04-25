@@ -12,7 +12,6 @@ import java.io.FileWriter
 import java.sql.Connection
 import java.sql.DriverManager
 
-// TODO merge with DbSchemaGenerator
 class VNodeDbSchemaGenerator(
     private val config: PlatformMigrationConfig = PlatformMigrationConfig(),
     private val liquibaseSchemaUpdater: LiquibaseSchemaUpdater = LiquibaseSchemaUpdaterImpl()
@@ -43,7 +42,7 @@ class VNodeDbSchemaGenerator(
         val writerFactory: (String) -> FileWriter = { file -> FileWriter(File(file)) },
         val lineReader: (String, (String) -> Unit) -> Unit = { filename, block ->
             File(filename).forEachLine { block(it) }
-        }, // TODO consider passing holdingIds as List<String>
+        },
         val liquibaseFactory: (String, Database) -> Liquibase = { file: String, database: Database ->
             Liquibase(file, ClassLoaderResourceAccessor(), database)
         },
@@ -55,11 +54,8 @@ class VNodeDbSchemaGenerator(
         }
     )
 
-    /**
-     * TODO add kdoc
-     */
     fun generateVNodeMigrationSqlFile(holdingIdFilename: String, outputFilename: String, jdbcConnectionParams: JdbcConnectionParams) {
-        val holdingIdsToMigrate = readHoldingIdsToMigrate(holdingIdFilename) // TODO reduce nested calls
+        val holdingIdsToMigrate = readHoldingIdsToMigrate(holdingIdFilename)
 
         config.writerFactory(outputFilename).use { fileWriter ->
             listOf(
@@ -81,7 +77,6 @@ class VNodeDbSchemaGenerator(
         jdbcConnectionParams: JdbcConnectionParams
     ) {
         val (jdbcUrl, user, password) = jdbcConnectionParams
-//        withPluginClassLoader { TODO wrap inside the run()
         val connection = config.jdbcConnectionFactory(jdbcUrl, user, password)
         val database = config.jdbcDatabaseFactory(connection).apply {
             val schemaName = fileAndSchema.schemaPrefix + holdingId
@@ -93,6 +88,5 @@ class VNodeDbSchemaGenerator(
             val lb = config.liquibaseFactory(fileAndSchema.filename, database)
             liquibaseSchemaUpdater.update(lb, fileWriter)
         }
-//        }
     }
 }

@@ -85,7 +85,7 @@ class PlatformMigration : Callable<Int> {
         val generator = VNodeDbSchemaGenerator()
         val jdbcConnectionParams = VNodeDbSchemaGenerator.JdbcConnectionParams(jdbcUrl, user, password)
 
-        withPluginClassLoader { // TODO or pass the classloader to the SDK?
+        withPluginClassLoader {
             generator.generateVNodeMigrationSqlFile(holdingIdFilename, outputFilename, jdbcConnectionParams)
         }
 
