@@ -23,6 +23,7 @@ import net.corda.data.crypto.wire.hsm.registration.queries.AssignedHSMQuery
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateWrappingKeyRpcCommand
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.utilities.toByteArray
 import net.corda.v5.base.util.EncodingUtils.toHex
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -46,7 +47,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class HSMRegistrationBusProcessorTests {
     companion object {
-        private val tenantId = toHex(UUID.randomUUID().toString().toByteArray().sha256Bytes()).take(12)
+        private val tenantId = toHex(UUID.randomUUID().toByteArray().sha256Bytes()).take(12)
 
         private val configEvent = ConfigChangedEvent(
             setOf(ConfigKeys.CRYPTO_CONFIG),

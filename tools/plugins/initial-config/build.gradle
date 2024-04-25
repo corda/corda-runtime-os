@@ -28,6 +28,7 @@ dependencies {
     implementation project(':libs:permissions:permission-password')
     implementation project(':libs:configuration:configuration-datamodel')
     implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:corda-sdk')
     implementation project(":libs:crypto:crypto-config-impl")
     implementation project(":libs:crypto:crypto-core")
     implementation project(':libs:db:db-core')

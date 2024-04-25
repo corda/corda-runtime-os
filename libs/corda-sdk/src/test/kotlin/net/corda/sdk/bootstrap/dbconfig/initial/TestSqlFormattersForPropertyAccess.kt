@@ -1,5 +1,6 @@
-package net.corda.cli.plugin.initialconfig
+package net.corda.sdk.bootstrap.dbconfig.initial
 
+import net.corda.sdk.bootstrap.initial.toInsertStatement
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -161,7 +162,7 @@ class TestSqlFormattersForPropertyAccess {
         val ex = assertThrows<java.lang.IllegalArgumentException> { ent.toInsertStatement() }
         assertEquals(
             "Value " +
-                "net.corda.cli.plugin.initialconfig.TestSqlFormattersForPropertyAccess.VersionedTestEntity for join " +
+                "net.corda.sdk.bootstrap.dbconfig.initial.TestSqlFormattersForPropertyAccess.VersionedTestEntity for join " +
                 "column does not have a primary key/id column",
             ex.message
         )

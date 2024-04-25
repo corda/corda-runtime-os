@@ -28,6 +28,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.test.util.createTestCase
 import net.corda.test.util.eventually
+import net.corda.utilities.toByteArray
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
@@ -230,8 +231,8 @@ class CryptoOperationsTests {
         ) {
             val scheme = schemeMetadata.findKeyScheme(publicKey)
             getInferableDigestNames(scheme).createTestCase { digest ->
-                val badData = UUID.randomUUID().toString().toByteArray()
-                val data = UUID.randomUUID().toString().toByteArray()
+                val badData = UUID.randomUUID().toByteArray()
+                val data = UUID.randomUUID().toByteArray()
                 val spec = schemeMetadata.inferSignatureSpec(publicKey, digest)
                 assertNotNull(spec)
                 val signature = factory.cryptoService.sign(tenantId, publicKey, spec, data)
@@ -260,7 +261,7 @@ class CryptoOperationsTests {
         ) {
             val scheme = schemeMetadata.findKeyScheme(publicKey)
             (getAllStandardSignatureSpecs(scheme) + getAllCustomSignatureSpecs(scheme)).createTestCase { spec ->
-                val data = UUID.randomUUID().toString().toByteArray()
+                val data = UUID.randomUUID().toByteArray()
                 val signature = factory.cryptoService.sign(tenantId, publicKey, spec, data)
                 assertEquals(publicKey, signature.by)
                 validateSignatureUsingExplicitSignatureSpec(publicKey, spec, signature.bytes, data)
@@ -273,7 +274,7 @@ class CryptoOperationsTests {
             signature: ByteArray,
             data: ByteArray
         ) {
-            val badData = UUID.randomUUID().toString().toByteArray()
+            val badData = UUID.randomUUID().toByteArray()
             assertTrue(
                 verifier.isValid(data, signature, publicKey, signatureSpec),
                 "Should validate with ${signatureSpec.signatureName}"
@@ -313,7 +314,7 @@ class CryptoOperationsTests {
 
     @Test
     fun `Should generate RSA key pair and be able sign and verify using RSASSA-PSS signature`() {
-        val testData = UUID.randomUUID().toString().toByteArray()
+        val testData = UUID.randomUUID().toByteArray()
         val scheme = schemeMetadata.findKeyScheme(RSA_CODE_NAME)
         val rsaPss = SignatureSpecs.RSASSA_PSS_SHA256
         val info = signingAliasedKeys.getValue(scheme)
@@ -330,7 +331,7 @@ class CryptoOperationsTests {
 
     @Test
     fun `Should generate fresh RSA key pair and be able sign and verify using RSASSA-PSS signature`() {
-        val testData = UUID.randomUUID().toString().toByteArray()
+        val testData = UUID.randomUUID().toByteArray()
         val scheme = schemeMetadata.findKeyScheme(RSA_CODE_NAME)
         val rsaPss = SignatureSpecs.RSASSA_PSS_SHA256
         val info = signingFreshKeys.getValue(scheme)
@@ -350,7 +351,7 @@ class CryptoOperationsTests {
     @Test
     fun `Filtering correctly our keys`() {
         val key1 = mock<PublicKey> {
-            on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+            on { encoded } doReturn UUID.randomUUID().toByteArray()
         }
         val key2 = signingFreshKeys.values.first().publicKey
         val ourKeys = factory.cryptoService.lookupSigningKeysByPublicKeyShortHash(
@@ -364,10 +365,10 @@ class CryptoOperationsTests {
     @Test
     fun `Filter our keys returns empty collection as none of the keys belong to us`() {
         val key1 = mock<PublicKey> {
-            on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+            on { encoded } doReturn UUID.randomUUID().toByteArray()
         }
         val key2 = mock<PublicKey> {
-            on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+            on { encoded } doReturn UUID.randomUUID().toByteArray()
         }
         val ourKeys = factory.cryptoService.lookupSigningKeysByPublicKeyShortHash(
             tenantId,
@@ -412,7 +413,7 @@ class CryptoOperationsTests {
     fun `Should return empty collection when looking up for not existing ids in all supported schemes`() {
         val returned = factory.cryptoService.lookupSigningKeysByPublicKeyShortHash(
             tenantId,
-            listOf(ShortHash.of(publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())))
+            listOf(ShortHash.of(publicKeyIdFromBytes(UUID.randomUUID().toByteArray())))
         )
         assertEquals(0, returned.size)
     }
@@ -482,7 +483,7 @@ class CryptoOperationsTests {
                 tenantId = tenantId,
                 publicKey = unknownPublicKey,
                 signatureSpec = spec,
-                data = UUID.randomUUID().toString().toByteArray()
+                data = UUID.randomUUID().toByteArray()
             )
         }
     }
@@ -502,7 +503,7 @@ class CryptoOperationsTests {
                 tenantId = UUID.randomUUID().toString(),
                 publicKey = info.publicKey,
                 signatureSpec = spec,
-                data = UUID.randomUUID().toString().toByteArray()
+                data = UUID.randomUUID().toByteArray()
             )
         }
     }
@@ -550,9 +551,9 @@ class CryptoOperationsTests {
         spec: SignatureSpec
     ) {
         val info = signingAliasedKeys.getValue(scheme)
-        val testData = UUID.randomUUID().toString().toByteArray()
+        val testData = UUID.randomUUID().toByteArray()
         val alicePublicKey = mock<PublicKey> {
-            on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+            on { encoded } doReturn UUID.randomUUID().toByteArray()
         }
         val bobPublicKey = info.publicKey
         verifyCachedKeyRecord(bobPublicKey, info.alias, null, scheme)
@@ -574,9 +575,9 @@ class CryptoOperationsTests {
         spec: SignatureSpec
     ) {
         val info = signingFreshKeys.getValue(scheme)
-        val testData = UUID.randomUUID().toString().toByteArray()
+        val testData = UUID.randomUUID().toByteArray()
         val alicePublicKey = mock<PublicKey> {
-            on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+            on { encoded } doReturn UUID.randomUUID().toByteArray()
         }
         val bobPublicKey = info.publicKey
         verifyCachedKeyRecord(bobPublicKey, null, info.externalId, scheme)

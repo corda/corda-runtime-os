@@ -1,4 +1,4 @@
-package net.corda.cli.plugin.initialconfig
+package net.corda.sdk.bootstrap.initial
 
 import net.corda.libs.permissions.common.constant.RoleKeys.DEFAULT_SYSTEM_ADMIN_ROLE
 import net.corda.libs.permissions.common.constant.UserKeys.DEFAULT_ADMIN_FULL_NAME
@@ -15,6 +15,8 @@ import java.security.SecureRandom
 import java.time.Instant
 import java.util.UUID
 
+private const val AUTOMATED_INIT_SETUP = "Automated initial set-up"
+
 fun buildRbacConfigSql(
     adminUser: String,
     password: String?,
@@ -29,7 +31,7 @@ fun buildRbacConfigSql(
         updateTimestamp = timeStamp,
         actorUser = requestUser,
         changeType = RestPermissionOperation.PERMISSION_INSERT,
-        details = "Automated initial set-up"
+        details = AUTOMATED_INIT_SETUP
     )
 
     val role = createAdminRole(timeStamp)
@@ -38,7 +40,7 @@ fun buildRbacConfigSql(
         updateTimestamp = timeStamp,
         actorUser = requestUser,
         changeType = RestPermissionOperation.ROLE_INSERT,
-        details = "Automated initial set-up"
+        details = AUTOMATED_INIT_SETUP
     )
     val user = createUser(
         fullName = DEFAULT_ADMIN_FULL_NAME,
@@ -51,7 +53,7 @@ fun buildRbacConfigSql(
         updateTimestamp = timeStamp,
         actorUser = requestUser,
         changeType = RestPermissionOperation.USER_INSERT,
-        details = "Automated initial set-up"
+        details = AUTOMATED_INIT_SETUP
     )
 
     val rolePermissionAssociation = RolePermissionAssociation(
@@ -65,7 +67,7 @@ fun buildRbacConfigSql(
         updateTimestamp = timeStamp,
         actorUser = requestUser,
         changeType = RestPermissionOperation.ADD_PERMISSION_TO_ROLE,
-        details = "Automated initial set-up"
+        details = AUTOMATED_INIT_SETUP
     )
 
     val roleUserAssociation = RoleUserAssociation(
@@ -79,9 +81,8 @@ fun buildRbacConfigSql(
         updateTimestamp = timeStamp,
         actorUser = requestUser,
         changeType = RestPermissionOperation.ADD_ROLE_TO_USER,
-        details = "Automated initial set-up"
+        details = AUTOMATED_INIT_SETUP
     )
-
 
     output.append(user.toInsertStatement())
     output.append(";\n")
@@ -107,7 +108,6 @@ fun buildRbacConfigSql(
     return output.toString()
 }
 
-
 @Suppress("LongParameterList")
 fun createUser(
     fullName: String,
@@ -115,7 +115,6 @@ fun createUser(
     timeStamp: Instant,
     password: String? = null
 ): User {
-
     // Create a hashed password if using
     val hashAndSalt = password?.let {
         val passwordService = PasswordServiceFactory().createPasswordService(SecureRandom())
