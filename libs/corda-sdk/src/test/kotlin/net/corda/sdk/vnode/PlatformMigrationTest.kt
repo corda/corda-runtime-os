@@ -1,11 +1,10 @@
-package net.corda.cli.plugins.vnode.commands
+package net.corda.sdk.vnode
 
 import liquibase.Liquibase
 import liquibase.command.CommandArgumentDefinition
 import liquibase.command.CommandScope
 import liquibase.database.Database
 import net.corda.db.admin.impl.LiquibaseSchemaUpdaterImpl
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentMatchers
@@ -37,8 +36,8 @@ class PlatformMigrationTest {
     private val mockDatabaseFactory = mock<(Connection) -> Database>().apply {
         whenever(invoke(any())).thenReturn(mockDatabase)
     }
-    val mockWriterFactory = mock<(String) -> FileWriter>()
-    val mockLineReader = mock<(String, (String) -> Unit) -> Unit>()
+    private val mockWriterFactory = mock<(String) -> FileWriter>()
+    private val mockLineReader = mock<(String, (String) -> Unit) -> Unit>()
 
     private val commandScope = mock<(CommandScope)> { cs ->
         on { addArgumentValue(ArgumentMatchers.anyString(), any()) } doReturn cs
@@ -51,7 +50,7 @@ class PlatformMigrationTest {
 
     private val liquibaseSchemaUpdater = LiquibaseSchemaUpdaterImpl(commandScopeFactory)
 
-    val pmConfig = PlatformMigration.PlatformMigrationConfig( // TODO move the test to SDK
+    private val pmConfig = VNodeDbSchemaGenerator.PlatformMigrationConfig(
         lineReader = mockLineReader,
         writerFactory = mockWriterFactory,
         liquibaseFactory = mockLiquibaseFactory,
@@ -69,15 +68,10 @@ class PlatformMigrationTest {
         val validHoldingIds = listOf("30f232111e9a", "25ab40d125a6", "ebf080aaeb79")
     }
 
-//    private fun createPlatformMigration() = PlatformMigration(pmConfig, liquibaseSchemaUpdater).apply {
-    private fun createPlatformMigration() = PlatformMigration().apply {
-        jdbcUrl = JDBC_URL
-        user = USER
-        password = PASSWORD
-    }
+    private val jdbcConnectionParams = VNodeDbSchemaGenerator.JdbcConnectionParams(JDBC_URL, USER, PASSWORD)
+    private fun createVNodeDbSchemaGenerator() = VNodeDbSchemaGenerator(pmConfig, liquibaseSchemaUpdater)
 
     @Test
-    @Disabled
     fun `invalid holding id`() {
         whenever(mockLineReader.invoke(any(), any())).thenAnswer {
             it.getArgument<(String) -> Unit>(1)!!.let { block ->
@@ -85,25 +79,12 @@ class PlatformMigrationTest {
             }
         }
 
-        assertThrows<IllegalArgumentException> { createPlatformMigration().call() }
-    }
-
-    @Test
-    @Disabled
-    fun `default filenames`() {
-        whenever(mockWriterFactory.invoke("./vnodes.sql")).thenReturn(mockFileWriter)
-        whenever(mockLineReader.invoke(eq("./holdingIds"), any())).thenAnswer {
-            it.getArgument<(String) -> Unit>(1)!!.let { block ->
-                validHoldingIds.forEach { holdingId -> block(holdingId) }
-            }
+        assertThrows<IllegalArgumentException> {
+            createVNodeDbSchemaGenerator().generateVNodeMigrationSqlFile("", "", jdbcConnectionParams)
         }
-
-        createPlatformMigration().call()
-        verifyFactoryCalls()
     }
 
     @Test
-    @Disabled
     fun `pass filenames`() {
         val sqlFilename = "my-sql-file"
         val holdingIdFilename = "my-holding-ids-file"
@@ -115,12 +96,7 @@ class PlatformMigrationTest {
             }
         }
 
-        val pm = createPlatformMigration()
-
-        pm.outputFilename = sqlFilename
-        pm.holdingIdFilename = holdingIdFilename
-
-        pm.call()
+        createVNodeDbSchemaGenerator().generateVNodeMigrationSqlFile(holdingIdFilename, sqlFilename, jdbcConnectionParams)
         verifyFactoryCalls()
     }
 
