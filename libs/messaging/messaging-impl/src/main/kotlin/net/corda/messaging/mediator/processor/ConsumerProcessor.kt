@@ -73,6 +73,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      * @param consumerConfig used to configure a consumer
      */
     fun processTopic(consumerFactory: MediatorConsumerFactory, consumerConfig: MediatorConsumerConfig<K, E>) {
+        val pollAction = ThrottledAction(consumerFactory.duration)
         var attempts = 0
         var consumer: MediatorConsumer<K, E>? = null
         val failureCounts = mutableMapOf<String, Int>()
@@ -110,7 +111,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                             )
                     }
                 }
-                pollLoop(consumer, outputsToProcess, inputsToCommit, inputsToRetry, assignedPartitions)
+                pollLoop(consumer, outputsToProcess, inputsToCommit, inputsToRetry, assignedPartitions, pollAction)
                 attempts = 0
             } catch (exception: Exception) {
                 val cause = if (exception is CompletionException) { exception.cause ?: exception} else exception
@@ -193,11 +194,12 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         outputsToProcess: BlockingQueue<Pair<String, Pair<EventProcessingOutput<K, E>, CompletableFuture<Unit>>>>,
         inputsToCommit: BlockingDeque<List<CordaConsumerRecord<K, E>>>,
         inputsToRetry: BlockingQueue<List<CordaConsumerRecord<K, E>>>,
-        assignedPartitions: MutableSet<CordaTopicPartition>
+        assignedPartitions: MutableSet<CordaTopicPartition>,
+        pollAction: ThrottledAction
     ) {
         metrics.processorTimer.recordCallable {
             try {
-                val (inputs, retryInputs) = getInputs(consumer, inputsToRetry, assignedPartitions)
+                val (inputs, retryInputs) = getInputs(consumer, inputsToRetry, assignedPartitions, pollAction)
                 val retriedOutputs = processInputs(emptyList(), retryInputs, inputsToCommit)
                 transferOutputs(retriedOutputs, outputsToProcess)
                 val outputs = processInputs(inputs, emptyList(), inputsToCommit)
@@ -285,14 +287,17 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         consumer: MediatorConsumer<K, E>,
         inputsToRetry: BlockingQueue<List<CordaConsumerRecord<K, E>>>,
         assignedPartitions: Set<CordaTopicPartition>,
+        pollAction: ThrottledAction,
     ): Pair<List<EventProcessingInput<K, E>>, List<EventProcessingInput<K, E>>> {
         // Retries filtered to exclude any partitions we don't own
         val retryMessages = inputsToRetry.drainAll()
             .map { it.filter { CordaTopicPartition(it.topic, it.partition) in assignedPartitions } }
             .filter { it.isNotEmpty() }
-        val polledMessages = metrics.pollTimer.recordCallable {
-            if (retryMessages.isNotEmpty()) consumer.poll(Duration.ZERO) else consumer.poll(pollTimeout)
-        }!!
+        val polledMessages = pollAction.throttled {
+            metrics.pollTimer.recordCallable {
+                if (retryMessages.isNotEmpty()) consumer.poll(Duration.ZERO) else consumer.poll(pollTimeout)
+            }!!
+        }
         val newRecords = polledMessages.groupBy { it.key }
         val retryRecords = retryMessages.groupBy { it.first().key }.mapValues { it.value.flatten() }
         val states = if (config.stateCaching) {

@@ -7,6 +7,7 @@ import net.corda.messaging.api.mediator.factory.MediatorConsumerFactoryFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.time.Duration
 
 /**
  * Factory for creating multi-source event mediator consumers.
@@ -18,12 +19,14 @@ class MediatorConsumerFactoryFactoryImpl @Activate constructor(
 ): MediatorConsumerFactoryFactory {
     override fun createMessageBusConsumerFactory(
         topicName: String,
+        duration: Duration,
         groupName: String,
         clientId: String,
         messageBusConfig: SmartConfig,
         rebalanceListener: CordaConsumerRebalanceListener?
     ) = MessageBusConsumerFactory(
         topicName,
+        duration,
         groupName,
         messageBusConfig,
         cordaConsumerBuilder,

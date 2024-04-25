@@ -34,6 +34,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import java.util.UUID
 
 @Component(service = [FlowMapperEventMediatorFactory::class])
@@ -96,7 +97,7 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
         val clientId = "MultiSourceSubscription--$CONSUMER_GROUP--$FLOW_MAPPER_START--${UUID.randomUUID()}"
         val mediatorConsumerFactory: MutableList<MediatorConsumerFactory> = mutableListOf(
             mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_MAPPER_START, CONSUMER_GROUP, clientId, messagingConfig,
+                FLOW_MAPPER_START, Duration.ZERO, CONSUMER_GROUP, clientId, messagingConfig,
             ),
         )
 
@@ -131,7 +132,7 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
         val mediatorConsumerFactory: List<MediatorConsumerFactory> = (1..mediatorReplicas).map {
             val clientId = "MultiSourceSubscription--$CONSUMER_GROUP--$topicName--${UUID.randomUUID()}"
             mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                topicName, CONSUMER_GROUP, clientId, messagingConfig
+                topicName, Duration.ZERO, CONSUMER_GROUP, clientId, messagingConfig
             )
         }
 

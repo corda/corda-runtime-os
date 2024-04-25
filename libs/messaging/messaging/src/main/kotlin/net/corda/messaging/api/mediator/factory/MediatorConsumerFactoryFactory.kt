@@ -2,6 +2,7 @@ package net.corda.messaging.api.mediator.factory
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
+import java.time.Duration
 
 /**
  * Factory for creating multi-source event mediator consumer factories.
@@ -18,6 +19,7 @@ interface MediatorConsumerFactoryFactory {
      */
     fun createMessageBusConsumerFactory(
         topicName: String,
+        duration: Duration,
         groupName: String,
         clientId: String,
         messageBusConfig: SmartConfig,
