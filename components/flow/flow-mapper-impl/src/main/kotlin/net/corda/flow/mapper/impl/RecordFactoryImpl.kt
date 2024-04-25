@@ -147,8 +147,7 @@ class RecordFactoryImpl @Activate constructor(
                 Record(outputTopic, sessionEvent.sessionId, FlowMapperEvent(sessionEvent))
             }
             Schemas.P2P.P2P_OUT_TOPIC -> {
-                val appMessage = generateAppMessage(sessionEvent, config)
-                Record(outputTopic, sessionId, appMessage)
+                generateAppMessageRecord(sessionEvent, config, sessionId)
             }
             else -> {
                 throw IllegalArgumentException("Invalid output topic of $outputTopic was found when forwarding a session event")
@@ -185,26 +184,32 @@ class RecordFactoryImpl @Activate constructor(
     }
 
     /**
-     * Generate an AppMessage to send to the P2P.out topic.
+     * Generate an record to send to the P2P.out topic.
      * @param sessionEvent Flow event to send
      * @param flowConfig config
      * @return AppMessage to send to the P2P.out topic with the serialized session event as payload
      */
-    private fun generateAppMessage(
+    private fun generateAppMessageRecord(
         sessionEvent: SessionEvent,
-        flowConfig: SmartConfig
-    ): AppMessage {
+        flowConfig: SmartConfig,
+        sessionId: String,
+    ): Record<String, AppMessage> {
         val (sourceIdentity, destinationIdentity) = getSourceAndDestinationIdentity(sessionEvent)
         val header = AuthenticatedMessageHeader(
             destinationIdentity,
             sourceIdentity,
             Instant.ofEpochMilli(sessionEvent.timestamp.toEpochMilli() + flowConfig.getLong(FlowConfig.SESSION_P2P_TTL)),
             sessionEvent.sessionId + "-" + UUID.randomUUID(),
-            "",
+            sessionId,
             Constants.FLOW_SESSION_SUBSYSTEM,
             MembershipStatusFilter.ACTIVE
         )
-        return AppMessage(AuthenticatedMessage(header, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
+        val message = AppMessage(AuthenticatedMessage(header, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
+        return Record(
+            key = header.messageId,
+            value = message,
+            topic = Schemas.P2P.P2P_OUT_TOPIC,
+        )
     }
 
     /**

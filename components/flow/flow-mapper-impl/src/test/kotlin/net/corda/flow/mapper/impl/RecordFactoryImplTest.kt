@@ -223,9 +223,10 @@ internal class RecordFactoryImplTest {
         )
         assertThat(record).isNotNull
         assertThat(record.topic).isEqualTo(Schemas.P2P.P2P_OUT_TOPIC)
-        assertThat(record.key).isEqualTo(SESSION_ID)
-        assertThat(record.value!!::class).isEqualTo(AppMessage::class)
-        val sessionOutput = ((record.value as AppMessage).message as AuthenticatedMessage).payload
+        val value = record.value as? AppMessage
+        val message = value?.message as? AuthenticatedMessage
+        assertThat(message?.header?.traceId).isEqualTo(SESSION_ID)
+        val sessionOutput = message?.payload
         assertThat(sessionOutput).isEqualTo(ByteBuffer.wrap("SessionEventSerialized".toByteArray()))
         verify(cordaAvroSerializer).serialize(sessionEvent)
     }
@@ -280,9 +281,10 @@ internal class RecordFactoryImplTest {
             flowConfig,
         )
         assertThat(record.topic).isEqualTo(Schemas.P2P.P2P_OUT_TOPIC)
-        assertThat(record.key).isEqualTo(SESSION_ID)
-        assertThat(record.value!!::class.java).isEqualTo(AppMessage::class.java)
-        val sessionOutput = ((record.value as AppMessage).message as AuthenticatedMessage).payload
+        val value = record.value as? AppMessage
+        val message = value?.message as? AuthenticatedMessage
+        assertThat(message?.header?.traceId).isEqualTo(SESSION_ID)
+        val sessionOutput = message?.payload
         assertThat(sessionOutput).isEqualTo(ByteBuffer.wrap("SessionEventSerialized".toByteArray()))
         verify(cordaAvroSerializer).serialize(sessionEvent.apply {
             messageDirection = MessageDirection.OUTBOUND

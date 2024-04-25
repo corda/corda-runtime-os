@@ -39,37 +39,34 @@ class FlowP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializati
     override fun onNext(
         events: List<Record<String, AppMessage>>
     ): List<Record<*, *>> {
-        val outputEvents = mutableListOf<Record<*, *>>()
-        events.forEach { appMessage ->
-            val authMessage = appMessage.value?.message
-            if (authMessage != null && authMessage is AuthenticatedMessage && authMessage.header.subsystem == FLOW_SESSION_SUBSYSTEM) {
-
+        return events.mapNotNull { appMessage ->
+            val authMessage = appMessage.value?.message as? AuthenticatedMessage
+            if (authMessage?.header?.subsystem == FLOW_SESSION_SUBSYSTEM) {
                 traceEventProcessingNullableSingle(appMessage, "Flow P2P Filter Event") {
-                    getOutputRecord(authMessage.payload, appMessage.key)
-                }?.let {
-                    outputEvents.add(it)
+                    getOutputRecord(authMessage.payload, authMessage.header.traceId)
                 }
+            } else {
+                null
             }
         }
-        return outputEvents
     }
 
     /**
      * Generate an output record for session events received from a counterparty to be passed to the Flow Mapper.
      * @param payload Authenticated message payload. Expected to be a SessionEvent
-     * @param key Key the event arrived on. Expected to be counterparties sessionId
+     * @param traceId Trace the event arrived on. Expected to be counterparties sessionId
      * @return Record to be sent to the Flow Mapper with sessionId set to that of the receiving party and a message direction of INBOUND.
      */
     private fun getOutputRecord(
         payload: ByteBuffer,
-        key: String
+        traceId: String
     ): Record<String, FlowMapperEvent>? {
         val sessionEvent = cordaAvroDeserializer.deserialize(payload.array())
-        logger.debug { "Processing message from p2p.in with subsystem $FLOW_SESSION_SUBSYSTEM. Key: $key, Event: $sessionEvent" }
+        logger.debug { "Processing message from p2p.in with subsystem $FLOW_SESSION_SUBSYSTEM. traceId: $traceId, Event: $sessionEvent" }
 
         return if (sessionEvent != null) {
             sessionEvent.messageDirection = MessageDirection.INBOUND
-            val sessionId = toggleSessionId(key)
+            val sessionId = toggleSessionId(traceId)
             sessionEvent.sessionId = sessionId
             Record(FLOW_MAPPER_SESSION_IN, sessionId, FlowMapperEvent(sessionEvent))
         } else {
