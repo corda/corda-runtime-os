@@ -6,6 +6,7 @@ import net.corda.crypto.cipher.suite.GeneratedWrappedKey
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.service.CryptoServiceRef
+import net.corda.utilities.toByteArray
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeAll
@@ -36,7 +37,7 @@ class CryptoServiceRefUtilsTests {
         )
         val generatedKey = GeneratedWrappedKey(
             publicKey = mock(),
-            keyMaterial = UUID.randomUUID().toString().toByteArray(),
+            keyMaterial = UUID.randomUUID().toByteArray(),
             encodingVersion = 12
         )
         val alias = UUID.randomUUID().toString()

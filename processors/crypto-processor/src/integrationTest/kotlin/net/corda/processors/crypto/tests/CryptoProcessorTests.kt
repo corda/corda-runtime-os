@@ -70,6 +70,7 @@ import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 import net.corda.test.util.TestRandom
 import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.utilities.toByteArray
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SecureHash
@@ -457,7 +458,7 @@ class CryptoProcessorTests {
     ) {
         val found = opsClient.lookupKeysByIds(
             tenantId = tenantId,
-            keyIds = listOf(ShortHash.of(publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())))
+            keyIds = listOf(ShortHash.of(publicKeyIdFromBytes(UUID.randomUUID().toByteArray())))
         )
         assertEquals(0, found.size)
     }
