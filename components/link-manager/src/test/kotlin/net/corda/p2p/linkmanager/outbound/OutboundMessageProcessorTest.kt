@@ -30,9 +30,11 @@ import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueues
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.mockMembersAndGroups
 import net.corda.schema.Schemas
+import net.corda.schema.Schemas.P2P.LINK_ACK_IN_TOPIC
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.MockTimeFacilitiesProvider
 import net.corda.utilities.Either
+import net.corda.utilities.flags.Features
 import net.corda.utilities.seconds
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -81,6 +83,9 @@ class OutboundMessageProcessorTest {
         on { validateInbound(any(), any()) } doReturn Either.Left(Unit)
         on { validateOutbound(any(), any()) } doReturn Either.Left(Unit)
     }
+    private val features = mock<Features> {
+        on { enableP2PStatefulDeliveryTracker } doReturn false
+    }
 
     private val processor = OutboundMessageProcessor(
         sessionManager,
@@ -90,7 +95,8 @@ class OutboundMessageProcessorTest {
         messagesPendingSession,
         mockTimeFacilitiesProvider.clock,
         messageConverter,
-        networkMessagingValidator
+        networkMessagingValidator,
+        features = features,
     )
 
     private fun setupSessionManager(response: SessionManager.SessionState) {
@@ -1000,6 +1006,47 @@ class OutboundMessageProcessorTest {
     }
 
     @Test
+    fun `processReplayedAuthenticatedMessage will send a message to the link ack in topic when the destination is locally hosted`() {
+        whenever(features.enableP2PStatefulDeliveryTracker).doReturn(true)
+        val destination = membersAndGroups.first.getGroupReader(localIdentity).lookup(myIdentity.x500Name)!!
+        whenever(hostingMap.isHostedLocallyAndSessionKeyMatch(destination)).doReturn(true)
+        val payload = "test"
+        val authenticatedMsg = AuthenticatedMessage(
+            AuthenticatedMessageHeader(
+                myIdentity.toAvro(),
+                localIdentity.toAvro(),
+                null, "message-id", "trace-id", "system-1", MembershipStatusFilter.ACTIVE
+            ),
+            ByteBuffer.wrap(payload.toByteArray())
+        )
+        val authenticatedMessageAndKey = AuthenticatedMessageAndKey(authenticatedMsg, "key")
+
+        val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
+
+        assertSoftly { softAssertions ->
+            softAssertions.assertThat(records).hasSize(3)
+            val markers = records.filter { it.topic == Schemas.P2P.P2P_OUT_MARKERS }.map { it.value }
+                .filterIsInstance<AppMessageMarker>()
+            softAssertions.assertThat(markers).hasSize(1)
+
+            val receivedMarkers = markers.map { it.marker }.filterIsInstance<LinkManagerReceivedMarker>()
+            softAssertions.assertThat(receivedMarkers).hasSize(1)
+
+            val messages = records
+                .filter {
+                    it.topic == Schemas.P2P.P2P_IN_TOPIC
+                }.filter {
+                    it.key == "key"
+                }.map { it.value }.filterIsInstance<AppMessage>()
+            softAssertions.assertThat(messages).hasSize(1)
+            softAssertions.assertThat(messages.first().message).isEqualTo(authenticatedMessageAndKey.message)
+
+            val ackMessage = records.firstOrNull { it.topic == LINK_ACK_IN_TOPIC }
+            softAssertions.assertThat(ackMessage?.key).isEqualTo("message-id")
+        }
+    }
+
+    @Test
     fun `processReplayedAuthenticatedMessage will not write any records if destination is not in the members map or locally hosted`() {
         setupSessionManager(SessionManager.SessionState.SessionEstablished(authenticatedSession, sessionCounterparties))
         val authenticatedMessage = AuthenticatedMessage(
@@ -1236,6 +1283,45 @@ class OutboundMessageProcessorTest {
             it.assertThat(markers.map { it.value as AppMessageMarker }
                 .filter { it.marker is LinkManagerReceivedMarker }).isEmpty()
             it.assertThat(markers.map { it.topic }.distinct()).containsOnly(Schemas.P2P.P2P_OUT_MARKERS)
+        }
+    }
+
+    @Test
+    fun `processReplayedAuthenticatedMessage will send a record to the link ack in topic when needed`() {
+        whenever(features.enableP2PStatefulDeliveryTracker).doReturn(true)
+        setupSessionManager(SessionManager.SessionState.SessionAlreadyPending(sessionCounterparties))
+        val authenticatedMsg = AuthenticatedMessage(
+            AuthenticatedMessageHeader(
+                remoteIdentity.toAvro(),
+                localIdentity.toAvro(),
+                null, "MessageId", "trace-id", "system-1", MembershipStatusFilter.ACTIVE
+            ),
+            ByteBuffer.wrap("payload".toByteArray())
+        )
+        val authenticatedMessageAndKey = AuthenticatedMessageAndKey(
+            authenticatedMsg,
+            "key"
+        )
+        authenticatedMessageAndKey.message.header.ttl = Instant.ofEpochMilli(0)
+
+        val records = processor.processReplayedAuthenticatedMessage(authenticatedMessageAndKey)
+
+        val markers = records.filter { it.value is AppMessageMarker }
+        assertSoftly {
+            it.assertThat(records).hasSize(2)
+
+            it.assertThat(markers.map { it.key }).allMatch {
+                it.equals("MessageId")
+            }
+            it.assertThat(markers).hasSize(1)
+            it.assertThat(markers.map { it.value as AppMessageMarker }.filter { it.marker is TtlExpiredMarker })
+                .hasSize(1)
+            it.assertThat(markers.map { it.value as AppMessageMarker }
+                .filter { it.marker is LinkManagerReceivedMarker }).isEmpty()
+            it.assertThat(markers.map { it.topic }.distinct()).containsOnly(Schemas.P2P.P2P_OUT_MARKERS)
+
+            val ackMessage = records.firstOrNull { record -> record.topic == LINK_ACK_IN_TOPIC }
+            it.assertThat(ackMessage?.key).isEqualTo("MessageId")
         }
     }
 
