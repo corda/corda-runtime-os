@@ -199,7 +199,7 @@ class PartitionStateTest {
             state.processRecordsFromOffset = 2001
             val captureState = argumentCaptor<State>()
             val group = mock<StateOperationGroup> {
-                on { create(captureState.capture()) } doReturn mock
+                on { update(captureState.capture()) } doReturn mock
             }
 
             state.addToOperationGroup(group)
@@ -228,7 +228,7 @@ class PartitionStateTest {
 
         @Test
         fun `it create a new state when needed`() {
-            val state = PartitionState(1)
+            val state = fromState (1, null)
             val group = mock<StateOperationGroup> {
                 on { create(any<State>()) } doReturn mock
             }
