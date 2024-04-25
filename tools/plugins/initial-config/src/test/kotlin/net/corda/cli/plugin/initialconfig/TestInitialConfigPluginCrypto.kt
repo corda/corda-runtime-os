@@ -19,7 +19,7 @@ class TestInitialConfigPluginCrypto {
     fun `Should output missing options`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = InitialConfigPlugin.PluginEntryPoint()
-        var outText = SystemLambda.tapSystemErrNormalized {
+        val outText = SystemLambda.tapSystemErrNormalized {
             CommandLine(
                 app
             ).setColorScheme(colorScheme).execute("create-crypto-config")
@@ -42,7 +42,7 @@ class TestInitialConfigPluginCrypto {
     fun `Should output missing options when targeting Hashicorp Vault`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = InitialConfigPlugin.PluginEntryPoint()
-        var outText = SystemLambda.tapSystemErrNormalized {
+        val outText = SystemLambda.tapSystemErrNormalized {
             CommandLine(
                 app
             ).setColorScheme(colorScheme).execute("create-crypto-config", "-t", "VAULT")

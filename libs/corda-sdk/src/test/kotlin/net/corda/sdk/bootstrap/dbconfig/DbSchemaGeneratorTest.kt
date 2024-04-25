@@ -1,4 +1,4 @@
-package net.corda.cli.plugins.dbconfig
+package net.corda.sdk.bootstrap.dbconfig
 
 import liquibase.Liquibase
 import liquibase.command.CommandArgumentDefinition
@@ -19,7 +19,18 @@ import java.io.FileWriter
 import java.nio.file.Path
 import java.sql.Connection
 
-class SpecTest {
+class DbSchemaGeneratorTest {
+    private companion object {
+        const val NUMBER_OF_DEFAULT_SCHEMAS = 3
+
+        const val JDBC_URL = "url"
+        const val USER = "user"
+        const val PASSWORD = "password"
+
+        const val DEFAULT_PATH = "./databasechangelog.csv"
+        const val CUSTOM_PATH = "path"
+    }
+
     private val mockLiquibase: Liquibase = mock()
     private val mockWriter: FileWriter = mock()
     private val mockWriterFactory = mock<(String) -> FileWriter>().apply {
@@ -37,7 +48,6 @@ class SpecTest {
     private val mockDatabaseFactory = mock<(Connection) -> Database>().apply {
         whenever(invoke(any())).thenReturn(mockDatabase)
     }
-
     private val commandScope = mock<(CommandScope)> { cs ->
         on { addArgumentValue(ArgumentMatchers.anyString(), any()) } doReturn cs
         on { addArgumentValue(any<CommandArgumentDefinition<Any>>(), anyOrNull()) } doReturn cs
@@ -47,8 +57,7 @@ class SpecTest {
         on { invoke(any()) } doReturn (commandScope)
     }
     private val liquibaseSchemaUpdater = LiquibaseSchemaUpdaterImpl(commandScopeFactory)
-
-    private val specConfig = Spec.SpecConfig(
+    private val specConfig = DbSchemaGenerator.SpecConfig(
         writerFactory = mockWriterFactory,
         liquibaseFactory = mockLiquibaseFactory,
         deleteFile = mockDeleteFile,
@@ -56,22 +65,11 @@ class SpecTest {
         jdbcDatabaseFactory = mockDatabaseFactory
     )
 
-    private companion object {
-        const val NUMBER_OF_DEFAULT_SCHEMAS = 3
-
-        const val JDBC_URL = "url"
-        const val USER = "user"
-        const val PASSWORD = "password"
-
-        const val DEFAULT_PATH = "./databasechangelog.csv"
-        const val CUSTOM_PATH = "path"
-    }
-
     @Test
     fun `Verify we run offline update and write the result to disk where no filter is specified`() {
-        val spec = Spec(specConfig, liquibaseSchemaUpdater)
+        val spec = DbSchemaGenerator(specConfig, liquibaseSchemaUpdater)
 
-        spec.run()
+        spec.generateSqlFilesForSchemas()
 
         verify(mockConnectionFactory, times(0)).invoke(any(), any(), any())
         verify(mockDatabaseFactory, times(0)).invoke(any())
@@ -82,11 +80,11 @@ class SpecTest {
 
     @Test
     fun `Verify we run offline update and write the result to disk only once with a filter`() {
-        val spec = Spec(specConfig, liquibaseSchemaUpdater)
+        val spec = DbSchemaGenerator(specConfig, liquibaseSchemaUpdater)
 
-        spec.schemasToGenerate = listOf("messagebus")
-
-        spec.run()
+        spec.generateSqlFilesForSchemas(
+            schemasToGenerate = listOf("messagebus")
+        )
 
         verify(mockConnectionFactory, times(0)).invoke(any(), any(), any())
         verify(mockDatabaseFactory, times(0)).invoke(any())
@@ -97,36 +95,36 @@ class SpecTest {
 
     @Test
     fun `Verify we delete the changelog file if clear is specified`() {
-        val spec = Spec(specConfig, liquibaseSchemaUpdater)
+        val spec = DbSchemaGenerator(specConfig, liquibaseSchemaUpdater)
 
         spec.clearChangeLog = true
 
-        spec.run()
+        spec.generateSqlFilesForSchemas()
 
         verify(mockDeleteFile, times(1)).invoke(Path.of(DEFAULT_PATH))
     }
 
     @Test
     fun `Verify we delete the changelog file at a custom location if clear is specified`() {
-        val spec = Spec(specConfig, liquibaseSchemaUpdater)
+        val spec = DbSchemaGenerator(specConfig, liquibaseSchemaUpdater)
 
         spec.clearChangeLog = true
         spec.databaseChangeLogFile = Path.of(CUSTOM_PATH)
 
-        spec.run()
+        spec.generateSqlFilesForSchemas()
 
         verify(mockDeleteFile, times(1)).invoke(Path.of(CUSTOM_PATH))
     }
 
     @Test
     fun `Verify specifying jdbc url attempts to connect to a live database`() {
-        val spec = Spec(specConfig, liquibaseSchemaUpdater)
+        val spec = DbSchemaGenerator(specConfig, liquibaseSchemaUpdater)
 
         spec.jdbcUrl = JDBC_URL
         spec.user = USER
         spec.password = PASSWORD
 
-        spec.run()
+        spec.generateSqlFilesForSchemas()
 
         verify(mockConnectionFactory, times(NUMBER_OF_DEFAULT_SCHEMAS)).invoke(JDBC_URL, USER, PASSWORD)
         verify(mockDatabaseFactory, times(NUMBER_OF_DEFAULT_SCHEMAS)).invoke(mockConnection)
@@ -138,15 +136,16 @@ class SpecTest {
 
     @Test
     fun `Verify specifying statemanager schema will generate only statemanager sql`() {
-        val spec = Spec(specConfig, liquibaseSchemaUpdater)
+        val spec = DbSchemaGenerator(specConfig, liquibaseSchemaUpdater)
 
         spec.jdbcUrl = JDBC_URL
         spec.user = USER
         spec.password = PASSWORD
-        spec.schemasToGenerate = listOf("statemanager")
-        spec.generateSchemaSql = listOf("statemanager:STATE_MANAGER_SCHEMA")
 
-        spec.run()
+        spec.generateSqlFilesForSchemas(
+            schemasToGenerate = listOf("statemanager"),
+            generateSchemaSql = listOf("statemanager:STATE_MANAGER_SCHEMA")
+        )
 
         verify(mockConnectionFactory, times(1)).invoke(JDBC_URL, USER, PASSWORD)
         verify(mockDatabaseFactory, times(1)).invoke(mockConnection)
