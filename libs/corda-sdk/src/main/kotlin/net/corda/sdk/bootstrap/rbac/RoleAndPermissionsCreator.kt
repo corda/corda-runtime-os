@@ -16,7 +16,9 @@ import kotlin.time.Duration.Companion.seconds
 
 class RoleAndPermissionsCreator {
 
-    val logger: Logger = LoggerFactory.getLogger(this::class.java)
+    private companion object {
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     /**
      * Creates a Role and grants Permissions
