@@ -79,7 +79,7 @@ class ClusterReadinessChecker: ClusterReadiness {
                 val response = function()
                 val statusCode = response.statusCode()
                 if (statusCode in 200..299) {
-                    logger.info("Status successful. Exiting tryUntil.")
+                    logger.info("Status successful with code $statusCode. Exiting tryUntil.")
                     return true
                 }
                 else {
@@ -99,8 +99,8 @@ class ClusterReadinessChecker: ClusterReadiness {
         val request = HttpRequest.newBuilder()
             .uri(URI.create(url))
             .build()
-        val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-        logger.info("Returning status ${response.statusCode()} $name on $url.")
-        return response
+        return client.send(request, HttpResponse.BodyHandlers.ofString()).also {
+            logger.info("Returning status ${it.statusCode()} $name on $url.")
+        }
     }
 }
