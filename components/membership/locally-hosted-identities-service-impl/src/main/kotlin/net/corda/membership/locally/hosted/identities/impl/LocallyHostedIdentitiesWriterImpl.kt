@@ -55,6 +55,8 @@ class LocallyHostedIdentitiesWriterImpl@Activate constructor(
     private var configSubscription: AutoCloseable? = null
 
     override fun put(recordKey: String, recordValue: HostedIdentityEntry) {
+        // TODO change to trace
+        logger.info("Reconciling hosted identity record for '${recordValue.holdingIdentity}', version=${recordValue.version}.")
         publish(
             listOf(
                 Record(
