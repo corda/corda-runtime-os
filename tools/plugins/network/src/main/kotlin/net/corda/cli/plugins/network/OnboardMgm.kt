@@ -16,7 +16,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
-import java.util.*
+import java.util.UUID
 import kotlin.time.Duration.Companion.seconds
 
 @Command(
