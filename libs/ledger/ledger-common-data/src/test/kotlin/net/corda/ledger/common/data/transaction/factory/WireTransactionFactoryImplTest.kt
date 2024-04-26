@@ -14,7 +14,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
     private val metadataJson = jsonMarshallingService.format(metadata)
     private val canonicalJson = jsonValidator.canonicalize(metadataJson)
     private val privacySalt = mockPrivacySaltProviderService.generatePrivacySalt()
-    private val header = "header"
+    private val header = "corda".toByteArray() + byteArrayOf(8, 0)
 
     @Test
     fun `Creating a very simple WireTransaction`() {
@@ -274,7 +274,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
         val metadataJson = jsonMarshallingService.format(metadata)
         val canonicalJson = jsonValidator.canonicalize(metadataJson)
         val componentGroupLists = (1..10).map {
-            listOf((header + canonicalJson).toByteArray())
+            listOf((header + canonicalJson.toByteArray()))
         }
         wireTransactionFactory.create(
             componentGroupLists,

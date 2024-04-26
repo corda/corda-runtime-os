@@ -591,7 +591,8 @@ class FilteredTransactionImplTest {
     @Test
     fun `Accessing metadata parses metadata with a header successfully`() {
         filteredTransaction = filteredTransaction(filteredComponentGroups = mapOf(0 to filteredComponentGroup0))
-        val jsonBlobWithHeader = ("header$metadataJson").encodeToByteArray()
+        val header = "corda".toByteArray() + byteArrayOf(8, 0)
+        val jsonBlobWithHeader = header + metadataJson.encodeToByteArray()
         componentGroupMerkleProofVerifies(listOf(indexedMerkleLeaf(0)))
 
         whenever(filteredComponentGroup0Proof.treeSize).thenReturn(1)

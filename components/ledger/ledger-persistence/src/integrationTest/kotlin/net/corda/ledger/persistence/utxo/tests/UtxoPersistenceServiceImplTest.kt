@@ -1933,7 +1933,8 @@ class UtxoPersistenceServiceImplTest {
     @Test
     fun `findFilteredTransaction parses metadata with a header successfully`() {
         val signatures = createSignatures(Instant.now())
-        val signedTransaction = createSignedTransaction(signatures = signatures, header = "header")
+        val signedTransaction =
+            createSignedTransaction(signatures = signatures, header = ("corda".toByteArray() + byteArrayOf(8, 0)))
         val account = "Account"
 
         val filteredTransactionToStore = createFilteredTransaction(signedTransaction)
@@ -2144,12 +2145,12 @@ class UtxoPersistenceServiceImplTest {
         referenceStateRefs: List<StateRef> = defaultReferenceStateRefs,
         outputStates: List<ContractState> = defaultVisibleTransactionOutputs,
         signatures: List<DigitalSignatureAndMetadata> = createSignatures(instant),
-        header: String = ""
+        header: ByteArray = "".toByteArray()
     ): SignedTransactionContainer {
         val transactionMetadata = utxoTransactionMetadataExample(cpkPackageSeed = seed)
         val timeWindow = Instant.now().plusMillis(Duration.ofDays(1).toMillis())
         val componentGroupLists: List<List<ByteArray>> = listOf(
-            listOf((header + jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetadata))).toByteArray()),
+            listOf((header + jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetadata)).toByteArray())),
             listOf(notaryExampleName.toBytes(), notaryExampleKey.toBytes(), timeWindow.toBytes()),
             listOf("group2_component1".toByteArray()),
             outputStates.map {
