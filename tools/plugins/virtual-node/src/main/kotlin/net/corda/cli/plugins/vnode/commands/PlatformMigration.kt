@@ -1,18 +1,9 @@
 package net.corda.cli.plugins.vnode.commands
 
-import liquibase.Liquibase
-import liquibase.database.Database
-import liquibase.database.DatabaseFactory
-import liquibase.database.jvm.JdbcConnection
-import liquibase.resource.ClassLoaderResourceAccessor
 import net.corda.cli.plugins.vnode.withPluginClassLoader
 import net.corda.sdk.vnode.VNodeDbSchemaGenerator
 import picocli.CommandLine
 import picocli.CommandLine.ExitCode
-import java.io.File
-import java.io.FileWriter
-import java.sql.Connection
-import java.sql.DriverManager
 import java.util.concurrent.Callable
 
 @CommandLine.Command(
@@ -64,22 +55,6 @@ class PlatformMigration : Callable<Int> {
         private const val HOLDING_ID_FILENAME = "./holdingIds"
         private const val SQL_FILENAME = "./vnodes.sql"
     }
-
-    data class PlatformMigrationConfig( // TODO used in the tests only, to be moved to SDK
-        val writerFactory: (String) -> FileWriter = { file -> FileWriter(File(file)) },
-        val lineReader: (String, (String) -> Unit) -> Unit = { filename, block ->
-            File(filename).forEachLine { block(it) }
-        },
-        val liquibaseFactory: (String, Database) -> Liquibase = { file: String, database: Database ->
-            Liquibase(file, ClassLoaderResourceAccessor(), database)
-        },
-        val jdbcConnectionFactory: (String?, String?, String?) -> Connection = { jdbcUrl, user, password ->
-            DriverManager.getConnection(jdbcUrl, user, password)
-        },
-        val jdbcDatabaseFactory: (Connection) -> Database = { connection ->
-            DatabaseFactory.getInstance().findCorrectDatabaseImplementation(JdbcConnection(connection))
-        }
-    )
 
     override fun call(): Int {
         val generator = VNodeDbSchemaGenerator()
