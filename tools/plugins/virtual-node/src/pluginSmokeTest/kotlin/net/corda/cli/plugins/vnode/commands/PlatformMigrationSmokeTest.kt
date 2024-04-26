@@ -58,4 +58,30 @@ class PlatformMigrationSmokeTest {
         }
         assertEquals(3 * validHoldingIds.size, updateDatabaseScriptLines.size)
     }
+
+    @Test
+    fun `use default filenames`() {
+        File("./holdingIds").let {
+            it.delete()
+            it.createNewFile()
+            it.deleteOnExit()
+            it.toPath().writeLines(validHoldingIds)
+        }
+        val defaultOutputFile = File("./vnodes.sql").also {
+            it.delete()
+            it.deleteOnExit()
+        }
+
+        val exitCode = CommandLine(PlatformMigration())
+            .execute(
+                "--jdbc-url=$jdbcUrl",
+                "--user=$postgresUser",
+                "--password=$postgresPassword",
+            )
+        assertEquals(0, exitCode)
+        val updateDatabaseScriptLines = defaultOutputFile.readLines().filter {
+            it.contains("-- Update Database Script")
+        }
+        assertEquals(3 * validHoldingIds.size, updateDatabaseScriptLines.size)
+    }
 }
