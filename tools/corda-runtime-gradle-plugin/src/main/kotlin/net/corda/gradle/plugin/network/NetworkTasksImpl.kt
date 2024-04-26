@@ -7,7 +7,6 @@ import net.corda.crypto.core.ShortHash
 import net.corda.gradle.plugin.configuration.ProjectContext
 import net.corda.gradle.plugin.dtos.VNode
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
-import net.corda.gradle.plugin.rpcWait
 import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
@@ -95,11 +94,6 @@ class NetworkTasksImpl(var pc: ProjectContext) {
      * @param [requiredNodes] Represents the list of VNodes as specified in the network Config json file (static-network-config.json)
      */
     fun registerVNodes(requiredNodes: List<VNode>) {
-
-        // There appears to be a delay between the successful post /virtualnodes synchronous call and the
-        // vnodes being returned in the GET /virtualnodes call. Putting a thread wait here as a quick fix
-        // as this will move to async mechanism post beta2. see CORE-12153
-        rpcWait(3000)
 
         val vNodeRestClient = RestClientUtils.createRestClient(
             VirtualNodeRestResource::class,
