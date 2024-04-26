@@ -12,6 +12,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_OPERATION_STATUS_TOPIC
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.write.db.impl.tests.ALICE_HOLDING_ID1
 import net.corda.virtualnode.write.db.impl.tests.CPI_CHECKSUM1
@@ -25,6 +26,7 @@ import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbFactory
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.factories.RecordFactory
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.CreateVirtualNodeOperationHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.services.CreateVirtualNodeService
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.utility.MgmInfoPersistenceHelper
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -65,6 +67,7 @@ class CreateVirtualNodeOperationHandlerTest {
     private val virtualNodeDbFactory = mock<VirtualNodeDbFactory>().apply {
         whenever(createVNodeDbs(any(), any())).thenReturn(virtualNodeDbs)
     }
+    private val mgmInfoPersistenceHelper = mock<MgmInfoPersistenceHelper>()
 
     private val recordFactory = mock<RecordFactory>()
     private val groupPolicyParser = mock<GroupPolicyParser>()
@@ -75,6 +78,7 @@ class CreateVirtualNodeOperationHandlerTest {
         virtualNodeDbFactory,
         recordFactory,
         groupPolicyParser,
+        mgmInfoPersistenceHelper,
         statusPublisher,
         externalMessagingRouteConfigGenerator,
         mock()
@@ -186,6 +190,41 @@ class CreateVirtualNodeOperationHandlerTest {
         target.handle(timestamp, requestId, request)
 
         verify(createVirtualNodeService).publishRecords(listOf(virtualNodeInfoRecord))
+    }
+
+    @Test
+    fun `vnode creation is unsuccessful when persistence of MGM info fails`() {
+        val request = getValidRequest()
+        val virtualNodeInfoRecord = Record("vnode", "", "")
+        val mgmInfo = mock<MemberInfo>()
+        val mgmInfoRecord = Record("mgm", "", "")
+        val f = CompletableFuture<Unit>().apply { this.complete(Unit) }
+        val records = argumentCaptor<List<Record<Any, Any>>>()
+
+        whenever(statusPublisher.publish(records.capture())).thenReturn(listOf(f))
+        whenever(groupPolicyParser.getMgmInfo(ALICE_HOLDING_ID1, GROUP_POLICY1)).thenReturn(mgmInfo)
+        whenever(recordFactory.createMgmInfoRecord(ALICE_HOLDING_ID1, mgmInfo)).thenReturn(
+            mgmInfoRecord
+        )
+        val reason = "mgm info persistence failed"
+        whenever(mgmInfoPersistenceHelper.persistMgmMemberInfo(eq(ALICE_HOLDING_ID1), eq(listOf(mgmInfoRecord))))
+            .thenThrow(CordaRuntimeException(reason))
+
+        val ex = assertThrows<CordaRuntimeException> {
+            target.handle(timestamp, requestId, request)
+        }
+        assertThat(ex).hasMessageContaining(reason)
+        records.firstValue.all { verifyRecord(it, requestId, "IN_PROGRESS") }
+        records.secondValue.all { verifyRecord(it, requestId, "UNEXPECTED_FAILURE") }
+
+        verify(createVirtualNodeService, never()).publishRecords(listOf(mgmInfoRecord, virtualNodeInfoRecord))
+        verify(createVirtualNodeService, never()).persistHoldingIdAndVirtualNode(any(), any(), any(), any(), any())
+        verify(recordFactory, never()).createVirtualNodeInfoRecord(
+            eq(ALICE_HOLDING_ID1),
+            eq(CPI_IDENTIFIER1),
+            any(),
+            eq(externalMessagingRouteConfig),
+        )
     }
 
     @Test

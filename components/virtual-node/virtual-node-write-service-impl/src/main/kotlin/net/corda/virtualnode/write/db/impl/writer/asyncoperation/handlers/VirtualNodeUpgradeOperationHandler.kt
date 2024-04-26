@@ -38,6 +38,7 @@ import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyn
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception.MigrationsFailedException
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception.VirtualNodeUpgradeRejectedException
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.factories.RecordFactory
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.utility.MgmInfoPersistenceHelper
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.UUID
@@ -53,6 +54,7 @@ internal class VirtualNodeUpgradeOperationHandler(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val memberResourceClient: MemberResourceClient,
     private val membershipQueryClient: MembershipQueryClient,
+    private val mgmInfoPersistenceHelper: MgmInfoPersistenceHelper,
     private val externalMessagingRouteConfigGenerator: ExternalMessagingRouteConfigGenerator,
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val recordFactory: RecordFactory,
@@ -243,6 +245,7 @@ internal class VirtualNodeUpgradeOperationHandler(
                 emptyList()
             }
         }
+        mgmInfoPersistenceHelper.persistMgmMemberInfo(holdingIdentity, records)
         virtualNodeInfoPublisher.publish(records)
 
         val registrationRequest = membershipQueryClient.queryRegistrationRequests(

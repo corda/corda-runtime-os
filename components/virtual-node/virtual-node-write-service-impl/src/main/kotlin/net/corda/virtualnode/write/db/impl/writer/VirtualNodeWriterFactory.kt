@@ -22,6 +22,7 @@ import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
 import net.corda.membership.client.MemberResourceClient
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
@@ -50,6 +51,7 @@ import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.Virtua
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeUpgradeOperationHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.services.CreateVirtualNodeServiceImpl
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.services.UpdateVirtualNodeServiceImpl
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.utility.MgmInfoPersistenceHelper
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.utility.MigrationUtilityImpl
 import org.slf4j.LoggerFactory
 
@@ -64,6 +66,7 @@ internal class VirtualNodeWriterFactory(
     private val groupPolicyParser: GroupPolicyParser,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val memberResourceClient: MemberResourceClient,
+    private val membershipPersistenceClient: MembershipPersistenceClient,
     private val membershipQueryClient: MembershipQueryClient,
     private val memberInfoFactory: MemberInfoFactory,
     private val cpiCpkRepositoryFactory: CpiCpkRepositoryFactory,
@@ -149,6 +152,10 @@ internal class VirtualNodeWriterFactory(
             )
 
         val recordFactory = RecordFactoryImpl(UTCClock(), memberInfoFactory)
+        val mgmInfoPersistenceHelper = MgmInfoPersistenceHelper(
+            membershipPersistenceClient,
+            memberInfoFactory,
+        )
 
         val handlerMap = mutableMapOf<Class<*>, VirtualNodeAsyncOperationHandler<*>>(
             VirtualNodeUpgradeRequest::class.java to VirtualNodeUpgradeOperationHandler(
@@ -159,6 +166,7 @@ internal class VirtualNodeWriterFactory(
                 membershipGroupReaderProvider,
                 memberResourceClient,
                 membershipQueryClient,
+                mgmInfoPersistenceHelper,
                 externalMessagingRouteConfigGenerator,
                 cordaAvroSerializationFactory,
                 recordFactory,
@@ -170,6 +178,7 @@ internal class VirtualNodeWriterFactory(
                 virtualNodeDbFactory,
                 recordFactory,
                 groupPolicyParser,
+                mgmInfoPersistenceHelper,
                 publisher,
                 externalMessagingRouteConfigGenerator,
                 LoggerFactory.getLogger(CreateVirtualNodeOperationHandler::class.java)

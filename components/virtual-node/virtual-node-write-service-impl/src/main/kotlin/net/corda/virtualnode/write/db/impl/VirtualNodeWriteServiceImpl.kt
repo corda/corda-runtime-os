@@ -10,6 +10,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.client.MemberResourceClient
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -43,6 +44,8 @@ internal class VirtualNodeWriteServiceImpl @Activate constructor(
     membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = MemberResourceClient::class)
     memberResourceClient: MemberResourceClient,
+    @Reference(service = MembershipPersistenceClient::class)
+    membershipPersistenceClient: MembershipPersistenceClient,
     @Reference(service = MembershipQueryClient::class)
     membershipQueryClient: MembershipQueryClient,
     @Reference(service = MemberInfoFactory::class)
@@ -62,6 +65,7 @@ internal class VirtualNodeWriteServiceImpl @Activate constructor(
             groupPolicyParser,
             membershipGroupReaderProvider,
             memberResourceClient,
+            membershipPersistenceClient,
             membershipQueryClient,
             memberInfoFactory,
             CpiCpkRepositoryFactory(),

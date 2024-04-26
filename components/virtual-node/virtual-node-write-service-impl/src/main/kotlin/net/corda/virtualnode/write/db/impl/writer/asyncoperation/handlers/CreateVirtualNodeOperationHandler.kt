@@ -17,6 +17,7 @@ import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterProcessor
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.factories.RecordFactory
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.services.CreateVirtualNodeService
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.utility.MgmInfoPersistenceHelper
 import org.slf4j.Logger
 import java.time.Instant
 
@@ -26,6 +27,7 @@ internal class CreateVirtualNodeOperationHandler(
     private val virtualNodeDbFactory: VirtualNodeDbFactory,
     private val recordFactory: RecordFactory,
     private val policyParser: GroupPolicyParser,
+    private val mgmInfoPersistenceHelper: MgmInfoPersistenceHelper,
     statusPublisher: Publisher,
     private val externalMessagingRouteConfigGenerator: ExternalMessagingRouteConfigGenerator,
     private val logger: Logger
@@ -110,16 +112,6 @@ internal class CreateVirtualNodeOperationHandler(
 
             logger.info("Generated new ExternalMessagingRouteConfig as: $externalMessagingRouteConfig")
 
-            val vNodeConnections = execLog.measureExecTime("persist holding ID and virtual node") {
-                createVirtualNodeService.persistHoldingIdAndVirtualNode(
-                    holdingId,
-                    vNodeDbs,
-                    cpiMetadata.cpiId,
-                    request.updateActor,
-                    externalMessagingRouteConfig
-                )
-            }
-
             val mgmInfo = if (!GroupPolicyParser.isStaticNetwork(cpiMetadata.groupPolicy!!)) {
                 policyParser.getMgmInfo(holdingId, cpiMetadata.groupPolicy!!)
             } else {
@@ -131,6 +123,17 @@ internal class CreateVirtualNodeOperationHandler(
                 mutableListOf()
             } else {
                 mutableListOf(recordFactory.createMgmInfoRecord(holdingId, mgmInfo))
+            }
+            mgmInfoPersistenceHelper.persistMgmMemberInfo(holdingId, records)
+
+            val vNodeConnections = execLog.measureExecTime("persist holding ID and virtual node") {
+                createVirtualNodeService.persistHoldingIdAndVirtualNode(
+                    holdingId,
+                    vNodeDbs,
+                    cpiMetadata.cpiId,
+                    request.updateActor,
+                    externalMessagingRouteConfig
+                )
             }
 
             records.add(
