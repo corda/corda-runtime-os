@@ -30,6 +30,7 @@ dependencies {
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:utilities')
     implementation project(':notary-plugins:notary-plugin-common')
+    implementation project(':libs:serialization:serialization-avro')
 
     runtimeOnly project(':components:configuration:configuration-read-service-impl')
     runtimeOnly project(':libs:ledger:ledger-common-data')

@@ -1,5 +1,6 @@
 package net.corda.processors.flow.mapper.internal
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.flow.p2p.filter.FlowP2PFilterService
@@ -51,7 +52,9 @@ class FlowMapperProcessorImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = LocallyHostedIdentitiesService::class)
-    private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService
+    private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) : FlowMapperProcessor {
 
     private companion object {
