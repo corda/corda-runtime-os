@@ -1,6 +1,5 @@
 package net.corda.flow.p2p.filter
 
-import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
@@ -30,11 +29,12 @@ class FlowP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializati
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val cordaAvroDeserializer: CordaAvroDeserializer<SessionEvent> =
-        cordaAvroSerializationFactory.createAvroDeserializer(
-            {},
-            SessionEvent::class.java
-        )
+    private val cordaAvroDeserializer by lazy {
+            cordaAvroSerializationFactory.createAvroDeserializer(
+                {},
+                SessionEvent::class.java
+            )
+    }
 
     override fun onNext(
         events: List<Record<String, AppMessage>>
