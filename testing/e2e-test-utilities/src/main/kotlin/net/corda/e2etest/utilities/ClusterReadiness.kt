@@ -6,6 +6,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.SoftAssertions
 import org.slf4j.LoggerFactory
+import org.slf4j.MDC
 import java.io.IOException
 import java.net.URI
 import java.net.http.HttpClient
@@ -39,8 +40,6 @@ class ClusterReadinessChecker: ClusterReadiness {
 
     private val client = HttpClient.newBuilder().build()
 
-
-
     override fun assertIsReady(timeOut: Duration, sleepDuration: Duration) {
         runBlocking(Dispatchers.Default) {
             val softly = SoftAssertions()
@@ -49,8 +48,10 @@ class ClusterReadinessChecker: ClusterReadiness {
                 .filter { !it.value.isNullOrBlank() }
                 .map {
                     async {
+                        MDC.clear()
+                        MDC.put("name", it.key)
                         var lastResponse: HttpResponse<String>? = null
-                        val isReady: Boolean = tryUntil(timeOut, sleepDuration, it.key) {
+                        val isReady: Boolean = tryUntil(timeOut, sleepDuration) {
                             sendAndReceiveResponse(it.key, it.value).also {
                                 lastResponse = it
                             }
@@ -72,14 +73,14 @@ class ClusterReadinessChecker: ClusterReadiness {
         }
     }
 
-    private fun tryUntil(timeOut: Duration, sleepDuration: Duration, name: String, function: () -> HttpResponse<String>): Boolean {
+    private fun tryUntil(timeOut: Duration, sleepDuration: Duration, function: () -> HttpResponse<String>): Boolean {
         val startTime = Instant.now()
         while (Instant.now() < startTime.plusNanos(timeOut.toNanos())) {
             try {
                 val response = function()
                 val statusCode = response.statusCode()
                 if (statusCode in 200..299) {
-                    logger.info("Status successful for $name. Exiting tryUntil.")
+                    logger.info("Response code success.")
                     return true
                 }
                 else {
