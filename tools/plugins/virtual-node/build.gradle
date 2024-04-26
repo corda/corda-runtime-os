@@ -48,6 +48,7 @@ dependencies {
     testImplementation libs.pf4j
     testCompileOnly "net.corda.cli.host:api:$pluginHostVersion"
     testImplementation "info.picocli:picocli:$picocliVersion"
+    testImplementation libs.assertj.core
 }
 
 cliPlugin {

@@ -1,10 +1,10 @@
 package net.corda.cli.plugins.vnode.commands
 
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import picocli.CommandLine
 import java.io.File
 import kotlin.io.path.writeLines
-import kotlin.test.assertEquals
 
 class PlatformMigrationSmokeTest {
     private companion object {
@@ -35,11 +35,11 @@ class PlatformMigrationSmokeTest {
                 "-i=${holdingIdsFile.absolutePath}",
                 "-o=${outputFile.absolutePath}"
             )
-        assertEquals(0, exitCode)
+        assertThat(exitCode).isEqualTo(0)
         val updateDatabaseScriptLines = outputFile.readLines().filter {
             it.contains("-- Update Database Script")
         }
-        assertEquals(3 * validHoldingIds.size, updateDatabaseScriptLines.size)
+        assertThat(updateDatabaseScriptLines.size).isEqualTo(3 * validHoldingIds.size)
     }
 
     @Test
@@ -52,11 +52,11 @@ class PlatformMigrationSmokeTest {
                 "--input-filename=${holdingIdsFile.absolutePath}",
                 "--output-filename=${outputFile.absolutePath}"
             )
-        assertEquals(0, exitCode)
+        assertThat(exitCode).isEqualTo(0)
         val updateDatabaseScriptLines = outputFile.readLines().filter {
             it.contains("-- Update Database Script")
         }
-        assertEquals(3 * validHoldingIds.size, updateDatabaseScriptLines.size)
+        assertThat(updateDatabaseScriptLines.size).isEqualTo(3 * validHoldingIds.size)
     }
 
     @Test
@@ -78,10 +78,11 @@ class PlatformMigrationSmokeTest {
                 "--user=$postgresUser",
                 "--password=$postgresPassword",
             )
-        assertEquals(0, exitCode)
+
+        assertThat(exitCode).isEqualTo(0)
         val updateDatabaseScriptLines = defaultOutputFile.readLines().filter {
             it.contains("-- Update Database Script")
         }
-        assertEquals(3 * validHoldingIds.size, updateDatabaseScriptLines.size)
+        assertThat(updateDatabaseScriptLines.size).isEqualTo(3 * validHoldingIds.size)
     }
 }
