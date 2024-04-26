@@ -2149,8 +2149,9 @@ class UtxoPersistenceServiceImplTest {
     ): SignedTransactionContainer {
         val transactionMetadata = utxoTransactionMetadataExample(cpkPackageSeed = seed)
         val timeWindow = Instant.now().plusMillis(Duration.ofDays(1).toMillis())
+        val jsonBlob = jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetadata)).toByteArray()
         val componentGroupLists: List<List<ByteArray>> = listOf(
-            listOf((header + jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetadata)).toByteArray())),
+            listOf(header + jsonBlob),
             listOf(notaryExampleName.toBytes(), notaryExampleKey.toBytes(), timeWindow.toBytes()),
             listOf("group2_component1".toByteArray()),
             outputStates.map {

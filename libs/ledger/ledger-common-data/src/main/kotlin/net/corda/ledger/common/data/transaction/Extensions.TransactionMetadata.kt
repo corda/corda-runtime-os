@@ -25,16 +25,15 @@ object TransactionMetadataUtils {
         jsonValidator: JsonValidator,
         jsonMarshallingService: JsonMarshallingService
     ): TransactionMetadataImpl {
-        // extracting a header and json.
+        // extracting MPV from a header and json.
         val (minimumPlatformVersion, json) = metadataBytes.extractHeaderMPVAndJson()
-
         if (minimumPlatformVersion != null) {
 //            TODO("if minimumPlatformVersion is null, it means MPV <= 5.2.1. write JSON without a header.")
         }
 
         jsonValidator.validate(json, getMetadataSchema(jsonValidator))
         val metadata = jsonMarshallingService.parse(json, TransactionMetadataImpl::class.java)
-
+        println("XXX after json parsing")
         check(metadata.digestSettings == WireTransactionDigestSettings.defaultValues) {
             "Only the default digest settings are acceptable now! ${metadata.digestSettings} vs " +
                 "${WireTransactionDigestSettings.defaultValues}"
@@ -51,36 +50,28 @@ object TransactionMetadataUtils {
 }
 
 fun ByteArray.extractHeaderMPVAndJson(): Pair<Int?, String> {
-    val openingBraceIndex = this.indexOf('{'.code.toByte())
-    val trailingBraceIndex = this.indexOf('}'.code.toByte())
-
-    // if byteArray starts with open curly bracket and end with tailing curly bracket. -> no header
-    // if byteArray is 8 bytes
-    // if byteArray contains "corda"
-    // if it contains number that represents tx metadata
-    // if it contains minimum platform version ( starting from 0 -> 5.2.1, 1 -> 5.3, 2 -> 5.4 ... )
-    // map MPV integer to MPV form -> 50210, 50300, 50400
-    // get appropriate version of schema
-    // parse metadata
+    val openingBrace = '{'.code.toByte()
+    val trailingBrace = '}'.code.toByte()
 
     // there isn't a header - meaning minimumPlatformVersion of this tx metadata <= 5.2.1
-    if (openingBraceIndex == 0 && trailingBraceIndex == lastIndex) {
+    if (this[0] == openingBrace && this[lastIndex] == trailingBrace) {
         return null to this.decodeToString()
     }
 
     try {
         // there is a header
+        val openingBraceIndex = this.indexOf(openingBrace)
         val headerBytes = this.copyOfRange(0, openingBraceIndex)
-        val json = this.copyOfRange(openingBraceIndex, this.lastIndex + 1).decodeToString()
-
+        val json = this.copyOfRange(openingBraceIndex, lastIndex + 1).decodeToString()
         if (!headerBytes.canDeserializeVersion()) {
             return null to json
         }
 
         // extract minimumPlatformVersion from a header byte array
-        return headerBytes.copyOfRange(4, lastIndex + 1).getOrNull(1)?.toInt() to json
+        val minimumPlatformVersion = headerBytes.copyOfRange(5, headerBytes.lastIndex + 1).getOrNull(1)
+        return minimumPlatformVersion?.toInt() to json
     } catch (e: Exception) {
-        throw CordaRuntimeException("Failed to extract jsob blob from byte array $this")
+        throw CordaRuntimeException("Failed to extract json blob from byte array $this")
     }
 }
 
@@ -88,14 +79,14 @@ fun ByteArray.canDeserializeVersion(): Boolean {
     // the header byte will look like: "corda" + byteArrayOf(8, <minimum platform version starting from 0 being 5.3>)
     val splitIndex = 4
     val firstHalf = this.copyOfRange(0, splitIndex + 1)
-    val secondHalf = this.copyOfRange(splitIndex, lastIndex + 1)
-
+    val secondHalf = this.copyOfRange(splitIndex + 1, lastIndex + 1)
     if (this.size != 7) {
         return false
     }
     if (!firstHalf.contentEquals("corda".toByteArray())) {
         return false
     }
+
     if (secondHalf.getOrNull(0) != TRANSACTION_METADATA_BYTE.toByte()) {
         return false
     }
