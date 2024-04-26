@@ -50,7 +50,7 @@ class ClusterReadinessChecker: ClusterReadiness {
                 .map {
                     async {
                         var lastResponse: HttpResponse<String>? = null
-                        val isReady: Boolean = tryUntil(timeOut, sleepDuration) {
+                        val isReady: Boolean = tryUntil(timeOut, sleepDuration, it.key) {
                             sendAndReceiveResponse(it.key, it.value).also {
                                 lastResponse = it
                             }
@@ -72,14 +72,14 @@ class ClusterReadinessChecker: ClusterReadiness {
         }
     }
 
-    private fun tryUntil(timeOut: Duration, sleepDuration: Duration, function: () -> HttpResponse<String>): Boolean {
+    private fun tryUntil(timeOut: Duration, sleepDuration: Duration, name: String, function: () -> HttpResponse<String>): Boolean {
         val startTime = Instant.now()
         while (Instant.now() < startTime.plusNanos(timeOut.toNanos())) {
             try {
                 val response = function()
                 val statusCode = response.statusCode()
                 if (statusCode in 200..299) {
-                    logger.info("Status successful with code $statusCode. Exiting tryUntil.")
+                    logger.info("Status successful for $name. Exiting tryUntil.")
                     return true
                 }
                 else {
