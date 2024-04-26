@@ -43,6 +43,11 @@ class FlowP2PFilterService @Activate constructor(
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
     }
 
+    init {
+        println("AAA init 1")
+        println("AAA init 2 this $this")
+    }
+
     private val coordinator = coordinatorFactory.createCoordinator<FlowP2PFilterService>(::eventHandler)
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -79,8 +84,12 @@ class FlowP2PFilterService @Activate constructor(
      */
     private fun restartFlowP2PFilterService(event: ConfigChangedEvent) {
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-
+        println("AAA restartFlowP2PFilterService 1 this $this")
+        println("AAA restartFlowP2PFilterService 2 - coordinator - $coordinator")
         coordinator.createManagedResource(SUBSCRIPTION) {
+            println("AAA restartFlowP2PFilterService 3")
+            println("AAA restartFlowP2PFilterService 4 - subscriptionFactory - $subscriptionFactory")
+            println("AAA restartFlowP2PFilterService 5 - cordaAvroSerializationFactory - $cordaAvroSerializationFactory")
             subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig(CONSUMER_GROUP, P2P_IN_TOPIC),
                 FlowP2PFilterProcessor(cordaAvroSerializationFactory),
