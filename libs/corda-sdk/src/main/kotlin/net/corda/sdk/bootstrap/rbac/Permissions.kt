@@ -38,12 +38,6 @@ object Permissions {
                 "GET:/api/$VERSION_PATH_REGEX/flowclass/$vNodeShortHash",
                 null
             ),
-            PermissionTemplate(
-                "Get status for a specific flow via WebSocket",
-                "WS:/api/$VERSION_PATH_REGEX/flow/$vNodeShortHash/${RbacKeys.CLIENT_REQ_REGEX}",
-                null
-            ),
-
             // Flow start related
             PermissionTemplate(
                 "Start any flow",
