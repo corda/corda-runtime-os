@@ -36,6 +36,7 @@ dependencies {
     implementation project(":components:membership:locally-hosted-identities-service")
     implementation project(':components:membership:mtls-mgm-allowed-list-reader-writer')
     implementation project(':libs:chunking:chunking-datamodel')
+    implementation project(':libs:membership:certificates-common')
     implementation project(':libs:membership:certificates-datamodel')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-datamodel')

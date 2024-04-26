@@ -13,26 +13,23 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
 import net.corda.membership.certificate.client.DbCertificateClient
+import net.corda.membership.certificates.toPemCertificateChain
 import net.corda.membership.datamodel.HostedIdentityEntity
 import net.corda.membership.datamodel.HostedIdentitySessionKeyInfoEntity
-import net.corda.membership.datamodel.HostedIdentitySessionKeyInfoEntityId
 import net.corda.reconciliation.Reconciler
 import net.corda.reconciliation.ReconcilerFactory
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.ReconcilerWriter
 import net.corda.reconciliation.VersionedRecord
+import net.corda.utilities.VisibleForTesting
 import net.corda.utilities.debug
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
-import org.bouncycastle.cert.X509CertificateHolder
-import org.bouncycastle.openssl.PEMParser
-import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.io.StringWriter
 import java.util.stream.Stream
 import javax.persistence.EntityManager
 
@@ -55,8 +52,11 @@ class HostedIdentityReconciler(
         )
     }
 
-    private var dbReconciler: DbReconcilerReader<String, HostedIdentityEntry>? = null
-    private var reconciler: Reconciler? = null
+    @VisibleForTesting
+    internal var dbReconciler: DbReconcilerReader<String, HostedIdentityEntry>? = null
+
+    @VisibleForTesting
+    internal var reconciler: Reconciler? = null
 
     private val reconciliationContextFactory = {
         Stream.of(ClusterReconciliationContext(dbConnectionManager))
@@ -115,20 +115,20 @@ class HostedIdentityReconciler(
 
     private fun HostedIdentityEntity.toHostedIdentityEntry(em: EntityManager): HostedIdentityEntry {
         val holdingId = ShortHash.of(holdingIdentityShortHash)
-        val preferredKey = em.find(
-            HostedIdentitySessionKeyInfoEntity::class.java, HostedIdentitySessionKeyInfoEntityId(
-                holdingIdentityShortHash, preferredSessionKeyAndCertificate
-            )
-        ).toSessionKeyAndCertificate()
         val keysQuery = em.criteriaBuilder.createQuery(HostedIdentitySessionKeyInfoEntity::class.java)
         val keysRoot = keysQuery.from(HostedIdentitySessionKeyInfoEntity::class.java)
         keysQuery
             .select(keysRoot)
             .where(
-                em.criteriaBuilder.equal(keysRoot.get<String>("holding_identity_id"), holdingIdentityShortHash)
+                em.criteriaBuilder.equal(
+                    keysRoot.get<String>(HostedIdentitySessionKeyInfoEntity::holdingIdentityShortHash.name),
+                    holdingIdentityShortHash
+                )
             )
-        val alternateKeys = em.createQuery(keysQuery).resultList.map { entity ->
-            entity.toSessionKeyAndCertificate()
+        val (preferredKey, alternateKeys) = em.createQuery(keysQuery).resultList.let { allKeys ->
+            val preferred = allKeys.firstOrNull { it.sessionKeyId == preferredSessionKeyAndCertificate }
+                ?: throw CordaRuntimeException("Failed to retrieve preferred session key for '$holdingIdentityShortHash'.")
+            preferred.toSessionKeyAndCertificate() to (allKeys - preferred).map { it.toSessionKeyAndCertificate() }
         }
 
         val (tlsKeyTenantId, tlsCertificateHoldingId) = when (useClusterLevelTlsCertificateAndKey) {
@@ -144,6 +144,7 @@ class HostedIdentityReconciler(
             .setTlsTenantId(tlsKeyTenantId)
             .setPreferredSessionKeyAndCert(preferredKey)
             .setAlternativeSessionKeysAndCerts(alternateKeys)
+            .setVersion(version)
             .build()
     }
 
@@ -184,31 +185,15 @@ class HostedIdentityReconciler(
         val certificateChain = dbClient.retrieveCertificates(
             certificateHoldingId, usage, certificateChainAlias
         )
-        return certificateChain?.reader().use { reader ->
-            PEMParser(reader).use {
-                generateSequence { it.readObject() }
-                    .filterIsInstance<X509CertificateHolder>()
-                    .map { certificate ->
-                        StringWriter().use { str ->
-                            JcaPEMWriter(str).use { writer ->
-                                writer.writeObject(certificate)
-                            }
-                            str.toString()
-                        }
-                    }
-                    .toList()
-            }
-        }
+        return certificateChain?.toPemCertificateChain()
+            ?: throw CertificatesResourceNotFoundException("Certificate with '$certificateChainAlias' not found.")
     }
 
     private fun getSessionKey(
         tenantId: String,
         sessionKeyId: ShortHash,
     ): String {
-        return cryptoOpsClient.lookupKeysByIds(
-            tenantId = tenantId,
-            keyIds = listOf(sessionKeyId)
-        ).firstOrNull()
+        return cryptoOpsClient.lookupKeysByIds(tenantId, listOf(sessionKeyId)).firstOrNull()
             ?.toPem()
             ?: throw CertificatesResourceNotFoundException("Can not find session key for $tenantId")
     }

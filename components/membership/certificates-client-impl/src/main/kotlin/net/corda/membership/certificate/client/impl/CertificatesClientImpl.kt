@@ -40,6 +40,7 @@ import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.concurrent.getOrThrow
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
@@ -132,16 +133,18 @@ class CertificatesClientImpl @Activate constructor(
             alternativeSessionKeyAndCertificates = alternativeSessionKeyAndCertificates,
         )
 
-        val version = membershipPersistenceClient.persistHostedIdentity(
-            record.value!!.holdingIdentity.toCorda(),
-            p2pTlsCertificateChainAlias,
-            useClusterLevelTlsCertificateAndKey,
-            preferredSessionKeyAndCertificate.toAvro(preferred = true),
-            alternativeSessionKeyAndCertificates.map { it.toAvro(preferred = false) }
-        ).getOrThrow()
+        record.value?.let { hostedIdentityEntry ->
+            val version = membershipPersistenceClient.persistHostedIdentity(
+                hostedIdentityEntry.holdingIdentity.toCorda(),
+                p2pTlsCertificateChainAlias,
+                useClusterLevelTlsCertificateAndKey,
+                preferredSessionKeyAndCertificate.toAvro(preferred = true),
+                alternativeSessionKeyAndCertificates.map { it.toAvro(preferred = false) }
+            ).getOrThrow()
 
-        // Set version as the persisted entity version
-        record.value?.version = version
+            // Set version as the persisted entity version
+            hostedIdentityEntry.version = version
+        } ?: throw CordaRuntimeException("Failed to create hosted identity record for '$holdingIdentityShortHash'.")
 
         val futures = publisher?.publish(
             listOf(

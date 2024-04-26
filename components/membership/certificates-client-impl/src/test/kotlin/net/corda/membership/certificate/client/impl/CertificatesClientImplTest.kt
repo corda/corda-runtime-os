@@ -9,6 +9,7 @@ import net.corda.data.certificates.rpc.request.CertificateRpcRequest
 import net.corda.data.certificates.rpc.request.ImportCertificateRpcRequest
 import net.corda.data.certificates.rpc.request.RetrieveCertificateRpcRequest
 import net.corda.data.certificates.rpc.response.CertificateRpcResponse
+import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -24,6 +25,8 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
@@ -44,6 +47,7 @@ import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -77,6 +81,15 @@ class CertificatesClientImplTest {
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
         on { getByHoldingIdentityShortHash(shortHash) } doReturn mock()
     }
+    private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
+        on { persistHostedIdentity(any(), any(), any(), any(), any()) } doAnswer {
+            object : MembershipPersistenceOperation<Int> {
+                override fun execute(): MembershipPersistenceResult<Int> = MembershipPersistenceResult.Success(10)
+
+                override fun createAsyncCommands(): Collection<Record<*, *>> = emptyList()
+            }
+        }
+    }
     private val client = CertificatesClientImpl(
         coordinatorFactory,
         publisherFactory,
@@ -86,7 +99,7 @@ class CertificatesClientImplTest {
         mock(),
         mock(),
         mock(),
-        mock(),
+        membershipPersistenceClient,
         mock(),
         mock(),
     )
@@ -192,8 +205,25 @@ class CertificatesClientImplTest {
 
     @Nested
     inner class SetupLocallyHostedIdentityTest {
+
+        private fun mockRecordCreation(): Record<String, HostedIdentityEntry> {
+            val record = mock<Record<String, HostedIdentityEntry>> {
+                on { value } doAnswer {
+                    mock {
+                        on { holdingIdentity } doReturn HoldingIdentity("O=Alice, L=LDN, C=GB", "12345")
+                    }
+                }
+            }
+            whenever(
+                mockHostedIdentityEntryFactory.constructed().first()
+                    .createIdentityRecord(any(), any(), any(), any(), anyOrNull())
+            ).doReturn(record)
+            return record
+        }
+
         @Test
         fun `publishToLocallyHostedIdentities calls createIdentityRecord`() {
+            mockRecordCreation()
             postConfigChangedEvent()
 
             client.setupLocallyHostedIdentity(
@@ -242,6 +272,7 @@ class CertificatesClientImplTest {
 
         @Test
         fun `publishToLocallyHostedIdentities throws exception if publisher is null`() {
+            mockRecordCreation()
             assertThrows<IllegalStateException> {
                 client.setupLocallyHostedIdentity(
                     shortHash,
@@ -258,6 +289,7 @@ class CertificatesClientImplTest {
 
         @Test
         fun `publishToLocallyHostedIdentities throws exception if publisher future fails`() {
+            mockRecordCreation()
             whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.failedFuture(CordaRuntimeException(""))))
             postConfigChangedEvent()
 
@@ -277,11 +309,7 @@ class CertificatesClientImplTest {
 
         @Test
         fun `publishToLocallyHostedIdentities publish the correct record`() {
-            val record = mock<Record<String, HostedIdentityEntry>>()
-            whenever(
-                mockHostedIdentityEntryFactory.constructed().first()
-                    .createIdentityRecord(any(), any(), any(), any(), anyOrNull())
-            ).doReturn(record)
+            val record = mockRecordCreation()
             postConfigChangedEvent()
 
             client.setupLocallyHostedIdentity(

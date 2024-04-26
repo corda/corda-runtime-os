@@ -116,6 +116,7 @@ class LocallyHostedIdentitiesWriterImpl@Activate constructor(
 
     private fun onStopEvent() {
         lock.withLock {
+            coordinator.updateStatus(LifecycleStatus.DOWN, "Received stop event.")
             registration?.close()
             registration = null
 
@@ -132,10 +133,10 @@ class LocallyHostedIdentitiesWriterImpl@Activate constructor(
             configSubscription?.close()
             configSubscription = configurationReadService.registerComponentForUpdates(
                 coordinator,
-                setOf(ConfigKeys.MESSAGING_CONFIG)
+                setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG)
             )
         } else {
-            coordinator.updateStatus(event.status)
+            coordinator.updateStatus(event.status, "Received ${event.status} event.")
             configSubscription?.close()
             configSubscription = null
         }
@@ -149,7 +150,7 @@ class LocallyHostedIdentitiesWriterImpl@Activate constructor(
             publisher = publisherFactory.createPublisher(
                 PublisherConfig(CLIENT_ID),
                 event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-            )
+            ).also { it.start() }
         }
         coordinator.updateStatus(LifecycleStatus.UP)
     }
