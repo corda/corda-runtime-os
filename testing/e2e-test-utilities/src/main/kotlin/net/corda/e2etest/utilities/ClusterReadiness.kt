@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
+import net.corda.utilities.withMDC
 import org.assertj.core.api.SoftAssertions
 import org.slf4j.LoggerFactory
 import java.io.IOException
@@ -39,8 +40,6 @@ class ClusterReadinessChecker: ClusterReadiness {
 
     private val client = HttpClient.newBuilder().build()
 
-
-
     override fun assertIsReady(timeOut: Duration, sleepDuration: Duration) {
         runBlocking(Dispatchers.Default) {
             val softly = SoftAssertions()
@@ -49,20 +48,21 @@ class ClusterReadinessChecker: ClusterReadiness {
                 .filter { !it.value.isNullOrBlank() }
                 .map {
                     async {
-                        var lastResponse: HttpResponse<String>? = null
-                        val isReady: Boolean = tryUntil(timeOut, sleepDuration) {
-                            sendAndReceiveResponse(it.key, it.value).also {
-                                lastResponse = it
+                        withMDC(mapOf("name" to it.key)) {
+                            var lastResponse: HttpResponse<String>? = null
+                            val isReady: Boolean = tryUntil(timeOut, sleepDuration) {
+                                sendAndReceiveResponse(it.key, it.value).also {
+                                    lastResponse = it
+                                }
                             }
-                        }
-                        if (isReady) {
-                            logger.info("${it.key} is ready")
-                        }
-                        else {
-                            """Problem with ${it.key} (${it.value}), status returns not ready, 
+                            if (isReady) {
+                                logger.info("${it.key} is ready")
+                            } else {
+                                """Problem with ${it.key} (${it.value}), status returns not ready, 
                                 | body: ${lastResponse?.body()}""".trimMargin().let {
-                                logger.error(it)
-                                softly.fail(it)
+                                    logger.error(it)
+                                    softly.fail(it)
+                                }
                             }
                         }
                     }
@@ -79,6 +79,7 @@ class ClusterReadinessChecker: ClusterReadiness {
                 val response = function()
                 val statusCode = response.statusCode()
                 if (statusCode in 200..299) {
+                    logger.info("Response code success.")
                     return true
                 }
                 else {
@@ -98,6 +99,8 @@ class ClusterReadinessChecker: ClusterReadiness {
         val request = HttpRequest.newBuilder()
             .uri(URI.create(url))
             .build()
-        return client.send(request, HttpResponse.BodyHandlers.ofString())
+        return client.send(request, HttpResponse.BodyHandlers.ofString()).also {
+            logger.info("Returning status ${it.statusCode()} $name on $url.")
+        }
     }
 }
