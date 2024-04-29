@@ -1,7 +1,7 @@
 [versions]
 kotlinVersion = "1.8.21"
 
-apacheCommonsCodecVersion="1.16.1"
+apacheCommonsCodecVersion="1.17.0"
 apacheCommonsCompressVersion = "1.26.1"
 bouncycastleVersion = "1.78.1"
 braveVersion = "6.0.3"
