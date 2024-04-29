@@ -3,7 +3,6 @@ package net.corda.membership.impl.rest.v1
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants.P2P
-import net.corda.crypto.core.CryptoTenants.REST
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.Lifecycle
@@ -124,9 +123,7 @@ class HsmRestResourceImpl @Activate constructor(
     }
 
     private fun verifyTenantId(tenantId: String) {
-        if ((tenantId == P2P) || (tenantId == REST)) {
-            return
-        }
+        if (tenantId == P2P) return
         try {
             virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
                 tenantId
