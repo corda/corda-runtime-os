@@ -112,6 +112,16 @@ internal class CreateVirtualNodeOperationHandler(
 
             logger.info("Generated new ExternalMessagingRouteConfig as: $externalMessagingRouteConfig")
 
+            val vNodeConnections = execLog.measureExecTime("persist holding ID and virtual node") {
+                createVirtualNodeService.persistHoldingIdAndVirtualNode(
+                    holdingId,
+                    vNodeDbs,
+                    cpiMetadata.cpiId,
+                    request.updateActor,
+                    externalMessagingRouteConfig
+                )
+            }
+
             val mgmInfo = if (!GroupPolicyParser.isStaticNetwork(cpiMetadata.groupPolicy!!)) {
                 policyParser.getMgmInfo(holdingId, cpiMetadata.groupPolicy!!)
             } else {
@@ -126,16 +136,6 @@ internal class CreateVirtualNodeOperationHandler(
             }
             if (records.isNotEmpty()) {
                 mgmInfoPersistenceHelper.persistMgmMemberInfo(holdingId, records)
-            }
-
-            val vNodeConnections = execLog.measureExecTime("persist holding ID and virtual node") {
-                createVirtualNodeService.persistHoldingIdAndVirtualNode(
-                    holdingId,
-                    vNodeDbs,
-                    cpiMetadata.cpiId,
-                    request.updateActor,
-                    externalMessagingRouteConfig
-                )
             }
 
             records.add(
