@@ -584,7 +584,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
         val mgmRecord = mock<Record<*, *>>()
         whenever(recordFactory.createMgmInfoRecord(any(), eq(newMgmInfo))).thenReturn(mgmRecord)
         val reason = "mgm info persistence failed"
-        whenever(mgmInfoPersistenceHelper.persistMgmMemberInfo(eq(mockHoldingIdentity), eq(listOf(mgmRecord))))
+        whenever(mgmInfoPersistenceHelper.persistMgmMemberInfo(eq(mockHoldingIdentity), eq(listOf(mgmRecord)), any()))
             .thenThrow(CordaRuntimeException(reason))
 
         withFailedOperation(VirtualNodeOperationStateDto.UNEXPECTED_FAILURE, reason) {

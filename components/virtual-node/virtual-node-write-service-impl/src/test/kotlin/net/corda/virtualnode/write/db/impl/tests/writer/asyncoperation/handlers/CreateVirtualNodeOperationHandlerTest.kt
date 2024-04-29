@@ -222,7 +222,9 @@ class CreateVirtualNodeOperationHandlerTest {
             mgmInfoRecord
         )
         val reason = "mgm info persistence failed"
-        whenever(mgmInfoPersistenceHelper.persistMgmMemberInfo(eq(ALICE_HOLDING_ID1), eq(listOf(mgmInfoRecord, virtualNodeInfoRecord))))
+        whenever(
+            mgmInfoPersistenceHelper.persistMgmMemberInfo(eq(ALICE_HOLDING_ID1), eq(listOf(mgmInfoRecord, virtualNodeInfoRecord)), any())
+        )
             .thenThrow(CordaRuntimeException(reason))
 
         val ex = assertThrows<CordaRuntimeException> {
