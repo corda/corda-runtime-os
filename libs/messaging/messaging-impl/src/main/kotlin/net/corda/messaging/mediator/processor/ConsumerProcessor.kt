@@ -73,7 +73,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      * @param consumerConfig used to configure a consumer
      */
     fun processTopic(consumerFactory: MediatorConsumerFactory, consumerConfig: MediatorConsumerConfig<K, E>) {
-        val pollAction = ThrottledAction(consumerFactory.duration)
+        val pollAction = QuotaAction(consumerFactory.maxQueueSize)
         var attempts = 0
         var consumer: MediatorConsumer<K, E>? = null
         val failureCounts = mutableMapOf<String, Int>()
@@ -195,14 +195,14 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         inputsToCommit: BlockingDeque<List<CordaConsumerRecord<K, E>>>,
         inputsToRetry: BlockingQueue<List<CordaConsumerRecord<K, E>>>,
         assignedPartitions: MutableSet<CordaTopicPartition>,
-        pollAction: ThrottledAction
+        pollAction: QuotaAction
     ) {
         metrics.processorTimer.recordCallable {
             try {
-                val (inputs, retryInputs) = getInputs(consumer, inputsToRetry, assignedPartitions, pollAction)
-                val retriedOutputs = processInputs(emptyList(), retryInputs, inputsToCommit)
+                val (inputs, retryInputs) = getInputs(consumer, inputsToRetry, assignedPartitions)
+                val retriedOutputs = processInputs(emptyList(), retryInputs, inputsToCommit, pollAction)
                 transferOutputs(retriedOutputs, outputsToProcess)
-                val outputs = processInputs(inputs, emptyList(), inputsToCommit)
+                val outputs = processInputs(inputs, emptyList(), inputsToCommit, pollAction)
                 transferOutputs(outputs, outputsToProcess)
                 inputQueueLoggingAction.periodically { log.info("input queue size = ${queuedTasks.get()}") }
                 commitConsumerOffsets(consumer, inputsToCommit)
@@ -287,17 +287,14 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         consumer: MediatorConsumer<K, E>,
         inputsToRetry: BlockingQueue<List<CordaConsumerRecord<K, E>>>,
         assignedPartitions: Set<CordaTopicPartition>,
-        pollAction: ThrottledAction,
     ): Pair<List<EventProcessingInput<K, E>>, List<EventProcessingInput<K, E>>> {
         // Retries filtered to exclude any partitions we don't own
         val retryMessages = inputsToRetry.drainAll()
             .map { it.filter { CordaTopicPartition(it.topic, it.partition) in assignedPartitions } }
             .filter { it.isNotEmpty() }
-        val polledMessages = pollAction.throttled {
-            metrics.pollTimer.recordCallable {
-                if (retryMessages.isNotEmpty()) consumer.poll(Duration.ZERO) else consumer.poll(pollTimeout)
-            }!!
-        }
+        val polledMessages = metrics.pollTimer.recordCallable {
+            if (retryMessages.isNotEmpty()) consumer.poll(Duration.ZERO) else consumer.poll(pollTimeout)
+        }!!
         val newRecords = polledMessages.groupBy { it.key }
         val retryRecords = retryMessages.groupBy { it.first().key }.mapValues { it.value.flatten() }
         val states = if (config.stateCaching) {
@@ -338,7 +335,8 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     private fun processInputs(
         inputs: List<EventProcessingInput<K, E>>,
         retryInputs: List<EventProcessingInput<K, E>>,
-        inputsToCommit: BlockingDeque<List<CordaConsumerRecord<K, E>>>
+        inputsToCommit: BlockingDeque<List<CordaConsumerRecord<K, E>>>,
+        pollAction: QuotaAction
     ): Map<String, Pair<CompletableFuture<EventProcessingOutput<K, E>>, CompletableFuture<Unit>>> {
         val prunedInputs = inputs.map { input ->
             input.state?.let { state ->
@@ -355,9 +353,9 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             input.records.isEmpty()
         }
         return (retryInputs.map { input ->
-            mapInputToOutput(input, true)
+            mapInputToOutput(input, pollAction, true)
         } + newInputs.map { input ->
-            mapInputToOutput(input)
+            mapInputToOutput(input, pollAction)
         } + alreadySeenInputs.map { input ->
             mapAlreadySeenInputToOutput(input)
         }).toMap().mapKeys { (key, _) ->
@@ -391,12 +389,14 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
 
     private fun mapInputToOutput(
         input: EventProcessingInput<K, E>,
+        quotaAction: QuotaAction,
         isRetry: Boolean = false
     ): Pair<K, Pair<CompletableFuture<EventProcessingOutput<K, E>>, CompletableFuture<Unit>>> {
         val persistFuture = CompletableFuture<Unit>()
         val inputKey = input.key
         val inputRecords = input.records
         val oldestSessionCreateTimestamp = inputRecords.priority(TimeUnit.DAYS.toMillis(365))
+        quotaAction.useQuota(inputRecords.size)
         queuedTasks.incrementAndGet()
         val future = taskManager.executeShortRunningTask(
             inputKey,
@@ -415,6 +415,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             }
             val updatedInput = EventProcessingInput(inputKey, inputRecords, updatedState)
             val output = eventProcessor.processEvents(mapOf(inputKey to updatedInput)).values.first()
+            quotaAction.complete(inputRecords.size)
             output
         }
         return inputKey to (future to persistFuture)
@@ -534,7 +535,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
      */
     private fun generateInputs(
         states: Collection<State>,
-        records: Map<K, List<CordaConsumerRecord<K, E>>>
+        records: Map<K, List<CordaConsumerRecord<K, E>>>,
     ): List<EventProcessingInput<K, E>> {
         if (records.isEmpty()) return emptyList()
         val (runningStates, failedStates) = states.partition {

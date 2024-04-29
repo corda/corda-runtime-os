@@ -64,7 +64,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
             .withFallback(defaults)
             .resolve()
 
-        logger.info("Resolved kafka configuration: ${resolvedConfig.toSafeConfig().root().render()}")
+        logger.debug { "Resolved kafka configuration: ${resolvedConfig.toSafeConfig().root().render()}" }
 
         // Trim down to just the Kafka config for the specified role.
         val roleConfig = resolvedConfig.getConfig("roles.$rolePath")

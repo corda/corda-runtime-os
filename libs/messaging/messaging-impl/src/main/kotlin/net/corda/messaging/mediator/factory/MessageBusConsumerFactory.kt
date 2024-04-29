@@ -11,7 +11,6 @@ import net.corda.messaging.api.mediator.config.MediatorConsumerConfig
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.mediator.MessageBusConsumer
 import net.corda.messaging.subscription.consumer.listener.LoggingConsumerRebalanceListener
-import java.time.Duration
 
 /**
  * Factory for creating multi-source event mediator message bus consumers.
@@ -26,7 +25,7 @@ import java.time.Duration
 @Suppress("LongParameterList")
 class MessageBusConsumerFactory(
     override val topicName: String,
-    override val duration: Duration,
+    override val maxQueueSize: Int,
     private val groupName: String,
     private val messageBusConfig: SmartConfig,
     private val cordaConsumerBuilder: CordaConsumerBuilder,
