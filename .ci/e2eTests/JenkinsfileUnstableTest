@@ -2,9 +2,10 @@
 
 endToEndPipeline(
     assembleAndCompile: true,
+    dailyBuildCron: '',
     multiCluster: true,
     gradleTestTargetsToExecute: ['smokeTest', 'e2eTest'],
     usePackagedCordaHelmChart: false,
     gradleAdditionalArgs : '-PrunUnstableTests -Dscan.tag.UnstableTests',
-    javaVersion: '17'
+    javaVersion: '17',
 )

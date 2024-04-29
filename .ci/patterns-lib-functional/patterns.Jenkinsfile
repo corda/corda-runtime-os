@@ -38,7 +38,7 @@ pipeline {
     }
     
     triggers {
-        cron '@midnight'
+        cron ''
     }
 
     stages {
