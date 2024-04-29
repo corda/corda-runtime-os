@@ -21,8 +21,9 @@ class MgmInfoPersistenceHelper(
             ).execute()
             if (mgmInfoPersistenceResult is MembershipPersistenceResult.Failure) {
                 // re-try in case the VirtualNodeInfoReadService haven't picked up the records yet
-                if (numOfRetries < 5
-                    && mgmInfoPersistenceResult.errorMsg.contains("Virtual node info can't be retrieved")) {
+                if (numOfRetries < 5 &&
+                    mgmInfoPersistenceResult.errorMsg.contains("Virtual node info can't be retrieved")
+                ) {
                     persistMgmMemberInfo(viewOwner, records, numOfRetries + 1)
                 }
                 throw CordaRuntimeException("Persisting of MGM information failed.")
