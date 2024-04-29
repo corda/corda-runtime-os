@@ -53,8 +53,11 @@ class LocallyHostedIdentitiesWriterImpl@Activate constructor(
     private val lock = ReentrantLock()
 
     override fun put(recordKey: String, recordValue: HostedIdentityEntry) {
-        // TODO change to trace
-        logger.info("Reconciling hosted identity record for '${recordValue.holdingIdentity}', version=${recordValue.version}.")
+        logger.trace(
+            "Reconciling hosted identity record for '{}', version={}.",
+            recordValue.holdingIdentity,
+            recordValue.version
+        )
         publish(
             listOf(
                 Record(

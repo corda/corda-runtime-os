@@ -561,7 +561,7 @@ class StaticMemberRegistrationService(
                 null
             ),
             emptyList(),
-            1
+            1,
         )
 
         return Record(

@@ -89,7 +89,7 @@ class LocallyHostedIdentitiesServiceImplTest {
             listOf("sessionCertificate"),
         ),
         emptyList(),
-        1
+        1,
     )
     private val publicKey = mock<PublicKey>()
     private val publicKeyFactory = mock<(Reader) -> PublicKey?> {
@@ -282,7 +282,7 @@ class LocallyHostedIdentitiesServiceImplTest {
                     listOf("sessionCertificate"),
                 ),
                 emptyList(),
-                1
+                1,
             )
             processor.firstValue.onSnapshot(
                 mapOf("id1" to identityEntry),

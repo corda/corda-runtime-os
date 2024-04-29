@@ -463,7 +463,7 @@ class MembershipPersistenceClientImpl(
         preferredSessionKeyAndCertificate: SessionKeyAndCertificate,
         alternateSessionKeyAndCertificates: List<SessionKeyAndCertificate>
     ): MembershipPersistenceOperation<Int> {
-        logger.info("Persisting locally-hosted identity for $holdingIdentity.")
+        logger.info("Persisting locally-hosted identity for ${holdingIdentity.shortHash}.")
 
         val request = MembershipPersistenceRequest(
             buildMembershipRequestContext(holdingIdentity.toAvro()),

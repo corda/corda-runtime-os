@@ -12,6 +12,9 @@ import javax.persistence.Table
 
 /**
  * An entity representing the session key and certificate information for locally-hosted identities.
+ *
+ * This entity contains an entry for every session key specified while setting up the locally-hosted identity for a
+ * [holdingIdentityShortHash].
  */
 @Entity
 @Table(name = DbSchema.HOSTED_IDENTITY_SESSION_KEY_INFO)
