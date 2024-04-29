@@ -91,15 +91,6 @@ interface MemberInfoFactory {
         memberSignatureSpec: CryptoSignatureSpec,
     ): PersistentMemberInfo
 
-    /**
-     * Should be only used when creating members on static networks.
-     */
-    fun createStaticSelfSignedMemberInfo(
-        memberInfo: MemberInfo,
-        memberSignature: CryptoSignatureWithKey,
-        memberSignatureSpec: CryptoSignatureSpec,
-    ): SelfSignedMemberInfo
-
     fun createSelfSignedMemberInfo(
         memberContext: ByteArray,
         mgmContext: ByteArray,

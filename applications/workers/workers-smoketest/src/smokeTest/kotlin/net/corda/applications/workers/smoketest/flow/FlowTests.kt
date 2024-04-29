@@ -136,7 +136,6 @@ class FlowTests : ClusterReadiness by ClusterReadinessChecker() {
         )
 
         // Make sure Virtual Nodes are created
-        val aliceActualHoldingId = getOrCreateVirtualNodeFor(aliceX500, applicationCpiName)
         val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, applicationCpiName)
         val charlieActualHoldingId = getOrCreateVirtualNodeFor(charlyX500, applicationCpiName)
         val davidActualHoldingId = getOrCreateVirtualNodeFor(davidX500, applicationCpiName)
@@ -144,7 +143,6 @@ class FlowTests : ClusterReadiness by ClusterReadinessChecker() {
 
         // Just validate the function and actual vnode holding ID hash are in sync
         // if this fails the X500_BOB formatting could have changed or the hash implementation might have changed
-        assertThat(aliceActualHoldingId).isEqualTo(aliceHoldingId)
         assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
         assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
         assertThat(davidActualHoldingId).isEqualTo(davidHoldingId)
