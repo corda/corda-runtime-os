@@ -25,6 +25,8 @@ object TransactionMetadataUtils {
         jsonValidator: JsonValidator,
         jsonMarshallingService: JsonMarshallingService
     ): TransactionMetadataImpl {
+        if (metadataBytes.isEmpty()) throw IllegalArgumentException("Metadata is empty.")
+
         // extracting MPV from a header and json.
         val (minimumPlatformVersion, json) = metadataBytes.extractHeaderMPVAndJson()
         if (minimumPlatformVersion != null) {
@@ -33,7 +35,6 @@ object TransactionMetadataUtils {
 
         jsonValidator.validate(json, getMetadataSchema(jsonValidator))
         val metadata = jsonMarshallingService.parse(json, TransactionMetadataImpl::class.java)
-        println("XXX after json parsing")
         check(metadata.digestSettings == WireTransactionDigestSettings.defaultValues) {
             "Only the default digest settings are acceptable now! ${metadata.digestSettings} vs " +
                 "${WireTransactionDigestSettings.defaultValues}"
