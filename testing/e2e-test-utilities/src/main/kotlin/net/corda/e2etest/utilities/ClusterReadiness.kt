@@ -19,6 +19,11 @@ interface ClusterReadiness {
         timeOut: Duration = Duration.ofSeconds(120),
         sleepDuration: Duration = Duration.ofSeconds(1)
     )
+
+    fun remainsReady(
+        timeOut: Duration = Duration.ofSeconds(30),
+        sleepDuration: Duration = Duration.ofSeconds(1)
+    )
 }
 
 class ClusterReadinessChecker: ClusterReadiness {
@@ -39,8 +44,6 @@ class ClusterReadinessChecker: ClusterReadiness {
 
     private val client = HttpClient.newBuilder().build()
 
-
-
     override fun assertIsReady(timeOut: Duration, sleepDuration: Duration) {
         runBlocking(Dispatchers.Default) {
             val softly = SoftAssertions()
@@ -57,6 +60,37 @@ class ClusterReadinessChecker: ClusterReadiness {
                         }
                         if (isReady) {
                             logger.info("${it.key} is ready")
+                        }
+                        else {
+                            """Problem with ${it.key} (${it.value}), status returns not ready, 
+                                | body: ${lastResponse?.body()}""".trimMargin().let {
+                                logger.error(it)
+                                softly.fail(it)
+                            }
+                        }
+                    }
+                }.awaitAll()
+
+            softly.assertAll()
+        }
+    }
+
+    override fun remainsReady(timeOut: Duration, sleepDuration: Duration) {
+        runBlocking(Dispatchers.Default) {
+            val softly = SoftAssertions()
+            // check all workers are up and "ready"
+            workerUrls
+                .filter { !it.value.isNullOrBlank() }
+                .map {
+                    async {
+                        var lastResponse: HttpResponse<String>? = null
+                        val isReady: Boolean = tryContinuously(timeOut, sleepDuration) {
+                            sendAndReceiveResponse(it.key, it.value).also {
+                                lastResponse = it
+                            }
+                        }
+                        if (isReady) {
+                            logger.info("${it.key} is ready and stable")
                         }
                         else {
                             """Problem with ${it.key} (${it.value}), status returns not ready, 
@@ -90,6 +124,28 @@ class ClusterReadinessChecker: ClusterReadiness {
             Thread.sleep(sleepDuration.toMillis())
         }
         return false
+    }
+
+    private fun tryContinuously(timeOut: Duration, sleepDuration: Duration, function: () -> HttpResponse<String>): Boolean {
+        val startTime = Instant.now()
+        var lastSuccess = false
+        while (Instant.now() < startTime.plusNanos(timeOut.toNanos())) {
+            try {
+                val response = function()
+                val statusCode = response.statusCode()
+                if (statusCode in 200..299) {
+                    lastSuccess = true
+                }
+                else {
+                    logger.info("Returned status $statusCode.")
+                    lastSuccess = false
+                }
+            } catch (connectionException: IOException) {
+                logger.info("Cannot connect.", connectionException)
+            }
+            Thread.sleep(sleepDuration.toMillis())
+        }
+        return lastSuccess
     }
 
     private fun sendAndReceiveResponse(name: String, endpoint: String): HttpResponse<String> {
