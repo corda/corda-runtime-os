@@ -1,5 +1,6 @@
 package net.corda.ledger.common.data.transaction.factory
 
+import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.databind.JsonMappingException
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.test.CommonLedgerTest
@@ -282,8 +283,8 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
     }
 
     @Test
-    fun `Creating a WireTransaction parses metadata with a header successfullyeee`() {
-        val header = "corda".toByteArray() + byteArrayOf(8, 123)
+    fun `Creating a WireTransaction parses metadata with an invalid header`() {
+        val header = "corda".toByteArray() + byteArrayOf(4, 0)
         val metadata = transactionMetadataExample(
             ledgerModel = "net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl",
             transactionSubType = "GENERAL",
@@ -294,9 +295,13 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
         val componentGroupLists = (1..10).map {
             listOf((header + canonicalJson.toByteArray()))
         }
-        wireTransactionFactory.create(
-            componentGroupLists,
-            privacySalt
-        )
+        assertThatThrownBy {
+            wireTransactionFactory.create(
+                componentGroupLists,
+                privacySalt
+            )
+        }
+            .isInstanceOf(JsonParseException::class.java)
+            .hasMessageContaining("Unrecognized token")
     }
 }
