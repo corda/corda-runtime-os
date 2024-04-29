@@ -60,7 +60,7 @@ class Keys {
                 keysClient.start().proxy.listKeys(
                     tenantId = holdingIdentityShortHash.value,
                     skip = 0,
-                    take = 20,
+                    take = 1,
                     orderBy = "NONE",
                     category = category.value,
                     schemeCodeName = scheme,
@@ -142,7 +142,7 @@ class Keys {
                 client.start().proxy.listKeys(
                     tenantId = "p2p",
                     skip = 0,
-                    take = 20,
+                    take = 1,
                     orderBy = "NONE",
                     category = KeyCategory.TLS_KEY.value,
                     schemeCodeName = null,

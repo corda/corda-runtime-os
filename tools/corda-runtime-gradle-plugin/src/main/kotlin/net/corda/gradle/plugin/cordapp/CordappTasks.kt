@@ -25,6 +25,7 @@ const val NOTARY_CPB_COMMAND = ":notary:cpb"
 
 fun createCordappTasks(project: Project, pluginConfiguration: PluginConfiguration) {
     project.afterEvaluate {
+        val pc = ProjectContext(project, pluginConfiguration)
         project.tasks.create(CREATE_GROUP_POLICY_TASK_NAME, CreateGroupPolicyTask::class.java) {
             it.group = CORDAPP_BUILD_GROUP
             it.dependsOn(PROJINIT_TASK_NAME)
@@ -33,7 +34,9 @@ fun createCordappTasks(project: Project, pluginConfiguration: PluginConfiguratio
 
         project.tasks.create(CREATE_KEYSTORE_TASK_NAME, CreateKeystoreTask::class.java) {
             it.group = CORDAPP_BUILD_GROUP
-            it.dependsOn(CREATE_GROUP_POLICY_TASK_NAME)
+            if (!pc.networkConfig.mgmNodeIsPresentInNetworkDefinition) {
+                it.dependsOn(CREATE_GROUP_POLICY_TASK_NAME)
+            }
             it.pluginConfig.set(pluginConfiguration)
         }
 
@@ -56,7 +59,7 @@ fun createCordappTasks(project: Project, pluginConfiguration: PluginConfiguratio
                 CREATE_KEYSTORE_TASK_NAME,
                 getWorkflowsModuleTaskName(pluginConfiguration)
             )
-            val pc = ProjectContext(project, pluginConfiguration)
+
             if (pc.isNotaryNonValidating) {
                 it.dependsOn(GET_NOTARY_SERVER_CPB_TASK_NAME)
             } else {

@@ -15,7 +15,7 @@ class NetworkConfig(val configFilePath: String) {
         const val MULTIPLE_MGM_ERROR_MESSAGE = "Invalid number of MGM nodes defined, can only specify one."
     }
 
-    var vNodes: List<VNode>
+    val vNodes: List<VNode>
 
     init {
         val mapper = ObjectMapper()
@@ -27,7 +27,7 @@ class NetworkConfig(val configFilePath: String) {
         }
     }
 
-    var x500Names = vNodes.map { it.x500Name }
+    val x500Names = vNodes.map { it.x500Name }
 
     fun getMgmNode(): VNode? {
         val mgmNodes = vNodes.filter { it.mgmNode.toBoolean() }
@@ -41,5 +41,5 @@ class NetworkConfig(val configFilePath: String) {
         return vNodes.filter { it != getMgmNode() }
     }
 
-    var mgmNodeIsPresentInNetworkDefinition: Boolean = getMgmNode() != null
+    val mgmNodeIsPresentInNetworkDefinition: Boolean = getMgmNode() != null
 }
