@@ -245,7 +245,9 @@ internal class VirtualNodeUpgradeOperationHandler(
                 emptyList()
             }
         }
-        mgmInfoPersistenceHelper.persistMgmMemberInfo(holdingIdentity, records)
+        if (records.isNotEmpty()) {
+            mgmInfoPersistenceHelper.persistMgmMemberInfo(holdingIdentity, records)
+        }
         virtualNodeInfoPublisher.publish(records)
 
         val registrationRequest = membershipQueryClient.queryRegistrationRequests(

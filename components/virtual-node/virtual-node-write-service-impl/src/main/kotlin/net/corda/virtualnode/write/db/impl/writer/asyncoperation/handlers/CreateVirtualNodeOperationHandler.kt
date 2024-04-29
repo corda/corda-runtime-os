@@ -124,7 +124,9 @@ internal class CreateVirtualNodeOperationHandler(
             } else {
                 mutableListOf(recordFactory.createMgmInfoRecord(holdingId, mgmInfo))
             }
-            mgmInfoPersistenceHelper.persistMgmMemberInfo(holdingId, records)
+            if (records.isNotEmpty()) {
+                mgmInfoPersistenceHelper.persistMgmMemberInfo(holdingId, records)
+            }
 
             val vNodeConnections = execLog.measureExecTime("persist holding ID and virtual node") {
                 createVirtualNodeService.persistHoldingIdAndVirtualNode(
