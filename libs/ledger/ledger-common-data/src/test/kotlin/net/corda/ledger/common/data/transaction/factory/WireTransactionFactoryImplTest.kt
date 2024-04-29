@@ -280,4 +280,23 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             privacySalt
         )
     }
+
+    @Test
+    fun `Creating a WireTransaction parses metadata with a header successfullyeee`() {
+        val header = "corda".toByteArray() + byteArrayOf(8, 123)
+        val metadata = transactionMetadataExample(
+            ledgerModel = "net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl",
+            transactionSubType = "GENERAL",
+            memberShipGroupParametersHash = "Membership group parameters hash"
+        )
+        val metadataJson = jsonMarshallingService.format(metadata)
+        val canonicalJson = jsonValidator.canonicalize(metadataJson)
+        val componentGroupLists = (1..10).map {
+            listOf((header + canonicalJson.toByteArray()))
+        }
+        wireTransactionFactory.create(
+            componentGroupLists,
+            privacySalt
+        )
+    }
 }

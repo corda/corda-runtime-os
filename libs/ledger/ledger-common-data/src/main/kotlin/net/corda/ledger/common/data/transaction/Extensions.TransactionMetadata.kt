@@ -8,6 +8,7 @@ import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.core.bytes
 import net.corda.crypto.core.concatByteArrays
 import net.corda.crypto.core.toByteArray
+import net.corda.utilities.VisibleForTesting
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -17,7 +18,10 @@ import net.corda.v5.crypto.merkle.HashDigestConstants
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import java.util.*
 
-const val TRANSACTION_METADATA_BYTE = 8
+private const val TRANSACTION_METADATA_BYTE = 8
+private const val TRANSACTION_METADATA_TOTAL_HEADER_SIZE = 7
+private const val TRANSACTION_METADATA_CORDA_HEADER_SIZE = "corda".length
+private val CORDA_BYTEARRAY = "corda".toByteArray()
 
 object TransactionMetadataUtils {
     fun parseMetadata(
@@ -50,20 +54,17 @@ object TransactionMetadataUtils {
         checkNotNull(this::class.java.getResourceAsStream(path)) { "Failed to load JSON schema from $path" }
 }
 
+@VisibleForTesting
 fun ByteArray.extractHeaderMetadataSchemaVersionAndJson(): Pair<Int?, String> {
-    val headerBytes = this.copyOfRange(0, 8)
     // there isn't a header - meaning schema version of this tx metadata <= 5.2.1
-    if (!headerBytes.canDeserializeVersion()) {
-        return null to this.decodeToString()
-    }
+    val schemaVersion = this.getSchemaVersion() ?: return null to this.decodeToString()
 
     try {
         // there is a header
-        val json = this.copyOfRange(8, lastIndex + 1)
+        val json = this.copyOfRange(TRANSACTION_METADATA_TOTAL_HEADER_SIZE, size)
 
         // extract schema version (the second byte of the last 2 bytes)
-        val schemaVersion = headerBytes.copyOfRange(5, headerBytes.lastIndex + 1).getOrNull(1)
-        return schemaVersion?.toInt() to json.decodeToString()
+        return schemaVersion to json.decodeToString()
     } catch (e: Exception) {
         throw CordaRuntimeException("Failed to extract json blob from byte array $this")
     }
@@ -73,14 +74,22 @@ fun ByteArray.extractHeaderMetadataSchemaVersionAndJson(): Pair<Int?, String> {
  * Decide whether the given metadata byte has a header to deserialize
  * the header byte will look like: "corda" + byteArrayOf(8, <schema version starting from 0 being 5.3>)
  */
-fun ByteArray.canDeserializeVersion(): Boolean {
+private fun ByteArray.getSchemaVersion(): Int? {
     // the header byte will look like: "corda" + byteArrayOf(8, <schema version starting from 0 being 5.3>)
-    val splitIndex = "corda".length
+    val headerBytes = this.copyOfRange(0, TRANSACTION_METADATA_TOTAL_HEADER_SIZE)
 
-    val firstHalf = this.copyOfRange(0, splitIndex + 1)
-    val secondHalf = this.copyOfRange(splitIndex + 1, lastIndex + 1)
 
-    return firstHalf.contentEquals("corda".toByteArray()) && secondHalf.getOrNull(0) == TRANSACTION_METADATA_BYTE.toByte()
+    return if (hasValidHeader(headerBytes)) {
+        headerBytes.copyOfRange(TRANSACTION_METADATA_CORDA_HEADER_SIZE, headerBytes.size).getOrNull(1)?.toInt()
+    } else {
+        null
+    }
+}
+
+private fun hasValidHeader(headerBytes: ByteArray): Boolean {
+    val cordaHeader = headerBytes.copyOfRange(0, TRANSACTION_METADATA_CORDA_HEADER_SIZE)
+    val versionHeader = headerBytes.copyOfRange(TRANSACTION_METADATA_CORDA_HEADER_SIZE, TRANSACTION_METADATA_TOTAL_HEADER_SIZE)
+    return cordaHeader.contentEquals(CORDA_BYTEARRAY) && versionHeader.getOrNull(0) == TRANSACTION_METADATA_BYTE.toByte()
 }
 
 private val base64Decoder = Base64.getDecoder()
