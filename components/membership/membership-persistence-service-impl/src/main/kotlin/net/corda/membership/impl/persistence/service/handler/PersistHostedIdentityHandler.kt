@@ -23,10 +23,16 @@ internal class PersistHostedIdentityHandler(persistenceHandlerServices: Persiste
             )?.version
             if (currentVersion != null) {
                 // Overwrite entries in HostedIdentitySessionKeyInfoEntity
-                em.createQuery(
-                    "DELETE FROM ${HostedIdentitySessionKeyInfoEntity::class.java.simpleName} k " +
-                        "WHERE k.holding_identity_id = $holdingIdentityShortHash"
-                ).executeUpdate()
+                val deleteQuery = em.criteriaBuilder.createCriteriaDelete(HostedIdentitySessionKeyInfoEntity::class.java)
+                val deleteRoot = deleteQuery.from(HostedIdentitySessionKeyInfoEntity::class.java)
+                deleteQuery
+                    .where(
+                        em.criteriaBuilder.equal(
+                            deleteRoot.get<String>(HostedIdentitySessionKeyInfoEntity::holdingIdentityShortHash.name),
+                            holdingIdentityShortHash
+                        )
+                    )
+                em.createQuery(deleteQuery).executeUpdate()
             }
             request.sessionKeysAndCertificates.forEach {
                 em.persist(

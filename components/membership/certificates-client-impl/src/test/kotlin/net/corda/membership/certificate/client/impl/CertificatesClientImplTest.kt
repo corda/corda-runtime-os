@@ -10,6 +10,7 @@ import net.corda.data.certificates.rpc.request.ImportCertificateRpcRequest
 import net.corda.data.certificates.rpc.request.RetrieveCertificateRpcRequest
 import net.corda.data.certificates.rpc.response.CertificateRpcResponse
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.membership.db.request.command.SessionKeyAndCertificate
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -38,6 +39,7 @@ import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
@@ -78,8 +80,13 @@ class CertificatesClientImplTest {
     }
     private val shortHash = ShortHash.of("AF77BF2471F3")
     private val nonExistentHoldingID = ShortHash.of("AF77BF2471E4")
+    private val knownHoldingIdentity = HoldingIdentity("O=Alice, L=LDN, C=GB", "12345")
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
-        on { getByHoldingIdentityShortHash(shortHash) } doReturn mock()
+        on { getByHoldingIdentityShortHash(shortHash) } doAnswer {
+            mock {
+                on { holdingIdentity } doReturn knownHoldingIdentity.toCorda()
+            }
+        }
     }
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on { persistHostedIdentity(any(), any(), any(), any(), any()) } doAnswer {
@@ -210,7 +217,7 @@ class CertificatesClientImplTest {
             val record = mock<Record<String, HostedIdentityEntry>> {
                 on { value } doAnswer {
                     mock {
-                        on { holdingIdentity } doReturn HoldingIdentity("O=Alice, L=LDN, C=GB", "12345")
+                        on { holdingIdentity } doReturn knownHoldingIdentity
                     }
                 }
             }
@@ -324,6 +331,38 @@ class CertificatesClientImplTest {
             )
 
             verify(publisher).publish(listOf(record))
+        }
+
+        @Test
+        fun `publishToLocallyHostedIdentities persists the correct hosted identity`() {
+            val tlsCertAlias = "tls"
+            val sessionKeyId = "123412341234"
+            val sessionCertAlias = "session"
+            mockRecordCreation()
+            postConfigChangedEvent()
+
+            client.setupLocallyHostedIdentity(
+                shortHash,
+                tlsCertAlias,
+                false,
+                CertificatesClient.SessionKeyAndCertificate(
+                    ShortHash.of(sessionKeyId),
+                    sessionCertAlias,
+                ),
+                emptyList(),
+            )
+
+            verify(membershipPersistenceClient).persistHostedIdentity(
+                knownHoldingIdentity.toCorda(),
+                tlsCertAlias,
+                false,
+                SessionKeyAndCertificate(
+                    ShortHash.of(sessionKeyId).value,
+                    sessionCertAlias,
+                    true
+                ),
+                emptyList(),
+            )
         }
     }
 

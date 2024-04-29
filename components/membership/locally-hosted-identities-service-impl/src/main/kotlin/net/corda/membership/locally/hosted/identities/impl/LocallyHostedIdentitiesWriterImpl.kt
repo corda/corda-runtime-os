@@ -9,7 +9,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
@@ -24,7 +23,6 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -46,13 +44,13 @@ class LocallyHostedIdentitiesWriterImpl@Activate constructor(
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val CLIENT_ID = "LOCALLY_HOSTED_IDENTITIES_WRITER"
+        const val FOLLOW_CHANGES_RESOURCE_NAME = "LocallyHostedIdentitiesWriter.followStatusChangesByName"
+        const val WAIT_FOR_CONFIG_RESOURCE_NAME = "LocallyHostedIdentitiesWriter.registerComponentForUpdates"
+        const val PUBLISHER_RESOURCE_NAME = "LocallyHostedIdentitiesWriter.publisher"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<LocallyHostedIdentitiesWriter>(::processEvent)
     private val lock = ReentrantLock()
-    private var publisher: Publisher? = null
-    private var registration: RegistrationHandle? = null
-    private var configSubscription: AutoCloseable? = null
 
     override fun put(recordKey: String, recordValue: HostedIdentityEntry) {
         // TODO change to trace
@@ -82,7 +80,7 @@ class LocallyHostedIdentitiesWriterImpl@Activate constructor(
 
     private fun publish(records: List<Record<String, HostedIdentityEntry>>) {
         lock.withLock {
-            publisher?.let {
+            coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)?.let {
                 it.publish(records).forEach { future ->
                     future.get()
                 }
@@ -111,36 +109,35 @@ class LocallyHostedIdentitiesWriterImpl@Activate constructor(
 
     private fun onStartEvent(coordinator: LifecycleCoordinator) {
         configurationReadService.start()
-        registration?.close()
-        registration =
+        coordinator.createManagedResource(FOLLOW_CHANGES_RESOURCE_NAME) {
             coordinator.followStatusChangesByName(setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>()))
+        }
     }
 
     private fun onStopEvent() {
         lock.withLock {
+            coordinator.closeManagedResources(
+                setOf(
+                    FOLLOW_CHANGES_RESOURCE_NAME,
+                    WAIT_FOR_CONFIG_RESOURCE_NAME,
+                    PUBLISHER_RESOURCE_NAME,
+                )
+            )
             coordinator.updateStatus(LifecycleStatus.DOWN, "Received stop event.")
-            registration?.close()
-            registration = null
-
-            configSubscription?.close()
-            configSubscription = null
-
-            publisher?.close()
-            publisher = null
         }
     }
 
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent) {
         if (event.status == LifecycleStatus.UP) {
-            configSubscription?.close()
-            configSubscription = configurationReadService.registerComponentForUpdates(
-                coordinator,
-                setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG)
-            )
+            coordinator.createManagedResource(WAIT_FOR_CONFIG_RESOURCE_NAME) {
+                configurationReadService.registerComponentForUpdates(
+                    coordinator,
+                    setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG)
+                )
+            }
         } else {
+            coordinator.closeManagedResources(setOf(WAIT_FOR_CONFIG_RESOURCE_NAME, PUBLISHER_RESOURCE_NAME))
             coordinator.updateStatus(event.status, "Received ${event.status} event.")
-            configSubscription?.close()
-            configSubscription = null
         }
     }
 
@@ -148,18 +145,13 @@ class LocallyHostedIdentitiesWriterImpl@Activate constructor(
         logger.debug { "Creating resources" }
         coordinator.updateStatus(LifecycleStatus.DOWN)
         lock.withLock {
-            publisher?.close()
-            publisher = publisherFactory.createPublisher(
-                PublisherConfig(CLIENT_ID),
-                event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-            ).also { it.start() }
+            coordinator.createManagedResource(PUBLISHER_RESOURCE_NAME) {
+                publisherFactory.createPublisher(
+                    PublisherConfig(CLIENT_ID),
+                    event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
+                ).also { it.start() }
+            }
         }
         coordinator.updateStatus(LifecycleStatus.UP)
-    }
-
-    @Deactivate
-    fun close() {
-        configSubscription?.close()
-        registration?.close()
     }
 }
