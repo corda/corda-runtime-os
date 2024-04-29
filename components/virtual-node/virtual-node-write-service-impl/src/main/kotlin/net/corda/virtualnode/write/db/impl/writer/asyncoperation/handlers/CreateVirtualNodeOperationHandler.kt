@@ -134,9 +134,6 @@ internal class CreateVirtualNodeOperationHandler(
             } else {
                 mutableListOf(recordFactory.createMgmInfoRecord(holdingId, mgmInfo))
             }
-            if (records.isNotEmpty()) {
-                mgmInfoPersistenceHelper.persistMgmMemberInfo(holdingId, records)
-            }
 
             records.add(
                 recordFactory.createVirtualNodeInfoRecord(
@@ -149,6 +146,10 @@ internal class CreateVirtualNodeOperationHandler(
 
             execLog.measureExecTime("publish virtual node and MGM info") {
                 createVirtualNodeService.publishRecords(records)
+            }
+
+            if (mgmInfo != null) {
+                mgmInfoPersistenceHelper.persistMgmMemberInfo(holdingId, records)
             }
         } catch (e: Exception) {
             publishErrorStatus(requestId, e.message ?: "Unexpected error")
