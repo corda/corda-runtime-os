@@ -5,6 +5,5 @@ cordaSnykScanPipeline (
     snykTokenId: 'r3-snyk-corda5',
     snykAdditionalCommands: "--all-sub-projects --configuration-matching='^runtimeClasspath\$' -d",
     cpuCount: 7,
-    javaVersion: '17',
-    
+    javaVersion: '17'
 )
