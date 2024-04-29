@@ -12,7 +12,7 @@ class MgmInfoPersistenceHelper(
     private val membershipPersistenceClient: MembershipPersistenceClient,
     private val memberInfoFactory: MemberInfoFactory,
 ) {
-    fun persistMgmMemberInfo(viewOwner: HoldingIdentity, records: List<Record<*, *>>) {
+    fun persistMgmMemberInfo(viewOwner: HoldingIdentity, records: List<Record<*, *>>, numOfRetries: Int = 0) {
         val persistentMgmInfo = records.first().value as? PersistentMemberInfo
         if (persistentMgmInfo != null) {
             val mgmInfoPersistenceResult = membershipPersistenceClient.persistMemberInfo(
@@ -20,6 +20,11 @@ class MgmInfoPersistenceHelper(
                 listOf(memberInfoFactory.createMgmSelfSignedMemberInfo(persistentMgmInfo)),
             ).execute()
             if (mgmInfoPersistenceResult is MembershipPersistenceResult.Failure) {
+                // re-try in case the VirtualNodeInfoReadService haven't picked up the records yet
+                if (numOfRetries < 5
+                    && mgmInfoPersistenceResult.errorMsg.contains("Virtual node info can't be retrieved")) {
+                    persistMgmMemberInfo(viewOwner, records, numOfRetries + 1)
+                }
                 throw CordaRuntimeException("Persisting of MGM information failed.")
             }
         } else {

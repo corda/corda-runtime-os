@@ -17,6 +17,8 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class MgmInfoPersistenceHelperTest {
@@ -63,5 +65,20 @@ class MgmInfoPersistenceHelperTest {
             mgmInfoPersistenceHelper.persistMgmMemberInfo(viewOwner, records)
         }
         assertThat(ex).hasMessageContaining("Could not find MGM information to persist.")
+    }
+
+    @Test
+    fun `retries and eventually fails when virtual node info can't be retrieved`() {
+        val operation = mock<MembershipPersistenceOperation<Unit>> {
+            on { execute() } doReturn MembershipPersistenceResult.Failure("Virtual node info can't be retrieved")
+        }
+        whenever(membershipPersistenceClient.persistMemberInfo(eq(viewOwner), eq(listOf(mgmSelfSignedInfo))))
+            .thenReturn(operation)
+        val ex = assertThrows<CordaRuntimeException> {
+            mgmInfoPersistenceHelper.persistMgmMemberInfo(viewOwner, records)
+        }
+        verify(membershipPersistenceClient, times(6))
+            .persistMemberInfo(eq(viewOwner), eq(listOf(mgmSelfSignedInfo)))
+        assertThat(ex).hasMessageContaining("Persisting of MGM information failed.")
     }
 }
