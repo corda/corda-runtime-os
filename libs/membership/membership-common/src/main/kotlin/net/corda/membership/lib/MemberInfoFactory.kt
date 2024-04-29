@@ -92,7 +92,7 @@ interface MemberInfoFactory {
     ): PersistentMemberInfo
 
     /**
-     * Should be only used when creating members on static networks.
+     * Should be only used when creating MGM member info to persist.
      */
     fun createMgmSelfSignedMemberInfo(
         memberInfo: PersistentMemberInfo,
