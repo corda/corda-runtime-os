@@ -27,10 +27,10 @@ object TransactionMetadataUtils {
     ): TransactionMetadataImpl {
         if (metadataBytes.isEmpty()) throw IllegalArgumentException("Metadata is empty.")
 
-        // extracting MPV from a header and json.
-        val (minimumPlatformVersion, json) = metadataBytes.extractHeaderMPVAndJson()
-        if (minimumPlatformVersion != null) {
-//            TODO("if minimumPlatformVersion is null, it means MPV <= 5.2.1. write JSON without a header.")
+        // extracting metadata schema version from a header and json.
+        val (metadataSchemaVersion, json) = metadataBytes.extractHeaderMetadataSchemaVersionAndJson()
+        if (metadataSchemaVersion != null) {
+//            TODO("if metadataSchemaVersion is null, it means MPV <= 5.2.1. write JSON without a header.")
         }
 
         jsonValidator.validate(json, getMetadataSchema(jsonValidator))
@@ -50,50 +50,37 @@ object TransactionMetadataUtils {
         checkNotNull(this::class.java.getResourceAsStream(path)) { "Failed to load JSON schema from $path" }
 }
 
-fun ByteArray.extractHeaderMPVAndJson(): Pair<Int?, String> {
-    val openingBrace = '{'.code.toByte()
-    val trailingBrace = '}'.code.toByte()
-
-    // there isn't a header - meaning minimumPlatformVersion of this tx metadata <= 5.2.1
-    if (this[0] == openingBrace && this[lastIndex] == trailingBrace) {
+fun ByteArray.extractHeaderMetadataSchemaVersionAndJson(): Pair<Int?, String> {
+    val headerBytes = this.copyOfRange(0, 8)
+    // there isn't a header - meaning schema version of this tx metadata <= 5.2.1
+    if (!headerBytes.canDeserializeVersion()) {
         return null to this.decodeToString()
     }
 
     try {
         // there is a header
-        val openingBraceIndex = this.indexOf(openingBrace)
-        val headerBytes = this.copyOfRange(0, openingBraceIndex)
-        val json = this.copyOfRange(openingBraceIndex, lastIndex + 1).decodeToString()
-        if (!headerBytes.canDeserializeVersion()) {
-            return null to json
-        }
+        val json = this.copyOfRange(8, lastIndex + 1)
 
-        // extract minimumPlatformVersion from a header byte array
-        val minimumPlatformVersion = headerBytes.copyOfRange(5, headerBytes.lastIndex + 1).getOrNull(1)
-        return minimumPlatformVersion?.toInt() to json
+        // extract schema version (the second byte of the last 2 bytes)
+        val schemaVersion = headerBytes.copyOfRange(5, headerBytes.lastIndex + 1).getOrNull(1)
+        return schemaVersion?.toInt() to json.decodeToString()
     } catch (e: Exception) {
         throw CordaRuntimeException("Failed to extract json blob from byte array $this")
     }
 }
 
+/**
+ * Decide whether the given metadata byte has a header to deserialize
+ * the header byte will look like: "corda" + byteArrayOf(8, <schema version starting from 0 being 5.3>)
+ */
 fun ByteArray.canDeserializeVersion(): Boolean {
-    // the header byte will look like: "corda" + byteArrayOf(8, <minimum platform version starting from 0 being 5.3>)
-    val splitIndex = 4
+    // the header byte will look like: "corda" + byteArrayOf(8, <schema version starting from 0 being 5.3>)
+    val splitIndex = "corda".length
+
     val firstHalf = this.copyOfRange(0, splitIndex + 1)
     val secondHalf = this.copyOfRange(splitIndex + 1, lastIndex + 1)
-    if (this.size != 7) {
-        return false
-    }
-    if (!firstHalf.contentEquals("corda".toByteArray())) {
-        return false
-    }
 
-    if (secondHalf.getOrNull(0) != TRANSACTION_METADATA_BYTE.toByte()) {
-        return false
-    }
-    // TODO("if MPV in metadata does not match with current MPV, return false")
-
-    return true
+    return firstHalf.contentEquals("corda".toByteArray()) && secondHalf.getOrNull(0) == TRANSACTION_METADATA_BYTE.toByte()
 }
 
 private val base64Decoder = Base64.getDecoder()
