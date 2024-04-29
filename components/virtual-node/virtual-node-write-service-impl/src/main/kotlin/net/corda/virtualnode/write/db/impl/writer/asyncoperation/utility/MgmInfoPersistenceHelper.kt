@@ -26,7 +26,7 @@ class MgmInfoPersistenceHelper(
                 ) {
                     persistMgmMemberInfo(viewOwner, records, numOfRetries + 1)
                 }
-                throw CordaRuntimeException("Persisting of MGM information failed.")
+                throw CordaRuntimeException("Persisting of MGM information failed. ${mgmInfoPersistenceResult.errorMsg}")
             }
         } else {
             throw CordaRuntimeException("Could not find MGM information to persist.")
