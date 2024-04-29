@@ -1,29 +1,68 @@
+@file:Suppress("DEPRECATION")
+// used for CertificatesRestResource and KeysRestResource
+
 package net.corda.gradle.plugin.network
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.ObjectNode
 import kong.unirest.Unirest
+import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
+import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
+import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.gradle.plugin.dtos.VNode
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
+import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
+import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
+import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
+import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.rest.v1.CertificatesRestResource
+import net.corda.membership.rest.v1.HsmRestResource
+import net.corda.membership.rest.v1.KeysRestResource
 import net.corda.membership.rest.v1.MemberRegistrationRestResource
+import net.corda.membership.rest.v1.NetworkRestResource
+import net.corda.membership.rest.v1.types.request.HostedIdentitySessionKeyAndCertificate
+import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
+import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
+import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 import net.corda.membership.rest.v1.types.response.RegistrationRequestProgress
 import net.corda.rest.client.RestClient
+import net.corda.rest.json.serialization.JsonObjectAsString
+import net.corda.schema.configuration.ConfigKeys
+import net.corda.sdk.config.ClusterConfig
 import net.corda.sdk.data.Checksum
+import net.corda.sdk.network.ClientCertificates
+import net.corda.sdk.network.Keys
+import net.corda.sdk.network.MemberRole
 import net.corda.sdk.network.RegistrationRequest
 import net.corda.sdk.network.RegistrationRequester
 import net.corda.sdk.network.VirtualNode
 import net.corda.sdk.packaging.CpiUploader
+import net.corda.v5.base.types.MemberX500Name
 import java.io.File
 import java.net.HttpURLConnection
+import java.net.URI
 
 class VNodeHelper {
 
     private val mapper = ObjectMapper()
+    private val certificateAuthority by lazy {
+        caHome.parentFile.mkdirs()
+        CertificateAuthorityFactory
+            .createFileSystemLocalAuthority(
+                RSA_TEMPLATE.toFactoryDefinitions(),
+                caHome,
+            ).also { it.save() }
+    }
+    private val p2pGatewayUrls = listOf("https://localhost:8080")
+    private lateinit var caHome: File // must be set before we call [certificateAuthority]
 
     init {
         Unirest.config().verifySsl(false)
@@ -94,30 +133,245 @@ class VNodeHelper {
     }
 
     /**
-     * Registers an individual Vnode
+     * Build the registration request based on the type of VNode
      */
     @Suppress("LongParameterList")
-    fun registerVNode(
-        restClient: RestClient<MemberRegistrationRestResource>,
+    fun getRegistrationRequest(
+        hsmRestClient: RestClient<HsmRestResource>,
+        keyRestClient: RestClient<KeysRestResource>,
+        certificateRestClient: RestClient<CertificatesRestResource>,
+        configRestClient: RestClient<ConfigRestResource>,
+        networkRestClient: RestClient<NetworkRestResource>,
         vNode: VNode,
-        shortHash: ShortHash
-    ): RegistrationRequestProgress {
-        val registrationBody = if (vNode.serviceX500Name == null) {
-            RegistrationRequest().createStaticMemberRegistrationRequest()
+        holdingId: ShortHash,
+        clusterURI: URI,
+        isDynamicNetwork: Boolean,
+        certificateAuthorityFilePath: String
+    ): MemberRegistrationRequest {
+        caHome = File(certificateAuthorityFilePath)
+        return if (vNode.mgmNode == "true") {
+            getMgmRegRequest(
+                hsmRestClient = hsmRestClient,
+                keyRestClient = keyRestClient,
+                certificateRestClient = certificateRestClient,
+                configRestClient = configRestClient,
+                holdingId = holdingId,
+                clusterURI = clusterURI
+            )
+        } else if (vNode.serviceX500Name == null) {
+            if (isDynamicNetwork) {
+                getDynamicMemberRegRequest(
+                    hsmRestClient = hsmRestClient,
+                    keyRestClient = keyRestClient,
+                    networkRestClient = networkRestClient,
+                    holdingId = holdingId
+                )
+            } else {
+                RegistrationRequest().createStaticMemberRegistrationRequest()
+            }
         } else {
             val flowProtocolValue = vNode.flowProtocolName ?: "com.r3.corda.notary.plugin.nonvalidating"
             val backchainValue = vNode.backchainRequired ?: "true"
-            RegistrationRequest().createStaticNotaryRegistrationRequest(
-                notaryServiceName = vNode.serviceX500Name!!,
-                notaryServiceProtocol = flowProtocolValue,
-                isBackchainRequired = backchainValue.toBoolean()
-            )
-        }
+            val notaryServiceName = vNode.serviceX500Name!!
 
+            if (isDynamicNetwork) {
+                val customProps = mapOf(
+                    MemberInfoExtension.NOTARY_SERVICE_NAME to notaryServiceName,
+                    MemberInfoExtension.NOTARY_SERVICE_BACKCHAIN_REQUIRED to backchainValue,
+                    MemberInfoExtension.NOTARY_SERVICE_PROTOCOL to flowProtocolValue
+                )
+                getDynamicNotaryRegRequest(
+                    hsmRestClient = hsmRestClient,
+                    keyRestClient = keyRestClient,
+                    networkRestClient = networkRestClient,
+                    holdingId = holdingId,
+                    customProperties = customProps
+                )
+            } else {
+                RegistrationRequest().createStaticNotaryRegistrationRequest(
+                    notaryServiceName = notaryServiceName,
+                    notaryServiceProtocol = flowProtocolValue,
+                    isBackchainRequired = backchainValue.toBoolean()
+                )
+            }
+        }
+    }
+
+    /**
+     * Registers an individual Vnode
+     */
+    fun registerVNode(
+        registrationRestClient: RestClient<MemberRegistrationRestResource>,
+        registrationRequest: MemberRegistrationRequest,
+        shortHash: ShortHash
+    ): RegistrationRequestProgress {
         return RegistrationRequester().requestRegistration(
-            restClient = restClient,
-            memberRegistrationRequest = registrationBody,
+            restClient = registrationRestClient,
+            memberRegistrationRequest = registrationRequest,
             holdingId = shortHash
         )
+    }
+
+    internal fun getDynamicNotaryRegRequest(
+        hsmRestClient: RestClient<HsmRestResource>,
+        keyRestClient: RestClient<KeysRestResource>,
+        networkRestClient: RestClient<NetworkRestResource>,
+        holdingId: ShortHash,
+        customProperties: Map<String, String>
+    ): MemberRegistrationRequest {
+        val sessionKey = generateKey(hsmRestClient, keyRestClient, holdingId, CryptoConsts.Categories.KeyCategory.SESSION_INIT_KEY)
+        val notaryKey = generateKey(hsmRestClient, keyRestClient, holdingId, CryptoConsts.Categories.KeyCategory.NOTARY_KEY)
+        configureNodeAsNetworkParticipant(networkRestClient, sessionKey, holdingId)
+        return RegistrationRequest().createNotaryRegistrationRequest(
+            preAuthToken = null,
+            roles = setOf(MemberRole.NOTARY),
+            customProperties = customProperties,
+            p2pGatewayUrls = p2pGatewayUrls,
+            sessionKey = sessionKey,
+            notaryKey = notaryKey
+        )
+    }
+
+    private fun getDynamicMemberRegRequest(
+        hsmRestClient: RestClient<HsmRestResource>,
+        keyRestClient: RestClient<KeysRestResource>,
+        networkRestClient: RestClient<NetworkRestResource>,
+        holdingId: ShortHash
+    ): MemberRegistrationRequest {
+        val sessionKey = generateKey(hsmRestClient, keyRestClient, holdingId, CryptoConsts.Categories.KeyCategory.SESSION_INIT_KEY)
+        val ledgerKey = generateKey(hsmRestClient, keyRestClient, holdingId, CryptoConsts.Categories.KeyCategory.LEDGER_KEY)
+        configureNodeAsNetworkParticipant(networkRestClient, sessionKey, holdingId)
+        return RegistrationRequest().createMemberRegistrationRequest(
+            preAuthToken = null,
+            roles = null,
+            customProperties = null,
+            p2pGatewayUrls = p2pGatewayUrls,
+            sessionKey = sessionKey,
+            ledgerKey = ledgerKey
+        )
+    }
+
+    private fun configureNodeAsNetworkParticipant(
+        networkRestClient: RestClient<NetworkRestResource>,
+        sessionKey: KeyPairIdentifier,
+        holdingId: ShortHash
+    ) {
+        val request = HostedIdentitySetupRequest(
+            p2pTlsCertificateChainAlias = Keys.P2P_TLS_CERTIFICATE_ALIAS,
+            useClusterLevelTlsCertificateAndKey = true,
+            sessionKeysAndCertificates = listOf(
+                HostedIdentitySessionKeyAndCertificate(
+                    sessionKeyId = sessionKey.id,
+                    preferred = true,
+                ),
+            ),
+        )
+        RegistrationRequester().configureAsNetworkParticipant(
+            restClient = networkRestClient,
+            request = request,
+            holdingId = holdingId,
+        )
+    }
+
+    @Suppress("LongParameterList")
+    private fun getMgmRegRequest(
+        hsmRestClient: RestClient<HsmRestResource>,
+        keyRestClient: RestClient<KeysRestResource>,
+        certificateRestClient: RestClient<CertificatesRestResource>,
+        configRestClient: RestClient<ConfigRestResource>,
+        holdingId: ShortHash,
+        clusterURI: URI
+    ): MemberRegistrationRequest {
+        val sessionKey = generateKey(hsmRestClient, keyRestClient, holdingId, CryptoConsts.Categories.KeyCategory.SESSION_INIT_KEY)
+        val preAuthKey = generateKey(hsmRestClient, keyRestClient, holdingId, CryptoConsts.Categories.KeyCategory.PRE_AUTH_KEY)
+        setupTlsKeyAndSignCsr(keyRestClient, certificateRestClient, clusterURI)
+        disableCrl(configRestClient)
+        return RegistrationRequest().createMgmRegistrationRequest(
+            mtls = false,
+            p2pGatewayUrls = p2pGatewayUrls,
+            sessionKey = sessionKey,
+            ecdhKey = preAuthKey,
+            tlsTrustRoot = certificateAuthority.caCertificate.toPem()
+        )
+    }
+
+    fun generateSessionKey(
+        hsmRestClient: RestClient<HsmRestResource>,
+        keyRestClient: RestClient<KeysRestResource>,
+        holdingId: ShortHash
+    ): KeyPairIdentifier {
+        return Keys().assignSoftHsmAndGenerateKey(
+            hsmRestClient = hsmRestClient,
+            keysRestClient = keyRestClient,
+            holdingIdentityShortHash = holdingId,
+            category = CryptoConsts.Categories.KeyCategory.SESSION_INIT_KEY
+        )
+    }
+
+    fun generateKey(
+        hsmRestClient: RestClient<HsmRestResource>,
+        keyRestClient: RestClient<KeysRestResource>,
+        holdingId: ShortHash,
+        category: CryptoConsts.Categories.KeyCategory
+    ): KeyPairIdentifier {
+        return Keys().assignSoftHsmAndGenerateKey(
+            hsmRestClient = hsmRestClient,
+            keysRestClient = keyRestClient,
+            holdingIdentityShortHash = holdingId,
+            category = category
+        )
+    }
+
+    private fun disableCrl(restClient: RestClient<ConfigRestResource>) {
+        val clusterConfig = ClusterConfig()
+        val objectMapper = ObjectMapper()
+        val currentConfig = clusterConfig.getCurrentConfig(restClient = restClient, configSection = ConfigKeys.RootConfigKey.P2P_GATEWAY)
+        val rawConfig = currentConfig.configWithDefaults
+        val rawConfigJson = objectMapper.readTree(rawConfig)
+        val sslConfig = rawConfigJson["sslConfig"]
+        val currentMode = sslConfig["revocationCheck"]?.get("mode")?.asText()
+
+        if (currentMode == "OFF") {
+            return
+        }
+
+        val newConfig = objectMapper.createObjectNode()
+        newConfig.set<ObjectNode>(
+            "sslConfig",
+            objectMapper.createObjectNode()
+                .set<ObjectNode>(
+                    "revocationCheck",
+                    objectMapper.createObjectNode().put("mode", "OFF"),
+                ),
+        )
+        val payload = UpdateConfigParameters(
+            section = "corda.p2p.gateway",
+            version = currentConfig.version,
+            config = JsonObjectAsString(objectMapper.writeValueAsString(newConfig)),
+            schemaVersion = ConfigSchemaVersion(major = currentConfig.schemaVersion.major, minor = currentConfig.schemaVersion.minor),
+        )
+        clusterConfig.updateConfig(restClient = restClient, updateConfig = payload)
+    }
+
+    private fun setupTlsKeyAndSignCsr(
+        keyRestClient: RestClient<KeysRestResource>,
+        certificateRestClient: RestClient<CertificatesRestResource>,
+        cordaClusterUri: URI
+    ) {
+        if (!Keys().hasTlsKey(restClient = keyRestClient)) {
+            val tlsKey = Keys().generateTlsKey(restClient = keyRestClient)
+
+            val clientCertificates = ClientCertificates()
+            val p2pHosts = cordaClusterUri.host
+
+            val csrCertRequest = clientCertificates.generateP2pCsr(
+                restClient = certificateRestClient,
+                tlsKey = tlsKey,
+                subjectX500Name = MemberX500Name.parse("CN=CordaOperator, C=GB, L=London, O=Org"),
+                p2pHostNames = listOf(p2pHosts),
+            )
+            val certificate = certificateAuthority.signCsr(csrCertRequest).toPem().byteInputStream()
+            clientCertificates.uploadTlsCertificate(restClient = certificateRestClient, certificate = certificate)
+        }
     }
 }

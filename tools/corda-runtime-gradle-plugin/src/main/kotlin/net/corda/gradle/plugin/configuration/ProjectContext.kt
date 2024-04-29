@@ -52,6 +52,7 @@ class ProjectContext(val project: Project, pluginConfig: PluginConfiguration) {
     val corDappCpiFilePath: String = "$workflowBuildDir/$corDappCpiName-${project.version}.cpi"
     val corDappCpiChecksumFilePath: String = "$workspaceDir/corDappCpiChecksum.json"
     val notaryCpiChecksumFilePath: String = "$workspaceDir/notaryCpiChecksum.json"
+    val mgmCorDappCpiChecksumFilePath: String = "$workspaceDir/mgmCorDappCpiChecksum.json"
 
     val networkConfig: NetworkConfig = NetworkConfig("${project.rootDir}/${networkConfigFile}")
     val isNotaryNonValidating: Boolean = EnvironmentSetupHelper().isNotaryNonValidating(networkConfig)
@@ -63,6 +64,9 @@ class ProjectContext(val project: Project, pluginConfig: PluginConfiguration) {
     val keystoreFilePath: String = "${project.rootDir}/$workspaceDir/signingkeys.pfx"
     val keystoreCertFilePath: String = "${project.rootDir}/$workspaceDir/signingkey1.pem"
     val r3RootCertKeyAlias: String = "digicert-ca"
+    val mgmCpiName: String? = networkConfig.getMgmNode()?.cpi
+    val mgmCorDappCpiFilePath: String = "$workspaceDir/$corDappCpiName.cpi"
+    val certificateAuthorityFilePath: String = "$workspaceDir/ca"
 
     val logger: Logger = project.logger
 }

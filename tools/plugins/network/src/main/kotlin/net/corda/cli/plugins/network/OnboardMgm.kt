@@ -6,6 +6,7 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.membership.rest.v1.MGMRestResource
 import net.corda.sdk.data.Checksum
 import net.corda.sdk.network.ExportGroupPolicyFromMgm
+import net.corda.sdk.network.MGM_GROUP_POLICY
 import net.corda.sdk.network.RegistrationRequest
 import net.corda.sdk.packaging.CpiAttributes
 import net.corda.sdk.packaging.CpiUploader
@@ -52,17 +53,6 @@ class OnboardMgm : Runnable, BaseOnboard() {
     )
 
     private val cpiName: String = "MGM-${UUID.randomUUID()}"
-
-    private val mgmGroupPolicy by lazy {
-        mapOf(
-            "fileFormatVersion" to 1,
-            "groupId" to "CREATE_ID",
-            "registrationProtocol" to "net.corda.membership.impl.registration.dynamic.mgm.MGMRegistrationService",
-            "synchronisationProtocol" to "net.corda.membership.impl.synchronisation.MgmSynchronisationServiceImpl",
-        ).let { groupPolicyMap ->
-            json.writeValueAsString(groupPolicyMap)
-        }
-    }
 
     private fun saveGroupPolicy() {
         val restClient = RestClientUtils.createRestClient(
@@ -116,7 +106,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
             CpiV2Creator.createCpi(
                 null,
                 cpiFile.toPath(),
-                mgmGroupPolicy,
+                MGM_GROUP_POLICY,
                 CpiAttributes(cpiName, CPI_VERSION, false),
                 createDefaultSingingOptions().asSigningOptionsSdk
             )

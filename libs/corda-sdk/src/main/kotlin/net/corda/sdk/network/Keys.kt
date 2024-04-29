@@ -23,6 +23,7 @@ class Keys {
 
     /**
      * Combination method, first assign a soft HSM, then generate a key-pair
+     * Checks if the key exists before generating
      * @param hsmRestClient of type RestClient<HsmRestResource>
      * @param keysRestClient of type RestClient<KeysRestResource>
      * @param holdingIdentityShortHash the holding identity of the node
@@ -49,10 +50,37 @@ class Keys {
             }
         }
 
+        val keyAlias = "$holdingIdentityShortHash-$category"
+
+        val keyAlreadyExists = keysRestClient.use { keysClient ->
+            executeWithRetry(
+                waitDuration = wait,
+                operationName = "List keys"
+            ) {
+                keysClient.start().proxy.listKeys(
+                    tenantId = holdingIdentityShortHash.value,
+                    skip = 0,
+                    take = 1,
+                    orderBy = "NONE",
+                    category = category.value,
+                    schemeCodeName = scheme,
+                    alias = keyAlias,
+                    masterKeyAlias = null,
+                    createdAfter = null,
+                    createdBefore = null,
+                    ids = null,
+                ).toList().firstOrNull()
+            }
+        }
+
+        if (keyAlreadyExists != null) {
+            return KeyPairIdentifier(keyAlreadyExists.second.keyId)
+        }
+
         return generateKeyPair(
             keysRestClient = keysRestClient,
             tenantId = holdingIdentityShortHash.value,
-            alias = "$holdingIdentityShortHash-$category",
+            alias = keyAlias,
             category = category,
             scheme = scheme,
             wait = wait
@@ -114,7 +142,7 @@ class Keys {
                 client.start().proxy.listKeys(
                     tenantId = "p2p",
                     skip = 0,
-                    take = 20,
+                    take = 1,
                     orderBy = "NONE",
                     category = KeyCategory.TLS_KEY.value,
                     schemeCodeName = null,

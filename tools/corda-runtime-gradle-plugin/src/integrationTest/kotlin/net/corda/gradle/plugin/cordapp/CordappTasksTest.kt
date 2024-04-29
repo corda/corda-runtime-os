@@ -1,6 +1,7 @@
 package net.corda.gradle.plugin.cordapp
 
 import net.corda.gradle.plugin.FunctionalBaseTest
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -12,18 +13,31 @@ class CordappTasksTest : FunctionalBaseTest() {
     }
 
     @Test
-    fun groupPolicyIsGenerated() {
+    fun groupPolicyIsGeneratedForStaticNetwork() {
         val groupPolicyFile = projectDir.resolve("workspace").resolve("GroupPolicy.json")
+        groupPolicyFile.delete()
         require(!groupPolicyFile.exists()) { "Group policy file $groupPolicyFile should not exist" }
 
-        appendCordaRuntimeGradlePluginExtension()
+        appendCordaRuntimeGradlePluginExtension(isStaticNetwork = true)
         executeWithRunner(CREATE_GROUP_POLICY_TASK_NAME)
-        assertTrue(groupPolicyFile.isFile)
+        assertThat(groupPolicyFile).exists().isFile
+    }
+
+    @Test
+    fun groupPolicyIsNotGeneratedForDynamicNetwork() {
+        val groupPolicyFile = projectDir.resolve("workspace").resolve("GroupPolicy.json")
+        groupPolicyFile.delete()
+        require(!groupPolicyFile.exists()) { "Group policy file $groupPolicyFile should not exist" }
+
+        appendCordaRuntimeGradlePluginExtension(isStaticNetwork = false)
+        executeWithRunner(CREATE_GROUP_POLICY_TASK_NAME)
+        assertThat(groupPolicyFile).doesNotExist()
+
     }
 
     @Test
     fun shouldFailBuildCpiWithNoWorkflows() {
-        appendCordaRuntimeGradlePluginExtension()
+        appendCordaRuntimeGradlePluginExtension(isStaticNetwork = false)
         val result = executeAndFailWithRunner(BUILD_CPIS_TASK_NAME)
         assertTrue(result.output.contains("Task with path ':workflowsModule:build' not found"))
     }

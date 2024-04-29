@@ -51,8 +51,6 @@ class QueryTasksImpl(val pc: ProjectContext) {
             password = pc.cordaRestPassword,
             targetUrl = pc.cordaClusterURL
         )
-        pc.logger.quiet("Tony")
-        pc.logger.quiet("URL: ${pc.cordaClusterURL}")
         val existingCPIs = CpiUploader().getAllCpis(restClient = restClient).cpis
         val cpiNamePadding = 40
         val cpiVersionPadding = 20
