@@ -31,10 +31,6 @@ pipeline {
         }
     }
 
-    triggers {
-        cron(gitUtils.isReleaseBranch() ? 'H 00 * * *' : '')
-    }
-
     environment {
         ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
         BUILD_CACHE_CREDENTIALS = credentials('gradle-ent-cache-credentials')

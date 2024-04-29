@@ -1,5 +1,6 @@
 @Library('corda-shared-build-pipeline-steps@5.1') _
 
 combinedWorkerPipeline(
-    agentOs : 'linux'
+    agentOs : 'linux',
+    dailyBuildCron: ''
 )
