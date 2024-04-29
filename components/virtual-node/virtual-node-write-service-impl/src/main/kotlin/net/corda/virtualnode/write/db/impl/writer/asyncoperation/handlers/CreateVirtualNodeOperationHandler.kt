@@ -129,7 +129,7 @@ internal class CreateVirtualNodeOperationHandler(
             }
 
             val records = if (mgmInfo == null) {
-                logger.info(".No MGM information found in group policy. MGM member info not published.")
+                logger.info("No MGM information found in group policy. MGM member info not published.")
                 mutableListOf()
             } else {
                 mutableListOf(recordFactory.createMgmInfoRecord(holdingId, mgmInfo))

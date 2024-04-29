@@ -198,16 +198,31 @@ class CreateVirtualNodeOperationHandlerTest {
         val virtualNodeInfoRecord = Record("vnode", "", "")
         val mgmInfo = mock<MemberInfo>()
         val mgmInfoRecord = Record("mgm", "", "")
-        val f = CompletableFuture<Unit>().apply { this.complete(Unit) }
+        val dbConnections = mock<VirtualNodeDbConnections>()
         val records = argumentCaptor<List<Record<Any, Any>>>()
 
+        val f = CompletableFuture<Unit>().apply { this.complete(Unit) }
         whenever(statusPublisher.publish(records.capture())).thenReturn(listOf(f))
+        whenever(createVirtualNodeService.persistHoldingIdAndVirtualNode(any(), any(), any(), any(), any())).thenReturn(
+            dbConnections
+        )
+        whenever(
+            recordFactory.createVirtualNodeInfoRecord(
+                ALICE_HOLDING_ID1,
+                CPI_IDENTIFIER1,
+                dbConnections,
+                externalMessagingRouteConfig
+            )
+        ).thenReturn(
+            virtualNodeInfoRecord
+        )
+
         whenever(groupPolicyParser.getMgmInfo(ALICE_HOLDING_ID1, GROUP_POLICY1)).thenReturn(mgmInfo)
         whenever(recordFactory.createMgmInfoRecord(ALICE_HOLDING_ID1, mgmInfo)).thenReturn(
             mgmInfoRecord
         )
         val reason = "mgm info persistence failed"
-        whenever(mgmInfoPersistenceHelper.persistMgmMemberInfo(eq(ALICE_HOLDING_ID1), eq(listOf(mgmInfoRecord))))
+        whenever(mgmInfoPersistenceHelper.persistMgmMemberInfo(eq(ALICE_HOLDING_ID1), eq(listOf(mgmInfoRecord, virtualNodeInfoRecord))))
             .thenThrow(CordaRuntimeException(reason))
 
         val ex = assertThrows<CordaRuntimeException> {
@@ -217,9 +232,9 @@ class CreateVirtualNodeOperationHandlerTest {
         records.firstValue.all { verifyRecord(it, requestId, "IN_PROGRESS") }
         records.secondValue.all { verifyRecord(it, requestId, "UNEXPECTED_FAILURE") }
 
-        verify(createVirtualNodeService, never()).publishRecords(listOf(mgmInfoRecord, virtualNodeInfoRecord))
-        verify(createVirtualNodeService, never()).persistHoldingIdAndVirtualNode(any(), any(), any(), any(), any())
-        verify(recordFactory, never()).createVirtualNodeInfoRecord(
+        verify(createVirtualNodeService).publishRecords(listOf(mgmInfoRecord, virtualNodeInfoRecord))
+        verify(createVirtualNodeService).persistHoldingIdAndVirtualNode(any(), any(), any(), any(), any())
+        verify(recordFactory).createVirtualNodeInfoRecord(
             eq(ALICE_HOLDING_ID1),
             eq(CPI_IDENTIFIER1),
             any(),
@@ -234,7 +249,10 @@ class CreateVirtualNodeOperationHandlerTest {
         val mgmInfo = mock<MemberInfo>()
         val mgmInfoRecord = Record("mgm", "", "")
         val dbConnections = mock<VirtualNodeDbConnections>()
+        val records = argumentCaptor<List<Record<Any, Any>>>()
 
+        val f = CompletableFuture<Unit>().apply { this.complete(Unit) }
+        whenever(statusPublisher.publish(records.capture())).thenReturn(listOf(f))
         whenever(createVirtualNodeService.persistHoldingIdAndVirtualNode(any(), any(), any(), any(), any())).thenReturn(
             dbConnections
         )
@@ -256,6 +274,8 @@ class CreateVirtualNodeOperationHandlerTest {
 
         target.handle(timestamp, requestId, request)
 
+        records.firstValue.all { verifyRecord(it, requestId, "IN_PROGRESS") }
+        records.secondValue.all { verifyRecord(it, requestId, "COMPLETED") }
         verify(createVirtualNodeService).publishRecords(listOf(mgmInfoRecord, virtualNodeInfoRecord))
     }
 
