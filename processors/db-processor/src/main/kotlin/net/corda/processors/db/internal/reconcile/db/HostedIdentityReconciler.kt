@@ -48,7 +48,9 @@ class HostedIdentityReconciler(
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val dependencies = setOf(
-            LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+            LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
+            LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
+            LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
         )
     }
 
