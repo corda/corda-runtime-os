@@ -9,10 +9,9 @@ import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.cli.plugins.typeconverter.ShortHashConverter
 import net.corda.cli.plugins.typeconverter.X500NameConverter
 import net.corda.crypto.core.ShortHash
-import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.RestGroupParameters
+import net.corda.restclient.CordaRestClient
 import net.corda.sdk.network.GroupParametersLookup
-import net.corda.sdk.rest.RestClientUtils.createRestClient
 import net.corda.v5.base.types.MemberX500Name
 import picocli.CommandLine
 import kotlin.time.Duration.Companion.seconds
@@ -52,15 +51,15 @@ class GroupParametersLookup(private val output: Output = ConsoleOutput()) : Rest
 
     private fun performGroupParametersLookup(): RestGroupParameters {
         val holdingIdentity = getHoldingIdentity(holdingIdentityShortHash, name, group)
-        val restClient = createRestClient(
-            MemberLookupRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
+        val restClient = CordaRestClient.createHttpClient(
+            baseUrl = targetUrl,
             username = username,
-            password = password,
-            targetUrl = targetUrl
+            password = password
         )
-        return GroupParametersLookup().lookupGroupParameters(restClient, holdingIdentity, wait = waitDurationSeconds.seconds)
+        return GroupParametersLookup(restClient).lookupGroupParameters(
+            holdingIdentityShortHash = holdingIdentity,
+            wait = waitDurationSeconds.seconds
+        )
     }
 
     override fun run() {

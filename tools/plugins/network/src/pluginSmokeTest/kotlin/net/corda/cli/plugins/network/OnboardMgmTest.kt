@@ -5,6 +5,7 @@ import net.corda.cli.plugins.network.utils.HoldingIdentityUtils
 import net.corda.crypto.core.ShortHash
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
+import net.corda.restclient.CordaRestClient
 import net.corda.sdk.packaging.CpiUploader
 import net.corda.sdk.rest.RestClientUtils
 import net.corda.v5.base.types.MemberX500Name
@@ -158,15 +159,12 @@ class OnboardMgmTest {
     }
 
     private fun OnboardMgm.getExistingCpiHash(): String {
-        val restClient = RestClientUtils.createRestClient(
-            CpiUploadRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
+        val restClient = CordaRestClient.createHttpClient(
+            baseUrl = targetUrl,
             username = username,
-            password = password,
-            targetUrl = targetUrl
+            password = password
         )
-        val cpisFromCluster = CpiUploader().getAllCpis(restClient = restClient, wait = waitDurationSeconds.seconds).cpis
+        val cpisFromCluster = CpiUploader(restClient).getAllCpis(wait = waitDurationSeconds.seconds).cpis
         return cpisFromCluster
             .first { it.groupPolicy?.contains("CREATE_ID") == true }
             .cpiFileChecksum

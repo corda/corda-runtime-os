@@ -3,14 +3,12 @@ package net.corda.cli.plugins.network
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.cli.plugins.network.utils.inferCpiName
 import net.corda.crypto.core.CryptoConsts.Categories.KeyCategory
-import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.sdk.data.Checksum
 import net.corda.sdk.network.MemberRole
 import net.corda.sdk.network.RegistrationRequest
 import net.corda.sdk.packaging.CpiAttributes
 import net.corda.sdk.packaging.CpiUploader
 import net.corda.sdk.packaging.CpiV2Creator
-import net.corda.sdk.rest.RestClientUtils
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
@@ -113,15 +111,7 @@ class OnboardMember : Runnable, BaseOnboard() {
         val cpiFile = File(cpisRoot, "$cpiName.cpi")
         println("Creating and uploading CPI using CPB '${cpbFile.name}'")
 
-        val restClient = RestClientUtils.createRestClient(
-            CpiUploadRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
-            username = username,
-            password = password,
-            targetUrl = targetUrl
-        )
-        val cpisFromCluster = CpiUploader().getAllCpis(restClient = restClient, wait = waitDurationSeconds.seconds).cpis
+        val cpisFromCluster = CpiUploader(restClient).getAllCpis(wait = waitDurationSeconds.seconds).cpis
         cpisFromCluster.firstOrNull { it.id.cpiName == cpiName && it.id.cpiVersion == CPI_VERSION }?.let {
             println("CPI already exists, using CPI ${it.id}")
             return Checksum(it.cpiFileChecksum)
@@ -133,7 +123,7 @@ class OnboardMember : Runnable, BaseOnboard() {
             println("CPI file saved as ${cpiFile.absolutePath}")
         }
         uploadSigningCertificates()
-        return uploadCpi(cpiFile, cpiFile.name)
+        return uploadCpi(cpiFile)
     }
 
     private fun createCpi(cpbFile: File, cpiFile: File) {

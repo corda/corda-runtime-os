@@ -1,12 +1,10 @@
 package net.corda.cli.plugin.initialRbac.commands
 
 import net.corda.cli.plugins.common.RestCommand
-import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
-import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
+import net.corda.restclient.CordaRestClient
 import net.corda.sdk.bootstrap.rbac.PermissionTemplate
 import net.corda.sdk.bootstrap.rbac.RoleAndPermissionsCreator
-import net.corda.sdk.rest.RestClientUtils.createRestClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import kotlin.time.Duration.Companion.seconds
@@ -34,26 +32,13 @@ internal object RoleCreationUtils {
 
         val start = System.currentTimeMillis()
 
-        val roleClient = createRestClient(
-            restResource = RoleEndpoint::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
+        val restClient = CordaRestClient.createHttpClient(
+            baseUrl = targetUrl,
             username = username,
-            password = password,
-            targetUrl = targetUrl
-        )
-        val permissionClient = createRestClient(
-            restResource = PermissionEndpoint::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
-            username = username,
-            password = password,
-            targetUrl = targetUrl
+            password = password
         )
 
-        val roleId = RoleAndPermissionsCreator().createRoleAndPermissions(
-            roleRestClient = roleClient,
-            permissionRestClient = permissionClient,
+        val roleId = RoleAndPermissionsCreator(restClient).createRoleAndPermissions(
             roleToCreate = CreateRoleType(
                 roleName = roleName,
                 groupVisibility = null

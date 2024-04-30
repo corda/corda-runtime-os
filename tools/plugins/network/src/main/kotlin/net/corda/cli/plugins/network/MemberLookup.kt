@@ -9,10 +9,9 @@ import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.cli.plugins.typeconverter.ShortHashConverter
 import net.corda.cli.plugins.typeconverter.X500NameConverter
 import net.corda.crypto.core.ShortHash
-import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.response.RestMemberInfo
+import net.corda.restclient.CordaRestClient
 import net.corda.sdk.network.MemberLookup
-import net.corda.sdk.rest.RestClientUtils.createRestClient
 import net.corda.v5.base.types.MemberX500Name
 import picocli.CommandLine
 import kotlin.time.Duration.Companion.seconds
@@ -104,17 +103,13 @@ class MemberLookup(private val output: Output = ConsoleOutput()) : RestCommand()
     var status: List<String>? = null
 
     private fun performMembersLookup(): List<RestMemberInfo> {
-        val restClient = createRestClient(
-            MemberLookupRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
+        val restClient = CordaRestClient.createHttpClient(
+            baseUrl = targetUrl,
             username = username,
-            password = password,
-            targetUrl = targetUrl
+            password = password
         )
         val holdingIdentity = getHoldingIdentity(holdingIdentityShortHash, name, group)
-        return MemberLookup().lookupMember(
-            restClient,
+        return MemberLookup(restClient).lookupMember(
             holdingIdentity,
             commonName,
             organization,

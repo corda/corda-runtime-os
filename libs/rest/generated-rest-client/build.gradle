@@ -1,0 +1,148 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.common-publishing'
+    id "org.openapi.generator" version "$openApiGeneratorVersion"
+}
+
+ext {
+    cordaEnableFormatting = false
+    releasable = false
+}
+
+openApiGenerate {
+    generatorName = 'kotlin'
+    library = 'jvm-okhttp4'
+    inputSpec = "${project.rootDir}/processors/rest-processor/src/integrationTest/resources/swaggerBaseline-v5_3.json"
+    outputDir = "${project.buildDir}/generated"
+    generateApiDocumentation = false
+    generateModelDocumentation = false
+    generateApiTests = false
+    generateModelTests = false
+    ignoreFileOverride = "${project.projectDir}/.openapi-generator-ignore"
+    packageName = 'net.corda.restclient.generated'
+    skipValidateSpec = true
+    importMappings.set([
+            'ApprovalRuleInfo'                      : 'net.corda.membership.rest.v1.types.response.ApprovalRuleInfo',
+            'ApprovalRuleRequestParams'             : 'net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams',
+            'AsyncOperationStatus'                  : 'net.corda.rest.asynchronous.v1.AsyncOperationStatus',
+            'AsyncResponse'                         : 'net.corda.rest.asynchronous.v1.AsyncResponse',
+            'BulkCreatePermissionsRequestType'      : 'net.corda.libs.permissions.endpoints.v1.permission.types.BulkCreatePermissionsRequestType',
+            'BulkCreatePermissionsResponseType'     : 'net.corda.libs.permissions.endpoints.v1.permission.types.BulkCreatePermissionsResponseType',
+            'ChangeOtherUserPasswordWrapperRequest' : 'net.corda.restclient.dto.ChangeOtherUserPasswordWrapperRequest',
+            'ChangeVirtualNodeStateResponse'        : 'net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse',
+            'ConfigSchemaVersion'                   : 'net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion',
+            'CpiIdentifier'                         : 'net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier',
+            'CpiIdentifier_1'                       : 'net.corda.restclient.dto.CpiIdentifier1',
+            'CpiMetadata'                           : 'net.corda.libs.cpiupload.endpoints.v1.CpiMetadata',
+            'CpiUploadResponse'                     : 'net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource.CpiUploadResponse',
+            'CpiUploadStatus'                       : 'net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource.CpiUploadStatus',
+            'CpkIdentifier'                         : 'net.corda.libs.cpiupload.endpoints.v1.CpkIdentifier',
+            'CpkMetadata'                           : 'net.corda.libs.cpiupload.endpoints.v1.CpkMetadata',
+            'CreatePermissionType'                  : 'net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType',
+            'CreateRoleType'                        : 'net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType',
+            'CreateUserType'                        : 'net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType',
+            'FlowResultResponse'                    : 'net.corda.flow.rest.v1.types.response.FlowResultResponse',
+            'FlowStateErrorResponse'                : 'net.corda.flow.rest.v1.types.response.FlowStateErrorResponse',
+            'FlowStatusResponse'                    : 'net.corda.flow.rest.v1.types.response.FlowStatusResponse',
+            'FlowStatusResponses'                   : 'net.corda.flow.rest.v1.types.response.FlowStatusResponses',
+            'GenerateCsrWrapperRequest'             : 'net.corda.restclient.dto.GenerateCsrWrapperRequest',
+            'GetCPIsResponse'                       : 'net.corda.libs.cpiupload.endpoints.v1.GetCPIsResponse',
+            'GetConfigResponse'                     : 'net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse',
+            'HoldingIdentity'                       : 'net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity',
+            'HostedIdentitySessionKeyAndCertificate': 'net.corda.membership.rest.v1.types.request.HostedIdentitySessionKeyAndCertificate',
+            'HostedIdentitySetupRequest'            : 'net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest',
+            'HsmAssociationInfo'                    : 'net.corda.membership.rest.v1.types.response.HsmAssociationInfo',
+            'JsonCreateVirtualNodeRequest'          : 'net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.JsonCreateVirtualNodeRequest',
+            'KeyMetaData'                           : 'net.corda.membership.rest.v1.types.response.KeyMetaData',
+            'KeyPairIdentifier'                     : 'net.corda.membership.rest.v1.types.response.KeyPairIdentifier',
+            'KeyRotationResponse'                   : 'net.corda.crypto.rest.response.KeyRotationResponse',
+            'KeyRotationStatusResponse'             : 'net.corda.crypto.rest.response.KeyRotationStatusResponse',
+            'MemberInfoSubmitted'                   : 'net.corda.membership.rest.v1.types.response.MemberInfoSubmitted',
+            'MemberRegistrationRequest'             : 'net.corda.membership.rest.v1.types.request.MemberRegistrationRequest',
+            'PermissionAssociationResponseType'     : 'net.corda.libs.permissions.endpoints.v1.permission.types.PermissionAssociationResponseType',
+            'PermissionResponseType'                : 'net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType',
+            'PermissionSummaryResponseType'         : 'net.corda.libs.permissions.endpoints.v1.user.types.PermissionSummaryResponseType',
+            'PreAuthToken'                          : 'net.corda.membership.rest.v1.types.response.PreAuthToken',
+            'PreAuthTokenRequest'                   : 'net.corda.membership.rest.v1.types.request.PreAuthTokenRequest',
+            'PropertyResponseType'                  : 'net.corda.libs.permissions.endpoints.v1.user.types.PropertyResponseType',
+            'RegistrationRequestProgress'           : 'net.corda.membership.rest.v1.types.response.RegistrationRequestProgress',
+            'RestGroupParameters'                   : 'net.corda.membership.rest.v1.types.RestGroupParameters',
+            'RestMemberInfo'                        : 'net.corda.membership.rest.v1.types.response.RestMemberInfo',
+            'RestMemberInfoList'                    : 'net.corda.membership.rest.v1.types.response.RestMemberInfoList',
+            'RestRegistrationRequestStatus'         : 'net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus',
+            'RoleAssociationResponseType'           : 'net.corda.libs.permissions.endpoints.v1.role.types.RoleAssociationResponseType',
+            'RoleResponseType'                      : 'net.corda.libs.permissions.endpoints.v1.role.types.RoleResponseType',
+            'RotatedKeysStatus'                     : 'net.corda.crypto.rest.response.RotatedKeysStatus',
+            'Route'                                 : 'net.corda.libs.external.messaging.entities.Route',
+            'RouteConfiguration'                    : 'net.corda.restclient.dto.RouteConfiguration',
+            'Routes'                                : 'net.corda.restclient.dto.Routes',
+            'SecureHash'                            : 'net.corda.data.crypto.SecureHash',
+            'StartFlowParameters'                   : 'net.corda.flow.rest.v1.types.request.StartFlowParameters',
+            'StartableFlowsResponse'                : 'net.corda.flow.rest.v1.types.response.StartableFlowsResponse',
+            'SuspensionActivationParameters'        : 'net.corda.membership.rest.v1.types.request.SuspensionActivationParameters',
+            'UpdateConfigParameters'                : 'net.corda.restclient.dto.UpdateConfigParametersString',
+            'UpdateConfigResponse'                  : 'net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse',
+            'UpdateVirtualNodeDbRequest'            : 'net.corda.libs.virtualnode.endpoints.v1.types.UpdateVirtualNodeDbRequest',
+            'UserPermissionSummaryResponseType'     : 'net.corda.libs.permissions.endpoints.v1.user.types.UserPermissionSummaryResponseType',
+            'UserResponseType'                      : 'net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType',
+            'VirtualNodeInfo'                       : 'net.corda.restclient.dto.VirtualNodeInfo',
+            'VirtualNodes'                          : 'net.corda.restclient.dto.VirtualNodes'
+    ])
+    configOptions.set([
+            'serializationLibrary' : 'jackson'
+    ])
+}
+
+dependencies {
+    implementation libs.kotlin.stdlib
+    implementation libs.jackson.dataformat.yaml
+    implementation libs.jackson.databind
+    implementation libs.jackson.module.kotlin
+    implementation libs.okHttp
+    implementation project(':components:crypto:crypto-rest')
+    implementation project(':components:flow:flow-rest-resource-service')
+    implementation project(':components:membership:membership-rest')
+    implementation project(':libs:configuration:configuration-endpoints')
+    implementation project(':libs:external-messaging')
+    implementation project(':libs:permissions:permission-endpoint')
+    implementation project(':libs:rest:rest')
+    implementation project(':libs:virtual-node:virtual-node-endpoints')
+    implementation project(':libs:virtual-node:virtual-node-info')
+    implementation "net.corda:corda-avro-schema:$cordaApiVersion"
+
+    testImplementation libs.javalin
+}
+
+tasks.register('deletePreviouslyGeneratedCode', Delete) {
+    delete 'src/main/kotlin/net/corda/restclient/generated/'
+    delete "${project.buildDir}/generated/"
+}
+
+tasks.named('openApiGenerate') {
+    dependsOn 'deletePreviouslyGeneratedCode'
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
+}
+
+tasks.register('copyGenerated', Copy) {
+    dependsOn 'openApiGenerate'
+    from "${project.buildDir}/generated/src/main/kotlin/net/corda/restclient/"
+    into 'src/main/kotlin/net/corda/restclient/'
+    outputs.upToDateWhen { false }
+}
+
+tasks.named('compileKotlin') {
+    def specFile = file("${project.rootDir}/processors/rest-processor/src/integrationTest/resources/swaggerBaseline-v5_3.json")
+    def generatedFile = file('src/main/kotlin/net/corda/restclient/generated/infrastructure/ApiClient.kt')
+
+    // Only generate and copy over new client if spec has changed
+    if (specFile.lastModified() > generatedFile.lastModified()) {
+        dependsOn('copyGenerated')
+    }
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    compilerOptions {
+        allWarningsAsErrors = false
+    }
+}

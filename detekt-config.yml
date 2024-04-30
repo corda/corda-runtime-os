@@ -19,7 +19,7 @@ complexity:
     ignoreSingleWhenExpression: true
   LargeClass:
     active: true
-    excludes: "**/test/**,**/integration-test/**,**/integration-test-slow/**,**/*Test.kt,**/*Tests.kt,**/buildSrc/**"
+    excludes: "**/test/**,**/integration-test/**,**/integration-test-slow/**,**/*Test.kt,**/*Tests.kt,**/buildSrc/**,**/generated/**"
     threshold: 600
   LongMethod:
     active: true
@@ -27,17 +27,17 @@ complexity:
     threshold: 120
   LongParameterList:
     active: true
-    excludes: "**/buildSrc/**"
+    excludes: "**/buildSrc/**,**/generated/**"
     constructorThreshold: 6
     functionThreshold: 6
     ignoreDefaultParameters: false
   NestedBlockDepth:
     active: true
-    excludes: "**/buildSrc/**"
+    excludes: "**/buildSrc/**,**/generated/**"
     threshold: 4
   TooManyFunctions:
     active: true
-    excludes: "**/test/**,**/integration-test/**,**/integration-test-slow/**,**/*Test.kt,**/*Tests.kt,**/buildSrc/**"
+    excludes: "**/test/**,**/integration-test/**,**/integration-test-slow/**,**/*Test.kt,**/*Tests.kt,**/buildSrc/**,**/generated/**"
     thresholdInFiles: 15
     thresholdInClasses: 15
     thresholdInInterfaces: 15
@@ -105,7 +105,7 @@ naming:
   ClassNaming:
     active: true
     classPattern: '[A-Z$][a-zA-Z0-9$]*'
-    excludes: "**/buildSrc/**"
+    excludes: "**/buildSrc/**,**/generated/**"
   EnumNaming:
     active: true
     enumEntryPattern: '^[A-Z][_a-zA-Z0-9]*'
@@ -174,7 +174,7 @@ style:
   active: true
   ForbiddenComment:
     active: true
-    excludes: "**/buildSrc/**"
+    excludes: "**/buildSrc/**,**/generated/**"
     values: ['TODO:','FIXME:','STOPSHIP:']
   MagicNumber:
     active: false
@@ -189,7 +189,7 @@ style:
     ignoreEnums: true
   MaxLineLength:
     active: true
-    excludes: "**/buildSrc/**"
+    excludes: "**/buildSrc/**,**/generated/**"
     maxLineLength: 140
     excludePackageStatements: true
     excludeImportStatements: true
@@ -204,7 +204,7 @@ style:
     excludes: "**/buildSrc/**"
   ThrowsCount:
     active: true
-    excludes: "**/buildSrc/**"
+    excludes: "**/buildSrc/**,**/generated/**"
     max: 2
   WildcardImport:
     active: true
@@ -212,3 +212,4 @@ style:
     excludeImports: ['java.util.*','kotlinx.android.synthetic.*']
   UnusedImports:
     active: true
+    excludes: "**/generated/**"

@@ -559,3 +559,6 @@ gradleEnterprise {
         }
     }
 }
+include 'libs:rest:generated-rest-client'
+findProject(':libs:rest:generated-rest-client')?.name = 'generated-rest-client'
+

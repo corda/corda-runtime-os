@@ -2,8 +2,6 @@ package net.corda.cli.plugins.network
 
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.crypto.test.certificates.generation.toPem
-import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
-import net.corda.membership.rest.v1.MGMRestResource
 import net.corda.sdk.data.Checksum
 import net.corda.sdk.network.ExportGroupPolicyFromMgm
 import net.corda.sdk.network.MGM_GROUP_POLICY
@@ -11,7 +9,6 @@ import net.corda.sdk.network.RegistrationRequest
 import net.corda.sdk.packaging.CpiAttributes
 import net.corda.sdk.packaging.CpiUploader
 import net.corda.sdk.packaging.CpiV2Creator
-import net.corda.sdk.rest.RestClientUtils
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
@@ -52,18 +49,8 @@ class OnboardMgm : Runnable, BaseOnboard() {
         "groupId.txt",
     )
 
-    private val cpiName: String = "MGM-${UUID.randomUUID()}"
-
     private fun saveGroupPolicy() {
-        val restClient = RestClientUtils.createRestClient(
-            MGMRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
-            username = username,
-            password = password,
-            targetUrl = targetUrl
-        )
-        val groupPolicyResponse = ExportGroupPolicyFromMgm().exportPolicy(restClient, holdingId, waitDurationSeconds.seconds)
+        val groupPolicyResponse = ExportGroupPolicyFromMgm(restClient).exportPolicy(holdingIdentityShortHash = holdingId)
         groupPolicyFile.parentFile.mkdirs()
         json.writerWithDefaultPrettyPrinter()
             .writeValue(
@@ -102,6 +89,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
         }
         cpiFile.parentFile.mkdirs()
 
+        val cpiName = "MGM-${UUID.randomUUID()}"
         runCatching {
             CpiV2Creator.createCpi(
                 null,
@@ -130,20 +118,12 @@ class OnboardMgm : Runnable, BaseOnboard() {
                 return@lazy existingChecksum
             }
 
-            uploadCpi(cpi, "$cpiName.cpi")
+            uploadCpi(cpi)
         }
     }
 
     private fun getExistingCpiChecksum(checksum: Checksum? = null): Checksum? {
-        val restClient = RestClientUtils.createRestClient(
-            CpiUploadRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
-            username = username,
-            password = password,
-            targetUrl = targetUrl
-        )
-        val response = CpiUploader().getAllCpis(restClient = restClient, wait = waitDurationSeconds.seconds)
+        val response = CpiUploader(restClient).getAllCpis(wait = waitDurationSeconds.seconds)
         return response.cpis
             .filter { it.cpiFileChecksum == checksum?.value || (checksum?.value == null && it.groupPolicy?.contains("CREATE_ID") ?: false) }
             .map { it.cpiFileChecksum }

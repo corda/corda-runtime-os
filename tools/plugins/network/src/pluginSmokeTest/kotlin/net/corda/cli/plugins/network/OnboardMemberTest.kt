@@ -5,8 +5,8 @@ import net.corda.cli.plugins.network.utils.inferCpiName
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.membership.lib.MemberInfoExtension
-import net.corda.membership.rest.v1.MGMRestResource
 import net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
+import net.corda.restclient.CordaRestClient
 import net.corda.sdk.network.MgmGeneratePreAuth
 import net.corda.sdk.packaging.CpiUploader
 import net.corda.sdk.rest.RestClientUtils
@@ -37,6 +37,11 @@ class OnboardMemberTest {
         private lateinit var command: OnboardMgm
         private lateinit var cpbLocation: String
         private lateinit var defaulGroupPolicyLocation: String
+        private val restClient = CordaRestClient.createHttpClient(
+            baseUrl = DEFAULT_CLUSTER.rest.uri.toString(),
+            username = user,
+            password = password
+        )
 
         @BeforeAll
         @JvmStatic
@@ -208,15 +213,7 @@ class OnboardMemberTest {
 
     private fun OnboardMgm.getExistingCpiHash(): String {
         val cpiName = inferCpiName(File(cpbLocation), File(defaulGroupPolicyLocation))
-        val restClient = RestClientUtils.createRestClient(
-            CpiUploadRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
-            username = username,
-            password = password,
-            targetUrl = targetUrl
-        )
-        val cpisFromCluster = CpiUploader().getAllCpis(restClient = restClient, wait = waitDurationSeconds.seconds).cpis
+        val cpisFromCluster = CpiUploader(restClient).getAllCpis(wait = waitDurationSeconds.seconds).cpis
         return cpisFromCluster.first { it.id.cpiName == cpiName }.cpiFileChecksum
     }
 
@@ -226,19 +223,9 @@ class OnboardMemberTest {
             mgmName,
             null,
         )
-        val restClient = RestClientUtils.createRestClient(
-            MGMRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
-            username = username,
-            password = password,
-            targetUrl = targetUrl
-        )
-        return MgmGeneratePreAuth().generatePreAuthToken(
-            restClient = restClient,
+        return MgmGeneratePreAuth(restClient).generatePreAuthToken(
             holdingIdentityShortHash = holdingIdentity,
             request = PreAuthTokenRequest(member),
-            wait = waitDurationSeconds.seconds
         ).id
     }
 
