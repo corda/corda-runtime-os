@@ -48,6 +48,8 @@ interface FlowCheckpoint : NonSerializable {
 
     val maxMessageSize: Long
 
+    val maxPayloadSize: Long
+
     val initialPlatformVersion: Int
 
     val isCompleted: Boolean
