@@ -158,6 +158,7 @@ class ClusterReadinessChecker : ClusterReadiness {
                 }
             } catch (connectionException: IOException) {
                 logger.info("Cannot connect.", connectionException)
+                lastSuccess = false
             }
             Thread.sleep(sleepDuration.toMillis())
         }
