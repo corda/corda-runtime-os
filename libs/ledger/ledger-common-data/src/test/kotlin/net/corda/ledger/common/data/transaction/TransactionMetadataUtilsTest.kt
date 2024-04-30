@@ -29,7 +29,7 @@ class TransactionMetadataUtilsTest {
     }
 
     @Test
-    fun `Consume metadata byteArray with an invalid header returns null for both schemaVersion and json`() {
+    fun `Consume metadata byteArray with an invalid header returns null for schemaVersion and empty string for json`() {
         val metadata = createTransactionMetadata()
         val header = "corda".toByteArray() + byteArrayOf(7, 1)
         val jsonBlob = buildJsonByteArrayFromPOJO(metadata, header = header)
@@ -65,7 +65,7 @@ class TransactionMetadataUtilsTest {
     }
 
     @Test
-    fun `Consume invalid metadata byteArray returns null for both schemaVersion and json`() {
+    fun `Consume invalid metadata byteArray returns null for schemaVersion and empty string for json`() {
         val jsonBlob = "\"something\":\"value\"}".toByteArray()
         val (schemaVersion, json) = magic.consume(jsonBlob)
 
