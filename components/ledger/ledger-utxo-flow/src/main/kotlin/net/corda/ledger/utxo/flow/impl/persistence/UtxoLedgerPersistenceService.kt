@@ -143,7 +143,7 @@ interface UtxoLedgerPersistenceService {
     ): TransactionExistenceStatus
 
     @Suspendable
-    fun persistTransactionSignatures(id: SecureHash, signatures: List<DigitalSignatureAndMetadata>)
+    fun persistTransactionSignatures(id: SecureHash, signatures: Set<DigitalSignatureAndMetadata>)
 
     /**
      * Persists a list of filtered transactions and their signatures represented as [UtxoFilteredTransactionAndSignatures]

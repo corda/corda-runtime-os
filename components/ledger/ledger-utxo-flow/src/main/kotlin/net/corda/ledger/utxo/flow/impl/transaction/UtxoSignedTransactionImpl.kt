@@ -31,7 +31,7 @@ data class UtxoSignedTransactionImpl(
     private val notarySignatureVerificationService: NotarySignatureVerificationServiceInternal,
     private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
     override val wireTransaction: WireTransaction,
-    private val signatures: List<DigitalSignatureAndMetadata>
+    private val signatures: Set<DigitalSignatureAndMetadata>
 ) : UtxoSignedTransactionInternal {
 
     private val keyIdToSignatories: MutableMap<String, Map<SecureHash, PublicKey>> = mutableMapOf()
@@ -53,7 +53,7 @@ data class UtxoSignedTransactionImpl(
     }
 
     override fun getSignatures(): List<DigitalSignatureAndMetadata> {
-        return signatures
+        return signatures.toList()
     }
 
     override fun getInputStateRefs(): List<StateRef> {
@@ -182,7 +182,7 @@ data class UtxoSignedTransactionImpl(
     }
 
     override fun verifyAttachedNotarySignature() {
-        notarySignatureVerificationService.verifyNotarySignatures(this, notaryKey, signatures, keyIdToNotaryKeys)
+        notarySignatureVerificationService.verifyNotarySignatures(this, notaryKey, signatures.toList(), keyIdToNotaryKeys)
     }
 
     override fun verifyNotarySignature(signature: DigitalSignatureAndMetadata) {
@@ -241,12 +241,12 @@ data class UtxoSignedTransactionImpl(
         if (this === other) return true
         if (other !is UtxoSignedTransactionImpl) return false
         if (other.wireTransaction != wireTransaction) return false
-        if (other.signatures.toSet() != signatures.toSet()) return false
+        if (other.signatures != signatures) return false
 
         return true
     }
 
-    override fun hashCode(): Int = Objects.hash(wireTransaction, signatures.toSet())
+    override fun hashCode(): Int = Objects.hash(wireTransaction, signatures)
 
     override fun toString(): String {
         return "UtxoSignedTransactionImpl(id=$id, signatures=$signatures, wireTransaction=$wireTransaction)"

@@ -230,7 +230,7 @@ class UtxoLedgerPersistenceServiceImplTest {
     @Test
     fun `persistFilteredTransactionsAndSignatures executes successfully`() {
         val filteredTransaction = mock<UtxoFilteredTransactionImpl>()
-        val signature = listOf(mock<DigitalSignatureAndMetadata>())
+        val signature = setOf(mock<DigitalSignatureAndMetadata>())
 
         utxoLedgerPersistenceService.persistFilteredTransactionsAndSignatures(
             listOf(UtxoFilteredTransactionAndSignaturesImpl(filteredTransaction, signature)),
@@ -252,7 +252,7 @@ class UtxoLedgerPersistenceServiceImplTest {
         whenever(wireTransaction.componentGroupLists).thenReturn(List(UtxoComponentGroup.values().size) { listOf() })
         whenever(wireTransaction.metadata).thenReturn(metadata)
 
-        val signatures = listOf(mock<DigitalSignatureAndMetadata>())
+        val signatures = setOf(mock<DigitalSignatureAndMetadata>())
         val expectedObj = UtxoSignedTransactionImpl(
             serializationService,
             transactionSignatureService,
@@ -264,7 +264,7 @@ class UtxoLedgerPersistenceServiceImplTest {
         val testId = parseSecureHash("SHA256:1234567890123456")
 
         whenever(serializationService.deserialize<Pair<SignedTransactionContainer, String>>(any<ByteArray>(), any()))
-            .thenReturn(SignedTransactionContainer(wireTransaction, signatures) to "V")
+            .thenReturn(SignedTransactionContainer(wireTransaction, signatures.toList()) to "V")
 
         whenever(utxoSignedTransactionFactory.create(any<WireTransaction>(), any())).thenReturn(expectedObj)
 
@@ -351,8 +351,8 @@ class UtxoLedgerPersistenceServiceImplTest {
             whenever(it.transactionId).thenReturn(testId)
         }
 
-        val expectedResultA = mapOf(testId to UtxoFilteredTransactionAndSignaturesImpl(utxoFilteredTransaction, listOf(signatureNotary1)))
-        val expectedResultB = mapOf(testId to UtxoFilteredTransactionAndSignaturesImpl(utxoFilteredTransaction, listOf(signatureNotary2)))
+        val expectedResultA = mapOf(testId to UtxoFilteredTransactionAndSignaturesImpl(utxoFilteredTransaction, setOf(signatureNotary1)))
+        val expectedResultB = mapOf(testId to UtxoFilteredTransactionAndSignaturesImpl(utxoFilteredTransaction, setOf(signatureNotary2)))
 
         // assert with notary composite key
         assertThat(

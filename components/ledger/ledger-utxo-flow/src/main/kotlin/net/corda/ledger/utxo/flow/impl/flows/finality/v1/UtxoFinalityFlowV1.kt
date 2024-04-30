@@ -244,7 +244,7 @@ class UtxoFinalityFlowV1(
 
     @Suspendable
     private fun persistCounterpartySignatures(id: SecureHash, newSignatures: Set<DigitalSignatureAndMetadata>) {
-        persistenceService.persistTransactionSignatures(id, newSignatures.toList())
+        persistenceService.persistTransactionSignatures(id, newSignatures)
         log.debug { "Recorded transaction with all parties' signatures $transactionId" }
     }
 

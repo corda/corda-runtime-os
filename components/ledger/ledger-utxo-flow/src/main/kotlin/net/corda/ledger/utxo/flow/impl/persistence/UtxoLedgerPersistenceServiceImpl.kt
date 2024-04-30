@@ -228,7 +228,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
 
                     UtxoFilteredTransactionAndSignaturesImpl(
                         utxoFilteredTransaction,
-                        signatures.filter { signature -> newTxNotaryKeyIds.contains(signature.by) }
+                        signatures.filter { signature -> newTxNotaryKeyIds.contains(signature.by) }.toSet()
                     )
                 }
             }
@@ -308,7 +308,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun persistTransactionSignatures(id: SecureHash, signatures: List<DigitalSignatureAndMetadata>) {
+    override fun persistTransactionSignatures(id: SecureHash, signatures: Set<DigitalSignatureAndMetadata>) {
         return recordSuspendable(
             { ledgerPersistenceFlowTimer(LedgerPersistenceMetricOperationName.PersistTransactionSignatures) }
         ) @Suspendable {

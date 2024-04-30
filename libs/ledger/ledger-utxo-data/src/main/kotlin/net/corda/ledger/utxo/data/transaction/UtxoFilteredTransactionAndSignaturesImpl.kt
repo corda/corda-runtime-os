@@ -8,10 +8,10 @@ import net.corda.v5.membership.NotaryInfo
 
 data class UtxoFilteredTransactionAndSignaturesImpl(
     private val filteredTransaction: UtxoFilteredTransaction,
-    private val signatures: List<DigitalSignatureAndMetadata>
+    private val signatures: Set<DigitalSignatureAndMetadata>
 ) : UtxoFilteredTransactionAndSignatures {
     override fun getFilteredTransaction(): UtxoFilteredTransaction = filteredTransaction
-    override fun getSignatures(): List<DigitalSignatureAndMetadata> = signatures
+    override fun getSignatures(): List<DigitalSignatureAndMetadata> = signatures.toList()
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -19,14 +19,14 @@ data class UtxoFilteredTransactionAndSignaturesImpl(
         other as UtxoFilteredTransactionAndSignaturesImpl
 
         if (filteredTransaction != other.filteredTransaction) return false
-        if (signatures.toSet() != other.signatures.toSet()) return false
+        if (signatures != other.signatures) return false
 
         return true
     }
 
     override fun hashCode(): Int {
         var result = filteredTransaction.hashCode()
-        result = 31 * result + signatures.toSet().hashCode()
+        result = 31 * result + signatures.hashCode()
         return result
     }
 

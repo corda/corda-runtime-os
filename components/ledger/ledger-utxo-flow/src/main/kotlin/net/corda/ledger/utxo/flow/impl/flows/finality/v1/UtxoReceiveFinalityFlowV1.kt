@@ -122,7 +122,7 @@ class UtxoReceiveFinalityFlowV1(
         return if (transferAdditionalSignatures) {
             receiveSignaturesAndAddToTransaction(transaction).let { (it, signatures) ->
                 verifyAllReceivedSignatures(it)
-                persistenceService.persistTransactionSignatures(it.id, signatures.toList())
+                persistenceService.persistTransactionSignatures(it.id, signatures)
                 it
             }
         } else {
