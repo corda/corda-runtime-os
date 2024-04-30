@@ -221,7 +221,7 @@
     "/certificates/getprotocolversion" : {
       "get" : {
         "tags" : [ "Certificates" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_certificates_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -532,7 +532,7 @@
     "/config/getprotocolversion" : {
       "get" : {
         "tags" : [ "Configuration" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_config_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -668,7 +668,7 @@
     "/cpi/getprotocolversion" : {
       "get" : {
         "tags" : [ "CPI" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_cpi_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -734,7 +734,7 @@
     "/flow/getprotocolversion" : {
       "get" : {
         "tags" : [ "Flow Management" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_flow_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -942,7 +942,7 @@
     "/flowclass/getprotocolversion" : {
       "get" : {
         "tags" : [ "Flow Info" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_flowclass_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -1047,7 +1047,7 @@
     "/hello/getprotocolversion" : {
       "get" : {
         "tags" : [ "Hello Rest" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_hello_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -1076,7 +1076,7 @@
     "/hsm/getprotocolversion" : {
       "get" : {
         "tags" : [ "HSM" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_hsm_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -1201,7 +1201,7 @@
     "/keys/getprotocolversion" : {
       "get" : {
         "tags" : [ "Keys Management" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_keys_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -1607,7 +1607,7 @@
     "/maintenance/virtualnode/getprotocolversion" : {
       "get" : {
         "tags" : [ "Virtual Node Maintenance" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_maintenance_virtualnode_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -1666,7 +1666,7 @@
     "/members/getprotocolversion" : {
       "get" : {
         "tags" : [ "Member Lookup" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_members_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -1849,7 +1849,7 @@
     "/membership/getprotocolversion" : {
       "get" : {
         "tags" : [ "Member Registration" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_membership_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -2014,7 +2014,7 @@
     "/mgm/getprotocolversion" : {
       "get" : {
         "tags" : [ "MGM" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_mgm_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -2891,7 +2891,7 @@
     "/mgmadmin/getprotocolversion" : {
       "get" : {
         "tags" : [ "MGM Admin" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_mgmadmin_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -2920,7 +2920,7 @@
     "/network/getprotocolversion" : {
       "get" : {
         "tags" : [ "Network" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_network_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -3149,7 +3149,7 @@
     "/permission/getprotocolversion" : {
       "get" : {
         "tags" : [ "RBAC Permission" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_permission_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -3281,7 +3281,7 @@
     "/role/getprotocolversion" : {
       "get" : {
         "tags" : [ "RBAC Role" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_role_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -3513,7 +3513,7 @@
     "/user/getprotocolversion" : {
       "get" : {
         "tags" : [ "RBAC User" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_user_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -3734,7 +3734,7 @@
     "/virtualnode/getprotocolversion" : {
       "get" : {
         "tags" : [ "Virtual Node" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_virtualnode_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
