@@ -73,19 +73,19 @@ class ClusterReadinessChecker : ClusterReadiness {
     private fun checkWorkerReady(
         timeOut: Duration,
         sleepDuration: Duration,
-        it: Map.Entry<String, String>,
+        workerUrl: Map.Entry<String, String>,
         softly: SoftAssertions
     ) {
         var lastResponse: HttpResponse<String>? = null
         val isReady: Boolean = tryUntilSuccess(timeOut, sleepDuration) {
-            sendAndReceiveResponse(it.key, it.value).also {
+            sendAndReceiveResponse(workerUrl.key, workerUrl.value).also {
                 lastResponse = it
             }
         }
         if (isReady) {
-            logger.info("${it.key} is ready")
+            logger.info("${workerUrl.key} is ready")
         } else {
-            """Problem with ${it.key} (${it.value}), status returns not ready, 
+            """Problem with ${workerUrl.key} (${workerUrl.value}), status returns not ready, 
                                     | body: ${lastResponse?.body()}""".trimMargin().let {
                 logger.error(it)
                 softly.fail(it)
