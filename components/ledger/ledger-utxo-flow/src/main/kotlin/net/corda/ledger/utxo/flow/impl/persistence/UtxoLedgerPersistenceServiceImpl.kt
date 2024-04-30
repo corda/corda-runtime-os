@@ -25,8 +25,8 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindFilteredT
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedLedgerTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedLedgerTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
-import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionIdsAndStatusesExternalEventFactory
-import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionIdsAndStatusesParameters
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedTransactionIdsAndStatusesExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedTransactionIdsAndStatusesParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionsWithStatusCreatedBetweenTimeExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionsWithStatusCreatedBetweenTimeParameters
@@ -129,12 +129,12 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun findTransactionIdsAndStatuses(ids: Collection<SecureHash>): Map<SecureHash, TransactionStatus> {
+    override fun findSignedTransactionIdsAndStatuses(ids: Collection<SecureHash>): Map<SecureHash, TransactionStatus> {
         return recordSuspendable({ ledgerPersistenceFlowTimer(FindTransactionIdsAndStatuses) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
-                    FindTransactionIdsAndStatusesExternalEventFactory::class.java,
-                    FindTransactionIdsAndStatusesParameters(ids.map { it.toString() })
+                    FindSignedTransactionIdsAndStatusesExternalEventFactory::class.java,
+                    FindSignedTransactionIdsAndStatusesParameters(ids.map { it.toString() })
                 )
             }
         }.firstOrNull()?.let {

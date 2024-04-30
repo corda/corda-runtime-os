@@ -28,7 +28,7 @@ import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoExecuteNamedQ
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindFilteredTransactionsAndSignaturesRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedGroupParametersRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedLedgerTransactionRequestHandler
-import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionIdsAndStatusesRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedTransactionIdsAndStatusesRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionsWithStatusCreatedBetweenTimeRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindUnconsumedStatesByTypeRequestHandler
@@ -188,7 +188,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                 )
             }
             is FindTransactionIdsAndStatuses -> {
-                UtxoFindTransactionIdsAndStatusesRequestHandler(
+                UtxoFindSignedTransactionIdsAndStatusesRequestHandler(
                     req,
                     externalEventContext,
                     persistenceService,

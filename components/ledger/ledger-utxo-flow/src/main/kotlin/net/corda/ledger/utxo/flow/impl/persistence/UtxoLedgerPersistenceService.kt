@@ -57,7 +57,7 @@ interface UtxoLedgerPersistenceService {
      * @return A list of the transaction IDs found and their statuses.
      */
     @Suspendable
-    fun findTransactionIdsAndStatuses(ids: Collection<SecureHash>): Map<SecureHash, TransactionStatus>
+    fun findSignedTransactionIdsAndStatuses(ids: Collection<SecureHash>): Map<SecureHash, TransactionStatus>
 
     /**
      * Find a verified [UtxoSignedLedgerTransaction] in the persistence context given it's [id]. This involves resolving its input and

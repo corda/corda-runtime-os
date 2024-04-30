@@ -8,16 +8,16 @@ import org.osgi.service.component.annotations.Component
 import java.time.Clock
 
 @Component(service = [ExternalEventFactory::class])
-class FindTransactionIdsAndStatusesExternalEventFactory :
-    AbstractUtxoLedgerExternalEventFactory<FindTransactionIdsAndStatusesParameters> {
+class FindSignedTransactionIdsAndStatusesExternalEventFactory :
+    AbstractUtxoLedgerExternalEventFactory<FindSignedTransactionIdsAndStatusesParameters> {
     @Activate
     constructor() : super()
     constructor(clock: Clock) : super(clock)
 
-    override fun createRequest(parameters: FindTransactionIdsAndStatusesParameters): Any {
+    override fun createRequest(parameters: FindSignedTransactionIdsAndStatusesParameters): Any {
         return FindTransactionIdsAndStatuses(parameters.transactionIds)
     }
 }
 
 @CordaSerializable
-data class FindTransactionIdsAndStatusesParameters(val transactionIds: List<String>)
+data class FindSignedTransactionIdsAndStatusesParameters(val transactionIds: List<String>)

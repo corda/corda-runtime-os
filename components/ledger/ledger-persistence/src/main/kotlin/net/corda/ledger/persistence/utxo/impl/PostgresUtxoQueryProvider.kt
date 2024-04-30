@@ -88,12 +88,24 @@ class PostgresUtxoQueryProvider @Activate constructor(
             """.trimIndent()
         }
 
-    override val persistTransactionSignatures: (batchSize: Int) -> String
+    override val persistTransactionSignaturesWithOnConflictDoNothing: (batchSize: Int) -> String
         get() = { batchSize ->
             """
             INSERT INTO utxo_transaction_signature(transaction_id, signature_idx, signature, pub_key_hash, created)
             VALUES ${List(batchSize) { "(?, ?, ?, ?, ?)" }.joinToString(",")}
             ON CONFLICT DO NOTHING
+            """.trimIndent()
+        }
+
+    override val persistTransactionSignaturesWithOnConflictUpdate: (batchSize: Int) -> String
+        get() = { batchSize ->
+            """
+            INSERT INTO utxo_transaction_signature(transaction_id, signature_idx, signature, pub_key_hash, created)
+            VALUES ${List(batchSize) { "(?, ?, ?, ?, ?)" }.joinToString(",")}
+            ON CONFLICT(transaction_id, signature_idx) DO
+            UPDATE SET signature_idx = EXCLUDED.signature_idx, signature = EXCLUDED.signature, pub_key_hash = EXCLUDED.pub_key_hash, 
+            created = EXCLUDED.created
+            WHERE pub_key_hash != EXCLUDED.pub_key_hash || signature != EXCLUDED.signature
             """.trimIndent()
         }
 
