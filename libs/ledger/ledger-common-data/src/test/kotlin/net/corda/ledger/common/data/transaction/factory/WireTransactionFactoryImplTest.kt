@@ -59,7 +59,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             )
         }
             .isInstanceOf(IllegalArgumentException::class.java)
-            .hasMessageContaining("Metadata json is invalid.")
+            .hasMessage("Metadata schema version is null.")
     }
 
     @Test
