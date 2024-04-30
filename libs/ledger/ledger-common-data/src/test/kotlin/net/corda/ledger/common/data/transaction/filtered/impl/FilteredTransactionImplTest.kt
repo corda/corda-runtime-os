@@ -591,7 +591,7 @@ class FilteredTransactionImplTest {
     @Test
     fun `Accessing metadata parses metadata with a header successfully`() {
         filteredTransaction = filteredTransaction(filteredComponentGroups = mapOf(0 to filteredComponentGroup0))
-        val header = "corda".toByteArray() + byteArrayOf(8, 0)
+        val header = "corda".toByteArray() + byteArrayOf(8, 1)
         val jsonBlobWithHeader = header + metadataJson.encodeToByteArray()
         componentGroupMerkleProofVerifies(listOf(indexedMerkleLeaf(0)))
 
@@ -600,6 +600,20 @@ class FilteredTransactionImplTest {
 
         assertDoesNotThrow { filteredTransaction.metadata }
         assertDoesNotThrow { filteredTransaction.verify() }
+    }
+
+    @Test
+    fun `Accessing metadata parses metadata with a header of unavailable schema version throws`() {
+        filteredTransaction = filteredTransaction(filteredComponentGroups = mapOf(0 to filteredComponentGroup0))
+        val header = "corda".toByteArray() + byteArrayOf(8, 0)
+        val jsonBlobWithHeader = header + metadataJson.encodeToByteArray()
+        componentGroupMerkleProofVerifies(listOf(indexedMerkleLeaf(0)))
+
+        whenever(filteredComponentGroup0Proof.treeSize).thenReturn(1)
+        whenever(filteredComponentGroup0Proof.leaves).thenReturn(listOf(indexedMerkleLeaf(0, jsonBlobWithHeader)))
+
+        assertThatThrownBy { filteredTransaction.metadata }.isInstanceOf(IllegalStateException::class.java)
+            .hasMessage("Failed to load JSON schema from /schema/v0/transaction-metadata.json")
     }
 
     private fun componentGroupMerkleProofVerifies(indexedMerkleLeaves: List<IndexedMerkleLeaf>) {

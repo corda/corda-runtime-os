@@ -1,6 +1,5 @@
 package net.corda.ledger.common.data.transaction.factory
 
-import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.databind.JsonMappingException
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.test.CommonLedgerTest
@@ -14,7 +13,6 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
     private val metadataJson = jsonMarshallingService.format(metadata)
     private val canonicalJson = jsonValidator.canonicalize(metadataJson)
     private val privacySalt = mockPrivacySaltProviderService.generatePrivacySalt()
-    private val header = "corda".toByteArray() + byteArrayOf(8, 0)
 
     @Test
     fun `Creating a very simple WireTransaction`() {
@@ -61,7 +59,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             )
         }
             .isInstanceOf(IllegalArgumentException::class.java)
-            .hasMessageContaining("Metadata is empty.")
+            .hasMessageContaining("Metadata json is invalid.")
     }
 
     @Test
@@ -266,6 +264,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
 
     @Test
     fun `Creating a WireTransaction parses metadata with a header successfully`() {
+        val header = "corda".toByteArray() + byteArrayOf(8, 1)
         val metadata = transactionMetadataExample(
             ledgerModel = "net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl",
             transactionSubType = "GENERAL",
@@ -283,8 +282,8 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
     }
 
     @Test
-    fun `Creating a WireTransaction parses metadata with an invalid header`() {
-        val header = "corda".toByteArray() + byteArrayOf(4, 0)
+    fun `Creating a WireTransaction parses metadata with an invalid header throws exception`() {
+        val header = "corda".toByteArray() + byteArrayOf(4, 1)
         val metadata = transactionMetadataExample(
             ledgerModel = "net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl",
             transactionSubType = "GENERAL",
@@ -301,7 +300,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
                 privacySalt
             )
         }
-            .isInstanceOf(JsonParseException::class.java)
-            .hasMessageContaining("Unrecognized token")
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining("Metadata schema version is null.")
     }
 }

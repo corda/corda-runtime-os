@@ -16,24 +16,24 @@ import net.corda.v5.crypto.merkle.HashDigestConstants
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import java.util.*
 
-class JsonMagic {
+object JsonMagic {
     private val header = "corda".toByteArray() + byteArrayOf(8)
-    private val openingBrace = '{'.code.toByte()
+    private const val OPENING_BRACKET = '{'.code.toByte()
 
     /**
      * returns a pair of schemaVersion to decoded json
      * */
-    fun consume(byteData: ByteArray): Pair<Int?, String?> {
+    fun consume(byteData: ByteArray): Pair<Int?, String> {
         val hasHeader = byteData.size > header.size && byteData.sliceArray(header.indices).contentEquals(header)
-        val hasNotHeader = byteData.isNotEmpty() && byteData[0] == openingBrace
+        val hasNoHeader = byteData.isNotEmpty() && byteData[0] == OPENING_BRACKET
 
         return if (hasHeader) {
-            byteData[header.size].toInt() to byteData.sliceArray(header.size + 1 until byteData.size - 1).decodeToString()
-        } else if (hasNotHeader) {
+            byteData[header.size].toInt() to byteData.sliceArray(header.size + 1 until byteData.size).decodeToString()
+        } else if (hasNoHeader) {
             // no header means schema version 1 which is compatible with platform version <= 5.2.1
             1 to byteData.decodeToString()
         } else {
-            null to null
+            null to ""
         }
     }
 }
@@ -44,21 +44,14 @@ object TransactionMetadataUtils {
         jsonValidator: JsonValidator,
         jsonMarshallingService: JsonMarshallingService
     ): TransactionMetadataImpl {
-        if (metadataBytes.isEmpty()) throw IllegalArgumentException("Metadata is empty.")
-
         // extracting metadata schema version from a header and json.
-        val magic = JsonMagic()
-        val (version, json) = magic.consume(metadataBytes)
+        val (version, json) = JsonMagic.consume(metadataBytes)
 
-        requireNotNull(json) {
-            "Metadata json is invalid."
+        requireNotNull(version) {
+            "Metadata schema version is null."
         }
 
-        if (version != null) {
-//            TODO("if metadataSchemaVersion is null, it means MPV <= 5.2.1. write JSON without a header.")
-        }
-
-        jsonValidator.validate(json, getMetadataSchema(jsonValidator))
+        jsonValidator.validate(json, getMetadataSchema(jsonValidator, version))
         val metadata = jsonMarshallingService.parse(json, TransactionMetadataImpl::class.java)
         check(metadata.digestSettings == WireTransactionDigestSettings.defaultValues) {
             "Only the default digest settings are acceptable now! ${metadata.digestSettings} vs " +
@@ -67,8 +60,12 @@ object TransactionMetadataUtils {
         return metadata
     }
 
-    private fun getMetadataSchema(jsonValidator: JsonValidator): WrappedJsonSchema {
-        return jsonValidator.parseSchema(getSchema(TransactionMetadataImpl.SCHEMA_PATH))
+    private fun getMetadataSchema(jsonValidator: JsonValidator, schemaVersion: Int): WrappedJsonSchema {
+        return jsonValidator.parseSchema(getSchema(getMetadataSchemaPath(schemaVersion)))
+    }
+
+    private fun getMetadataSchemaPath(schemaVersion: Int): String {
+        return "/schema/v$schemaVersion/transaction-metadata.json"
     }
 
     private fun getSchema(path: String) =
