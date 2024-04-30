@@ -562,13 +562,13 @@ class UtxoPersistenceServiceImplTest {
                     assertThat(dbInput.field<Instant>("consumed")).isNull()
                 }
 
-            val signatures = signedTransaction.signatures
+            val signatures = signedTransaction.signatures.sortedBy { it.by.toString() }
             val txSignatures = dbTransaction.field<Collection<Any>?>("signatures")
             assertThat(txSignatures)
                 .isNotNull
                 .hasSameSizeAs(signatures)
             txSignatures!!
-                .sortedBy { it.field<Int>("index") }
+                .sortedBy { it.field<Int>("publicKeyHash") }
                 .zip(signatures)
                 .forEach { (dbSignature, signature) ->
                     assertThat(dbSignature.field<ByteArray>("signature")).isEqualTo(
