@@ -48,7 +48,7 @@ object TransactionMetadataUtils {
         val (version, json) = JsonMagic.consume(metadataBytes)
 
         requireNotNull(version) {
-            "Metadata schema version is null."
+            "Metadata json blob is invalid."
         }
 
         jsonValidator.validate(json, getMetadataSchema(jsonValidator, version))
