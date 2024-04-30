@@ -104,12 +104,7 @@ interface UtxoQueryProvider {
     /**
      * @property persistTransactionSignature SQL text for [UtxoRepositoryImpl.persistTransactionSignature].
      */
-    val persistTransactionSignaturesWithOnConflictDoNothing: (batchSize: Int) -> String
-
-    /**
-     * @property persistTransactionSignature SQL text for [UtxoRepositoryImpl.persistTransactionSignature].
-     */
-    val persistTransactionSignaturesWithOnConflictUpdate: (batchSize: Int) -> String
+    val persistTransactionSignatures: (batchSize: Int) -> String
 
     /**
      * @property persistMerkleProof SQL text for [UtxoRepositoryImpl.persistMerkleProof].

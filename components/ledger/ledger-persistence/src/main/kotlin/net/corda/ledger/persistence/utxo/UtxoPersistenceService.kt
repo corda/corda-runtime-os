@@ -83,7 +83,7 @@ interface UtxoPersistenceService {
         account: String
     )
 
-    fun persistTransactionSignatures(id: String, signatures: List<ByteArray>, startingIndex: Int)
+    fun persistTransactionSignatures(id: String, signatures: List<ByteArray>)
 
     /**
      * Retrieve matching filtered transactions and signatures a list of state references.

@@ -233,7 +233,7 @@ class UtxoPersistenceServiceImpl(
     private fun hash(data: ByteArray) = sandboxDigestService.hash(data, DigestAlgorithmName.SHA2_256).toString()
 
     override fun persistTransaction(transaction: UtxoTransactionReader, utxoTokenMap: Map<StateRef, UtxoToken>): Instant {
-        return persistTransaction(transaction, utxoTokenMap, overwriteExistingSignatures = false) { block ->
+        return persistTransaction(transaction, utxoTokenMap) { block ->
             entityManagerFactory.transaction { em -> block(em) }
         }
     }
@@ -242,7 +242,7 @@ class UtxoPersistenceServiceImpl(
         entityManagerFactory.transaction { em ->
             val transactionIdString = transaction.id.toString()
             val status = repository.findSignedTransactionStatus(em, transactionIdString) ?: run {
-                persistTransaction(transaction, emptyMap(), overwriteExistingSignatures = true) { block -> block(em) }
+                persistTransaction(transaction, emptyMap()) { block -> block(em) }
                 return ""
             }
             return status
@@ -252,10 +252,8 @@ class UtxoPersistenceServiceImpl(
     private inline fun persistTransaction(
         transaction: UtxoTransactionReader,
         utxoTokenMap: Map<StateRef, UtxoToken>,
-        overwriteExistingSignatures: Boolean,
         optionalTransactionBlock: ((EntityManager) -> Unit) -> Unit
     ): Instant {
-        Array<CharArray>(10) { CharArray(10) }
         val nowUtc = utcClock.instant()
         val transactionIdString = transaction.id.toString()
 
@@ -274,10 +272,9 @@ class UtxoPersistenceServiceImpl(
             )
         }
 
-        val transactionSignatures = transaction.signatures.mapIndexed { index, signature ->
+        val transactionSignatures = transaction.signatures.map { signature ->
             UtxoRepository.TransactionSignature(
                 transactionIdString,
-                index,
                 serializationService.serialize(signature).bytes,
                 signature.by
             )
@@ -391,35 +388,24 @@ class UtxoPersistenceServiceImpl(
             }
 
             // Insert the Transactions signatures
-            repository.persistTransactionSignatures(
-                em,
-                transactionSignatures,
-                nowUtc,
-                withOnConflictUpdate = overwriteExistingSignatures
-            )
+            repository.persistTransactionSignatures(em, transactionSignatures, nowUtc)
         }
 
         return nowUtc
     }
 
-    override fun persistTransactionSignatures(id: String, signatures: List<ByteArray>, startingIndex: Int) {
+    override fun persistTransactionSignatures(id: String, signatures: List<ByteArray>) {
         val transactionSignatures = signatures.mapIndexed { index, bytes ->
             val signature = serializationService.deserialize<DigitalSignatureAndMetadata>(bytes)
             UtxoRepository.TransactionSignature(
                 id,
-                startingIndex + index,
                 serializationService.serialize(signature).bytes,
                 signature.by
             )
         }
 
         entityManagerFactory.transaction { em ->
-            repository.persistTransactionSignatures(
-                em,
-                transactionSignatures,
-                utcClock.instant(),
-                withOnConflictUpdate = true
-            )
+            repository.persistTransactionSignatures(em, transactionSignatures, utcClock.instant())
         }
     }
 
@@ -522,12 +508,7 @@ class UtxoPersistenceServiceImpl(
                 nowUtc
             )
 
-            repository.persistTransactionSignatures(
-                em,
-                filteredTransactionsToPersist.flatMap { it.signatures },
-                nowUtc,
-                withOnConflictUpdate = true
-            )
+            repository.persistTransactionSignatures(em, filteredTransactionsToPersist.flatMap { it.signatures }, nowUtc)
 
             // No need to persist the leaf data for the top level merkle proof as we can reconstruct that
             val topLevelProofs = filteredTransactionsToPersist.map(FilteredTransactionToPersist::topLevelProof)
@@ -616,10 +597,9 @@ class UtxoPersistenceServiceImpl(
         metadataHash: SecureHash
     ): FilteredTransactionToPersist {
         val filteredTransactionId = filteredTransaction.id.toString()
-        val transactionSignatures = signatures.mapIndexed { index, signature ->
+        val transactionSignatures = signatures.map { signature ->
             UtxoRepository.TransactionSignature(
                 filteredTransactionId,
-                index,
                 serializationService.serialize(signature).bytes,
                 signature.by
             )

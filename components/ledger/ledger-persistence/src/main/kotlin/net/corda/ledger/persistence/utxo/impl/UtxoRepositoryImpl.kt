@@ -395,24 +395,17 @@ class UtxoRepositoryImpl(
     override fun persistTransactionSignatures(
         entityManager: EntityManager,
         signatures: List<UtxoRepository.TransactionSignature>,
-        timestamp: Instant,
-        withOnConflictUpdate: Boolean
+        timestamp: Instant
     ) {
-        val query = if (withOnConflictUpdate) {
-            queryProvider.persistTransactionSignaturesWithOnConflictUpdate
-        } else {
-            queryProvider.persistTransactionSignaturesWithOnConflictDoNothing
-        }
         entityManager.connection { connection ->
             batchPersistenceService.persistBatch(
                 connection,
-                query,
+                queryProvider.persistTransactionSignatures,
                 signatures
             ) { statement, parameterIndex, signature ->
                 statement.setString(parameterIndex.next(), signature.transactionId)
-                statement.setInt(parameterIndex.next(), signature.index)
-                statement.setBytes(parameterIndex.next(), signature.signatureBytes)
                 statement.setString(parameterIndex.next(), signature.publicKeyHash.toString())
+                statement.setBytes(parameterIndex.next(), signature.signatureBytes)
                 statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp), utcCalendar)
             }
         }

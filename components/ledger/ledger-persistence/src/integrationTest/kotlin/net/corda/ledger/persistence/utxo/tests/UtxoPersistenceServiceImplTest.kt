@@ -570,8 +570,7 @@ class UtxoPersistenceServiceImplTest {
             txSignatures!!
                 .sortedBy { it.field<Int>("index") }
                 .zip(signatures)
-                .forEachIndexed { index, (dbSignature, signature) ->
-                    assertThat(dbSignature.field<Int>("index")).isEqualTo(index)
+                .forEach { (dbSignature, signature) ->
                     assertThat(dbSignature.field<ByteArray>("signature")).isEqualTo(
                         serializationService.serialize(
                             signature
@@ -2159,10 +2158,9 @@ class UtxoPersistenceServiceImplTest {
                 }
             )
             transaction.field<MutableCollection<Any>>("signatures").addAll(
-                signedTransaction.signatures.mapIndexed { index, signature ->
+                signedTransaction.signatures.map { signature ->
                     entityFactory.createUtxoTransactionSignatureEntity(
                         transaction,
-                        index,
                         serializationService.serialize(signature).bytes,
                         signature.by.toString(),
                         createdTs

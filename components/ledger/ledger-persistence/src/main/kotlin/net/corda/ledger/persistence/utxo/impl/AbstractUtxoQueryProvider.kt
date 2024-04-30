@@ -69,8 +69,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
         get() = """
             SELECT signature
             FROM {h-schema}utxo_transaction_signature
-            WHERE transaction_id = :transactionId
-            ORDER BY signature_idx"""
+            WHERE transaction_id = :transactionId"""
             .trimIndent()
 
     override val findSignedTransactionStatus: String

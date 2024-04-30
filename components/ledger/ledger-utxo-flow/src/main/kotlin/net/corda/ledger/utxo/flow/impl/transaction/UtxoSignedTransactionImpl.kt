@@ -241,14 +241,12 @@ data class UtxoSignedTransactionImpl(
         if (this === other) return true
         if (other !is UtxoSignedTransactionImpl) return false
         if (other.wireTransaction != wireTransaction) return false
-        if (other.signatures.size != signatures.size) return false
+        if (other.signatures.toSet() != signatures.toSet()) return false
 
-        return other.signatures.withIndex().all {
-            it.value == signatures[it.index]
-        }
+        return true
     }
 
-    override fun hashCode(): Int = Objects.hash(wireTransaction, signatures)
+    override fun hashCode(): Int = Objects.hash(wireTransaction, signatures.toSet())
 
     override fun toString(): String {
         return "UtxoSignedTransactionImpl(id=$id, signatures=$signatures, wireTransaction=$wireTransaction)"

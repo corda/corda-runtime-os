@@ -120,9 +120,9 @@ class UtxoReceiveFinalityFlowV1(
         transferAdditionalSignatures: Boolean
     ): UtxoSignedTransactionInternal {
         return if (transferAdditionalSignatures) {
-            receiveSignaturesAndAddToTransaction(transaction).let { (it, startingIndex, signatures) ->
+            receiveSignaturesAndAddToTransaction(transaction).let { (it, signatures) ->
                 verifyAllReceivedSignatures(it)
-                persistenceService.persistTransactionSignatures(it.id, startingIndex, signatures)
+                persistenceService.persistTransactionSignatures(it.id, signatures.toList())
                 it
             }
         } else {
@@ -313,7 +313,7 @@ class UtxoReceiveFinalityFlowV1(
 
     @Suspendable
     private fun receiveSignaturesAndAddToTransaction(transaction: UtxoSignedTransactionInternal): TransactionAndReceivedSignatures {
-        val initialSignaturesSize = transaction.signatures.size
+        val initialSignatures = transaction.signatures.toSet()
         if (log.isDebugEnabled) {
             log.debug("Waiting for other parties' signatures for transaction: ${transaction.id}")
         }
@@ -328,8 +328,7 @@ class UtxoReceiveFinalityFlowV1(
 
         return TransactionAndReceivedSignatures(
             signedTransaction,
-            initialSignaturesSize,
-            signedTransaction.signatures.drop(initialSignaturesSize)
+            signedTransaction.signatures.toSet() - initialSignatures
         )
     }
 
@@ -404,7 +403,6 @@ class UtxoReceiveFinalityFlowV1(
 
     private data class TransactionAndReceivedSignatures(
         val transaction: UtxoSignedTransactionInternal,
-        val indexOfNewSignatures: Int,
-        val orderedNewSignatures: List<DigitalSignatureAndMetadata>
+        val newSignatures: Set<DigitalSignatureAndMetadata>
     )
 }

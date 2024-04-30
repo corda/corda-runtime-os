@@ -12,6 +12,25 @@ data class UtxoFilteredTransactionAndSignaturesImpl(
 ) : UtxoFilteredTransactionAndSignatures {
     override fun getFilteredTransaction(): UtxoFilteredTransaction = filteredTransaction
     override fun getSignatures(): List<DigitalSignatureAndMetadata> = signatures
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as UtxoFilteredTransactionAndSignaturesImpl
+
+        if (filteredTransaction != other.filteredTransaction) return false
+        if (signatures.toSet() != other.signatures.toSet()) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = filteredTransaction.hashCode()
+        result = 31 * result + signatures.toSet().hashCode()
+        return result
+    }
+
+
 }
 
 fun UtxoFilteredTransactionAndSignatures.verifyFilteredTransactionAndSignatures(

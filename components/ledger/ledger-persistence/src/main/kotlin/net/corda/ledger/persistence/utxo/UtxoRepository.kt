@@ -148,8 +148,7 @@ interface UtxoRepository {
     fun persistTransactionSignatures(
         entityManager: EntityManager,
         signatures: List<TransactionSignature>,
-        timestamp: Instant,
-        withOnConflictUpdate: Boolean
+        timestamp: Instant
     )
 
     /**
@@ -225,7 +224,7 @@ interface UtxoRepository {
         val notaryName: String,
     )
 
-    data class TransactionSignature(val transactionId: String, val index: Int, val signatureBytes: ByteArray, val publicKeyHash: SecureHash)
+    data class TransactionSignature(val transactionId: String, val signatureBytes: ByteArray, val publicKeyHash: SecureHash)
 
     data class FilteredTransaction(
         val transactionId: String,

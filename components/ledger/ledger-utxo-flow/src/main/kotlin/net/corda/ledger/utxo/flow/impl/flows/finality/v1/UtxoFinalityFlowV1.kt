@@ -103,9 +103,9 @@ class UtxoFinalityFlowV1(
             transferAdditionalSignatures
         )
 
-        val (transaction, signaturesReceivedFromSessions, startingIndex, signatures) = receiveSignaturesAndAddToTransaction()
+        val (transaction, signaturesReceivedFromSessions, newSignatures) = receiveSignaturesAndAddToTransaction()
         verifyAllReceivedSignatures(transaction, signaturesReceivedFromSessions)
-        persistCounterpartySignatures(transaction.id, startingIndex, signatures)
+        persistCounterpartySignatures(transaction.id, newSignatures)
 
         if (transferAdditionalSignatures) {
             sendUnseenSignaturesToCounterparties(transaction, signaturesReceivedFromSessions)
@@ -207,13 +207,10 @@ class UtxoFinalityFlowV1(
             session to signatures
         }.toMap()
 
-        val initialSignaturesSize = initialTransaction.signatures.size
-
         return TransactionAndReceivedSignatures(
             transaction,
             signaturesReceivedFromSessions,
-            initialSignaturesSize,
-            transaction.signatures.drop(initialSignaturesSize)
+            newSignatures = transaction.signatures.toSet() - initialTransaction.signatures.toSet()
         )
     }
 
@@ -246,12 +243,8 @@ class UtxoFinalityFlowV1(
     }
 
     @Suspendable
-    private fun persistCounterpartySignatures(
-        id: SecureHash,
-        startingIndex: Int,
-        signatures: List<DigitalSignatureAndMetadata>
-    ) {
-        persistenceService.persistTransactionSignatures(id, startingIndex, signatures)
+    private fun persistCounterpartySignatures(id: SecureHash, newSignatures: Set<DigitalSignatureAndMetadata>) {
+        persistenceService.persistTransactionSignatures(id, newSignatures.toList())
         log.debug { "Recorded transaction with all parties' signatures $transactionId" }
     }
 
@@ -389,7 +382,6 @@ class UtxoFinalityFlowV1(
     private data class TransactionAndReceivedSignatures(
         val transaction: UtxoSignedTransactionInternal,
         val sessionsToSignatures: Map<FlowSession, List<DigitalSignatureAndMetadata>>,
-        val indexOfNewSignatures: Int,
-        val orderedNewSignatures: List<DigitalSignatureAndMetadata>
+        val newSignatures: Set<DigitalSignatureAndMetadata>
     )
 }
