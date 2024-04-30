@@ -20,9 +20,14 @@ interface ClusterReadiness {
         timeOut: Duration = Duration.ofSeconds(120),
         sleepDuration: Duration = Duration.ofSeconds(1)
     )
+
+    fun remainsReady(
+        timeOut: Duration = Duration.ofSeconds(30),
+        sleepDuration: Duration = Duration.ofSeconds(1)
+    )
 }
 
-class ClusterReadinessChecker: ClusterReadiness {
+class ClusterReadinessChecker : ClusterReadiness {
     private companion object {
         private val logger = LoggerFactory.getLogger(ClusterReadiness::class.java)
         private val workerUrls = mapOf(
@@ -40,30 +45,22 @@ class ClusterReadinessChecker: ClusterReadiness {
 
     private val client = HttpClient.newBuilder().build()
 
-    override fun assertIsReady(timeOut: Duration, sleepDuration: Duration) {
+    private fun concurrentlyPollAllWorkers(
+        timeOut: Duration, sleepDuration: Duration,
+        block: (
+            timeOut: Duration, sleepDuration: Duration,
+            workerUrl: Map.Entry<String, String>, softAssertions: SoftAssertions
+        ) -> Unit
+    ) {
         runBlocking(Dispatchers.Default) {
             val softly = SoftAssertions()
-            // check all workers are up and "ready"
+            // Execute `block` supplied concurrently on all the workers
             workerUrls
                 .filter { !it.value.isNullOrBlank() }
-                .map {
+                .map { workerUrl ->
                     async {
-                        withMDC(mapOf("name" to it.key)) {
-                            var lastResponse: HttpResponse<String>? = null
-                            val isReady: Boolean = tryUntil(timeOut, sleepDuration) {
-                                sendAndReceiveResponse(it.key, it.value).also {
-                                    lastResponse = it
-                                }
-                            }
-                            if (isReady) {
-                                logger.info("${it.key} is ready")
-                            } else {
-                                """Problem with ${it.key} (${it.value}), status returns not ready, 
-                                | body: ${lastResponse?.body()}""".trimMargin().let {
-                                    logger.error(it)
-                                    softly.fail(it)
-                                }
-                            }
+                        withMDC(mapOf("name" to workerUrl.key)) {
+                            block(timeOut, sleepDuration, workerUrl, softly)
                         }
                     }
                 }.awaitAll()
@@ -72,17 +69,70 @@ class ClusterReadinessChecker: ClusterReadiness {
         }
     }
 
-    private fun tryUntil(timeOut: Duration, sleepDuration: Duration, function: () -> HttpResponse<String>): Boolean {
+    override fun assertIsReady(timeOut: Duration, sleepDuration: Duration) {
+        concurrentlyPollAllWorkers(timeOut, sleepDuration, ::checkWorkerReady)
+    }
+
+    private fun checkWorkerReady(
+        timeOut: Duration,
+        sleepDuration: Duration,
+        workerUrl: Map.Entry<String, String>,
+        softly: SoftAssertions
+    ) {
+        var lastResponse: HttpResponse<String>? = null
+        val isReady: Boolean = tryUntilSuccess(timeOut, sleepDuration) {
+            sendAndReceiveResponse(workerUrl.key, workerUrl.value).also {
+                lastResponse = it
+            }
+        }
+        if (isReady) {
+            logger.info("${workerUrl.key} is ready")
+        } else {
+            """Problem with ${workerUrl.key} (${workerUrl.value}), status returns not ready, 
+                                    | body: ${lastResponse?.body()}""".trimMargin().let {
+                logger.error(it)
+                softly.fail(it)
+            }
+        }
+    }
+
+    override fun remainsReady(timeOut: Duration, sleepDuration: Duration) {
+        concurrentlyPollAllWorkers(timeOut, sleepDuration, ::checkWorkerRemainsReady)
+    }
+
+    private fun checkWorkerRemainsReady(
+        timeOut: Duration,
+        sleepDuration: Duration,
+        workerUrl: Map.Entry<String, String>,
+        softAssertions: SoftAssertions
+    ) {
+        var lastResponse: HttpResponse<String>? = null
+        val lastReady: Boolean = tryContinuously(timeOut, sleepDuration) {
+            sendAndReceiveResponse(workerUrl.key, workerUrl.value).also {
+                lastResponse = it
+            }
+        }
+        if (lastReady) {
+            logger.info("${workerUrl.key} is ready and stable")
+        } else {
+            """Problem with ${workerUrl.key} (${workerUrl.value}), status returns not ready, 
+                                    | body: ${lastResponse?.body()}""".trimMargin().let {
+                logger.error(it)
+                softAssertions.fail(it)
+            }
+        }
+    }
+
+    private fun tryUntilSuccess(timeOut: Duration, sleepDuration: Duration, function: () -> HttpResponse<String>): Boolean {
         val startTime = Instant.now()
         while (Instant.now() < startTime.plusNanos(timeOut.toNanos())) {
             try {
                 val response = function()
                 val statusCode = response.statusCode()
                 if (statusCode in 200..299) {
-                    logger.info("Response code success.")
+                    logger.info("Response code success: $statusCode")
                     return true
-                }
-                else {
+                } else {
                     logger.info("Returned status $statusCode.")
                 }
             } catch (connectionException: IOException) {
@@ -91,6 +141,32 @@ class ClusterReadinessChecker: ClusterReadiness {
             Thread.sleep(sleepDuration.toMillis())
         }
         return false
+    }
+
+    private fun tryContinuously(
+        timeOut: Duration,
+        sleepDuration: Duration,
+        function: () -> HttpResponse<String>
+    ): Boolean {
+        val startTime = Instant.now()
+        var lastSuccess = false
+        while (Instant.now() < startTime.plusNanos(timeOut.toNanos())) {
+            try {
+                val response = function()
+                val statusCode = response.statusCode()
+                if (statusCode in 200..299) {
+                    lastSuccess = true
+                } else {
+                    logger.info("Returned status during continuous polling: $statusCode.")
+                    lastSuccess = false
+                }
+            } catch (connectionException: IOException) {
+                logger.info("Cannot connect.", connectionException)
+                lastSuccess = false
+            }
+            Thread.sleep(sleepDuration.toMillis())
+        }
+        return lastSuccess
     }
 
     private fun sendAndReceiveResponse(name: String, endpoint: String): HttpResponse<String> {
