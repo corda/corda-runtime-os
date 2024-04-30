@@ -1,12 +1,17 @@
 package net.corda.gradle.plugin.cordalifecycle
 
+import net.corda.gradle.plugin.configuration.NetworkConfig
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
 import java.nio.file.Path
+import kotlin.io.path.absolutePathString
 import kotlin.test.assertTrue
+import kotlin.io.path.createTempFile
+import kotlin.io.path.writeText
 
 class EnvironmentSetupHelperTests {
     @TempDir
@@ -107,5 +112,67 @@ class EnvironmentSetupHelperTests {
             exception.message!!.contains("require a username and password"),
             "We should not be able to download an unpublished version without credentials"
         )
+    }
+
+    @Test
+    fun `when no protocol name is specified we default to nonvalidating notary`() {
+        val configFile = createTempFile()
+        configFile.writeText(
+            """
+                [
+                    {
+                        "x500Name" : "CN=NotaryRep1, OU=Test Dept, O=R3, L=London, C=GB",
+                        "cpi" : "NotaryServer",
+                        "serviceX500Name": "CN=NotaryService, OU=Test Dept, O=R3, L=London, C=GB"
+                    }
+                ]
+            """.trimIndent()
+        )
+
+        val networkConfig = NetworkConfig(configFile.absolutePathString())
+        val result = EnvironmentSetupHelper().isNotaryNonValidating(networkConfig)
+        assertThat(result).isTrue
+    }
+
+    @Test
+    fun `when protocol contains 'nonvalid', we use nonvalidating notary`() {
+        val configFile = createTempFile()
+        configFile.writeText(
+            """
+                [
+                    {
+                        "x500Name" : "CN=NotaryRep1, OU=Test Dept, O=R3, L=London, C=GB",
+                        "cpi" : "NotaryServer",
+                        "serviceX500Name": "CN=NotaryService, OU=Test Dept, O=R3, L=London, C=GB",
+                        "flowProtocolName" : "com.r3.corda.notary.plugin.nonvalidating"
+                    }
+                ]
+            """.trimIndent()
+        )
+
+        val networkConfig = NetworkConfig(configFile.absolutePathString())
+        val result = EnvironmentSetupHelper().isNotaryNonValidating(networkConfig)
+        assertThat(result).isTrue
+    }
+
+    @Test
+    fun `when protocol does not contain nonvalid but specifies contractverifying, we use contract verifying notary`() {
+        val configFile = createTempFile()
+        configFile.writeText(
+            """
+                [
+                    {
+                        "x500Name" : "CN=NotaryRep1, OU=Test Dept, O=R3, L=London, C=GB",
+                        "cpi" : "NotaryServer",
+                        "serviceX500Name": "CN=NotaryService, OU=Test Dept, O=R3, L=London, C=GB",
+                        "flowProtocolName" : "com.r3.corda.notary.plugin.contractverifying"
+                    }
+                ]
+            """.trimIndent()
+        )
+
+        val networkConfig = NetworkConfig(configFile.absolutePathString())
+        val result = EnvironmentSetupHelper().isNotaryNonValidating(networkConfig)
+        assertThat(result).isFalse
     }
 }

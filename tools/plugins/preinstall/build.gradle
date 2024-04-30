@@ -16,26 +16,14 @@ dependencies {
     kapt libs.pf4j
     kapt "info.picocli:picocli:$picocliVersion"
 
+    implementation libs.slf4j.api
+    implementation project(':libs:corda-sdk')
+
     testImplementation libs.bundles.test
     testImplementation libs.pf4j
     testCompileOnly "net.corda.cli.host:api:$pluginHostVersion"
     testImplementation "com.github.stefanbirkner:system-lambda:$systemLambdaVersion"
     testImplementation "info.picocli:picocli:$picocliVersion"
-
-    implementation libs.jackson.dataformat.yaml
-    implementation libs.jackson.databind
-    implementation libs.jackson.module.kotlin
-    implementation libs.kubernetes.client
-    constraints {
-        implementation(libs.okio) {
-            because 'kubernetes-client uses an older version of Okio library, needs to be at least 3.4.0 to avoid CVE-2023-0833.'
-        }
-        implementation(libs.okHttp) {
-            because 'kubernetes-client uses an older version of okhttp3 library, needs to be at least 4.9.2 to avoid CVE-2023-0833.'
-        }
-    }
-    implementation libs.postgresql.jdbc
-    implementation libs.kafka.client
 }
 
 cliPlugin {

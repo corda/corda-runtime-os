@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.cli.plugins.network.output.Output
 import net.corda.membership.lib.MemberInfoExtension
+import net.corda.v5.base.types.MemberX500Name
 
 internal class OutputStub : Output {
     private val objectMapper = ObjectMapper()
@@ -13,13 +14,16 @@ internal class OutputStub : Output {
         printedOutput = objectMapper.readTree(content)
     }
 
-    fun getFirstPartyName(): String? {
-        return printedOutput?.get(0)?.get("memberContext")?.get(MemberInfoExtension.PARTY_NAME)?.asText()
+    fun getFirstPartyName(): MemberX500Name? {
+        return printedOutput?.get(0)?.get("memberContext")?.get(MemberInfoExtension.PARTY_NAME)?.asText()?.let {
+            MemberX500Name.parse(it)
+        }
     }
 
-    fun getAllPartyNames(): Collection<String> {
+    fun getAllPartyNames(): Collection<MemberX500Name> {
         val names = mutableSetOf<String>()
-        return printedOutput?.mapNotNullTo(names) { it.get("memberContext")?.get(MemberInfoExtension.PARTY_NAME)?.asText() }
-            ?: emptySet()
+        return printedOutput?.mapNotNullTo(names) { it.get("memberContext")?.get(MemberInfoExtension.PARTY_NAME)?.asText() }?.let {
+            names.map { MemberX500Name.parse(it) }
+        } ?: emptySet()
     }
 }

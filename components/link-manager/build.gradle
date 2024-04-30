@@ -47,6 +47,7 @@ dependencies {
     implementation project(":components:crypto:crypto-client")
     implementation project(':libs:crypto:cipher-suite')
     implementation project(":libs:crypto:crypto-utils")
+    implementation project(':libs:serialization:serialization-avro')
     implementation project(":components:membership:membership-persistence-client")
     implementation project(":libs:metrics")
     implementation project(":libs:tracing")
@@ -66,11 +67,14 @@ dependencies {
     implementation "net.corda:corda-topic-schema"
     implementation libs.typesafe.config
     implementation libs.caffeine
+    implementation libs.jackson.module.kotlin
+    implementation libs.jackson.datatype.jsr310
     implementation project(":components:membership:group-policy")
     implementation project(":libs:virtual-node:virtual-node-info")
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(":components:virtual-node:cpi-info-read-service")
     implementation project(":libs:membership:membership-common")
+    implementation project(':libs:p2p-messaging')
     implementation project(":components:membership:membership-group-read")
     implementation project(":libs:state-manager:state-manager-api")
     implementation project(":libs:utilities")
@@ -94,12 +98,13 @@ dependencies {
     nonOsgiIntegrationTestImplementation project(":testing:p2p:inmemory-messaging-impl")
     nonOsgiIntegrationTestImplementation project(':libs:messaging:message-bus')
     nonOsgiIntegrationTestImplementation project(":libs:messaging:db-message-bus-impl")
+    nonOsgiIntegrationTestImplementation project(':libs:messaging:kafka-message-bus-impl')
     nonOsgiIntegrationTestImplementation project(":components:crypto:crypto-client")
     nonOsgiIntegrationTestImplementation project(':libs:schema-registry:schema-registry')
     nonOsgiIntegrationTestImplementation project(':libs:platform-info')
     nonOsgiIntegrationTestImplementation "net.corda:corda-avro-schema"
-    nonOsgiIntegrationTestImplementation project(":libs:schema-registry:schema-registry-impl")
     nonOsgiIntegrationTestImplementation project(':libs:schema-registry:schema-registry-impl')
+    nonOsgiIntegrationTestImplementation project(':libs:crypto:certificate-generation')
     nonOsgiIntegrationTestRuntimeOnly 'org.osgi:osgi.core'
 
     integrationTestImplementation project(":components:configuration:configuration-read-service-impl")

@@ -26,6 +26,7 @@ import net.corda.membership.rest.v1.CertificateRestResource
 import net.corda.membership.rest.v1.CertificateRestResource.Companion.SIGNATURE_SPEC
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
@@ -159,7 +160,7 @@ class CertificateRestResourceImpl @Activate constructor(
             } else {
                 val message = "$name is not a valid domain name or IP address"
                 throw InvalidInputDataException(
-                    message = message,
+                    title = message,
                     details = mapOf("subjectAlternativeNames" to message),
                 )
             }
@@ -227,7 +228,8 @@ class CertificateRestResourceImpl @Activate constructor(
         } catch (e: Exception) {
             logger.warn("Invalid certificate", e)
             throw InvalidInputDataException(
-                details = mapOf("certificate" to "Not a valid certificate: ${e.message}")
+                details = mapOf("certificate" to "Not a valid certificate: ${e.message}"),
+                exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
             )
         }.filterIsInstance<X509Certificate>()
 
@@ -284,7 +286,8 @@ class CertificateRestResourceImpl @Activate constructor(
                     details = mapOf(
                         "certificate" to
                             "The X500 name of the certificate is not a valid Corda X500 name: ${e.message}."
-                    )
+                    ),
+                    exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
                 )
             }
             if (subject != node.holdingIdentity.x500Name) {
@@ -423,7 +426,8 @@ class CertificateRestResourceImpl @Activate constructor(
         } catch (e: IllegalArgumentException) {
             throw InvalidInputDataException(
                 "The X500 name of the certificate is invalid: ${e.message}.",
-                mapOf("x500Name" to x500Name)
+                mapOf("x500Name" to x500Name),
+                ExceptionDetails(e::class.java.name, "${e.message}")
             )
         }
     }
@@ -433,7 +437,8 @@ class CertificateRestResourceImpl @Activate constructor(
         } catch (e: IllegalArgumentException) {
             throw InvalidInputDataException(
                 "The X500 name of the certificate is not a valid Corda X500 name: ${e.message}.",
-                mapOf("x500Name" to x500Name)
+                mapOf("x500Name" to x500Name),
+                ExceptionDetails(e::class.java.name, "${e.message}")
             )
         }
     }
@@ -472,7 +477,10 @@ class CertificateRestResourceImpl @Activate constructor(
         try {
             ShortHash.parse(tenantId)
         } catch (e: ShortHashException) {
-            throw InvalidInputDataException("Provided tenantId $tenantId is not a valid holding identity ID.")
+            throw InvalidInputDataException(
+                title = "Provided tenantId $tenantId is not a valid holding identity ID.",
+                exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
+            )
         }
 
         // Check if a virtual node exists for given tenantId, if not, it throws ResourceNotFoundException

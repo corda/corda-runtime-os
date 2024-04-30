@@ -31,7 +31,6 @@ class CryptoRewrapBusProcessor(
     val cryptoService: CryptoService,
     private val stateManager: StateManager,
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    private val defaultUnmanagedWrappingKeyName: String,
 ) : DurableProcessor<String, IndividualKeyRotationRequest> {
 
     companion object {
@@ -74,6 +73,10 @@ class CryptoRewrapBusProcessor(
                     logger.info("targetKeyAlias missing from unmanaged IndividualKeyRotationRequest, ignoring.")
                     return
                 }
+                if (request.masterWrappingKeyAlias.isNullOrEmpty()) {
+                    logger.info("masterWrappingKeyAlias missing from unmanaged IndividualKeyRotationRequest, ignoring.")
+                    return
+                }
                 if (request.keyUuid != null) {
                     logger.info("keyUuid provided for unmanaged IndividualKeyRotationRequest, ignoring.")
                     return
@@ -83,7 +86,7 @@ class CryptoRewrapBusProcessor(
                     cryptoService.rewrapWrappingKey(
                         request.tenantId,
                         request.targetKeyAlias,
-                        defaultUnmanagedWrappingKeyName
+                        request.masterWrappingKeyAlias,
                     )
                 }
 
@@ -93,6 +96,10 @@ class CryptoRewrapBusProcessor(
             KeyType.MANAGED -> {
                 if (request.targetKeyAlias != null) {
                     logger.info("targetKeyAlias provided for managed IndividualKeyRotationRequest, ignoring.")
+                    return
+                }
+                if (request.masterWrappingKeyAlias != null) {
+                    logger.info("masterWrappingKeyAlias provided for managed IndividualKeyRotationRequest, ignoring.")
                     return
                 }
                 if (request.keyUuid.isNullOrEmpty()) {
@@ -142,7 +149,7 @@ class CryptoRewrapBusProcessor(
             }
 
             tenantIdSigningKeysRecords.entries.single().let { (_, state) ->
-                logger.debug(
+                logger.info(
                     "Updating state manager record for tenantId ${request.tenantId} " +
                             "after re-wrapping ${request.keyUuid}."
                 )
@@ -183,19 +190,19 @@ class CryptoRewrapBusProcessor(
                 stateManager.get(
                     listOf(
                         getKeyRotationStatusRecordKey(
-                            defaultUnmanagedWrappingKeyName,
+                            request.masterWrappingKeyAlias,
                             request.tenantId
                         )
                     )
                 )
             check(tenantIdWrappingKeysRecords.size == 1) {
                 "Found none or more than 1 ${request.tenantId} record " +
-                        "in the database for new master wrapping key $defaultUnmanagedWrappingKeyName. " +
+                        "in the database for new master wrapping key ${request.masterWrappingKeyAlias}. " +
                         "Found records $tenantIdWrappingKeysRecords."
             }
 
             tenantIdWrappingKeysRecords.forEach { (_, state) ->
-                logger.debug(
+                logger.info(
                     "Updating state manager record for tenantId ${request.tenantId} " +
                         "after re-wrapping ${request.targetKeyAlias}."
                 )

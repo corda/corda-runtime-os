@@ -63,7 +63,8 @@ class TestFlowFiberServiceWithSerialization(
             currentSandboxGroupContext,
             emptyMap(),
             mock(FlowMetrics::class.java),
-            emptyMap()
+            emptyMap(),
+            mock()
         )
 
         Mockito.`when`(mockFlowFiber.getExecutionContext()).thenReturn(flowFiberExecutionContext)

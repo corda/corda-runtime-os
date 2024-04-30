@@ -27,6 +27,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSP
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.exceptions.NotFoundEntityPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.test.util.TestRandom
@@ -200,7 +201,7 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         val context = MembershipRequestContext(clock.instant(), requestId, member,)
         val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId,)
 
-        assertThrows<MembershipPersistenceException> {
+        assertThrows<NotFoundEntityPersistenceException> {
             handler.invoke(context, request)
         }
     }
@@ -215,7 +216,7 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         val context = MembershipRequestContext(clock.instant(), requestId, member)
         val request = UpdateMemberAndRegistrationRequestToApproved(member, requestId)
 
-        assertThrows<MembershipPersistenceException> {
+        assertThrows<NotFoundEntityPersistenceException> {
             handler.invoke(context, request)
         }
     }

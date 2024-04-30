@@ -11,7 +11,7 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.exceptions.NotFoundEntityPersistenceException
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
@@ -55,7 +55,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
 
     fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R {
         val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
-            ?: throw MembershipPersistenceException(
+            ?: throw NotFoundEntityPersistenceException(
                 "Virtual node info can't be retrieved for " +
                     "holding identity ID $holdingIdentityShortHash"
             )

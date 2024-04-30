@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@5.2') _
+@Library('corda-shared-build-pipeline-steps@5.3') _
 
 import groovy.transform.Field
 import com.r3.build.utils.PipelineUtils
@@ -47,6 +47,7 @@ pipeline {
         CORDA_DEV_POSTGRES_PASSWORD="${env.POSTGRES_CREDENTIALS_PSW}"
         CORDA_DEV_CLUSTER_DB_NAME="${postgresDb}"
         CORDA_USE_CACHE = "corda-remotes"
+        JDBC_URL = "jdbc:postgresql://${postgresHost}:${postgresPort}/${postgresDb}"
         KUBECONFIG = credentials("e2e-tests-credentials")
         CORDA_CLI_USER_HOME = "/tmp/corda-cli-home"
         CORDA_GRADLE_SCAN_KEY = credentials('gradle-build-scans-key')
@@ -94,7 +95,7 @@ pipeline {
                 REST_TLS_PATH = "${env.WORKSPACE}/applications/workers/release/combined-worker/tls/rest/rest_worker.pfx"
                 VM_PARAMETERS = "-Dco.paralleluniverse.fibers.verifyInstrumentation=true"
                 LOG4J_PARAMETERS = "-Dlog4j.configurationFile=log4j2-console.xml"
-                PROGRAM_PARAMETERS = "--instance-id=0 -mbus.busType=DATABASE -spassphrase=password -ssalt=salt -ddatabase.user=u${postgresDb} -ddatabase.pass=password -ddatabase.jdbc.url=jdbc:postgresql://${postgresHost}:${postgresPort}/${postgresDb} -ddatabase.jdbc.directory=${JDBC_PATH} -rtls.keystore.path=${REST_TLS_PATH} -rtls.keystore.password=mySecretPassword"
+                PROGRAM_PARAMETERS = "--instance-id=0 -mbus.busType=DATABASE -spassphrase=password -ssalt=salt -ddatabase.user=u${postgresDb} -ddatabase.pass=password -ddatabase.jdbc.url=${JDBC_URL} -ddatabase.jdbc.directory=${JDBC_PATH} -rtls.keystore.path=${REST_TLS_PATH} -rtls.keystore.password=mySecretPassword"
                 WORKING_DIRECTORY = "${env.WORKSPACE}"
             }
             steps {

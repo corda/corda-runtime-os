@@ -13,6 +13,7 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation project(':components:ledger:ledger-persistence')
     implementation project(':libs:db:db-orm')
+    implementation project(':libs:ledger:ledger-utxo-data')
     implementation project(':libs:utilities')
     implementation project(':testing:db-hsqldb-json')
     implementation 'org.slf4j:slf4j-api'

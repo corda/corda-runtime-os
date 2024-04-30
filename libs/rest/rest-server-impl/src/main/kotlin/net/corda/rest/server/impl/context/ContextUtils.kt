@@ -4,8 +4,8 @@ import io.javalin.core.util.Header
 import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
 import io.javalin.http.UnauthorizedResponse
+import net.corda.data.rest.PasswordExpiryStatus
 import net.corda.metrics.CordaMetrics
-import net.corda.rest.authorization.AuthorizationUtils
 import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.exception.HttpApiException
 import net.corda.rest.exception.InvalidInputDataException
@@ -21,6 +21,9 @@ import net.corda.rest.server.impl.internal.ParameterRetrieverFactory
 import net.corda.rest.server.impl.internal.ParametersRetrieverContext
 import net.corda.rest.server.impl.security.RestAuthenticationProvider
 import net.corda.rest.server.impl.security.provider.credentials.CredentialResolver
+import net.corda.utilities.MDC_METHOD
+import net.corda.utilities.MDC_PATH
+import net.corda.utilities.MDC_USER
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import net.corda.utilities.withMDC
@@ -41,9 +44,9 @@ internal object ContextUtils {
     private fun <T> withMDC(user: String, method: String, path: String, block: () -> T): T {
         return withMDC(
             listOf(
-                AuthorizationUtils.USER_MDC to user,
-                AuthorizationUtils.METHOD_MDC to method,
-                AuthorizationUtils.PATH_MDC to path
+                MDC_USER to user,
+                MDC_METHOD to method,
+                MDC_PATH to path
             ).toMap(),
             block
         )
@@ -53,6 +56,7 @@ internal object ContextUtils {
         return LoggerFactory.getLogger(ContextUtils::class.java.name + "." + this)
     }
 
+    @Suppress("ThrowsCount")
     fun authenticate(
         ctx: ClientRequestContext,
         restAuthProvider: RestAuthenticationProvider,
@@ -79,6 +83,14 @@ internal object ContextUtils {
                     ),
                     it
                 )
+                if (it.expiryStatus == PasswordExpiryStatus.CLOSE_TO_EXPIRY) {
+                    ctx.addPasswordExpiryHeader(it.expiryStatus)
+                } else if (it.expiryStatus == PasswordExpiryStatus.EXPIRED) {
+                    "Password has expired. Please change it to carry on.".let { passwordExpiredWarning ->
+                        log.warn(passwordExpiredWarning)
+                        throw UnauthorizedResponse(passwordExpiredWarning)
+                    }
+                }
                 CURRENT_REST_CONTEXT.set(restAuthContext)
                 log.trace { """Authenticate user "${it.principal}" completed.""" }
             }

@@ -5,9 +5,11 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
+import net.corda.messaging.api.processor.EventSourceProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
@@ -28,21 +30,26 @@ import net.corda.messaging.emulation.topic.service.TopicService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
+import net.corda.messaging.api.subscription.listener.ConsumerOffsetProvider
+import net.corda.messaging.emulation.subscription.eventsource.EventSourceSubscription
+import net.corda.messaging.emulation.http.HttpService
+import net.corda.messaging.emulation.subscription.http.HttpRpcSubscription
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * In memory implementation of the Subscription Factory.
  */
 @Component(service = [SubscriptionFactory::class])
-class InMemSubscriptionFactory @Activate constructor(
+internal class InMemSubscriptionFactory @Activate constructor(
     @Reference(service = TopicService::class)
     private val topicService: TopicService,
     @Reference(service = RPCTopicService::class)
     private val rpcTopicService: RPCTopicService,
     @Reference(service = LifecycleCoordinatorFactory::class)
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = HttpService::class)
+    private val httpService: HttpService,
 ) : SubscriptionFactory {
     private companion object {
         val instanceIndex = AtomicInteger()
@@ -124,6 +131,23 @@ class InMemSubscriptionFactory @Activate constructor(
         )
     }
 
+    override fun <K : Any, V : Any> createEventSourceSubscription(
+        subscriptionConfig: SubscriptionConfig,
+        processor: EventSourceProcessor<K, V>,
+        messagingConfig: SmartConfig,
+        partitionAssignmentListener: PartitionAssignmentListener?,
+        consumerOffsetProvider: ConsumerOffsetProvider?
+    ): Subscription<K, V> {
+        return EventSourceSubscription(
+            subscriptionConfig,
+            processor,
+            partitionAssignmentListener,
+            topicService,
+            lifecycleCoordinatorFactory,
+            instanceIndex.incrementAndGet()
+        )
+    }
+
     override fun <REQUEST : Any, RESPONSE : Any> createRPCSubscription(
         rpcConfig: RPCConfig<REQUEST, RESPONSE>,
         messagingConfig: SmartConfig,
@@ -141,5 +165,11 @@ class InMemSubscriptionFactory @Activate constructor(
     override fun <REQUEST : Any, RESPONSE : Any> createHttpRPCSubscription(
         rpcConfig: SyncRPCConfig,
         processor: SyncRPCProcessor<REQUEST, RESPONSE>
-    ): RPCSubscription<REQUEST, RESPONSE> = throw NotImplementedError()
+    ): RPCSubscription<REQUEST, RESPONSE> = HttpRpcSubscription(
+        httpService,
+        rpcConfig,
+        processor,
+        lifecycleCoordinatorFactory,
+        instanceIndex.incrementAndGet(),
+    )
 }

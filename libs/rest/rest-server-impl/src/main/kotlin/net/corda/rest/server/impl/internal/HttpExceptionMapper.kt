@@ -48,6 +48,15 @@ internal object HttpExceptionMapper {
     }
 
     private fun HttpApiException.asHttpResponseException(): HttpResponseException {
-        return HttpResponseException(responseCode.statusCode, message, details)
+        val fullDetails = when {
+            exceptionDetails?.cause.isNullOrBlank() || exceptionDetails?.reason.isNullOrBlank() -> details
+            else -> {
+                details + mapOf(
+                    exceptionDetails!!.cause.let { "cause" to it },
+                    exceptionDetails!!.reason.let { "reason" to it }
+                )
+            }
+        }
+        return HttpResponseException(responseCode.statusCode, title, fullDetails)
     }
 }

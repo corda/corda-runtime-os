@@ -1,6 +1,7 @@
 package net.corda.p2p.gateway.messaging.http
 
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.p2p.GatewayTruststore
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -12,7 +13,6 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.data.p2p.GatewayTruststore
 import net.corda.schema.Schemas
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
@@ -80,7 +80,7 @@ class TrustStoresMapTest {
         lifecycleCoordinatorFactory,
         subscriptionFactory,
         nodeConfiguration,
-        certificateFactory
+        certificateFactory,
     )
 
     @Test
@@ -105,14 +105,14 @@ class TrustStoresMapTest {
         processor.firstValue.onNext(
             Record(Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, "key", GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one"))),
             null,
-            emptyMap()
+            emptyMap(),
         )
 
         assertThat(
             testObject.getTrustStore(
                 MemberX500Name.parse(sourceX500Name),
                 groupId,
-            ).trustStore
+            ).trustStore,
         ).isEqualTo(keyStore)
     }
 
@@ -128,18 +128,18 @@ class TrustStoresMapTest {
                 "key",
                 GatewayTruststore(
                     HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", groupId),
-                    listOf("one")
-                )
+                    listOf("one"),
+                ),
             ),
             null,
-            emptyMap()
+            emptyMap(),
         )
 
         assertThat(
             testObject.getTrustStore(
                 MemberX500Name.parse("C=GB,   CN=Alice, O=Alice Corp, L=LDN"),
-                groupId
-            ).trustStore
+                groupId,
+            ).trustStore,
         )
             .isEqualTo(keyStore)
     }
@@ -152,14 +152,14 @@ class TrustStoresMapTest {
         creteResources.get()?.invoke(mock())
         processor.firstValue.onSnapshot(
             mapOf(
-                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one"))
-            )
+                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one")),
+            ),
         )
 
         processor.firstValue.onNext(
             Record(Schemas.P2P.GATEWAY_TLS_TRUSTSTORES, "key", null),
             null,
-            emptyMap()
+            emptyMap(),
         )
 
         assertThrows<IllegalArgumentException> {
@@ -173,15 +173,16 @@ class TrustStoresMapTest {
         val groupId = "group id 1"
         processor.firstValue.onSnapshot(
             mapOf(
-                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one"))
-            )
+                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one")),
+            ),
         )
 
         assertThat(
             testObject.getTrustStore(
                 MemberX500Name.parse(sourceX500Name),
                 groupId,
-            ).trustStore).isEqualTo(keyStore)
+            ).trustStore,
+        ).isEqualTo(keyStore)
     }
 
     @Test
@@ -191,8 +192,8 @@ class TrustStoresMapTest {
         creteResources.get()?.invoke(mock())
         processor.firstValue.onSnapshot(
             mapOf(
-                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one", "two"))
-            )
+                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one", "two")),
+            ),
         )
 
         testObject.getTrustStore(MemberX500Name.parse(sourceX500Name), groupId)
@@ -209,8 +210,8 @@ class TrustStoresMapTest {
         creteResources.get()?.invoke(mock())
         processor.firstValue.onSnapshot(
             mapOf(
-                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one", "two"))
-            )
+                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one", "two")),
+            ),
         )
 
         testObject.getTrustStore(MemberX500Name.parse(sourceX500Name), groupId).trustStore
@@ -227,8 +228,8 @@ class TrustStoresMapTest {
         creteResources.get()?.invoke(mock())
         processor.firstValue.onSnapshot(
             mapOf(
-                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one", "two"))
-            )
+                "key" to GatewayTruststore(HoldingIdentity(sourceX500Name, groupId), listOf("one", "two")),
+            ),
         )
 
         testObject.getTrustStore(MemberX500Name.parse(sourceX500Name), groupId).trustStore

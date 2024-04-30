@@ -2,8 +2,8 @@ package net.corda.ledger.utxo.flow.impl.persistence
 
 import io.micrometer.core.instrument.Timer
 import net.corda.crypto.core.fullIdHash
+import net.corda.flow.application.services.FlowCheckpointService
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.metrics.recordSuspendable
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
@@ -80,17 +80,24 @@ import java.time.Instant
     scope = PROTOTYPE
 )
 class UtxoLedgerPersistenceServiceImpl @Activate constructor(
-    @Reference(service = CurrentSandboxGroupContext::class) private val currentSandboxGroupContext: CurrentSandboxGroupContext,
-    @Reference(service = ExternalEventExecutor::class) private val externalEventExecutor: ExternalEventExecutor,
-    @Reference(service = SerializationService::class) private val serializationService: SerializationService,
-    @Reference(service = UtxoLedgerTransactionFactory::class) private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
-    @Reference(service = UtxoSignedTransactionFactory::class) private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
-    @Reference(service = UtxoFilteredTransactionFactory::class) private val utxoFilteredTransactionFactory: UtxoFilteredTransactionFactory,
-    @Reference(
-        service = NotarySignatureVerificationService::class
-    ) private val notarySignatureVerificationService: NotarySignatureVerificationService,
-    @Reference(service = StateAndRefCache::class) private val stateAndRefCache: StateAndRefCache,
-    @Reference(service = FlowFiberService::class) private val flowFiberService: FlowFiberService
+    @Reference(service = CurrentSandboxGroupContext::class)
+    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
+    @Reference(service = ExternalEventExecutor::class)
+    private val externalEventExecutor: ExternalEventExecutor,
+    @Reference(service = SerializationService::class)
+    private val serializationService: SerializationService,
+    @Reference(service = UtxoLedgerTransactionFactory::class)
+    private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
+    @Reference(service = UtxoSignedTransactionFactory::class)
+    private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
+    @Reference(service = UtxoFilteredTransactionFactory::class)
+    private val utxoFilteredTransactionFactory: UtxoFilteredTransactionFactory,
+    @Reference(service = NotarySignatureVerificationService::class)
+    private val notarySignatureVerificationService: NotarySignatureVerificationService,
+    @Reference(service = StateAndRefCache::class)
+    private val stateAndRefCache: StateAndRefCache,
+    @Reference(service = FlowCheckpointService::class)
+    private val flowCheckpointService: FlowCheckpointService
 ) : UtxoLedgerPersistenceService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -257,10 +264,9 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         java.security.AccessController.doPrivileged(
             PrivilegedExceptionAction {
                 val previousTimeStamp =
-                    flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
-                        .readCustomState(UtxoLedgerLastPersistedTimestamp::class.java)
+                    flowCheckpointService.getCheckpoint().readCustomState(UtxoLedgerLastPersistedTimestamp::class.java)
                 if (previousTimeStamp == null || previousTimeStamp.lastPersistedTimestamp < persistTimeStamp) {
-                    flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
+                    flowCheckpointService.getCheckpoint()
                         .writeCustomState(UtxoLedgerLastPersistedTimestamp(persistTimeStamp))
                 }
             }
@@ -325,7 +331,9 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun persistFilteredTransactionsAndSignatures(
-        filteredTransactionsAndSignatures: List<UtxoFilteredTransactionAndSignatures>
+        filteredTransactionsAndSignatures: List<UtxoFilteredTransactionAndSignatures>,
+        inputStateRefs: List<StateRef>,
+        referenceStateRefs: List<StateRef>
     ) {
         val filteredTransactionAndSignatureMap = filteredTransactionsAndSignatures.associate {
             (it.filteredTransaction as UtxoFilteredTransactionImpl).filteredTransaction to it.signatures
@@ -337,7 +345,11 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     PersistFilteredTransactionsExternalEventFactory::class.java,
-                    PersistFilteredTransactionParameters(serialize(filteredTransactionAndSignatureMap))
+                    PersistFilteredTransactionParameters(
+                        serialize(filteredTransactionAndSignatureMap),
+                        inputStateRefs,
+                        referenceStateRefs
+                    )
                 )
             }
         }

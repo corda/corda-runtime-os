@@ -13,6 +13,7 @@ enum class ConsumerRoles(val configPath: String) {
     SAE_STATE ("stateAndEvent.stateConsumer"),
     SAE_EVENT ("stateAndEvent.eventConsumer"),
     EVENT_LOG ("eventLog.consumer"),
+    EVENT_SOURCE ("eventSource.consumer"),
     RPC_SENDER ("rpcSender.consumer"),
     RPC_RESPONDER("rpcResponder.consumer")
 }

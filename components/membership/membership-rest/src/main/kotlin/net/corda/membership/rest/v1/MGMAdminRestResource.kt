@@ -13,7 +13,7 @@ import net.corda.rest.annotations.RestPathParameter
  * may be displaying unexpected behaviour. This API should only be used by the MGM and under exceptional circumstances.
  */
 @HttpRestResource(
-    name = "MGM Admin API",
+    name = "MGM Admin",
     description = "The MGM Admin API consists of endpoints used to carry out administrative tasks on membership " +
         "groups. A membership group is a logical grouping of a number of Corda Identities to communicate and " +
         "transact with one another with a specific set of CorDapps. The API allows the MGM to perform actions " +

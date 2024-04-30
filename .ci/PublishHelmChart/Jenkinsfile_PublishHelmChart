@@ -1,5 +1,5 @@
 #! groovy
-@Library('corda-shared-build-pipeline-steps@5.2') _
+@Library('corda-shared-build-pipeline-steps@5.3') _
 
 import com.r3.build.agents.KubernetesAgent
 import com.r3.build.enums.BuildEnvironment

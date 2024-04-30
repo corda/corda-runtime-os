@@ -18,4 +18,5 @@ dependencies {
     compileOnly platform("net.corda:corda-api:$cordaApiVersion")
 
     api project(':libs:rest:rest-client')
+    api project(':libs:corda-sdk')
 }

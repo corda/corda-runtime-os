@@ -16,6 +16,8 @@ import net.corda.schema.configuration.FlowConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.time.Instant
 
 @Component(service = [CheckpointCleanupHandler::class])
@@ -28,11 +30,19 @@ class CheckpointCleanupHandlerImpl @Activate constructor(
     private val flowMessageFactory: FlowMessageFactory
 ) : CheckpointCleanupHandler {
 
+    private companion object {
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
     override fun cleanupCheckpoint(
         checkpoint: FlowCheckpoint,
         config: SmartConfig,
         exception: Exception
     ): List<Record<*, *>> {
+
+        logger.info("Performing checkpoint (flowId=${checkpoint.flowId}, vNode=${checkpoint.holdingIdentity}) " +
+                "clean-up due to exception", exception)
+
         val time = Instant.now()
         val records = errorActiveSessions(checkpoint, config, exception, time) +
                 cleanupSessions(checkpoint, config, time) +

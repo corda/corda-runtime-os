@@ -35,8 +35,8 @@ class RevocationChecker(
     messagingConfig: SmartConfig,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     certificateFactory: CertificateFactory = CertificateFactory.getInstance(certificateFactoryType),
-    certPathValidator: CertPathValidator = CertPathValidator.getInstance(certificateAlgorithm)
-): LifecycleWithDominoTile {
+    certPathValidator: CertPathValidator = CertPathValidator.getInstance(certificateAlgorithm),
+) : LifecycleWithDominoTile {
 
     companion object {
         private const val groupAndClientName = "GatewayRevocationChecker"
@@ -69,55 +69,59 @@ class RevocationChecker(
         groupAndClientName,
         GATEWAY_REVOCATION_CHECK_REQUEST_TOPIC,
         RevocationCheckRequest::class.java,
-        RevocationCheckResponse::class.java
+        RevocationCheckResponse::class.java,
     )
 
     private val processor = RevocationCheckProcessor(certificateFactory, certPathValidator)
 
     private class RevocationCheckProcessor(
         private val certificateFactory: CertificateFactory,
-        private val certPathValidator: CertPathValidator
-    ): RPCResponderProcessor<RevocationCheckRequest, RevocationCheckResponse> {
+        private val certPathValidator: CertPathValidator,
+    ) : RPCResponderProcessor<RevocationCheckRequest, RevocationCheckResponse> {
         override fun onNext(request: RevocationCheckRequest, respFuture: CompletableFuture<RevocationCheckResponse>) {
             revocationTimer.recordCallable { checkRevocation(request, respFuture) }
         }
 
         private fun checkRevocation(
             request: RevocationCheckRequest,
-            respFuture: CompletableFuture<RevocationCheckResponse>
+            respFuture: CompletableFuture<RevocationCheckResponse>,
         ) {
             val revocationMode = request.mode
             if (revocationMode == null) {
                 respFuture.completeExceptionally(
-                    IllegalStateException("Revocation check request cannot be made, revocation mode is null.")
+                    IllegalStateException("Revocation check request cannot be made, revocation mode is null."),
                 )
                 return
             }
             val trustStore = request.trustedCertificates?.let { convertToKeyStore(certificateFactory, it, "trusted") }
             if (trustStore == null) {
                 respFuture.completeExceptionally(
-                    IllegalStateException("Revocation check request cannot be made, trust store could not be parsed from pem format.")
+                    IllegalStateException("Revocation check request cannot be made, trust store could not be parsed from pem format."),
                 )
                 return
             }
             val certificateChain = try {
-                certificateFactory.generateCertPath(request.certificates.map { pemCertificate ->
-                    ByteArrayInputStream(pemCertificate.toByteArray()).use {
-                        certificateFactory.generateCertificate(it)
-                    }
-                })
+                certificateFactory.generateCertPath(
+                    request.certificates.map { pemCertificate ->
+                        ByteArrayInputStream(pemCertificate.toByteArray()).use {
+                            certificateFactory.generateCertificate(it)
+                        }
+                    },
+                )
             } catch (exception: CertificateException) {
                 respFuture.completeExceptionally(
                     IllegalStateException(
-                        "Revocation check request cannot be made, certificate chain could not be parsed from pem format. Cause by:\n"
-                                + exception.message
-                    )
+                        "Revocation check request cannot be made, certificate chain could not be parsed from pem format. Cause by:\n" +
+                            exception.message,
+                    ),
                 )
                 return
             }
             if (certificateChain == null) {
                 respFuture.completeExceptionally(
-                    IllegalStateException("Revocation check request cannot be made, certificate chain could not be parsed from pem format.")
+                    IllegalStateException(
+                        "Revocation check request cannot be made, certificate chain could not be parsed from pem format.",
+                    ),
                 )
                 return
             }
@@ -149,6 +153,6 @@ class RevocationChecker(
         subscription,
         subscriptionConfig,
         emptySet(),
-        emptySet()
+        emptySet(),
     )
 }

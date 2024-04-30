@@ -144,6 +144,7 @@ internal class VirtualNodeUpgradeOperationHandler(
                     "name: ${upgradedVNodeInfo.cpiIdentifier.name}, version: ${upgradedVNodeInfo.cpiIdentifier.version} " +
                     "(request $requestId)"
             )
+            logger.info("Supplied cpkChangelogs: ${cpkChangelogs.joinToString { it.id.filePath }}")
             publishVirtualNodeInfo(completeVirtualNodeOperation(request.virtualNodeShortHash))
             return
         }

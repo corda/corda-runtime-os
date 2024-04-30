@@ -8,6 +8,7 @@ import net.corda.test.util.eventually
 import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
+import java.text.SimpleDateFormat
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Semaphore
@@ -242,7 +243,7 @@ fun ClusterInfo.whenNoKeyExists(
  *   @param expectedHttpStatusCode Status code that should be displayed when the API is hit,
  *   helps to validate both positive or negative scenarios.
  */
-fun ClusterInfo.rotateCryptoUnmanagedWrappingKeys(
+fun ClusterInfo.rotateCryptoWrappingKeys(
     tenantId: String,
     expectedHttpStatusCode: Int
 ) = cluster {
@@ -281,6 +282,19 @@ fun ClusterInfo.getProtocolVersionForKeyRotation(
         condition { it.code == ResponseCode.OK.statusCode }
     }
 }
+
+/**
+ * This method fetches the local time of the corda cluster
+ */
+fun ClusterInfo.getTime(
+) = SimpleDateFormat("EEE,dd MMM yyyy HH:mm:ss zzz") // RFC 822
+    .parse(cluster {
+        assertWithRetry {
+            command { get("/api/$REST_API_VERSION_PATH/hello/getprotocolversion") }
+            condition { it.code == ResponseCode.OK.statusCode }
+        }
+    }.headers.single { it.first == "Date" }.second
+).toInstant()
 
 private fun <T> Semaphore.runWith(block: () -> T): T {
     this.acquire()

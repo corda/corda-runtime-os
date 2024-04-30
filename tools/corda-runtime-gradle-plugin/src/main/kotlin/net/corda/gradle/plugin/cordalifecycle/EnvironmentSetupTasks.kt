@@ -33,14 +33,18 @@ fun createPluginEnvSetupTasks(project: Project, pluginConfig: PluginConfiguratio
     // this point in the initialisation then the extension block has not yet been read and
     // will contain the default values, ie overriding in the extension block won't have any effect.
     project.afterEvaluate {
+        val projectContext = ProjectContext(project, pluginConfig)
+
         project.tasks.create(PROJINIT_TASK_NAME, ProjInit::class.java) {
             it.group = UTIL_TASK_GROUP
             it.pluginConfig.set(pluginConfig)
         }
 
-        project.tasks.create(GET_NOTARY_SERVER_CPB_TASK_NAME, DownloadNotaryCpb::class.java) {
-            it.group = UTIL_TASK_GROUP
-            it.pluginConfig.set(pluginConfig)
+        if (projectContext.isNotaryNonValidating) {
+            project.tasks.create(GET_NOTARY_SERVER_CPB_TASK_NAME, DownloadNotaryCpb::class.java) {
+                it.group = UTIL_TASK_GROUP
+                it.pluginConfig.set(pluginConfig)
+            }
         }
 
         project.tasks.create(UPDATE_PROCESSOR_TIMEOUT, UpdateClusterConfig::class.java) {
@@ -68,12 +72,14 @@ open class DownloadNotaryCpb @Inject constructor(objects: ObjectFactory) : Defau
     @TaskAction
     fun downloadNotaryCpb() {
         val pc = ProjectContext(project, pluginConfig.get())
-        EnvironmentSetupHelper().downloadNotaryCpb(
-            pc.notaryVersion,
-            pc.notaryCpbFilePath,
-            pc.artifactoryUsername,
-            pc.artifactoryPassword
-        )
+        if (pc.isNotaryNonValidating) {
+            EnvironmentSetupHelper().downloadNotaryCpb(
+                pc.notaryVersion,
+                pc.nonValidatingNotaryCpbFilePath,
+                pc.artifactoryUsername,
+                pc.artifactoryPassword
+            )
+        }
     }
 }
 

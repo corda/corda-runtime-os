@@ -2,18 +2,18 @@ package net.corda.p2p.gateway.messaging.http
 
 import org.apache.commons.validator.routines.DomainValidator
 import org.apache.commons.validator.routines.InetAddressValidator
-import org.slf4j.LoggerFactory
-import java.security.KeyStore
-import javax.net.ssl.SNIHostName
-import javax.net.ssl.SNIMatcher
-import javax.net.ssl.SNIServerName
-import javax.net.ssl.StandardConstants
-import java.security.cert.X509Certificate
 import org.bouncycastle.asn1.x500.AttributeTypeAndValue
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x500.style.BCStyle
 import org.bouncycastle.asn1.x509.GeneralName
+import org.slf4j.LoggerFactory
+import java.security.KeyStore
+import java.security.cert.X509Certificate
 import java.util.concurrent.ConcurrentHashMap
+import javax.net.ssl.SNIHostName
+import javax.net.ssl.SNIMatcher
+import javax.net.ssl.SNIServerName
+import javax.net.ssl.StandardConstants
 
 class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
 
@@ -30,7 +30,7 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
     }
     private val matchedAliasIsC5 = ConcurrentHashMap<String, Boolean>()
 
-    internal fun aliasMatch(alias: String) : MatchType {
+    internal fun aliasMatch(alias: String): MatchType {
         return when (matchedAliasIsC5[alias]) {
             null -> MatchType.NONE
             true -> MatchType.C5
@@ -60,10 +60,10 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
             } else if (isIpSni(serverNameString)) {
                 val ipAddress = serverNameString.removeSuffix(SniCalculator.IP_SNI_SUFFIX)
                 val valid = InetAddressValidator.getInstance().isValid(ipAddress)
-                if(valid && matchIp(ipAddress, certificate)) {
+                if (valid && matchIp(ipAddress, certificate)) {
                     matchedAliasIsC5[alias] = true
                 }
-            } else  {
+            } else {
                 if (matchDNS(serverNameString, certificate)) {
                     matchedAliasIsC5[alias] = true
                 }
@@ -132,7 +132,7 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
             return false
         }
         names.forEach {
-            if(ALTNAME_DNS == it[0]) {
+            if (ALTNAME_DNS == it[0]) {
                 val altName = it[1] as String
                 if (matchWithWildcard(hostName.lowercase(), altName.lowercase())) {
                     return true
@@ -157,8 +157,9 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
     internal fun matchWithWildcard(expectedName: String, altName: String?): Boolean {
         altName?.let {
             // Straightforward check
-            if (expectedName == altName)
+            if (expectedName == altName) {
                 return true
+            }
 
             // Check if wildcards exist and if they are legal
             if (illegalWildcard(altName)) {
@@ -188,7 +189,6 @@ class HostnameMatcher(private val keyStore: KeyStore) : SNIMatcher(0) {
                         return false
                     }
                 }
-
             }
 
             return true

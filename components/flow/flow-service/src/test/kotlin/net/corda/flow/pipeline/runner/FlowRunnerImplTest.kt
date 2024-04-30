@@ -113,7 +113,8 @@ class FlowRunnerImplTest {
             mock(),
             emptyMap(),
             mock(),
-            emptyMap()
+            emptyMap(),
+            mock()
         )
         whenever(virtualNodeInfoReadService.get(any())).thenReturn(getMockVNodeInfo())
         whenever(cpiInfoReadService.get(any())).thenReturn(getMockCpiMetaData())

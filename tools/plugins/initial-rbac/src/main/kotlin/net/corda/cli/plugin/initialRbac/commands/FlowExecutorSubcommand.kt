@@ -1,14 +1,9 @@
 package net.corda.cli.plugin.initialRbac.commands
 
-import net.corda.cli.plugin.initialRbac.commands.RestApiVersionUtils.VERSION_PATH_REGEX
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.checkOrCreateRole
-import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.wildcardMatch
 import net.corda.cli.plugins.common.RestCommand
-import net.corda.rbac.schema.RbacKeys.CLIENT_REQ_REGEX
-import net.corda.rbac.schema.RbacKeys.FLOW_NAME_REGEX
-import net.corda.rbac.schema.RbacKeys.PREFIX_SEPARATOR
-import net.corda.rbac.schema.RbacKeys.START_FLOW_PREFIX
 import net.corda.rbac.schema.RbacKeys.VNODE_SHORT_HASH_REGEX
+import net.corda.sdk.bootstrap.rbac.Permissions.flowExecutor
 import picocli.CommandLine
 import java.util.concurrent.Callable
 
@@ -33,42 +28,6 @@ class FlowExecutorSubcommand : RestCommand(), Callable<Int> {
     )
     lateinit var vnodeShortHash: String
 
-    private val permissionsToCreate: Set<PermissionTemplate> get() = setOf(
-        // Endpoint level commands
-        PermissionTemplate(
-            "Start Flow endpoint",
-            "POST:/api/$VERSION_PATH_REGEX/flow/$vnodeShortHash",
-            null
-        ),
-        PermissionTemplate(
-            "Get status for all flows",
-            "GET:/api/$VERSION_PATH_REGEX/flow/$vnodeShortHash",
-            null
-        ),
-        PermissionTemplate(
-            "Get status for a specific flow",
-            "GET:/api/$VERSION_PATH_REGEX/flow/$vnodeShortHash/$CLIENT_REQ_REGEX",
-            null
-        ),
-        PermissionTemplate(
-            "Get a list of startable flows",
-            "GET:/api/$VERSION_PATH_REGEX/flowclass/$vnodeShortHash",
-            null
-        ),
-        PermissionTemplate(
-            "Get status for a specific flow via WebSocket",
-            "WS:/api/$VERSION_PATH_REGEX/flow/$vnodeShortHash/$CLIENT_REQ_REGEX",
-            null
-        ),
-
-        // Flow start related
-        PermissionTemplate(
-            "Start any flow",
-            "$START_FLOW_PREFIX$PREFIX_SEPARATOR$FLOW_NAME_REGEX",
-            vnodeShortHash
-        )
-    )
-
     override fun call(): Int {
         if (!wildcardMatch(vnodeShortHash, VNODE_SHORT_HASH_REGEX)) {
             throw IllegalArgumentException(
@@ -77,6 +36,10 @@ class FlowExecutorSubcommand : RestCommand(), Callable<Int> {
             )
         }
 
-        return checkOrCreateRole("$FLOW_EXECUTOR_ROLE-$vnodeShortHash", permissionsToCreate)
+        return checkOrCreateRole("$FLOW_EXECUTOR_ROLE-$vnodeShortHash", flowExecutor(vnodeShortHash))
+    }
+
+    private fun wildcardMatch(input: String, regex: String): Boolean {
+        return input.matches(regex.toRegex(RegexOption.IGNORE_CASE))
     }
 }

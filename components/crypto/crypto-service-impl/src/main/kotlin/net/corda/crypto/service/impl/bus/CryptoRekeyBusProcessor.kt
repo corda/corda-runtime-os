@@ -48,6 +48,8 @@ class CryptoRekeyBusProcessor(
 ) : DurableProcessor<String, KeyRotationRequest> {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        const val RETRIES_TO_CREATE_SM_RECORDS = 10
+        const val RETRIES_TO_DELETE_SM_RECORDS = 10
     }
 
     override val keyClass: Class<String> = String::class.java
@@ -201,7 +203,7 @@ class CryptoRekeyBusProcessor(
         }
 
         // Only delete previous key rotation status if we are actually going to rotate something
-        // If we can't delete previous records, we won't start new key rotation
+        // If we can't delete previous records or create a new ones, we won't start new key rotation
         if (records.isNotEmpty()) {
             if (!deleteStateManagerRecords(
                     listOf(
@@ -220,7 +222,7 @@ class CryptoRekeyBusProcessor(
             ) {
                 return false
             }
-            stateManager.create(records)
+            if (!createStateManagerRecords(records)) return false
         }
         return true
     }
@@ -264,7 +266,7 @@ class CryptoRekeyBusProcessor(
         }
 
         // Only delete previous key rotation status if we are actually going to rotate something
-        // If we can't delete previous records, we won't start new key rotation
+        // If we can't delete previous records or create a new ones, we won't start new key rotation
         if (records.isNotEmpty()) {
             if (!deleteStateManagerRecords(
                     listOf(
@@ -278,7 +280,7 @@ class CryptoRekeyBusProcessor(
             ) {
                 return false
             }
-            stateManager.create(records)
+            if (!createStateManagerRecords(records)) return false
         }
         return true
     }
@@ -295,6 +297,7 @@ class CryptoRekeyBusProcessor(
                     IndividualKeyRotationRequest(
                         request.requestId,
                         tenantId,
+                        defaultUnmanagedWrappingKeyName,
                         alias,
                         null, // keyUuid not used in unmanaged key rotation
                         KeyType.UNMANAGED
@@ -317,6 +320,7 @@ class CryptoRekeyBusProcessor(
                         request.requestId,
                         request.tenantId,
                         null,
+                        null,
                         it.toString(),
                         KeyType.MANAGED
                     )
@@ -330,9 +334,9 @@ class CryptoRekeyBusProcessor(
      */
     private fun deleteStateManagerRecords(filters: Collection<MetadataFilter>, reason: String): Boolean {
         var recordsDeleted = false
-        var retries = 10
+        var retries = RETRIES_TO_DELETE_SM_RECORDS
         while (!recordsDeleted) {
-            if (retries == 0) return false
+            if (retries < 1) return false
             val toDelete = stateManager.findByMetadataMatchingAll(
                 filters +
                         MetadataFilter(
@@ -351,6 +355,30 @@ class CryptoRekeyBusProcessor(
                 retries--
             } else {
                 recordsDeleted = true
+            }
+        }
+        return true
+    }
+
+    /**
+     * @return false if records were failed to be created
+     */
+    private fun createStateManagerRecords(records: Collection<State>): Boolean {
+        logger.info("Creating following records in state manager for key rotation: $records")
+        var failedToCreate: Set<String>?
+        var toCreate = records
+        var recordsCreated = false
+        var retries = RETRIES_TO_CREATE_SM_RECORDS
+        while (!recordsCreated) {
+            if (retries < 1) return false
+            failedToCreate = stateManager.create(toCreate)
+
+            if (failedToCreate.isNotEmpty()){
+                logger.info("Failed to create following states $failedToCreate in the state manager, retrying.")
+                toCreate = records.filter { it.key in failedToCreate } // retry to create only those records what were not yet created
+                retries--
+            } else {
+                recordsCreated = true
             }
         }
         return true

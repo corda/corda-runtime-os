@@ -33,7 +33,7 @@ internal class TestCryptoOpsClient(
     private val tenantIdToKeys = ConcurrentHashMap<String, MutableMap<PublicKey, PrivateKey>>()
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<CryptoOpsClient> { event, coordinator ->
-        if(event is StartEvent) { coordinator.updateStatus(LifecycleStatus.UP) }
+        if (event is StartEvent) { coordinator.updateStatus(LifecycleStatus.UP) }
     }
 
     private fun Key.publicKey(): PublicKey? =
@@ -60,8 +60,8 @@ internal class TestCryptoOpsClient(
                 .keyStore
                 .getKey(
                     alias,
-                    keyStoreWithPassword.password.toCharArray()
-                ) as? PrivateKey ?:  throw CordaRuntimeException("Missing private key")
+                    keyStoreWithPassword.password.toCharArray(),
+                ) as? PrivateKey ?: throw CordaRuntimeException("Missing private key")
             val publicKey = privateKey.publicKey() ?: throw CordaRuntimeException("Can not read public key")
 
             tenantIdToKeys.computeIfAbsent(tenantId) {
@@ -101,7 +101,7 @@ internal class TestCryptoOpsClient(
         }
         val signature = Signature.getInstance(
             signatureSpec.signatureName,
-            providerName
+            providerName,
         )
         signature.initSign(privateKey)
         (signatureSpec as? ParameterizedSignatureSpec)?.let { signature.setParameter(it.params) }
@@ -114,7 +114,7 @@ internal class TestCryptoOpsClient(
         skip: Int,
         take: Int,
         orderBy: CryptoKeyOrderBy,
-        filter: Map<String, String>
+        filter: Map<String, String>,
     ): List<CryptoSigningKey> {
         throw UnsupportedOperationException()
     }
@@ -126,7 +126,7 @@ internal class TestCryptoOpsClient(
     override fun filterMyKeys(
         tenantId: String,
         candidateKeys: Collection<PublicKey>,
-        usingFullIds: Boolean
+        usingFullIds: Boolean,
     ): Collection<PublicKey> {
         throw UnsupportedOperationException()
     }
@@ -136,7 +136,7 @@ internal class TestCryptoOpsClient(
         category: String,
         alias: String,
         scheme: String,
-        context: Map<String, String>
+        context: Map<String, String>,
     ): PublicKey {
         throw UnsupportedOperationException()
     }
@@ -147,7 +147,7 @@ internal class TestCryptoOpsClient(
         alias: String,
         externalId: String,
         scheme: String,
-        context: Map<String, String>
+        context: Map<String, String>,
     ): PublicKey {
         throw UnsupportedOperationException()
     }
@@ -161,7 +161,7 @@ internal class TestCryptoOpsClient(
         category: String,
         externalId: String,
         scheme: String,
-        context: Map<String, String>
+        context: Map<String, String>,
     ): PublicKey {
         throw UnsupportedOperationException()
     }
@@ -178,7 +178,7 @@ internal class TestCryptoOpsClient(
         hsmId: String,
         failIfExists: Boolean,
         masterKeyAlias: String,
-        context: Map<String, String>
+        context: Map<String, String>,
     ) {
         throw UnsupportedOperationException()
     }
@@ -187,7 +187,7 @@ internal class TestCryptoOpsClient(
         tenantId: String,
         publicKey: PublicKey,
         otherPublicKey: PublicKey,
-        context: Map<String, String>
+        context: Map<String, String>,
     ): ByteArray {
         throw UnsupportedOperationException()
     }

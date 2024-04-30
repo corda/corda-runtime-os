@@ -1,18 +1,23 @@
 package net.corda.cli.plugins.network
 
-import net.corda.cli.plugins.common.RestClientUtils.createRestClient
-import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
-import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.membership.rest.v1.MGMRestResource
+import net.corda.sdk.data.Checksum
+import net.corda.sdk.network.ExportGroupPolicyFromMgm
+import net.corda.sdk.network.MGM_GROUP_POLICY
+import net.corda.sdk.network.RegistrationRequest
+import net.corda.sdk.packaging.CpiAttributes
+import net.corda.sdk.packaging.CpiUploader
+import net.corda.sdk.packaging.CpiV2Creator
+import net.corda.sdk.rest.RestClientUtils
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.UUID
+import kotlin.time.Duration.Companion.seconds
 
 @Command(
     name = "onboard-mgm",
@@ -22,6 +27,10 @@ import java.util.UUID
     mixinStandardHelpOptions = true,
 )
 class OnboardMgm : Runnable, BaseOnboard() {
+    private companion object {
+        const val CPI_VERSION = "1.0"
+    }
+
     @Option(
         names = ["--cpi-hash", "-h"],
         description = [
@@ -29,7 +38,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
                 "If not specified, an auto-generated MGM CPI will be used.",
         ],
     )
-    var cpiHash: String? = null
+    var cpiChecksum: Checksum? = null
 
     @Option(
         names = ["--save-group-policy-as", "-s"],
@@ -45,50 +54,30 @@ class OnboardMgm : Runnable, BaseOnboard() {
 
     private val cpiName: String = "MGM-${UUID.randomUUID()}"
 
-    private val groupPolicy by lazy {
-        mapOf(
-            "fileFormatVersion" to 1,
-            "groupId" to "CREATE_ID",
-            "registrationProtocol" to "net.corda.membership.impl.registration.dynamic.mgm.MGMRegistrationService",
-            "synchronisationProtocol" to "net.corda.membership.impl.synchronisation.MgmSynchronisationServiceImpl",
-        ).let { groupPolicyMap ->
-            ByteArrayOutputStream().use { outputStream ->
-                json.writeValue(outputStream, groupPolicyMap)
-                outputStream.toByteArray()
-            }
-        }
-    }
-
     private fun saveGroupPolicy() {
-        var groupPolicyResponse = ""
-        createRestClient(MGMRestResource::class).use { client ->
-            checkInvariant(
-                maxAttempts = MAX_ATTEMPTS,
-                waitInterval = WAIT_INTERVAL,
-                errorMessage = "Failed to save group policy after $MAX_ATTEMPTS attempts.",
-            ) {
-                try {
-                    val resource = client.start().proxy
-                    groupPolicyResponse = resource.generateGroupPolicy(holdingId)
-                } catch (e: Exception) {
-                    null
-                }
-            }
-            groupPolicyFile.parentFile.mkdirs()
-            json.writerWithDefaultPrettyPrinter()
-                .writeValue(
-                    groupPolicyFile,
-                    json.readTree(groupPolicyResponse),
-                )
-            println("Group policy file created at $groupPolicyFile")
-            // extract the groupId from the response
-            val groupId = json.readTree(groupPolicyResponse).get("groupId").asText()
+        val restClient = RestClientUtils.createRestClient(
+            MGMRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        val groupPolicyResponse = ExportGroupPolicyFromMgm().exportPolicy(restClient, holdingId, waitDurationSeconds.seconds)
+        groupPolicyFile.parentFile.mkdirs()
+        json.writerWithDefaultPrettyPrinter()
+            .writeValue(
+                groupPolicyFile,
+                json.readTree(groupPolicyResponse),
+            )
+        println("Group policy file created at $groupPolicyFile")
+        // extract the groupId from the response
+        val groupId = json.readTree(groupPolicyResponse).get("groupId").asText()
 
-            // write the groupId to the file
-            groupIdFile.apply {
-                parentFile.mkdirs()
-                writeText(groupId)
-            }
+        // write the groupId to the file
+        groupIdFile.apply {
+            parentFile.mkdirs()
+            writeText(groupId)
         }
     }
 
@@ -96,88 +85,69 @@ class OnboardMgm : Runnable, BaseOnboard() {
         ca.caCertificate.toPem()
     }
 
-    override val registrationContext by lazy {
-        val tlsType = if (mtls) {
-            "Mutual"
-        } else {
-            "OneWay"
-        }
-
-        val endpoints = mutableMapOf<String, String>()
-
-        p2pGatewayUrls.mapIndexed { index, url ->
-            endpoints["corda.endpoints.$index.connectionURL"] = url
-            endpoints["corda.endpoints.$index.protocolVersion"] = "1"
-        }
-
-        mapOf(
-            "corda.session.keys.0.id" to sessionKeyId,
-            "corda.ecdh.key.id" to ecdhKeyId,
-            "corda.group.protocol.registration"
-                to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
-            "corda.group.protocol.synchronisation"
-                to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
-            "corda.group.protocol.p2p.mode" to "Authenticated_Encryption",
-            "corda.group.key.session.policy" to "Distinct",
-            "corda.group.tls.type" to tlsType,
-            "corda.group.pki.session" to "NoPKI",
-            "corda.group.pki.tls" to "Standard",
-            "corda.group.tls.version" to "1.3",
-            "corda.group.trustroot.tls.0" to tlsTrustRoot,
-        ) + endpoints
+    override val memberRegistrationRequest by lazy {
+        RegistrationRequest().createMgmRegistrationRequest(
+            mtls = mtls,
+            p2pGatewayUrls = p2pGatewayUrls,
+            sessionKey = sessionKeyId,
+            ecdhKey = ecdhKeyId,
+            tlsTrustRoot = tlsTrustRoot
+        )
     }
 
     private val cpi by lazy {
-        val mgmGroupPolicyFile = File.createTempFile("mgm.groupPolicy.", ".json").also {
-            it.deleteOnExit()
-            it.writeBytes(groupPolicy)
-        }
         val cpiFile = File.createTempFile("mgm.", ".cpi").also {
             it.deleteOnExit()
             it.delete()
         }
         cpiFile.parentFile.mkdirs()
-        val creator = CreateCpiV2()
-        creator.groupPolicyFileName = mgmGroupPolicyFile.absolutePath
-        creator.cpiName = cpiName
-        creator.cpiVersion = "1.0"
-        creator.cpiUpgrade = false
-        creator.outputFileName = cpiFile.absolutePath
-        creator.signingOptions = createDefaultSingingOptions()
-        val exitCode = creator.call()
-        if (exitCode != 0) {
-            throw CordaRuntimeException("Create CPI returned non-zero exit code")
-        }
+
+        runCatching {
+            CpiV2Creator.createCpi(
+                null,
+                cpiFile.toPath(),
+                MGM_GROUP_POLICY,
+                CpiAttributes(cpiName, CPI_VERSION, false),
+                createDefaultSingingOptions().asSigningOptionsSdk
+            )
+        }.onFailure { e -> throw CordaRuntimeException("Create CPI failed: ${e.message}", e) }
+
         uploadSigningCertificates()
         cpiFile
     }
 
-    override val cpiFileChecksum: String by lazy {
-        if (cpiHash != null) {
-            val existingHash = getExistingCpiHash(cpiHash)
-            if (existingHash != null) {
-                return@lazy existingHash
+    override val cpiFileChecksum: Checksum by lazy {
+        if (cpiChecksum != null) {
+            val existingChecksum = getExistingCpiChecksum(cpiChecksum)
+            if (existingChecksum != null) {
+                return@lazy existingChecksum
             } else {
                 throw IllegalArgumentException("Invalid CPI hash provided. CPI hash does not exist on the Corda cluster.")
             }
         } else {
-            val existingHash = getExistingCpiHash()
-            if (existingHash != null) {
-                return@lazy existingHash
+            val existingChecksum = getExistingCpiChecksum()
+            if (existingChecksum != null) {
+                return@lazy existingChecksum
             }
 
-            uploadCpi(cpi.inputStream(), cpiName)
+            uploadCpi(cpi, "$cpiName.cpi")
         }
     }
 
-    private fun getExistingCpiHash(hash: String? = null): String? {
-        return createRestClient(CpiUploadRestResource::class).use { client ->
-            val response = client.start().proxy.getAllCpis()
-            response.cpis
-                .filter { it.cpiFileChecksum == hash || (hash == null && it.groupPolicy?.contains("CREATE_ID") ?: false) }
-                .map { it.cpiFileChecksum }
-                .firstOrNull()
-        }
+    private fun getExistingCpiChecksum(checksum: Checksum? = null): Checksum? {
+        val restClient = RestClientUtils.createRestClient(
+            CpiUploadRestResource::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        val response = CpiUploader().getAllCpis(restClient = restClient, wait = waitDurationSeconds.seconds)
+        return response.cpis
+            .filter { it.cpiFileChecksum == checksum?.value || (checksum?.value == null && it.groupPolicy?.contains("CREATE_ID") ?: false) }
+            .map { it.cpiFileChecksum }
+            .firstOrNull()?.let { Checksum(it) }
     }
 
     override fun run() {

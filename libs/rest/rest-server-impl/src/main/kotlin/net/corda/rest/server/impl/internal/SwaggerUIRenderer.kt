@@ -70,7 +70,7 @@ internal class SwaggerUIRenderer(private val configurationProvider: RestServerSe
                     }
                 
                     const ui = SwaggerUIBundle({
-                        url: "${ctx.path().jsonPath()}",
+                        url: "${ctx.path().removeSuffix("/").jsonPath()}",
                         dom_id: "#swagger-ui",
                         deepLinking: true,
                         presets: [SwaggerUIBundle.presets.apis],

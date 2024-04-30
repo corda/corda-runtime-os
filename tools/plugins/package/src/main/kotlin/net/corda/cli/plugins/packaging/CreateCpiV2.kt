@@ -2,36 +2,19 @@ package net.corda.cli.plugins.packaging
 
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileDoesNotExist
 import net.corda.cli.plugins.packaging.FileHelpers.requireFileExists
-import net.corda.cli.plugins.packaging.signing.CertificateLoader.readCertificates
-import net.corda.cli.plugins.packaging.signing.SigningHelpers
 import net.corda.cli.plugins.packaging.signing.SigningOptions
-import net.corda.libs.packaging.verify.PackageType
-import net.corda.libs.packaging.verify.VerifierBuilder
-import net.corda.libs.packaging.verify.internal.VerifierFactory
+import net.corda.sdk.packaging.CpiAttributes
+import net.corda.sdk.packaging.CpiV2Creator
 import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.ExitCode
 import picocli.CommandLine.Option
 import java.io.File
-import java.io.FileInputStream
-import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardOpenOption.READ
-import java.nio.file.StandardOpenOption.WRITE
 import java.util.concurrent.Callable
 import java.util.jar.Attributes
-import java.util.jar.JarEntry
-import java.util.jar.JarOutputStream
-import java.util.jar.Manifest
-
-/**
- * Filename of group policy within jar file
- */
-private const val META_INF_GROUP_POLICY_JSON = "META-INF/GroupPolicy.json"
 
 private const val CPI_EXTENSION = ".cpi"
-
-internal const val MANIFEST_VERSION = "1.0"
 
 internal val CPI_FORMAT_ATTRIBUTE_NAME = Attributes.Name("Corda-CPI-Format")
 
@@ -96,26 +79,19 @@ class CreateCpiV2 : Callable<Int> {
         else
             File(requireFileExists(groupPolicyFileName).toString()).readText(Charsets.UTF_8)
 
-        GroupPolicyValidator.validateGroupPolicy(groupPolicyString)
-
         val cpbPath = cpbFileName?.let { requireFileExists(it) }
-
-        // Check input Cpb file is indeed a Cpb
-        cpbPath?.let {
-            try {
-                verifyIsValidCpbV2(it)
-            } catch (e: Exception) {
-                System.err.println("Error verifying CPB: ${e.message}")
-                return ExitCode.SOFTWARE
-            }
-        }
-
         val outputName = determineOutputFileName(cpbPath)
 
         // Check output Cpi file does not exist
         val outputFilePath = requireFileDoesNotExist(outputName)
 
-        buildAndSignCpi(cpbPath, outputFilePath, groupPolicyString)
+        CpiV2Creator.createCpi(
+            cpbPath,
+            outputFilePath,
+            groupPolicyString,
+            CpiAttributes(cpiName, cpiVersion, cpiUpgrade),
+            signingOptions.asSigningOptionsSdk
+        )
         return ExitCode.OK
     }
 
@@ -132,85 +108,5 @@ class CreateCpiV2 : Callable<Int> {
             }
         }
         return outputName
-    }
-
-    /**
-     * @throws IllegalArgumentException if it fails to verify Cpb V2
-     */
-    private fun verifyIsValidCpbV2(cpbPath: Path) {
-        VerifierBuilder()
-            .type(PackageType.CPB)
-            .format(VerifierFactory.FORMAT_2)
-            .name(cpbPath.toString())
-            .inputStream(FileInputStream(cpbPath.toString()))
-            .trustedCerts(readCertificates(signingOptions.keyStoreFileName, signingOptions.keyStorePass))
-            .build()
-            .verify()
-    }
-
-    /**
-     * Build and sign CPI file
-     *
-     * Creates a temporary file, copies CPB into temporary file, adds group policy then signs
-     */
-    private fun buildAndSignCpi(cpbPath: Path?, outputFilePath: Path, groupPolicy: String) {
-        val unsignedCpi = Files.createTempFile("buildCPI", null)
-        try {
-            // Build unsigned CPI jar
-            buildUnsignedCpi(cpbPath, unsignedCpi, groupPolicy)
-
-            // Sign CPI jar
-            SigningHelpers.sign(
-                unsignedCpi,
-                outputFilePath,
-                signingOptions.keyStoreFileName,
-                signingOptions.keyStorePass,
-                signingOptions.keyAlias,
-                signingOptions.sigFile,
-                signingOptions.tsaUrl
-            )
-        } finally {
-            // Delete temp file
-            Files.deleteIfExists(unsignedCpi)
-        }
-    }
-
-    /**
-     * Build unsigned CPI file
-     *
-     * Copies CPB into new jar file and then adds group policy
-     */
-    private fun buildUnsignedCpi(cpbPath: Path?, unsignedCpi: Path, groupPolicy: String) {
-        val manifest = Manifest()
-        val manifestMainAttributes = manifest.mainAttributes
-        manifestMainAttributes[Attributes.Name.MANIFEST_VERSION] = MANIFEST_VERSION
-        manifestMainAttributes[CPI_FORMAT_ATTRIBUTE_NAME] = CPI_FORMAT_ATTRIBUTE
-        manifestMainAttributes[CPI_NAME_ATTRIBUTE_NAME] = cpiName
-        manifestMainAttributes[CPI_VERSION_ATTRIBUTE_NAME] = cpiVersion
-        manifestMainAttributes[CPI_UPGRADE_ATTRIBUTE_NAME] = cpiUpgrade.toString()
-
-        JarOutputStream(Files.newOutputStream(unsignedCpi, WRITE), manifest).use { cpiJar ->
-            cpbPath?.let {
-                // Copy the CPB contents
-                cpiJar.putNextEntry(JarEntry(cpbPath.fileName.toString()))
-                Files.newInputStream(cpbPath, READ).use {
-                    it.copyTo(cpiJar)
-                }
-            }
-
-            // Add group policy
-            addGroupPolicy(cpiJar, groupPolicy)
-        }
-    }
-
-    /**
-     * Adds group policy file to jar file
-     *
-     * Reads group policy from stdin or file depending on user choice
-     */
-    private fun addGroupPolicy(cpiJar: JarOutputStream, groupPolicy: String) {
-        cpiJar.putNextEntry(JarEntry(META_INF_GROUP_POLICY_JSON))
-        cpiJar.write(groupPolicy.toByteArray())
-        cpiJar.closeEntry()
     }
 }
