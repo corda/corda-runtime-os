@@ -2055,6 +2055,43 @@ class UtxoPersistenceServiceImplTest {
         assertThat(transactionIds4).containsExactly(transaction1.id, transaction2.id, transaction3.id)
     }
 
+    @Test
+    fun `findSignedTransactionIdsAndStatuses finds all transactions and statuses that are not solely stored as filtered transactions`() {
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        entityManagerFactory.transaction { em ->
+            em.createNamedQuery("UtxoTransactionEntity.findAll", entityFactory.utxoTransaction)
+                .resultList
+                .forEach { entity ->
+                    em.remove(entity)
+                }
+        }
+        val transaction1 = persistTransactionViaEntity(entityFactory, UNVERIFIED)
+        val transaction2 = persistTransactionViaEntity(entityFactory, VERIFIED)
+        val transaction3 = persistTransactionViaEntity(entityFactory, DRAFT)
+        val transaction4 = persistTransactionViaEntity(entityFactory, INVALID)
+        val transaction5 = persistTransactionViaEntity(entityFactory, UNVERIFIED, isFiltered = true)
+        val transaction6 = persistTransactionViaEntity(entityFactory, VERIFIED, isFiltered = true)
+        val transactionIds = listOf(
+            transaction1,
+            transaction2,
+            transaction3,
+            transaction4,
+            transaction5,
+            transaction6
+        ).map { it.id.toString() }
+        val result = persistenceService.findSignedTransactionIdsAndStatuses(transactionIds)
+        assertThat(result).containsExactlyInAnyOrderEntriesOf(
+            mapOf(
+                transaction1.id to UNVERIFIED.value,
+                transaction2.id to VERIFIED.value,
+                transaction3.id to DRAFT.value,
+                transaction4.id to INVALID.value,
+                transaction5.id to UNVERIFIED.value
+            )
+        )
+        assertThat(result).doesNotContainKey(transaction6.id)
+    }
+
     @Suppress("LongParameterList")
     private fun createUtxoTokenMap(
         transactionReader: TestUtxoTransactionReader,
