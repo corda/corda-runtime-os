@@ -29,8 +29,6 @@ data class UtxoFilteredTransactionAndSignaturesImpl(
         result = 31 * result + signatures.hashCode()
         return result
     }
-
-
 }
 
 fun UtxoFilteredTransactionAndSignatures.verifyFilteredTransactionAndSignatures(

@@ -24,9 +24,9 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindFilteredT
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindFilteredTransactionsAndSignaturesParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedLedgerTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedLedgerTransactionParameters
-import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedTransactionIdsAndStatusesExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedTransactionIdsAndStatusesParameters
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionsWithStatusCreatedBetweenTimeExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionsWithStatusCreatedBetweenTimeParameters

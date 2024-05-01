@@ -21,7 +21,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             FROM {h-schema}utxo_transaction 
             WHERE id IN (:transactionIds)
             AND NOT (status = 'V' AND is_filtered = true)
-            """.trimIndent()
+        """.trimIndent()
 
     override val findTransactionsPrivacySaltAndMetadata: String
         get() = """
