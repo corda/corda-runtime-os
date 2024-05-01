@@ -591,7 +591,7 @@ class FilteredTransactionImplTest {
     @Test
     fun `Accessing metadata parses metadata with a header successfully`() {
         filteredTransaction = filteredTransaction(filteredComponentGroups = mapOf(0 to filteredComponentGroup0))
-        val header = "corda".toByteArray() + byteArrayOf(8, 1)
+        val header = "corda".toByteArray() + byteArrayOf(8, 0, 1)
         val jsonBlobWithHeader = header + metadataJson.encodeToByteArray()
         componentGroupMerkleProofVerifies(listOf(indexedMerkleLeaf(0)))
 
@@ -605,7 +605,7 @@ class FilteredTransactionImplTest {
     @Test
     fun `Accessing metadata parses metadata with a header of unavailable schema version throws`() {
         filteredTransaction = filteredTransaction(filteredComponentGroups = mapOf(0 to filteredComponentGroup0))
-        val header = "corda".toByteArray() + byteArrayOf(8, 0)
+        val header = "corda".toByteArray() + byteArrayOf(8, 0, 0)
         val jsonBlobWithHeader = header + metadataJson.encodeToByteArray()
         componentGroupMerkleProofVerifies(listOf(indexedMerkleLeaf(0)))
 

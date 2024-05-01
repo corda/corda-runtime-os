@@ -1934,7 +1934,7 @@ class UtxoPersistenceServiceImplTest {
     fun `findFilteredTransaction parses metadata with a header successfully`() {
         val signatures = createSignatures(Instant.now())
         val signedTransaction =
-            createSignedTransaction(signatures = signatures, header = ("corda".toByteArray() + byteArrayOf(8, 1)))
+            createSignedTransaction(signatures = signatures, header = ("corda".toByteArray() + byteArrayOf(8, 0, 1)))
         val account = "Account"
 
         val filteredTransactionToStore = createFilteredTransaction(signedTransaction)

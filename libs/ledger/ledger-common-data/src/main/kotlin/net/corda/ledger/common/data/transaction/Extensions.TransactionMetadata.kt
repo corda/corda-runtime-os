@@ -17,7 +17,7 @@ import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import java.util.*
 
 object JsonMagic {
-    private val header = "corda".toByteArray() + byteArrayOf(8)
+    private val header = "corda".toByteArray() + byteArrayOf(8, 0)
     private const val OPENING_BRACKET = '{'.code.toByte()
 
     /**

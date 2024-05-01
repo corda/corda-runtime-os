@@ -31,7 +31,7 @@ class TransactionMetadataUtilsTest {
     @Test
     fun `Consume metadata byteArray with an invalid header returns null for schemaVersion and empty string for json`() {
         val metadata = createTransactionMetadata()
-        val header = "corda".toByteArray() + byteArrayOf(7, 1)
+        val header = "corda".toByteArray() + byteArrayOf(7, 0, 1)
         val jsonBlob = buildJsonByteArrayFromPOJO(metadata, header = header)
 
         val (schemaVersion, json) = magic.consume(jsonBlob)
@@ -43,7 +43,7 @@ class TransactionMetadataUtilsTest {
     @Test
     fun `Consume metadata byteArray with an valid header returns expected schemaVersion and json`() {
         val metadata = createTransactionMetadata()
-        val header = "corda".toByteArray() + byteArrayOf(8, 3)
+        val header = "corda".toByteArray() + byteArrayOf(8, 0, 3)
         val jsonBlob = buildJsonByteArrayFromPOJO(metadata, header = header)
         val jsonWithoutHeader = jsonBlob.sliceArray(header.size until jsonBlob.size)
         val (schemaVersion, json) = magic.consume(jsonBlob)
@@ -53,9 +53,9 @@ class TransactionMetadataUtilsTest {
     }
 
     @Test
-    fun `Consume metadata byteArray with an header containing opening bracket returns correct schemaVersion and json`() {
+    fun `Consume metadata byteArray with a header containing opening bracket returns correct schemaVersion and json`() {
         val metadata = createTransactionMetadata()
-        val header = "corda".toByteArray() + byteArrayOf(8, 123)
+        val header = "corda".toByteArray() + byteArrayOf(8, 0, 123)
         val jsonBlob = buildJsonByteArrayFromPOJO(metadata, header = header)
         val jsonWithoutHeader = jsonBlob.sliceArray(header.size until jsonBlob.size)
         val (schemaVersion, json) = magic.consume(jsonBlob)

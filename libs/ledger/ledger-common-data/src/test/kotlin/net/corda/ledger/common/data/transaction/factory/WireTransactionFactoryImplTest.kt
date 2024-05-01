@@ -264,7 +264,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
 
     @Test
     fun `Creating a WireTransaction parses metadata with a header successfully`() {
-        val header = "corda".toByteArray() + byteArrayOf(8, 1)
+        val header = "corda".toByteArray() + byteArrayOf(8, 0, 1)
         val metadata = transactionMetadataExample(
             ledgerModel = "net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl",
             transactionSubType = "GENERAL",
@@ -283,7 +283,7 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
 
     @Test
     fun `Creating a WireTransaction parses metadata with an invalid header throws exception`() {
-        val header = "corda".toByteArray() + byteArrayOf(4, 1)
+        val header = "corda".toByteArray() + byteArrayOf(4, 0, 1)
         val metadata = transactionMetadataExample(
             ledgerModel = "net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl",
             transactionSubType = "GENERAL",
