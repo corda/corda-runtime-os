@@ -224,7 +224,7 @@
     "/certificate/getprotocolversion" : {
       "get" : {
         "tags" : [ "Certificate" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_certificate_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -535,7 +535,7 @@
     "/config/getprotocolversion" : {
       "get" : {
         "tags" : [ "Configuration" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_config_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -671,7 +671,7 @@
     "/cpi/getprotocolversion" : {
       "get" : {
         "tags" : [ "CPI" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_cpi_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -737,7 +737,7 @@
     "/flow/getprotocolversion" : {
       "get" : {
         "tags" : [ "Flow Management" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_flow_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -956,7 +956,7 @@
     "/flowclass/getprotocolversion" : {
       "get" : {
         "tags" : [ "Flow Info" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_flowclass_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -1061,7 +1061,7 @@
     "/hello/getprotocolversion" : {
       "get" : {
         "tags" : [ "Hello Rest" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_hello_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -1090,7 +1090,7 @@
     "/hsm/getprotocolversion" : {
       "get" : {
         "tags" : [ "HSM" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_hsm_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -1215,7 +1215,7 @@
     "/key/getprotocolversion" : {
       "get" : {
         "tags" : [ "Key Management" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_key_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -1621,7 +1621,7 @@
     "/maintenance/virtualnode/getprotocolversion" : {
       "get" : {
         "tags" : [ "Virtual Node Maintenance" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_maintenance_virtualnode_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -1680,7 +1680,7 @@
     "/members/getprotocolversion" : {
       "get" : {
         "tags" : [ "Member Lookup" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_members_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -1863,7 +1863,7 @@
     "/membership/getprotocolversion" : {
       "get" : {
         "tags" : [ "Member Registration" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_membership_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -2028,7 +2028,7 @@
     "/mgm/getprotocolversion" : {
       "get" : {
         "tags" : [ "MGM" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_mgm_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -2953,7 +2953,7 @@
     "/mgmadmin/getprotocolversion" : {
       "get" : {
         "tags" : [ "MGM Admin" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_mgmadmin_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -3023,7 +3023,7 @@
     "/network/getprotocolversion" : {
       "get" : {
         "tags" : [ "Network" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_network_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -3252,7 +3252,7 @@
     "/permission/getprotocolversion" : {
       "get" : {
         "tags" : [ "RBAC Permission" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_permission_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -3384,7 +3384,7 @@
     "/role/getprotocolversion" : {
       "get" : {
         "tags" : [ "RBAC Role" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_role_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -3581,7 +3581,7 @@
     "/user/getprotocolversion" : {
       "get" : {
         "tags" : [ "RBAC User" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_user_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -4017,7 +4017,7 @@
     "/virtualnode/getprotocolversion" : {
       "get" : {
         "tags" : [ "Virtual Node" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_virtualnode_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -4325,7 +4325,7 @@
     "/wrappingkey/getprotocolversion" : {
       "get" : {
         "tags" : [ "Key Rotation" ],
-        "description" : "",
+        "description" : "Returns the version of the endpoint",
         "operationId" : "get_wrappingkey_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
@@ -4500,7 +4500,6 @@
             "example" : "string"
           },
           "status" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "IN_PROGRESS",
             "enum" : [ "ACCEPTED", "IN_PROGRESS", "SUCCEEDED", "FAILED", "ABORTED" ]
@@ -4799,7 +4798,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -5039,7 +5037,6 @@
       },
       "GenerateCsrWrapperRequest" : {
         "required" : [ "x500Name" ],
-        "type" : "object",
         "properties" : {
           "contextMap" : {
             "type" : "object",
@@ -5397,7 +5394,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -5441,7 +5437,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -5478,7 +5473,6 @@
             "example" : "string"
           },
           "status" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "REVOKED",
             "enum" : [ "AVAILABLE", "REVOKED", "CONSUMED", "AUTO_INVALIDATED" ]
@@ -5647,7 +5641,6 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "registrationStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "SENT_TO_MGM",
             "enum" : [ "NEW", "SENT_TO_MGM", "RECEIVED_BY_MGM", "STARTED_PROCESSING_BY_MGM", "PENDING_MEMBER_VERIFICATION", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "INVALID", "FAILED", "APPROVED" ]
@@ -5762,7 +5755,6 @@
             "example" : "string"
           },
           "inactiveResponseType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "IGNORE",
             "enum" : [ "ERROR", "IGNORE" ]
@@ -6187,19 +6179,16 @@
             "$ref" : "#/components/schemas/RouteConfiguration"
           },
           "flowOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowP2pOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowStartOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
@@ -6228,7 +6217,6 @@
             "example" : "string"
           },
           "vaultDbOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
