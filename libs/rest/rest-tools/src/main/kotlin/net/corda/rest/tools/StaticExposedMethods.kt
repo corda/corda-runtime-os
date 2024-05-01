@@ -12,8 +12,12 @@ private data class MethodDocs(val methodDescription: String, val responseDescrip
  * Note: These are also exempt from sanity checks in HttpRpcClientProxyHandler.invoke(...).
  */
 private val staticExposedGetMethods: Map<String, MethodDocs> =
-    mapOf("getProtocolVersion" to MethodDocs("Returns the version of the endpoint",
-        "An integer value specifying the version of the endpoint"))
+    mapOf(
+        "getProtocolVersion" to MethodDocs(
+            "Returns the version of the endpoint",
+            "An integer value specifying the version of the endpoint"
+        )
+    )
         .mapKeys { it.key.lowercase() }
 
 fun Method.isStaticallyExposedGet(): Boolean {
