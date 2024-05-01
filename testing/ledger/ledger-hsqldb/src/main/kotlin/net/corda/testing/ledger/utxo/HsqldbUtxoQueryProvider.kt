@@ -131,7 +131,6 @@ class HsqldbUtxoQueryProvider @Activate constructor(
             """.trimIndent()
         }
 
-    // can we do it without always updating the created timestamp if the correct signatures already exist
     override val persistTransactionSignatures: (batchSize: Int) -> String
         get() = { batchSize ->
             """
