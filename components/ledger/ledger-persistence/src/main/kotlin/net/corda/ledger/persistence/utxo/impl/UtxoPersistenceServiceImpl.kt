@@ -395,7 +395,7 @@ class UtxoPersistenceServiceImpl(
     }
 
     override fun persistTransactionSignatures(id: String, signatures: List<ByteArray>) {
-        val transactionSignatures = signatures.mapIndexed { index, bytes ->
+        val transactionSignatures = signatures.map { bytes ->
             val signature = serializationService.deserialize<DigitalSignatureAndMetadata>(bytes)
             UtxoRepository.TransactionSignature(
                 id,
