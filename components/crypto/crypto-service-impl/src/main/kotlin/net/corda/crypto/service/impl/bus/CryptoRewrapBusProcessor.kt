@@ -176,14 +176,15 @@ class CryptoRewrapBusProcessor(
             }
         }
 
-        logger.info("Id:KR Listing SM records after re-wrap during managed key rotation. " +
-            "${stateManager.findByMetadata(
-                MetadataFilter(
+        val recordsForLogs = stateManager.findByMetadata(
+            MetadataFilter(
                 KeyRotationMetadataValues.STATUS_TYPE,
                 Operation.NotEquals,
                 "dummyValue"
-                )
-            )}"
+            )
+        )
+        logger.info("Id:KR ${recordsForLogs.size} Listing SM records after re-wrap during managed key rotation. " +
+            recordsForLogs
         )
 
         logger.debug("Update state manager ${stateManager.name} for managed key rotation tenantId: ${request.tenantId}.")
@@ -239,14 +240,15 @@ class CryptoRewrapBusProcessor(
             }
         }
 
-        logger.info("Id:KR Listing SM records after update in re-wrap during master key rotation. " +
-            "${stateManager.findByMetadata(
-                MetadataFilter(
-                    KeyRotationMetadataValues.STATUS_TYPE,
-                    Operation.NotEquals,
-                    "dummyValue"
-                )
-            )}"
+        val recordsForLogs = stateManager.findByMetadata(
+            MetadataFilter(
+                KeyRotationMetadataValues.STATUS_TYPE,
+                Operation.NotEquals,
+                "dummyValue"
+            )
+        )
+        logger.info("Id:KR ${recordsForLogs.size} Listing SM records after update in re-wrap during master key rotation. " +
+                recordsForLogs
         )
     }
 

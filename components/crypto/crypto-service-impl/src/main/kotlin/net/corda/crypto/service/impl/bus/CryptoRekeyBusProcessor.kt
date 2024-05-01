@@ -345,7 +345,7 @@ class CryptoRekeyBusProcessor(
                             KeyRotationRecordType.KEY_ROTATION
                         )
             )
-            logger.info("Id:KR Deleting following records ${toDelete.keys} for previous key rotation for ${reason}.")
+            logger.info("Id:KR ${toDelete.size} Deleting following records ${toDelete.keys} for previous key rotation for ${reason}.")
             val failedToDelete = stateManager.delete(toDelete.values)
             if (failedToDelete.isNotEmpty()) {
                 logger.info(
@@ -357,13 +357,17 @@ class CryptoRekeyBusProcessor(
                 recordsDeleted = true
             }
         }
-        logger.info("Id:KR Listing all key rotation records after deleting some in state manager: " +
-                "${stateManager.findByMetadata(MetadataFilter(
-                    KeyRotationMetadataValues.STATUS_TYPE,
-                    Operation.NotEquals,
-                    "dummyValue"
-                ))}"
+        val recordsForLogs = stateManager.findByMetadata(
+            MetadataFilter(
+                KeyRotationMetadataValues.STATUS_TYPE,
+                Operation.NotEquals,
+                "dummyValue"
+            )
         )
+        logger.info("Id:KR ${recordsForLogs.size} Listing all key rotation records after deleting some in state manager: " +
+                recordsForLogs
+        )
+
         return true
     }
 
@@ -371,7 +375,7 @@ class CryptoRekeyBusProcessor(
      * @return false if records were failed to be created
      */
     private fun createStateManagerRecords(records: Collection<State>): Boolean {
-        logger.info("Id:KR Creating following records in state manager for key rotation: $records")
+        logger.info("Id:KR ${records.size} Creating following records in state manager for key rotation: $records")
         var failedToCreate: Set<String>?
         var toCreate = records
         var recordsCreated = false
@@ -388,13 +392,18 @@ class CryptoRekeyBusProcessor(
                 recordsCreated = true
             }
         }
-        logger.info("Id:KR Listing all key rotation records in state manager: " +
-                "${stateManager.findByMetadata(MetadataFilter(
-                    KeyRotationMetadataValues.STATUS_TYPE,
-                    Operation.NotEquals,
-                    "dummyValue"
-                ))}"
+
+        val recordsForLogs = stateManager.findByMetadata(
+            MetadataFilter(
+                KeyRotationMetadataValues.STATUS_TYPE,
+                Operation.NotEquals,
+                "dummyValue"
+            )
         )
+        logger.info("Id:KR ${recordsForLogs.size} Listing all key rotation records in state manager: " +
+                recordsForLogs
+        )
+
         return true
     }
 }
