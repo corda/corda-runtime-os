@@ -92,7 +92,7 @@ class SoftCryptoServiceCachingTests {
                 }
             },
             signingRepositoryFactory = { TestSigningRepository() },
-            tenantInfoService = tenantInfoService
+            clusterDbInfoService = tenantInfoService
         )
         val rsaScheme =
             myCryptoService.supportedSchemes.filter { it.key.codeName == RSA_CODE_NAME }.toList().first().first

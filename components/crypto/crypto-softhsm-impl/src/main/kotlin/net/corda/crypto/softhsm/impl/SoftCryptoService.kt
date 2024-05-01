@@ -31,7 +31,6 @@ import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.core.isRecoverable
-import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.hes.core.impl.deriveDHSharedSecret
 import net.corda.crypto.impl.SignatureInstances
 import net.corda.crypto.impl.getSigningData
@@ -41,9 +40,9 @@ import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.SigningRepositoryFactory
 import net.corda.crypto.softhsm.TenantInfoService
+import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.crypto.softhsm.WrappingRepositoryFactory
 import net.corda.crypto.softhsm.deriveSupportedSchemes
-import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -104,7 +103,7 @@ open class SoftCryptoService(
     private val wrappingKeyFactory: (schemeMetadata: CipherSchemeMetadata) -> WrappingKey = {
         WrappingKeyImpl.generateWrappingKey(it)
     },
-    private val tenantInfoService: TenantInfoService,
+    private val clusterDbInfoService: TenantInfoService,
 ) : Closeable, CryptoService {
 
     companion object {
@@ -242,7 +241,7 @@ open class SoftCryptoService(
     ): GeneratedWrappedKey {
         logger.info("generateKeyPair(tenant={}, category={}, alias={})", tenantId, category, alias)
         val parentKeyAlias =
-            context.get("parentKeyAlias") ?: tenantInfoService.lookup(tenantId, category)?.masterKeyAlias
+            context.get("parentKeyAlias") ?: clusterDbInfoService.lookup(tenantId, category)?.masterKeyAlias
             ?: throw InvalidParamsException("The tenant '$tenantId' is not configured for category '$category'.")
 
         signingRepositoryFactory.getInstance(tenantId).use { repo ->
@@ -278,12 +277,6 @@ open class SoftCryptoService(
                 repo.savePrivateKey(saveContext)
             }
         }
-    }
-
-    private fun shortHashOf(key: PublicKey): ShortHash {
-        val keyBytes = schemeMetadata.encodeAsByteArray(key)
-        val shortHash = ShortHash.of(publicKeyIdFromBytes(keyBytes))
-        return shortHash
     }
 
     private fun computeTenantId(context: Map<String, String>) = context.get("tenantId") ?: CryptoTenants.CRYPTO
@@ -571,7 +564,7 @@ open class SoftCryptoService(
         alias: String?,
     ): ByteArray {
         val keyAlias = alias ?: run {
-            tenantInfoService.lookup(tenantId, ENCRYPTION_SECRET)?.masterKeyAlias
+            clusterDbInfoService.lookup(tenantId, ENCRYPTION_SECRET)?.masterKeyAlias
                 ?: throw IllegalStateException("No tenant association found for $tenantId $ENCRYPTION_SECRET.")
         }
 
@@ -586,7 +579,7 @@ open class SoftCryptoService(
         alias: String?,
     ): ByteArray {
         val keyAlias = alias ?: run {
-            tenantInfoService.lookup(tenantId, ENCRYPTION_SECRET)?.masterKeyAlias
+            clusterDbInfoService.lookup(tenantId, ENCRYPTION_SECRET)?.masterKeyAlias
                 ?: throw IllegalStateException("No tenant association found for $tenantId $ENCRYPTION_SECRET.")
         }
 

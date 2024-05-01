@@ -25,13 +25,13 @@ import net.corda.crypto.config.impl.retrying
 import net.corda.crypto.core.ApiNames.DECRYPT_PATH
 import net.corda.crypto.core.ApiNames.ENCRYPT_PATH
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.CryptoConsts.Categories.ENCRYPTION_SECRET
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.db.model.CryptoEntities
+import net.corda.crypto.persistence.getClusterDbEntityManager
 import net.corda.crypto.persistence.getEntityManagerFactory
 import net.corda.crypto.service.impl.TenantInfoServiceImpl
 import net.corda.crypto.service.impl.bus.CryptoOpsBusProcessor
@@ -220,12 +220,12 @@ class CryptoProcessorImpl @Activate constructor(
             }
 
             is ConfigChangedEvent -> {
-                val tenantInfoService = createTenantInfoService()
+                val clusterDbInfoService = createClusterDbInfoService()
                 val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
                 val stateManagerConfig = event.config.getConfig(STATE_MANAGER_CONFIG)
                 val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
 
-                val cryptoService = startCryptoService(cryptoConfig, tenantInfoService)
+                val cryptoService = startCryptoService(cryptoConfig, clusterDbInfoService)
 
                 stateManager?.stop()
                 val stateManager =
@@ -233,15 +233,12 @@ class CryptoProcessorImpl @Activate constructor(
                         .also { it.start() }
                 this.stateManager = stateManager
 
-                (CryptoConsts.Categories.all - ENCRYPTION_SECRET).forEach { category ->
-                    CryptoTenants.allClusterTenants.forEach { tenantId ->
-                        tenantInfoService.populate(tenantId, category, cryptoService)
-                        logger.trace("Assigned SOFT HSM for $tenantId:$category")
-                    }
+                // If a new category is introduced, category ENCRYPTION_SECRET should be generated only for CryptoTenants.P2P
+                (CryptoConsts.Categories.all).forEach { category ->
+                    clusterDbInfoService.populate(CryptoTenants.P2P, category, cryptoService)
+                    logger.trace("Assigned SOFT HSM for $CryptoTenants.P2P:$category")
                 }
 
-                tenantInfoService.populate(CryptoTenants.P2P, ENCRYPTION_SECRET, cryptoService)
-                logger.trace("Assigned SOFT HSM for ${CryptoTenants.P2P}:$ENCRYPTION_SECRET")
 
                 startProcessors(
                     cryptoConfig,
@@ -250,7 +247,7 @@ class CryptoProcessorImpl @Activate constructor(
                     stateManager,
                     cordaAvroSerializationFactory,
                     cryptoService,
-                    tenantInfoService
+                    clusterDbInfoService
                 )
                 setStatus(LifecycleStatus.UP, coordinator)
             }
@@ -258,7 +255,7 @@ class CryptoProcessorImpl @Activate constructor(
     }
 
     @Suppress("ThrowsCount")
-    private fun startCryptoService(config: SmartConfig, tenantInfoService: TenantInfoService): CryptoService {
+    private fun startCryptoService(config: SmartConfig, clusterDbInfoService: TenantInfoService): CryptoService {
         logger.info("Creating instance of the {}", SoftCryptoService::class.java.name)
         val cachingConfig = config.getConfig(CACHING)
         val expireAfterAccessMins = cachingConfig.getConfig(EXPIRE_AFTER_ACCESS_MINS).getLong(DEFAULT)
@@ -337,17 +334,16 @@ class CryptoProcessorImpl @Activate constructor(
             shortHashCache = shortHashCache,
             keyPairGeneratorFactory = keyPairGeneratorFactory,
             wrappingKeyFactory = wrappingKeyFactory,
-            tenantInfoService = tenantInfoService
+            clusterDbInfoService = clusterDbInfoService
         )
     }
 
-    private fun createTenantInfoService(): TenantInfoServiceImpl {
-        val emf = getEntityManagerFactory(
-            CryptoTenants.CRYPTO,
-            dbConnectionManager,
-            virtualNodeInfoReadService,
-            jpaEntitiesRegistry
-        )
+
+    /**
+     * Connects to the cluster DB
+     */
+    private fun createClusterDbInfoService(): TenantInfoServiceImpl {
+        val emf = getClusterDbEntityManager(dbConnectionManager)
         val hsmRegistry = HSMRepositoryImpl(emf)
         return TenantInfoServiceImpl(hsmRegistry)
     }
@@ -369,7 +365,7 @@ class CryptoProcessorImpl @Activate constructor(
                     tenantId = tenantId,
                     dbConnectionManager = dbConnectionManager,
                     virtualNodeInfoReadService = virtualNodeInfoReadService,
-                    jpaEntitiesRegistry = jpaEntitiesRegistry
+                    jpaEntitiesRegistry = jpaEntitiesRegistry,
                 ),
                 tenantId = tenantId
             )

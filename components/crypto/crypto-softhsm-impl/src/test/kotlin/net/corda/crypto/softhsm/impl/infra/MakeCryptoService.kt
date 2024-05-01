@@ -50,6 +50,6 @@ fun makeSoftCryptoService(
             KeyPairGenerator.getInstance(algorithm, provider)
         },
         wrappingKeyFactory = wrappingKeyFactory,
-        tenantInfoService =  tenantInfoService
+        clusterDbInfoService =  tenantInfoService
     )
 }

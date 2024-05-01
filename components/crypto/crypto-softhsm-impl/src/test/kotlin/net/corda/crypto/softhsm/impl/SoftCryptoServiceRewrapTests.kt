@@ -29,7 +29,6 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import java.lang.IllegalStateException
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.Provider
@@ -113,7 +112,7 @@ class SoftCryptoServiceRewrapTests {
             shortHashCache = shortHashCache,
             signingRepositoryFactory = signingRepositoryFactory,
             privateKeyCache = privateKeyCache,
-            tenantInfoService = tenantInfoService
+            clusterDbInfoService = tenantInfoService
         )
     }
 

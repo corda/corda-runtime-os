@@ -127,7 +127,7 @@ class SoftCryptoServiceOperationsTests {
             shortHashCache = shortHashCache,
             signingRepositoryFactory = { signingRepository },
             privateKeyCache = null,
-            tenantInfoService = mock {
+            clusterDbInfoService = mock {
                 on { lookup(eq(CryptoTenants.P2P), any()) } doReturn mockHsmAssociation
             }
         )

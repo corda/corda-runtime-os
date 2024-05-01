@@ -654,7 +654,7 @@ class SoftCryptoServiceGeneralTests {
                 KeyPairGenerator.getInstance(algorithm, provider)
             },
             wrappingKeyFactory = { WrappingKeyImpl.generateWrappingKey(it) },
-            tenantInfoService = makeTenantInfoService(masterKeyAlias)
+            clusterDbInfoService = makeTenantInfoService(masterKeyAlias)
         ) {
             override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedWrappedKey =
                 generatedKey
@@ -784,7 +784,7 @@ class SoftCryptoServiceGeneralTests {
             keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
                 KeyPairGenerator.getInstance(algorithm, provider)
             },
-            tenantInfoService = makeTenantInfoService()
+            clusterDbInfoService = makeTenantInfoService()
         )
         if (keysInCache >= 1) populateShortHashCache(cache, shortKeyId0, fullKeyId0)
         if (keysInCache >= 2) populateShortHashCache(cache, shortKeyId1, fullKeyId1)
@@ -839,7 +839,7 @@ class SoftCryptoServiceGeneralTests {
                 KeyPairGenerator.getInstance(algorithm, provider)
             },
             shortHashCache = cache,
-            tenantInfoService = makeTenantInfoService()
+            clusterDbInfoService = makeTenantInfoService()
         )
         val lookedUpByFullKeyIdsKeys =
             cryptoService.lookupSigningKeysByPublicKeyHashes(tenantId, listOf(requestedFullKeyId))

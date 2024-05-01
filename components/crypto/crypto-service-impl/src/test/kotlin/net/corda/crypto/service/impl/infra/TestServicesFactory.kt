@@ -174,7 +174,7 @@ class TestServicesFactory {
             signingRepositoryFactory = {
                 signingRepository
             },
-            tenantInfoService = tenantInfoService
+            clusterDbInfoService = tenantInfoService
         )
     }
 

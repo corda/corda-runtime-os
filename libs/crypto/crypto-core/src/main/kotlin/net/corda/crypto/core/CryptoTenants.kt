@@ -9,7 +9,7 @@ object CryptoTenants {
      * Tenant id used by the crypto services in some cases to attribute the ownership of the operation however
      * that tenant does not own any asymmetric key pairs, that's why it's not included in the [allClusterTenants] variable.
      */
-    const val CRYPTO: String = "crypto"
+    //const val CRYPTO: String = "crypto"
 
     /**
      * Tenant id of the P2P services.
@@ -28,5 +28,15 @@ object CryptoTenants {
      * Returns true if the tenant is one of the cluster's.
      */
     fun isClusterTenant(tenantId: String) =
-        tenantId == CRYPTO || allClusterTenants.contains(tenantId)
+        allClusterTenants.contains(tenantId)
+}
+
+/**
+ * Defines the identifier of cluster level database used for crypto services and some helper functions.
+ */
+object ClusterLevelDb {
+    const val NAME: String = "crypto"
+
+    fun isClusterLevelDb(name: String) = name == NAME
+
 }
