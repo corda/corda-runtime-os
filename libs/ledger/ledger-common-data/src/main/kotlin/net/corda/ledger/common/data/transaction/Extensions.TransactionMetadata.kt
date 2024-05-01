@@ -17,6 +17,8 @@ import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import java.util.*
 
 object JsonMagic {
+    // jsonb with a header example: corda + 0x8 + 0x0 + 0x<schema version> + { json }
+    // 0x0 is a padding just in case and total jsonb is 8 bytes
     private val header = "corda".toByteArray() + byteArrayOf(8, 0)
     private const val OPENING_BRACKET = '{'.code.toByte()
 
