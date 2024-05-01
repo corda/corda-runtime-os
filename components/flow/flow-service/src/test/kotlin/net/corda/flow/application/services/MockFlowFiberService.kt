@@ -69,6 +69,7 @@ class MockFlowFiberService : FlowFiberService {
         whenever(flowContext.flattenPlatformProperties()).thenReturn(platformContext)
         whenever(flowContext.platformProperties).thenReturn(platformProperties)
         whenever(flowCheckpoint.flowContext).thenReturn(flowContext)
+        whenever(flowCheckpoint.maxPayloadSize).thenReturn(1024)
     }
 
     override fun getExecutingFiber(): FlowFiber {
