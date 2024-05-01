@@ -10,6 +10,8 @@ import net.corda.data.crypto.wire.ops.key.rotation.KeyType
 import net.corda.data.crypto.wire.ops.key.status.ManagedKeyStatus
 import net.corda.data.crypto.wire.ops.key.status.UnmanagedKeyStatus
 import net.corda.libs.statemanager.api.Metadata
+import net.corda.libs.statemanager.api.MetadataFilter
+import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.STATE_TYPE
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
@@ -150,7 +152,7 @@ class CryptoRewrapBusProcessor(
 
             tenantIdSigningKeysRecords.entries.single().let { (_, state) ->
                 logger.info(
-                    "Updating state manager record for tenantId ${request.tenantId} " +
+                    "Id:KR Updating state manager record for tenantId ${request.tenantId} " +
                             "after re-wrapping ${request.keyUuid}."
                 )
                 val deserializedStatus = checkNotNull(managedDeserializer.deserialize(state.value))
@@ -173,6 +175,16 @@ class CryptoRewrapBusProcessor(
                 statusUpdated = updateState(stateManager, state, newValue, newMetadata)
             }
         }
+
+        logger.info("Id:KR Listing SM records after re-wrap during managed key rotation. " +
+            "${stateManager.findByMetadata(
+                MetadataFilter(
+                KeyRotationMetadataValues.STATUS_TYPE,
+                Operation.NotEquals,
+                "dummyValue"
+                )
+            )}"
+        )
 
         logger.debug("Update state manager ${stateManager.name} for managed key rotation tenantId: ${request.tenantId}.")
     }
@@ -203,7 +215,7 @@ class CryptoRewrapBusProcessor(
 
             tenantIdWrappingKeysRecords.forEach { (_, state) ->
                 logger.info(
-                    "Updating state manager record for tenantId ${request.tenantId} " +
+                    "Id:KR Updating state manager record for tenantId ${request.tenantId} " +
                         "after re-wrapping ${request.targetKeyAlias}."
                 )
                 val deserializedStatus = checkNotNull(unmanagedDeserializer.deserialize(state.value))
@@ -226,6 +238,16 @@ class CryptoRewrapBusProcessor(
                 statusUpdated = updateState(stateManager, state, newValue, newMetadata)
             }
         }
+
+        logger.info("Id:KR Listing SM records after update in re-wrap during master key rotation. " +
+            "${stateManager.findByMetadata(
+                MetadataFilter(
+                    KeyRotationMetadataValues.STATUS_TYPE,
+                    Operation.NotEquals,
+                    "dummyValue"
+                )
+            )}"
+        )
     }
 
     private fun mergeMetadata(existing: Metadata?, newMetadata: Metadata?, stateType: String): Metadata {
