@@ -4,12 +4,27 @@ import net.corda.cli.api.AbstractCordaCliVersionProvider
 import net.corda.cli.api.CordaCliPlugin
 import org.pf4j.Extension
 import org.pf4j.Plugin
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import picocli.CommandLine
 
 class VersionProvider : AbstractCordaCliVersionProvider()
 
 @Suppress("unused")
-class PackagePluginWrapper : Plugin() {
+class ProfilePluginWrapper : Plugin() {
+
+    private companion object {
+        val logger: Logger = LoggerFactory.getLogger(this::class.java)
+    }
+
+    override fun start() {
+        logger.debug("starting profile plugin")
+    }
+
+    override fun stop() {
+        logger.debug("stopping profile plugin")
+    }
+
     @Extension
     @CommandLine.Command(
         name = "profile",
@@ -18,5 +33,5 @@ class PackagePluginWrapper : Plugin() {
         description = ["Plugin for profile operations."],
         versionProvider = VersionProvider::class
     )
-    class ProfilePlugin : CordaCliPlugin
+    class PluginEntryPoint : CordaCliPlugin
 }
