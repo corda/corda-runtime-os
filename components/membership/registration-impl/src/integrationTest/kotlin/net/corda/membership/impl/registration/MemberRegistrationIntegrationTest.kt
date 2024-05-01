@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.publicKeyId
@@ -30,8 +31,9 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.grouppolicy.test.common.TestGroupPolicy
 import net.corda.membership.grouppolicy.test.common.TestGroupPolicyProvider
+import net.corda.membership.impl.registration.dummy.TestCpiInfoReadService
 import net.corda.membership.impl.registration.dummy.TestCryptoOpsClient
-import net.corda.membership.impl.registration.dummy.TestGroupReaderProvider
+import net.corda.membership.impl.registration.dummy.TestGroupPolicyParser
 import net.corda.membership.impl.registration.dummy.TestPlatformInfoProvider.Companion.TEST_ACTIVE_PLATFORM_VERSION
 import net.corda.membership.impl.registration.dummy.TestPlatformInfoProvider.Companion.TEST_SOFTWARE_VERSION
 import net.corda.membership.impl.registration.dummy.TestVirtualNodeInfoReadService
@@ -116,7 +118,7 @@ class MemberRegistrationIntegrationTest {
         lateinit var serializationFactory: CordaAvroSerializationFactory
 
         @InjectService(timeout = 5000)
-        lateinit var membershipGroupReaderProvider: TestGroupReaderProvider
+        lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
 
         @InjectService(timeout = 5000)
         lateinit var groupPolicyProvider: TestGroupPolicyProvider
@@ -129,6 +131,12 @@ class MemberRegistrationIntegrationTest {
 
         @InjectService(timeout = 5000)
         lateinit var memberInfoFactory: MemberInfoFactory
+
+        @InjectService(timeout = 5000)
+        lateinit var groupPolicyParser: TestGroupPolicyParser
+
+        @InjectService(timeout = 5000)
+        lateinit var cpiInfoReadService: TestCpiInfoReadService
 
         @InjectService(timeout = 5000)
         lateinit var keyEncodingService: KeyEncodingService
@@ -216,6 +224,7 @@ class MemberRegistrationIntegrationTest {
                             LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
                             LifecycleCoordinatorName.forComponent<LocallyHostedIdentitiesService>(),
                             LifecycleCoordinatorName.forComponent<HSMRegistrationClient>(),
+                            LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
                         )
                     )
                 } else if (e is RegistrationStatusChangeEvent) {
@@ -240,6 +249,7 @@ class MemberRegistrationIntegrationTest {
             membershipPersistenceClient.start()
             hsmRegistrationClient.start()
             testVirtualNodeInfoReadService.start()
+            cpiInfoReadService.start()
 
             configurationReadService.bootstrapConfig(bootConfig)
 
@@ -305,8 +315,10 @@ class MemberRegistrationIntegrationTest {
     fun `dynamic member registration service publishes unauthenticated message to be sent to the MGM`() {
         val member = HoldingIdentity(memberName, groupId)
         val context = buildTestContext(member)
-        groupPolicyProvider.putGroupPolicy(member, TestGroupPolicy())
-        membershipGroupReaderProvider.loadMembers(member, createMemberList())
+        val groupPolicy = TestGroupPolicy()
+        groupPolicyProvider.putGroupPolicy(member, groupPolicy)
+        cpiInfoReadService.loadGroupPolicy(groupPolicy.toString())
+        groupPolicyParser.loadMgm(member, createMemberList())
         val completableResult = CompletableFuture<Pair<String, AppMessage>>()
         // Set up subscription to gather results of processing p2p message
         val registrationRequestSubscription = subscriptionFactory.createPubSubSubscription(
@@ -385,7 +397,7 @@ class MemberRegistrationIntegrationTest {
         }
     }
 
-    private fun createMemberList(): List<MemberInfo> {
+    private fun createMemberList(): MemberInfo {
         val mgmName = MemberX500Name("Corda MGM", "London", "GB")
         val mgmId = HoldingIdentity(mgmName, groupId).shortHash.value
         val ecdhKey = cryptoOpsClient.generateKeyPair(
@@ -394,21 +406,19 @@ class MemberRegistrationIntegrationTest {
             mgmId + "ecdh",
             ECDSA_SECP256R1_CODE_NAME
         )
-        return listOf(
-            memberInfoFactory.createMemberInfo(
-                sortedMapOf(
-                    PARTY_NAME to mgmName.toString(),
-                    GROUP_ID to groupId,
-                    URL_KEY.format(0) to "localhost:1081",
-                    PROTOCOL_VERSION.format(0) to "1",
-                    PLATFORM_VERSION to "5000",
-                    SOFTWARE_VERSION to "5.0.0",
-                    ECDH_KEY to keyEncodingService.encodeAsString(ecdhKey)
-                ),
-                sortedMapOf(
-                    IS_MGM to "true",
-                    STATUS to MEMBER_STATUS_ACTIVE
-                )
+        return memberInfoFactory.createMemberInfo(
+            sortedMapOf(
+                PARTY_NAME to mgmName.toString(),
+                GROUP_ID to groupId,
+                URL_KEY.format(0) to "localhost:1081",
+                PROTOCOL_VERSION.format(0) to "1",
+                PLATFORM_VERSION to "5000",
+                SOFTWARE_VERSION to "5.0.0",
+                ECDH_KEY to keyEncodingService.encodeAsString(ecdhKey)
+            ),
+            sortedMapOf(
+                IS_MGM to "true",
+                STATUS to MEMBER_STATUS_ACTIVE
             )
         )
     }

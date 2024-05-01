@@ -26,23 +26,17 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
-import net.corda.membership.read.MembershipGroupReader
-import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeEntityRepository
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtility
-import net.corda.virtualnode.write.db.impl.writer.asyncoperation.factories.RecordFactory
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeUpgradeOperationHandler
-import net.corda.virtualnode.write.db.impl.writer.asyncoperation.utility.MgmInfoPersistenceHelper
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -53,7 +47,6 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -115,38 +108,16 @@ class VirtualNodeUpgradeOperationHandlerTest {
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
     }
-    private val recordFactory = mock<RecordFactory>()
-
-    private val mgmX500Name = MemberX500Name.parse("CN=MGM, O=MGM Corp, L=LDN, C=GB")
-    private val newMgmInfo = mock<MemberInfo> {
-        on { name } doReturn mgmX500Name
-    }
-    private val groupPolicyParser = mock<GroupPolicyParser> {
-        on { getMgmInfo(any(), any()) } doReturn newMgmInfo
-    }
-
-    private val oldMgmInfo = mock<MemberInfo>()
-    private val membershipGroupReader = mock<MembershipGroupReader> {
-        on { lookup(eq(mgmX500Name), any()) } doReturn oldMgmInfo
-    }
-    private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider> {
-        on { getGroupReader(any()) } doReturn membershipGroupReader
-    }
-    private val mgmInfoPersistenceHelper = mock<MgmInfoPersistenceHelper>()
 
     private val handler = VirtualNodeUpgradeOperationHandler(
         entityManagerFactory,
         oldVirtualNodeEntityRepository,
         virtualNodeInfoPublisher,
         migrationUtility,
-        membershipGroupReaderProvider,
         memberResourceClient,
         membershipQueryClient,
-        mgmInfoPersistenceHelper,
         externalMessagingRouteConfigGenerator,
         cordaAvroSerializationFactory,
-        recordFactory,
-        groupPolicyParser,
         mockCpkDbChangeLogRepository,
         virtualNodeRepository,
     )
@@ -555,75 +526,6 @@ class VirtualNodeUpgradeOperationHandlerTest {
             expectedOperationInProgress = requestId,
             expectedExternalMessagingRouteConfig = newExternalMessagingRouteConfig
         )
-    }
-
-    @Test
-    fun `upgrade is unsuccessful when persistence of MGM info fails`() {
-        val requestTimestamp = Instant.now()
-
-        whenever(virtualNodeRepository.find(em, ShortHash.of(vnodeId))).thenReturn(vNode)
-        whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(
-            nonStaticTargetCpiMetadata
-        )
-        whenever(oldVirtualNodeEntityRepository.getCPIMetadataById(eq(em), eq(cpiId)))
-            .thenReturn(nonStaticTargetCpiMetadata)
-        whenever(
-            virtualNodeRepository.upgradeVirtualNodeCpi(
-                eq(em),
-                eq(vnodeId),
-                eq(cpiName),
-                eq("v2"),
-                eq(sshString),
-                eq(newExternalMessagingRouteConfig),
-                eq(requestId),
-                eq(requestTimestamp),
-                eq(request.toString())
-            )
-        ).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
-        whenever(virtualNodeRepository.completedOperation(any(), any())).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
-        val mgmRecord = mock<Record<*, *>>()
-        whenever(recordFactory.createMgmInfoRecord(any(), eq(newMgmInfo))).thenReturn(mgmRecord)
-        val reason = "mgm info persistence failed"
-        whenever(mgmInfoPersistenceHelper.persistMgmMemberInfo(eq(mockHoldingIdentity), eq(listOf(mgmRecord)), any()))
-            .thenThrow(CordaRuntimeException(reason))
-
-        withFailedOperation(VirtualNodeOperationStateDto.UNEXPECTED_FAILURE, reason) {
-            handler.handle(requestTimestamp, requestId, request)
-        }
-
-        verify(virtualNodeInfoPublisher, never()).publish(eq(listOf(mgmRecord)))
-    }
-
-    @Test
-    fun `upgrade handler re-publishes updated mgm information when group policy changed`() {
-        val requestTimestamp = Instant.now()
-
-        whenever(virtualNodeRepository.find(em, ShortHash.of(vnodeId))).thenReturn(vNode)
-        whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(
-            nonStaticTargetCpiMetadata
-        )
-        whenever(oldVirtualNodeEntityRepository.getCPIMetadataById(eq(em), eq(cpiId)))
-            .thenReturn(nonStaticTargetCpiMetadata)
-        whenever(
-            virtualNodeRepository.upgradeVirtualNodeCpi(
-                eq(em),
-                eq(vnodeId),
-                eq(cpiName),
-                eq("v2"),
-                eq(sshString),
-                eq(newExternalMessagingRouteConfig),
-                eq(requestId),
-                eq(requestTimestamp),
-                eq(request.toString())
-            )
-        ).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
-        whenever(virtualNodeRepository.completedOperation(any(), any())).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
-        val mgmRecord = mock<Record<*, *>>()
-        whenever(recordFactory.createMgmInfoRecord(any(), eq(newMgmInfo))).thenReturn(mgmRecord)
-
-        handler.handle(requestTimestamp, requestId, request)
-
-        verify(virtualNodeInfoPublisher).publish(eq(listOf(mgmRecord)))
     }
 
     @Test
