@@ -67,7 +67,11 @@ class FlowMessagingImplTest {
         val SESSION_INFO_FOUR = SessionInfo(SESSION_ID_FOUR, MemberX500Name("org", "LDN", "GB"))
         val SESSION_INFO_FIVE = SessionInfo(SESSION_ID_FIVE, MemberX500Name("org", "LDN", "GB"))
 
-        val MAX_PAYLOAD_SIZE = (MockFlowFiberService().getExecutingFiber().getExecutionContext().flowCheckpoint.maxPayloadSize).toInt()
+        val MAX_PAYLOAD_SIZE = MockFlowFiberService()
+            .getExecutingFiber()
+            .getExecutionContext()
+            .flowCheckpoint.maxPayloadSize
+            .toInt()
     }
 
     private val mockFlowFiberService = MockFlowFiberService()

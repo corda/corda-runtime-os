@@ -22,7 +22,7 @@ internal object SessionUtils {
         val maxPayloadSize = checkpoint.maxPayloadSize
 
         if (payloadSize > maxPayloadSize) {
-            throw FlowPlatformException("Payload size $payloadSize larger than allowed $maxPayloadSize")
+            throw FlowPlatformException("Payload size: $payloadSize bytes larger than allowed: $maxPayloadSize bytes.")
         }
     }
 }

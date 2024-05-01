@@ -39,7 +39,11 @@ class FlowSessionImplTest {
         const val SESSION_ID = "session id"
         const val HI = "hi"
         const val HELLO_THERE = "hello there"
-        val MAX_PAYLOAD_SIZE = (MockFlowFiberService().getExecutingFiber().getExecutionContext().flowCheckpoint.maxPayloadSize).toInt()
+        val MAX_PAYLOAD_SIZE = MockFlowFiberService()
+            .getExecutingFiber()
+            .getExecutionContext()
+            .flowCheckpoint.maxPayloadSize
+            .toInt()
         val received = mapOf(SESSION_ID to HELLO_THERE.toByteArray())
     }
 

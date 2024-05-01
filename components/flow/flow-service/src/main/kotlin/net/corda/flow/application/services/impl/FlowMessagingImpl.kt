@@ -184,8 +184,8 @@ class FlowMessagingImpl @Activate constructor(
             val serializedPayload = serialize(payload)
             checkPayloadMaxSize(serializedPayload, flowFiberService)
             flowSessionInternal.getSessionInfo() to when (session) {
-                is VersionSendingFlowSession -> session.getPayloadToSend(serialize(payload))
-                else -> serialize(payload)
+                is VersionSendingFlowSession -> session.getPayloadToSend(serializedPayload)
+                else -> serializedPayload
             }
         }.toMap()
         fiber.suspend(FlowIORequest.Send(sessionPayload))
