@@ -25,9 +25,6 @@ dependencies {
     implementation "net.corda:corda-topic-schema:$cordaApiVersion"
     implementation libs.kafka.client
     implementation project(':libs:corda-sdk')
-    constraints {
-        implementation(libs.slf4j.v2.api)
-    }
 
     testImplementation libs.bundles.test
     testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'

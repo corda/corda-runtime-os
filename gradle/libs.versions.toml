@@ -24,12 +24,7 @@ log4jVersion = "2.23.0"
 liquibaseVersion = "4.27.0"
 mssqlDriverVersion = "11.2.3.jre17"
 postgresDriverVersion = "42.7.3"
-# SLF4J cannot be ugraded to 2.x due to CorDapps requiring the 1.7 <= x < 2.0
-slf4jVersion = { strictly = "1.7.36" }
-# The CLI plugins use SLF4J version 2 because PF4j requires it
-# Since slf4jVersion is "strictly" enforced from `corda-api`, in order to override version we need to specify
-# version strictly here as well
-slf4jV2Version = { strictly = "2.0.6" }
+slf4jVersion = "2.0.12"
 snakeyamlVersion = "2.2"
 # Please also update SWAGGERUI.version in net.corda.rest.server.impl.internal.OptionalDependency
 swaggeruiVersion = "5.15.1"
@@ -104,8 +99,7 @@ kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.re
 kubernetes-client = { group = "io.fabric8", name = "kubernetes-client", version.ref = "kubernetesClientVersion" }
 log4j-core = { group = "org.apache.logging.log4j", name = "log4j-core", version.ref = "log4jVersion" }
 log4j-layout-json = { group = "org.apache.logging.log4j", name = "log4j-layout-template-json", version.ref = "log4jVersion" }
-log4j-slf4j = { group = "org.apache.logging.log4j", name = "log4j-slf4j-impl", version.ref = "log4jVersion" }
-log4j-slf4j2 = { group = "org.apache.logging.log4j", name = "log4j-slf4j2-impl", version.ref = "log4jVersion" }
+log4j-slf4j = { group = "org.apache.logging.log4j", name = "log4j-slf4j2-impl", version.ref = "log4jVersion" }
 micrometer-core = { group = "io.micrometer", name = "micrometer-core", version.ref = "micrometerVersion" }
 micrometer-registry-prometheus = { group = "io.micrometer", name = "micrometer-registry-prometheus", version.ref = "micrometerVersion" }
 mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockitoVersion" }
@@ -117,7 +111,6 @@ postgresql-jdbc = { group = "org.postgresql", name = "postgresql", version.ref =
 slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4jVersion" }
 slf4j-jul = { group = "org.slf4j", name = "jul-to-slf4j", version.ref = "slf4jVersion" }
 slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4jVersion" }
-slf4j-v2-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4jV2Version" }
 snakeyaml = { group = "org.yaml", name = "snakeyaml", version.ref = "snakeyamlVersion" }
 typesafe-config = { group = "com.typesafe", name = "config", version.ref = "typeSafeConfigVersion" }
 unirest-java = { group = "com.konghq", name = "unirest-java", version.ref = "unirestVersion"}

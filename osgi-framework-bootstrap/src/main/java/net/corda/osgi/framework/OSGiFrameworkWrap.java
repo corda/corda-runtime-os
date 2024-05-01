@@ -218,7 +218,7 @@ class OSGiFrameworkWrap implements AutoCloseable {
         if (resourceUrl == null) {
             throw new IOException("OSGi bundle at " + resource + " not found");
         }
-        try (InputStream inputStream = resourceUrl.openStream()) {
+        try (InputStream inputStream = new FixLogging(resourceUrl.openStream())) {
             final BundleContext bundleContext = framework.getBundleContext();
             if (bundleContext == null) {
                 throw new IllegalStateException("OSGi framework not active yet.");
@@ -266,7 +266,7 @@ class OSGiFrameworkWrap implements AutoCloseable {
     private void installBundleFile(URI fileUri) throws BundleException, IOException {
         logger.debug("OSGi bundle {} installing...", fileUri);
 
-        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(fileUri.getPath()))) {
+        try (InputStream inputStream = new FixLogging(new BufferedInputStream(new FileInputStream(fileUri.getPath())))) {
             final BundleContext bundleContext = framework.getBundleContext();
             if (bundleContext == null) {
                 throw new IllegalStateException("OSGi framework not active yet.");

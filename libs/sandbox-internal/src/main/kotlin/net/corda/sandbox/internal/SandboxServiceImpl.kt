@@ -30,7 +30,7 @@ import java.io.InputStream
 import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.security.PrivilegedAction
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -326,7 +326,7 @@ internal class SandboxServiceImpl @Activate constructor(
 
         val sandboxLocation = SandboxLocation(securityDomain, sandboxId, bundleSource)
         val bundle = try {
-            inputStream.use {
+            FixLogging(inputStream).use {
                 bundleContext.installBundle(sandboxLocation.toString(), it)
             }
         } catch (e: BundleException) {

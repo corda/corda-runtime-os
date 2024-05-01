@@ -13,10 +13,6 @@ ext {
 group 'net.corda.cli.deployment'
 
 dependencies {
-    constraints {
-        implementation(libs.slf4j.v2.api)
-    }
-
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
 
     implementation project(':libs:packaging:packaging-verify')
@@ -32,7 +28,7 @@ dependencies {
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:packaging-test-utilities")
 
-    testRuntimeOnly libs.log4j.slf4j2
+    testRuntimeOnly libs.log4j.slf4j
 }
 
 cliPlugin {
