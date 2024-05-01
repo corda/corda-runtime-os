@@ -30,4 +30,5 @@ interface MediatorConsumer<K : Any, V : Any> : AutoCloseable {
      * Resets consumer's offsets to the last committed positions. Next poll will read from the last committed positions.
      */
     fun resetEventOffsetPosition()
+    fun tagRecords(records: List<CordaConsumerRecord<K, V>>, tag: String)
 }

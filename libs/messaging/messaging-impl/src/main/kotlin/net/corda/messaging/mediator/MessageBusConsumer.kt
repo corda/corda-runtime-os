@@ -34,6 +34,10 @@ class MessageBusConsumer<K : Any, V : Any>(
         return records
     }
 
+    override fun tagRecords(records: List<CordaConsumerRecord<K, V>>, tag: String) {
+        records.forEach { offsetManager.recordOffsetTag(it.partition, it.offset, tag) }
+    }
+
     override fun alreadySyncedOffset(topic: String, partition: Int, offset: Long): Boolean? {
         if (topic != this.topic) return null
         return (offsetManager.getLowestUncommittedOffset(partition) ?: Long.MAX_VALUE) > offset

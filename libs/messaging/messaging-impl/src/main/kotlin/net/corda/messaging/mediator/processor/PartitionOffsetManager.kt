@@ -19,7 +19,22 @@ import java.util.concurrent.atomic.AtomicBoolean
  * }
  */
 class PartitionOffsetManager {
-    private val offsets = TreeMap<Long, AtomicBoolean>()
+    private class State : AtomicBoolean(false) {
+        private var meta: MutableSet<String>? = null
+        fun addTag(tag: String) {
+            if (meta == null) {
+                meta = mutableSetOf(tag)
+            } else {
+                meta!! += tag
+            }
+        }
+
+        override fun toString(): String {
+            return "State(${this.get()}, meta=${meta ?: "()"})"
+        }
+    }
+
+    private val offsets = TreeMap<Long, State>()
     private val preCommitted = mutableSetOf<Long>()
     private var polledCount = 0L
     private var committedCount = 0L
@@ -32,7 +47,7 @@ class PartitionOffsetManager {
 
     @Synchronized
     fun recordPolledOffset(offset: Long) {
-        if (offsets.putIfAbsent(offset, AtomicBoolean(false)) == null) {
+        if (offsets.putIfAbsent(offset, State()) == null) {
             polledCount++
         }
     }
@@ -43,6 +58,12 @@ class PartitionOffsetManager {
         if (flag.get()) return
         flag.set(true)
         preCommitted.add(offset)
+    }
+
+    @Synchronized
+    fun recordOffsetTag(offset: Long, tag: String) {
+        val state = offsets[offset] ?: return
+        state.addTag(tag)
     }
 
     // null means no change and thus nothing to commit
@@ -95,6 +116,6 @@ class PartitionOffsetManager {
 
     @Synchronized
     override fun toString(): String {
-        return "${this.javaClass.simpleName}(size=${offsets.size}, polled=$polledCount, preCommited=${preCommitted.size}, committed=$committedCount, lowestOffset=${getLowestUncommittedOffset()}, highestOffset=${getHighestUncommittedOffset()}, canCommitOffset=${getCommittableOffset()})"
+        return "${this.javaClass.simpleName}(size=${offsets.size}, polled=$polledCount, preCommited=${preCommitted.size}, committed=$committedCount, lowestOffset=${offsets.firstEntry()}, highestOffset=${getHighestUncommittedOffset()}, canCommitOffset=${getCommittableOffset()})"
     }
 }

@@ -22,6 +22,10 @@ class TopicOffsetManager(val topic: String) {
         getPartitionOffsetManager(partition).recordOffsetPreCommit(offset)
     }
 
+    fun recordOffsetTag(partition: Int, offset: Long, tag: String) {
+        getPartitionOffsetManager(partition).recordOffsetTag(offset, tag)
+    }
+
     fun getCommittableOffsets(): Map<Int, Long> {
         return partitionOffsetManagers.filterValues {
             it.getCommittableOffset() != null
