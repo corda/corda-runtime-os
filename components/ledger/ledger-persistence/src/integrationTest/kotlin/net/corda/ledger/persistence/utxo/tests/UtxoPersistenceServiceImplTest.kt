@@ -2092,6 +2092,35 @@ class UtxoPersistenceServiceImplTest {
         assertThat(result).doesNotContainKey(transaction6.id)
     }
 
+    @Test
+    fun `findFilteredTransaction parses metadata with a header successfully`() {
+        val signatures = createSignatures(Instant.now())
+        val signedTransaction =
+            createSignedTransaction(signatures = signatures, header = ("corda".toByteArray() + byteArrayOf(8, 0, 1)))
+
+        val filteredTransactionToStore = createFilteredTransaction(signedTransaction)
+        persistenceService.persistFilteredTransactions(
+            mapOf(filteredTransactionToStore to signatures),
+            emptyList(),
+            emptyList(),
+            "Account"
+        )
+
+        val filteredTxResults = (persistenceService as UtxoPersistenceServiceImpl).findFilteredTransactions(
+            listOf(filteredTransactionToStore.id.toString())
+        )
+
+        assertThat(filteredTxResults).hasSize(1)
+
+        val storedFilteredTransaction = filteredTxResults[filteredTransactionToStore.id]?.first
+
+        assertNotNull(storedFilteredTransaction)
+
+        assertThat(storedFilteredTransaction!!.metadata).isEqualTo(filteredTransactionToStore.metadata)
+
+        storedFilteredTransaction.verify()
+    }
+
     @Suppress("LongParameterList")
     private fun createUtxoTokenMap(
         transactionReader: TestUtxoTransactionReader,
@@ -2140,7 +2169,6 @@ class UtxoPersistenceServiceImplTest {
                     status = status,
                     isFiltered = isFiltered,
                     createdTs = createdTs,
-//                    createdTs = testClock.instant(),
                     repairAttemptCount = repairAttemptCount
                 )
             )
@@ -2279,11 +2307,13 @@ class UtxoPersistenceServiceImplTest {
         referenceStateRefs: List<StateRef> = defaultReferenceStateRefs,
         outputStates: List<ContractState> = defaultVisibleTransactionOutputs,
         signatures: List<DigitalSignatureAndMetadata> = createSignatures(instant),
+        header: ByteArray = "".toByteArray()
     ): SignedTransactionContainer {
         val transactionMetadata = utxoTransactionMetadataExample(cpkPackageSeed = seed)
         val timeWindow = Instant.now().plusMillis(Duration.ofDays(1).toMillis())
+        val jsonBlob = jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetadata)).toByteArray()
         val componentGroupLists: List<List<ByteArray>> = listOf(
-            listOf(jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetadata)).toByteArray()),
+            listOf(header + jsonBlob),
             listOf(notaryExampleName.toBytes(), notaryExampleKey.toBytes(), timeWindow.toBytes()),
             listOf("group2_component1".toByteArray()),
             outputStates.map {
