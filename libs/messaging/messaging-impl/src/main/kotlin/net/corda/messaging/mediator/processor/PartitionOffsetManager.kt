@@ -20,17 +20,17 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class PartitionOffsetManager {
     private class State : AtomicBoolean(false) {
-        private var meta: MutableSet<String>? = null
+        private var meta: MutableList<String>? = null
         fun addTag(tag: String) {
             if (meta == null) {
-                meta = mutableSetOf(tag)
+                meta = mutableListOf(tag)
             } else {
                 meta!! += tag
             }
         }
 
         override fun toString(): String {
-            return "State(${this.get()}, meta=${meta ?: "()"})"
+            return "State(${this.get()}, meta=${meta ?: "[]"})"
         }
     }
 
