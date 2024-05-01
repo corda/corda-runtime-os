@@ -1,5 +1,6 @@
 package net.corda.ledger.common.data.transaction.filtered.impl
 
+import net.corda.common.json.validation.JsonValidator
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY
@@ -8,7 +9,7 @@ import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_ALGORITH
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY
-import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
+import net.corda.ledger.common.data.transaction.TransactionMetadataUtils.parseMetadata
 import net.corda.ledger.common.data.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransactionVerificationException
@@ -29,6 +30,7 @@ class FilteredTransactionImpl(
     override val filteredComponentGroups: Map<Int, FilteredComponentGroup>,
     override val privacySalt: PrivacySalt,
     private val jsonMarshallingService: JsonMarshallingService,
+    private val jsonValidator: JsonValidator,
     private val merkleTreeProvider: MerkleTreeProvider
 ) : FilteredTransaction {
 
@@ -99,10 +101,8 @@ class FilteredTransactionImpl(
         val proof =
             checkNotNull(filteredComponentGroups[0]?.merkleProof) { "Component group 0's Merkle proof does not exist" }
         check(proof.leaves.size == 1) { "Component group 0's Merkle proof must have a single leaf but contains ${proof.leaves.size}" }
-        jsonMarshallingService.parse(
-            proof.leaves.single().leafData.decodeToString(),
-            TransactionMetadataImpl::class.java
-        )
+
+        parseMetadata(proof.leaves.single().leafData, jsonValidator, jsonMarshallingService)
     }
 
     override fun getComponentGroupContent(componentGroupIndex: Int): List<Pair<Int, ByteArray>>? {
