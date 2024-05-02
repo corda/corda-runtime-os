@@ -1,12 +1,12 @@
 package net.corda.orm.impl
 
-import net.corda.flow.external.events.responses.exceptions.criteria
 import net.corda.orm.PersistenceExceptionCategorizer
 import net.corda.orm.PersistenceExceptionType
 import net.corda.orm.PersistenceExceptionType.DATA_RELATED
 import net.corda.orm.PersistenceExceptionType.FATAL
 import net.corda.orm.PersistenceExceptionType.TRANSIENT
 import net.corda.orm.PersistenceExceptionType.UNCATEGORIZED
+import net.corda.utilities.criteria
 import org.hibernate.QueryException
 import org.hibernate.ResourceClosedException
 import org.hibernate.SessionException
