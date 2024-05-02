@@ -20,14 +20,23 @@ dependencies {
     }
 
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation libs.jackson.module.kotlin
     implementation libs.jackson.datatype.jsr310
+    implementation libs.kafka.client
     implementation libs.snakeyaml
     implementation libs.unirest.java
     implementation libs.pf4j
     kapt libs.pf4j
 
+    implementation "net.corda:corda-avro-schema:$cordaApiVersion"
+    implementation "net.corda:corda-topic-schema"
+    implementation project(":libs:messaging:kafka-message-bus-impl")
+    implementation project(":libs:schema-registry:schema-registry")
+    implementation project(":libs:serialization:serialization-avro")
+    implementation project(":tools:plugins:topic-config")
+    implementation project(":libs:schema-registry:schema-registry-impl")
 }
 
 cliPlugin {
