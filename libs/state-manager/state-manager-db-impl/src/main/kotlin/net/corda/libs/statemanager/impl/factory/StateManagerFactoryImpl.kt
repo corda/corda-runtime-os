@@ -31,7 +31,7 @@ class StateManagerFactoryImpl @Activate constructor(
     private val compressionService: CompressionService,
 ) : StateManagerFactory {
     private val lock = ReentrantLock()
-    private var dataSource: CloseableDataSource? = null
+    private var dataSourceMap = mutableMapOf<String,CloseableDataSource>()
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -44,8 +44,9 @@ class StateManagerFactoryImpl @Activate constructor(
 
     override fun create(config: SmartConfig, stateType: StateManagerConfig.StateType, compressionType: CompressionType): StateManager {
         lock.withLock {
-            if (dataSource == null) {
-                logger.info("Initializing Shared State Manager DataSource")
+
+            if(dataSourceMap[stateType.value] == null) {
+                logger.info("Initializing Shared State Manager DataSource for type $stateType")
 
                 val stateManagerConfig = config.getConfig(stateType.value)
 
@@ -71,7 +72,7 @@ class StateManagerFactoryImpl @Activate constructor(
                     stateManagerConfig.getInt(StateManagerConfig.Database.JDBC_POOL_VALIDATION_TIMEOUT_SECONDS).toLong()
                         .run(Duration::ofSeconds)
 
-                dataSource = DataSourceFactoryImpl().create(
+                dataSourceMap[stateType.value] = DataSourceFactoryImpl().create(
                     enablePool = true,
                     username = user,
                     password = pass,
@@ -89,7 +90,7 @@ class StateManagerFactoryImpl @Activate constructor(
 
         return StateManagerImpl(
             lifecycleCoordinatorFactory,
-            dataSource!!,
+            dataSourceMap[stateType.value]!!,
             StateRepositoryImpl(queryProvider(), compressionService, compressionType),
             MetricsRecorderImpl()
         )
