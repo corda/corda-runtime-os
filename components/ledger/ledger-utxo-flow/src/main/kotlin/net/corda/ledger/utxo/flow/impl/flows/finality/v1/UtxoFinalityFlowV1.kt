@@ -26,6 +26,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.notary.plugin.api.NotarizationType
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
+import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionGeneral
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionUnknown
 import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.UtxoLedgerService
@@ -283,6 +284,12 @@ class UtxoFinalityFlowV1(
             try {
                 notarySignatures = notarize(++attemptNumber)
                 break
+            } catch (e: NotaryExceptionGeneral) {
+                log.warn(
+                    "Received general error from notarization for transaction: ${transaction.id} on attempt: $attemptNumber. " +
+                        "Error: ${e.message} Retrying notarisation."
+                )
+                continue
             } catch (e: NotaryExceptionUnknown) {
                 log.warn(
                     "Received unknown error from notarization for transaction: ${transaction.id} on attempt: $attemptNumber. " +
