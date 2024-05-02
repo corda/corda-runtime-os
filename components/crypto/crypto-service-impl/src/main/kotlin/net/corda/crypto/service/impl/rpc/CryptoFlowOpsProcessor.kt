@@ -5,6 +5,7 @@ import net.corda.crypto.config.impl.RetryingConfig
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.isRecoverable
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
@@ -21,7 +22,9 @@ import net.corda.data.crypto.wire.ops.flow.queries.ByIdsFlowQuery
 import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.data.flow.event.FlowEvent
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
+import net.corda.messaging.api.exception.CordaHTTPServerTransientException
 import net.corda.messaging.api.processor.SyncRPCProcessor
+import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
@@ -30,10 +33,18 @@ import net.corda.utilities.debug
 import net.corda.utilities.trace
 import net.corda.utilities.translateFlowContextToMDC
 import net.corda.utilities.withMDC
+import org.bouncycastle.crypto.CryptoException
+import org.hibernate.exception.JDBCConnectionException
+import org.hibernate.exception.LockAcquisitionException
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
+import java.sql.SQLTransientException
 import java.time.Duration
 import java.time.Instant
+import javax.persistence.LockTimeoutException
+import javax.persistence.OptimisticLockException
+import javax.persistence.PersistenceException
+import javax.persistence.QueryTimeoutException
 
 @Suppress("LongParameterList")
 class CryptoFlowOpsProcessor(
@@ -48,6 +59,15 @@ class CryptoFlowOpsProcessor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        private val transientDBExceptions = setOf(
+            SQLTransientException::class.java,
+            JDBCConnectionException::class.java,
+            LockAcquisitionException::class.java,
+            LockTimeoutException::class.java,
+            QueryTimeoutException::class.java,
+            OptimisticLockException::class.java
+        )
     }
 
     private val executor = CryptoRetryingExecutor(logger, config.maxAttempts.toLong(), config.waitBetweenMills)
@@ -66,24 +86,15 @@ class CryptoFlowOpsProcessor(
         val result = withMDC(mdc) {
             val requestPayload = request.request
             val startTime = System.nanoTime()
-
             logger.debug { "Handling ${requestPayload::class.java.name} for tenant ${request.context.tenantId}" }
 
-            try {
-                val response = executor.executeWithRetry {
-                    handleRequest(requestPayload, request.context)
-                }
-
-                externalEventResponseFactory.success(
-                    request.flowExternalEventContext,
-                    FlowOpsResponse(createResponseContext(request), response, null)
-                )
+            val response = try {
+                executor.executeWithRetry { handleRequest(requestPayload, request.context) }
             } catch (e: Exception) {
-                logger.warn(
-                    "Failed to handle ${requestPayload::class.java.name} for tenant ${request.context.tenantId}", e
-                )
-                externalEventResponseFactory.platformError(request.flowExternalEventContext, e)
-            }.also {
+                processException(e, request, requestPayload)
+            }
+
+            createSuccessResponse(request, response).also {
                 CordaMetrics.Metric.Crypto.FlowOpsProcessorExecutionTime.builder()
                     .withTag(CordaMetrics.Tag.OperationName, requestPayload::class.java.simpleName)
                     .build()
@@ -91,8 +102,34 @@ class CryptoFlowOpsProcessor(
             }
         }
 
+
         return result.value as FlowEvent
     }
+
+    private fun processException(e: Exception, request: FlowOpsRequest, requestPayload: Any) {
+        if (isTransientException(e)) {
+            throw CordaHTTPServerTransientException(request.flowExternalEventContext.requestId, e)
+        } else {
+            handlePlatformException(e, request, requestPayload)
+        }
+    }
+
+    private fun isTransientException(e: Exception) : Boolean {
+        return e::class.java in transientDBExceptions ||
+                (e is PersistenceException && e.cause is SQLTransientException) ||
+                (e is CryptoException && e.isRecoverable())
+    }
+
+    private fun handlePlatformException(e: Exception, request: FlowOpsRequest, requestPayload: Any): Record<String, FlowEvent> {
+        logger.warn("Failed to handle ${requestPayload::class.java.name} for tenant ${request.context.tenantId}", e)
+        return externalEventResponseFactory.platformError(request.flowExternalEventContext, e)
+    }
+
+    private fun createSuccessResponse(request: FlowOpsRequest, response: Any) =
+        externalEventResponseFactory.success(
+            request.flowExternalEventContext,
+            FlowOpsResponse(createResponseContext(request), response, null)
+        )
 
     private fun handleRequest(request: Any, context: CryptoRequestContext): Any {
         return when (request) {
