@@ -20,8 +20,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Duration
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
+import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [StateManagerFactory::class])
 class StateManagerFactoryImpl @Activate constructor(
@@ -30,8 +29,7 @@ class StateManagerFactoryImpl @Activate constructor(
     @Reference(service = CompressionService::class)
     private val compressionService: CompressionService,
 ) : StateManagerFactory {
-    private val lock = ReentrantLock()
-    private var dataSource: CloseableDataSource? = null
+    private val dataSources = ConcurrentHashMap<String, CloseableDataSource>()
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -42,54 +40,56 @@ class StateManagerFactoryImpl @Activate constructor(
         return PostgresQueryProvider()
     }
 
-    override fun create(config: SmartConfig, stateType: StateManagerConfig.StateType, compressionType: CompressionType): StateManager {
-        lock.withLock {
-            if (dataSource == null) {
-                logger.info("Initializing Shared State Manager DataSource")
+    override fun create(
+        config: SmartConfig,
+        stateType: StateManagerConfig.StateType,
+        compressionType: CompressionType
+    ): StateManager {
+        val dataSource = dataSources.computeIfAbsent(stateType.value) {
+            logger.info("Initializing Shared State Manager DataSource")
 
-                val stateManagerConfig = config.getConfig(stateType.value)
-
-                val user = stateManagerConfig.getString(StateManagerConfig.Database.JDBC_USER)
-                val pass = stateManagerConfig.getString(StateManagerConfig.Database.JDBC_PASS)
-                val jdbcUrl = stateManagerConfig.getString(StateManagerConfig.Database.JDBC_URL)
-                val jdbcDiver = stateManagerConfig.getString(StateManagerConfig.Database.JDBC_DRIVER)
-                val maxPoolSize = stateManagerConfig.getInt(StateManagerConfig.Database.JDBC_POOL_MAX_SIZE)
-                val minPoolSize = stateManagerConfig.getIntOrDefault(StateManagerConfig.Database.JDBC_POOL_MIN_SIZE, maxPoolSize)
-                val idleTimeout =
-                    stateManagerConfig.getInt(StateManagerConfig.Database.JDBC_POOL_IDLE_TIMEOUT_SECONDS).toLong().run(
-                        Duration::ofSeconds
-                    )
-                val maxLifetime =
-                    stateManagerConfig.getInt(StateManagerConfig.Database.JDBC_POOL_MAX_LIFETIME_SECONDS).toLong().run(
-                        Duration::ofSeconds
-                    )
-                val keepAliveTime =
-                    stateManagerConfig.getInt(StateManagerConfig.Database.JDBC_POOL_KEEP_ALIVE_TIME_SECONDS).toLong().run(
-                        Duration::ofSeconds
-                    )
-                val validationTimeout =
-                    stateManagerConfig.getInt(StateManagerConfig.Database.JDBC_POOL_VALIDATION_TIMEOUT_SECONDS).toLong()
-                        .run(Duration::ofSeconds)
-
-                dataSource = DataSourceFactoryImpl().create(
-                    enablePool = true,
-                    username = user,
-                    password = pass,
-                    jdbcUrl = jdbcUrl,
-                    driverClass = jdbcDiver,
-                    idleTimeout = idleTimeout,
-                    maxLifetime = maxLifetime,
-                    keepaliveTime = keepAliveTime,
-                    minimumPoolSize = minPoolSize,
-                    maximumPoolSize = maxPoolSize,
-                    validationTimeout = validationTimeout
+            val stateManagerConfig = config.getConfig(stateType.value)
+            val user = stateManagerConfig.getString(StateManagerConfig.Database.JDBC_USER)
+            val pass = stateManagerConfig.getString(StateManagerConfig.Database.JDBC_PASS)
+            val jdbcUrl = stateManagerConfig.getString(StateManagerConfig.Database.JDBC_URL)
+            val jdbcDiver = stateManagerConfig.getString(StateManagerConfig.Database.JDBC_DRIVER)
+            val maxPoolSize = stateManagerConfig.getInt(StateManagerConfig.Database.JDBC_POOL_MAX_SIZE)
+            val minPoolSize =
+                stateManagerConfig.getIntOrDefault(StateManagerConfig.Database.JDBC_POOL_MIN_SIZE, maxPoolSize)
+            val idleTimeout =
+                stateManagerConfig.getInt(StateManagerConfig.Database.JDBC_POOL_IDLE_TIMEOUT_SECONDS).toLong().run(
+                    Duration::ofSeconds
                 )
-            }
+            val maxLifetime =
+                stateManagerConfig.getInt(StateManagerConfig.Database.JDBC_POOL_MAX_LIFETIME_SECONDS).toLong().run(
+                    Duration::ofSeconds
+                )
+            val keepAliveTime =
+                stateManagerConfig.getInt(StateManagerConfig.Database.JDBC_POOL_KEEP_ALIVE_TIME_SECONDS).toLong().run(
+                    Duration::ofSeconds
+                )
+            val validationTimeout =
+                stateManagerConfig.getInt(StateManagerConfig.Database.JDBC_POOL_VALIDATION_TIMEOUT_SECONDS).toLong()
+                    .run(Duration::ofSeconds)
+
+            DataSourceFactoryImpl().create(
+                enablePool = true,
+                username = user,
+                password = pass,
+                jdbcUrl = jdbcUrl,
+                driverClass = jdbcDiver,
+                idleTimeout = idleTimeout,
+                maxLifetime = maxLifetime,
+                keepaliveTime = keepAliveTime,
+                minimumPoolSize = minPoolSize,
+                maximumPoolSize = maxPoolSize,
+                validationTimeout = validationTimeout
+            )
         }
 
         return StateManagerImpl(
             lifecycleCoordinatorFactory,
-            dataSource!!,
+            dataSource,
             StateRepositoryImpl(queryProvider(), compressionService, compressionType),
             MetricsRecorderImpl()
         )
