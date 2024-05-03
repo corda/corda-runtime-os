@@ -29,7 +29,7 @@ class StateManagerFactoryImpl @Activate constructor(
     @Reference(service = CompressionService::class)
     private val compressionService: CompressionService,
 ) : StateManagerFactory {
-    private val dataSources = ConcurrentHashMap<String, CloseableDataSource>()
+    private val dataSources = ConcurrentHashMap<StateManagerConfig.StateType, CloseableDataSource>()
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -45,8 +45,8 @@ class StateManagerFactoryImpl @Activate constructor(
         stateType: StateManagerConfig.StateType,
         compressionType: CompressionType
     ): StateManager {
-        val dataSource = dataSources.computeIfAbsent(stateType.value) {
-            logger.info("Initializing Shared State Manager DataSource")
+        val dataSource = dataSources.computeIfAbsent(stateType) {
+            logger.info("Initializing Shared State Manager DataSource - State Type: $stateType")
 
             val stateManagerConfig = config.getConfig(stateType.value)
             val user = stateManagerConfig.getString(StateManagerConfig.Database.JDBC_USER)
