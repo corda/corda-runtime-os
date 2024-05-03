@@ -48,6 +48,6 @@ class HelloRestResourceImpl @Activate constructor(
     override fun greet(addressee: String): String {
         val restContext = CURRENT_REST_CONTEXT.get()
         val principal = restContext.principal
-        return "Hello, $addressee! (from $principal)".also { log.info(it) }
+        return "\"Hello, $addressee! (from $principal)\"".also { log.info(it) }
     }
 }
