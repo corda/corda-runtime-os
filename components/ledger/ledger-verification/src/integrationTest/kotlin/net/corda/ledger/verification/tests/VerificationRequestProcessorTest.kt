@@ -24,12 +24,12 @@ import net.corda.ledger.utxo.verification.CordaPackageSummary
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.utxo.verification.TransactionVerificationResponse
 import net.corda.ledger.utxo.verification.TransactionVerificationStatus
+import net.corda.ledger.verification.processor.VerificationErrorType
 import net.corda.ledger.verification.processor.impl.VerificationRequestHandlerImpl
 import net.corda.ledger.verification.processor.impl.VerificationRequestProcessor
 import net.corda.ledger.verification.tests.helpers.VirtualNodeService
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.membership.lib.GroupParametersFactory
-import net.corda.messaging.api.exception.CordaHTTPServerTransientException
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -161,7 +161,7 @@ class VerificationRequestProcessorTest {
             verificationSandboxService,
             VerificationRequestHandlerImpl(externalEventResponseFactory),
             externalEventResponseFactory
-        )
+        ) { _ -> VerificationErrorType.FATAL }
 
         // Send request to message processor
         val flowEvent = processor.process(request)
@@ -193,7 +193,7 @@ class VerificationRequestProcessorTest {
             verificationSandboxService,
             VerificationRequestHandlerImpl(externalEventResponseFactory),
             externalEventResponseFactory
-        )
+        ) { _ -> VerificationErrorType.FATAL }
 
         // Send request to message processor
         val flowEvent = processor.process(request)
@@ -212,7 +212,7 @@ class VerificationRequestProcessorTest {
     }
 
     @Test
-    fun `returns transient exception after CPK not available`() {
+    fun `returns fatal exception after CPK not available`() {
         val virtualNodeInfo = virtualNodeService.load(TEST_CPB)
         val holdingIdentity = virtualNodeInfo.holdingIdentity
         val cpksMetadata =
@@ -228,15 +228,17 @@ class VerificationRequestProcessorTest {
             verificationSandboxService,
             VerificationRequestHandlerImpl(externalEventResponseFactory),
             externalEventResponseFactory
-        )
-
-        // Send request to message processor (there were max number of redeliveries)
-        val e = assertThrows<CordaHTTPServerTransientException> {
-            processor.process(request)
+        ) { exception: Throwable ->
+            if (exception is CpkNotAvailableException) {
+                VerificationErrorType.RETRYABLE
+            } else {
+                VerificationErrorType.FATAL
+            }
         }
 
-        assertThat(e.requestId).isEqualTo(request.flowExternalEventContext.requestId)
-        assertThat(e.cause!!.javaClass).isEqualTo(CpkNotAvailableException::class.java)
+        assertThrows<CpkNotAvailableException> {
+            processor.process(request)
+        }
     }
 
     private fun createTestTransaction(ctx: SandboxGroupContext, isValid: Boolean): UtxoLedgerTransactionContainer {
