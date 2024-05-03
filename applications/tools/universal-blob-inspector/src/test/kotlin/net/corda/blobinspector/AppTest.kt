@@ -43,7 +43,7 @@ class AppTest {
         requireNotNull(bytes) {
             "Couldn't read resource: $resourceName"
         }
-        val decoded = Encoding.decodedBytes(bytes)
+        val decoded = Encoding.decodedBytes(bytes, false)
         println(decoded.result.prettyPrint())
     }
 }
