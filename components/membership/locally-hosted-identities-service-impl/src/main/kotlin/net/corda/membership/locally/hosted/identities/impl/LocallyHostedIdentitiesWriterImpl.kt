@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 /**
- * Locally-hosted Identities writer to [put] and [remove] records from Kafka.
+ * Locally-hosted Identities writer to [put] and [remove] (publish null) records to Kafka.
  */
 @Component(service = [LocallyHostedIdentitiesWriter::class])
 class LocallyHostedIdentitiesWriterImpl@Activate constructor(
