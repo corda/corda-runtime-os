@@ -6,7 +6,7 @@ description "Corda Universal Blob Inspector"
 
 dependencies {
     // Use the Kotlin standard library.
-    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib'
 
     // AMQP support
     implementation "org.apache.qpid:proton-j:$protonjVersion"
@@ -38,4 +38,11 @@ tasks.named('jar', Jar) {
     from {
         configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
+}
+
+// for debugging purpose: in this way, you don't need to delete and create a new jar
+tasks.register("runBlobInspectorCommand", JavaExec) {
+    mainClass = "net.corda.blobinspector.AppKt"
+    classpath = sourceSets.main.runtimeClasspath
+    args = ["path_to_binary_file", "-oa"]
 }

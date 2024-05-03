@@ -24,10 +24,14 @@ class Command : Callable<Int> {
     @CommandLine.Option(names = ["-f", "--format"], description = ["The type of format of the bytes that is encoded."])
     var format: String? = null
 
+    @CommandLine.Option(names = ["-oa", "--optionalAMQP"], description = ["Turn off adding AMQP bytes"])
+    var optionalAMQP: Boolean = false
+
     override fun call(): Int {
         val bytes = (inputFile?.let { FileInputStream(it) } ?: System.`in`).readFully().sequence()
-        val decoded = Encoding.decodedBytes(bytes, encoding, encodingStart, format)
+        val decoded = Encoding.decodedBytes(bytes, optionalAMQP, encoding, encodingStart, format)
         println(decoded.result)
+        println("optional AMQP bytes: $optionalAMQP")
         return 0
     }
 }
