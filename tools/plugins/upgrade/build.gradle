@@ -19,6 +19,10 @@ dependencies {
         implementation libs.slf4j.v2.api
     }
 
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-config-schema'
+
+
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
 
     implementation libs.jackson.module.kotlin
@@ -26,9 +30,20 @@ dependencies {
     implementation libs.snakeyaml
     implementation libs.unirest.java
     implementation libs.pf4j
+
     kapt libs.pf4j
 
     implementation "org.liquibase:liquibase-core:$liquibaseVersion"
+    implementation 'javax.persistence:javax.persistence-api'
+    implementation 'net.corda:corda-avro-schema'
+
+    implementation project(':components:membership:membership-rest')
+    implementation project(':libs:crypto:crypto-core')
+    implementation project(':libs:db:db-core')
+    implementation project(':libs:membership:membership-datamodel')
+    implementation project(':libs:virtual-node:virtual-node-info')
+    implementation project(':tools:plugins:network')
+    implementation project(':tools:plugins:plugins-rest')
 
     // DO NOT DISTRIBUTE DRIVERS HERE WE ARE NOT LICENSED TO DISTRIBUTE
     // JDBC drivers are picked up in Corda 5 from a configured location, the CLI tool does not yet have this ability so
