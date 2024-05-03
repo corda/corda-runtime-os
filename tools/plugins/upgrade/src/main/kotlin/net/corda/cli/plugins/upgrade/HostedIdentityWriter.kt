@@ -67,6 +67,7 @@ class HostedIdentityWriter(private val output: Output = ConsoleOutput()) : RestC
         val connection = connectToDatabase()
         val testId = "FB04950F5F92"
 
+        // look up for all keys for holding ID
         val keyLookupResult: Pair<String, List<KeyMetaData>> = createRestClient(KeyRestResource::class, RestApiVersion.C5_2).use { client ->
             checkInvariant(
                 maxAttempts = MAX_ATTEMPTS,
@@ -99,7 +100,8 @@ class HostedIdentityWriter(private val output: Output = ConsoleOutput()) : RestC
 
         val pemLookupParams = keyLookupResult.first to keyLookupResult.second.map { it.keyId }
 
-        val certLookupResult: List<Triple<String, String, String>> = createRestClient(
+        // find the pem format of keys for holding ID and key ID
+        val pemLookupResult: List<Triple<String, String, String>> = createRestClient(
             KeyRestResource::class,
             RestApiVersion.C5_2
         ).use { client ->
@@ -125,7 +127,7 @@ class HostedIdentityWriter(private val output: Output = ConsoleOutput()) : RestC
 
         verifyAndPrintError {
             printJsonOutput(keyLookupResult, output)
-            printJsonOutput(certLookupResult, output)
+            printJsonOutput(pemLookupResult, output)
         }
 
         // Should map the PEM to find the ID for preferred key ID
@@ -134,12 +136,13 @@ class HostedIdentityWriter(private val output: Output = ConsoleOutput()) : RestC
         // Default version to 1
         val entity = HostedIdentityEntity(
             testId,
-            certLookupResult.first().second,
+            pemLookupResult.first().second,
             "dummyAlias",
             true,
             2
         )
 
+        // need to add insert for hosted_identity_session_key_info table as well
         val statement = entity.toInsertStatement()
         connection.createStatement().execute(statement)
     }
