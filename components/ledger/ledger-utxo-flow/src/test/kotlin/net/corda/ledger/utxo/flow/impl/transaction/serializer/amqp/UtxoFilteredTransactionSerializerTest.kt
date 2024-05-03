@@ -15,7 +15,7 @@ class UtxoFilteredTransactionSerializerTest : UtxoLedgerTest() {
     private val testBase = UtxoFilteredTransactionTestBase()
     private val serializationService = TestSerializationService.getTestSerializationService({
         it.register(wireTransactionAMQPSerializer, it)
-        it.register(FilteredTransactionSerializer(jsonMarshallingService, merkleTreeProvider), it)
+        it.register(FilteredTransactionSerializer(jsonMarshallingService, jsonValidator, merkleTreeProvider), it)
         it.register(UtxoFilteredTransactionSerializer(serializationServiceNullCfg), it)
     }, cipherSchemeMetadata)
 

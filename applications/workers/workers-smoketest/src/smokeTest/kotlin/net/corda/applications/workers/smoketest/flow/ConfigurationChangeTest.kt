@@ -92,16 +92,19 @@ class ConfigurationChangeTest : ClusterReadiness by ClusterReadinessChecker() {
         logger.info("Set new config")
         managedConfig()
             .load(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue).apply {
-            // Wait for the rest-worker to reload the configuration and come back up
+            // Wait for the REST worker to reload the configuration and start coming back up
             logger.info("Wait for the rest-worker to reload the configuration and come back up")
             waitForConfigurationChange(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue.toString(), false)
 
-            //Ensure cluster is ready after Config Update.
+            // Ensure the cluster is ready after Config Update.
             assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(100))
+
+            // Ensure that the cluster remains in ready state for at least 30 seconds
+            remainsReady()
 
             // Execute some flows which require functionality from different workers and make sure they succeed
             logger.info("Execute some flows which require functionality from different workers and make sure they succeed")
-            val flowIds = mutableListOf(
+            val flowIds = listOf(
                 startRestFlow(
                     bobHoldingId,
                     RestSmokeTestInput().apply {
