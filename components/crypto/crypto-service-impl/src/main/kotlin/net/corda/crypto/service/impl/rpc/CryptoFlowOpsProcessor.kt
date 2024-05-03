@@ -5,11 +5,12 @@ import net.corda.crypto.config.impl.RetryingConfig
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
-import net.corda.crypto.core.isRecoverable
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toSignatureSpec
+import net.corda.crypto.service.CryptoExceptionType
+import net.corda.crypto.service.impl.CryptoExceptionCategorizerImpl
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
@@ -33,25 +34,17 @@ import net.corda.utilities.debug
 import net.corda.utilities.trace
 import net.corda.utilities.translateFlowContextToMDC
 import net.corda.utilities.withMDC
-import org.bouncycastle.crypto.CryptoException
-import org.hibernate.exception.JDBCConnectionException
-import org.hibernate.exception.LockAcquisitionException
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
-import java.sql.SQLTransientException
 import java.time.Duration
 import java.time.Instant
-import javax.persistence.LockTimeoutException
-import javax.persistence.OptimisticLockException
-import javax.persistence.PersistenceException
-import javax.persistence.QueryTimeoutException
 
 @Suppress("LongParameterList")
 class CryptoFlowOpsProcessor(
     private val cryptoService: CryptoService,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     config: RetryingConfig,
-    private val keyEncodingService: KeyEncodingService
+    private val keyEncodingService: KeyEncodingService,
 ) : SyncRPCProcessor<FlowOpsRequest, FlowEvent> {
 
     override val requestClass = FlowOpsRequest::class.java
@@ -59,18 +52,10 @@ class CryptoFlowOpsProcessor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-
-        private val transientDBExceptions = setOf(
-            SQLTransientException::class.java,
-            JDBCConnectionException::class.java,
-            LockAcquisitionException::class.java,
-            LockTimeoutException::class.java,
-            QueryTimeoutException::class.java,
-            OptimisticLockException::class.java
-        )
     }
 
     private val executor = CryptoRetryingExecutor(logger, config.maxAttempts.toLong(), config.waitBetweenMills)
+    private val cryptoExceptionCategorizer = CryptoExceptionCategorizerImpl()
 
     override fun process(request: FlowOpsRequest): FlowEvent {
         logger.trace { "Processing request: ${request::class.java.name}" }
@@ -102,27 +87,19 @@ class CryptoFlowOpsProcessor(
             }
         }
 
-
         return result.value as FlowEvent
     }
 
-    private fun processException(e: Exception, request: FlowOpsRequest, requestPayload: Any) {
-        if (isTransientException(e)) {
-            throw CordaHTTPServerTransientException(request.flowExternalEventContext.requestId, e)
-        } else {
-            handlePlatformException(e, request, requestPayload)
+    private fun processException(e: Exception, request: FlowOpsRequest, requestPayload: Any): Record<String, FlowEvent> {
+        val requestId = request.flowExternalEventContext.requestId
+
+        return when (cryptoExceptionCategorizer.categorize(e)) {
+            CryptoExceptionType.TRANSIENT -> throw CordaHTTPServerTransientException(requestId, e)
+            else -> {
+                logger.warn("Failed to handle ${requestPayload::class.java.name} for tenant ${request.context.tenantId}", e)
+                externalEventResponseFactory.platformError(request.flowExternalEventContext, e)
+            }
         }
-    }
-
-    private fun isTransientException(e: Exception) : Boolean {
-        return e::class.java in transientDBExceptions ||
-                (e is PersistenceException && e.cause is SQLTransientException) ||
-                (e is CryptoException && e.isRecoverable())
-    }
-
-    private fun handlePlatformException(e: Exception, request: FlowOpsRequest, requestPayload: Any): Record<String, FlowEvent> {
-        logger.warn("Failed to handle ${requestPayload::class.java.name} for tenant ${request.context.tenantId}", e)
-        return externalEventResponseFactory.platformError(request.flowExternalEventContext, e)
     }
 
     private fun createSuccessResponse(request: FlowOpsRequest, response: Any) =
