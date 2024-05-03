@@ -5,6 +5,7 @@ import io.micrometer.core.instrument.Timer
 import net.corda.metrics.CordaMetrics
 import net.corda.taskmanager.TaskManager
 import net.corda.utilities.VisibleForTesting
+import org.slf4j.LoggerFactory
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -19,6 +20,9 @@ internal class TaskManagerImpl(
     private val longRunningThreadName: String,
     private val executorService: ExecutorService
 ) : TaskManager {
+    companion object {
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     enum class Type {
         SHORT_RUNNING, LONG_RUNNING
@@ -54,6 +58,7 @@ internal class TaskManagerImpl(
         private val queue = LinkedBlockingDeque<Step>()
         private var started = false
         private var closed = false
+        private var executing = 0
 
         @Suppress("UNCHECKED_CAST")
         @Synchronized
@@ -63,25 +68,27 @@ internal class TaskManagerImpl(
             priority: Long,
             command: () -> T
         ): CompletableFuture<T> {
+            if (closed) throw BatchRaceException()
             val future = CompletableFuture<Any>()
             if (forceFirst) {
                 queue.addFirst(Step(command, future, persistedFuture))
-                started = true
-                executorService.execute(this)
+                if (executing++ == 0) {
+                    executorService.execute(this)
+                } else {
+                    log.warn("Asked to retry $key but executing already $executing", Exception())
+                }
             } else {
-                if (closed) throw BatchRaceException()
-                val isFirst = queue.isEmpty() && !started
                 queue.add(Step(command, future, persistedFuture))
-                if (isFirst) {
+                if (this.priority > priority) this.priority = priority
+                if (!started) {
                     started = true
+                    executing++
                     executorService.execute(this)
                 }
-                if (this.priority > priority) this.priority = priority
             }
             return future as CompletableFuture<T>
         }
 
-        @Synchronized
         private fun close(): Boolean {
             if (queue.isEmpty()) {
                 closed = true
@@ -90,19 +97,29 @@ internal class TaskManagerImpl(
             return closed
         }
 
-        private fun runNextCommand() {
-            val (nextCommand, nextFuture, persistedFuture) = queue.poll() ?: return
-            // Only submit the next in the queue once this one has made it all the way to persistence
-            persistedFuture.whenComplete { _, _ ->
-                if (!close()) {
+        @Synchronized
+        private fun completed(success: Boolean) {
+            if (executing > 1) {
+                log.warn("Asked to complete $key but executing already $executing", Exception())
+            }
+            if (success) {
+                if (--executing == 0 && !close()) {
+                    executing++
                     executorService.execute(this)
                 }
+            } else {
+                --executing
             }
-            executeStep(nextCommand, nextFuture)
         }
 
         override fun run() {
-            runNextCommand()
+            val (nextCommand, nextFuture, persistedFuture) = queue.poll()
+                ?: throw IllegalStateException("Queue should never be empty")
+            // Only submit the next in the queue once this one has made it all the way to persistence
+            persistedFuture.whenComplete { _, throwable ->
+                completed(throwable == null)
+            }
+            executeStep(nextCommand, nextFuture)
         }
 
         private fun executeStep(
@@ -121,7 +138,7 @@ internal class TaskManagerImpl(
     }
 
     override fun <T : Any> executeShortRunningTask(
-        key: Any,
+        key: String,
         priority: Long,
         persistedFuture: CompletableFuture<Unit>,
         forceFirst: Boolean,

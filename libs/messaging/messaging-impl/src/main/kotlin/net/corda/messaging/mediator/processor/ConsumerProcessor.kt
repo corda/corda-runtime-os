@@ -307,9 +307,13 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val newRecords = polledMessages.groupBy { it.key }
         val retryRecords = retryMessages.groupBy { it.first().key }.mapValues { it.value.flatten() }
         val states = if (config.stateCaching) {
-            stateManager.get(newRecords.map { it.toString() } + retryRecords.map { it.toString() }, emptySet()).values
+            stateManager.get(newRecords.map { it.key.toString() } + retryRecords.map { it.key.toString() },
+                emptySet()
+            ).values
         } else {
-            stateManager.get(emptySet(), newRecords.map { it.toString() } + retryRecords.map { it.toString() }).values
+            stateManager.get(
+                emptySet(),
+                newRecords.map { it.key.toString() } + retryRecords.map { it.key.toString() }).values
         }
         return generateInputs(states, newRecords, inputsToCommit) to generateInputs(
             states,
@@ -372,23 +376,47 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         } + newInputs.map { input ->
             mapInputToOutput(consumer, input, pollAction)
         } + alreadySeenInputs.map { input ->
-            mapAlreadySeenInputToOutput(input)
+            mapAlreadySeenInputToOutput(consumer, input)
         }).toMap().mapKeys { (key, _) ->
             key.toString()
         }
     }
 
-    private fun mapAlreadySeenInputToOutput(input: EventProcessingInput<K, E>): Pair<K, Pair<CompletableFuture<EventProcessingOutput<K, E>>, CompletableFuture<Unit>>> {
+    private fun mapAlreadySeenInputToOutput(
+        consumer: MediatorConsumer<K, E>,
+        input: EventProcessingInput<K, E>
+    ): Pair<K, Pair<CompletableFuture<EventProcessingOutput<K, E>>, CompletableFuture<Unit>>> {
         val persistFuture = CompletableFuture<Unit>()
-        val result: EventProcessingOutput<K, E> =
-            if (input.state?.metadata?.containsKey(DELETE_LATER_METADATA_PROPERTY) ?: false) {
-                EventProcessingOutput<K, E>(
-                    listOf(), StateChangeAndOperation.Delete(input.state!!), emptyList()
-                )
-            } else {
-                EventProcessingOutput<K, E>(listOf(), StateChangeAndOperation.Noop(input.state), emptyList())
-            }
-        return input.key to (CompletableFuture.completedFuture(result) to persistFuture)
+        val inputKey = input.key
+        val inputKeyString = inputKey.toString()
+        val inputRecords = input.records
+        val oldestSessionCreateTimestamp = inputRecords.priority(TimeUnit.DAYS.toMillis(365))
+        queuedTasks.incrementAndGet()
+        consumer.tagRecords(inputRecords, "SEEN_QUEUED")
+        val future = taskManager.executeShortRunningTask(
+            inputKeyString,
+            minOf(
+                input.state?.metadata?.get(PRIORITY_METADATA_PROPERTY) as? Long ?: oldestSessionCreateTimestamp,
+                oldestSessionCreateTimestamp
+            ),
+            persistFuture,
+            false
+        ) {
+            queuedTasks.decrementAndGet()
+            consumer.tagRecords(inputRecords, "SEEN_UNQUEUED")
+            val updatedState = stateManager.get(setOf(inputKeyString)).values.firstOrNull()
+            val output: EventProcessingOutput<K, E> =
+                if (updatedState?.metadata?.containsKey(DELETE_LATER_METADATA_PROPERTY) == true) {
+                    EventProcessingOutput<K, E>(
+                        listOf(), StateChangeAndOperation.Delete(updatedState), emptyList()
+                    )
+                } else {
+                    EventProcessingOutput<K, E>(listOf(), StateChangeAndOperation.Noop(updatedState), emptyList())
+                }
+            consumer.tagRecords(inputRecords, "SEEN_PROCESSED")
+            output
+        }
+        return inputKey to (future to persistFuture)
     }
 
     private fun List<CordaConsumerRecord<K, E>>.priority(defaultOffset: Long = 0): Long {
@@ -410,13 +438,14 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
     ): Pair<K, Pair<CompletableFuture<EventProcessingOutput<K, E>>, CompletableFuture<Unit>>> {
         val persistFuture = CompletableFuture<Unit>()
         val inputKey = input.key
+        val inputKeyString = inputKey.toString()
         val inputRecords = input.records
         val oldestSessionCreateTimestamp = inputRecords.priority(TimeUnit.DAYS.toMillis(365))
         quotaAction.useQuota(inputRecords.size)
         queuedTasks.incrementAndGet()
-        consumer.tagRecords(input.records, if (isRetry) "RETRY_QUEUED" else "QUEUED")
+        consumer.tagRecords(inputRecords, if (isRetry) "RETRY_QUEUED" else "QUEUED")
         val future = taskManager.executeShortRunningTask(
-            inputKey,
+            inputKeyString,
             minOf(
                 input.state?.metadata?.get(PRIORITY_METADATA_PROPERTY) as? Long ?: oldestSessionCreateTimestamp,
                 oldestSessionCreateTimestamp
@@ -425,16 +454,16 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             isRetry
         ) {
             queuedTasks.decrementAndGet()
-            consumer.tagRecords(input.records, if (isRetry) "RETRY_UNQUEUED" else "UNQUEUED")
+            consumer.tagRecords(inputRecords, if (isRetry) "RETRY_UNQUEUED" else "UNQUEUED")
             val updatedState = if (isRetry) {
-                stateManager.get(emptySet(), setOf(inputKey.toString())).values.firstOrNull()
+                stateManager.get(emptySet(), setOf(inputKeyString)).values.firstOrNull()
             } else {
-                stateManager.get(setOf(inputKey.toString())).values.firstOrNull()
+                stateManager.get(setOf(inputKeyString)).values.firstOrNull()
             }
             val updatedInput = EventProcessingInput(inputKey, inputRecords, updatedState)
             val output = eventProcessor.processEvents(mapOf(inputKey to updatedInput)).values.first()
             quotaAction.complete(inputRecords.size)
-            consumer.tagRecords(input.records, if (isRetry) "RETRY_PROCESSED" else "PROCESSED")
+            consumer.tagRecords(inputRecords, if (isRetry) "RETRY_PROCESSED" else "PROCESSED")
             output
         }
         return inputKey to (future to persistFuture)
@@ -485,6 +514,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         consumer.tagRecords(nonFatalFailures.values.map { it.first.processedOffsets }.flatten(), "NON_FATAL")
         val failureDelayedActions = nonFatalFailures.map { failure ->
             Runnable {
+                failure.value.second.completeExceptionally(Exception())
                 inputsToRetry.put(failure.value.first.processedOffsets)
             }
         }
@@ -596,10 +626,9 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         val statesToUpdate = mutableListOf<State>()
         val statesToDelete = mutableListOf<State>()
         val outputsMap = outputs.toMap()
-        val writeFutures = mutableMapOf<String, CompletableFuture<Unit>>()
         consumer.tagRecords(outputsMap.values.map { it.first.processedOffsets }.flatten(), "OUTPUTS_MAP")
         outputsMap.forEach {
-            val (output, writeFuture) = it.value
+            val output = it.value.first
             val stateWithOffsets = output.stateChangeAndOperation.outputState?.let {
                 it.copy(metadata = calculateMaxOffsets(it.metadata, output.processedOffsets))
             }
@@ -609,7 +638,6 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
                 is StateChangeAndOperation.Delete -> statesToDelete.add(stateWithOffsets!!)
                 else -> Unit // No state change required.
             }
-            writeFutures[it.key] = writeFuture
         }
         val failedToCreateKeys = stateManager.create(statesToCreate)
         val failedToCreate = stateManager.get(failedToCreateKeys)
@@ -629,7 +657,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         )
         val successfulDelayedActions = (outputsMap - unsuccessfulStates).map {
             Runnable {
-                writeFutures[it.key]!!.complete(Unit)
+                it.value.second.complete(Unit)
                 inputsToCommit.put(it.value.first.processedOffsets)
                 consumer.tagRecords(it.value.first.processedOffsets, "SUCCESS")
             }
@@ -640,6 +668,7 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
         consumer.tagRecords(unsuccessfulDelayedOutputs.map { it.first.processedOffsets }.flatten(), "UNSUCCESSFUL")
         val unsuccessfulDelayedActions = unsuccessfulDelayedOutputs.map { output ->
             Runnable {
+                output.second.completeExceptionally(Exception())
                 inputsToRetry.put(output.first.processedOffsets)
                 consumer.tagRecords(output.first.processedOffsets, "RETRY")
             }

@@ -5,7 +5,7 @@ import java.util.concurrent.Executor
 
 interface TaskManager : Executor {
     fun <T : Any> executeShortRunningTask(
-        key: Any,
+        key: String,
         priority: Long,
         persistedFuture: CompletableFuture<Unit>,
         forceFirst: Boolean,

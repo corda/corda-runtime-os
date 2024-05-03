@@ -125,7 +125,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 recordsToReturn.addAll(parseRecords(partition, bufferedRecords.plus(records)))
             }
 
-            recordsToReturn.sortedBy { it.timestamp }
+            recordsToReturn.sortedBy { it.offset }
         }
     }
 
