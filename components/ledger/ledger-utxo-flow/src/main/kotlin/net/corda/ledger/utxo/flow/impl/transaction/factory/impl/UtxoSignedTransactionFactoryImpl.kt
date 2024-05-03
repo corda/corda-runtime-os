@@ -103,7 +103,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
             notarySignatureVerificationService,
             utxoLedgerTransactionFactory,
             wireTransaction,
-            signaturesWithMetadata
+            signaturesWithMetadata.toSet()
         )
     }
 
@@ -116,7 +116,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         notarySignatureVerificationService,
         utxoLedgerTransactionFactory,
         wireTransaction,
-        signaturesWithMetaData
+        signaturesWithMetaData.toSet()
     )
 
     @Suspendable

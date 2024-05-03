@@ -37,7 +37,7 @@ interface UtxoPersistenceService {
      *
      * @return A map of the transaction IDs found and their statuses.
      */
-    fun findTransactionIdsAndStatuses(transactionIds: List<String>): Map<SecureHash, String>
+    fun findSignedTransactionIdsAndStatuses(transactionIds: List<String>): Map<SecureHash, String>
 
     /**
      * Find a signed ledger transaction in the persistence context given it's [id] and return it with the status it is stored with. This
@@ -83,7 +83,7 @@ interface UtxoPersistenceService {
         account: String
     )
 
-    fun persistTransactionSignatures(id: String, signatures: List<ByteArray>, startingIndex: Int)
+    fun persistTransactionSignatures(id: String, signatures: List<ByteArray>)
 
     /**
      * Retrieve matching filtered transactions and signatures a list of state references.

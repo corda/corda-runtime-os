@@ -24,9 +24,9 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindFilteredT
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindFilteredTransactionsAndSignaturesParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedLedgerTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedLedgerTransactionParameters
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedTransactionIdsAndStatusesExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedTransactionIdsAndStatusesParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
-import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionIdsAndStatusesExternalEventFactory
-import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionIdsAndStatusesParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionsWithStatusCreatedBetweenTimeExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionsWithStatusCreatedBetweenTimeParameters
@@ -129,12 +129,12 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun findTransactionIdsAndStatuses(ids: Collection<SecureHash>): Map<SecureHash, TransactionStatus> {
+    override fun findSignedTransactionIdsAndStatuses(ids: Collection<SecureHash>): Map<SecureHash, TransactionStatus> {
         return recordSuspendable({ ledgerPersistenceFlowTimer(FindTransactionIdsAndStatuses) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
-                    FindTransactionIdsAndStatusesExternalEventFactory::class.java,
-                    FindTransactionIdsAndStatusesParameters(ids.map { it.toString() })
+                    FindSignedTransactionIdsAndStatusesExternalEventFactory::class.java,
+                    FindSignedTransactionIdsAndStatusesParameters(ids.map { it.toString() })
                 )
             }
         }.firstOrNull()?.let {
@@ -228,7 +228,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
 
                     UtxoFilteredTransactionAndSignaturesImpl(
                         utxoFilteredTransaction,
-                        signatures.filter { signature -> newTxNotaryKeyIds.contains(signature.by) }
+                        signatures.filter { signature -> newTxNotaryKeyIds.contains(signature.by) }.toSet()
                     )
                 }
             }
@@ -308,11 +308,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun persistTransactionSignatures(
-        id: SecureHash,
-        startingIndex: Int,
-        signatures: List<DigitalSignatureAndMetadata>
-    ) {
+    override fun persistTransactionSignatures(id: SecureHash, signatures: Set<DigitalSignatureAndMetadata>) {
         return recordSuspendable(
             { ledgerPersistenceFlowTimer(LedgerPersistenceMetricOperationName.PersistTransactionSignatures) }
         ) @Suspendable {
@@ -321,7 +317,6 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                     PersistTransactionSignaturesExternalEventFactory::class.java,
                     PersistTransactionSignaturesParameters(
                         id.toString(),
-                        startingIndex,
                         signatures.map { serializationService.serialize(it).bytes }
                     )
                 )

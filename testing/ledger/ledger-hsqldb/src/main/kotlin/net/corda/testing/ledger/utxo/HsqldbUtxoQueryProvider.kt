@@ -137,14 +137,14 @@ class HsqldbUtxoQueryProvider @Activate constructor(
             MERGE INTO utxo_transaction_signature AS uts
             USING (VALUES${
                 List(batchSize) {
-                    "(?, CAST(? AS INT), CAST(? AS VARBINARY(1048576)), ?, CAST(? AS TIMESTAMP))"
+                    "(?, ?, CAST(? AS VARBINARY(1048576)), CAST(? AS TIMESTAMP))"
                 }.joinToString(",")
             })
-                AS x(transaction_id, signature_idx, signature, pub_key_hash, created)
-            ON uts.transaction_id = x.transaction_id AND uts.signature_idx = x.signature_idx
+                AS x(transaction_id, pub_key_hash, signature, created)
+            ON uts.transaction_id = x.transaction_id AND uts.pub_key_hash = x.pub_key_hash
             WHEN NOT MATCHED THEN
-                INSERT (transaction_id, signature_idx, signature, pub_key_hash, created)
-                VALUES (x.transaction_id, x.signature_idx, x.signature, x.pub_key_hash, x.created)
+                INSERT (transaction_id, pub_key_hash, signature, created)
+                VALUES (x.transaction_id, x.pub_key_hash, x.signature, x.created)
             """.trimIndent()
         }
 

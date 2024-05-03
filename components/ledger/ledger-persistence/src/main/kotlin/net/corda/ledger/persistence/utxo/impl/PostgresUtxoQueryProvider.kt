@@ -91,8 +91,8 @@ class PostgresUtxoQueryProvider @Activate constructor(
     override val persistTransactionSignatures: (batchSize: Int) -> String
         get() = { batchSize ->
             """
-            INSERT INTO utxo_transaction_signature(transaction_id, signature_idx, signature, pub_key_hash, created)
-            VALUES ${List(batchSize) { "(?, ?, ?, ?, ?)" }.joinToString(",")}
+            INSERT INTO utxo_transaction_signature(transaction_id, pub_key_hash, signature, created)
+            VALUES ${List(batchSize) { "(?, ?, ?, ?)" }.joinToString(",")}
             ON CONFLICT DO NOTHING
             """.trimIndent()
         }

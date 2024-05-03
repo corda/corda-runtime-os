@@ -57,7 +57,7 @@ interface UtxoLedgerPersistenceService {
      * @return A list of the transaction IDs found and their statuses.
      */
     @Suspendable
-    fun findTransactionIdsAndStatuses(ids: Collection<SecureHash>): Map<SecureHash, TransactionStatus>
+    fun findSignedTransactionIdsAndStatuses(ids: Collection<SecureHash>): Map<SecureHash, TransactionStatus>
 
     /**
      * Find a verified [UtxoSignedLedgerTransaction] in the persistence context given it's [id]. This involves resolving its input and
@@ -143,7 +143,7 @@ interface UtxoLedgerPersistenceService {
     ): TransactionExistenceStatus
 
     @Suspendable
-    fun persistTransactionSignatures(id: SecureHash, startingIndex: Int, signatures: List<DigitalSignatureAndMetadata>)
+    fun persistTransactionSignatures(id: SecureHash, signatures: Set<DigitalSignatureAndMetadata>)
 
     /**
      * Persists a list of filtered transactions and their signatures represented as [UtxoFilteredTransactionAndSignatures]

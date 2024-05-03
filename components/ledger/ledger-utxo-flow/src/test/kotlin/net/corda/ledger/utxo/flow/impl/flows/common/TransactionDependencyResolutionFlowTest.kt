@@ -55,7 +55,7 @@ class TransactionDependencyResolutionFlowTest : UtxoLedgerTest() {
     private val filteredTransaction = mock<UtxoFilteredTransaction>()
     private val filteredDependency = UtxoFilteredTransactionAndSignaturesImpl(
         filteredTransaction,
-        listOf(notarySignature)
+        setOf(notarySignature)
     )
 
     private val mockFlowEngine = mock<FlowEngine>()

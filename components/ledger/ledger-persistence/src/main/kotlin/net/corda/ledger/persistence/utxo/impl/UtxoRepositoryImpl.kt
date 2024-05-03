@@ -93,11 +93,11 @@ class UtxoRepositoryImpl(
         )
     }
 
-    override fun findTransactionIdsAndStatuses(
+    override fun findSignedTransactionIdsAndStatuses(
         entityManager: EntityManager,
         transactionIds: List<String>
     ): Map<SecureHash, String> {
-        return entityManager.createNativeQuery(queryProvider.findTransactionIdsAndStatuses, Tuple::class.java)
+        return entityManager.createNativeQuery(queryProvider.findSignedTransactionIdsAndStatuses, Tuple::class.java)
             .setParameter("transactionIds", transactionIds)
             .resultListAsTuples()
             .associate { r -> parseSecureHash(r.get(0) as String) to r.get(1) as String }
@@ -166,11 +166,11 @@ class UtxoRepositoryImpl(
             .map { r -> serializationService.deserialize(r.get(0) as ByteArray) }
     }
 
-    override fun findTransactionStatus(entityManager: EntityManager, id: String): Pair<String, Boolean>? {
-        return entityManager.createNativeQuery(queryProvider.findTransactionStatus, Tuple::class.java)
+    override fun findSignedTransactionStatus(entityManager: EntityManager, id: String): String? {
+        return entityManager.createNativeQuery(queryProvider.findSignedTransactionStatus, Tuple::class.java)
             .setParameter("transactionId", id)
             .resultListAsTuples()
-            .map { r -> r.get(0) as String to r.get(1) as Boolean }
+            .map { r -> r.get(0) as String }
             .singleOrNull()
     }
 
@@ -404,9 +404,8 @@ class UtxoRepositoryImpl(
                 signatures
             ) { statement, parameterIndex, signature ->
                 statement.setString(parameterIndex.next(), signature.transactionId)
-                statement.setInt(parameterIndex.next(), signature.index)
-                statement.setBytes(parameterIndex.next(), signature.signatureBytes)
                 statement.setString(parameterIndex.next(), signature.publicKeyHash.toString())
+                statement.setBytes(parameterIndex.next(), signature.signatureBytes)
                 statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp), utcCalendar)
             }
         }

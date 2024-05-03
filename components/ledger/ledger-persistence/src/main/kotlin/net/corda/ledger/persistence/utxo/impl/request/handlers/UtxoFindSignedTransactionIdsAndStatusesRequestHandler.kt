@@ -11,7 +11,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.v5.application.serialization.SerializationService
 import java.nio.ByteBuffer
 
-class UtxoFindTransactionIdsAndStatusesRequestHandler(
+class UtxoFindSignedTransactionIdsAndStatusesRequestHandler(
     private val findTransactions: FindTransactionIdsAndStatuses,
     private val externalEventContext: ExternalEventContext,
     private val persistenceService: UtxoPersistenceService,
@@ -20,7 +20,7 @@ class UtxoFindTransactionIdsAndStatusesRequestHandler(
 ) : RequestHandler {
 
     override fun execute(): List<Record<*, *>> {
-        val existingTransactions = persistenceService.findTransactionIdsAndStatuses(findTransactions.ids)
+        val existingTransactions = persistenceService.findSignedTransactionIdsAndStatuses(findTransactions.ids)
         return listOf(
             externalEventResponseFactory.success(
                 externalEventContext,

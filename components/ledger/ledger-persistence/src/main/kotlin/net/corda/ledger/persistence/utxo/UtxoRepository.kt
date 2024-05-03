@@ -18,7 +18,7 @@ import javax.persistence.EntityManager
 interface UtxoRepository {
 
     /** Retrieves transaction IDs and their statuses if its ID is included in the [transactionIds] list. */
-    fun findTransactionIdsAndStatuses(
+    fun findSignedTransactionIdsAndStatuses(
         entityManager: EntityManager,
         transactionIds: List<String>
     ): Map<SecureHash, String>
@@ -53,10 +53,10 @@ interface UtxoRepository {
     ): List<DigitalSignatureAndMetadata>
 
     /** Retrieves a transaction's status */
-    fun findTransactionStatus(
+    fun findSignedTransactionStatus(
         entityManager: EntityManager,
         id: String,
-    ): Pair<String, Boolean>?
+    ): String?
 
     /** Marks visible states of transactions consumed */
     fun markTransactionVisibleStatesConsumed(
@@ -224,7 +224,7 @@ interface UtxoRepository {
         val notaryName: String,
     )
 
-    data class TransactionSignature(val transactionId: String, val index: Int, val signatureBytes: ByteArray, val publicKeyHash: SecureHash)
+    data class TransactionSignature(val transactionId: String, val signatureBytes: ByteArray, val publicKeyHash: SecureHash)
 
     data class FilteredTransaction(
         val transactionId: String,
