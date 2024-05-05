@@ -652,10 +652,10 @@ class ConsumerProcessor<K : Any, S : Any, E : Any>(
             successful.values.flatMap { it.first.asyncOutputs.map { message -> message.overridePriorityIfSet(it.first.stateChangeAndOperation.outputState.priority()) } }
         sendAsynchronousEvents(outputsToSend)
         consumer.tagRecords(
-            (outputsMap - unsuccessfulStates).map { it.value.first.processedOffsets }.flatten(),
+            (outputsMap - unsuccessfulStates.keys).map { it.value.first.processedOffsets }.flatten(),
             "SUCCESSFUL"
         )
-        val successfulDelayedActions = (outputsMap - unsuccessfulStates).map {
+        val successfulDelayedActions = (outputsMap - unsuccessfulStates.keys).map {
             Runnable {
                 it.value.second.complete(Unit)
                 inputsToCommit.put(it.value.first.processedOffsets)
