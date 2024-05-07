@@ -38,12 +38,17 @@ class AppTest {
         run("C5WireTx.bin")
     }
 
-    private fun run(resourceName: String) {
+    @Test
+    fun parseWithoutOriginalBytes() {
+        run("C5WireTx.bin", false)
+    }
+
+    private fun run(resourceName: String, includeOriginalBytes: Boolean = true) {
         val bytes = this.javaClass.getResourceAsStream(resourceName)?.readFully()?.sequence()
         requireNotNull(bytes) {
             "Couldn't read resource: $resourceName"
         }
-        val decoded = Encoding.decodedBytes(bytes, false)
+        val decoded = Encoding.decodedBytes(bytes, includeOriginalBytes)
         println(decoded.result.prettyPrint())
     }
 }
