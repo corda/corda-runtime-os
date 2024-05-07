@@ -73,13 +73,12 @@ class CryptoFlowOpsProcessor(
             val startTime = System.nanoTime()
             logger.debug { "Handling ${requestPayload::class.java.name} for tenant ${request.context.tenantId}" }
 
-            val response = try {
-                executor.executeWithRetry { handleRequest(requestPayload, request.context) }
+            try {
+                val successResponse = executor.executeWithRetry { handleRequest(requestPayload, request.context) }
+                createSuccessResponse(request, successResponse)
             } catch (e: Exception) {
                 processException(e, request)
-            }
-
-            createSuccessResponse(request, response).also {
+            }.also {
                 CordaMetrics.Metric.Crypto.FlowOpsProcessorExecutionTime.builder()
                     .withTag(CordaMetrics.Tag.OperationName, requestPayload::class.java.simpleName)
                     .build()
