@@ -364,7 +364,6 @@ class CryptoRekeyBusProcessor(
      * @return false if records were failed to be created
      */
     private fun createStateManagerRecords(records: Collection<State>): Boolean {
-        logger.info("Creating following records in state manager for key rotation: $records")
         var failedToCreate: Set<String>?
         var toCreate = records
         var recordsCreated = false
