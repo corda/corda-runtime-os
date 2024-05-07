@@ -188,7 +188,8 @@ class CryptoFlowOpsProcessorTests {
             cryptoService,
             externalEventResponseFactory,
             retryingConfig,
-            keyEncodingService
+            keyEncodingService,
+            mock()
         )
         digestService = mock<DigestService>().also {
             fun capture() {

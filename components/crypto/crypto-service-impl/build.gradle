@@ -11,7 +11,6 @@ dependencies {
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "org.hibernate:hibernate-core:$hibernateVersion"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation libs.jackson.databind
