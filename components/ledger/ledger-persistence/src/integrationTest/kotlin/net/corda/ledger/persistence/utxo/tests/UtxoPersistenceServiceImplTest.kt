@@ -2102,6 +2102,8 @@ class UtxoPersistenceServiceImplTest {
         val filteredTransactionToStore = createFilteredTransaction(signedTransaction)
         persistenceService.persistFilteredTransactions(
             mapOf(filteredTransactionToStore to signatures),
+            emptyList(),
+            emptyList(),
             account
         )
 
