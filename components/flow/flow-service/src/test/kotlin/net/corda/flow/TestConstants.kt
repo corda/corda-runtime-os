@@ -4,7 +4,6 @@ import com.typesafe.config.ConfigFactory
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.FlowConfig
-import net.corda.schema.configuration.MessagingConfig
 import net.corda.v5.base.types.MemberX500Name
 
 const val BOB_X500 = "CN=Bob, O=Bob Corp, L=LDN, C=GB"
@@ -22,7 +21,7 @@ val MINIMUM_SMART_CONFIG = SmartConfigFactory.createWithoutSecurityServices().cr
         mapOf<String, Any>(
             FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS to 5,
             FlowConfig.PROCESSING_MAX_RETRY_WINDOW_DURATION to 10000,
-            MessagingConfig.Subscription.PROCESSOR_TIMEOUT to 60000
+            FlowConfig.PROCESSING_FLOW_FIBER_TIMEOUT to 11250
         )
     )
 )

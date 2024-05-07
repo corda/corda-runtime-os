@@ -118,7 +118,7 @@ class FlowServiceTestContext @Activate constructor(
         FlowConfig.PROCESSING_MAX_RETRY_DELAY to 16000,
         FlowConfig.PROCESSING_FLOW_MAPPER_CLEANUP_TIME to 30000,
         FlowConfig.PROCESSING_MAX_RETRY_WINDOW_DURATION to 300000,
-        MessagingConfig.Subscription.PROCESSOR_TIMEOUT to 60000,
+        FlowConfig.PROCESSING_FLOW_FIBER_TIMEOUT to 11250,
         MessagingConfig.MAX_ALLOWED_MSG_SIZE to 972800
     )
 

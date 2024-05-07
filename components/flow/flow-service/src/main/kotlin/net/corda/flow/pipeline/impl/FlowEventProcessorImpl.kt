@@ -23,7 +23,6 @@ import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.FlowConfig
-import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
 import net.corda.tracing.TraceContext
 import net.corda.tracing.traceStateAndEventExecution
 import net.corda.utilities.debug
@@ -121,7 +120,7 @@ class FlowEventProcessorImpl(
     ): StateAndEventProcessor.Response<Checkpoint> {
         // flow result timeout must be lower than the processor timeout as the processor thread will be killed by the subscription consumer
         // thread after this period and so this timeout would never be reached and given a chance to return otherwise.
-        val flowTimeout = (flowConfig.getLong(PROCESSOR_TIMEOUT) * 0.75).toLong()
+        val flowTimeout = flowConfig.getLong(FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS)
         val result = try {
             tryWithBackoff(
                 logger = log,
