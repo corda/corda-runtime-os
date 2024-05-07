@@ -3,6 +3,7 @@ package net.corda.ledger.common.data.transaction.filtered.impl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
+import net.corda.common.json.validation.JsonValidator
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.merkle.impl.IndexedMerkleLeafImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
@@ -52,6 +53,7 @@ class FilteredTransactionImplTest {
 
     private val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
     private val jsonMarshallingService = mock<JsonMarshallingService>()
+    private val jsonValidator = mock<JsonValidator>()
 
     private val merkleTreeHashDigestCaptor = argumentCaptor<MerkleTreeHashDigest>()
 
@@ -586,6 +588,34 @@ class FilteredTransactionImplTest {
         }
     }
 
+    @Test
+    fun `Accessing metadata parses metadata with a header successfully`() {
+        filteredTransaction = filteredTransaction(filteredComponentGroups = mapOf(0 to filteredComponentGroup0))
+        val header = "corda".toByteArray() + byteArrayOf(8, 0, 1)
+        val jsonBlobWithHeader = header + metadataJson.encodeToByteArray()
+        componentGroupMerkleProofVerifies(listOf(indexedMerkleLeaf(0)))
+
+        whenever(filteredComponentGroup0Proof.treeSize).thenReturn(1)
+        whenever(filteredComponentGroup0Proof.leaves).thenReturn(listOf(indexedMerkleLeaf(0, jsonBlobWithHeader)))
+
+        assertDoesNotThrow { filteredTransaction.metadata }
+        assertDoesNotThrow { filteredTransaction.verify() }
+    }
+
+    @Test
+    fun `Accessing metadata parses metadata with a header of unavailable schema version throws`() {
+        filteredTransaction = filteredTransaction(filteredComponentGroups = mapOf(0 to filteredComponentGroup0))
+        val header = "corda".toByteArray() + byteArrayOf(8, 0, 0)
+        val jsonBlobWithHeader = header + metadataJson.encodeToByteArray()
+        componentGroupMerkleProofVerifies(listOf(indexedMerkleLeaf(0)))
+
+        whenever(filteredComponentGroup0Proof.treeSize).thenReturn(1)
+        whenever(filteredComponentGroup0Proof.leaves).thenReturn(listOf(indexedMerkleLeaf(0, jsonBlobWithHeader)))
+
+        assertThatThrownBy { filteredTransaction.metadata }.isInstanceOf(IllegalStateException::class.java)
+            .hasMessage("Failed to load JSON schema from /schema/v0/transaction-metadata.json")
+    }
+
     private fun componentGroupMerkleProofVerifies(indexedMerkleLeaves: List<IndexedMerkleLeaf>) {
         whenever(componentGroupMerkleProof.leaves).thenReturn(indexedMerkleLeaves)
         whenever(componentGroupMerkleProof.verify(any(), any())).thenReturn(true)
@@ -612,6 +642,7 @@ class FilteredTransactionImplTest {
             filteredComponentGroups,
             mock(),
             jsonMarshallingService,
+            jsonValidator,
             merkleTreeProvider
         )
     }

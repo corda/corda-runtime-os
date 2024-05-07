@@ -1,5 +1,6 @@
 package net.corda.ledger.common.data.transaction.filtered.factory.impl
 
+import net.corda.common.json.validation.JsonValidator
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
@@ -35,6 +36,8 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 class FilteredTransactionFactoryImpl @Activate constructor(
     @Reference(service = JsonMarshallingService::class, scope = PROTOTYPE_REQUIRED)
     private val jsonMarshallingService: JsonMarshallingService,
+    @Reference(service = JsonValidator::class)
+    private val jsonValidator: JsonValidator,
     @Reference(service = MerkleTreeProvider::class)
     private val merkleTreeProvider: MerkleTreeProvider,
     @Reference(service = SerializationService::class)
@@ -63,6 +66,7 @@ class FilteredTransactionFactoryImpl @Activate constructor(
             filteredComponentGroups,
             wireTransaction.privacySalt,
             jsonMarshallingService,
+            jsonValidator,
             merkleTreeProvider
         )
     }
@@ -80,6 +84,7 @@ class FilteredTransactionFactoryImpl @Activate constructor(
             filteredComponentGroups,
             PrivacySaltImpl(privacySaltBytes),
             jsonMarshallingService,
+            jsonValidator,
             merkleTreeProvider
         )
     }

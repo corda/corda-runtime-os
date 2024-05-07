@@ -65,6 +65,7 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
     private val utxoFilteredTransactionFactory = UtxoFilteredTransactionFactoryImpl(
         FilteredTransactionFactoryImpl(
             jsonMarshallingService,
+            jsonValidator,
             merkleTreeProvider,
             serializationServiceWithWireTx,
             mock()

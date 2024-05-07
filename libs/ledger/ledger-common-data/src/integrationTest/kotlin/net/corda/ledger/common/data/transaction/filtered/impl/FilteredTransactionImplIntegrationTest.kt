@@ -52,6 +52,7 @@ class FilteredTransactionImplIntegrationTest {
 
     private val filteredTransactionFactory = FilteredTransactionFactoryImpl(
         jsonMarshallingService,
+        jsonValidator,
         merkleTreeProvider,
         serializationService,
         DigestServiceImpl(PlatformDigestServiceImpl(CipherSchemeMetadataImpl()), null)
