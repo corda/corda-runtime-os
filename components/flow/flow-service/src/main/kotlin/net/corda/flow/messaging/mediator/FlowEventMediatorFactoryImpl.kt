@@ -135,7 +135,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         )
         val configWithMaxPollRecords = messagingConfig.withFallback(maxPollRecords)
         val mediatorConsumerFactory: MutableList<MediatorConsumerFactory> = mutableListOf(
-            mediatorConsumerFactory(FLOW_START, 1, configWithMaxPollRecords),
+            mediatorConsumerFactory(FLOW_START, 2, configWithMaxPollRecords),
             mediatorConsumerFactory(FLOW_EVENT_TOPIC, Int.MAX_VALUE, messagingConfig)
         )
 
