@@ -2,9 +2,9 @@ package net.corda.ledger.verification.processor.impl
 
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.NotAllowedCpkException
-import net.corda.flow.external.events.responses.exceptions.criteria
 import net.corda.ledger.verification.processor.VerificationErrorType
 import net.corda.ledger.verification.processor.VerificationExceptionCategorizer
+import net.corda.utilities.criteria
 import java.io.NotSerializableException
 
 class VerificationExceptionCategorizerImpl : VerificationExceptionCategorizer {

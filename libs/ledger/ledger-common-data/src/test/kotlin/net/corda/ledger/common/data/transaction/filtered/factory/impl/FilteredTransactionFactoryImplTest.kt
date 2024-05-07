@@ -49,6 +49,7 @@ class FilteredTransactionFactoryImplTest {
 
     private val filteredTransactionFactory = FilteredTransactionFactoryImpl(
         jsonMarshallingService,
+        jsonValidator,
         merkleTreeProvider,
         serializationService,
         digestService

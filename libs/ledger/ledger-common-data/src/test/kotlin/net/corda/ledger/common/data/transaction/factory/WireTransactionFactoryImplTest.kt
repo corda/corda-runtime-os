@@ -58,8 +58,8 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
                 privacySalt
             )
         }
-            .isInstanceOf(IllegalStateException::class.java)
-            .hasMessageStartingWith("JSON validation failed due to:")
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessage("Metadata json blob is invalid.")
     }
 
     @Test
@@ -260,5 +260,47 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
         }
             .isInstanceOf(IllegalStateException::class.java)
             .hasMessageContaining("ledgerModel: does not have a value in the enumeration")
+    }
+
+    @Test
+    fun `Creating a WireTransaction parses metadata with a header successfully`() {
+        val header = "corda".toByteArray() + byteArrayOf(8, 0, 1)
+        val metadata = transactionMetadataExample(
+            ledgerModel = "net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl",
+            transactionSubType = "GENERAL",
+            memberShipGroupParametersHash = "Membership group parameters hash"
+        )
+        val metadataJson = jsonMarshallingService.format(metadata)
+        val canonicalJson = jsonValidator.canonicalize(metadataJson)
+        val componentGroupLists = (1..10).map {
+            listOf((header + canonicalJson.toByteArray()))
+        }
+        wireTransactionFactory.create(
+            componentGroupLists,
+            privacySalt
+        )
+    }
+
+    @Test
+    fun `Creating a WireTransaction parses metadata with an invalid header throws exception`() {
+        val header = "corda".toByteArray() + byteArrayOf(4, 0, 1)
+        val metadata = transactionMetadataExample(
+            ledgerModel = "net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl",
+            transactionSubType = "GENERAL",
+            memberShipGroupParametersHash = "Membership group parameters hash"
+        )
+        val metadataJson = jsonMarshallingService.format(metadata)
+        val canonicalJson = jsonValidator.canonicalize(metadataJson)
+        val componentGroupLists = (1..10).map {
+            listOf((header + canonicalJson.toByteArray()))
+        }
+        assertThatThrownBy {
+            wireTransactionFactory.create(
+                componentGroupLists,
+                privacySalt
+            )
+        }
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining("Metadata json blob is invalid.")
     }
 }
