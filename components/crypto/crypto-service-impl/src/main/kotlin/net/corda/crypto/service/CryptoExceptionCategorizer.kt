@@ -1,6 +1,6 @@
 package net.corda.crypto.service
 
-interface CryptoExceptionCategorizer {
+fun interface CryptoExceptionCategorizer {
     fun categorize(exception: Exception): CryptoExceptionType
 }
 
