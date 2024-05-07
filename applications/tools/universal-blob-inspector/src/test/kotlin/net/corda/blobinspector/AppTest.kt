@@ -69,6 +69,7 @@ class AppTest {
     private fun runInSeparateJVM(binaryFileName: String, flags: List<String> = emptyList()): Pair<Int, String> {
         val currentPath = System.getProperty("user.dir")
         val pathToBinary = "$currentPath/src/test/resources/net/corda/blobinspector/$binaryFileName"
+        println("pathToBinary: $pathToBinary")
 
         // Create a StringBuilder to capture the printed output
         val output = StringBuilder()
