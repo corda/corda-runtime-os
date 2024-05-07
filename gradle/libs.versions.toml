@@ -8,7 +8,7 @@ braveVersion = "6.0.3"
 caffeineVersion = "3.1.8"
 guavaVersion = "33.2.0-jre"
 hikariCpVersion = "5.1.0"
-jacksonVersion = "2.17.0"
+jacksonVersion = "2.17.1"
 javalinVersion = "4.6.8"
 jcipAnnotationsVersion = "1.0_2"
 # This version of Jetty must be the same major version as used by Javalin, please see above.
