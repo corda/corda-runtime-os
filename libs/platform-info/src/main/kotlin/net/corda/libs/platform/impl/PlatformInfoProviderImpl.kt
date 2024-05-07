@@ -2,7 +2,6 @@ package net.corda.libs.platform.impl
 
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.libs.platform.PlatformVersion.CORDA_5_3
-import net.corda.libs.platform.PlatformVersion.CORDA_JSON_BLOB_HEADER
 import org.osgi.framework.BundleContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -14,7 +13,7 @@ class PlatformInfoProviderImpl @Activate constructor(
 ) : PlatformInfoProvider {
 
     internal companion object {
-        val STUB_PLATFORM_VERSION = CORDA_JSON_BLOB_HEADER.value
+        val STUB_PLATFORM_VERSION = CORDA_5_3.value
 
         private val DEFAULT_PLATFORM_VERSION = CORDA_5_3.value
         private const val PLATFORM_VERSION_KEY = "net.corda.platform.version"
