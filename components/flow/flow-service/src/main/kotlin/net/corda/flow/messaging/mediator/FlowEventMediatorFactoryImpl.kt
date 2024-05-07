@@ -130,7 +130,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
     private fun createMediatorConsumerFactories(messagingConfig: SmartConfig, bootConfig: SmartConfig): List<MediatorConsumerFactory> {
         val maxPollRecords = ConfigFactory.parseString(
             """{ bus.kafkaProperties.consumer : {
-           max.poll.records: 2
+           max.poll.records: 1
         }}""".trimIndent()
         )
         val configWithMaxPollRecords = messagingConfig.withFallback(maxPollRecords)
