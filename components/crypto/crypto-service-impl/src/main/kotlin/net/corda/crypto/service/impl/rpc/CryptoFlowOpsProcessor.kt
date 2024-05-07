@@ -76,7 +76,7 @@ class CryptoFlowOpsProcessor(
             val response = try {
                 executor.executeWithRetry { handleRequest(requestPayload, request.context) }
             } catch (e: Exception) {
-                processException(e, request, requestPayload)
+                processException(e, request)
             }
 
             createSuccessResponse(request, response).also {
@@ -90,13 +90,13 @@ class CryptoFlowOpsProcessor(
         return result.value as FlowEvent
     }
 
-    private fun processException(e: Exception, request: FlowOpsRequest, requestPayload: Any): Record<String, FlowEvent> {
+    private fun processException(e: Exception, request: FlowOpsRequest): Record<String, FlowEvent> {
         val requestId = request.flowExternalEventContext.requestId
 
         return when (cryptoExceptionCategorizer.categorize(e)) {
             CryptoExceptionType.TRANSIENT -> throw CordaHTTPServerTransientException(requestId, e)
             else -> {
-                logger.warn("Failed to handle ${requestPayload::class.java.name} for tenant ${request.context.tenantId}", e)
+                logger.warn("Failed to handle ${request.request::class.java.name} for tenant ${request.context.tenantId}", e)
                 externalEventResponseFactory.platformError(request.flowExternalEventContext, e)
             }
         }
