@@ -9,8 +9,8 @@ import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toSignatureSpec
+import net.corda.crypto.service.CryptoExceptionCategorizer
 import net.corda.crypto.service.CryptoExceptionType
-import net.corda.crypto.service.impl.CryptoExceptionCategorizerImpl
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
@@ -45,6 +45,7 @@ class CryptoFlowOpsProcessor(
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     config: RetryingConfig,
     private val keyEncodingService: KeyEncodingService,
+    private val cryptoExceptionCategorizer: CryptoExceptionCategorizer
 ) : SyncRPCProcessor<FlowOpsRequest, FlowEvent> {
 
     override val requestClass = FlowOpsRequest::class.java
@@ -55,7 +56,6 @@ class CryptoFlowOpsProcessor(
     }
 
     private val executor = CryptoRetryingExecutor(logger, config.maxAttempts.toLong(), config.waitBetweenMills)
-    private val cryptoExceptionCategorizer = CryptoExceptionCategorizerImpl()
 
     override fun process(request: FlowOpsRequest): FlowEvent {
         logger.trace { "Processing request: ${request::class.java.name}" }

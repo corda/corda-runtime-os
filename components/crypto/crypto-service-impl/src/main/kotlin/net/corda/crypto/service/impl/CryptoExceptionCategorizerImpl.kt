@@ -7,29 +7,41 @@ import net.corda.crypto.service.CryptoExceptionType.FATAL
 import net.corda.crypto.service.CryptoExceptionType.PLATFORM
 import net.corda.crypto.service.CryptoExceptionType.TRANSIENT
 import net.corda.db.connection.manager.DBConfigurationException
-import net.corda.flow.external.events.responses.exceptions.criteria
+import net.corda.orm.PersistenceExceptionCategorizer
+import net.corda.orm.PersistenceExceptionType
+import net.corda.utilities.criteria
 import net.corda.v5.crypto.exceptions.CryptoException
-import org.hibernate.exception.JDBCConnectionException
-import org.hibernate.exception.LockAcquisitionException
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.sql.SQLTransientException
-import javax.persistence.LockTimeoutException
-import javax.persistence.OptimisticLockException
-import javax.persistence.QueryTimeoutException
 
-internal class CryptoExceptionCategorizerImpl : CryptoExceptionCategorizer {
+@Component(service = [CryptoExceptionCategorizer::class])
+internal class CryptoExceptionCategorizerImpl @Activate constructor(
+    @Reference(service = PersistenceExceptionCategorizer::class)
+    private val persistenceExceptionCategorizer: PersistenceExceptionCategorizer
+) : CryptoExceptionCategorizer {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun categorize(exception: Exception): CryptoExceptionType {
+        return when (persistenceExceptionCategorizer.categorize(exception)) {
+            PersistenceExceptionType.FATAL -> FATAL
+            PersistenceExceptionType.TRANSIENT -> TRANSIENT
+            PersistenceExceptionType.DATA_RELATED -> PLATFORM
+            PersistenceExceptionType.UNCATEGORIZED -> categorizeCrypto(exception)
+        }.also {
+            logger.warn("Categorized exception as $it: $exception", exception)
+        }
+    }
+
+    private fun categorizeCrypto(exception: Exception): CryptoExceptionType {
         return when {
             isFatal(exception) -> FATAL
             isPlatform(exception) -> PLATFORM
             isTransient(exception) -> TRANSIENT
             else -> PLATFORM
-        }.also {
-            logger.warn("Categorized exception as $it: $exception", exception)
         }
     }
 
@@ -55,12 +67,6 @@ internal class CryptoExceptionCategorizerImpl : CryptoExceptionCategorizer {
 
     private fun isTransient(exception: Exception): Boolean {
         val checks = listOf(
-            criteria<SQLTransientException>(),
-            criteria<JDBCConnectionException>(),
-            criteria<LockAcquisitionException>(),
-            criteria<LockTimeoutException>(),
-            criteria<QueryTimeoutException>(),
-            criteria<OptimisticLockException>(),
             criteria<CryptoException> {
                 exception.isRecoverable()
             },
