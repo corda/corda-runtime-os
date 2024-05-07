@@ -49,7 +49,13 @@ class AMQPSerializationFormatDecoder(
         return AMQPDecodedBytes(rendering)
     }
 
-    private fun readObject(obj: Any?, registry: DynamicDescriptorRegistry, depth: Int, described: Boolean, includeOriginalBytes: Boolean): Any? {
+    private fun readObject(
+        obj: Any?,
+        registry: DynamicDescriptorRegistry,
+        depth: Int,
+        described: Boolean,
+        includeOriginalBytes: Boolean
+    ): Any? {
         return if (obj is DescribedType) {
             val descriptor = if (obj.descriptor is Symbol) {
                 Descriptor(obj.descriptor as Symbol, null)
@@ -69,7 +75,10 @@ class AMQPSerializationFormatDecoder(
             val serializedBytes = extractSerializedBytes(transformed)
             (
                 if (serializedBytes != null) {
-                    mapOf("_class" to (transformed as Map<*, *>)["_class"], "_value" to recurse(serializedBytes, depth + 1, includeOriginalBytes))
+                    mapOf(
+                        "_class" to (transformed as Map<*, *>)["_class"],
+                        "_value" to recurse(serializedBytes, depth + 1, includeOriginalBytes)
+                    )
                 } else {
                     transformed
                 }
