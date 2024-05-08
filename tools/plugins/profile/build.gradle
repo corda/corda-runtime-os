@@ -26,6 +26,7 @@ dependencies {
     implementation libs.jackson.dataformat.yaml
     implementation libs.pf4j
     implementation project(':libs:permissions:permission-password')
+    implementation project(':libs:corda-sdk')
     kapt libs.pf4j
 
     testImplementation "net.corda.cli.host:api:$pluginHostVersion"
