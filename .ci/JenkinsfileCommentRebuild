@@ -6,5 +6,5 @@ cancelQueuedJobByName(env.JOB_NAME)
 
 githubCommentBuildTests(
     branch: 'release/5.2',
-    chartVersion: '^5.2.0-alpha',
+    chartVersion: '^5.2.1-alpha',
 )
