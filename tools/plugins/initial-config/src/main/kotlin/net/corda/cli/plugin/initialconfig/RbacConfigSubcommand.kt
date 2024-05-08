@@ -1,5 +1,6 @@
 package net.corda.cli.plugin.initialconfig
 
+import net.corda.sdk.bootstrap.initial.buildRbacConfigSql
 import picocli.CommandLine
 import java.io.File
 import java.io.FileWriter

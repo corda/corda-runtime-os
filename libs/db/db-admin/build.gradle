@@ -12,4 +12,6 @@ dependencies {
 
     compileOnly "org.osgi:osgi.annotation"
     api "javax.persistence:javax.persistence-api"
+
+    implementation libs.liquibase
 }

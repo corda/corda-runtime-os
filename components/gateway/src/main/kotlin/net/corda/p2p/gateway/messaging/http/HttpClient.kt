@@ -161,7 +161,7 @@ internal class HttpClient(
         bootstrap.group(nettyGroup)
             .option(
                 ChannelOption.CONNECT_TIMEOUT_MILLIS,
-                connectionConfiguration.acquireTimeout.toMillis().toInt()
+                connectionConfiguration.acquireTimeout.toMillis().toInt(),
             )
             .channel(NioSocketChannel::class.java)
             // using a name resolver that selects randomly an IP to ensure load will be distributed across the recipient
@@ -209,7 +209,7 @@ internal class HttpClient(
             if (!explicitlyClosed) {
                 logger.info(
                     "Previous connection to ${destinationInfo.uri} was closed, " +
-                        "a new attempt will be made to connect again in ${retryDelay.seconds} seconds."
+                        "a new attempt will be made to connect again in ${retryDelay.seconds} seconds.",
                 )
                 retryFuture?.cancel(true)
 
@@ -257,7 +257,7 @@ internal class HttpClient(
                     destinationInfo.legalName,
                     trustManagerFactory,
                     destinationInfo.clientCertificatesKeyStore?.keyStore,
-                )
+                ),
             )
             pipeline.addLast(HttpClientCodec())
             pipeline.addLast(HttpClientChannelHandler(this@HttpClient, logger))
@@ -278,7 +278,7 @@ internal data class DestinationInfo(
     val sni: String,
     val legalName: X500Name?,
     val trustStore: TrustStoresMap.TrustedCertificates,
-    val clientCertificatesKeyStore: DynamicKeyStore.ClientKeyStore?
+    val clientCertificatesKeyStore: DynamicKeyStore.ClientKeyStore?,
 )
 
 typealias HttpRequestPayload = ByteArray

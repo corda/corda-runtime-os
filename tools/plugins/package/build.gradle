@@ -20,6 +20,7 @@ dependencies {
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
 
     implementation project(':libs:packaging:packaging-verify')
+    implementation project(':libs:corda-sdk')
     implementation project(':libs:membership:schema-validation')
     implementation project(':libs:membership:membership-common')
     implementation libs.pf4j

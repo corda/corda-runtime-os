@@ -1,14 +1,18 @@
 package net.corda.gradle.plugin.cordapp
 
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
-import java.io.File
+import net.corda.sdk.network.MGM_GROUP_POLICY
+import net.corda.sdk.packaging.CpiAttributes
+import net.corda.sdk.packaging.CpiV2Creator
+import net.corda.sdk.packaging.signing.SigningOptions
+import java.nio.file.Files
+import java.nio.file.Path
+import kotlin.io.path.exists
+import kotlin.io.path.readText
 
 class BuildCpiHelper {
-
     @Suppress("LongParameterList")
     fun createCPI(
-        javaBinDir: String,
-        cordaCliBinDir: String,
         groupPolicyFilePath: String,
         keystoreFilePath: String,
         keystoreAlias: String,
@@ -18,46 +22,66 @@ class BuildCpiHelper {
         cpiName: String,
         cpiVersion: String,
     ) {
-        // Get Cpb
-        val cpbFile = File(cpbFilePath)
-        if (!cpbFile.exists()) {
-            throw CordaRuntimeGradlePluginException("CPB file not found at: $cpbFilePath.")
-        }
-        // Clear previous cpi if it exists
-        val cpiFile = File(cpiFilePath)
-        if (cpiFile.exists()) {
-            cpiFile.delete()
-        }
-        // Build and execute command to build cpi
-        val cmdList = listOf(
-            "$javaBinDir/java",
-            "-Dpf4j.pluginsDir=$cordaCliBinDir/plugins/",
-            "-jar",
-            "$cordaCliBinDir/corda-cli.jar",
-            "package",
-            "create-cpi",
-            "--cpb",
-            cpbFile.absolutePath,
-            "--group-policy",
-            groupPolicyFilePath,
-            "--cpi-name",
-            cpiName,
-            "--cpi-version",
-            cpiVersion,
-            "--file",
-            cpiFilePath,
-            "--keystore",
-            keystoreFilePath,
-            "--storepass",
-            keystorePassword,
-            "--key",
-            keystoreAlias
-        )
+        try {
+            val (cpbFile, groupPolicyFile, keyStoreFile) = requireFilesExist(cpbFilePath, groupPolicyFilePath, keystoreFilePath)
+            val groupPolicy = groupPolicyFile.readText(Charsets.UTF_8)
 
-        val pb = ProcessBuilder(cmdList)
-        pb.redirectErrorStream(true)
-        val proc = pb.start()
-        proc.inputStream.transferTo(System.out)
-        proc.waitFor()
+            // Clear previous cpi if it exists
+            val cpiFile = Path.of(cpiFilePath).also { Files.deleteIfExists(it) }
+
+            CpiV2Creator.createCpi(
+                cpbFile,
+                cpiFile,
+                groupPolicy,
+                CpiAttributes(cpiName, cpiVersion),
+                SigningOptions(
+                    keyStoreFile,
+                    keystorePassword,
+                    keystoreAlias
+                )
+            )
+        } catch (e: Exception) {
+            throw CordaRuntimeGradlePluginException("Unable to create CPI: ${e.message}", e)
+        }
+    }
+
+    private fun requireFilesExist(vararg filePath: String): List<Path> =
+        filePath.map { path ->
+            Path.of(path).also {
+                if (!it.exists()) throw CordaRuntimeGradlePluginException("File not found: $it")
+            }
+        }
+
+    @Suppress("LongParameterList")
+    fun createMgmCpi(
+        keystoreFilePath: String,
+        keystoreAlias: String,
+        keystorePassword: String,
+        cpiFilePath: String,
+        cpiName: String,
+        cpiVersion: String,
+    ) {
+        if (Path.of(cpiFilePath).exists()) {
+            return // reuse existing file
+        }
+
+        try {
+            val (keyStoreFile) = requireFilesExist(keystoreFilePath)
+            CpiV2Creator.createCpi(
+                cpbPath = null,
+                outputFilePath = Path.of(cpiFilePath),
+                groupPolicy = MGM_GROUP_POLICY,
+                cpiAttributes = CpiAttributes(cpiName, cpiVersion),
+                signingOptions = SigningOptions(
+                    keyStoreFile,
+                    keystorePassword,
+                    keystoreAlias
+                )
+            )
+
+        } catch (e: Exception) {
+            throw CordaRuntimeGradlePluginException("Unable to create CPI: ${e.message}", e)
+        }
+
     }
 }

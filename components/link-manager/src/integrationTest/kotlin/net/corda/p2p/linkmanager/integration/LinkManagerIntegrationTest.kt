@@ -4,6 +4,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigValueFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.SessionEncryptionOpsClient
@@ -13,14 +14,10 @@ import net.corda.data.p2p.crypto.protocol.RevocationCheckMode
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_ENABLED_KEY
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.INBOUND_SESSIONS_CACHE_SIZE
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_FOR_MEMBER_KEY
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_FOR_MGM_KEY
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_KEY
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_REFRESH_THRESHOLD_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.OUTBOUND_SESSIONS_CACHE_SIZE
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -46,8 +43,8 @@ import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
-import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.configuration.StateManagerConfig
+import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.test.util.eventually
 import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.utilities.seconds
@@ -98,6 +95,9 @@ class LinkManagerIntegrationTest {
         lateinit var configReadService: ConfigurationReadService
 
         @InjectService(timeout = 4000)
+        lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
+
+        @InjectService(timeout = 4000)
         lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 
         @InjectService(timeout = 4000)
@@ -122,14 +122,10 @@ class LinkManagerIntegrationTest {
             .withValue(LinkManagerConfiguration.MESSAGE_REPLAY_PERIOD_KEY, ConfigValueFactory.fromAnyRef(replayPeriod))
         return ConfigFactory.empty()
             .withValue(MAX_MESSAGE_SIZE_KEY, ConfigValueFactory.fromAnyRef(1000000))
+            .withValue(INBOUND_SESSIONS_CACHE_SIZE, ConfigValueFactory.fromAnyRef(100))
+            .withValue(OUTBOUND_SESSIONS_CACHE_SIZE, ConfigValueFactory.fromAnyRef(100))
             .withValue(MAX_REPLAYING_MESSAGES_PER_PEER, ConfigValueFactory.fromAnyRef(100))
-            .withValue(HEARTBEAT_ENABLED_KEY, ConfigValueFactory.fromAnyRef(true))
-            .withValue(HEARTBEAT_MESSAGE_PERIOD_KEY, ConfigValueFactory.fromAnyRef(2000))
             .withValue(SESSION_TIMEOUT_KEY, ConfigValueFactory.fromAnyRef(10000))
-            .withValue(SESSIONS_PER_PEER_KEY, ConfigValueFactory.fromAnyRef(null))
-            .withValue(SESSIONS_PER_PEER_FOR_MEMBER_KEY, ConfigValueFactory.fromAnyRef(2))
-            .withValue(SESSIONS_PER_PEER_FOR_MGM_KEY, ConfigValueFactory.fromAnyRef(1))
-            .withValue(SESSION_REFRESH_THRESHOLD_KEY, ConfigValueFactory.fromAnyRef(432000))
             .withValue(
                 LinkManagerConfiguration.REPLAY_ALGORITHM_KEY,
                 ConfigFactory.empty().withValue(
@@ -219,6 +215,7 @@ class LinkManagerIntegrationTest {
             publisherFactory,
             lifecycleCoordinatorFactory,
             configReadService,
+            cordaAvroSerializationFactory,
             bootstrapConfig,
             GroupPolicyProviderStub(),
             VirtualNodeInfoReadServiceStub(),

@@ -7,12 +7,15 @@ import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.PreAuthTokenEntity
+import net.corda.membership.lib.exceptions.ConflictPersistenceException
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.eq
@@ -20,10 +23,12 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.UUID
+import javax.persistence.EntityExistsException
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
@@ -86,5 +91,18 @@ class AddPreAuthTokenHandlerTest {
             it.assertThat(persistedEntity.creationRemark).isEqualTo(remark)
             it.assertThat(persistedEntity.removalRemark).isNull()
         }
+    }
+
+    @Test
+    fun `existing entity issue will throw a clonflict issue`() {
+        val tokenId = "tokenId"
+        val ownerX500Name = "x500Name"
+        val ttl = Instant.ofEpochSecond(100)
+        val remark = "A remark"
+        whenever(entityManager.persist(any())).doThrow(EntityExistsException(""))
+
+        assertThatThrownBy {
+            handler.invoke(context, AddPreAuthToken(tokenId, ownerX500Name, ttl, remark))
+        }.isInstanceOf(ConflictPersistenceException::class.java)
     }
 }

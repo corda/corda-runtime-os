@@ -10,6 +10,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureParameterSpec
 import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.utilities.toByteArray
 import net.corda.v5.base.util.EncodingUtils.toHex
 import net.corda.v5.crypto.DigestAlgorithmName
 import org.assertj.core.api.Assertions.assertThat
@@ -84,7 +85,7 @@ class WireUtilsTests {
 
     @Test
     fun `Should create wire request context for a given caller`() {
-        val tenantId = toHex(UUID.randomUUID().toString().toByteArray().sha256Bytes()).take(12)
+        val tenantId = toHex(UUID.randomUUID().toByteArray().sha256Bytes()).take(12)
         val other = KeyValuePairList(
             listOf(
                 KeyValuePair("key1", "value1")
@@ -114,7 +115,7 @@ class WireUtilsTests {
                 algSpec
             }
         }
-        val paramBytes = UUID.randomUUID().toString().toByteArray()
+        val paramBytes = UUID.randomUUID().toByteArray()
         val origin = CryptoSignatureSpec(
             "name1",
             "custom2",
@@ -143,7 +144,7 @@ class WireUtilsTests {
                 algSpec
             }
         }
-        val paramBytes = UUID.randomUUID().toString().toByteArray()
+        val paramBytes = UUID.randomUUID().toByteArray()
         val origin = CryptoSignatureSpec(
             "name1",
             null,
@@ -174,7 +175,7 @@ class WireUtilsTests {
 
     @Test
     fun `Should convert SignatureSpec to wire with spec params and custom digest`() {
-        val paramBytes = UUID.randomUUID().toString().toByteArray()
+        val paramBytes = UUID.randomUUID().toByteArray()
         val algSpec = mock<AlgorithmParameterSpec>()
         val serializer = mock<AlgorithmParameterSpecEncodingService> {
             on { serialize(any()) } doReturn SerializedAlgorithmParameterSpec("class1", paramBytes)
@@ -195,7 +196,7 @@ class WireUtilsTests {
 
     @Test
     fun `Should convert SignatureSpec to wire with spec params`() {
-        val paramBytes = UUID.randomUUID().toString().toByteArray()
+        val paramBytes = UUID.randomUUID().toByteArray()
         val algSpec = mock<AlgorithmParameterSpec>()
         val serializer = mock<AlgorithmParameterSpecEncodingService> {
             on { serialize(any()) } doReturn SerializedAlgorithmParameterSpec("class1", paramBytes)

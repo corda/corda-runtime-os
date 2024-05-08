@@ -24,10 +24,7 @@ class TaskSchedulerLogEntityRepository {
      * Get the latest log for a given `taskName`, or initialise a new one if one doesn't exist.
      */
     fun getOrInitialiseLog(taskName: String, schedulerId: String, em: EntityManager) : TaskSchedulerLog {
-        val readQuery = em.createNamedQuery(TASK_SCHEDULER_LOG_GET_QUERY_NAME, TaskSchedulerLogEntity::class.java)
-        readQuery.setParameter(TASK_SCHEDULER_LOG_QUERY_PARAM_NAME, taskName)
-        readQuery.lockMode = LockModeType.PESSIMISTIC_WRITE
-        return readQuery.resultList.singleOrNull()?:
+        return getLogEntityForTask(em, taskName)?:
             // try to persist, but catch a constraint violation caused by a possible race condition
             try {
                 TaskSchedulerLogEntity(taskName, schedulerId, Instant.MIN, Date.from(Instant.now())).also {
@@ -36,16 +33,9 @@ class TaskSchedulerLogEntityRepository {
                 }
             }
             catch (e: PersistenceException) {
-                // NOTE: this is not great, but we must be able to detect a constraint violation in case
-                //  of a race condition, however, the JPA exception type doesn't give us enough info, so we check
-                //  the hibernate generated message.
-                if(e.message?.contains("ConstraintViolationException") == true) {
-                    // in this case, re-run the get query
+                return getLogEntityForTask(em, taskName).also {
                     log.warn("Race condition on inserting scheduled task. Ignoring the exception and returning the existing value: $e")
-                    readQuery.resultList.first()
-                } else {
-                    throw e
-                }
+                }?: throw e
             }
     }
 
@@ -57,6 +47,13 @@ class TaskSchedulerLogEntityRepository {
         updateQ.setParameter(TASK_SCHEDULER_LOG_QUERY_PARAM_NAME, taskName)
         updateQ.setParameter(TASK_SCHEDULER_LOG_QUERY_PARAM_SCHEDULER_ID, schedulerId)
         updateQ.executeUpdate()
+    }
+
+    private fun getLogEntityForTask(em: EntityManager, taskName: String): TaskSchedulerLog? {
+        val readQuery = em.createNamedQuery(TASK_SCHEDULER_LOG_GET_QUERY_NAME, TaskSchedulerLogEntity::class.java)
+        readQuery.setParameter(TASK_SCHEDULER_LOG_QUERY_PARAM_NAME, taskName)
+        readQuery.lockMode = LockModeType.PESSIMISTIC_WRITE
+        return readQuery.resultList.singleOrNull()
     }
 }
 

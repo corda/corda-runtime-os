@@ -14,7 +14,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @HttpRestResource(
-    name = "Hello Rest API",
+    name = "Hello Rest",
     description = "The Hello Rest API is used to test interactions via the " +
         "Rest API. It verifies that a call to Rest can be made, and that the identity of the user making the " +
         "call can be recognized. RBAC permissions are checked and the call is successfully processed by " +
@@ -48,6 +48,6 @@ class HelloRestResourceImpl @Activate constructor(
     override fun greet(addressee: String): String {
         val restContext = CURRENT_REST_CONTEXT.get()
         val principal = restContext.principal
-        return "Hello, $addressee! (from $principal)".also { log.info(it) }
+        return "\"Hello, $addressee! (from $principal)\"".also { log.info(it) }
     }
 }

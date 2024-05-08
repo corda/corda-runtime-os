@@ -1,24 +1,17 @@
 package net.corda.cli.plugin.initialRbac.commands
 
-import net.corda.cli.plugins.common.RestClientUtils.createRestClient
-import net.corda.cli.plugins.common.RestClientUtils.executeWithRetry
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
-import net.corda.libs.permissions.endpoints.v1.permission.types.BulkCreatePermissionsRequestType
-import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
-import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
+import net.corda.sdk.bootstrap.rbac.PermissionTemplate
+import net.corda.sdk.bootstrap.rbac.RoleAndPermissionsCreator
+import net.corda.sdk.rest.RestClientUtils.createRestClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.time.Duration
-import java.time.temporal.ChronoUnit
+import kotlin.time.Duration.Companion.seconds
 
 internal object RoleCreationUtils {
-
-    fun wildcardMatch(input: String, regex: String): Boolean {
-        return input.matches(regex.toRegex(RegexOption.IGNORE_CASE))
-    }
 
     fun RestCommand.checkOrCreateRole(roleName: String, permissionsToCreate: Map<String, String>): Int {
         return checkOrCreateRole(
@@ -36,58 +29,45 @@ internal object RoleCreationUtils {
     fun RestCommand.checkOrCreateRole(roleName: String, permissionsToCreate: Set<PermissionTemplate>): Int {
         val logger: Logger = LoggerFactory.getLogger(this::class.java)
         val sysOut: Logger = LoggerFactory.getLogger("SystemOut")
-        val errOut: Logger = LoggerFactory.getLogger("SystemErr")
 
         logger.info("Running ${this.javaClass.simpleName}")
 
         val start = System.currentTimeMillis()
 
-        createRestClient(RoleEndpoint::class).use { roleEndpointClient ->
-            val waitDuration = Duration.of(waitDurationSeconds.toLong(), ChronoUnit.SECONDS)
-            val roleEndpoint = executeWithRetry(waitDuration, "Connect to role HTTP endpoint") {
-                roleEndpointClient.start().proxy
-            }
-            val allRoles = executeWithRetry(waitDuration, "Obtain list of available roles") {
-                roleEndpoint.getRoles()
-            }
-            if (allRoles.any { it.roleName == roleName }) {
-                errOut.error("$roleName already exists - nothing to do.")
-                return 5
-            }
+        val roleClient = createRestClient(
+            restResource = RoleEndpoint::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
+        val permissionClient = createRestClient(
+            restResource = PermissionEndpoint::class,
+            insecure = insecure,
+            minimumServerProtocolVersion = minimumServerProtocolVersion,
+            username = username,
+            password = password,
+            targetUrl = targetUrl
+        )
 
-            val roleId = executeWithRetry(waitDuration, "Creating role: $roleName") {
-                roleEndpoint.createRole(CreateRoleType(roleName, null)).responseBody.id
-            }
+        val roleId = RoleAndPermissionsCreator().createRoleAndPermissions(
+            roleRestClient = roleClient,
+            permissionRestClient = permissionClient,
+            roleToCreate = CreateRoleType(
+                roleName = roleName,
+                groupVisibility = null
+            ),
+            permissionsToCreate = permissionsToCreate,
+            wait = waitDurationSeconds.seconds
+        ).id
 
-            createRestClient(PermissionEndpoint::class).use { permissionEndpointClient ->
-                val permissionEndpoint = executeWithRetry(waitDuration, "Start of permissions HTTP endpoint") {
-                    permissionEndpointClient.start().proxy
-                }
+        val end = System.currentTimeMillis()
 
-                val bulkRequest = BulkCreatePermissionsRequestType(
-                    permissionsToCreate.map { entry ->
-                        CreatePermissionType(
-                            PermissionType.ALLOW,
-                            entry.permissionString,
-                            null,
-                            entry.vnodeShortHash
-                        )
-                    }.toSet(),
-                    setOf(roleId)
-                )
-
-                executeWithRetry(waitDuration, "Creating and assigning permissions to the role") {
-                    permissionEndpoint.createAndAssignPermissions(bulkRequest)
-                }
-            }
-
-            val end = System.currentTimeMillis()
-
-            sysOut.info(
-                "Successfully created $roleName with id: $roleId and assigned permissions. " +
-                    "Elapsed time: ${end - start}ms."
-            )
-        }
+        sysOut.info(
+            "Successfully created $roleName with id: $roleId and assigned permissions. " +
+                "Elapsed time: ${end - start}ms."
+        )
 
         return 0
     }

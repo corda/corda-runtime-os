@@ -1,6 +1,7 @@
 package net.corda.gradle.plugin.cordalifecycle
 
 import kong.unirest.Unirest
+import net.corda.gradle.plugin.configuration.NetworkConfig
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
 import net.corda.gradle.plugin.retryAttempts
 import java.io.File
@@ -12,6 +13,17 @@ import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 
 class EnvironmentSetupHelper {
+
+    fun isNotaryNonValidating(networkConfig: NetworkConfig): Boolean {
+        val notaryNodes = networkConfig.vNodes.filter { it.serviceX500Name != null }
+        val nodesWithProtocolName = notaryNodes.filter { it.flowProtocolName != null }
+        if (notaryNodes.isEmpty() || nodesWithProtocolName.isEmpty()) {
+            // revert to default behaviour
+            return true
+        }
+
+        return nodesWithProtocolName.any { it.flowProtocolName!!.lowercase().contains("nonvalid") }
+    }
 
     fun downloadNotaryCpb(
         notaryCpbVersion: String,

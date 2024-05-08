@@ -25,6 +25,7 @@ import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
+import net.corda.utilities.trace
 import net.corda.utilities.translateFlowContextToMDC
 import net.corda.utilities.withMDC
 import net.corda.v5.application.flows.FlowContextPropertyKeys
@@ -50,6 +51,8 @@ class ProcessorService {
         val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
         val holdingIdentity = request.holdingIdentity.toCorda()
 
+        logger.trace { "Handling ${request.request::class.java.name} for holdingIdentity ${holdingIdentity.shortHash.value}" }
+
         val result = withMDC(
             mapOf(
                 MDC_CLIENT_ID to clientRequestId, MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
@@ -57,8 +60,6 @@ class ProcessorService {
         ) {
             var requestOutcome = "FAILED"
             try {
-                logger.info("Handling ${request.request::class.java.name} for holdingIdentity ${holdingIdentity.shortHash.value}")
-
                 val cpkFileHashes = request.flowExternalEventContext.contextProperties.items.filter {
                     it.key.startsWith(FlowContextPropertyKeys.CPK_FILE_CHECKSUM)
                 }.map { it.value.toSecureHash() }.toSet()

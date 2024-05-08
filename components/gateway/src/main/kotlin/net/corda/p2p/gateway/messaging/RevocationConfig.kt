@@ -17,7 +17,7 @@ enum class RevocationConfigMode {
     /**
      * Switch CRL check off.
      */
-    OFF
+    OFF,
 }
 
 /**

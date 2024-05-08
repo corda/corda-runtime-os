@@ -18,11 +18,15 @@ dependencies {
 
     implementation project(":libs:virtual-node:virtual-node-endpoints-maintenance")
     implementation project(":libs:virtual-node:cpi-upload-endpoints")
+    implementation project(':libs:crypto:crypto-core')
+    implementation project(":libs:db:db-admin-impl")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-db-schema'
 
+    implementation project(':libs:corda-sdk')
     implementation project(":tools:plugins:plugins-rest")
+    implementation project(":tools:plugins:common-utils")
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
     compileOnly libs.pf4j
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
@@ -30,12 +34,9 @@ dependencies {
     kapt libs.pf4j
     kapt "info.picocli:picocli:$picocliVersion"
 
-    implementation "org.liquibase:liquibase-core:$liquibaseVersion"
+    implementation libs.liquibase
     constraints {
         implementation(libs.slf4j.v2.api)
-        implementation(libs.snakeyaml)  {
-            because "required until liquibase-core updates it's internal version of snakeYaml, currently using 1.33 which has CVE-2022-1471"
-        }
     }
 
     // DO NOT DISTRIBUTE DRIVERS HERE WE ARE NOT LICENSED TO DISTRIBUTE
@@ -46,6 +47,8 @@ dependencies {
     testImplementation libs.bundles.test
     testImplementation libs.pf4j
     testCompileOnly "net.corda.cli.host:api:$pluginHostVersion"
+    testImplementation "info.picocli:picocli:$picocliVersion"
+    testImplementation libs.assertj.core
 }
 
 cliPlugin {

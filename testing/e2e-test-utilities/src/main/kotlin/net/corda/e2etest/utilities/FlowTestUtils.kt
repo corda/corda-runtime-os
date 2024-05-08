@@ -46,7 +46,7 @@ fun startRestFlow(
 
 fun startRestFlow(
     holdingId: String,
-    args: Map<String, Any>,
+    args: Map<String, Any?>,
     flowName: String,
     expectedCode: Int = 202,
     requestId: String = UUID.randomUUID().toString()
@@ -54,7 +54,7 @@ fun startRestFlow(
 
 fun ClusterInfo.startRestFlow(
     holdingId: String,
-    args: Map<String, Any>,
+    args: Map<String, Any?>,
     flowName: String,
     expectedCode: Int = 202,
     requestId: String = UUID.randomUUID().toString()

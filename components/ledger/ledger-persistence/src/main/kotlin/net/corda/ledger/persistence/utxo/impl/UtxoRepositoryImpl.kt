@@ -93,11 +93,11 @@ class UtxoRepositoryImpl(
         )
     }
 
-    override fun findTransactionIdsAndStatuses(
+    override fun findSignedTransactionIdsAndStatuses(
         entityManager: EntityManager,
         transactionIds: List<String>
     ): Map<SecureHash, String> {
-        return entityManager.createNativeQuery(queryProvider.findTransactionIdsAndStatuses, Tuple::class.java)
+        return entityManager.createNativeQuery(queryProvider.findSignedTransactionIdsAndStatuses, Tuple::class.java)
             .setParameter("transactionIds", transactionIds)
             .resultListAsTuples()
             .associate { r -> parseSecureHash(r.get(0) as String) to r.get(1) as String }
@@ -166,11 +166,11 @@ class UtxoRepositoryImpl(
             .map { r -> serializationService.deserialize(r.get(0) as ByteArray) }
     }
 
-    override fun findTransactionStatus(entityManager: EntityManager, id: String): Pair<String, Boolean>? {
-        return entityManager.createNativeQuery(queryProvider.findTransactionStatus, Tuple::class.java)
+    override fun findSignedTransactionStatus(entityManager: EntityManager, id: String): String? {
+        return entityManager.createNativeQuery(queryProvider.findSignedTransactionStatus, Tuple::class.java)
             .setParameter("transactionId", id)
             .resultListAsTuples()
-            .map { r -> r.get(0) as String to r.get(1) as Boolean }
+            .map { r -> r.get(0) as String }
             .singleOrNull()
     }
 
@@ -225,23 +225,25 @@ class UtxoRepositoryImpl(
             .logResult("transaction [$id]")
     }
 
-    override fun persistFilteredTransaction(
+    override fun persistFilteredTransactions(
         entityManager: EntityManager,
-        id: String,
-        privacySalt: ByteArray,
-        account: String,
+        filteredTransactions: List<UtxoRepository.FilteredTransaction>,
         timestamp: Instant,
-        metadataHash: String
     ) {
-        entityManager.createNativeQuery(queryProvider.persistFilteredTransaction)
-            .setParameter("id", id)
-            .setParameter("privacySalt", privacySalt)
-            .setParameter("accountId", account)
-            .setParameter("createdAt", timestamp)
-            .setParameter("updatedAt", timestamp)
-            .setParameter("metadataHash", metadataHash)
-            .executeUpdate()
-            .logResult("transaction [$id]")
+        entityManager.connection { connection ->
+            batchPersistenceService.persistBatch(
+                connection,
+                queryProvider.persistFilteredTransaction,
+                filteredTransactions
+            ) { statement, parameterIndex, filteredTransaction ->
+                statement.setString(parameterIndex.next(), filteredTransaction.transactionId)
+                statement.setBytes(parameterIndex.next(), filteredTransaction.privacySalt)
+                statement.setString(parameterIndex.next(), filteredTransaction.account)
+                statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp), utcCalendar)
+                statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp), utcCalendar)
+                statement.setString(parameterIndex.next(), filteredTransaction.metadataHash)
+            }
+        }
     }
 
     override fun updateTransactionToVerified(entityManager: EntityManager, id: String, timestamp: Instant) {
@@ -376,6 +378,13 @@ class UtxoRepositoryImpl(
                 } else {
                     statement.setNull(parameterIndex.next(), Types.NUMERIC)
                 }
+
+                if (visibleTransactionOutput.token?.priority != null) {
+                    statement.setLong(parameterIndex.next(), visibleTransactionOutput.token.priority!!)
+                } else {
+                    statement.setNull(parameterIndex.next(), Types.BIGINT)
+                }
+
                 statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp), utcCalendar)
                 statement.setNull(parameterIndex.next(), Types.TIMESTAMP)
                 statement.setString(parameterIndex.next(), visibleTransactionOutput.customRepresentation.json)
@@ -385,7 +394,6 @@ class UtxoRepositoryImpl(
 
     override fun persistTransactionSignatures(
         entityManager: EntityManager,
-        transactionId: String,
         signatures: List<UtxoRepository.TransactionSignature>,
         timestamp: Instant
     ) {
@@ -395,10 +403,9 @@ class UtxoRepositoryImpl(
                 queryProvider.persistTransactionSignatures,
                 signatures
             ) { statement, parameterIndex, signature ->
-                statement.setString(parameterIndex.next(), transactionId)
-                statement.setInt(parameterIndex.next(), signature.index)
-                statement.setBytes(parameterIndex.next(), signature.signatureBytes)
+                statement.setString(parameterIndex.next(), signature.transactionId)
                 statement.setString(parameterIndex.next(), signature.publicKeyHash.toString())
+                statement.setBytes(parameterIndex.next(), signature.signatureBytes)
                 statement.setTimestamp(parameterIndex.next(), Timestamp.from(timestamp), utcCalendar)
             }
         }
@@ -613,6 +620,26 @@ class UtxoRepositoryImpl(
         entityManager.createNativeQuery(queryProvider.incrementRepairAttemptCount)
             .setParameter("transactionId", id)
             .executeUpdate()
+    }
+
+    override fun stateRefsExist(entityManager: EntityManager, stateRefs: List<StateRef>): List<Pair<String, Int>> {
+        val results = mutableListOf<Pair<String, Int>>()
+        if (stateRefs.isNotEmpty()) {
+            entityManager.connection { connection ->
+                connection.prepareStatement(queryProvider.stateRefsExist(stateRefs.size)).use { statement ->
+                    val parameterIndex = generateSequence(1) { it + 1 }.iterator()
+                    for (stateRef in stateRefs) {
+                        statement.setString(parameterIndex.next(), stateRef.transactionId.toString())
+                        statement.setInt(parameterIndex.next(), stateRef.index)
+                    }
+                    val resultSet = statement.executeQuery()
+                    while (resultSet.next()) {
+                        results += resultSet.getString(1) to resultSet.getInt(2)
+                    }
+                }
+            }
+        }
+        return results
     }
 
     private fun <T> EntityManager.connection(block: (connection: Connection) -> T) {

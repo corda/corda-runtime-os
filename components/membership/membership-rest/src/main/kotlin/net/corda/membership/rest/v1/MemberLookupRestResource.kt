@@ -15,7 +15,7 @@ import net.corda.rest.annotations.RestQueryParameter
  * you to retrieve a list of active and pending members in the membership group.
  */
 @HttpRestResource(
-    name = "Member Lookup API",
+    name = "Member Lookup",
     description = "The Member Lookup API consists of endpoints used to look up information related to membership groups.",
     path = "members"
 )

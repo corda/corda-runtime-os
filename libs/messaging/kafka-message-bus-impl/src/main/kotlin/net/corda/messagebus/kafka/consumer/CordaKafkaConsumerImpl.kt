@@ -306,6 +306,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
+
     override fun syncCommitOffsets() {
         var attemptCommit = true
 

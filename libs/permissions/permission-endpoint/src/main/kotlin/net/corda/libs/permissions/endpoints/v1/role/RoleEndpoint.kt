@@ -17,7 +17,7 @@ import net.corda.rest.response.ResponseEntity
  * Role endpoint exposes HTTP operations for management of Roles in the RBAC permission system.
  */
 @HttpRestResource(
-    name = "RBAC Role API",
+    name = "RBAC Role",
     description = "The RBAC Role API consists of a number of endpoints enabling role management in the RBAC " +
         "(role-based access control) permission system. You can get all roles in the system, " +
         "create new roles and add and delete permissions from roles.",

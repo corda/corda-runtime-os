@@ -17,7 +17,7 @@ import net.corda.rest.annotations.RestPathParameter
  * for a holding identity, and check the status of a previously created registration request.
  */
 @HttpRestResource(
-    name = "Member Registration API",
+    name = "Member Registration",
     description = "The Member Registration API consists of a number of endpoints which manage holding identities'" +
         " participation in membership groups. To participate in a membership group, the holding identity is" +
         " required to make a registration request that needs to be approved by the MGM for that group." +

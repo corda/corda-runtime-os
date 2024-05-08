@@ -17,7 +17,7 @@ internal class DynamicCertificateSubjectStore(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
-): LifecycleWithDominoTile {
+) : LifecycleWithDominoTile {
     private companion object {
         const val CONSUMER_GROUP_ID = "gateway_certificates_allowed_client_subjects_reader"
     }
@@ -28,7 +28,7 @@ internal class DynamicCertificateSubjectStore(
         subscriptionFactory.createCompactedSubscription(
             subscriptionConfig,
             Processor(),
-            messagingConfiguration
+            messagingConfiguration,
         )
     }
     override val dominoTile = SubscriptionDominoTile(
@@ -67,7 +67,7 @@ internal class DynamicCertificateSubjectStore(
         override fun onNext(
             newRecord: Record<String, ClientCertificateSubjects>,
             oldValue: ClientCertificateSubjects?,
-            currentData: Map<String, ClientCertificateSubjects>
+            currentData: Map<String, ClientCertificateSubjects>,
         ) {
             val newCertificateSubject = newRecord.value?.subject
             val oldCertificateSubjects = oldValue?.subject

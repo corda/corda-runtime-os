@@ -14,4 +14,18 @@ sealed interface Either<out T, out S> {
             is Right -> Right(mapper(this.b))
         }
     }
+
+    fun asLeft(): T? {
+        return when (this) {
+            is Left -> this.a
+            is Right -> null
+        }
+    }
+
+    fun asRight(): S? {
+        return when (this) {
+            is Right -> this.b
+            is Left -> null
+        }
+    }
 }

@@ -9,6 +9,7 @@ import net.corda.flow.application.serialization.FlowSerializationService
 import net.corda.flow.application.services.MockFlowFiberService
 import net.corda.flow.application.sessions.impl.FlowSessionImpl
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.state.FlowContext
 import net.corda.flow.utils.KeyValueStore
 import net.corda.internal.serialization.SerializedBytesImpl
@@ -18,6 +19,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
@@ -37,6 +39,11 @@ class FlowSessionImplTest {
         const val SESSION_ID = "session id"
         const val HI = "hi"
         const val HELLO_THERE = "hello there"
+        val MAX_PAYLOAD_SIZE = MockFlowFiberService()
+            .getExecutingFiber()
+            .getExecutionContext()
+            .flowCheckpoint.maxPayloadSize
+            .toInt()
         val received = mapOf(SESSION_ID to HELLO_THERE.toByteArray())
     }
 
@@ -160,6 +167,44 @@ class FlowSessionImplTest {
         verify(flowFiber).suspend(any<FlowIORequest.Send>())
     }
 
+    @Test
+    fun `calling send or sendAndReceive with a payload size above the configurable maxPayloadSize throws an exception`() {
+        val session = createInitiatingSession()
+        val payload = ByteArray(MAX_PAYLOAD_SIZE + 1)
+
+        whenever(serializationService.serialize(any<ByteArray>())).thenReturn(SerializedBytesImpl(payload))
+
+        assertThrows<FlowPlatformException> {
+            session.send(payload)
+            session.sendAndReceive(String::class.java, payload)
+        }
+    }
+
+    @Test
+    fun `calling send or sendAndReceive with a payload size equal to the configurable maxPayloadSize does not throw an exception`() {
+        val session = createInitiatingSession()
+        val payload = ByteArray(MAX_PAYLOAD_SIZE)
+
+        whenever(serializationService.serialize(any<ByteArray>())).thenReturn(SerializedBytesImpl(payload))
+
+        assertDoesNotThrow {
+            session.send(payload)
+            session.sendAndReceive(String::class.java, payload)
+        }
+    }
+
+    @Test
+    fun `calling send or sendAndReceive with a payload size below the configurable maxPayloadSize does not throw an exception`() {
+        val session = createInitiatingSession()
+        val payload = ByteArray(MAX_PAYLOAD_SIZE - 1)
+
+        whenever(serializationService.serialize(any<ByteArray>())).thenReturn(SerializedBytesImpl(payload))
+
+        assertDoesNotThrow {
+            session.send(payload)
+            session.sendAndReceive(String::class.java, payload)
+        }
+    }
 
     @Test
     fun `calling close when not CLOSED will cause the flow to suspend`() {

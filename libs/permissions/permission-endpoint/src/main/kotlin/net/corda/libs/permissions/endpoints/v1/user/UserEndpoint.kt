@@ -20,7 +20,7 @@ import net.corda.rest.response.ResponseEntity
  * User endpoint exposes HTTP endpoints for management of Users in the RBAC permission system.
  */
 @HttpRestResource(
-    name = "RBAC User API",
+    name = "RBAC User",
     description = "The RBAC User API consists of a number of endpoints enabling user management in the RBAC " +
         "(role-based access control) permission system. You can get details of specified users, create new users, " +
         "assign roles to users and remove roles from users.",

@@ -30,7 +30,6 @@ import net.corda.p2p.gateway.messaging.http.HttpRequest
 import net.corda.p2p.gateway.messaging.http.HttpWriter
 import net.corda.p2p.gateway.messaging.http.ReconfigurableHttpServer
 import net.corda.p2p.gateway.messaging.mtls.DynamicCertificateSubjectStore
-import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
 import net.corda.schema.Schemas.P2P.LINK_IN_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
@@ -62,9 +61,9 @@ internal class InboundMessageHandler(
         // Setting max limits for variable-length fields to prevent malicious clients from trying to trigger large memory allocations.
         System.setProperty(SystemLimitException.MAX_BYTES_LENGTH_PROPERTY, AVRO_LIMIT.toString())
         System.setProperty(SystemLimitException.MAX_STRING_LENGTH_PROPERTY, AVRO_LIMIT.toString())
-        
+
         // Need to call package private method for changes to have effect
-        // The fact that [SystemLimitException] is using static initializer is not nice, especially given that is class 
+        // The fact that [SystemLimitException] is using static initializer is not nice, especially given that is class
         // loaded when [AvroSchemaRegistry] is created.
         val declaredMethod = SystemLimitException::class.java.getDeclaredMethod("resetLimits")
         declaredMethod.setAccessible(true)
@@ -80,18 +79,13 @@ internal class InboundMessageHandler(
         publisherFactory,
         lifecycleCoordinatorFactory,
         PublisherConfig("inbound-message-handler", false),
-        messagingConfiguration
-    )
-    private val sessionPartitionMapper = SessionPartitionMapperImpl(
-        lifecycleCoordinatorFactory,
-        subscriptionFactory,
-        messagingConfiguration
+        messagingConfiguration,
     )
 
     private val dynamicCertificateSubjectStore = DynamicCertificateSubjectStore(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
-        messagingConfiguration
+        messagingConfiguration,
     )
     private val linkManagerClient =
         LinkManagerRpcClient(
@@ -111,17 +105,15 @@ internal class InboundMessageHandler(
         this::class.java.simpleName,
         lifecycleCoordinatorFactory,
         dependentChildren = listOf(
-            sessionPartitionMapper.dominoTile.coordinatorName,
             p2pInPublisher.dominoTile.coordinatorName,
             server.dominoTile.coordinatorName,
             dynamicCertificateSubjectStore.dominoTile.coordinatorName,
         ),
         managedChildren = listOf(
-            sessionPartitionMapper.dominoTile.toNamedLifecycle(),
             p2pInPublisher.dominoTile.toNamedLifecycle(),
             server.dominoTile.toNamedLifecycle(),
             dynamicCertificateSubjectStore.dominoTile.toNamedLifecycle(),
-        )
+        ),
     )
 
     /**
@@ -153,8 +145,12 @@ internal class InboundMessageHandler(
             return HttpResponseStatus.BAD_REQUEST
         }
 
-        logger.debug("Received and processing message {} of type {} from {}",
-            gatewayMessage.id, p2pMessage.payload::class.java, request.source)
+        logger.debug(
+            "Received and processing message {} of type {} from {}",
+            gatewayMessage.id,
+            p2pMessage.payload::class.java,
+            request.source,
+        )
         return if (commonComponents.features.enableP2PGatewayToLinkManagerOverHttp) {
             return forwardMessage(
                 httpWriter,
@@ -217,31 +213,9 @@ internal class InboundMessageHandler(
 
     private fun processSessionMessage(p2pMessage: LinkInMessage): HttpResponseStatus {
         val sessionId = getSessionId(p2pMessage) ?: return INTERNAL_SERVER_ERROR
-        if (p2pMessage.payload is InitiatorHelloMessage) {
-            /* we are using the session identifier as key to ensure replayed initiator hello messages will end up on the same partition, and
-             * thus processed by the same link manager instance under normal conditions. */
-            p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, sessionId, p2pMessage)))
-            return HttpResponseStatus.OK
-        }
         val record = Record(LINK_IN_TOPIC, sessionId, p2pMessage)
-        if (commonComponents.features.useStatefulSessionManager) {
-            p2pInPublisher.publish(listOf(record))
-            return HttpResponseStatus.OK
-        } else {
-            val partitions = sessionPartitionMapper.getPartitions(sessionId)
-            return if (partitions == null) {
-                logger.warn("No mapping for session ($sessionId), discarding the message and returning an error.")
-                HttpResponseStatus.GONE
-            } else if (partitions.isEmpty()) {
-                logger.warn("No partitions exist for session ($sessionId), discarding the message and returning an error.")
-                HttpResponseStatus.GONE
-            } else {
-                // this is simplistic (stateless) load balancing amongst the partitions owned by the LM that "hosts" the session.
-                val selectedPartition = partitions.random()
-                p2pInPublisher.publishToPartition(listOf(selectedPartition to record))
-                HttpResponseStatus.OK
-            }
-        }
+        p2pInPublisher.publish(listOf(record))
+        return HttpResponseStatus.OK
     }
 
     private fun getSessionId(message: LinkInMessage): String? {

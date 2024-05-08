@@ -3,7 +3,6 @@ package net.corda.membership.impl.rest.v1
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants.P2P
-import net.corda.crypto.core.CryptoTenants.REST
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.Lifecycle
@@ -14,6 +13,8 @@ import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
 import net.corda.membership.rest.v1.HsmRestResource
 import net.corda.membership.rest.v1.types.response.HsmAssociationInfo
 import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -122,11 +123,20 @@ class HsmRestResourceImpl @Activate constructor(
     }
 
     private fun verifyTenantId(tenantId: String) {
-        if ((tenantId == P2P) || (tenantId == REST)) {
-            return
+        if (tenantId == P2P) return
+        try {
+            virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
+                tenantId
+            ) { "Could not find holding identity '$tenantId' associated with member." }
+        } catch (e: BadRequestException) {
+            // re-throw using a more suitable message
+            throw BadRequestException(
+                title = e::class.java.simpleName,
+                exceptionDetails = ExceptionDetails(
+                    e::class.java.name,
+                    "Invalid tenant id: $tenantId. Accepted values are holding identity short hash, 'p2p', or 'rest'"
+                )
+            )
         }
-        virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
-            tenantId
-        ) { "Could not find holding identity '$tenantId' associated with member." }
     }
 }

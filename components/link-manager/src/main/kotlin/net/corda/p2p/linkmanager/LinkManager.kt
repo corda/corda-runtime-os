@@ -1,8 +1,10 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.SessionEncryptionOpsClient
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -19,12 +21,12 @@ import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMapImpl
 import net.corda.p2p.linkmanager.inbound.InboundLinkManager
 import net.corda.p2p.linkmanager.outbound.OutboundLinkManager
+import net.corda.p2p.linkmanager.sessions.SessionManagerCommonComponents
+import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import java.util.UUID
-import net.corda.crypto.client.SessionEncryptionOpsClient
-import net.corda.schema.registry.AvroSchemaRegistry
 
 @Suppress("LongParameterList")
 class LinkManager(
@@ -32,6 +34,7 @@ class LinkManager(
     publisherFactory: PublisherFactory,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configurationReaderService: ConfigurationReadService,
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     messagingConfiguration: SmartConfig,
     groupPolicyProvider: GroupPolicyProvider,
     virtualNodeInfoReadService: VirtualNodeInfoReadService,
@@ -64,7 +67,6 @@ class LinkManager(
         groupPolicyProvider = groupPolicyProvider,
         membershipGroupReaderProvider = membershipGroupReaderProvider,
         configurationReaderService = configurationReaderService,
-        cryptoOpsClient = cryptoOpsClient,
         subscriptionFactory = subscriptionFactory,
         publisherFactory = publisherFactory,
         messagingConfiguration = messagingConfiguration,
@@ -77,9 +79,15 @@ class LinkManager(
         schemaRegistry = schemaRegistry,
         sessionEncryptionOpsClient = sessionEncryptionOpsClient,
     )
+    private val sessionManagerCommonComponents = SessionManagerCommonComponents(
+        cryptoOpsClient,
+        cordaAvroSerializationFactory,
+        commonComponents,
+    )
     private val outboundLinkManager = OutboundLinkManager(
         lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,
         commonComponents = commonComponents,
+        sessionComponents = sessionManagerCommonComponents,
         linkManagerHostingMap = linkManagerHostingMap,
         groupPolicyProvider = groupPolicyProvider,
         membershipGroupReaderProvider = membershipGroupReaderProvider,
@@ -91,11 +99,12 @@ class LinkManager(
     )
     private val inboundLinkManager = InboundLinkManager(
         lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,
-        commonComponents = commonComponents,
+        commonComponents = sessionManagerCommonComponents,
         groupPolicyProvider = groupPolicyProvider,
         membershipGroupReaderProvider = membershipGroupReaderProvider,
         subscriptionFactory = subscriptionFactory,
         messagingConfiguration = messagingConfiguration,
+        publisherFactory = publisherFactory,
         clock = clock,
     )
 
@@ -104,11 +113,13 @@ class LinkManager(
         lifecycleCoordinatorFactory,
         dependentChildren = setOf(
             commonComponents.dominoTile.coordinatorName,
+            sessionManagerCommonComponents.dominoTile.coordinatorName,
             outboundLinkManager.dominoTile.coordinatorName,
             inboundLinkManager.dominoTile.coordinatorName,
         ),
         managedChildren = setOf(
             commonComponents.dominoTile.toNamedLifecycle(),
+            sessionManagerCommonComponents.dominoTile.toNamedLifecycle(),
             outboundLinkManager.dominoTile.toNamedLifecycle(),
             inboundLinkManager.dominoTile.toNamedLifecycle(),
         )

@@ -1,6 +1,7 @@
 package net.corda.cli.plugins.topicconfig
 
 import com.fasterxml.jackson.module.kotlin.readValue
+import net.corda.sdk.bootstrap.topicconfig.TopicConfigCreator
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.io.File
@@ -14,12 +15,20 @@ class PreviewTest {
 
         val expectedConfigYamlFile = this::class.java.classLoader.getResource("preview_config.yaml")?.toURI()
         val expectedConfigString = Files.readString(File(expectedConfigYamlFile!!).toPath())
-        val expectedConfig: Create.PreviewTopicConfigurations = command.create!!.mapper.readValue(expectedConfigString)
+        val expectedConfig: TopicConfigCreator.PreviewTopicConfigurations = command
+            .create!!
+            .topicConfigCreator
+            .mapper
+            .readValue(expectedConfigString)
 
 
         val topicDefinitionsFile = this::class.java.classLoader.getResource("config.yaml")?.toURI()
         val topicDefinitionsString = Files.readString(File(topicDefinitionsFile!!).toPath())
-        val topicDefinitions: Create.TopicDefinitions = command.create!!.mapper.readValue(topicDefinitionsString)
+        val topicDefinitions: TopicConfigCreator.TopicDefinitions = command
+            .create!!
+            .topicConfigCreator
+            .mapper
+            .readValue(topicDefinitionsString)
         val actualConfig = command.create!!.getTopicConfigsForPreview(topicDefinitions.topics.values.toList())
 
         assertEquals(expectedConfig, actualConfig)

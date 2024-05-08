@@ -19,7 +19,7 @@ class TestInitialConfigPluginCrypto {
     fun `Should output missing options`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = InitialConfigPlugin.PluginEntryPoint()
-        var outText = SystemLambda.tapSystemErrNormalized {
+        val outText = SystemLambda.tapSystemErrNormalized {
             CommandLine(
                 app
             ).setColorScheme(colorScheme).execute("create-crypto-config")
@@ -42,7 +42,7 @@ class TestInitialConfigPluginCrypto {
     fun `Should output missing options when targeting Hashicorp Vault`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = InitialConfigPlugin.PluginEntryPoint()
-        var outText = SystemLambda.tapSystemErrNormalized {
+        val outText = SystemLambda.tapSystemErrNormalized {
             CommandLine(
                 app
             ).setColorScheme(colorScheme).execute("create-crypto-config", "-t", "VAULT")
@@ -119,7 +119,6 @@ class TestInitialConfigPluginCrypto {
                 "--vault-path", "cryptosecrets",
                 "--key-salt", "salt",
                 "--key-passphrase", "passphrase",
-                "--number-of-unmanaged-root-wrapping-keys", "1"
             )
         }
         assertThat(outText).startsWith(expectedPrefix)
@@ -152,6 +151,7 @@ class TestInitialConfigPluginCrypto {
                 "--key-passphrase", "passphrase",
                 "--key-salt", "salt2",
                 "--key-passphrase", "passphrase2",
+                "--number-of-unmanaged-root-wrapping-keys", "2"
             )
         }
         assertThat(outText).startsWith(expectedPrefix)
@@ -170,6 +170,7 @@ class TestInitialConfigPluginCrypto {
             assertThat(key1.getValue("passphrase")).isNotEqualTo((key2.getValue("passphrase")))
         }
     }
+
     @Test
     fun `Should fail to create vault initial crypto configuration with insufficient keys specified`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
@@ -183,6 +184,7 @@ class TestInitialConfigPluginCrypto {
                 "--vault-path", "cryptosecrets",
                 "--key-salt", "salt",
                 "--key-passphrase", "passphrase",
+                "--number-of-unmanaged-root-wrapping-keys", "2"
             )
         }
         assertThat(outText).contains("Not enough vault wrapping key salt keys passed in")

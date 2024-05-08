@@ -3,12 +3,14 @@ package net.corda.messaging.emulation.subscription.factory
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
+import net.corda.messaging.api.processor.EventSourceProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.emulation.subscription.compacted.InMemoryCompactedSubscription
 import net.corda.messaging.emulation.subscription.durable.DurableSubscription
 import net.corda.messaging.emulation.subscription.eventlog.EventLogSubscription
+import net.corda.messaging.emulation.subscription.eventsource.EventSourceSubscription
 import net.corda.messaging.emulation.subscription.pubsub.PubSubSubscription
 import net.corda.messaging.emulation.subscription.stateandevent.InMemoryStateAndEventSubscription
 import org.assertj.core.api.Assertions.assertThat
@@ -16,7 +18,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 
 class InMemSubscriptionFactoryTest {
-    private val factory = InMemSubscriptionFactory(mock(), mock(), mock())
+    private val factory = InMemSubscriptionFactory(mock(), mock(), mock(), mock())
     private val subscriptionConfig = SubscriptionConfig("topic", "group")
 
     @Test
@@ -40,6 +42,19 @@ class InMemSubscriptionFactoryTest {
                 mock()
             )
         ).isInstanceOf(EventLogSubscription::class.java)
+    }
+
+    @Test
+    fun `createEventSourceSubscription creates EventSourceSubscription`() {
+        assertThat(
+            factory.createEventSourceSubscription(
+                subscriptionConfig,
+                mock<EventSourceProcessor<String, Long>>(),
+                mock(),
+                mock(),
+                mock()
+            )
+        ).isInstanceOf(EventSourceSubscription::class.java)
     }
 
     @Test

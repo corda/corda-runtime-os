@@ -15,12 +15,13 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
         val VERIFIED = TransactionStatus.VERIFIED.value
     }
 
-    override val findTransactionIdsAndStatuses: String
+    override val findSignedTransactionIdsAndStatuses: String
         get() = """
             SELECT id, status 
             FROM {h-schema}utxo_transaction 
-            WHERE id IN (:transactionIds)"""
-            .trimIndent()
+            WHERE id IN (:transactionIds)
+            AND NOT (status = 'V' AND is_filtered = true)
+        """.trimIndent()
 
     override val findTransactionsPrivacySaltAndMetadata: String
         get() = """
@@ -68,15 +69,15 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
         get() = """
             SELECT signature
             FROM {h-schema}utxo_transaction_signature
-            WHERE transaction_id = :transactionId
-            ORDER BY signature_idx"""
+            WHERE transaction_id = :transactionId"""
             .trimIndent()
 
-    override val findTransactionStatus: String
+    override val findSignedTransactionStatus: String
         get() = """
-            SELECT status, is_filtered
+            SELECT status
             FROM {h-schema}utxo_transaction
-            WHERE id = :transactionId"""
+            WHERE id = :transactionId
+            AND NOT (status = 'V' AND is_filtered = true)"""
             .trimIndent()
 
     override val markTransactionVisibleStatesConsumed: String

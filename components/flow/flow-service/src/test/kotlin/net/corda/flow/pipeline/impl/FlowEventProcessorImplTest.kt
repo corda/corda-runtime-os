@@ -39,6 +39,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.FLOW_SESSION
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
+import net.corda.schema.configuration.FlowConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -206,6 +207,13 @@ class FlowEventProcessorImplTest {
             verify(flowEventPipeline).executeFlow(any())
             verify(flowEventPipeline).globalPostProcessing()
         }
+    }
+
+    @Test
+    fun `ensure the correct flow config timeout value is used`() {
+        val expectedTimeoutValue = MINIMUM_SMART_CONFIG.getLong(FlowConfig.PROCESSING_FLOW_FIBER_TIMEOUT)
+        processor.onNext(state, getFlowEventRecord(FlowEvent(flowKey, payload)))
+        verify(flowEventPipeline).executeFlow(expectedTimeoutValue)
     }
 
     @Test

@@ -17,16 +17,10 @@ object CryptoTenants {
     const val P2P: String = "p2p"
 
     /**
-     * Tenant id of the REST
-     */
-    const val REST: String = "rest"
-
-    /**
      * Lists all cluster level tenants which can own asymmetric key pairs
      */
     val allClusterTenants: Set<String> = setOf(
         P2P,
-        REST,
         // TODO should CRYPTO be here?
     )
 

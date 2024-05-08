@@ -3,12 +3,14 @@ package net.corda.db.admin.impl
 import liquibase.Contexts
 import liquibase.LabelExpression
 import liquibase.Liquibase
+import liquibase.command.core.StatusCommandStep
 import liquibase.database.Database
 import liquibase.database.DatabaseFactory
 import liquibase.database.OfflineConnection
 import liquibase.database.jvm.JdbcConnection
 import liquibase.resource.ResourceAccessor
 import net.corda.db.admin.DbChange
+import net.corda.db.admin.LiquibaseSchemaUpdater
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
@@ -37,7 +39,8 @@ class LiquibaseSchemaMigratorImpl(
             DatabaseFactory
                 .getInstance()
                 .findCorrectDatabaseImplementation(OfflineConnection(url, resourceAccessor))
-        }
+        },
+    private val liquibaseSchemaUpdater: LiquibaseSchemaUpdater = LiquibaseSchemaUpdaterImpl()
 ) : LiquibaseSchemaMigrator {
     companion object {
         // default schema
@@ -88,13 +91,16 @@ class LiquibaseSchemaMigratorImpl(
             val database = databaseFactory(datasource)
 
             val masterChangeLogFileName = "master-changelog-${UUID.randomUUID()}.xml"
-            val liquibase = liquibaseFactory(
+            val lb = liquibaseFactory(
                 masterChangeLogFileName,
                 StreamResourceAccessor(masterChangeLogFileName, dbChange),
                 database
             )
 
-            return liquibase.listUnrunChangeSets(Contexts(), LabelExpression(), false).map { it.filePath }
+            lb.databaseChangeLog.validate(database, Contexts(), LabelExpression())
+
+            return StatusCommandStep().listUnrunChangeSets(Contexts(), LabelExpression(),
+                lb.databaseChangeLog, database).map { it.filePath }
         }
     }
 
@@ -122,13 +128,12 @@ class LiquibaseSchemaMigratorImpl(
                 database
             )
 
-            log.info("Updating ${database.databaseProductName} ${database.databaseProductVersion} " +
-                    "DB Schema for ${database.connection.catalog}")
-            if (null == sql) {
-                lb.update(tag, Contexts())
-            } else {
-                lb.update(tag, Contexts(), sql)
-            }
+            log.info(
+                "Updating ${database.databaseProductName} ${database.databaseProductVersion} " +
+                        "DB Schema for ${database.connection.catalog}"
+            )
+
+            liquibaseSchemaUpdater.update(lb, sql, tag)
             log.info("${database.connection.catalog} DB schema update complete")
         }
     }
@@ -150,8 +155,7 @@ class LiquibaseSchemaMigratorImpl(
             )
 
             log.info("Retrieving ${database.databaseProductName} DB Schema")
-            lb.update(null, Contexts(), sql)
-
+            liquibaseSchemaUpdater.update(lb, sql)
             File(offlineChangeLogFileName).delete()
         }
     }
@@ -179,7 +183,7 @@ class LiquibaseSchemaMigratorImpl(
                 database
             )
 
-            lb.rollback(tagToRollbackTo, Contexts())
+            lb.rollback(tagToRollbackTo, null, Contexts(), LabelExpression())
             log.info("${database.connection.catalog} DB schema rollback complete")
         }
     }

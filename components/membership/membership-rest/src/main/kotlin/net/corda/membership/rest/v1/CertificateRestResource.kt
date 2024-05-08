@@ -16,7 +16,7 @@ import net.corda.rest.annotations.RestPathParameter
  * authority (CA).
  */
 @HttpRestResource(
-    name = "Certificate API",
+    name = "Certificate",
     description = "The Certificates API consists of endpoints used to work with certificates and related operations. " +
         "The API allows you to import a certificate chain, and generate a certificate signing request (CSR) to be" +
         " submitted to a certificate authority (CA).",
