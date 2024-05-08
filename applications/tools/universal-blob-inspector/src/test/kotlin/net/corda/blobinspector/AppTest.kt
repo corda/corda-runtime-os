@@ -104,8 +104,6 @@ class AppTest {
         // Wait for the process to complete
         val exitCode = process.waitFor()
 
-//        println("Captured output: $output")
-
         return exitCode to output.toString()
     }
 }
