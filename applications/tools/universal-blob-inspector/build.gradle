@@ -39,3 +39,7 @@ tasks.named('jar', Jar) {
         configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
 }
+
+test {
+    systemProperty("JARVersion", version)
+}

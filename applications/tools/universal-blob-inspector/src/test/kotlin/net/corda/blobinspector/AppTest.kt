@@ -3,7 +3,6 @@ package net.corda.blobinspector
 import org.junit.jupiter.api.Test
 import java.io.BufferedReader
 import java.io.File
-import java.io.FileNotFoundException
 import java.io.InputStreamReader
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -69,27 +68,26 @@ class AppTest {
 
     private fun runInSeparateJVM(binaryFileName: String, flags: List<String> = emptyList()): Pair<Int, String> {
         val currentPath = System.getProperty("user.dir")
+        val jarVersion = System.getProperty("JARVersion")
         val pathToBinary = "$currentPath/src/test/resources/net/corda/blobinspector/$binaryFileName"
-        println("pathToBinary: $pathToBinary")
 
         // Check if the binary file exists
         val binaryFile = File(pathToBinary)
-        if (!binaryFile.exists()) {
-            throw FileNotFoundException("Binary file not found at path: $pathToBinary")
+        require(binaryFile.exists()) {
+            "Binary file not found at path: $pathToBinary"
         }
 
         // Create a StringBuilder to capture the printed output
         val output = StringBuilder()
 
         // Create a ProcessBuilder to execute the JAR file
-        val pathToBlobInspectorJar = "$currentPath/build/bin/corda-universal-blob-inspector-5.3.0.0-SNAPSHOT.jar"
+        val pathToBlobInspectorJar = "$currentPath/build/bin/corda-universal-blob-inspector-$jarVersion.jar"
 
         // Check if the JAR file exists
         val jarFile = File(pathToBlobInspectorJar)
-        if (jarFile.exists()) {
-            println("JAR file exists at path: $pathToBlobInspectorJar")
-        } else {
-            println("JAR file not found at path: $pathToBlobInspectorJar")
+
+        require(jarFile.exists()) {
+            "JAR file not found at path: $pathToBlobInspectorJar"
         }
 
         val args = listOf("java", "-jar", pathToBlobInspectorJar, pathToBinary) + flags
@@ -106,7 +104,7 @@ class AppTest {
         // Wait for the process to complete
         val exitCode = process.waitFor()
 
-        println("Captured output: $output")
+//        println("Captured output: $output")
 
         return exitCode to output.toString()
     }
