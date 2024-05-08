@@ -8,7 +8,7 @@ import java.io.File
 
 object ProfileUtils {
     val objectMapper = ObjectMapper(YAMLFactory()).registerKotlinModule()
-    private val profileFile = File(System.getProperty("user.home"), ".corda/cli/profile.yaml")
+    var profileFile = File(System.getProperty("user.home"), ".corda/cli/profile.yaml")
 
     val validKeys = listOf("restUsername", "restPassword", "endpoint", "jdbcUsername", "jdbcPassword", "databaseUrl")
 

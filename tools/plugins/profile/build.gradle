@@ -29,10 +29,13 @@ dependencies {
     kapt libs.pf4j
 
     testImplementation "net.corda.cli.host:api:$pluginHostVersion"
+    testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
     testImplementation libs.pf4j
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:packaging-test-utilities")
 
+    testImplementation libs.bundles.test
+    testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
     testRuntimeOnly libs.log4j.slf4j2
 }
 
