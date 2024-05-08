@@ -120,7 +120,7 @@ class FlowEventProcessorImpl(
     ): StateAndEventProcessor.Response<Checkpoint> {
         // flow result timeout must be lower than the processor timeout as the processor thread will be killed by the subscription consumer
         // thread after this period and so this timeout would never be reached and given a chance to return otherwise.
-        val flowTimeout = flowConfig.getLong(FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS)
+        val flowTimeout = flowConfig.getLong(FlowConfig.PROCESSING_FLOW_FIBER_TIMEOUT)
         val result = try {
             tryWithBackoff(
                 logger = log,
