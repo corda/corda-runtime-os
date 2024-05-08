@@ -2097,13 +2097,14 @@ class UtxoPersistenceServiceImplTest {
         val signatures = createSignatures(Instant.now())
         val signedTransaction =
             createSignedTransaction(signatures = signatures, header = ("corda".toByteArray() + byteArrayOf(8, 0, 1)))
+        val account = "Account"
 
         val filteredTransactionToStore = createFilteredTransaction(signedTransaction)
         persistenceService.persistFilteredTransactions(
             mapOf(filteredTransactionToStore to signatures),
             emptyList(),
             emptyList(),
-            "Account"
+            account
         )
 
         val filteredTxResults = (persistenceService as UtxoPersistenceServiceImpl).findFilteredTransactions(
