@@ -85,12 +85,8 @@ internal object ContextUtils {
                 )
                 if (it.expiryStatus == PasswordExpiryStatus.CLOSE_TO_EXPIRY) {
                     ctx.addPasswordExpiryHeader(it.expiryStatus)
-                } else if (it.expiryStatus == PasswordExpiryStatus.EXPIRED) {
-                    "Password has expired. Please change it to carry on.".let { passwordExpiredWarning ->
-                        log.warn(passwordExpiredWarning)
-                        throw UnauthorizedResponse(passwordExpiredWarning)
-                    }
                 }
+
                 CURRENT_REST_CONTEXT.set(restAuthContext)
                 log.trace { """Authenticate user "${it.principal}" completed.""" }
             }

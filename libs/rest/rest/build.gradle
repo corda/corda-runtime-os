@@ -12,5 +12,13 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
+    implementation libs.javalin
+    constraints {
+        implementation(libs.bundles.jetty) {
+            because 'Javalin uses an older version of Jetty which is exposed to CVE-2023-26048 and CVE-2023-26049. ' +
+                    'This might be resolved in the future versions of Javalin.'
+        }
+    }
+
     api "net.corda:corda-avro-schema"
 }
