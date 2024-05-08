@@ -39,7 +39,7 @@ class UpdateProfile : Runnable {
             if (!ProfileUtils.isValidKey(key)) {
                 throw IllegalArgumentException("Invalid key '$key'. Allowed keys are: ${ProfileUtils.validKeys}")
             }
-            if (key.contains("Password")) {
+            if (key.lowercase().contains("password")) {
                 val passwordHash = passwordService.saltAndHash(value)
                 profile[key] = passwordHash.value
                 profile["${key}Salt"] = passwordHash.salt
