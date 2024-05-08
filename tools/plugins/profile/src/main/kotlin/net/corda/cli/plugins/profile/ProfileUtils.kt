@@ -4,16 +4,15 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import net.corda.sdk.profile.ProfileConfig
 import java.io.File
 
 object ProfileUtils {
     val objectMapper = ObjectMapper(YAMLFactory()).registerKotlinModule()
     var profileFile = File(System.getProperty("user.home"), ".corda/cli/profile.yaml")
 
-    val validKeys = listOf("restUsername", "restPassword", "endpoint", "jdbcUsername", "jdbcPassword", "databaseUrl")
-
     fun isValidKey(key: String): Boolean {
-        return validKeys.contains(key)
+        return ProfileConfig.VALID_KEYS.contains(key)
     }
 
     fun loadProfiles(): Map<String, Any> {
