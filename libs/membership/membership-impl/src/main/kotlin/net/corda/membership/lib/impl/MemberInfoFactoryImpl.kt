@@ -170,6 +170,16 @@ class MemberInfoFactoryImpl @Activate constructor(
         .setSerializedMgmContext(serialize(memberInfo.mgmProvidedContext.toAvro()).toByteBuffer())
         .build()
 
+    override fun createMgmSelfSignedMemberInfo(
+        memberInfo: PersistentMemberInfo,
+    ) = SelfSignedMemberInfoImpl(
+        memberInfo.signedMemberContext.data.array(),
+        memberInfo.serializedMgmContext.array(),
+        memberInfo.signedMemberContext.signature,
+        memberInfo.signedMemberContext.signatureSpec,
+        this,
+    )
+
     override fun createSelfSignedMemberInfo(
         memberContext: ByteArray,
         mgmContext: ByteArray,
