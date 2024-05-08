@@ -7,7 +7,7 @@ Add the following extension properties
 
 ```groovy
     cordaRuntimeGradlePlugin {
-        notaryVersion = "5.2.0.0"
+        notaryVersion = "5.2.1.0"
         notaryCpiName = "NotaryServer"
         corDappCpiName = "MyCorDapp"
         cpiUploadTimeout = "30000"
@@ -85,7 +85,7 @@ services:
     ]
 
   corda:
-    image: corda-os-docker.software.r3.com/corda-os-combined-worker-kafka:5.2.0.0
+    image: corda-os-docker.software.r3.com/corda-os-combined-worker-kafka:5.2.1.0
     depends_on:
       - postgresql
       - kafka
@@ -132,7 +132,7 @@ services:
       - 5432:5432
 
   corda:
-    image: corda-os-docker.software.r3.com/corda-os-combined-worker:5.2.0.0
+    image: corda-os-docker.software.r3.com/corda-os-combined-worker:5.2.1.0
     depends_on:
       - postgresql
     environment:
