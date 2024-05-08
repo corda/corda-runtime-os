@@ -1,9 +1,10 @@
 package net.corda.cli.plugins.profile.commands
 
-import net.corda.cli.plugins.profile.ProfileUtils.loadProfiles
-import net.corda.cli.plugins.profile.ProfileUtils.saveProfiles
+import net.corda.cli.plugins.profile.ProfileUtils
+import net.corda.permissions.password.impl.PasswordServiceImpl
 import picocli.CommandLine
 import picocli.CommandLine.Option
+import java.security.SecureRandom
 
 @CommandLine.Command(
     name = "create",
@@ -15,36 +16,41 @@ class CreateProfile : Runnable {
     @Option(names = ["-n", "--name"], description = ["Profile name"], required = true)
     lateinit var profileName: String
 
-    @Option(names = ["-u", "--username"], description = ["Username"], required = true)
-    lateinit var username: String
+    @Option(names = ["-p", "--property"], description = ["Profile property (key=value)"], required = true)
+    lateinit var properties: Array<String>
 
-    @Option(names = ["-p", "--password"], description = ["Password"], required = true)
-    lateinit var password: String
-
-    @Option(names = ["-e", "--endpoint"], description = ["Endpoint URL"])
-    var endpoint: String? = null
+    private val passwordService = PasswordServiceImpl(SecureRandom())
 
     override fun run() {
-        val profiles = loadProfiles().toMutableMap()
+        val profiles = ProfileUtils.loadProfiles().toMutableMap()
 
         if (profiles.containsKey(profileName)) {
             println("Profile '$profileName' already exists. Overwrite? (y/n)")
-            val confirmation = readlnOrNull()
+            val confirmation = readLine()
             if (confirmation?.lowercase() != "y") {
                 println("Profile creation aborted.")
                 return
             }
         }
 
-        val profile = mapOf(
-            "username" to username,
-            "password" to password,
-            "endpoint" to endpoint
-        )
+        val profile = mutableMapOf<String, Any>()
+        properties.forEach { property ->
+            val (key, value) = property.split("=")
+            if (!ProfileUtils.isValidKey(key)) {
+                throw IllegalArgumentException("Invalid key '$key'. Allowed keys are: ${ProfileUtils.validKeys}")
+            }
+            if (key.contains("Password")) {
+                val passwordHash = passwordService.saltAndHash(value)
+                profile[key] = passwordHash.value
+                profile["${key}Salt"] = passwordHash.salt
+            } else {
+                profile[key] = value
+            }
+        }
 
         profiles[profileName] = profile
 
-        saveProfiles(profiles)
+        ProfileUtils.saveProfiles(profiles)
         println("Profile '$profileName' created successfully.")
     }
 }

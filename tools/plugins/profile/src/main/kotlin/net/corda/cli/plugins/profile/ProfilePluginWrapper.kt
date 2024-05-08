@@ -2,7 +2,6 @@ package net.corda.cli.plugins.profile
 
 import net.corda.cli.api.AbstractCordaCliVersionProvider
 import net.corda.cli.api.CordaCliPlugin
-import net.corda.cli.plugins.profile.commands.ActivateProfile
 import net.corda.cli.plugins.profile.commands.CreateProfile
 import net.corda.cli.plugins.profile.commands.DeleteProfile
 import net.corda.cli.plugins.profile.commands.ListProfile
@@ -36,7 +35,6 @@ class ProfilePluginWrapper : Plugin() {
         subcommands = [
             CreateProfile::class,
             ListProfile::class,
-            ActivateProfile::class,
             DeleteProfile::class,
             UpdateProfile::class,
         ],

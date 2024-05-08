@@ -10,6 +10,12 @@ object ProfileUtils {
     val objectMapper = ObjectMapper(YAMLFactory()).registerKotlinModule()
     private val profileFile = File(System.getProperty("user.home"), ".corda/cli/profile.yaml")
 
+    val validKeys = listOf("restUsername", "restPassword", "endpoint", "jdbcUsername", "jdbcPassword", "databaseUrl")
+
+    fun isValidKey(key: String): Boolean {
+        return validKeys.contains(key)
+    }
+
     fun loadProfiles(): Map<String, Any> {
         return if (profileFile.exists()) {
             objectMapper.readValue(profileFile, jacksonTypeRef<Map<String, Any>>())

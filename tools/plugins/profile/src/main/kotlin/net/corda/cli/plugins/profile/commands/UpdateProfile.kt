@@ -2,8 +2,10 @@ package net.corda.cli.plugins.profile.commands
 
 import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.cli.plugins.profile.ProfileUtils
+import net.corda.permissions.password.impl.PasswordServiceImpl
 import picocli.CommandLine
 import picocli.CommandLine.Option
+import java.security.SecureRandom
 
 @CommandLine.Command(
     name = "update",
@@ -15,14 +17,10 @@ class UpdateProfile : Runnable {
     @Option(names = ["-n", "--name"], description = ["Profile name"], required = true)
     lateinit var profileName: String
 
-    @Option(names = ["-u", "--username"], description = ["Username"])
-    var username: String? = null
+    @Option(names = ["-p", "--property"], description = ["Profile property (key=value)"])
+    var properties: Array<String> = emptyArray()
 
-    @Option(names = ["-p", "--password"], description = ["Password"])
-    var password: String? = null
-
-    @Option(names = ["-e", "--endpoint"], description = ["Endpoint URL"])
-    var endpoint: String? = null
+    private val passwordService = PasswordServiceImpl(SecureRandom())
 
     override fun run() {
         val profiles = ProfileUtils.loadProfiles().toMutableMap()
@@ -36,16 +34,18 @@ class UpdateProfile : Runnable {
             ProfileUtils.objectMapper.writeValueAsString(profiles[profileName])
         )
 
-        if (username != null) {
-            profile["username"] = username!!
-        }
-
-        if (password != null) {
-            profile["password"] = password!!
-        }
-
-        if (endpoint != null) {
-            profile["endpoint"] = endpoint!!
+        properties.forEach { property ->
+            val (key, value) = property.split("=")
+            if (!ProfileUtils.isValidKey(key)) {
+                throw IllegalArgumentException("Invalid key '$key'. Allowed keys are: ${ProfileUtils.validKeys}")
+            }
+            if (key.contains("Password")) {
+                val passwordHash = passwordService.saltAndHash(value)
+                profile[key] = passwordHash.value
+                profile["${key}Salt"] = passwordHash.salt
+            } else {
+                profile[key] = value
+            }
         }
 
         profiles[profileName] = profile
