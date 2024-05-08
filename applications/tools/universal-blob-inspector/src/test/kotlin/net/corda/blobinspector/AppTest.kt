@@ -2,8 +2,9 @@ package net.corda.blobinspector
 
 import org.junit.jupiter.api.Test
 import java.io.BufferedReader
+import java.io.File
+import java.io.FileNotFoundException
 import java.io.InputStreamReader
-import java.util.concurrent.Executors
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -71,29 +72,39 @@ class AppTest {
         val pathToBinary = "$currentPath/src/test/resources/net/corda/blobinspector/$binaryFileName"
         println("pathToBinary: $pathToBinary")
 
+        // Check if the binary file exists
+        val binaryFile = File(pathToBinary)
+        if (!binaryFile.exists()) {
+            throw FileNotFoundException("Binary file not found at path: $pathToBinary")
+        }
+
         // Create a StringBuilder to capture the printed output
         val output = StringBuilder()
 
         // Create a ProcessBuilder to execute the JAR file
         val pathToBlobInspectorJar = "$currentPath/build/bin/corda-universal-blob-inspector-5.3.0.0-SNAPSHOT.jar"
+
+        // Check if the JAR file exists
+        val jarFile = File(pathToBlobInspectorJar)
+        if (jarFile.exists()) {
+            println("JAR file exists at path: $pathToBlobInspectorJar")
+        } else {
+            println("JAR file not found at path: $pathToBlobInspectorJar")
+        }
+
         val args = listOf("java", "-jar", pathToBlobInspectorJar, pathToBinary) + flags
         val processBuilder = ProcessBuilder(args)
 
         val process = processBuilder.start()
 
-        // Create a thread to read the output of the process
-        val executor = Executors.newSingleThreadExecutor()
-        executor.submit {
-            val reader = BufferedReader(InputStreamReader(process.inputStream))
-            var line: String?
-            while (reader.readLine().also { line = it } != null) {
-                output.append(line).append("\n")
-            }
+        val reader = BufferedReader(InputStreamReader(process.inputStream))
+        var line: String?
+        while (reader.readLine().also { line = it } != null) {
+            output.append(line).append("\n")
         }
 
         // Wait for the process to complete
         val exitCode = process.waitFor()
-        executor.shutdown()
 
         println("Captured output: $output")
 
