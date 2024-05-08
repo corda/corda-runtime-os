@@ -5,7 +5,10 @@ import net.corda.cli.plugins.profile.commands.DeleteProfile
 import net.corda.cli.plugins.profile.commands.ListProfile
 import net.corda.cli.plugins.profile.commands.UpdateProfile
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
