@@ -324,8 +324,8 @@ class MemberSynchronisationServiceImpl internal constructor(
                 ).execute()
                 if (memberListPersistenceResult is MembershipPersistenceResult.Failure) {
                     throw CordaRuntimeException(
-                        "Persistence error happened when view owner " +
-                            "$viewOwningMember persisted the member list."
+                        "Persistence error happened when view owner $viewOwningMember persisted the member list: " +
+                            memberListPersistenceResult.errorMsg
                     )
                 }
 
