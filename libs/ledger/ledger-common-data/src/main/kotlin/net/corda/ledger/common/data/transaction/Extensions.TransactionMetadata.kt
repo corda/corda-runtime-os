@@ -16,17 +16,45 @@ import net.corda.v5.crypto.merkle.HashDigestConstants
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import java.util.*
 
-object TransactionMetadataUtils {
+object JsonMagic {
+    // jsonb with a header example: corda + 0x8 + 0x0 + 0x<schema version> + { json }
+    // 0x0 is a padding just in case and total jsonb is 8 bytes
+    private val header = "corda".toByteArray() + byteArrayOf(8, 0)
+    private const val OPENING_BRACKET = '{'.code.toByte()
 
+    /**
+     * returns a pair of schemaVersion to decoded json
+     * */
+    fun consume(byteData: ByteArray): Pair<Int?, String> {
+        val hasHeader = byteData.size > header.size && byteData.sliceArray(header.indices).contentEquals(header)
+        val hasNoHeader = byteData.isNotEmpty() && byteData[0] == OPENING_BRACKET
+
+        return if (hasHeader) {
+            byteData[header.size].toInt() to byteData.sliceArray(header.size + 1 until byteData.size).decodeToString()
+        } else if (hasNoHeader) {
+            // no header means schema version 1 which is compatible with platform version <= 5.2.1
+            1 to byteData.decodeToString()
+        } else {
+            null to ""
+        }
+    }
+}
+
+object TransactionMetadataUtils {
     fun parseMetadata(
         metadataBytes: ByteArray,
         jsonValidator: JsonValidator,
         jsonMarshallingService: JsonMarshallingService
     ): TransactionMetadataImpl {
-        val json = metadataBytes.decodeToString()
-        jsonValidator.validate(json, getMetadataSchema(jsonValidator))
-        val metadata = jsonMarshallingService.parse(json, TransactionMetadataImpl::class.java)
+        // extracting metadata schema version from a header and json.
+        val (version, json) = JsonMagic.consume(metadataBytes)
 
+        requireNotNull(version) {
+            "Metadata json blob is invalid."
+        }
+
+        jsonValidator.validate(json, getMetadataSchema(jsonValidator, version))
+        val metadata = jsonMarshallingService.parse(json, TransactionMetadataImpl::class.java)
         check(metadata.digestSettings == WireTransactionDigestSettings.defaultValues) {
             "Only the default digest settings are acceptable now! ${metadata.digestSettings} vs " +
                 "${WireTransactionDigestSettings.defaultValues}"
@@ -34,8 +62,12 @@ object TransactionMetadataUtils {
         return metadata
     }
 
-    private fun getMetadataSchema(jsonValidator: JsonValidator): WrappedJsonSchema {
-        return jsonValidator.parseSchema(getSchema(TransactionMetadataImpl.SCHEMA_PATH))
+    private fun getMetadataSchema(jsonValidator: JsonValidator, schemaVersion: Int): WrappedJsonSchema {
+        return jsonValidator.parseSchema(getSchema(getMetadataSchemaPath(schemaVersion)))
+    }
+
+    private fun getMetadataSchemaPath(schemaVersion: Int): String {
+        return "/schema/v$schemaVersion/transaction-metadata.json"
     }
 
     private fun getSchema(path: String) =

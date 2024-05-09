@@ -32,5 +32,5 @@ dependencies {
     testImplementation project(':testing:test-serialization')
     testImplementation project(':testing:kryo-serialization-testkit')
     testImplementation project(':testing:ledger:ledger-common-base-test')
-
+    testImplementation libs.jackson.module.kotlin
 }
