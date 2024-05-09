@@ -1,6 +1,5 @@
 package net.corda.rest.authorization
 
-import io.javalin.http.UnauthorizedResponse
 import net.corda.data.rest.PasswordExpiryStatus
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -19,10 +18,8 @@ interface AuthorizationProvider {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         override fun isAuthorized(subject: AuthorizingSubject, action: String): Boolean {
             if (subject.expiryStatus == PasswordExpiryStatus.EXPIRED) {
-                "Password has expired. Please change it to carry on.".let { passwordExpiredWarning ->
-                    log.warn(passwordExpiredWarning)
-                    throw UnauthorizedResponse(passwordExpiredWarning)
-                }
+                log.warn("Password has expired. Please change it to carry on.")
+                return false
             }
             return AuthorizationUtils.authorize(subject, action)
         }

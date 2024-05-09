@@ -1,6 +1,5 @@
 package net.corda.libs.permissions.endpoints.v1.user.impl
 
-import net.corda.data.rest.PasswordExpiryStatus
 import net.corda.libs.permissions.common.constant.RoleKeys.DEFAULT_SYSTEM_ADMIN_ROLE
 import net.corda.libs.permissions.common.constant.UserKeys.DEFAULT_ADMIN_FULL_NAME
 import net.corda.libs.permissions.endpoints.common.PermissionEndpointEventHandler
@@ -72,7 +71,7 @@ class UserEndpointImpl @Activate constructor(
 
             // if requested Path is for /selfpassword we override the default authorization, as all users
             // should be able to change their password
-            return if (requestedPath.endsWith(changeSelfPasswordMethodPath) && subject.expiryStatus == PasswordExpiryStatus.EXPIRED) {
+            return if (requestedPath.endsWith(changeSelfPasswordMethodPath)) {
                 true
             } else {
                 AuthorizationProvider.Default.isAuthorized(subject, action)
