@@ -38,6 +38,7 @@ import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.synchronisation.MemberSynchronisationService
@@ -317,6 +318,16 @@ class MemberSynchronisationServiceImpl internal constructor(
 
                     selfSignedMemberInfo
                 }?.associateBy { it.id } ?: emptyMap()
+                val memberListPersistenceResult = services.membershipPersistenceClient.persistMemberInfo(
+                    viewOwningMember,
+                    updateMembersInfo.values,
+                ).execute()
+                if (memberListPersistenceResult is MembershipPersistenceResult.Failure) {
+                    throw CordaRuntimeException(
+                        "Persistence error happened when view owner $viewOwningMember persisted the member list: " +
+                            memberListPersistenceResult.errorMsg
+                    )
+                }
 
                 val persistentMemberInfoRecords = updateMembersInfo.map { (_, memberInfo) ->
                     Record(
