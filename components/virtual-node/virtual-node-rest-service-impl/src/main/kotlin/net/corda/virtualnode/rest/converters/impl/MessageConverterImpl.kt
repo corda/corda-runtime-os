@@ -13,10 +13,10 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier as CpiIdentifierRestR
 import net.corda.libs.packaging.core.CpiIdentifier as CpiIdentifierDto
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingIdentityRestResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo as VirtualNodeInfoRestResponse
+import net.corda.libs.virtualnode.endpoints.v1.types.external.messaging.InactiveResponseType as InactiveResponseTypeRestResponse
+import net.corda.libs.virtualnode.endpoints.v1.types.external.messaging.Route as RouteRestResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.external.messaging.RouteConfiguration as RouteConfigurationRestResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.external.messaging.Routes as RoutesRestResponse
-import net.corda.libs.virtualnode.endpoints.v1.types.external.messaging.Route as RouteRestResponse
-import net.corda.libs.virtualnode.endpoints.v1.types.external.messaging.InactiveResponseType as InactiveResponseTypeRestResponse
 import net.corda.virtualnode.HoldingIdentity as HoldingIdentityDto
 import net.corda.virtualnode.VirtualNodeInfo as VirtualNodeInfoDto
 
@@ -161,7 +161,6 @@ class MessageConverterImpl(
             cpiIdentifier.toEndpointType(),
             routes.map { it.toEndpointType() }
         )
-
 
     private fun Route.toEndpointType(): RouteRestResponse =
         RouteRestResponse(
