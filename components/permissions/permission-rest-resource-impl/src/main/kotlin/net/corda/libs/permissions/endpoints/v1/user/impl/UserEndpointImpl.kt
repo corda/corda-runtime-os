@@ -75,7 +75,7 @@ class UserEndpointImpl @Activate constructor(
             return if (requestedPath.endsWith(changeSelfPasswordMethodPath) && subject.expiryStatus == PasswordExpiryStatus.EXPIRED) {
                 true
             } else {
-                AuthorizationProvider.Default. isAuthorized(subject, action)
+                AuthorizationProvider.Default.isAuthorized(subject, action)
             }
         }
     }
