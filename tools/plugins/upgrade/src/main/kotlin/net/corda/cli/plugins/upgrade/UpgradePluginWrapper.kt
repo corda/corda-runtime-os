@@ -27,7 +27,7 @@ class UpgradePluginWrapper : Plugin() {
     @Extension
     @CommandLine.Command(
         name = "upgrade",
-        subcommands = [MigrateHostedIdentities::class],
+        subcommands = [MigrateHostedIdentities::class, HostedIdentityReader::class, HostedIdentityWriter::class],
         mixinStandardHelpOptions = true,
         description = ["Plugin for operations related to platform upgrade"],
         versionProvider = VersionProvider::class,
