@@ -4,8 +4,6 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.external.messaging.entities.RouteConfiguration
 import net.corda.libs.external.messaging.entities.Routes
 import net.corda.libs.external.messaging.serialization.ExternalMessagingRouteConfigSerializer
-import net.corda.libs.virtualnode.endpoints.v1.types.external.messaging.Routes as RoutesRestResponse
-import net.corda.libs.virtualnode.endpoints.v1.types.external.messaging.RouteConfiguration as RouteConfigurationRestResponse
 import net.corda.rest.asynchronous.v1.AsyncOperationState
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.OperationalStatus
@@ -24,6 +22,8 @@ import net.corda.data.virtualnode.VirtualNodeOperationStatus as AvroVirtualNodeO
 import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier as CpiIdentifierRestResponse
 import net.corda.libs.packaging.core.CpiIdentifier as CpiIdentifierDto
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingIdentityRestResponse
+import net.corda.libs.virtualnode.endpoints.v1.types.external.messaging.RouteConfiguration as RouteConfigurationRestResponse
+import net.corda.libs.virtualnode.endpoints.v1.types.external.messaging.Routes as RoutesRestResponse
 import net.corda.virtualnode.HoldingIdentity as HoldingIdentityDto
 import net.corda.virtualnode.VirtualNodeInfo as VirtualNodeInfoDto
 
