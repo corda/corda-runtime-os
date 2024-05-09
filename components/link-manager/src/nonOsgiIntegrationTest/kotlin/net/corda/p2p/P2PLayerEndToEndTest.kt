@@ -852,7 +852,8 @@ class P2PLayerEndToEndTest {
                             info.keyPair.public.toPem(),
                             null
                         ),
-                        emptyList()
+                        emptyList(),
+                        1
                     )
                 )
             }.toList()

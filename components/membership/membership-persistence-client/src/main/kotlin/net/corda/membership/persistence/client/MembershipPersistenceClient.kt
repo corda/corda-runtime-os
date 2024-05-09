@@ -5,6 +5,7 @@ import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.v2.RegistrationStatus
+import net.corda.data.membership.db.request.command.SessionKeyAndCertificate
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.InternalGroupParameters
@@ -330,4 +331,22 @@ interface MembershipPersistenceClient : Lifecycle {
         viewOwningIdentity: HoldingIdentity,
         newGroupParameters: Map<String, String>
     ): MembershipPersistenceOperation<InternalGroupParameters>
+
+    /**
+     * Persist a locally-hosted identity.
+     *
+     * @param holdingIdentity Holding identity of the locally-hosted identity.
+     * @param p2pTlsCertificateChainAlias TLS certificates chain alias.
+     * @param useClusterLevelTlsCertificateAndKey Should we use the P2P cluster level TLS certificate type and P2P key or
+     *   the virtual node certificate and key.
+     * @param preferredSessionKeyAndCertificate The preferred session key and certificate.
+     * @param alternateSessionKeyAndCertificates Alternate session keys and certificates.
+     */
+    fun persistHostedIdentity(
+        holdingIdentity: HoldingIdentity,
+        p2pTlsCertificateChainAlias: String,
+        useClusterLevelTlsCertificateAndKey: Boolean,
+        preferredSessionKeyAndCertificate: SessionKeyAndCertificate,
+        alternateSessionKeyAndCertificates: List<SessionKeyAndCertificate>,
+    ): MembershipPersistenceOperation<Int>
 }

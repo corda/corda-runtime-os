@@ -671,6 +671,8 @@ class SynchronisationIntegrationTest {
 
             it.assertThat(membershipPersistenceClient.getPersistedGroupParameters()!!.toAvro())
                 .isEqualTo(groupParameters)
+            it.assertThat(membershipPersistenceClient.getPersistedMemberInfos())
+                .containsExactlyElementsOf(selfSignedMembers)
         }
     }
 

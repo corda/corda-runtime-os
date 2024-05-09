@@ -9,6 +9,8 @@ import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toSignatureSpec
+import net.corda.crypto.service.CryptoExceptionCategorizer
+import net.corda.crypto.service.CryptoExceptionType
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
@@ -21,7 +23,9 @@ import net.corda.data.crypto.wire.ops.flow.queries.ByIdsFlowQuery
 import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.data.flow.event.FlowEvent
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
+import net.corda.messaging.api.exception.CordaHTTPServerTransientException
 import net.corda.messaging.api.processor.SyncRPCProcessor
+import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
@@ -40,7 +44,8 @@ class CryptoFlowOpsProcessor(
     private val cryptoService: CryptoService,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     config: RetryingConfig,
-    private val keyEncodingService: KeyEncodingService
+    private val keyEncodingService: KeyEncodingService,
+    private val cryptoExceptionCategorizer: CryptoExceptionCategorizer
 ) : SyncRPCProcessor<FlowOpsRequest, FlowEvent> {
 
     override val requestClass = FlowOpsRequest::class.java
@@ -66,23 +71,13 @@ class CryptoFlowOpsProcessor(
         val result = withMDC(mdc) {
             val requestPayload = request.request
             val startTime = System.nanoTime()
-
             logger.debug { "Handling ${requestPayload::class.java.name} for tenant ${request.context.tenantId}" }
 
             try {
-                val response = executor.executeWithRetry {
-                    handleRequest(requestPayload, request.context)
-                }
-
-                externalEventResponseFactory.success(
-                    request.flowExternalEventContext,
-                    FlowOpsResponse(createResponseContext(request), response, null)
-                )
+                val successResponse = executor.executeWithRetry { handleRequest(requestPayload, request.context) }
+                createSuccessResponse(request, successResponse)
             } catch (e: Exception) {
-                logger.warn(
-                    "Failed to handle ${requestPayload::class.java.name} for tenant ${request.context.tenantId}", e
-                )
-                externalEventResponseFactory.platformError(request.flowExternalEventContext, e)
+                processException(e, request)
             }.also {
                 CordaMetrics.Metric.Crypto.FlowOpsProcessorExecutionTime.builder()
                     .withTag(CordaMetrics.Tag.OperationName, requestPayload::class.java.simpleName)
@@ -93,6 +88,24 @@ class CryptoFlowOpsProcessor(
 
         return result.value as FlowEvent
     }
+
+    private fun processException(e: Exception, request: FlowOpsRequest): Record<String, FlowEvent> {
+        val requestId = request.flowExternalEventContext.requestId
+
+        return when (cryptoExceptionCategorizer.categorize(e)) {
+            CryptoExceptionType.TRANSIENT -> throw CordaHTTPServerTransientException(requestId, e)
+            else -> {
+                logger.warn("Failed to handle ${request.request::class.java.name} for tenant ${request.context.tenantId}", e)
+                externalEventResponseFactory.platformError(request.flowExternalEventContext, e)
+            }
+        }
+    }
+
+    private fun createSuccessResponse(request: FlowOpsRequest, response: Any) =
+        externalEventResponseFactory.success(
+            request.flowExternalEventContext,
+            FlowOpsResponse(createResponseContext(request), response, null)
+        )
 
     private fun handleRequest(request: Any, context: CryptoRequestContext): Any {
         return when (request) {

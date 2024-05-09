@@ -129,7 +129,7 @@ class JPABackingStoreImplBenchmark {
             mock(),
             jpaEntitiesRegistry,
             dbConnectionManager,
-            JPABackingStoreImpl(jpaEntitiesRegistry, dbConnectionManager, virtualNodeInfoReadService)
+            JPABackingStoreImpl(jpaEntitiesRegistry, dbConnectionManager, mock(), virtualNodeInfoReadService)
         ).apply {
             eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
         }

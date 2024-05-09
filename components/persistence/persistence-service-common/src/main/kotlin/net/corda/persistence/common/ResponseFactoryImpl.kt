@@ -8,10 +8,11 @@ import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.exception.CordaHTTPServerTransientException
 import net.corda.messaging.api.records.Record
+import net.corda.orm.PersistenceExceptionCategorizer
+import net.corda.orm.PersistenceExceptionType
 import net.corda.persistence.common.exceptions.KafkaMessageSizeException
 import net.corda.persistence.common.exceptions.MissingAccountContextPropertyException
 import net.corda.persistence.common.exceptions.NullParameterException
-import net.corda.v5.base.annotations.VisibleForTesting
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -21,20 +22,16 @@ import java.sql.SQLException
 import javax.persistence.PersistenceException
 
 @Component(service = [ResponseFactory::class])
-class ResponseFactoryImpl @VisibleForTesting internal constructor(
+class ResponseFactoryImpl @Activate internal constructor(
+    @Reference(service = ExternalEventResponseFactory::class)
     private val externalEventResponseFactory: ExternalEventResponseFactory,
+    @Reference(service = PersistenceExceptionCategorizer::class)
     private val persistenceExceptionCategorizer: PersistenceExceptionCategorizer
 ) : ResponseFactory {
 
     private companion object{
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
-
-    @Activate
-    constructor(
-        @Reference(service = ExternalEventResponseFactory::class)
-        externalEventResponseFactory: ExternalEventResponseFactory
-    ) : this(externalEventResponseFactory, PersistenceExceptionCategorizerImpl())
 
     override fun successResponse(
         flowExternalEventContext: ExternalEventContext,
@@ -56,7 +53,8 @@ class ResponseFactoryImpl @VisibleForTesting internal constructor(
         is PersistenceException, is SQLException -> {
             when (persistenceExceptionCategorizer.categorize(exception)) {
                 PersistenceExceptionType.FATAL -> fatalErrorResponse(externalEventContext, exception)
-                PersistenceExceptionType.PLATFORM -> platformErrorResponse(externalEventContext, exception)
+                PersistenceExceptionType.DATA_RELATED,
+                PersistenceExceptionType.UNCATEGORIZED -> platformErrorResponse(externalEventContext, exception)
                 PersistenceExceptionType.TRANSIENT -> throw CordaHTTPServerTransientException(externalEventContext.requestId, exception)
             }
         }

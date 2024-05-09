@@ -2,6 +2,8 @@ package net.corda.persistence.common
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
+import net.corda.orm.PersistenceExceptionCategorizer
+import net.corda.orm.PersistenceExceptionType
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
@@ -87,7 +89,7 @@ class ResponseFactoryImplTest {
     @Test
     fun `errorResponse creates and returns a platform error response when the input exception is PersistenceException and categorized as platform`() {
         val exception = PersistenceException()
-        whenever(persistenceExceptionCategorizer.categorize(exception)).thenReturn(PersistenceExceptionType.PLATFORM)
+        whenever(persistenceExceptionCategorizer.categorize(exception)).thenReturn(PersistenceExceptionType.DATA_RELATED)
         whenever(externalEventResponseFactory.platformError(FLOW_EXTERNAL_EVENT_CONTEXT, exception)).thenReturn(RECORD)
         assertThat(responseFactory.errorResponse(FLOW_EXTERNAL_EVENT_CONTEXT, exception)).isEqualTo(RECORD)
     }
@@ -110,7 +112,7 @@ class ResponseFactoryImplTest {
     @Test
     fun `errorResponse creates and returns a platform error response when the input exception is SQLException and categorized as platform`() {
         val exception = SQLException()
-        whenever(persistenceExceptionCategorizer.categorize(exception)).thenReturn(PersistenceExceptionType.PLATFORM)
+        whenever(persistenceExceptionCategorizer.categorize(exception)).thenReturn(PersistenceExceptionType.DATA_RELATED)
         whenever(externalEventResponseFactory.platformError(FLOW_EXTERNAL_EVENT_CONTEXT, exception)).thenReturn(RECORD)
         assertThat(responseFactory.errorResponse(FLOW_EXTERNAL_EVENT_CONTEXT, exception)).isEqualTo(RECORD)
     }
