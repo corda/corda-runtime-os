@@ -28,9 +28,11 @@ import net.corda.data.membership.db.request.command.MutualTlsRemoveFromAllowedCe
 import net.corda.data.membership.db.request.command.PersistApprovalRule
 import net.corda.data.membership.db.request.command.PersistGroupParameters
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
+import net.corda.data.membership.db.request.command.PersistHostedIdentity
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RevokePreAuthToken
+import net.corda.data.membership.db.request.command.SessionKeyAndCertificate
 import net.corda.data.membership.db.request.command.SuspendMember
 import net.corda.data.membership.db.request.command.UpdateGroupParameters
 import net.corda.data.membership.db.request.command.UpdateStaticNetworkInfo
@@ -40,6 +42,7 @@ import net.corda.data.membership.db.response.command.ActivateMemberResponse
 import net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
+import net.corda.data.membership.db.response.command.PersistHostedIdentityResponse
 import net.corda.data.membership.db.response.command.RevokePreAuthTokenResponse
 import net.corda.data.membership.db.response.command.SuspendMemberResponse
 import net.corda.data.membership.db.response.query.ErrorKind
@@ -1544,6 +1547,88 @@ class MembershipPersistenceClientImplTest {
 
             assertThat(output).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
             assertThat((output as MembershipPersistenceResult.Failure).errorMsg).contains("Unexpected response")
+        }
+    }
+
+    @Nested
+    inner class PersistHostedIdentityTests {
+        private val tlsCertAlias = "tls"
+        private val sessionKeyId = "123412341234"
+        private val sessionCertAlias = "session"
+
+        @Test
+        fun `persistHostedIdentity returns the correct result`() {
+            postConfigChangedEvent()
+            val expectedResult = PersistHostedIdentityResponse(5)
+            mockPersistenceResponse(payload = expectedResult)
+
+            val result = membershipPersistenceClient.persistHostedIdentity(
+                ourHoldingIdentity,
+                tlsCertAlias,
+                true,
+                SessionKeyAndCertificate(sessionKeyId, sessionCertAlias, true),
+                emptyList()
+            )
+
+            assertThat(result.getOrThrow()).isEqualTo(expectedResult.version)
+        }
+
+        @Test
+        fun `persistHostedIdentity returns error in case of failure`() {
+            postConfigChangedEvent()
+            mockPersistenceResponse(
+                PersistenceFailedResponse("Placeholder error", ErrorKind.GENERAL),
+            )
+
+            val result = membershipPersistenceClient.persistHostedIdentity(
+                ourHoldingIdentity,
+                tlsCertAlias,
+                true,
+                SessionKeyAndCertificate(sessionKeyId, sessionCertAlias, true),
+                emptyList()
+            ).execute()
+
+            assertThat(result).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
+        }
+
+        @Test
+        fun `persistHostedIdentity returns failure for unexpected result`() {
+            postConfigChangedEvent()
+            mockPersistenceResponse(
+                null,
+            )
+
+            val result = membershipPersistenceClient.persistHostedIdentity(
+                ourHoldingIdentity,
+                tlsCertAlias,
+                true,
+                SessionKeyAndCertificate(sessionKeyId, sessionCertAlias, true),
+                emptyList()
+            ).execute()
+
+            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<ApprovalRuleDetails>("Unexpected response: null"))
+        }
+
+        @Test
+        fun `persistHostedIdentity sends the correct data`() {
+            val sessionKeyAndCert = SessionKeyAndCertificate(sessionKeyId, sessionCertAlias, true)
+            postConfigChangedEvent()
+            val argument = argumentCaptor<MembershipPersistenceRequest>()
+            val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
+            whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
+
+            membershipPersistenceClient.persistHostedIdentity(
+                ourHoldingIdentity,
+                tlsCertAlias,
+                true,
+                sessionKeyAndCert,
+                emptyList()
+            ).execute()
+
+            val sentRequest = (argument.firstValue.request as? PersistHostedIdentity)!!
+            assertThat(sentRequest.tlsCertificateAlias).isEqualTo(tlsCertAlias)
+            assertThat(sentRequest.useClusterLevelTls).isTrue()
+            assertThat(sentRequest.sessionKeysAndCertificates).isEqualTo(listOf(sessionKeyAndCert))
         }
     }
 }

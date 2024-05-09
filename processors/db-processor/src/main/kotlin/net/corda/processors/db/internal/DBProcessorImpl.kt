@@ -12,6 +12,8 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.cpk.read.CpkReadService
 import net.corda.cpk.write.CpkWriteService
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
@@ -40,6 +42,8 @@ import net.corda.membership.group.policy.validation.MembershipGroupPolicyValidat
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesWriter
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -138,6 +142,14 @@ class DBProcessorImpl @Activate constructor(
     private val membershipPersistenceClient: MembershipPersistenceClient,
     @Reference(service = MemberInfoFactory::class)
     private val memberInfoFactory: MemberInfoFactory,
+    @Reference(service = LocallyHostedIdentitiesService::class)
+    private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService,
+    @Reference(service = LocallyHostedIdentitiesWriter::class)
+    private val locallyHostedIdentitiesWriter: LocallyHostedIdentitiesWriter,
+    @Reference(service = CryptoOpsClient::class)
+    private val cryptoOpsClient: CryptoOpsClient,
+    @Reference(service = KeyEncodingService::class)
+    private val keyEncodingService: KeyEncodingService,
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
@@ -194,6 +206,9 @@ class DBProcessorImpl @Activate constructor(
         ::memberResourceClient,
         ::membershipQueryClient,
         ::membershipPersistenceClient,
+        ::cryptoOpsClient,
+        ::locallyHostedIdentitiesService,
+        ::locallyHostedIdentitiesWriter,
     )
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<DBProcessorImpl>(dependentComponents, ::eventHandler)
 
@@ -218,6 +233,11 @@ class DBProcessorImpl @Activate constructor(
         publisherFactory,
         configurationReadService,
         memberInfoFactory,
+        locallyHostedIdentitiesService,
+        locallyHostedIdentitiesWriter,
+        certificatesService.client,
+        cryptoOpsClient,
+        keyEncodingService,
     )
 
     override fun start(bootConfig: SmartConfig) {

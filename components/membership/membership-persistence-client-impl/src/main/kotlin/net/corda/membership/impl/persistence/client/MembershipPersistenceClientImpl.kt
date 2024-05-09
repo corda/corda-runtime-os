@@ -22,9 +22,11 @@ import net.corda.data.membership.db.request.command.PersistApprovalRule
 import net.corda.data.membership.db.request.command.PersistGroupParameters
 import net.corda.data.membership.db.request.command.PersistGroupParametersInitialSnapshot
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
+import net.corda.data.membership.db.request.command.PersistHostedIdentity
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RevokePreAuthToken
+import net.corda.data.membership.db.request.command.SessionKeyAndCertificate
 import net.corda.data.membership.db.request.command.SuspendMember
 import net.corda.data.membership.db.request.command.UpdateGroupParameters
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
@@ -34,6 +36,7 @@ import net.corda.data.membership.db.response.command.ActivateMemberResponse
 import net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
+import net.corda.data.membership.db.response.command.PersistHostedIdentityResponse
 import net.corda.data.membership.db.response.command.RevokePreAuthTokenResponse
 import net.corda.data.membership.db.response.command.SuspendMemberResponse
 import net.corda.data.membership.db.response.query.StaticNetworkInfoQueryResponse
@@ -449,6 +452,31 @@ class MembershipPersistenceClientImpl(
         return request.operation { payload ->
             dataToResultConvertor<PersistGroupParametersResponse, InternalGroupParameters>(payload) { response ->
                 groupParametersFactory.create(response.groupParameters)
+            }
+        }
+    }
+
+    override fun persistHostedIdentity(
+        holdingIdentity: HoldingIdentity,
+        p2pTlsCertificateChainAlias: String,
+        useClusterLevelTlsCertificateAndKey: Boolean,
+        preferredSessionKeyAndCertificate: SessionKeyAndCertificate,
+        alternateSessionKeyAndCertificates: List<SessionKeyAndCertificate>
+    ): MembershipPersistenceOperation<Int> {
+        logger.info("Persisting locally-hosted identity for ${holdingIdentity.shortHash}.")
+
+        val request = MembershipPersistenceRequest(
+            buildMembershipRequestContext(holdingIdentity.toAvro()),
+            PersistHostedIdentity(
+                p2pTlsCertificateChainAlias,
+                useClusterLevelTlsCertificateAndKey,
+                listOf(preferredSessionKeyAndCertificate) + alternateSessionKeyAndCertificates
+            )
+        )
+
+        return request.operation { payload ->
+            dataToResultConvertor<PersistHostedIdentityResponse, Int>(payload) {
+                it.version
             }
         }
     }

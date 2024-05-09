@@ -18,6 +18,7 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.reconciliation.VersionedRecord
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.crypto.publicKeyFactory
@@ -34,6 +35,7 @@ import java.security.PublicKey
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.util.concurrent.ConcurrentHashMap
+import java.util.stream.Stream
 
 @Component(service = [LocallyHostedIdentitiesService::class])
 @Suppress("LongParameterList")
@@ -72,7 +74,7 @@ class LocallyHostedIdentitiesServiceImpl(
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val identities = ConcurrentHashMap<HoldingIdentity, IdentityInfo>()
+    private val identities = ConcurrentHashMap<HoldingIdentity, HostedIdentityEntry>()
     private val coordinator = coordinatorFactory.createCoordinator<LocallyHostedIdentitiesService> { event, _ ->
         handleEvent(event)
     }
@@ -152,20 +154,15 @@ class LocallyHostedIdentitiesServiceImpl(
                     )
                 }
             } else {
-                addEntry(newEntry)
+                identities[newEntry.holdingIdentity.toCorda()] = newEntry
             }
         }
 
         override fun onSnapshot(currentData: Map<String, HostedIdentityEntry>) {
             currentData.values.forEach {
-                addEntry(it)
+                identities[it.holdingIdentity.toCorda()] = it
             }
             coordinator.updateStatus(LifecycleStatus.UP)
-        }
-    }
-    private fun addEntry(newEntry: HostedIdentityEntry) {
-        newEntry.toIdentityInfo()?.also { info ->
-            identities[info.identity] = info
         }
     }
 
@@ -204,7 +201,7 @@ class LocallyHostedIdentitiesServiceImpl(
         if (!isRunning) {
             throw CordaRuntimeException("Service is not ready")
         }
-        val known = identities[identity]
+        val known = identities[identity]?.toIdentityInfo()
         if (known != null) {
             return known
         }
@@ -219,6 +216,20 @@ class LocallyHostedIdentitiesServiceImpl(
 
     override fun pollForIdentityInfo(identity: HoldingIdentity): IdentityInfo? =
         pollForIdentityInfo(identity, defaultRetries)
+
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<String, HostedIdentityEntry>> =
+        identities.values.stream()
+            .map {
+                object : VersionedRecord<String, HostedIdentityEntry> {
+                    override val version = it.version
+                    override val isDeleted = false
+                    override val key = it.holdingIdentity.toCorda().shortHash.value
+                    override val value = it
+                }
+            }
+
+    override val lifecycleCoordinatorName: LifecycleCoordinatorName
+        get() = coordinator.name
 
     override fun isHostedLocally(identity: HoldingIdentity): Boolean {
         if (!isRunning) {

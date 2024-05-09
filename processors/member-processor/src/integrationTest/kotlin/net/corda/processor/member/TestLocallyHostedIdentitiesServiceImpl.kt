@@ -1,15 +1,18 @@
 package net.corda.processor.member
 
+import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.membership.locally.hosted.identities.IdentityInfo
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
+import net.corda.reconciliation.VersionedRecord
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.stream.Stream
 
 @Component(service = [LocallyHostedIdentitiesService::class])
 internal class TestLocallyHostedIdentitiesServiceImpl @Activate constructor(
@@ -31,6 +34,12 @@ internal class TestLocallyHostedIdentitiesServiceImpl @Activate constructor(
     override fun pollForIdentityInfo(identity: HoldingIdentity): IdentityInfo? {
         throw UnsupportedOperationException()
     }
+
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<String, HostedIdentityEntry>> =
+        emptyList<VersionedRecord<String, HostedIdentityEntry>>().stream()
+
+    override val lifecycleCoordinatorName: LifecycleCoordinatorName
+        get() = coordinator.name
 
     override val isRunning = true
 
