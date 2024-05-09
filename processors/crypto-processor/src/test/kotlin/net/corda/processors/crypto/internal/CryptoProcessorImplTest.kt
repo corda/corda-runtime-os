@@ -237,7 +237,8 @@ class CryptoProcessorImplTest {
                 schemeMetadata = mock(),
                 publisherFactory = publisherFactory,
                 stateManagerFactory = stateManagerFactory,
-                cordaAvroSerializationFactory = mock()
+                cordaAvroSerializationFactory = mock(),
+                cryptoExceptionCategorizer = mock()
             ).apply {
                 // Must start and pass some sort of boot config
                 start(mock {

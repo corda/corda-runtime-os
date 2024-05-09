@@ -33,6 +33,7 @@ import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.crypto.persistence.getEntityManagerFactory
+import net.corda.crypto.service.CryptoExceptionCategorizer
 import net.corda.crypto.service.impl.TenantInfoServiceImpl
 import net.corda.crypto.service.impl.bus.CryptoOpsBusProcessor
 import net.corda.crypto.service.impl.bus.CryptoRekeyBusProcessor
@@ -133,7 +134,9 @@ class CryptoProcessorImpl @Activate constructor(
     @Reference(service = StateManagerFactory::class)
     private val stateManagerFactory: StateManagerFactory,
     @Reference(service = CordaAvroSerializationFactory::class)
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    @Reference(service = CryptoExceptionCategorizer::class)
+    private val cryptoExceptionCategorizer: CryptoExceptionCategorizer
 ) : CryptoProcessor {
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -499,7 +502,8 @@ class CryptoProcessorImpl @Activate constructor(
             cryptoService,
             externalEventResponseFactory,
             retryingConfig,
-            keyEncodingService
+            keyEncodingService,
+            cryptoExceptionCategorizer
         )
 
         coordinator.createManagedResource(FLOW_OPS_SUBSCRIPTION) {
