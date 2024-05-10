@@ -5860,10 +5860,6 @@
           }
         }
       },
-      "SecureHash" : {
-        "type" : "object",
-        "properties" : { }
-      },
       "StartFlowParameters" : {
         "required" : [ "clientRequestId", "flowClassName", "requestBody" ],
         "type" : "object",
