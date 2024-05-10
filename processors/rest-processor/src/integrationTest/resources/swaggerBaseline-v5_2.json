@@ -4639,25 +4639,6 @@
           }
         }
       },
-      "CpiIdentifier_1" : {
-        "required" : [ "name", "signerSummaryHash", "version" ],
-        "type" : "object",
-        "properties" : {
-          "name" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "signerSummaryHash" : {
-            "$ref" : "#/components/schemas/SecureHash"
-          },
-          "version" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }
-      },
       "CpiMetadata" : {
         "required" : [ "cpiFileChecksum", "cpiFileFullChecksum", "cpks", "id", "timestamp" ],
         "type" : "object",
@@ -5783,7 +5764,7 @@
         "type" : "object",
         "properties" : {
           "cpiIdentifier" : {
-            "$ref" : "#/components/schemas/CpiIdentifier_1"
+            "$ref" : "#/components/schemas/CpiIdentifier"
           },
           "routes" : {
             "uniqueItems" : false,
@@ -5794,10 +5775,6 @@
             }
           }
         }
-      },
-      "SecureHash" : {
-        "type" : "object",
-        "properties" : { }
       },
       "StartFlowParameters" : {
         "required" : [ "clientRequestId", "flowClassName", "requestBody" ],
