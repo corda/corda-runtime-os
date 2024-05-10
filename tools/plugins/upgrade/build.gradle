@@ -45,6 +45,7 @@ dependencies {
     implementation project(':libs:virtual-node:virtual-node-info')
     implementation project(':tools:plugins:network')
     implementation project(':tools:plugins:plugins-rest')
+    implementation project(':tools:plugins:initial-config')
 
     // DO NOT DISTRIBUTE DRIVERS HERE WE ARE NOT LICENSED TO DISTRIBUTE
     // JDBC drivers are picked up in Corda 5 from a configured location, the CLI tool does not yet have this ability so
