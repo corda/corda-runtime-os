@@ -24,9 +24,12 @@ class Command : Callable<Int> {
     @CommandLine.Option(names = ["-f", "--format"], description = ["The type of format of the bytes that is encoded."])
     var format: String? = null
 
+    @CommandLine.Option(names = ["-b", "--skipWritingBytes"], description = ["Skip writing original bytes."])
+    var includeOriginalBytes: Boolean = true
+
     override fun call(): Int {
         val bytes = (inputFile?.let { FileInputStream(it) } ?: System.`in`).readFully().sequence()
-        val decoded = Encoding.decodedBytes(bytes, encoding, encodingStart, format)
+        val decoded = Encoding.decodedBytes(bytes, includeOriginalBytes, encoding, encodingStart, format)
         println(decoded.result)
         return 0
     }

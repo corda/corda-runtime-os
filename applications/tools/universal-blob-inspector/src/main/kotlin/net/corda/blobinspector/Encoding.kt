@@ -73,20 +73,22 @@ object Encoding {
     private enum class SerializationFormat(val decoder: SerializationFormatDecoder) {
         KRYO1(KryoSerializationFormatDecoder()),
         AMQP1(
-            AMQPSerializationFormatDecoder({ bytes, depth ->
+            AMQPSerializationFormatDecoder({ bytes, depth, includeOriginalBytes ->
                 decodedBytes(
                     bytes,
-                    recurseDepth = depth
+                    recurseDepth = depth,
+                    includeOriginalBytes = includeOriginalBytes
                 ).result
             }, { data -> Envelope.get(data) }, {
                 DynamicDescriptorRegistry()
             })
         ),
         AMQP5(
-            AMQPSerializationFormatDecoder({ bytes, depth ->
+            AMQPSerializationFormatDecoder({ bytes, depth, includeOriginalBytes ->
                 decodedBytes(
                     bytes,
-                    recurseDepth = depth
+                    recurseDepth = depth,
+                    includeOriginalBytes = includeOriginalBytes
                 ).result
             }, { data -> Envelope.get(data, osgiBundles = true) }, {
                 DynamicDescriptorRegistry(lenientBuiltIns = true)
@@ -114,8 +116,10 @@ object Encoding {
 
     private val cordaPrimaryEncodings = Encodings.values().associateBy { it.primaryEncoding }
 
+    @Suppress("LongParameterList")
     fun decodedBytes(
         byteSequence: ByteSequence,
+        includeOriginalBytes: Boolean,
         compressionEncodingOverride: String? = null,
         compressionEncodingStartOverride: Int? = null,
         formatOverride: String? = null,
@@ -149,7 +153,7 @@ object Encoding {
         }
 
         compressionEncoding.createStream(byteSequence.subSequence(compressionEncodingStart)).use { stream ->
-            return decoder.decode(stream, recurseDepth, originalBytes)
+            return decoder.decode(stream, recurseDepth, originalBytes, includeOriginalBytes)
         }
     }
 
