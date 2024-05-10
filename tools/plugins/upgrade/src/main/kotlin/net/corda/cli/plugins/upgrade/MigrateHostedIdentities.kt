@@ -124,12 +124,11 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
         }
     }
 
-    private fun findCertChainAlias(
+    private fun findCertChainAliases(
         clusterLevelCertificate: Boolean,
         holdingId: String,
-        certificates: List<String>,
         usage: String
-    ): String {
+    ): Map<String, String> {
         val possibleTlsAliases: List<String> = createRestClient(
             CertificateRestResource::class,
             "Could not find pem data for $holdingId",
@@ -142,28 +141,25 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
         }
 
         return createRestClient(CertificateRestResource::class, "Could not find pem data for $holdingId") { proxy ->
-            possibleTlsAliases.map { alias ->
+            possibleTlsAliases.associate { alias ->
                 if (clusterLevelCertificate) {
-                    alias to proxy.getCertificateChain(usage, alias)
+                    proxy.getCertificateChain(usage, alias) to alias
                 } else {
-                    alias to proxy.getCertificateChain(usage, holdingId, alias)
+                    proxy.getCertificateChain(usage, holdingId, alias) to alias
                 }
             }
-        }.first {
-            it.second == certificates.joinToString("\n")
-        }.first
+        }
     }
 
     private fun findTlsCertChainAlias(
         useClusterLevelTlsCertificateAndKey: Boolean,
         holdingId: String,
-        tlsCertificates: List<String>
-    ): String {
-        return findCertChainAlias(useClusterLevelTlsCertificateAndKey, holdingId, tlsCertificates, "p2p-tls")
+    ): Map<String, String> {
+        return findCertChainAliases(useClusterLevelTlsCertificateAndKey, holdingId, "p2p-tls")
     }
 
-    private fun findSessionCertificateAlias(holdingId: String, sessionCertificates: List<String>): String {
-        return findCertChainAlias(false, holdingId, sessionCertificates, "p2p-session")
+    private fun findSessionCertificateAlias(holdingId: String): Map<String, String> {
+        return findCertChainAliases(false, holdingId, "p2p-session")
     }
 
     private fun <I : RestResource, T : Any> createRestClient(
@@ -232,12 +228,25 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
         val pemLookupResult = findAllSessionKeys(holdingId)
 
         val preferredSessionKey = pemLookupResult[kafkaHostedIdentity.preferredSessionKeyAndCert.sessionPublicKey]
-            ?: throw IllegalArgumentException()
-
+        if (preferredSessionKey == null) {
+            UpgradePluginWrapper.logger.error(
+                "Could not find the session key alias for ${kafkaHostedIdentity.preferredSessionKeyAndCert.sessionPublicKey}."
+            )
+            return
+        }
         val useClusterLevelTlsCertificateAndKey = kafkaHostedIdentity.tlsTenantId == CryptoTenants.P2P
 
-        val tlsCertificateChainAlias =
-            findTlsCertChainAlias(useClusterLevelTlsCertificateAndKey, holdingId, kafkaHostedIdentity.tlsCertificates)
+        val tlsCertificateChainAlias = findTlsCertChainAlias(
+            useClusterLevelTlsCertificateAndKey,
+            holdingId
+        )[kafkaHostedIdentity.tlsCertificates.joinToString("\n")]
+
+        if (tlsCertificateChainAlias == null) {
+            UpgradePluginWrapper.logger.error(
+                "Could not find the TLS certificate alias for: ${kafkaHostedIdentity.tlsCertificates}."
+            )
+            return
+        }
 
         val entity = HostedIdentityEntity(
             holdingId,
@@ -249,16 +258,19 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
 
         val statement = entity.toInsertStatement()
         print(statement)
-        // connection.createStatement().execute(statement)
         val allSessionKeysAndCertificates = kafkaHostedIdentity.alternativeSessionKeysAndCerts +
             kafkaHostedIdentity.preferredSessionKeyAndCert
 
+        val allSessionCertificates = findSessionCertificateAlias(holdingId)
         for (sessionKeyAndCert in allSessionKeysAndCertificates) {
             val sessionKeyId = pemLookupResult[kafkaHostedIdentity.preferredSessionKeyAndCert.sessionPublicKey] ?: let {
-                throw IllegalArgumentException()
+                UpgradePluginWrapper.logger.error(
+                    "Could not find the Session certificate alias for: ${kafkaHostedIdentity.tlsCertificates}."
+                )
+                return
             }
             val sessionCertificateAlias = sessionKeyAndCert?.sessionCertificates?.let {
-                findSessionCertificateAlias(holdingId, it)
+                allSessionCertificates[it.joinToString("\n")]
             }
             val sessionKeyEntity = HostedIdentitySessionKeyInfoEntity(
                 holdingId,
