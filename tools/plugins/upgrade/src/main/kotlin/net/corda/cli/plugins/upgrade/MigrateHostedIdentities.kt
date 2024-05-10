@@ -14,6 +14,7 @@ import net.corda.membership.rest.v1.CertificateRestResource
 import net.corda.membership.rest.v1.KeyRestResource
 import net.corda.membership.rest.v1.types.response.KeyMetaData
 import net.corda.messagebus.kafka.serialization.CordaAvroDeserializerImpl
+import net.corda.rest.RestResource
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
@@ -34,6 +35,7 @@ import javax.persistence.Id
 import javax.persistence.JoinColumn
 import javax.persistence.Table
 import javax.persistence.Version
+import kotlin.reflect.KClass
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.declaredMemberProperties
@@ -64,19 +66,19 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
     var bootstrapServer: String = ""
 
     @CommandLine.Option(
-        names = ["-k", "--kafka-config"],
+        names = ["--kafka-config"],
         description = ["Absolute path to Kafka configuration file."]
     )
     var kafkaConfig: String? = null
 
     @CommandLine.Option(
-        names = ["-t", "--timeout"],
+        names = ["--timeout"],
         description = ["Timeout in milliseconds to read from Kafka. Defaults to 3000."]
     )
     var timeoutMs: Long = POLL_TIMEOUT_MS
 
     @CommandLine.Option(
-        names = ["-p", "--topic-prefix"],
+        names = ["--topic-prefix"],
         description = ["Kafka topic prefix"]
     )
     var topicPrefix: String = ""
@@ -99,13 +101,9 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
         val consumer = KafkaConsumer(getKafkaProperties(), keyDeserializer, valueDeserializer)
         val records = try {
             consumer.subscribe(setOf(hostedIdentityTopic))
-
             val records = consumer.poll(Duration.ofMillis(timeoutMs)).let { records ->
-                logger.debug("Read {} records from topic '{}'.", records.count(), hostedIdentityTopic)
                 records.mapNotNull { it.value() as? HostedIdentityEntry }
             }
-            logger.debug("Read the following records from topic '{}': {}.", hostedIdentityTopic, records)
-
             records
         } catch (ex: Exception) {
             logger.warn("Failed to read hosted identity records from topic '$hostedIdentityTopic'.", ex)
@@ -115,8 +113,6 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
         }
 
         records.forEach { persistHostedIdentity(it) }
-        println("Read the following records from topic '$hostedIdentityTopic': $records.")
-
         Thread.currentThread().contextClassLoader = contextCL
     }
 
@@ -147,50 +143,21 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
     ): String {
         val possibleTlsAliases: List<String> = createRestClient(
             CertificateRestResource::class,
-            RestApiVersion.C5_2
-        ).use { client ->
-            checkInvariant(
-                maxAttempts = MAX_ATTEMPTS,
-                waitInterval = WAIT_INTERVAL,
-                errorMessage = "Could not find pem data for $holdingId",
-            ) {
-                try {
-                    val proxy = client.start().proxy
-                    if (clusterLevelCertificate) {
-                        proxy.getCertificateAliases(usage)
-                    } else {
-                        proxy.getCertificateAliases(usage, holdingId)
-                    }
-                } catch (e: ResourceNotFoundException) {
-                    null
-                } catch (e: ServiceUnavailableException) {
-                    null
-                }
+            "Could not find pem data for $holdingId",
+        ) { proxy ->
+            if (clusterLevelCertificate) {
+                proxy.getCertificateAliases(usage)
+            } else {
+                proxy.getCertificateAliases(usage, holdingId)
             }
         }
 
-        return createRestClient(
-            CertificateRestResource::class,
-            RestApiVersion.C5_2
-        ).use { client ->
-            checkInvariant(
-                maxAttempts = MAX_ATTEMPTS,
-                waitInterval = WAIT_INTERVAL,
-                errorMessage = "Could not find pem data for $holdingId",
-            ) {
-                try {
-                    val proxy = client.start().proxy
-                    possibleTlsAliases.map { alias ->
-                        if (clusterLevelCertificate) {
-                            alias to proxy.getCertificateChain(usage, alias)
-                        } else {
-                            alias to proxy.getCertificateChain(usage, holdingId, alias)
-                        }
-                    }
-                } catch (e: ResourceNotFoundException) {
-                    null
-                } catch (e: ServiceUnavailableException) {
-                    null
+        return createRestClient(CertificateRestResource::class, "Could not find pem data for $holdingId") { proxy ->
+            possibleTlsAliases.map { alias ->
+                if (clusterLevelCertificate) {
+                    alias to proxy.getCertificateChain(usage, alias)
+                } else {
+                    alias to proxy.getCertificateChain(usage, holdingId, alias)
                 }
             }
         }.first {
@@ -210,36 +177,22 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
         return findCertChainAlias(false, holdingId, sessionCertificates, "p2p-session")
     }
 
-    private fun findAllSessionKeys(holdingId: String): Map<String, String> {
-        // look up for all keys for holding ID
-        val keyLookupResult: List<KeyMetaData> = createRestClient(KeyRestResource::class, RestApiVersion.C5_2).use { client ->
+    private fun <I : RestResource, T : Any> createRestClient(
+        restResource: KClass<I>,
+        errorMessage: String,
+        function: (proxy: I) -> T
+    ): T {
+        return createRestClient(restResource, RestApiVersion.C5_2).use { client ->
             checkInvariant(
                 maxAttempts = MAX_ATTEMPTS,
                 waitInterval = WAIT_INTERVAL,
-                errorMessage = "Could not find key data for $holdingId",
+                errorMessage = errorMessage,
             ) {
                 try {
                     val proxy = client.start().proxy
-                    var skip = 0
-                    val keys = mutableListOf<KeyMetaData>()
-                    do {
-                        val page = proxy.listKeys(
-                            holdingId,
-                            skip,
-                            KEYS_PAGE_SIZE,
-                            "none",
-                            "SESSION_INIT",
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                        ).values.toList()
-                        keys.addAll(page)
-                        skip += KEYS_PAGE_SIZE
-                    } while (page.isNotEmpty())
-                    keys
+                    val result = function(proxy)
+                    client.close()
+                    result
                 } catch (e: ResourceNotFoundException) {
                     null
                 } catch (e: ServiceUnavailableException) {
@@ -247,29 +200,40 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
                 }
             }
         }
+    }
+
+    private fun findAllSessionKeys(holdingId: String): Map<String, String> {
+        // look up for all keys for holding ID
+        val keyLookupResult: List<KeyMetaData> =
+            createRestClient(KeyRestResource::class, "Could not find key data for $holdingId") { proxy ->
+                var skip = 0
+                val keys = mutableListOf<KeyMetaData>()
+                do {
+                    val page = proxy.listKeys(
+                        holdingId,
+                        skip,
+                        KEYS_PAGE_SIZE,
+                        "none",
+                        "SESSION_INIT",
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                    ).values.toList()
+                    keys.addAll(page)
+                    skip += KEYS_PAGE_SIZE
+                } while (page.isNotEmpty())
+                keys
+            }
 
         val pemLookupParams = keyLookupResult.map { it.keyId }
 
         // find the pem format of keys for holding ID and key ID
-        return createRestClient(
-            KeyRestResource::class,
-            RestApiVersion.C5_2
-        ).use { client ->
-            checkInvariant(
-                maxAttempts = MAX_ATTEMPTS,
-                waitInterval = WAIT_INTERVAL,
-                errorMessage = "Could not find pem data for $holdingId",
-            ) {
-                try {
-                    val proxy = client.start().proxy
-                    pemLookupParams.associateBy {
-                        proxy.generateKeyPem(holdingId, it)
-                    }
-                } catch (e: ResourceNotFoundException) {
-                    null
-                } catch (e: ServiceUnavailableException) {
-                    null
-                }
+        return createRestClient(KeyRestResource::class, "Could not find pem data for $holdingId") { proxy ->
+            pemLookupParams.associateBy {
+                proxy.generateKeyPem(holdingId, it)
             }
         }
     }
