@@ -4,18 +4,20 @@ import net.corda.cli.plugins.profile.commands.CreateProfile
 import net.corda.cli.plugins.profile.commands.DeleteProfile
 import net.corda.cli.plugins.profile.commands.ListProfile
 import net.corda.cli.plugins.profile.commands.UpdateProfile
+import net.corda.sdk.profile.ProfileUtils
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.nio.file.Path
-import kotlin.test.assertContains
 
 class ProfilePluginTest {
 
@@ -43,19 +45,57 @@ class ProfilePluginTest {
     fun `test create profile`() {
         val createProfile = CreateProfile()
         createProfile.profileName = "test-profile"
-        createProfile.properties = arrayOf("endpoint=http://localhost:1234", "restUsername=testuser", "restPassword=testpassword")
+        createProfile.properties = arrayOf("endpoint=http://localhost:1234", "rest_username=testuser", "rest_password=testpassword")
 
         createProfile.run()
-
-        assertTrue(profileFilePath.toFile().exists(), "Profile file should be created")
-        assertEquals("Profile 'test-profile' created successfully.", outContent.toString().trim())
 
         val profiles = ProfileUtils.loadProfiles()
         assertTrue(profiles.containsKey("test-profile"), "Created profile should exist")
         val profile = profiles["test-profile"] as Map<*, *>
         assertEquals("http://localhost:1234", profile["endpoint"])
-        assertEquals("testuser", profile["restUsername"])
-        assertNotEquals("testpassword", profile["restPassword"], "Password should be encrypted")
+        assertEquals("testuser", profile["rest_username"])
+        assertNotEquals("testpassword", profile["rest_password"], "Password should be encrypted")
+    }
+
+    @Test
+    fun `test create profile with existing name`() {
+        val profiles = mutableMapOf<String, Any>(
+            "test-profile" to mapOf(
+                "endpoint" to "http://localhost:1234",
+                "rest_username" to "testuser",
+                "rest_password" to "testpassword"
+            )
+        )
+        ProfileUtils.saveProfiles(profiles)
+
+        val createProfile = CreateProfile()
+        createProfile.profileName = "test-profile"
+        createProfile.properties = arrayOf("endpoint=http://localhost:5678", "rest_username=newuser", "rest_password=newpassword")
+
+        // user input to overwrite the existing profile
+        System.setIn(ByteArrayInputStream("y\n".toByteArray()))
+
+        createProfile.run()
+
+        val updatedProfiles = ProfileUtils.loadProfiles()
+        val profile = updatedProfiles["test-profile"] as Map<*, *>
+        assertEquals("http://localhost:5678", profile["endpoint"])
+        assertEquals("newuser", profile["rest_username"])
+        assertNotEquals("newpassword", profile["rest_password"], "Password should be encrypted")
+    }
+
+    @Test
+    fun `test create profile with invalid key`() {
+        val createProfile = CreateProfile()
+        createProfile.profileName = "test-profile"
+        createProfile.properties = arrayOf("endpoint=http://localhost:1234", "invalid_key=value")
+
+        val exception = assertThrows(IllegalArgumentException::class.java) {
+            createProfile.run()
+        }
+
+        assertEquals("Invalid key 'invalid_key'. Allowed keys are: ${ProfileUtils.VALID_KEYS}", exception.message)
+        assertFalse(profileFilePath.toFile().exists(), "Profile file should not be created")
     }
 
     @Test
@@ -64,24 +104,22 @@ class ProfilePluginTest {
         val profiles = mutableMapOf<String, Any>(
             "test-profile" to mapOf(
                 "endpoint" to "http://localhost:1234",
-                "restUsername" to "testuser",
-                "restPassword" to "testpassword"
+                "rest_username" to "testuser",
+                "rest_password" to "testpassword"
             )
         )
         ProfileUtils.saveProfiles(profiles)
 
         val updateProfile = UpdateProfile()
         updateProfile.profileName = "test-profile"
-        updateProfile.properties = arrayOf("restUsername=updateduser", "restPassword=updatedpassword")
+        updateProfile.properties = arrayOf("rest_username=updateduser", "rest_password=updatedpassword")
 
         updateProfile.run()
 
-        assertEquals("Profile 'test-profile' updated successfully.", outContent.toString().trim())
-
         val updatedProfiles = ProfileUtils.loadProfiles()
         val profile = updatedProfiles["test-profile"] as Map<*, *>
-        assertEquals("updateduser", profile["restUsername"])
-        assertNotEquals("updatedpassword", profile["restPassword"], "Password should be encrypted")
+        assertEquals("updateduser", profile["rest_username"])
+        assertNotEquals("updatedpassword", profile["rest_password"], "Password should be encrypted")
     }
 
     @Test
@@ -90,8 +128,8 @@ class ProfilePluginTest {
         val profiles = mutableMapOf<String, Any>(
             "test-profile" to mapOf(
                 "endpoint" to "http://localhost:1234",
-                "restUsername" to "testuser",
-                "restPassword" to "testpassword"
+                "rest_username" to "testuser",
+                "rest_password" to "testpassword"
             )
         )
         ProfileUtils.saveProfiles(profiles)
@@ -99,14 +137,25 @@ class ProfilePluginTest {
         val deleteProfile = DeleteProfile()
         deleteProfile.profileName = "test-profile"
 
-        System.setIn("y".byteInputStream())
+        // Simulate user input for confirmation
+        System.setIn(ByteArrayInputStream("y\n".toByteArray()))
 
         deleteProfile.run()
 
-        assertContains(outContent.toString().trim(), "Profile 'test-profile' deleted.")
-
         val updatedProfiles = ProfileUtils.loadProfiles()
         assertFalse(updatedProfiles.containsKey("test-profile"), "Deleted profile should not exist")
+    }
+
+    @Test
+    fun `test delete non-existing profile`() {
+        val deleteProfile = DeleteProfile()
+        deleteProfile.profileName = "non-existing-profile"
+
+        val exception = assertThrows(IllegalArgumentException::class.java) {
+            deleteProfile.run()
+        }
+
+        assertEquals("Profile 'non-existing-profile' does not exist.", exception.message)
     }
 
     @Test
@@ -121,11 +170,9 @@ class ProfilePluginTest {
         val listProfile = ListProfile()
         listProfile.run()
 
-        val expectedOutput = """
-            Available profiles:
-            - profile1
-            - profile2
-        """.trimIndent().trim()
-        assertEquals(expectedOutput, outContent.toString().trimIndent().trim())
+        val loadedProfiles = ProfileUtils.loadProfiles()
+        assertEquals(2, loadedProfiles.size)
+        assertTrue(loadedProfiles.containsKey("profile1"))
+        assertTrue(loadedProfiles.containsKey("profile2"))
     }
 }

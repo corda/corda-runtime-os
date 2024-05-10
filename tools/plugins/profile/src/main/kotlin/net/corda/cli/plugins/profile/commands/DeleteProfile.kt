@@ -1,9 +1,12 @@
 package net.corda.cli.plugins.profile.commands
 
-import net.corda.cli.plugins.profile.ProfileUtils.loadProfiles
-import net.corda.cli.plugins.profile.ProfileUtils.saveProfiles
+import net.corda.sdk.profile.ProfileUtils.loadProfiles
+import net.corda.sdk.profile.ProfileUtils.saveProfiles
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import picocli.CommandLine.Option
+import kotlin.system.exitProcess
 
 @CommandLine.Command(
     name = "delete",
@@ -12,21 +15,29 @@ import picocli.CommandLine.Option
 )
 class DeleteProfile : Runnable {
 
+    private companion object {
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val sysOut: Logger = LoggerFactory.getLogger("SystemOut")
+        val sysErr: Logger = LoggerFactory.getLogger("SystemErr")
+    }
+
     @Option(names = ["-n", "--name"], description = ["Profile name"], required = true)
     lateinit var profileName: String
 
     override fun run() {
+        logger.debug("Deleting profile: $profileName")
         val profiles = loadProfiles()
 
         if (!profiles.containsKey(profileName)) {
-            println("Profile '$profileName' does not exist.")
-            return
+            val errorMessage = "Profile '$profileName' does not exist."
+            sysErr.error(errorMessage)
+            throw IllegalArgumentException(errorMessage)
         }
 
-        println("Are you sure you want to delete profile '$profileName'? (y/n)")
+        sysOut.info("Are you sure you want to delete profile '$profileName'? (y/n)")
         val confirmation = readlnOrNull()
         if (confirmation?.lowercase() != "y") {
-            println("Profile deletion aborted.")
+            sysOut.info("Profile deletion aborted.")
             return
         }
 
@@ -34,6 +45,6 @@ class DeleteProfile : Runnable {
         updatedProfiles.remove(profileName)
 
         saveProfiles(updatedProfiles)
-        println("Profile '$profileName' deleted.")
+        sysOut.info("Profile '$profileName' deleted.")
     }
 }

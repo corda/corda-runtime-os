@@ -1,12 +1,14 @@
 package net.corda.cli.plugins.profile.commands
 
 import com.fasterxml.jackson.module.kotlin.readValue
-import net.corda.cli.plugins.profile.ProfileUtils
 import net.corda.permissions.password.impl.PasswordServiceImpl
-import net.corda.sdk.profile.ProfileConfig
+import net.corda.sdk.profile.ProfileUtils
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import picocli.CommandLine.Option
 import java.security.SecureRandom
+import kotlin.system.exitProcess
 
 @CommandLine.Command(
     name = "update",
@@ -14,6 +16,11 @@ import java.security.SecureRandom
     mixinStandardHelpOptions = true
 )
 class UpdateProfile : Runnable {
+
+    private companion object {
+        val sysOut: Logger = LoggerFactory.getLogger("SystemOut")
+        val sysErr: Logger = LoggerFactory.getLogger("SystemErr")
+    }
 
     @Option(names = ["-n", "--name"], description = ["Profile name"], required = true)
     lateinit var profileName: String
@@ -27,8 +34,8 @@ class UpdateProfile : Runnable {
         val profiles = ProfileUtils.loadProfiles().toMutableMap()
 
         if (!profiles.containsKey(profileName)) {
-            println("Profile '$profileName' does not exist.")
-            return
+            sysErr.error("Profile '$profileName' does not exist.")
+            exitProcess(1)
         }
 
         val profile = ProfileUtils.objectMapper.readValue<MutableMap<String, Any>>(
@@ -38,12 +45,14 @@ class UpdateProfile : Runnable {
         properties.forEach { property ->
             val (key, value) = property.split("=")
             if (!ProfileUtils.isValidKey(key)) {
-                throw IllegalArgumentException("Invalid key '$key'. Allowed keys are: ${ProfileConfig.VALID_KEYS}")
+                val error = "Invalid key '$key'. Allowed keys are: ${ProfileUtils.VALID_KEYS}"
+                sysErr.error(error)
+                throw IllegalArgumentException(error)
             }
             if (key.lowercase().contains("password")) {
                 val passwordHash = passwordService.saltAndHash(value)
                 profile[key] = passwordHash.value
-                profile["${key}Salt"] = passwordHash.salt
+                profile["${key}_salt"] = passwordHash.salt
             } else {
                 profile[key] = value
             }
@@ -52,6 +61,6 @@ class UpdateProfile : Runnable {
         profiles[profileName] = profile
 
         ProfileUtils.saveProfiles(profiles)
-        println("Profile '$profileName' updated successfully.")
+        sysOut.info("Profile '$profileName' updated successfully.")
     }
 }

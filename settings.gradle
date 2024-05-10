@@ -560,6 +560,3 @@ gradleEnterprise {
         }
     }
 }
-include 'tools:plugins:profile'
-findProject(':tools:plugins:profile')?.name = 'profile'
-

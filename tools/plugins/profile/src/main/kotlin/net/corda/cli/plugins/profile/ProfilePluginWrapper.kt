@@ -18,7 +18,7 @@ class VersionProvider : AbstractCordaCliVersionProvider()
 class ProfilePluginWrapper : Plugin() {
 
     private companion object {
-        val logger: Logger = LoggerFactory.getLogger(this::class.java)
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun start() {

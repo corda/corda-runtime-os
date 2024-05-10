@@ -1,6 +1,8 @@
 package net.corda.cli.plugins.profile.commands
 
-import net.corda.cli.plugins.profile.ProfileUtils.loadProfiles
+import net.corda.sdk.profile.ProfileUtils.loadProfiles
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import picocli.CommandLine
 
 @CommandLine.Command(
@@ -9,14 +11,19 @@ import picocli.CommandLine
     mixinStandardHelpOptions = true
 )
 class ListProfile : Runnable {
+
+    private companion object {
+        val sysOut: Logger = LoggerFactory.getLogger("SystemOut")
+    }
+
     override fun run() {
         val profiles = loadProfiles()
 
         if (profiles.isEmpty()) {
-            println("No profiles found.")
+            sysOut.info("No profiles found.")
         } else {
-            println("Available profiles:")
-            profiles.keys.forEach { println("- $it") }
+            sysOut.info("Available profiles:")
+            profiles.keys.forEach { sysOut.info("- $it") }
         }
     }
 }
