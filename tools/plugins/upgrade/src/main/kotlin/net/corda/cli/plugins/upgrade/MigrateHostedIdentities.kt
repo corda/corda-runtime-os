@@ -2,12 +2,28 @@ package net.corda.cli.plugins.upgrade
 
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
+import net.corda.cli.plugins.network.output.ConsoleOutput
+import net.corda.cli.plugins.network.output.Output
+import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
+import net.corda.cli.plugins.upgrade.UpgradePluginWrapper.UpgradePlugin
+import net.corda.crypto.core.CryptoTenants
 import net.corda.data.p2p.HostedIdentityEntry
+import net.corda.membership.datamodel.HostedIdentityEntity
+import net.corda.membership.datamodel.HostedIdentitySessionKeyInfoEntity
+import net.corda.membership.rest.v1.CertificateRestResource
+import net.corda.membership.rest.v1.KeyRestResource
+import net.corda.membership.rest.v1.types.response.KeyMetaData
 import net.corda.messagebus.kafka.serialization.CordaAvroDeserializerImpl
+import net.corda.rest.annotations.RestApiVersion
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.schema.Schemas
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
+import net.corda.virtualnode.toCorda
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.KafkaConsumer
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.FileInputStream
 import java.sql.DriverManager
@@ -19,22 +35,6 @@ import javax.persistence.Id
 import javax.persistence.JoinColumn
 import javax.persistence.Table
 import javax.persistence.Version
-import net.corda.cli.plugins.network.output.ConsoleOutput
-import net.corda.cli.plugins.network.output.Output
-import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
-import net.corda.cli.plugins.network.utils.PrintUtils.printJsonOutput
-import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
-import net.corda.crypto.core.CryptoTenants
-import net.corda.data.certificates.CertificateUsage
-import net.corda.membership.datamodel.HostedIdentityEntity
-import net.corda.membership.rest.v1.CertificateRestResource
-import net.corda.membership.rest.v1.KeyRestResource
-import net.corda.membership.rest.v1.types.response.KeyMetaData
-import net.corda.rest.annotations.RestApiVersion
-import net.corda.rest.exception.ResourceNotFoundException
-import net.corda.rest.exception.ServiceUnavailableException
-import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.toCorda
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.declaredMemberProperties
@@ -42,6 +42,7 @@ import kotlin.reflect.jvm.isAccessible
 import kotlin.reflect.jvm.javaField
 import kotlin.reflect.jvm.javaGetter
 
+@Suppress("TooManyFunctions")
 @CommandLine.Command(
     name = "migrate-data",
     description = ["Read hosted identity records from Kafka and persist them to the database."],
@@ -53,6 +54,8 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
         const val POLL_TIMEOUT_MS = 3000L
         const val MAX_ATTEMPTS = 10
         const val WAIT_INTERVAL = 2000L
+        const val KEYS_PAGE_SIZE = 20
+        val logger: Logger = LoggerFactory.getLogger(UpgradePlugin::class.java)
     }
 
     @CommandLine.Option(
@@ -79,24 +82,6 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
     )
     var topicPrefix: String = ""
 
-    @CommandLine.Option(
-        names = ["--jdbc-url"],
-        description = ["JDBC Url of database. If not specified runs in offline mode"]
-    )
-    var jdbcUrl: String? = null
-
-    @CommandLine.Option(
-        names = ["--db-user"],
-        description = ["Database username"]
-    )
-    var dbUser: String? = null
-
-    @CommandLine.Option(
-        names = ["--db-password"],
-        description = ["Database password"]
-    )
-    var dbPassword: String? = null
-
     private val hostedIdentityTopic by lazy {
         topicPrefix + Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
     }
@@ -117,21 +102,20 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
             consumer.subscribe(setOf(hostedIdentityTopic))
 
             val records = consumer.poll(Duration.ofMillis(timeoutMs)).let { records ->
-                UpgradePluginWrapper.logger.debug("Read {} records from topic '{}'.", records.count(), hostedIdentityTopic)
+                logger.debug("Read {} records from topic '{}'.", records.count(), hostedIdentityTopic)
                 records.mapNotNull { it.value() as? HostedIdentityEntry }
             }
-            UpgradePluginWrapper.logger.debug("Read the following records from topic '{}': {}.", hostedIdentityTopic, records)
+            logger.debug("Read the following records from topic '{}': {}.", hostedIdentityTopic, records)
 
             records
         } catch (ex: Exception) {
-            UpgradePluginWrapper.logger.warn("Failed to read hosted identity records from topic '$hostedIdentityTopic'.", ex)
+            logger.warn("Failed to read hosted identity records from topic '$hostedIdentityTopic'.", ex)
             emptyList()
         } finally {
             consumer.closeConsumer()
         }
 
         records.forEach { persistHostedIdentity(it) }
-        // TODO to be replaced with persistence logic
         println("Read the following records from topic '$hostedIdentityTopic': $records.")
 
         Thread.currentThread().contextClassLoader = contextCL
@@ -156,86 +140,12 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
         }
     }
 
-    private data class KeyLookupResult(
-        val tenantId: String,
-        val keyId: String,
-        val pem: String
-    )
-
-    private fun persistHostedIdentity(kafkaHostedIdentity: HostedIdentityEntry) {
-        Class.forName("org.postgresql.Driver")
-        val connection = connectToDatabase()
-        val holdingId = kafkaHostedIdentity.holdingIdentity.toCorda().shortHash.toString()
-
-        // look up for all keys for holding ID
-        val keyLookupResult: Pair<String, List<KeyMetaData>> = createRestClient(KeyRestResource::class, RestApiVersion.C5_2).use { client ->
-            checkInvariant(
-                maxAttempts = MAX_ATTEMPTS,
-                waitInterval = WAIT_INTERVAL,
-                errorMessage = "Could not find key data for $holdingId",
-            ) {
-                try {
-                    val proxy = client.start().proxy
-                    val keys = holdingId to proxy.listKeys(
-                        holdingId,
-                        0,
-                        20,
-                        "none",
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                    ).values.filter { it.hsmCategory == "SESSION_INIT" }
-                    keys
-                } catch (e: ResourceNotFoundException) {
-                    null
-                } catch (e: ServiceUnavailableException) {
-                    null
-                }
-            }
-        }
-
-        val pemLookupParams = keyLookupResult.first to keyLookupResult.second.map { it.keyId }
-
-        // find the pem format of keys for holding ID and key ID
-        val pemLookupResult: List<KeyLookupResult> = createRestClient(
-            KeyRestResource::class,
-            RestApiVersion.C5_2
-        ).use { client ->
-            checkInvariant(
-                maxAttempts = MAX_ATTEMPTS,
-                waitInterval = WAIT_INTERVAL,
-                errorMessage = "Could not find pem data for $holdingId",
-            ) {
-                try {
-                    val proxy = client.start().proxy
-                    val result = pemLookupParams.second.map {
-                        val pem = proxy.generateKeyPem(pemLookupParams.first, it)
-                        KeyLookupResult(pemLookupParams.first, it, pem)
-                    }
-                    result
-                } catch (e: ResourceNotFoundException) {
-                    null
-                } catch (e: ServiceUnavailableException) {
-                    null
-                }
-            }
-        }
-
-        verifyAndPrintError {
-            printJsonOutput(keyLookupResult, output)
-            printJsonOutput(pemLookupResult, output)
-        }
-
-        val preferredSessionKey = pemLookupResult.single {
-            it.pem == kafkaHostedIdentity.preferredSessionKeyAndCert.sessionPublicKey
-        }.keyId
-
-        val useClusterLevelTlsCertificateAndKey = kafkaHostedIdentity.tlsTenantId == CryptoTenants.P2P
-
+    private fun findCertChainAlias(
+        clusterLevelCertificate: Boolean,
+        holdingId: String,
+        certificates: List<String>,
+        usage: String
+    ): String {
         val possibleTlsAliases: List<String> = createRestClient(
             CertificateRestResource::class,
             RestApiVersion.C5_2
@@ -247,10 +157,10 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
             ) {
                 try {
                     val proxy = client.start().proxy
-                    if (useClusterLevelTlsCertificateAndKey) {
-                        proxy.getCertificateAliases(CertificateUsage.P2P_TLS.toString())
+                    if (clusterLevelCertificate) {
+                        proxy.getCertificateAliases(usage)
                     } else {
-                        proxy.getCertificateAliases(CertificateUsage.P2P_TLS.toString(), holdingId)
+                        proxy.getCertificateAliases(usage, holdingId)
                     }
                 } catch (e: ResourceNotFoundException) {
                     null
@@ -260,7 +170,7 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
             }
         }
 
-        val tlsCertificateChainAlias = createRestClient(
+        return createRestClient(
             CertificateRestResource::class,
             RestApiVersion.C5_2
         ).use { client ->
@@ -272,7 +182,11 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
                 try {
                     val proxy = client.start().proxy
                     possibleTlsAliases.map { alias ->
-                        alias to proxy.getCertificateChain(CertificateUsage.P2P_TLS.toString(), alias)
+                        if (clusterLevelCertificate) {
+                            alias to proxy.getCertificateChain(usage, alias)
+                        } else {
+                            alias to proxy.getCertificateChain(usage, holdingId, alias)
+                        }
                     }
                 } catch (e: ResourceNotFoundException) {
                     null
@@ -281,14 +195,98 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
                 }
             }
         }.first {
-            it.second == kafkaHostedIdentity.tlsCertificates.joinToString("\n")
+            it.second == certificates.joinToString("\n")
         }.first
+    }
 
+    private fun findTlsCertChainAlias(
+        useClusterLevelTlsCertificateAndKey: Boolean,
+        holdingId: String,
+        tlsCertificates: List<String>
+    ): String {
+        return findCertChainAlias(useClusterLevelTlsCertificateAndKey, holdingId, tlsCertificates, "p2p-tls")
+    }
 
-        // Should map the PEM to find the ID for preferred key ID
-        // Need to figure out the cert alias, but possibly `p2p-tls-cert` everywhere?
-        // Boolean should be something like `identity.tlsTenantId == CryptoTenants.P2P`? but needs to be verified
-        // Default version to 1
+    private fun findSessionCertificateAlias(holdingId: String, sessionCertificates: List<String>): String {
+        return findCertChainAlias(false, holdingId, sessionCertificates, "p2p-session")
+    }
+
+    private fun findAllSessionKeys(holdingId: String): Map<String, String> {
+        // look up for all keys for holding ID
+        val keyLookupResult: List<KeyMetaData> = createRestClient(KeyRestResource::class, RestApiVersion.C5_2).use { client ->
+            checkInvariant(
+                maxAttempts = MAX_ATTEMPTS,
+                waitInterval = WAIT_INTERVAL,
+                errorMessage = "Could not find key data for $holdingId",
+            ) {
+                try {
+                    val proxy = client.start().proxy
+                    var skip = 0
+                    val keys = mutableListOf<KeyMetaData>()
+                    do {
+                        val page = proxy.listKeys(
+                            holdingId,
+                            skip,
+                            KEYS_PAGE_SIZE,
+                            "none",
+                            "SESSION_INIT",
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                        ).values.toList()
+                        keys.addAll(page)
+                        skip += KEYS_PAGE_SIZE
+                    } while (page.isNotEmpty())
+                    keys
+                } catch (e: ResourceNotFoundException) {
+                    null
+                } catch (e: ServiceUnavailableException) {
+                    null
+                }
+            }
+        }
+
+        val pemLookupParams = keyLookupResult.map { it.keyId }
+
+        // find the pem format of keys for holding ID and key ID
+        return createRestClient(
+            KeyRestResource::class,
+            RestApiVersion.C5_2
+        ).use { client ->
+            checkInvariant(
+                maxAttempts = MAX_ATTEMPTS,
+                waitInterval = WAIT_INTERVAL,
+                errorMessage = "Could not find pem data for $holdingId",
+            ) {
+                try {
+                    val proxy = client.start().proxy
+                    pemLookupParams.associateBy {
+                        proxy.generateKeyPem(holdingId, it)
+                    }
+                } catch (e: ResourceNotFoundException) {
+                    null
+                } catch (e: ServiceUnavailableException) {
+                    null
+                }
+            }
+        }
+    }
+
+    private fun persistHostedIdentity(kafkaHostedIdentity: HostedIdentityEntry) {
+        val holdingId = kafkaHostedIdentity.holdingIdentity.toCorda().shortHash.toString()
+        val pemLookupResult = findAllSessionKeys(holdingId)
+
+        val preferredSessionKey = pemLookupResult[kafkaHostedIdentity.preferredSessionKeyAndCert.sessionPublicKey]
+            ?: throw IllegalArgumentException()
+
+        val useClusterLevelTlsCertificateAndKey = kafkaHostedIdentity.tlsTenantId == CryptoTenants.P2P
+
+        val tlsCertificateChainAlias =
+            findTlsCertChainAlias(useClusterLevelTlsCertificateAndKey, holdingId, kafkaHostedIdentity.tlsCertificates)
+
         val entity = HostedIdentityEntity(
             holdingId,
             preferredSessionKey,
@@ -297,26 +295,28 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
             kafkaHostedIdentity.version
         )
 
-        // need to add insert for hosted_identity_session_key_info table as well
         val statement = entity.toInsertStatement()
-        connection.createStatement().execute(statement)
-    }
+        print(statement)
+        // connection.createStatement().execute(statement)
+        val allSessionKeysAndCertificates = kafkaHostedIdentity.alternativeSessionKeysAndCerts +
+            kafkaHostedIdentity.preferredSessionKeyAndCert
 
-    /*private fun insertHostedIdentities(identities: List<HostedIdentityEntry>) {
-        identities.forEach { identity ->
-            identity.
-            val entity = HostedIdentityEntity(
-                identity.holdingIdentity.toCorda().shortHash.value,
-                "asd",
-                "asd",
-                identity.tlsTenantId == CryptoTenants.P2P,
-                1
+        for (sessionKeyAndCert in allSessionKeysAndCertificates) {
+            val sessionKeyId = pemLookupResult[kafkaHostedIdentity.preferredSessionKeyAndCert.sessionPublicKey] ?: let {
+                throw IllegalArgumentException()
+            }
+            val sessionCertificateAlias = sessionKeyAndCert?.sessionCertificates?.let {
+                findSessionCertificateAlias(holdingId, it)
+            }
+            val sessionKeyEntity = HostedIdentitySessionKeyInfoEntity(
+                holdingId,
+                sessionKeyId,
+                sessionCertificateAlias,
             )
+            val sessionKeyStatement = sessionKeyEntity.toInsertStatement()
+            print(sessionKeyStatement)
         }
-    }*/
-
-    private fun connectToDatabase() =
-        DriverManager.getConnection(jdbcUrl, dbUser, dbPassword)
+    }
 
     private fun Any.toInsertStatement(): String {
         val values = this::class.declaredMemberProperties.mapNotNull { property ->
@@ -327,7 +327,7 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
         }
 
         return "insert into config.${formatTableName(this)} (${values.joinToString { it.first }}) " +
-                "values (${values.joinToString { it.second }});"
+            "values (${values.joinToString { it.second }});"
     }
 
     private fun formatValue(value: Any?): String? {
