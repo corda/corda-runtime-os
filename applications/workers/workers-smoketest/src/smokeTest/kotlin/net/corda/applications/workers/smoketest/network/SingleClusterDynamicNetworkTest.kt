@@ -22,11 +22,11 @@ class SingleClusterDynamicNetworkTest : ClusterReadiness by ClusterReadinessChec
     private val bobX500 = "CN=Bob-${testUniqueId}, OU=Application, O=R3, L=London, C=GB"
     private val notaryX500 = "CN=Notary-${testUniqueId}, OU=Application, O=R3, L=London, C=GB"
 
-//    @BeforeEach
-//    fun setup() {
-//        // check cluster is ready
-//        assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(100))
-//    }
+    @BeforeEach
+    fun setup() {
+        // check cluster is ready
+        assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(100))
+    }
 
     @Test
     fun `Create mgm and allow members to join the group`() {
