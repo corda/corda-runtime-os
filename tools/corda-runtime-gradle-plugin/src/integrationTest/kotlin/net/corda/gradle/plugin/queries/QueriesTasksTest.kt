@@ -101,7 +101,7 @@ class QueriesTasksTest : FunctionalBaseTest() {
             )
         }.let { VirtualNodes(it) }
 
-        app.get("/api/v1/virtualnode") { ctx -> ctx.json(vNodeResponsePayload) }
+        app.get("/api/v5_2/virtualnode") { ctx -> ctx.json(vNodeResponsePayload) }
     }
 
     private fun mockGetCPIResponse(inputs: List<String>) {
@@ -119,14 +119,14 @@ class QueriesTasksTest : FunctionalBaseTest() {
                 timestamp = Instant.now()
             )
         }.let { GetCPIsResponse(it) }
-        app.get("/api/v1/cpi") { ctx -> ctx.json(responseToUse) }
+        app.get("/api/v5_2/cpi") { ctx -> ctx.json(responseToUse) }
     }
 
     private fun mockGetCPIProtocolVersion() {
-        app.get("/api/v1/cpi/getprotocolversion") { ctx -> ctx.result("1") }
+        app.get("/api/v5_2/cpi/getprotocolversion") { ctx -> ctx.result("1") }
     }
 
     private fun mockGetVirtualNodeProtocolVersion() {
-        app.get("/api/v1/virtualnode/getprotocolversion") { ctx -> ctx.result("1") }
+        app.get("/api/v5_2/virtualnode/getprotocolversion") { ctx -> ctx.result("1") }
     }
 }
