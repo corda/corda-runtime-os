@@ -12,6 +12,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.VersionedRecord
 import org.slf4j.LoggerFactory
+import javax.persistence.EntityTransaction
 
 /**
  * A [DbReconcilerReader] for database data that map to compacted topics data.
@@ -55,7 +56,7 @@ class DbReconcilerReader<K : Any, V : Any>(
     }
 
     private fun onStartEvent(coordinator: LifecycleCoordinator) {
-         coordinator.createManagedResource(REGISTRATION) { coordinator.followStatusChangesByName(dependencies) }
+        coordinator.createManagedResource(REGISTRATION) { coordinator.followStatusChangesByName(dependencies) }
     }
 
     private fun onRegistrationStatusChangeEvent(
@@ -74,8 +75,9 @@ class DbReconcilerReader<K : Any, V : Any>(
     @Suppress("SpreadOperator")
     override fun getAllVersionedRecords(): Stream<VersionedRecord<K, V>> {
         val streamOfStreams: Stream<Stream<VersionedRecord<K, V>>> = reconciliationContextFactory().map { context ->
+            var currentTransaction: EntityTransaction? = null
             try {
-                val currentTransaction = context.getOrCreateEntityManager().transaction
+                currentTransaction = context.getOrCreateEntityManager().transaction
                 currentTransaction.begin()
                 doGetAllVersionedRecords(context).onClose {
                     // This class only have access to this em and transaction. This is a read only transaction,
@@ -85,6 +87,7 @@ class DbReconcilerReader<K : Any, V : Any>(
                 }
             } catch (e: Exception) {
                 logger.warn("Error while retrieving DB records for reconciliation for ${context.prettyPrint()}", e)
+                currentTransaction?.rollback()
                 context.close()
                 Stream.empty()
             }

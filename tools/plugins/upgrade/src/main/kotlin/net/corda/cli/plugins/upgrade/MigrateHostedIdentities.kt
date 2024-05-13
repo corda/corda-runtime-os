@@ -3,10 +3,7 @@ package net.corda.cli.plugins.upgrade
 import net.corda.cli.plugin.initialconfig.toInsertStatement
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
-import net.corda.cli.plugins.network.output.ConsoleOutput
-import net.corda.cli.plugins.network.output.Output
 import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
-import net.corda.cli.plugins.upgrade.UpgradePluginWrapper.UpgradePlugin
 import net.corda.crypto.core.CryptoTenants
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.membership.datamodel.HostedIdentityEntity
@@ -21,33 +18,36 @@ import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.schema.Schemas
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
+import net.corda.utilities.classload.executeWithThreadContextClassLoader
 import net.corda.virtualnode.toCorda
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
+import picocli.CommandLine.ExitCode
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileWriter
 import java.time.Duration
 import java.util.Properties
 import java.util.UUID
+import java.util.concurrent.Callable
 import kotlin.reflect.KClass
 
 @CommandLine.Command(
-    name = "migrate-data",
-    description = ["Read hosted identity records from Kafka and persist them to the database."],
+    name = "migrate-data-5-2-1",
+    description = ["Read hosted identity records from Kafka and generate SQL to persist them to the database."],
     mixinStandardHelpOptions = true,
 )
-class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : RestCommand(), Runnable {
+class MigrateHostedIdentities : RestCommand(), Callable<Int> {
 
     private companion object {
         const val POLL_TIMEOUT_MS = 3000L
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val MAX_ATTEMPTS = 10
         const val WAIT_INTERVAL = 2000L
         const val KEYS_PAGE_SIZE = 20
-        val logger: Logger = LoggerFactory.getLogger(UpgradePlugin::class.java)
         const val SCHEMA_NAME = "config"
     }
 
@@ -70,10 +70,10 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
     var timeoutMs: Long = POLL_TIMEOUT_MS
 
     @CommandLine.Option(
-        names = ["--topic-prefix"],
-        description = ["Kafka topic prefix"]
+        names = ["-n", "--name-prefix"],
+        description = ["Name prefix for topics"]
     )
-    var topicPrefix: String = ""
+    var namePrefix: String = ""
 
     @CommandLine.Option(
         names = ["-l", "--location"],
@@ -82,37 +82,46 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
     var outputDir: String = "."
 
     private val hostedIdentityTopic by lazy {
-        topicPrefix + Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
+        namePrefix + Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
+    }
+
+    private val sysOut by lazy {
+        LoggerFactory.getLogger("SystemOut")
     }
 
     private val consumerGroup = UUID.randomUUID().toString()
 
-    override fun run() {
-        // Switch ClassLoader so LoginModules can be found
-        val contextCL = Thread.currentThread().contextClassLoader
-        Thread.currentThread().contextClassLoader = this::class.java.classLoader
-
-        val registry = AvroSchemaRegistryImpl()
-        val keyDeserializer = CordaAvroDeserializerImpl(registry, {}, String::class.java)
-        val valueDeserializer = CordaAvroDeserializerImpl(registry, {}, HostedIdentityEntry::class.java)
-
-        val consumer = KafkaConsumer(getKafkaProperties(), keyDeserializer, valueDeserializer)
-        val records = try {
+    override fun call(): Int {
+        val consumer = executeWithThreadContextClassLoader(this::class.java.classLoader) {
+            val registry = AvroSchemaRegistryImpl()
+            val keyDeserializer = CordaAvroDeserializerImpl(registry, {}, String::class.java)
+            val valueDeserializer = CordaAvroDeserializerImpl(registry, {}, HostedIdentityEntry::class.java)
+            KafkaConsumer(getKafkaProperties(), keyDeserializer, valueDeserializer)
+        }
+        val allRecords = mutableListOf<HostedIdentityEntry>()
+        try {
             consumer.subscribe(setOf(hostedIdentityTopic))
-            val records = consumer.poll(Duration.ofMillis(timeoutMs)).let { records ->
-                records.mapNotNull { it.value() as? HostedIdentityEntry }
-            }
-            records
+            do {
+                val records = consumer.poll(Duration.ofMillis(timeoutMs)).let { records ->
+                    logger.debug("Read {} records from topic '{}'.", records.count(), hostedIdentityTopic)
+                    records.mapNotNull { it.value() as? HostedIdentityEntry }
+                }
+                consumer.commitSync()
+                logger.trace("Read the following records from topic '{}': {}.", hostedIdentityTopic, records)
+                if (records.isNotEmpty()) {
+                    allRecords.addAll(records)
+                }
+            } while (records.isNotEmpty())
         } catch (ex: Exception) {
             logger.warn("Failed to read hosted identity records from topic '$hostedIdentityTopic'.", ex)
-            emptyList()
+            return ExitCode.SOFTWARE
         } finally {
             consumer.closeConsumer()
         }
         FileWriter(File("${outputDir.removeSuffix("/")}/${SCHEMA_NAME}.sql")).use { outputFile ->
-            records.forEach { persistHostedIdentity(it, outputFile) }
+            allRecords.forEach { persistHostedIdentity(it, outputFile) }
         }
-        Thread.currentThread().contextClassLoader = contextCL
+        return ExitCode.OK
     }
 
     private fun getKafkaProperties(): Properties {
