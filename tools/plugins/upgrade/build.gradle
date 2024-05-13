@@ -37,6 +37,7 @@ dependencies {
     implementation project(":libs:serialization:serialization-avro")
     implementation project(":tools:plugins:topic-config")
     implementation project(":libs:schema-registry:schema-registry-impl")
+    implementation project(":libs:utilities")
 }
 
 cliPlugin {

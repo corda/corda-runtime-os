@@ -1,30 +1,32 @@
 package net.corda.cli.plugins.upgrade
 
-import net.corda.cli.plugins.upgrade.UpgradePluginWrapper.UpgradePlugin
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.messagebus.kafka.serialization.CordaAvroDeserializerImpl
 import net.corda.schema.Schemas
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
+import net.corda.utilities.classload.executeWithThreadContextClassLoader
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
+import picocli.CommandLine.ExitCode
 import java.io.FileInputStream
 import java.time.Duration
 import java.util.Properties
 import java.util.UUID
+import java.util.concurrent.Callable
 
 @CommandLine.Command(
     name = "migrate-data-5-2-1",
     description = ["Read hosted identity records from Kafka and generate SQL to persist them to the database."],
     mixinStandardHelpOptions = true,
 )
-class MigrateHostedIdentities : Runnable {
+class MigrateHostedIdentities : Callable<Int> {
 
     private companion object {
         const val POLL_TIMEOUT_MS = 3000L
-        val logger: Logger = LoggerFactory.getLogger(UpgradePlugin::class.java)
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CommandLine.Option(
@@ -55,17 +57,19 @@ class MigrateHostedIdentities : Runnable {
         namePrefix + Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
     }
 
+    private val sysOut by lazy {
+        LoggerFactory.getLogger("SystemOut")
+    }
+
     private val consumerGroup = UUID.randomUUID().toString()
 
-    override fun run() {
-        // Switch ClassLoader so LoginModules can be found
-        val contextCL = Thread.currentThread().contextClassLoader
-        Thread.currentThread().contextClassLoader = this::class.java.classLoader
-
-        val registry = AvroSchemaRegistryImpl()
-        val keyDeserializer = CordaAvroDeserializerImpl(registry, {}, String::class.java)
-        val valueDeserializer = CordaAvroDeserializerImpl(registry, {}, HostedIdentityEntry::class.java)
-        val consumer = KafkaConsumer(getKafkaProperties(), keyDeserializer, valueDeserializer)
+    override fun call(): Int {
+        val consumer = executeWithThreadContextClassLoader(this::class.java.classLoader) {
+            val registry = AvroSchemaRegistryImpl()
+            val keyDeserializer = CordaAvroDeserializerImpl(registry, {}, String::class.java)
+            val valueDeserializer = CordaAvroDeserializerImpl(registry, {}, HostedIdentityEntry::class.java)
+            KafkaConsumer(getKafkaProperties(), keyDeserializer, valueDeserializer)
+        }
         val allRecords = mutableListOf<HostedIdentityEntry>()
         try {
             consumer.subscribe(setOf(hostedIdentityTopic))
@@ -82,14 +86,12 @@ class MigrateHostedIdentities : Runnable {
             } while (records.isNotEmpty())
         } catch (ex: Exception) {
             logger.warn("Failed to read hosted identity records from topic '$hostedIdentityTopic'.", ex)
+            return ExitCode.SOFTWARE
         } finally {
             consumer.closeConsumer()
         }
-
-        // TODO replace with persistence logic in CORE-20426
-        println("Read the following records from topic '$hostedIdentityTopic': $allRecords.")
-
-        Thread.currentThread().contextClassLoader = contextCL
+        sysOut.info("Read the following records from topic '$hostedIdentityTopic': $allRecords.")
+        return ExitCode.OK
     }
 
     private fun getKafkaProperties(): Properties {
