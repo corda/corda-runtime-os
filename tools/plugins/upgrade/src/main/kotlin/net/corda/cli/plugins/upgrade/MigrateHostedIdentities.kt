@@ -1,22 +1,16 @@
 package net.corda.cli.plugins.upgrade
 
-import com.fasterxml.jackson.module.kotlin.readValue
-import net.corda.cli.plugins.topicconfig.Create
-import net.corda.cli.plugins.topicconfig.CreateConnect
 import net.corda.cli.plugins.upgrade.UpgradePluginWrapper.UpgradePlugin
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.messagebus.kafka.serialization.CordaAvroDeserializerImpl
 import net.corda.schema.Schemas
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
-import org.apache.kafka.clients.admin.Admin
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.FileInputStream
-import java.nio.file.Files
-import java.nio.file.Paths
 import java.time.Duration
 import java.util.Properties
 import java.util.UUID
@@ -57,12 +51,6 @@ class MigrateHostedIdentities : Runnable {
     )
     var namePrefix: String = ""
 
-    @CommandLine.Option(
-        names = ["-f", "--topic-config"],
-        description = ["Path to Kafka topic configuration file in YAML format"]
-    )
-    var topicConfig: String? = null
-
     private val hostedIdentityTopic by lazy {
         namePrefix + Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
     }
@@ -74,12 +62,10 @@ class MigrateHostedIdentities : Runnable {
         val contextCL = Thread.currentThread().contextClassLoader
         Thread.currentThread().contextClassLoader = this::class.java.classLoader
 
-        val kafkaProperties = getKafkaProperties()
-        createAcls(kafkaProperties)
         val registry = AvroSchemaRegistryImpl()
         val keyDeserializer = CordaAvroDeserializerImpl(registry, {}, String::class.java)
         val valueDeserializer = CordaAvroDeserializerImpl(registry, {}, HostedIdentityEntry::class.java)
-        val consumer = KafkaConsumer(kafkaProperties, keyDeserializer, valueDeserializer)
+        val consumer = KafkaConsumer(getKafkaProperties(), keyDeserializer, valueDeserializer)
         val allRecords = mutableListOf<HostedIdentityEntry>()
         try {
             consumer.subscribe(setOf(hostedIdentityTopic))
@@ -104,18 +90,6 @@ class MigrateHostedIdentities : Runnable {
         println("Read the following records from topic '$hostedIdentityTopic': $allRecords.")
 
         Thread.currentThread().contextClassLoader = contextCL
-    }
-
-    private fun createAcls(kafkaProperties: Properties) {
-        try {
-            val client = Admin.create(kafkaProperties)
-            require(topicConfig != null) { "Topic configuration file was not provided." }
-            val topicConfigs: Create.PreviewTopicConfigurations =
-                Create().mapper.readValue(Files.readString(Paths.get(topicConfig!!)))
-            client.createAcls(CreateConnect().getAclBindings(topicConfigs.acls)).all().get()
-        } catch (ex: Exception) {
-            logger.warn("Failed to create Kafka ACLs. Cause: ${ex.message}", ex)
-        }
     }
 
     private fun getKafkaProperties(): Properties {
