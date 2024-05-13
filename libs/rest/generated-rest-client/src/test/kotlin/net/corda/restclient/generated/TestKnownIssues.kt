@@ -1,7 +1,5 @@
 package net.corda.restclient.generated
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
 import io.javalin.Javalin
 import net.corda.restclient.CordaRestClient
 import net.corda.restclient.generated.apis.CertificateApi
@@ -40,7 +38,7 @@ class TestKnownIssues {
      */
     @Test
     fun testPostHelloCanHandleRawStringResponse(){
-        app.post("api/v1/hello") { ctx ->
+        app.post("api/v5_2/hello") { ctx ->
             val name = ctx.queryParam("addressee") ?: "Guest"
             ctx.header("Content-Type", "application/json")
             ctx.result("Hello, $name! (from admin)")
@@ -63,7 +61,7 @@ class TestKnownIssues {
     @Test
     fun testGetGroupPolicyFromMgm() {
         val inputStream = File("./src/test/resources/groupPolicy.json").inputStream()
-        app.get("api/v1/mgm/1234/info") {ctx ->
+        app.get("api/v5_2/mgm/1234/info") {ctx ->
             ctx.header("Content-Type", "application/json")
             ctx.result(inputStream)
         }
