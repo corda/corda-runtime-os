@@ -154,6 +154,13 @@ tasks.named('sourcesJar') {
     }
 }
 
+tasks.named('detekt') {
+    // Only generate and copy over new client if spec has changed
+    if (specUpdated()) {
+        dependsOn('copyGenerated')
+    }
+}
+
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
     compilerOptions {
         allWarningsAsErrors = false
