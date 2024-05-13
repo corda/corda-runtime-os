@@ -27,7 +27,9 @@ import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
+import java.io.File
 import java.io.FileInputStream
+import java.io.FileWriter
 import java.time.Duration
 import java.util.Properties
 import java.util.UUID
@@ -46,6 +48,7 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
         const val WAIT_INTERVAL = 2000L
         const val KEYS_PAGE_SIZE = 20
         val logger: Logger = LoggerFactory.getLogger(UpgradePlugin::class.java)
+        const val SCHEMA_NAME = "config"
     }
 
     @CommandLine.Option(
@@ -71,6 +74,12 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
         description = ["Kafka topic prefix"]
     )
     var topicPrefix: String = ""
+
+    @CommandLine.Option(
+        names = ["-l", "--location"],
+        description = ["Directory to write all files to"]
+    )
+    var outputDir: String = "."
 
     private val hostedIdentityTopic by lazy {
         topicPrefix + Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
@@ -100,8 +109,9 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
         } finally {
             consumer.closeConsumer()
         }
-
-        records.forEach { persistHostedIdentity(it) }
+        FileWriter(File("${outputDir.removeSuffix("/")}/${SCHEMA_NAME}.sql")).use { outputFile ->
+            records.forEach { persistHostedIdentity(it, outputFile) }
+        }
         Thread.currentThread().contextClassLoader = contextCL
     }
 
@@ -223,7 +233,7 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
         }
     }
 
-    private fun persistHostedIdentity(kafkaHostedIdentity: HostedIdentityEntry) {
+    private fun persistHostedIdentity(kafkaHostedIdentity: HostedIdentityEntry, file: FileWriter) {
         val holdingId = kafkaHostedIdentity.holdingIdentity.toCorda().shortHash.toString()
         val pemLookupResult = findAllSessionKeys(holdingId)
 
@@ -256,8 +266,8 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
             kafkaHostedIdentity.version
         )
 
-        val statement = entity.toInsertStatement()
-        print(statement)
+        val statement = entity.toInsertStatement() + "\n"
+        file.write(statement)
         val allSessionKeysAndCertificates = kafkaHostedIdentity.alternativeSessionKeysAndCerts +
             kafkaHostedIdentity.preferredSessionKeyAndCert
 
@@ -277,8 +287,8 @@ class MigrateHostedIdentities(private val output: Output = ConsoleOutput()) : Re
                 sessionKeyId,
                 sessionCertificateAlias,
             )
-            val sessionKeyStatement = sessionKeyEntity.toInsertStatement()
-            print(sessionKeyStatement)
+            val sessionKeyStatement = sessionKeyEntity.toInsertStatement() + "\n"
+            file.write(sessionKeyStatement)
         }
     }
 }
