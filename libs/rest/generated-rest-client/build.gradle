@@ -130,6 +130,12 @@ tasks.register('copyGenerated', Copy) {
     into 'src/main/kotlin/net/corda/restclient/'
     outputs.upToDateWhen { false }
 }
+/*
+
+// Originally we had planned it so upon compilation we check to see if the spec has been updated, and if so, we run the client generation.
+// However it appears this occurs within the pipeline even when no material change is made.
+// The issue being we need to apply a number of workarounds as the raw generated code doesn't quite work.
+// See the TestKnownIssues test classes for details
 
 Boolean specUpdated() {
     def specFile = file("${project.rootDir}/processors/rest-processor/src/integrationTest/resources/swaggerBaseline-v5_3.json")
@@ -160,6 +166,7 @@ tasks.named('detekt') {
         dependsOn('copyGenerated')
     }
 }
+ */
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
     compilerOptions {

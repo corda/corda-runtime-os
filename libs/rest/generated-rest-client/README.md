@@ -5,7 +5,7 @@ This client can then be used, by the SDK for example, to send requests to a runn
 
 ## Gradle lifecycle
 
-On the `compileKotlin` task we check if the OpenAPI specification has been updated since the last time we generated the client. If it has we:
+Task ordering, just run the last one manually and it will invoke the earlier ones:
 - Run task `deletePreviouslyGeneratedCode` to delete the generated code.
 - Run task `openApiGenerate` to generate new code in the build directory.
 - Run task `copyGenerated` to move the generated code into the main directory.
