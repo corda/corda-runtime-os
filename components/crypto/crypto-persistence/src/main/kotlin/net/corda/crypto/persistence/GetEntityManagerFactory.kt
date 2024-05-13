@@ -16,35 +16,52 @@ fun getEntityManagerFactory(
     virtualNodeInfoReadService: VirtualNodeInfoReadService,
     jpaEntitiesRegistry: JpaEntitiesRegistry,
 ): EntityManagerFactory {
+    return if (CryptoTenants.isClusterTenant(tenantId)) {
+        // tenantID is P2P; let's obtain a connection to our cluster Crypto database
+        getClusterDbEntityManager(dbConnectionManager)
+    } else {
+        // tenantID is a virtual node; let's connect to one of the virtual node Crypto databases
+        getVNodeDbEntityManager(tenantId, dbConnectionManager, virtualNodeInfoReadService, jpaEntitiesRegistry)
+    }
+
+}
+
+fun getClusterDbEntityManager(dbConnectionManager: DbConnectionManager): EntityManagerFactory {
+    return CordaMetrics.Metric.Crypto.EntityManagerFactoryCreationTimer.builder()
+        .build()
+        .recordCallable {
+            dbConnectionManager.getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
+        }!!
+}
+
+fun getVNodeDbEntityManager(
+    tenantId: String,
+    dbConnectionManager: DbConnectionManager,
+    virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    jpaEntitiesRegistry: JpaEntitiesRegistry,
+): EntityManagerFactory {
     return CordaMetrics.Metric.Crypto.EntityManagerFactoryCreationTimer.builder()
         .withTag(CordaMetrics.Tag.Tenant, tenantId)
         .build()
         .recordCallable {
-            val onCluster = CryptoTenants.isClusterTenant(tenantId)
-            val entityManagerFactory = if (onCluster) {
-                // tenantID is crypto, P2P or REST; let's obtain a connection to our cluster Crypto database
-                dbConnectionManager.getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
-            } else {
-                // tenantID is a virtual node; let's connect to one of the virtual node Crypto databases
-                dbConnectionManager.getOrCreateEntityManagerFactory(
-                    connectionId = virtualNodeInfoReadService.getByHoldingIdentityShortHash(
-                        ShortHash.of(
-                            tenantId
-                        )
-                    )?.cryptoDmlConnectionId
-                        ?: throw IllegalStateException(
-                            "virtual node for $tenantId is not registered."
-                        ),
-                    entitiesSet = jpaEntitiesRegistry.get(CordaDb.Crypto.persistenceUnitName)
-                        ?: throw IllegalStateException(
-                            "persistenceUnitName ${CordaDb.Crypto.persistenceUnitName} is not registered."
-                        ),
-                    // disabling client side connection pool means we can cache the EMFs without "hogging" DB
-                    //  connections. This should be ok because signing requests will usually be served from keys
-                    //  in cache.
-                    enablePool = false
-                )
-            }
-            entityManagerFactory
+            // tenantID is a virtual node; let's connect to one of the virtual node Crypto databases
+            dbConnectionManager.getOrCreateEntityManagerFactory(
+                connectionId = virtualNodeInfoReadService.getByHoldingIdentityShortHash(
+                    ShortHash.of(
+                        tenantId
+                    )
+                )?.cryptoDmlConnectionId
+                    ?: throw IllegalStateException(
+                        "virtual node for $tenantId is not registered."
+                    ),
+                entitiesSet = jpaEntitiesRegistry.get(CordaDb.Crypto.persistenceUnitName)
+                    ?: throw IllegalStateException(
+                        "persistenceUnitName ${CordaDb.Crypto.persistenceUnitName} is not registered."
+                    ),
+                // disabling client side connection pool means we can cache the EMFs without "hogging" DB
+                //  connections. This should be ok because signing requests will usually be served from keys
+                //  in cache.
+                enablePool = false
+            )
         }!!
 }
