@@ -131,12 +131,25 @@ tasks.register('copyGenerated', Copy) {
     outputs.upToDateWhen { false }
 }
 
-tasks.named('compileKotlin') {
+Boolean specUpdated() {
     def specFile = file("${project.rootDir}/processors/rest-processor/src/integrationTest/resources/swaggerBaseline-v5_3.json")
     def generatedFile = file('src/main/kotlin/net/corda/restclient/generated/infrastructure/ApiClient.kt')
 
     // Only generate and copy over new client if spec has changed
-    if (specFile.lastModified() > generatedFile.lastModified()) {
+    return (specFile.lastModified() > generatedFile.lastModified())
+
+}
+
+tasks.named('compileKotlin') {
+    // Only generate and copy over new client if spec has changed
+    if (specUpdated()) {
+        dependsOn('copyGenerated')
+    }
+}
+
+tasks.named('sourcesJar') {
+    // Only generate and copy over new client if spec has changed
+    if (specUpdated()) {
         dependsOn('copyGenerated')
     }
 }
