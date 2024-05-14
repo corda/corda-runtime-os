@@ -44,6 +44,16 @@ class AppTest {
     }
 
     @Test
+    fun parseMetadataV0() {
+        run("metadatav0.bin")
+    }
+
+    @Test
+    fun parseMetadataV1() {
+        run("metadatav0.bin", buildMetadataV1 = true)
+    }
+
+    @Test
     fun runWithoutBytes() {
         val(exitCode, output) = runInSeparateJVM("C5WireTx.bin", listOf("-b"))
         assertTrue(exitCode == 0)
@@ -57,12 +67,17 @@ class AppTest {
         assertTrue(output.contains("_bytes"))
     }
 
-    private fun run(resourceName: String, includeOriginalBytes: Boolean = true) {
+    private fun run(resourceName: String, includeOriginalBytes: Boolean = true, buildMetadataV1: Boolean = false) {
         val bytes = this.javaClass.getResourceAsStream(resourceName)?.readFully()?.sequence()
         requireNotNull(bytes) {
             "Couldn't read resource: $resourceName"
         }
-        val decoded = Encoding.decodedBytes(bytes, includeOriginalBytes)
+        val finalBytes = if (buildMetadataV1) {
+            ("corda".toByteArray() + byteArrayOf(8, 0, 1) + bytes.bytes).sequence()
+        } else {
+            bytes
+        }
+        val decoded = Encoding.decodedBytes(finalBytes, includeOriginalBytes)
         println(decoded.result.prettyPrint())
     }
 
