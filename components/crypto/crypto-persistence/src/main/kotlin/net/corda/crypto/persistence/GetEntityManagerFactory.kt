@@ -18,15 +18,15 @@ fun getEntityManagerFactory(
 ): EntityManagerFactory {
     return if (CryptoTenants.isClusterTenant(tenantId)) {
         // tenantID is P2P; let's obtain a connection to our cluster Crypto database
-        getClusterDbEntityManager(dbConnectionManager)
+        getClusterDbEntityManagerFactory(dbConnectionManager)
     } else {
         // tenantID is a virtual node; let's connect to one of the virtual node Crypto databases
-        getVNodeDbEntityManager(tenantId, dbConnectionManager, virtualNodeInfoReadService, jpaEntitiesRegistry)
+        getVNodeDbEntityManagerFactory(tenantId, dbConnectionManager, virtualNodeInfoReadService, jpaEntitiesRegistry)
     }
 
 }
 
-fun getClusterDbEntityManager(dbConnectionManager: DbConnectionManager): EntityManagerFactory {
+fun getClusterDbEntityManagerFactory(dbConnectionManager: DbConnectionManager): EntityManagerFactory {
     return CordaMetrics.Metric.Crypto.EntityManagerFactoryCreationTimer.builder()
         .build()
         .recordCallable {
@@ -34,7 +34,7 @@ fun getClusterDbEntityManager(dbConnectionManager: DbConnectionManager): EntityM
         }!!
 }
 
-fun getVNodeDbEntityManager(
+private fun getVNodeDbEntityManagerFactory(
     tenantId: String,
     dbConnectionManager: DbConnectionManager,
     virtualNodeInfoReadService: VirtualNodeInfoReadService,

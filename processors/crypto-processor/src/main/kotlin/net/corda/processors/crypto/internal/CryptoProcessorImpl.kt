@@ -32,7 +32,7 @@ import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.db.model.CryptoEntities
-import net.corda.crypto.persistence.getClusterDbEntityManager
+import net.corda.crypto.persistence.getClusterDbEntityManagerFactory
 import net.corda.crypto.persistence.getEntityManagerFactory
 import net.corda.crypto.service.CryptoExceptionCategorizer
 import net.corda.crypto.service.impl.TenantInfoServiceImpl
@@ -346,7 +346,7 @@ class CryptoProcessorImpl @Activate constructor(
     }
 
     private fun createTenantInfoService(): TenantInfoServiceImpl {
-        val emf = getClusterDbEntityManager(dbConnectionManager)
+        val emf = getClusterDbEntityManagerFactory(dbConnectionManager)
         val hsmRegistry = HSMRepositoryImpl(emf)
         return TenantInfoServiceImpl(hsmRegistry)
     }
