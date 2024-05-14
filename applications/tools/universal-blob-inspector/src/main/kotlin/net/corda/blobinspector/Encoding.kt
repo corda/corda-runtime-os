@@ -161,9 +161,9 @@ object Encoding {
     private fun extractEncoding(
         byteSequence: ByteSequence
     ): Triple<CompressionEncoding, Int, SerializationFormatDecoder> {
-        val magicString = byteSequence.take(5)
-        val magicType = cordaMagicHeaders[magicString]
-        requireNotNull(magicType) { "Unknown magic header $magicString." }
+        val magicByteSequence = byteSequence.take(5)
+        val magicType = cordaMagicHeaders[magicByteSequence]
+        requireNotNull(magicType) { "Unknown magic header $magicByteSequence." }
 
         val primaryEncodingType = magicType.primaryEncoding
 
