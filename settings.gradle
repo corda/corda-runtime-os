@@ -259,6 +259,7 @@ include 'libs:flows:flow-api'
 include 'libs:flows:session-manager'
 include 'libs:flows:session-manager-impl'
 include 'libs:flows:flow-utils'
+include 'libs:rest:generated-rest-client'
 include 'libs:rest:rest'
 include 'libs:rest:rest-security-read'
 include 'libs:rest:rest-tools'
@@ -559,6 +560,4 @@ gradleEnterprise {
         }
     }
 }
-include 'libs:rest:generated-rest-client'
-findProject(':libs:rest:generated-rest-client')?.name = 'generated-rest-client'
 

@@ -1,7 +1,7 @@
 plugins {
     id 'corda.common-library'
     id 'corda.common-publishing'
-    id "org.openapi.generator" version "$openApiGeneratorVersion"
+    alias libs.plugins.openapi.generator
 }
 
 ext {
