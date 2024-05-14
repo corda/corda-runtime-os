@@ -5,7 +5,9 @@ import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import net.corda.crypto.core.CryptoTenants
+import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.HostedIdentityEntry
+import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
 import net.corda.membership.datamodel.HostedIdentityEntity
 import net.corda.membership.datamodel.HostedIdentitySessionKeyInfoEntity
 import net.corda.membership.rest.v1.CertificateRestResource
@@ -20,6 +22,7 @@ import net.corda.schema.Schemas
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.utilities.classload.executeWithThreadContextClassLoader
 import net.corda.virtualnode.toCorda
+import org.apache.avro.Schema
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.slf4j.Logger
@@ -89,11 +92,61 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
         LoggerFactory.getLogger("SystemOut")
     }
 
+    private val oldHostedIdentityEntrySchema = Schema.Parser()
+        .addTypes(
+            mapOf(
+                HoldingIdentity::class.java.name to HoldingIdentity.`SCHEMA$`,
+                HostedIdentitySessionKeyAndCert::class.java.name to HostedIdentitySessionKeyAndCert.`SCHEMA$`
+            )
+        ).parse(
+            """
+        {
+          "type": "record",
+          "name": "HostedIdentityEntry",
+          "namespace": "net.corda.data.p2p",
+          "fields": [
+            {
+              "doc": "The Holding identity hosted in this node",
+              "name": "holdingIdentity",
+              "type": "net.corda.data.identity.HoldingIdentity"
+            },
+            {
+              "doc": "The tenant ID under which the TLS key is stored",
+              "name": "tlsTenantId",
+              "type": "string"
+            },
+            {
+              "doc": "The TLS certificates (in PEM format)",
+              "name": "tlsCertificates",
+              "type": {
+                "type": "array",
+                "items": "string"
+              }
+            },
+            {
+              "doc": "The preferred session initiation key and certificate",
+              "name": "preferredSessionKeyAndCert",
+              "type": "HostedIdentitySessionKeyAndCert"
+            },
+            {
+              "doc": "Alternative session initiation keys and certificates",
+              "name": "alternativeSessionKeysAndCerts",
+               "type": {
+                 "type": "array",
+                 "items": "HostedIdentitySessionKeyAndCert"
+               }
+             }
+          ]
+        }
+        """.trimIndent()
+        )
+
     private val consumerGroup = UUID.randomUUID().toString()
 
     override fun call(): Int {
         val consumer = executeWithThreadContextClassLoader(this::class.java.classLoader) {
             val registry = AvroSchemaRegistryImpl()
+            registry.addSchemaOnly(oldHostedIdentityEntrySchema)
             val keyDeserializer = CordaAvroDeserializerImpl(registry, {}, String::class.java)
             val valueDeserializer = CordaAvroDeserializerImpl(registry, {}, HostedIdentityEntry::class.java)
             KafkaConsumer(getKafkaProperties(), keyDeserializer, valueDeserializer)
@@ -272,7 +325,7 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
             preferredSessionKey,
             tlsCertificateChainAlias,
             useClusterLevelTlsCertificateAndKey,
-            kafkaHostedIdentity.version
+            kafkaHostedIdentity.version ?: 1
         )
 
         val statement = entity.toInsertStatement() + "\n"
