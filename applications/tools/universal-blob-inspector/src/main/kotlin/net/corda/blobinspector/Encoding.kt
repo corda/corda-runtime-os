@@ -14,7 +14,9 @@ import java.util.zip.DeflaterInputStream
 object Encoding {
     val cordaMagic = "corda".toByteArray().sequence()
 
+    @Suppress("LongParameterList")
     private enum class Encodings(
+        val magic: String,
         val primaryEncoding: String,
         @Suppress("Unused")
         val description: String,
@@ -22,23 +24,18 @@ object Encoding {
         val compressionEncoding: CompressionEncoding,
         val serializationFormat: SerializationFormat
     ) {
-        KRYO1("0001", "Corda 1+ Kryo", 7, CompressionEncoding.CORDA1, SerializationFormat.KRYO1),
-        AMQP_ENT3("0100", "Corda OS 4+ / ENT 3+ AMQP", 7, CompressionEncoding.CORDA1, SerializationFormat.AMQP1),
-        AMQP5GA("0400", "Corda 5 GA AMQP", 7, CompressionEncoding.CORDA1, SerializationFormat.AMQP5),
+        KRYO1("corda", "0001", "Corda 1+ Kryo", 7, CompressionEncoding.CORDA1, SerializationFormat.KRYO1),
+        AMQP_ENT3("corda", "0100", "Corda OS 4+ / ENT 3+ AMQP", 7, CompressionEncoding.CORDA1, SerializationFormat.AMQP1),
+        AMQP5GA("corda", "0400", "Corda 5 GA AMQP", 7, CompressionEncoding.CORDA1, SerializationFormat.AMQP5),
 
         // there are couple more trailing bytes "01" after primary encoding, which represents version of metadata schema.
-        METADATA00("7B22", "Corda 5.2.1 >= Metadata", 0, CompressionEncoding.NONE, SerializationFormat.METADATA),
-        METADATA01("0800", "Corda 5.2.1+ Metadata", 8, CompressionEncoding.NONE, SerializationFormat.METADATA)
+        METADATA00("{\"com", "7B22", "Corda 5.2.1 >= Metadata", 0, CompressionEncoding.NONE, SerializationFormat.METADATA),
+        METADATA01("corda", "0800", "Corda 5.2.1+ Metadata", 8, CompressionEncoding.NONE, SerializationFormat.METADATA)
     }
 
     private enum class CompressionEncoding {
         CORDA1 {
             override fun createStream(byteSequence: ByteSequence): InputStream {
-                SecondaryEncoding.values().forEach {
-                    println("secondary encoding: $it")
-                }
-                println("first byte of sequence: ${byteArrayOf(2).toHexString()}")
-                println("createStream ${SecondaryEncoding.values()[byteSequence[0].toInt()]}")
                 return when (SecondaryEncoding.values()[byteSequence[0].toInt()]) {
                     SecondaryEncoding.RAW_DATA_PLUS_PADDING -> NONE.createStream(byteSequence.subSequence(1))
                     SecondaryEncoding.RAW_DATA -> NONE.createStream(byteSequence.subSequence(1))
@@ -127,6 +124,7 @@ object Encoding {
     }
 
     private val cordaPrimaryEncodings = Encodings.values().associateBy { it.primaryEncoding }
+    private val cordaMagicHeaders = Encodings.values().associateBy { it.magic.toByteArray().sequence() }
 
     @Suppress("LongParameterList")
     fun decodedBytes(
@@ -148,12 +146,12 @@ object Encoding {
             )
             return triple
         }
-        val hasHeader = byteSequence[0].toInt() != 123
+
         val originalBytes = byteSequence.copyBytes()
         val (compressionEncoding, compressionEncodingStart, decoder) = if (allOverridesPresent()) {
             overriddenEncoding()
         } else {
-            extractEncoding(byteSequence, hasHeader)
+            extractEncoding(byteSequence)
         }
         compressionEncoding.createStream(byteSequence.subSequence(compressionEncodingStart)).use { stream ->
             return decoder.decode(stream, recurseDepth, originalBytes, includeOriginalBytes)
@@ -161,40 +159,29 @@ object Encoding {
     }
 
     private fun extractEncoding(
-        byteSequence: ByteSequence,
-        hasHeader: Boolean = true
+        byteSequence: ByteSequence
     ): Triple<CompressionEncoding, Int, SerializationFormatDecoder> {
-        if (hasHeader && byteSequence.take(5) != cordaMagic) {
-            @Suppress("TooGenericExceptionThrown")
-            throw RuntimeException(
-                "Blob does not begin with 'corda' as expected.  Not a Corda blob?  Try overrides?"
-            )
-        }
+        val magicString = byteSequence.take(5)
+        val magicType = cordaMagicHeaders[magicString]
+        requireNotNull(magicType) { "Unknown magic header $magicString." }
 
-        val primaryEncodingString = byteSequence.subSequence(5, 2).toHexString()
-        val primaryEncodingType = cordaPrimaryEncodings.getOrDefault(primaryEncodingString, null)
-            ?: if (!hasHeader && primaryEncodingString == "706F") { // "706F" is hexstring of "po" of metadata {"component
-                METADATA00
-            } else {
-                @Suppress("TooGenericExceptionThrown")
-                throw RuntimeException("Unknown primary encoding $primaryEncodingString.")
-            }
+        val primaryEncodingType = magicType.primaryEncoding
 
-        val compressionEncodingInfo = "Compression encoding ${primaryEncodingType.compressionEncoding}, " +
-            "encoding start = ${primaryEncodingType.compressionEncodingStart}, " +
-            "format = ${primaryEncodingType.serializationFormat}"
+        val compressionEncodingInfo = "Compression encoding ${magicType.compressionEncoding}, " +
+            "encoding start = ${magicType.compressionEncodingStart}, " +
+            "format = ${magicType.serializationFormat}"
 
-        println("Primary encoding ${primaryEncodingType.description}")
+        println("Primary encoding ${magicType.description}")
 
-        when (primaryEncodingType) {
+        when (cordaPrimaryEncodings[primaryEncodingType]) {
             METADATA00 -> println("$compressionEncodingInfo, Metadata Schema version = 00")
             METADATA01 -> println("$compressionEncodingInfo, Metadata schema version = ${byteSequence.subSequence(7, 1).toHexString()}")
             else -> println(compressionEncodingInfo)
         }
 
-        val compressionEncoding = primaryEncodingType.compressionEncoding
-        val compressionEncodingStart = primaryEncodingType.compressionEncodingStart
-        val decoder = primaryEncodingType.serializationFormat.decoder
+        val compressionEncoding = magicType.compressionEncoding
+        val compressionEncodingStart = magicType.compressionEncodingStart
+        val decoder = magicType.serializationFormat.decoder
         return Triple(compressionEncoding, compressionEncodingStart, decoder.duplicate())
     }
 }
