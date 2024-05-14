@@ -399,7 +399,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         createRestClient(MemberRegistrationRestResource::class).use { client ->
             checkInvariant(
                 maxAttempts = MAX_ATTEMPTS,
-                waitInterval = REGISTRATION_CHECK_INTERVAL,
+                waitInterval = WAIT_INTERVAL,
                 errorMessage = "Check Registration Progress failed after maximum number of attempts ($MAX_ATTEMPTS).",
             ) {
                 try {
