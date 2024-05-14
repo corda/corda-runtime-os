@@ -12,7 +12,7 @@ class RegistrationsLookupTest {
 
     @Test
     fun testIsVnodeRegistrationApprovedEmptyList() {
-        val client = CordaRestClient.createHttpClient()
+        val client = CordaRestClient.createHttpClient(baseUrl = "https://localhost:8888")
         client.memberRegistrationClient = mock {
             on { it.getMembershipHoldingidentityshorthash(any()) } doReturn emptyList()
         }

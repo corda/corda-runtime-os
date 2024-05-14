@@ -21,6 +21,7 @@ import net.corda.restclient.generated.apis.VirtualNodeApi
 import net.corda.restclient.generated.apis.VirtualNodeMaintenanceApi
 import net.corda.restclient.generated.infrastructure.ApiClient
 import okhttp3.OkHttpClient
+import java.net.URI
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
 import javax.net.ssl.SSLContext
@@ -55,7 +56,7 @@ class CordaRestClient(
 
 
     companion object {
-        const val API_VERSION = "/api/v5_2" // oldest supported version
+        private const val API_VERSION = "/api/v5_2" // oldest supported version
         fun createHttpClient(
             baseUrl: String = "https://localhost:8888",
             username: String = "admin",
@@ -76,15 +77,27 @@ class CordaRestClient(
 
             val sslContext = SSLContext.getInstance("SSL")
             sslContext.init(null, trustAllCerts, SecureRandom())
-            val apiClientCompanion = ApiClient.apply {
+            ApiClient.apply {
                 this.username = username
                 this.password = password
             }
-            val client = apiClientCompanion.builder
+            val client = ApiClient.builder
                 .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
                 .hostnameVerifier { _, _ -> true }
                 .build()
             return CordaRestClient(urlWithCordaApiVersion, client)
+        }
+
+        fun createHttpClient(
+            baseUrl: URI = URI.create("https://localhost:8888"),
+            username: String = "admin",
+            password: String = "admin"
+        ): CordaRestClient {
+            return createHttpClient(
+                baseUrl = baseUrl.toString(),
+                username = username,
+                password = password
+            )
         }
     }
 }

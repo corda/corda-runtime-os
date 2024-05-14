@@ -12,7 +12,7 @@ class ExportGroupPolicyFromMgmTest {
 
     @Test
     fun testExportPolicy() {
-        val client = CordaRestClient.createHttpClient()
+        val client = CordaRestClient.createHttpClient(baseUrl = "https://localhost:8888")
         client.mgmClient = mock {
             on(it.getMgmHoldingidentityshorthashInfo(any())) doReturn """
                 {

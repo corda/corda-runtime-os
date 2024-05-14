@@ -1,7 +1,5 @@
 package net.corda.restclient.dto
 
-import com.fasterxml.jackson.annotation.JsonProperty
-
 /**
  * ChangeOtherUserPasswordWrapperRequest
  *
@@ -13,11 +11,9 @@ import com.fasterxml.jackson.annotation.JsonProperty
 data class ChangeOtherUserPasswordWrapperRequest (
 
     /* The new password to apply. */
-    @field:JsonProperty("password")
-    val password: kotlin.String,
+    val password: String,
 
     /* Username for the password change. */
-    @field:JsonProperty("username")
-    val username: kotlin.String
+    val username: String
 
 )

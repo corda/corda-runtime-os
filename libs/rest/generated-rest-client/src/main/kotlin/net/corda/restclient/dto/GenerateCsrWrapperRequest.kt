@@ -1,7 +1,5 @@
 package net.corda.restclient.dto
 
-import com.fasterxml.jackson.annotation.JsonProperty
-
 /**
  * GenerateCsrWrapperRequest
  *
@@ -14,14 +12,11 @@ import com.fasterxml.jackson.annotation.JsonProperty
 data class GenerateCsrWrapperRequest (
 
     /* The X.500 name that will be the subject associated with the request */
-    @field:JsonProperty("x500Name")
-    val x500Name: kotlin.String,
+    val x500Name: String,
 
     /* Used to add additional attributes to the CSR; for example, signature spec */
-    @field:JsonProperty("contextMap")
-    val contextMap: kotlin.collections.Map<kotlin.String, kotlin.String>? = null,
+    val contextMap: Map<String, String>? = null,
 
-    @field:JsonProperty("subjectAlternativeNames")
-    val subjectAlternativeNames: kotlin.collections.List<kotlin.String>? = null
+    val subjectAlternativeNames: List<String>? = null
 
 )

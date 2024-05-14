@@ -13,9 +13,11 @@ import java.time.Instant
 
 class CpiUploaderTest {
 
+    private val url = "https://localhost:8888"
+
     @Test
     fun testCpiPreviouslyUploadedReturnsFalseNoMatch() {
-        val client = CordaRestClient.createHttpClient()
+        val client = CordaRestClient.createHttpClient(baseUrl = url)
         client.cpiClient = mock {
             on { getCpi() } doReturn GetCPIsResponse(
                 listOf(
@@ -43,7 +45,7 @@ class CpiUploaderTest {
 
     @Test
     fun testCpiPreviouslyUploadedReturnsFalseEmpty() {
-        val client = CordaRestClient.createHttpClient()
+        val client = CordaRestClient.createHttpClient(baseUrl = url)
         client.cpiClient = mock {
             on { getCpi() } doReturn GetCPIsResponse(emptyList())
         }
@@ -56,7 +58,7 @@ class CpiUploaderTest {
 
     @Test
     fun testCpiPreviouslyUploadedReturnsTrue() {
-        val client = CordaRestClient.createHttpClient()
+        val client = CordaRestClient.createHttpClient(baseUrl = url)
         client.cpiClient = mock {
             on { getCpi() } doReturn GetCPIsResponse(
                 listOf(
@@ -84,7 +86,7 @@ class CpiUploaderTest {
 
     @Test
     fun testCpiChecksumExistsReturnsFalseNoMatch() {
-        val client = CordaRestClient.createHttpClient()
+        val client = CordaRestClient.createHttpClient(baseUrl = url)
         client.cpiClient = mock {
             on { getCpi() } doReturn GetCPIsResponse(
                 listOf(
@@ -111,7 +113,7 @@ class CpiUploaderTest {
 
     @Test
     fun testCpiChecksumExistsReturnsTrue() {
-        val client = CordaRestClient.createHttpClient()
+        val client = CordaRestClient.createHttpClient(baseUrl = url)
         client.cpiClient = mock {
             on { getCpi() } doReturn GetCPIsResponse(
                 listOf(
