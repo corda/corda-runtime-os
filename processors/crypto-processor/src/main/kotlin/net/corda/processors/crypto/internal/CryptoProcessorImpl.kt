@@ -224,7 +224,7 @@ class CryptoProcessorImpl @Activate constructor(
             }
 
             is ConfigChangedEvent -> {
-                val tenantInfoService = `createTenantInfoService()`()
+                val tenantInfoService = createTenantInfoService()
                 val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
                 val stateManagerConfig = event.config.getConfig(STATE_MANAGER_CONFIG)
                 val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
@@ -345,7 +345,7 @@ class CryptoProcessorImpl @Activate constructor(
         )
     }
 
-    private fun `createTenantInfoService()`(): TenantInfoServiceImpl {
+    private fun createTenantInfoService(): TenantInfoServiceImpl {
         val emf = getClusterDbEntityManager(dbConnectionManager)
         val hsmRegistry = HSMRepositoryImpl(emf)
         return TenantInfoServiceImpl(hsmRegistry)
