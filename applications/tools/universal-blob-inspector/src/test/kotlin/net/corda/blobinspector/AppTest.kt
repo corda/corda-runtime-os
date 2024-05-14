@@ -8,6 +8,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class AppTest {
+
     @Test
     fun parseCashSignedTransaction() {
         run("cash-stx-db.blob")
@@ -50,7 +51,7 @@ class AppTest {
 
     @Test
     fun parseMetadataV1() {
-        run("metadatav0.bin", buildMetadataV1 = true)
+        run("metadatav1.bin")
     }
 
     @Test
@@ -67,17 +68,12 @@ class AppTest {
         assertTrue(output.contains("_bytes"))
     }
 
-    private fun run(resourceName: String, includeOriginalBytes: Boolean = true, buildMetadataV1: Boolean = false) {
+    private fun run(resourceName: String, includeOriginalBytes: Boolean = true) {
         val bytes = this.javaClass.getResourceAsStream(resourceName)?.readFully()?.sequence()
         requireNotNull(bytes) {
             "Couldn't read resource: $resourceName"
         }
-        val finalBytes = if (buildMetadataV1) {
-            ("corda".toByteArray() + byteArrayOf(8, 0, 1) + bytes.bytes).sequence()
-        } else {
-            bytes
-        }
-        val decoded = Encoding.decodedBytes(finalBytes, includeOriginalBytes)
+        val decoded = Encoding.decodedBytes(bytes, includeOriginalBytes)
         println(decoded.result.prettyPrint())
     }
 

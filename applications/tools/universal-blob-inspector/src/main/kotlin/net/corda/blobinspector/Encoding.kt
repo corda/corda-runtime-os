@@ -150,7 +150,6 @@ object Encoding {
         }
         val hasHeader = byteSequence[0].toInt() != 123
         val originalBytes = byteSequence.copyBytes()
-        println("original bytes: ${originalBytes.sequence().toHexString()}")
         val (compressionEncoding, compressionEncodingStart, decoder) = if (allOverridesPresent()) {
             overriddenEncoding()
         } else {
@@ -174,7 +173,7 @@ object Encoding {
 
         val primaryEncodingString = byteSequence.subSequence(5, 2).toHexString()
         val primaryEncodingType = cordaPrimaryEncodings.getOrDefault(primaryEncodingString, null)
-            ?: if (!hasHeader && primaryEncodingString == "706F") { // "706F" is "po" of metadata {"component
+            ?: if (!hasHeader && primaryEncodingString == "706F") { // "706F" is hexstring of "po" of metadata {"component
                 METADATA00
             } else {
                 @Suppress("TooGenericExceptionThrown")
