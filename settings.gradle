@@ -485,6 +485,7 @@ include 'tools:plugins:package'
 include 'tools:plugins:preinstall'
 include 'tools:plugins:secret-config'
 include 'tools:plugins:topic-config'
+include 'tools:plugins:upgrade'
 include 'tools:plugins:virtual-node'
 
 // The following logic dictates if we use the composite build gradle functionality,
