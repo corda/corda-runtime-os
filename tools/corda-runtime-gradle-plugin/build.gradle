@@ -2,10 +2,12 @@ plugins {
     id 'java-gradle-plugin'
     id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'org.jetbrains.kotlin.jvm'
+    id 'corda.javadoc-generation'
 }
 
 ext {
     releasable = true
+    vcsUrl = System.getenv('GIT_URL') ?: 'https://github.com/corda/corda-runtime-os.git'
 }
 
 group 'net.corda.gradle.plugin'
@@ -46,6 +48,27 @@ publishing {
             pom {
                 name = 'corda-runtime-gradle-plugin'
                 description = 'A Gradle plugin that wraps a subset of the SDK functions to facilitate their use in developer and CI scenarios.'
+                url = vcsUrl - '.git'
+
+                scm {
+                    url = vcsUrl
+                }
+
+                licenses {
+                    license {
+                        name = licenseName
+                        url = licenseUrl
+                        distribution = 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'R3'
+                        name = 'R3'
+                        email = 'dev@corda.net'
+                    }
+                }
             }
         }
     }
