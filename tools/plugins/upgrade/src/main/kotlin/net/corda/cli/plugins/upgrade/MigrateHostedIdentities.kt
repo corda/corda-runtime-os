@@ -48,7 +48,7 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
         const val MAX_ATTEMPTS = 10
         const val WAIT_INTERVAL = 2000L
         const val KEYS_PAGE_SIZE = 20
-        const val SCHEMA_NAME = "config"
+        const val SQL_FILE_NAME = "migrate_member_data"
     }
 
     @CommandLine.Option(
@@ -59,7 +59,7 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
 
     @CommandLine.Option(
         names = ["--kafka-config"],
-        description = ["Absolute path to Kafka configuration file."]
+        description = ["Path to Kafka configuration file."]
     )
     var kafkaConfig: String? = null
 
@@ -118,7 +118,7 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
         } finally {
             consumer.closeConsumer()
         }
-        FileWriter(File("${outputDir.removeSuffix("/")}/${SCHEMA_NAME}.sql")).use { outputFile ->
+        FileWriter(File("${outputDir.removeSuffix("/")}/${SQL_FILE_NAME}.sql")).use { outputFile ->
             allRecords.forEach { persistHostedIdentity(it, outputFile) }
         }
         return ExitCode.OK
