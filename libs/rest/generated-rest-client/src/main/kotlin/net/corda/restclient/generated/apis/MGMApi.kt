@@ -15,23 +15,29 @@
 
 package net.corda.restclient.generated.apis
 
+import java.io.IOException
+import okhttp3.OkHttpClient
+import okhttp3.HttpUrl
+
+import net.corda.restclient.generated.models.PostMgmHoldingidentityshorthashDeclineRequestidRequest
+import net.corda.restclient.generated.models.PutMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest
+
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
+
 import net.corda.restclient.generated.infrastructure.ApiClient
 import net.corda.restclient.generated.infrastructure.ApiResponse
-import net.corda.restclient.generated.infrastructure.ClientError
 import net.corda.restclient.generated.infrastructure.ClientException
+import net.corda.restclient.generated.infrastructure.ClientError
+import net.corda.restclient.generated.infrastructure.ServerException
+import net.corda.restclient.generated.infrastructure.ServerError
 import net.corda.restclient.generated.infrastructure.MultiValueMap
+import net.corda.restclient.generated.infrastructure.PartConfig
 import net.corda.restclient.generated.infrastructure.RequestConfig
 import net.corda.restclient.generated.infrastructure.RequestMethod
 import net.corda.restclient.generated.infrastructure.ResponseType
-import net.corda.restclient.generated.infrastructure.ServerError
-import net.corda.restclient.generated.infrastructure.ServerException
 import net.corda.restclient.generated.infrastructure.Success
-import net.corda.restclient.generated.models.PostMgmHoldingidentityshorthashDeclineRequestidRequest
-import net.corda.restclient.generated.models.PutMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest
-import okhttp3.HttpUrl
-import okhttp3.OkHttpClient
-import java.io.IOException
+import net.corda.restclient.generated.infrastructure.toMultiValue
 
 class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = ApiClient.defaultClient) : ApiClient(basePath, client) {
     companion object {
@@ -42,7 +48,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
     }
 
     /**
-     *
+     * 
      * This API deletes a group approval rule for registrations including a pre-auth token.
      * @param holdingidentityshorthash The holding identity ID of the MGM.
      * @param ruleid The ID of the group approval rule to be deleted.
@@ -54,11 +60,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @throws ServerException If the API returns a server error response
      */
     @Throws(IllegalStateException::class, IOException::class, UnsupportedOperationException::class, ClientException::class, ServerException::class)
-    fun deleteMgmHoldingidentityshorthashApprovalRulesPreauthRuleid(holdingidentityshorthash: kotlin.String, ruleid: kotlin.String): Unit {
-        val localVarResponse = deleteMgmHoldingidentityshorthashApprovalRulesPreauthRuleidWithHttpInfo(
-            holdingidentityshorthash = holdingidentityshorthash,
-            ruleid = ruleid
-        )
+    fun deleteMgmHoldingidentityshorthashApprovalRulesPreauthRuleid(holdingidentityshorthash: kotlin.String, ruleid: kotlin.String) : Unit {
+        val localVarResponse = deleteMgmHoldingidentityshorthashApprovalRulesPreauthRuleidWithHttpInfo(holdingidentityshorthash = holdingidentityshorthash, ruleid = ruleid)
 
         return when (localVarResponse.responseType) {
             ResponseType.Success -> Unit
@@ -66,26 +69,17 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
             ResponseType.Redirection -> throw UnsupportedOperationException("Client does not support Redirection responses.")
             ResponseType.ClientError -> {
                 val localVarError = localVarResponse as ClientError<*>
-                throw ClientException(
-                    "Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ClientException("Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}", localVarError.statusCode, localVarResponse)
             }
-
             ResponseType.ServerError -> {
                 val localVarError = localVarResponse as ServerError<*>
-                throw ServerException(
-                    "Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ServerException("Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}", localVarError.statusCode, localVarResponse)
             }
         }
     }
 
     /**
-     *
+     * 
      * This API deletes a group approval rule for registrations including a pre-auth token.
      * @param holdingidentityshorthash The holding identity ID of the MGM.
      * @param ruleid The ID of the group approval rule to be deleted.
@@ -94,14 +88,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @throws IOException Rethrows the OkHttp execute method exception
      */
     @Throws(IllegalStateException::class, IOException::class)
-    fun deleteMgmHoldingidentityshorthashApprovalRulesPreauthRuleidWithHttpInfo(
-        holdingidentityshorthash: kotlin.String,
-        ruleid: kotlin.String
-    ): ApiResponse<Unit?> {
-        val localVariableConfig = deleteMgmHoldingidentityshorthashApprovalRulesPreauthRuleidRequestConfig(
-            holdingidentityshorthash = holdingidentityshorthash,
-            ruleid = ruleid
-        )
+    fun deleteMgmHoldingidentityshorthashApprovalRulesPreauthRuleidWithHttpInfo(holdingidentityshorthash: kotlin.String, ruleid: kotlin.String) : ApiResponse<Unit?> {
+        val localVariableConfig = deleteMgmHoldingidentityshorthashApprovalRulesPreauthRuleidRequestConfig(holdingidentityshorthash = holdingidentityshorthash, ruleid = ruleid)
 
         return request<Unit, Unit>(
             localVariableConfig
@@ -115,20 +103,14 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @param ruleid The ID of the group approval rule to be deleted.
      * @return RequestConfig
      */
-    fun deleteMgmHoldingidentityshorthashApprovalRulesPreauthRuleidRequestConfig(
-        holdingidentityshorthash: kotlin.String,
-        ruleid: kotlin.String
-    ): RequestConfig<Unit> {
+    fun deleteMgmHoldingidentityshorthashApprovalRulesPreauthRuleidRequestConfig(holdingidentityshorthash: kotlin.String, ruleid: kotlin.String) : RequestConfig<Unit> {
         val localVariableBody = null
         val localVariableQuery: MultiValueMap = mutableMapOf()
         val localVariableHeaders: MutableMap<String, String> = mutableMapOf()
-
+        
         return RequestConfig(
             method = RequestMethod.DELETE,
-            path = "/mgm/{holdingidentityshorthash}/approval/rules/preauth/{ruleid}".replace(
-                "{" + "holdingidentityshorthash" + "}",
-                encodeURIComponent(holdingidentityshorthash.toString())
-            ).replace("{" + "ruleid" + "}", encodeURIComponent(ruleid.toString())),
+            path = "/mgm/{holdingidentityshorthash}/approval/rules/preauth/{ruleid}".replace("{"+"holdingidentityshorthash"+"}", encodeURIComponent(holdingidentityshorthash.toString())).replace("{"+"ruleid"+"}", encodeURIComponent(ruleid.toString())),
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = true,
@@ -137,7 +119,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
     }
 
     /**
-     *
+     * 
      * This API deletes a previously added group approval rule.
      * @param holdingidentityshorthash The holding identity ID of the MGM of the membership group
      * @param ruleid The ID of the group approval rule to be deleted
@@ -149,9 +131,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @throws ServerException If the API returns a server error response
      */
     @Throws(IllegalStateException::class, IOException::class, UnsupportedOperationException::class, ClientException::class, ServerException::class)
-    fun deleteMgmHoldingidentityshorthashApprovalRulesRuleid(holdingidentityshorthash: kotlin.String, ruleid: kotlin.String): Unit {
-        val localVarResponse =
-            deleteMgmHoldingidentityshorthashApprovalRulesRuleidWithHttpInfo(holdingidentityshorthash = holdingidentityshorthash, ruleid = ruleid)
+    fun deleteMgmHoldingidentityshorthashApprovalRulesRuleid(holdingidentityshorthash: kotlin.String, ruleid: kotlin.String) : Unit {
+        val localVarResponse = deleteMgmHoldingidentityshorthashApprovalRulesRuleidWithHttpInfo(holdingidentityshorthash = holdingidentityshorthash, ruleid = ruleid)
 
         return when (localVarResponse.responseType) {
             ResponseType.Success -> Unit
@@ -159,26 +140,17 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
             ResponseType.Redirection -> throw UnsupportedOperationException("Client does not support Redirection responses.")
             ResponseType.ClientError -> {
                 val localVarError = localVarResponse as ClientError<*>
-                throw ClientException(
-                    "Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ClientException("Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}", localVarError.statusCode, localVarResponse)
             }
-
             ResponseType.ServerError -> {
                 val localVarError = localVarResponse as ServerError<*>
-                throw ServerException(
-                    "Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ServerException("Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}", localVarError.statusCode, localVarResponse)
             }
         }
     }
 
     /**
-     *
+     * 
      * This API deletes a previously added group approval rule.
      * @param holdingidentityshorthash The holding identity ID of the MGM of the membership group
      * @param ruleid The ID of the group approval rule to be deleted
@@ -187,12 +159,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @throws IOException Rethrows the OkHttp execute method exception
      */
     @Throws(IllegalStateException::class, IOException::class)
-    fun deleteMgmHoldingidentityshorthashApprovalRulesRuleidWithHttpInfo(
-        holdingidentityshorthash: kotlin.String,
-        ruleid: kotlin.String
-    ): ApiResponse<Unit?> {
-        val localVariableConfig =
-            deleteMgmHoldingidentityshorthashApprovalRulesRuleidRequestConfig(holdingidentityshorthash = holdingidentityshorthash, ruleid = ruleid)
+    fun deleteMgmHoldingidentityshorthashApprovalRulesRuleidWithHttpInfo(holdingidentityshorthash: kotlin.String, ruleid: kotlin.String) : ApiResponse<Unit?> {
+        val localVariableConfig = deleteMgmHoldingidentityshorthashApprovalRulesRuleidRequestConfig(holdingidentityshorthash = holdingidentityshorthash, ruleid = ruleid)
 
         return request<Unit, Unit>(
             localVariableConfig
@@ -206,20 +174,14 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @param ruleid The ID of the group approval rule to be deleted
      * @return RequestConfig
      */
-    fun deleteMgmHoldingidentityshorthashApprovalRulesRuleidRequestConfig(
-        holdingidentityshorthash: kotlin.String,
-        ruleid: kotlin.String
-    ): RequestConfig<Unit> {
+    fun deleteMgmHoldingidentityshorthashApprovalRulesRuleidRequestConfig(holdingidentityshorthash: kotlin.String, ruleid: kotlin.String) : RequestConfig<Unit> {
         val localVariableBody = null
         val localVariableQuery: MultiValueMap = mutableMapOf()
         val localVariableHeaders: MutableMap<String, String> = mutableMapOf()
-
+        
         return RequestConfig(
             method = RequestMethod.DELETE,
-            path = "/mgm/{holdingidentityshorthash}/approval/rules/{ruleid}".replace(
-                "{" + "holdingidentityshorthash" + "}",
-                encodeURIComponent(holdingidentityshorthash.toString())
-            ).replace("{" + "ruleid" + "}", encodeURIComponent(ruleid.toString())),
+            path = "/mgm/{holdingidentityshorthash}/approval/rules/{ruleid}".replace("{"+"holdingidentityshorthash"+"}", encodeURIComponent(holdingidentityshorthash.toString())).replace("{"+"ruleid"+"}", encodeURIComponent(ruleid.toString())),
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = true,
@@ -228,7 +190,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
     }
 
     /**
-     *
+     * 
      * This API disallows a client certificate with a given subject to be used in mutual TLS connections.
      * @param holdingidentityshorthash The holding identity ID of the MGM.
      * @param subject The certificate subject.
@@ -240,14 +202,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @throws ServerException If the API returns a server error response
      */
     @Throws(IllegalStateException::class, IOException::class, UnsupportedOperationException::class, ClientException::class, ServerException::class)
-    fun deleteMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsSubject(
-        holdingidentityshorthash: kotlin.String,
-        subject: kotlin.String
-    ): Unit {
-        val localVarResponse = deleteMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsSubjectWithHttpInfo(
-            holdingidentityshorthash = holdingidentityshorthash,
-            subject = subject
-        )
+    fun deleteMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsSubject(holdingidentityshorthash: kotlin.String, subject: kotlin.String) : Unit {
+        val localVarResponse = deleteMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsSubjectWithHttpInfo(holdingidentityshorthash = holdingidentityshorthash, subject = subject)
 
         return when (localVarResponse.responseType) {
             ResponseType.Success -> Unit
@@ -255,26 +211,17 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
             ResponseType.Redirection -> throw UnsupportedOperationException("Client does not support Redirection responses.")
             ResponseType.ClientError -> {
                 val localVarError = localVarResponse as ClientError<*>
-                throw ClientException(
-                    "Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ClientException("Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}", localVarError.statusCode, localVarResponse)
             }
-
             ResponseType.ServerError -> {
                 val localVarError = localVarResponse as ServerError<*>
-                throw ServerException(
-                    "Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ServerException("Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}", localVarError.statusCode, localVarResponse)
             }
         }
     }
 
     /**
-     *
+     * 
      * This API disallows a client certificate with a given subject to be used in mutual TLS connections.
      * @param holdingidentityshorthash The holding identity ID of the MGM.
      * @param subject The certificate subject.
@@ -283,14 +230,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @throws IOException Rethrows the OkHttp execute method exception
      */
     @Throws(IllegalStateException::class, IOException::class)
-    fun deleteMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsSubjectWithHttpInfo(
-        holdingidentityshorthash: kotlin.String,
-        subject: kotlin.String
-    ): ApiResponse<Unit?> {
-        val localVariableConfig = deleteMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsSubjectRequestConfig(
-            holdingidentityshorthash = holdingidentityshorthash,
-            subject = subject
-        )
+    fun deleteMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsSubjectWithHttpInfo(holdingidentityshorthash: kotlin.String, subject: kotlin.String) : ApiResponse<Unit?> {
+        val localVariableConfig = deleteMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsSubjectRequestConfig(holdingidentityshorthash = holdingidentityshorthash, subject = subject)
 
         return request<Unit, Unit>(
             localVariableConfig
@@ -304,20 +245,14 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @param subject The certificate subject.
      * @return RequestConfig
      */
-    fun deleteMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsSubjectRequestConfig(
-        holdingidentityshorthash: kotlin.String,
-        subject: kotlin.String
-    ): RequestConfig<Unit> {
+    fun deleteMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsSubjectRequestConfig(holdingidentityshorthash: kotlin.String, subject: kotlin.String) : RequestConfig<Unit> {
         val localVariableBody = null
         val localVariableQuery: MultiValueMap = mutableMapOf()
         val localVariableHeaders: MutableMap<String, String> = mutableMapOf()
-
+        
         return RequestConfig(
             method = RequestMethod.DELETE,
-            path = "/mgm/{holdingidentityshorthash}/mutual-tls/allowed-client-certificate-subjects/{subject}".replace(
-                "{" + "holdingidentityshorthash" + "}",
-                encodeURIComponent(holdingidentityshorthash.toString())
-            ).replace("{" + "subject" + "}", encodeURIComponent(subject.toString())),
+            path = "/mgm/{holdingidentityshorthash}/mutual-tls/allowed-client-certificate-subjects/{subject}".replace("{"+"holdingidentityshorthash"+"}", encodeURIComponent(holdingidentityshorthash.toString())).replace("{"+"subject"+"}", encodeURIComponent(subject.toString())),
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = true,
@@ -326,8 +261,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
     }
 
     /**
-     *
-     *
+     * 
+     * Returns the version of the endpoint
      * @return kotlin.Int
      * @throws IllegalStateException If the request is not correctly configured
      * @throws IOException Rethrows the OkHttp execute method exception
@@ -337,7 +272,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class, UnsupportedOperationException::class, ClientException::class, ServerException::class)
-    fun getMgmGetprotocolversion(): kotlin.Int {
+    fun getMgmGetprotocolversion() : kotlin.Int {
         val localVarResponse = getMgmGetprotocolversionWithHttpInfo()
 
         return when (localVarResponse.responseType) {
@@ -346,34 +281,25 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
             ResponseType.Redirection -> throw UnsupportedOperationException("Client does not support Redirection responses.")
             ResponseType.ClientError -> {
                 val localVarError = localVarResponse as ClientError<*>
-                throw ClientException(
-                    "Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ClientException("Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}", localVarError.statusCode, localVarResponse)
             }
-
             ResponseType.ServerError -> {
                 val localVarError = localVarResponse as ServerError<*>
-                throw ServerException(
-                    "Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ServerException("Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}", localVarError.statusCode, localVarResponse)
             }
         }
     }
 
     /**
-     *
-     *
+     * 
+     * Returns the version of the endpoint
      * @return ApiResponse<kotlin.Int?>
      * @throws IllegalStateException If the request is not correctly configured
      * @throws IOException Rethrows the OkHttp execute method exception
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class)
-    fun getMgmGetprotocolversionWithHttpInfo(): ApiResponse<kotlin.Int?> {
+    fun getMgmGetprotocolversionWithHttpInfo() : ApiResponse<kotlin.Int?> {
         val localVariableConfig = getMgmGetprotocolversionRequestConfig()
 
         return request<Unit, kotlin.Int>(
@@ -386,7 +312,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      *
      * @return RequestConfig
      */
-    fun getMgmGetprotocolversionRequestConfig(): RequestConfig<Unit> {
+    fun getMgmGetprotocolversionRequestConfig() : RequestConfig<Unit> {
         val localVariableBody = null
         val localVariableQuery: MultiValueMap = mutableMapOf()
         val localVariableHeaders: MutableMap<String, String> = mutableMapOf()
@@ -403,7 +329,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
     }
 
     /**
-     *
+     * 
      * This API retrieves the set of rules the group is currently configured with
      * @param holdingidentityshorthash The holding identity ID of the MGM of the membership group
      * @return kotlin.collections.List<net.corda.membership.rest.v1.types.response.ApprovalRuleInfo>
@@ -415,7 +341,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class, UnsupportedOperationException::class, ClientException::class, ServerException::class)
-    fun getMgmHoldingidentityshorthashApprovalRules(holdingidentityshorthash: kotlin.String): kotlin.collections.List<net.corda.membership.rest.v1.types.response.ApprovalRuleInfo> {
+    fun getMgmHoldingidentityshorthashApprovalRules(holdingidentityshorthash: kotlin.String) : kotlin.collections.List<net.corda.membership.rest.v1.types.response.ApprovalRuleInfo> {
         val localVarResponse = getMgmHoldingidentityshorthashApprovalRulesWithHttpInfo(holdingidentityshorthash = holdingidentityshorthash)
 
         return when (localVarResponse.responseType) {
@@ -424,26 +350,17 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
             ResponseType.Redirection -> throw UnsupportedOperationException("Client does not support Redirection responses.")
             ResponseType.ClientError -> {
                 val localVarError = localVarResponse as ClientError<*>
-                throw ClientException(
-                    "Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ClientException("Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}", localVarError.statusCode, localVarResponse)
             }
-
             ResponseType.ServerError -> {
                 val localVarError = localVarResponse as ServerError<*>
-                throw ServerException(
-                    "Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ServerException("Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}", localVarError.statusCode, localVarResponse)
             }
         }
     }
 
     /**
-     *
+     * 
      * This API retrieves the set of rules the group is currently configured with
      * @param holdingidentityshorthash The holding identity ID of the MGM of the membership group
      * @return ApiResponse<kotlin.collections.List<net.corda.membership.rest.v1.types.response.ApprovalRuleInfo>?>
@@ -452,7 +369,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class)
-    fun getMgmHoldingidentityshorthashApprovalRulesWithHttpInfo(holdingidentityshorthash: kotlin.String): ApiResponse<kotlin.collections.List<net.corda.membership.rest.v1.types.response.ApprovalRuleInfo>?> {
+    fun getMgmHoldingidentityshorthashApprovalRulesWithHttpInfo(holdingidentityshorthash: kotlin.String) : ApiResponse<kotlin.collections.List<net.corda.membership.rest.v1.types.response.ApprovalRuleInfo>?> {
         val localVariableConfig = getMgmHoldingidentityshorthashApprovalRulesRequestConfig(holdingidentityshorthash = holdingidentityshorthash)
 
         return request<Unit, kotlin.collections.List<net.corda.membership.rest.v1.types.response.ApprovalRuleInfo>>(
@@ -466,7 +383,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @param holdingidentityshorthash The holding identity ID of the MGM of the membership group
      * @return RequestConfig
      */
-    fun getMgmHoldingidentityshorthashApprovalRulesRequestConfig(holdingidentityshorthash: kotlin.String): RequestConfig<Unit> {
+    fun getMgmHoldingidentityshorthashApprovalRulesRequestConfig(holdingidentityshorthash: kotlin.String) : RequestConfig<Unit> {
         val localVariableBody = null
         val localVariableQuery: MultiValueMap = mutableMapOf()
         val localVariableHeaders: MutableMap<String, String> = mutableMapOf()
@@ -474,10 +391,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
 
         return RequestConfig(
             method = RequestMethod.GET,
-            path = "/mgm/{holdingidentityshorthash}/approval/rules".replace(
-                "{" + "holdingidentityshorthash" + "}",
-                encodeURIComponent(holdingidentityshorthash.toString())
-            ),
+            path = "/mgm/{holdingidentityshorthash}/approval/rules".replace("{"+"holdingidentityshorthash"+"}", encodeURIComponent(holdingidentityshorthash.toString())),
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = true,
@@ -486,7 +400,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
     }
 
     /**
-     *
+     * 
      * This API retrieves the set of rules the group is currently configured with for registration request with a pre-auth token.
      * @param holdingidentityshorthash The holding identity ID of the MGM.
      * @return kotlin.collections.List<net.corda.membership.rest.v1.types.response.ApprovalRuleInfo>
@@ -498,7 +412,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class, UnsupportedOperationException::class, ClientException::class, ServerException::class)
-    fun getMgmHoldingidentityshorthashApprovalRulesPreauth(holdingidentityshorthash: kotlin.String): kotlin.collections.List<net.corda.membership.rest.v1.types.response.ApprovalRuleInfo> {
+    fun getMgmHoldingidentityshorthashApprovalRulesPreauth(holdingidentityshorthash: kotlin.String) : kotlin.collections.List<net.corda.membership.rest.v1.types.response.ApprovalRuleInfo> {
         val localVarResponse = getMgmHoldingidentityshorthashApprovalRulesPreauthWithHttpInfo(holdingidentityshorthash = holdingidentityshorthash)
 
         return when (localVarResponse.responseType) {
@@ -507,26 +421,17 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
             ResponseType.Redirection -> throw UnsupportedOperationException("Client does not support Redirection responses.")
             ResponseType.ClientError -> {
                 val localVarError = localVarResponse as ClientError<*>
-                throw ClientException(
-                    "Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ClientException("Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}", localVarError.statusCode, localVarResponse)
             }
-
             ResponseType.ServerError -> {
                 val localVarError = localVarResponse as ServerError<*>
-                throw ServerException(
-                    "Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ServerException("Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}", localVarError.statusCode, localVarResponse)
             }
         }
     }
 
     /**
-     *
+     * 
      * This API retrieves the set of rules the group is currently configured with for registration request with a pre-auth token.
      * @param holdingidentityshorthash The holding identity ID of the MGM.
      * @return ApiResponse<kotlin.collections.List<net.corda.membership.rest.v1.types.response.ApprovalRuleInfo>?>
@@ -535,7 +440,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class)
-    fun getMgmHoldingidentityshorthashApprovalRulesPreauthWithHttpInfo(holdingidentityshorthash: kotlin.String): ApiResponse<kotlin.collections.List<net.corda.membership.rest.v1.types.response.ApprovalRuleInfo>?> {
+    fun getMgmHoldingidentityshorthashApprovalRulesPreauthWithHttpInfo(holdingidentityshorthash: kotlin.String) : ApiResponse<kotlin.collections.List<net.corda.membership.rest.v1.types.response.ApprovalRuleInfo>?> {
         val localVariableConfig = getMgmHoldingidentityshorthashApprovalRulesPreauthRequestConfig(holdingidentityshorthash = holdingidentityshorthash)
 
         return request<Unit, kotlin.collections.List<net.corda.membership.rest.v1.types.response.ApprovalRuleInfo>>(
@@ -549,7 +454,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @param holdingidentityshorthash The holding identity ID of the MGM.
      * @return RequestConfig
      */
-    fun getMgmHoldingidentityshorthashApprovalRulesPreauthRequestConfig(holdingidentityshorthash: kotlin.String): RequestConfig<Unit> {
+    fun getMgmHoldingidentityshorthashApprovalRulesPreauthRequestConfig(holdingidentityshorthash: kotlin.String) : RequestConfig<Unit> {
         val localVariableBody = null
         val localVariableQuery: MultiValueMap = mutableMapOf()
         val localVariableHeaders: MutableMap<String, String> = mutableMapOf()
@@ -557,10 +462,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
 
         return RequestConfig(
             method = RequestMethod.GET,
-            path = "/mgm/{holdingidentityshorthash}/approval/rules/preauth".replace(
-                "{" + "holdingidentityshorthash" + "}",
-                encodeURIComponent(holdingidentityshorthash.toString())
-            ),
+            path = "/mgm/{holdingidentityshorthash}/approval/rules/preauth".replace("{"+"holdingidentityshorthash"+"}", encodeURIComponent(holdingidentityshorthash.toString())),
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = true,
@@ -569,7 +471,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
     }
 
     /**
-     *
+     * 
      * This API retrieves the group policy from the MGM required to join the membership group.
      * @param holdingidentityshorthash The holding identity ID of the MGM of the membership group to be joined
      * @return kotlin.String
@@ -581,7 +483,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class, UnsupportedOperationException::class, ClientException::class, ServerException::class)
-    fun getMgmHoldingidentityshorthashInfo(holdingidentityshorthash: kotlin.String): kotlin.String {
+    fun getMgmHoldingidentityshorthashInfo(holdingidentityshorthash: kotlin.String) : kotlin.String {
         val localVarResponse = getMgmHoldingidentityshorthashInfoWithHttpInfo(holdingidentityshorthash = holdingidentityshorthash)
 
         return when (localVarResponse.responseType) {
@@ -590,26 +492,17 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
             ResponseType.Redirection -> throw UnsupportedOperationException("Client does not support Redirection responses.")
             ResponseType.ClientError -> {
                 val localVarError = localVarResponse as ClientError<*>
-                throw ClientException(
-                    "Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ClientException("Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}", localVarError.statusCode, localVarResponse)
             }
-
             ResponseType.ServerError -> {
                 val localVarError = localVarResponse as ServerError<*>
-                throw ServerException(
-                    "Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ServerException("Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}", localVarError.statusCode, localVarResponse)
             }
         }
     }
 
     /**
-     *
+     * 
      * This API retrieves the group policy from the MGM required to join the membership group.
      * @param holdingidentityshorthash The holding identity ID of the MGM of the membership group to be joined
      * @return ApiResponse<kotlin.String?>
@@ -618,7 +511,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class)
-    fun getMgmHoldingidentityshorthashInfoWithHttpInfo(holdingidentityshorthash: kotlin.String): ApiResponse<kotlin.String?> {
+    fun getMgmHoldingidentityshorthashInfoWithHttpInfo(holdingidentityshorthash: kotlin.String) : ApiResponse<kotlin.String?> {
         val localVariableConfig = getMgmHoldingidentityshorthashInfoRequestConfig(holdingidentityshorthash = holdingidentityshorthash)
 
         val response = request<Unit, Map<String, Any?>>(
@@ -635,7 +528,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @param holdingidentityshorthash The holding identity ID of the MGM of the membership group to be joined
      * @return RequestConfig
      */
-    fun getMgmHoldingidentityshorthashInfoRequestConfig(holdingidentityshorthash: kotlin.String): RequestConfig<Unit> {
+    fun getMgmHoldingidentityshorthashInfoRequestConfig(holdingidentityshorthash: kotlin.String) : RequestConfig<Unit> {
         val localVariableBody = null
         val localVariableQuery: MultiValueMap = mutableMapOf()
         val localVariableHeaders: MutableMap<String, String> = mutableMapOf()
@@ -643,10 +536,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
 
         return RequestConfig(
             method = RequestMethod.GET,
-            path = "/mgm/{holdingidentityshorthash}/info".replace(
-                "{" + "holdingidentityshorthash" + "}",
-                encodeURIComponent(holdingidentityshorthash.toString())
-            ),
+            path = "/mgm/{holdingidentityshorthash}/info".replace("{"+"holdingidentityshorthash"+"}", encodeURIComponent(holdingidentityshorthash.toString())),
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = true,
@@ -655,7 +545,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
     }
 
     /**
-     *
+     * 
      * This API list the allowed  client certificates subjects to be used in mutual TLS connections.
      * @param holdingidentityshorthash The holding identity ID of the MGM.
      * @return kotlin.collections.List<kotlin.String>
@@ -667,9 +557,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class, UnsupportedOperationException::class, ClientException::class, ServerException::class)
-    fun getMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjects(holdingidentityshorthash: kotlin.String): kotlin.collections.List<kotlin.String> {
-        val localVarResponse =
-            getMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsWithHttpInfo(holdingidentityshorthash = holdingidentityshorthash)
+    fun getMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjects(holdingidentityshorthash: kotlin.String) : kotlin.collections.List<kotlin.String> {
+        val localVarResponse = getMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsWithHttpInfo(holdingidentityshorthash = holdingidentityshorthash)
 
         return when (localVarResponse.responseType) {
             ResponseType.Success -> (localVarResponse as Success<*>).data as kotlin.collections.List<kotlin.String>
@@ -677,26 +566,17 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
             ResponseType.Redirection -> throw UnsupportedOperationException("Client does not support Redirection responses.")
             ResponseType.ClientError -> {
                 val localVarError = localVarResponse as ClientError<*>
-                throw ClientException(
-                    "Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ClientException("Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}", localVarError.statusCode, localVarResponse)
             }
-
             ResponseType.ServerError -> {
                 val localVarError = localVarResponse as ServerError<*>
-                throw ServerException(
-                    "Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ServerException("Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}", localVarError.statusCode, localVarResponse)
             }
         }
     }
 
     /**
-     *
+     * 
      * This API list the allowed  client certificates subjects to be used in mutual TLS connections.
      * @param holdingidentityshorthash The holding identity ID of the MGM.
      * @return ApiResponse<kotlin.collections.List<kotlin.String>?>
@@ -705,9 +585,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class)
-    fun getMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsWithHttpInfo(holdingidentityshorthash: kotlin.String): ApiResponse<kotlin.collections.List<kotlin.String>?> {
-        val localVariableConfig =
-            getMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsRequestConfig(holdingidentityshorthash = holdingidentityshorthash)
+    fun getMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsWithHttpInfo(holdingidentityshorthash: kotlin.String) : ApiResponse<kotlin.collections.List<kotlin.String>?> {
+        val localVariableConfig = getMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsRequestConfig(holdingidentityshorthash = holdingidentityshorthash)
 
         return request<Unit, kotlin.collections.List<kotlin.String>>(
             localVariableConfig
@@ -720,7 +599,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @param holdingidentityshorthash The holding identity ID of the MGM.
      * @return RequestConfig
      */
-    fun getMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsRequestConfig(holdingidentityshorthash: kotlin.String): RequestConfig<Unit> {
+    fun getMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsRequestConfig(holdingidentityshorthash: kotlin.String) : RequestConfig<Unit> {
         val localVariableBody = null
         val localVariableQuery: MultiValueMap = mutableMapOf()
         val localVariableHeaders: MutableMap<String, String> = mutableMapOf()
@@ -728,10 +607,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
 
         return RequestConfig(
             method = RequestMethod.GET,
-            path = "/mgm/{holdingidentityshorthash}/mutual-tls/allowed-client-certificate-subjects".replace(
-                "{" + "holdingidentityshorthash" + "}",
-                encodeURIComponent(holdingidentityshorthash.toString())
-            ),
+            path = "/mgm/{holdingidentityshorthash}/mutual-tls/allowed-client-certificate-subjects".replace("{"+"holdingidentityshorthash"+"}", encodeURIComponent(holdingidentityshorthash.toString())),
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = true,
@@ -740,9 +616,9 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
     }
 
     /**
-     *
-     *
-     * @param holdingidentityshorthash
+     * 
+     * 
+     * @param holdingidentityshorthash 
      * @param ownerx500name  (optional)
      * @param preauthtokenid  (optional)
      * @param viewinactive  (optional)
@@ -755,18 +631,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class, UnsupportedOperationException::class, ClientException::class, ServerException::class)
-    fun getMgmHoldingidentityshorthashPreauthtoken(
-        holdingidentityshorthash: kotlin.String,
-        ownerx500name: kotlin.String? = null,
-        preauthtokenid: kotlin.String? = null,
-        viewinactive: kotlin.Boolean? = null
-    ): kotlin.collections.List<net.corda.membership.rest.v1.types.response.PreAuthToken> {
-        val localVarResponse = getMgmHoldingidentityshorthashPreauthtokenWithHttpInfo(
-            holdingidentityshorthash = holdingidentityshorthash,
-            ownerx500name = ownerx500name,
-            preauthtokenid = preauthtokenid,
-            viewinactive = viewinactive
-        )
+    fun getMgmHoldingidentityshorthashPreauthtoken(holdingidentityshorthash: kotlin.String, ownerx500name: kotlin.String? = null, preauthtokenid: kotlin.String? = null, viewinactive: kotlin.Boolean? = null) : kotlin.collections.List<net.corda.membership.rest.v1.types.response.PreAuthToken> {
+        val localVarResponse = getMgmHoldingidentityshorthashPreauthtokenWithHttpInfo(holdingidentityshorthash = holdingidentityshorthash, ownerx500name = ownerx500name, preauthtokenid = preauthtokenid, viewinactive = viewinactive)
 
         return when (localVarResponse.responseType) {
             ResponseType.Success -> (localVarResponse as Success<*>).data as kotlin.collections.List<net.corda.membership.rest.v1.types.response.PreAuthToken>
@@ -774,28 +640,19 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
             ResponseType.Redirection -> throw UnsupportedOperationException("Client does not support Redirection responses.")
             ResponseType.ClientError -> {
                 val localVarError = localVarResponse as ClientError<*>
-                throw ClientException(
-                    "Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ClientException("Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}", localVarError.statusCode, localVarResponse)
             }
-
             ResponseType.ServerError -> {
                 val localVarError = localVarResponse as ServerError<*>
-                throw ServerException(
-                    "Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ServerException("Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}", localVarError.statusCode, localVarResponse)
             }
         }
     }
 
     /**
-     *
-     *
-     * @param holdingidentityshorthash
+     * 
+     * 
+     * @param holdingidentityshorthash 
      * @param ownerx500name  (optional)
      * @param preauthtokenid  (optional)
      * @param viewinactive  (optional)
@@ -805,18 +662,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class)
-    fun getMgmHoldingidentityshorthashPreauthtokenWithHttpInfo(
-        holdingidentityshorthash: kotlin.String,
-        ownerx500name: kotlin.String?,
-        preauthtokenid: kotlin.String?,
-        viewinactive: kotlin.Boolean?
-    ): ApiResponse<kotlin.collections.List<net.corda.membership.rest.v1.types.response.PreAuthToken>?> {
-        val localVariableConfig = getMgmHoldingidentityshorthashPreauthtokenRequestConfig(
-            holdingidentityshorthash = holdingidentityshorthash,
-            ownerx500name = ownerx500name,
-            preauthtokenid = preauthtokenid,
-            viewinactive = viewinactive
-        )
+    fun getMgmHoldingidentityshorthashPreauthtokenWithHttpInfo(holdingidentityshorthash: kotlin.String, ownerx500name: kotlin.String?, preauthtokenid: kotlin.String?, viewinactive: kotlin.Boolean?) : ApiResponse<kotlin.collections.List<net.corda.membership.rest.v1.types.response.PreAuthToken>?> {
+        val localVariableConfig = getMgmHoldingidentityshorthashPreauthtokenRequestConfig(holdingidentityshorthash = holdingidentityshorthash, ownerx500name = ownerx500name, preauthtokenid = preauthtokenid, viewinactive = viewinactive)
 
         return request<Unit, kotlin.collections.List<net.corda.membership.rest.v1.types.response.PreAuthToken>>(
             localVariableConfig
@@ -826,18 +673,13 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
     /**
      * To obtain the request config of the operation getMgmHoldingidentityshorthashPreauthtoken
      *
-     * @param holdingidentityshorthash
+     * @param holdingidentityshorthash 
      * @param ownerx500name  (optional)
      * @param preauthtokenid  (optional)
      * @param viewinactive  (optional)
      * @return RequestConfig
      */
-    fun getMgmHoldingidentityshorthashPreauthtokenRequestConfig(
-        holdingidentityshorthash: kotlin.String,
-        ownerx500name: kotlin.String?,
-        preauthtokenid: kotlin.String?,
-        viewinactive: kotlin.Boolean?
-    ): RequestConfig<Unit> {
+    fun getMgmHoldingidentityshorthashPreauthtokenRequestConfig(holdingidentityshorthash: kotlin.String, ownerx500name: kotlin.String?, preauthtokenid: kotlin.String?, viewinactive: kotlin.Boolean?) : RequestConfig<Unit> {
         val localVariableBody = null
         val localVariableQuery: MultiValueMap = mutableMapOf<kotlin.String, kotlin.collections.List<kotlin.String>>()
             .apply {
@@ -856,10 +698,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
 
         return RequestConfig(
             method = RequestMethod.GET,
-            path = "/mgm/{holdingidentityshorthash}/preauthtoken".replace(
-                "{" + "holdingidentityshorthash" + "}",
-                encodeURIComponent(holdingidentityshorthash.toString())
-            ),
+            path = "/mgm/{holdingidentityshorthash}/preauthtoken".replace("{"+"holdingidentityshorthash"+"}", encodeURIComponent(holdingidentityshorthash.toString())),
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = true,
@@ -868,8 +707,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
     }
 
     /**
-     *
-     *
+     * 
+     * 
      * @param holdingidentityshorthash The holding identity ID of the MGM of the membership group
      * @param requestsubjectx500name X.500 name of the requesting member (optional)
      * @param viewhistoric Include completed (historic) requests if set to &#39;true&#39; (optional)
@@ -882,16 +721,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class, UnsupportedOperationException::class, ClientException::class, ServerException::class)
-    fun getMgmHoldingidentityshorthashRegistrations(
-        holdingidentityshorthash: kotlin.String,
-        requestsubjectx500name: kotlin.String? = null,
-        viewhistoric: kotlin.Boolean? = null
-    ): kotlin.collections.List<net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus> {
-        val localVarResponse = getMgmHoldingidentityshorthashRegistrationsWithHttpInfo(
-            holdingidentityshorthash = holdingidentityshorthash,
-            requestsubjectx500name = requestsubjectx500name,
-            viewhistoric = viewhistoric
-        )
+    fun getMgmHoldingidentityshorthashRegistrations(holdingidentityshorthash: kotlin.String, requestsubjectx500name: kotlin.String? = null, viewhistoric: kotlin.Boolean? = null) : kotlin.collections.List<net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus> {
+        val localVarResponse = getMgmHoldingidentityshorthashRegistrationsWithHttpInfo(holdingidentityshorthash = holdingidentityshorthash, requestsubjectx500name = requestsubjectx500name, viewhistoric = viewhistoric)
 
         return when (localVarResponse.responseType) {
             ResponseType.Success -> (localVarResponse as Success<*>).data as kotlin.collections.List<net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus>
@@ -899,27 +730,18 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
             ResponseType.Redirection -> throw UnsupportedOperationException("Client does not support Redirection responses.")
             ResponseType.ClientError -> {
                 val localVarError = localVarResponse as ClientError<*>
-                throw ClientException(
-                    "Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ClientException("Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}", localVarError.statusCode, localVarResponse)
             }
-
             ResponseType.ServerError -> {
                 val localVarError = localVarResponse as ServerError<*>
-                throw ServerException(
-                    "Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ServerException("Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}", localVarError.statusCode, localVarResponse)
             }
         }
     }
 
     /**
-     *
-     *
+     * 
+     * 
      * @param holdingidentityshorthash The holding identity ID of the MGM of the membership group
      * @param requestsubjectx500name X.500 name of the requesting member (optional)
      * @param viewhistoric Include completed (historic) requests if set to &#39;true&#39; (optional)
@@ -929,16 +751,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class)
-    fun getMgmHoldingidentityshorthashRegistrationsWithHttpInfo(
-        holdingidentityshorthash: kotlin.String,
-        requestsubjectx500name: kotlin.String?,
-        viewhistoric: kotlin.Boolean?
-    ): ApiResponse<kotlin.collections.List<net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus>?> {
-        val localVariableConfig = getMgmHoldingidentityshorthashRegistrationsRequestConfig(
-            holdingidentityshorthash = holdingidentityshorthash,
-            requestsubjectx500name = requestsubjectx500name,
-            viewhistoric = viewhistoric
-        )
+    fun getMgmHoldingidentityshorthashRegistrationsWithHttpInfo(holdingidentityshorthash: kotlin.String, requestsubjectx500name: kotlin.String?, viewhistoric: kotlin.Boolean?) : ApiResponse<kotlin.collections.List<net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus>?> {
+        val localVariableConfig = getMgmHoldingidentityshorthashRegistrationsRequestConfig(holdingidentityshorthash = holdingidentityshorthash, requestsubjectx500name = requestsubjectx500name, viewhistoric = viewhistoric)
 
         return request<Unit, kotlin.collections.List<net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus>>(
             localVariableConfig
@@ -953,11 +767,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @param viewhistoric Include completed (historic) requests if set to &#39;true&#39; (optional)
      * @return RequestConfig
      */
-    fun getMgmHoldingidentityshorthashRegistrationsRequestConfig(
-        holdingidentityshorthash: kotlin.String,
-        requestsubjectx500name: kotlin.String?,
-        viewhistoric: kotlin.Boolean?
-    ): RequestConfig<Unit> {
+    fun getMgmHoldingidentityshorthashRegistrationsRequestConfig(holdingidentityshorthash: kotlin.String, requestsubjectx500name: kotlin.String?, viewhistoric: kotlin.Boolean?) : RequestConfig<Unit> {
         val localVariableBody = null
         val localVariableQuery: MultiValueMap = mutableMapOf<kotlin.String, kotlin.collections.List<kotlin.String>>()
             .apply {
@@ -973,10 +783,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
 
         return RequestConfig(
             method = RequestMethod.GET,
-            path = "/mgm/{holdingidentityshorthash}/registrations".replace(
-                "{" + "holdingidentityshorthash" + "}",
-                encodeURIComponent(holdingidentityshorthash.toString())
-            ),
+            path = "/mgm/{holdingidentityshorthash}/registrations".replace("{"+"holdingidentityshorthash"+"}", encodeURIComponent(holdingidentityshorthash.toString())),
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = true,
@@ -985,7 +792,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
     }
 
     /**
-     *
+     * 
      * This endpoint enables you to activate a previously suspended member.
      * @param holdingidentityshorthash The holding identity ID of the MGM of the membership group
      * @param netCordaMembershipRestV1TypesRequestSuspensionActivationParameters requestBody
@@ -997,14 +804,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @throws ServerException If the API returns a server error response
      */
     @Throws(IllegalStateException::class, IOException::class, UnsupportedOperationException::class, ClientException::class, ServerException::class)
-    fun postMgmHoldingidentityshorthashActivate(
-        holdingidentityshorthash: kotlin.String,
-        netCordaMembershipRestV1TypesRequestSuspensionActivationParameters: net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
-    ): Unit {
-        val localVarResponse = postMgmHoldingidentityshorthashActivateWithHttpInfo(
-            holdingidentityshorthash = holdingidentityshorthash,
-            netCordaMembershipRestV1TypesRequestSuspensionActivationParameters = netCordaMembershipRestV1TypesRequestSuspensionActivationParameters
-        )
+    fun postMgmHoldingidentityshorthashActivate(holdingidentityshorthash: kotlin.String, netCordaMembershipRestV1TypesRequestSuspensionActivationParameters: net.corda.membership.rest.v1.types.request.SuspensionActivationParameters) : Unit {
+        val localVarResponse = postMgmHoldingidentityshorthashActivateWithHttpInfo(holdingidentityshorthash = holdingidentityshorthash, netCordaMembershipRestV1TypesRequestSuspensionActivationParameters = netCordaMembershipRestV1TypesRequestSuspensionActivationParameters)
 
         return when (localVarResponse.responseType) {
             ResponseType.Success -> Unit
@@ -1012,26 +813,17 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
             ResponseType.Redirection -> throw UnsupportedOperationException("Client does not support Redirection responses.")
             ResponseType.ClientError -> {
                 val localVarError = localVarResponse as ClientError<*>
-                throw ClientException(
-                    "Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ClientException("Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}", localVarError.statusCode, localVarResponse)
             }
-
             ResponseType.ServerError -> {
                 val localVarError = localVarResponse as ServerError<*>
-                throw ServerException(
-                    "Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ServerException("Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}", localVarError.statusCode, localVarResponse)
             }
         }
     }
 
     /**
-     *
+     * 
      * This endpoint enables you to activate a previously suspended member.
      * @param holdingidentityshorthash The holding identity ID of the MGM of the membership group
      * @param netCordaMembershipRestV1TypesRequestSuspensionActivationParameters requestBody
@@ -1040,14 +832,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @throws IOException Rethrows the OkHttp execute method exception
      */
     @Throws(IllegalStateException::class, IOException::class)
-    fun postMgmHoldingidentityshorthashActivateWithHttpInfo(
-        holdingidentityshorthash: kotlin.String,
-        netCordaMembershipRestV1TypesRequestSuspensionActivationParameters: net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
-    ): ApiResponse<Unit?> {
-        val localVariableConfig = postMgmHoldingidentityshorthashActivateRequestConfig(
-            holdingidentityshorthash = holdingidentityshorthash,
-            netCordaMembershipRestV1TypesRequestSuspensionActivationParameters = netCordaMembershipRestV1TypesRequestSuspensionActivationParameters
-        )
+    fun postMgmHoldingidentityshorthashActivateWithHttpInfo(holdingidentityshorthash: kotlin.String, netCordaMembershipRestV1TypesRequestSuspensionActivationParameters: net.corda.membership.rest.v1.types.request.SuspensionActivationParameters) : ApiResponse<Unit?> {
+        val localVariableConfig = postMgmHoldingidentityshorthashActivateRequestConfig(holdingidentityshorthash = holdingidentityshorthash, netCordaMembershipRestV1TypesRequestSuspensionActivationParameters = netCordaMembershipRestV1TypesRequestSuspensionActivationParameters)
 
         return request<net.corda.membership.rest.v1.types.request.SuspensionActivationParameters, Unit>(
             localVariableConfig
@@ -1061,21 +847,15 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @param netCordaMembershipRestV1TypesRequestSuspensionActivationParameters requestBody
      * @return RequestConfig
      */
-    fun postMgmHoldingidentityshorthashActivateRequestConfig(
-        holdingidentityshorthash: kotlin.String,
-        netCordaMembershipRestV1TypesRequestSuspensionActivationParameters: net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
-    ): RequestConfig<net.corda.membership.rest.v1.types.request.SuspensionActivationParameters> {
+    fun postMgmHoldingidentityshorthashActivateRequestConfig(holdingidentityshorthash: kotlin.String, netCordaMembershipRestV1TypesRequestSuspensionActivationParameters: net.corda.membership.rest.v1.types.request.SuspensionActivationParameters) : RequestConfig<net.corda.membership.rest.v1.types.request.SuspensionActivationParameters> {
         val localVariableBody = netCordaMembershipRestV1TypesRequestSuspensionActivationParameters
         val localVariableQuery: MultiValueMap = mutableMapOf()
         val localVariableHeaders: MutableMap<String, String> = mutableMapOf()
         localVariableHeaders["Content-Type"] = "application/json"
-
+        
         return RequestConfig(
             method = RequestMethod.POST,
-            path = "/mgm/{holdingidentityshorthash}/activate".replace(
-                "{" + "holdingidentityshorthash" + "}",
-                encodeURIComponent(holdingidentityshorthash.toString())
-            ),
+            path = "/mgm/{holdingidentityshorthash}/activate".replace("{"+"holdingidentityshorthash"+"}", encodeURIComponent(holdingidentityshorthash.toString())),
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = true,
@@ -1084,7 +864,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
     }
 
     /**
-     *
+     * 
      * This API adds a rule to the set of group approval rules.
      * @param holdingidentityshorthash The holding identity ID of the MGM of the membership group
      * @param netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams requestBody
@@ -1097,14 +877,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class, UnsupportedOperationException::class, ClientException::class, ServerException::class)
-    fun postMgmHoldingidentityshorthashApprovalRules(
-        holdingidentityshorthash: kotlin.String,
-        netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams: net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams
-    ): net.corda.membership.rest.v1.types.response.ApprovalRuleInfo {
-        val localVarResponse = postMgmHoldingidentityshorthashApprovalRulesWithHttpInfo(
-            holdingidentityshorthash = holdingidentityshorthash,
-            netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams = netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams
-        )
+    fun postMgmHoldingidentityshorthashApprovalRules(holdingidentityshorthash: kotlin.String, netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams: net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams) : net.corda.membership.rest.v1.types.response.ApprovalRuleInfo {
+        val localVarResponse = postMgmHoldingidentityshorthashApprovalRulesWithHttpInfo(holdingidentityshorthash = holdingidentityshorthash, netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams = netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams)
 
         return when (localVarResponse.responseType) {
             ResponseType.Success -> (localVarResponse as Success<*>).data as net.corda.membership.rest.v1.types.response.ApprovalRuleInfo
@@ -1112,26 +886,17 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
             ResponseType.Redirection -> throw UnsupportedOperationException("Client does not support Redirection responses.")
             ResponseType.ClientError -> {
                 val localVarError = localVarResponse as ClientError<*>
-                throw ClientException(
-                    "Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ClientException("Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}", localVarError.statusCode, localVarResponse)
             }
-
             ResponseType.ServerError -> {
                 val localVarError = localVarResponse as ServerError<*>
-                throw ServerException(
-                    "Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ServerException("Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}", localVarError.statusCode, localVarResponse)
             }
         }
     }
 
     /**
-     *
+     * 
      * This API adds a rule to the set of group approval rules.
      * @param holdingidentityshorthash The holding identity ID of the MGM of the membership group
      * @param netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams requestBody
@@ -1141,14 +906,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class)
-    fun postMgmHoldingidentityshorthashApprovalRulesWithHttpInfo(
-        holdingidentityshorthash: kotlin.String,
-        netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams: net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams
-    ): ApiResponse<net.corda.membership.rest.v1.types.response.ApprovalRuleInfo?> {
-        val localVariableConfig = postMgmHoldingidentityshorthashApprovalRulesRequestConfig(
-            holdingidentityshorthash = holdingidentityshorthash,
-            netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams = netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams
-        )
+    fun postMgmHoldingidentityshorthashApprovalRulesWithHttpInfo(holdingidentityshorthash: kotlin.String, netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams: net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams) : ApiResponse<net.corda.membership.rest.v1.types.response.ApprovalRuleInfo?> {
+        val localVariableConfig = postMgmHoldingidentityshorthashApprovalRulesRequestConfig(holdingidentityshorthash = holdingidentityshorthash, netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams = netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams)
 
         return request<net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams, net.corda.membership.rest.v1.types.response.ApprovalRuleInfo>(
             localVariableConfig
@@ -1162,10 +921,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @param netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams requestBody
      * @return RequestConfig
      */
-    fun postMgmHoldingidentityshorthashApprovalRulesRequestConfig(
-        holdingidentityshorthash: kotlin.String,
-        netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams: net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams
-    ): RequestConfig<net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams> {
+    fun postMgmHoldingidentityshorthashApprovalRulesRequestConfig(holdingidentityshorthash: kotlin.String, netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams: net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams) : RequestConfig<net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams> {
         val localVariableBody = netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams
         val localVariableQuery: MultiValueMap = mutableMapOf()
         val localVariableHeaders: MutableMap<String, String> = mutableMapOf()
@@ -1174,10 +930,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
 
         return RequestConfig(
             method = RequestMethod.POST,
-            path = "/mgm/{holdingidentityshorthash}/approval/rules".replace(
-                "{" + "holdingidentityshorthash" + "}",
-                encodeURIComponent(holdingidentityshorthash.toString())
-            ),
+            path = "/mgm/{holdingidentityshorthash}/approval/rules".replace("{"+"holdingidentityshorthash"+"}", encodeURIComponent(holdingidentityshorthash.toString())),
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = true,
@@ -1186,7 +939,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
     }
 
     /**
-     *
+     * 
      * This API adds a rule to the set of group approval rules for registrations including a pre-auth token.
      * @param holdingidentityshorthash The holding identity ID of the MGM.
      * @param netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams requestBody
@@ -1199,14 +952,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class, UnsupportedOperationException::class, ClientException::class, ServerException::class)
-    fun postMgmHoldingidentityshorthashApprovalRulesPreauth(
-        holdingidentityshorthash: kotlin.String,
-        netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams: net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams
-    ): net.corda.membership.rest.v1.types.response.ApprovalRuleInfo {
-        val localVarResponse = postMgmHoldingidentityshorthashApprovalRulesPreauthWithHttpInfo(
-            holdingidentityshorthash = holdingidentityshorthash,
-            netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams = netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams
-        )
+    fun postMgmHoldingidentityshorthashApprovalRulesPreauth(holdingidentityshorthash: kotlin.String, netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams: net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams) : net.corda.membership.rest.v1.types.response.ApprovalRuleInfo {
+        val localVarResponse = postMgmHoldingidentityshorthashApprovalRulesPreauthWithHttpInfo(holdingidentityshorthash = holdingidentityshorthash, netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams = netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams)
 
         return when (localVarResponse.responseType) {
             ResponseType.Success -> (localVarResponse as Success<*>).data as net.corda.membership.rest.v1.types.response.ApprovalRuleInfo
@@ -1214,26 +961,17 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
             ResponseType.Redirection -> throw UnsupportedOperationException("Client does not support Redirection responses.")
             ResponseType.ClientError -> {
                 val localVarError = localVarResponse as ClientError<*>
-                throw ClientException(
-                    "Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ClientException("Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}", localVarError.statusCode, localVarResponse)
             }
-
             ResponseType.ServerError -> {
                 val localVarError = localVarResponse as ServerError<*>
-                throw ServerException(
-                    "Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ServerException("Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}", localVarError.statusCode, localVarResponse)
             }
         }
     }
 
     /**
-     *
+     * 
      * This API adds a rule to the set of group approval rules for registrations including a pre-auth token.
      * @param holdingidentityshorthash The holding identity ID of the MGM.
      * @param netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams requestBody
@@ -1243,14 +981,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class)
-    fun postMgmHoldingidentityshorthashApprovalRulesPreauthWithHttpInfo(
-        holdingidentityshorthash: kotlin.String,
-        netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams: net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams
-    ): ApiResponse<net.corda.membership.rest.v1.types.response.ApprovalRuleInfo?> {
-        val localVariableConfig = postMgmHoldingidentityshorthashApprovalRulesPreauthRequestConfig(
-            holdingidentityshorthash = holdingidentityshorthash,
-            netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams = netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams
-        )
+    fun postMgmHoldingidentityshorthashApprovalRulesPreauthWithHttpInfo(holdingidentityshorthash: kotlin.String, netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams: net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams) : ApiResponse<net.corda.membership.rest.v1.types.response.ApprovalRuleInfo?> {
+        val localVariableConfig = postMgmHoldingidentityshorthashApprovalRulesPreauthRequestConfig(holdingidentityshorthash = holdingidentityshorthash, netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams = netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams)
 
         return request<net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams, net.corda.membership.rest.v1.types.response.ApprovalRuleInfo>(
             localVariableConfig
@@ -1264,10 +996,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @param netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams requestBody
      * @return RequestConfig
      */
-    fun postMgmHoldingidentityshorthashApprovalRulesPreauthRequestConfig(
-        holdingidentityshorthash: kotlin.String,
-        netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams: net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams
-    ): RequestConfig<net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams> {
+    fun postMgmHoldingidentityshorthashApprovalRulesPreauthRequestConfig(holdingidentityshorthash: kotlin.String, netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams: net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams) : RequestConfig<net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams> {
         val localVariableBody = netCordaMembershipRestV1TypesRequestApprovalRuleRequestParams
         val localVariableQuery: MultiValueMap = mutableMapOf()
         val localVariableHeaders: MutableMap<String, String> = mutableMapOf()
@@ -1276,10 +1005,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
 
         return RequestConfig(
             method = RequestMethod.POST,
-            path = "/mgm/{holdingidentityshorthash}/approval/rules/preauth".replace(
-                "{" + "holdingidentityshorthash" + "}",
-                encodeURIComponent(holdingidentityshorthash.toString())
-            ),
+            path = "/mgm/{holdingidentityshorthash}/approval/rules/preauth".replace("{"+"holdingidentityshorthash"+"}", encodeURIComponent(holdingidentityshorthash.toString())),
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = true,
@@ -1288,8 +1014,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
     }
 
     /**
-     *
-     *
+     * 
+     * 
      * @param holdingidentityshorthash The holding identity ID of the MGM of the membership group
      * @param requestid ID of the registration request
      * @return void
@@ -1300,9 +1026,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @throws ServerException If the API returns a server error response
      */
     @Throws(IllegalStateException::class, IOException::class, UnsupportedOperationException::class, ClientException::class, ServerException::class)
-    fun postMgmHoldingidentityshorthashApproveRequestid(holdingidentityshorthash: kotlin.String, requestid: kotlin.String): Unit {
-        val localVarResponse =
-            postMgmHoldingidentityshorthashApproveRequestidWithHttpInfo(holdingidentityshorthash = holdingidentityshorthash, requestid = requestid)
+    fun postMgmHoldingidentityshorthashApproveRequestid(holdingidentityshorthash: kotlin.String, requestid: kotlin.String) : Unit {
+        val localVarResponse = postMgmHoldingidentityshorthashApproveRequestidWithHttpInfo(holdingidentityshorthash = holdingidentityshorthash, requestid = requestid)
 
         return when (localVarResponse.responseType) {
             ResponseType.Success -> Unit
@@ -1310,27 +1035,18 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
             ResponseType.Redirection -> throw UnsupportedOperationException("Client does not support Redirection responses.")
             ResponseType.ClientError -> {
                 val localVarError = localVarResponse as ClientError<*>
-                throw ClientException(
-                    "Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ClientException("Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}", localVarError.statusCode, localVarResponse)
             }
-
             ResponseType.ServerError -> {
                 val localVarError = localVarResponse as ServerError<*>
-                throw ServerException(
-                    "Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ServerException("Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}", localVarError.statusCode, localVarResponse)
             }
         }
     }
 
     /**
-     *
-     *
+     * 
+     * 
      * @param holdingidentityshorthash The holding identity ID of the MGM of the membership group
      * @param requestid ID of the registration request
      * @return ApiResponse<Unit?>
@@ -1338,12 +1054,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @throws IOException Rethrows the OkHttp execute method exception
      */
     @Throws(IllegalStateException::class, IOException::class)
-    fun postMgmHoldingidentityshorthashApproveRequestidWithHttpInfo(
-        holdingidentityshorthash: kotlin.String,
-        requestid: kotlin.String
-    ): ApiResponse<Unit?> {
-        val localVariableConfig =
-            postMgmHoldingidentityshorthashApproveRequestidRequestConfig(holdingidentityshorthash = holdingidentityshorthash, requestid = requestid)
+    fun postMgmHoldingidentityshorthashApproveRequestidWithHttpInfo(holdingidentityshorthash: kotlin.String, requestid: kotlin.String) : ApiResponse<Unit?> {
+        val localVariableConfig = postMgmHoldingidentityshorthashApproveRequestidRequestConfig(holdingidentityshorthash = holdingidentityshorthash, requestid = requestid)
 
         return request<Unit, Unit>(
             localVariableConfig
@@ -1357,20 +1069,14 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @param requestid ID of the registration request
      * @return RequestConfig
      */
-    fun postMgmHoldingidentityshorthashApproveRequestidRequestConfig(
-        holdingidentityshorthash: kotlin.String,
-        requestid: kotlin.String
-    ): RequestConfig<Unit> {
+    fun postMgmHoldingidentityshorthashApproveRequestidRequestConfig(holdingidentityshorthash: kotlin.String, requestid: kotlin.String) : RequestConfig<Unit> {
         val localVariableBody = null
         val localVariableQuery: MultiValueMap = mutableMapOf()
         val localVariableHeaders: MutableMap<String, String> = mutableMapOf()
-
+        
         return RequestConfig(
             method = RequestMethod.POST,
-            path = "/mgm/{holdingidentityshorthash}/approve/{requestid}".replace(
-                "{" + "holdingidentityshorthash" + "}",
-                encodeURIComponent(holdingidentityshorthash.toString())
-            ).replace("{" + "requestid" + "}", encodeURIComponent(requestid.toString())),
+            path = "/mgm/{holdingidentityshorthash}/approve/{requestid}".replace("{"+"holdingidentityshorthash"+"}", encodeURIComponent(holdingidentityshorthash.toString())).replace("{"+"requestid"+"}", encodeURIComponent(requestid.toString())),
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = true,
@@ -1379,8 +1085,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
     }
 
     /**
-     *
-     *
+     * 
+     * 
      * @param holdingidentityshorthash The holding identity ID of the MGM of the membership group
      * @param requestid ID of the registration request
      * @param postMgmHoldingidentityshorthashDeclineRequestidRequest requestBody
@@ -1392,16 +1098,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @throws ServerException If the API returns a server error response
      */
     @Throws(IllegalStateException::class, IOException::class, UnsupportedOperationException::class, ClientException::class, ServerException::class)
-    fun postMgmHoldingidentityshorthashDeclineRequestid(
-        holdingidentityshorthash: kotlin.String,
-        requestid: kotlin.String,
-        postMgmHoldingidentityshorthashDeclineRequestidRequest: PostMgmHoldingidentityshorthashDeclineRequestidRequest
-    ): Unit {
-        val localVarResponse = postMgmHoldingidentityshorthashDeclineRequestidWithHttpInfo(
-            holdingidentityshorthash = holdingidentityshorthash,
-            requestid = requestid,
-            postMgmHoldingidentityshorthashDeclineRequestidRequest = postMgmHoldingidentityshorthashDeclineRequestidRequest
-        )
+    fun postMgmHoldingidentityshorthashDeclineRequestid(holdingidentityshorthash: kotlin.String, requestid: kotlin.String, postMgmHoldingidentityshorthashDeclineRequestidRequest: PostMgmHoldingidentityshorthashDeclineRequestidRequest) : Unit {
+        val localVarResponse = postMgmHoldingidentityshorthashDeclineRequestidWithHttpInfo(holdingidentityshorthash = holdingidentityshorthash, requestid = requestid, postMgmHoldingidentityshorthashDeclineRequestidRequest = postMgmHoldingidentityshorthashDeclineRequestidRequest)
 
         return when (localVarResponse.responseType) {
             ResponseType.Success -> Unit
@@ -1409,27 +1107,18 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
             ResponseType.Redirection -> throw UnsupportedOperationException("Client does not support Redirection responses.")
             ResponseType.ClientError -> {
                 val localVarError = localVarResponse as ClientError<*>
-                throw ClientException(
-                    "Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ClientException("Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}", localVarError.statusCode, localVarResponse)
             }
-
             ResponseType.ServerError -> {
                 val localVarError = localVarResponse as ServerError<*>
-                throw ServerException(
-                    "Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ServerException("Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}", localVarError.statusCode, localVarResponse)
             }
         }
     }
 
     /**
-     *
-     *
+     * 
+     * 
      * @param holdingidentityshorthash The holding identity ID of the MGM of the membership group
      * @param requestid ID of the registration request
      * @param postMgmHoldingidentityshorthashDeclineRequestidRequest requestBody
@@ -1438,16 +1127,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @throws IOException Rethrows the OkHttp execute method exception
      */
     @Throws(IllegalStateException::class, IOException::class)
-    fun postMgmHoldingidentityshorthashDeclineRequestidWithHttpInfo(
-        holdingidentityshorthash: kotlin.String,
-        requestid: kotlin.String,
-        postMgmHoldingidentityshorthashDeclineRequestidRequest: PostMgmHoldingidentityshorthashDeclineRequestidRequest
-    ): ApiResponse<Unit?> {
-        val localVariableConfig = postMgmHoldingidentityshorthashDeclineRequestidRequestConfig(
-            holdingidentityshorthash = holdingidentityshorthash,
-            requestid = requestid,
-            postMgmHoldingidentityshorthashDeclineRequestidRequest = postMgmHoldingidentityshorthashDeclineRequestidRequest
-        )
+    fun postMgmHoldingidentityshorthashDeclineRequestidWithHttpInfo(holdingidentityshorthash: kotlin.String, requestid: kotlin.String, postMgmHoldingidentityshorthashDeclineRequestidRequest: PostMgmHoldingidentityshorthashDeclineRequestidRequest) : ApiResponse<Unit?> {
+        val localVariableConfig = postMgmHoldingidentityshorthashDeclineRequestidRequestConfig(holdingidentityshorthash = holdingidentityshorthash, requestid = requestid, postMgmHoldingidentityshorthashDeclineRequestidRequest = postMgmHoldingidentityshorthashDeclineRequestidRequest)
 
         return request<PostMgmHoldingidentityshorthashDeclineRequestidRequest, Unit>(
             localVariableConfig
@@ -1462,22 +1143,15 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @param postMgmHoldingidentityshorthashDeclineRequestidRequest requestBody
      * @return RequestConfig
      */
-    fun postMgmHoldingidentityshorthashDeclineRequestidRequestConfig(
-        holdingidentityshorthash: kotlin.String,
-        requestid: kotlin.String,
-        postMgmHoldingidentityshorthashDeclineRequestidRequest: PostMgmHoldingidentityshorthashDeclineRequestidRequest
-    ): RequestConfig<PostMgmHoldingidentityshorthashDeclineRequestidRequest> {
+    fun postMgmHoldingidentityshorthashDeclineRequestidRequestConfig(holdingidentityshorthash: kotlin.String, requestid: kotlin.String, postMgmHoldingidentityshorthashDeclineRequestidRequest: PostMgmHoldingidentityshorthashDeclineRequestidRequest) : RequestConfig<PostMgmHoldingidentityshorthashDeclineRequestidRequest> {
         val localVariableBody = postMgmHoldingidentityshorthashDeclineRequestidRequest
         val localVariableQuery: MultiValueMap = mutableMapOf()
         val localVariableHeaders: MutableMap<String, String> = mutableMapOf()
         localVariableHeaders["Content-Type"] = "application/json"
-
+        
         return RequestConfig(
             method = RequestMethod.POST,
-            path = "/mgm/{holdingidentityshorthash}/decline/{requestid}".replace(
-                "{" + "holdingidentityshorthash" + "}",
-                encodeURIComponent(holdingidentityshorthash.toString())
-            ).replace("{" + "requestid" + "}", encodeURIComponent(requestid.toString())),
+            path = "/mgm/{holdingidentityshorthash}/decline/{requestid}".replace("{"+"holdingidentityshorthash"+"}", encodeURIComponent(holdingidentityshorthash.toString())).replace("{"+"requestid"+"}", encodeURIComponent(requestid.toString())),
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = true,
@@ -1486,7 +1160,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
     }
 
     /**
-     *
+     * 
      * This API allows you to make changes to the group parameters by submitting an updated version of the group parameters.
      * @param holdingidentityshorthash The holding identity ID of the MGM
      * @param netCordaMembershipRestV1TypesRestGroupParameters requestBody
@@ -1499,14 +1173,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class, UnsupportedOperationException::class, ClientException::class, ServerException::class)
-    fun postMgmHoldingidentityshorthashGroupParameters(
-        holdingidentityshorthash: kotlin.String,
-        netCordaMembershipRestV1TypesRestGroupParameters: net.corda.membership.rest.v1.types.RestGroupParameters
-    ): net.corda.membership.rest.v1.types.RestGroupParameters {
-        val localVarResponse = postMgmHoldingidentityshorthashGroupParametersWithHttpInfo(
-            holdingidentityshorthash = holdingidentityshorthash,
-            netCordaMembershipRestV1TypesRestGroupParameters = netCordaMembershipRestV1TypesRestGroupParameters
-        )
+    fun postMgmHoldingidentityshorthashGroupParameters(holdingidentityshorthash: kotlin.String, netCordaMembershipRestV1TypesRestGroupParameters: net.corda.membership.rest.v1.types.RestGroupParameters) : net.corda.membership.rest.v1.types.RestGroupParameters {
+        val localVarResponse = postMgmHoldingidentityshorthashGroupParametersWithHttpInfo(holdingidentityshorthash = holdingidentityshorthash, netCordaMembershipRestV1TypesRestGroupParameters = netCordaMembershipRestV1TypesRestGroupParameters)
 
         return when (localVarResponse.responseType) {
             ResponseType.Success -> (localVarResponse as Success<*>).data as net.corda.membership.rest.v1.types.RestGroupParameters
@@ -1514,26 +1182,17 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
             ResponseType.Redirection -> throw UnsupportedOperationException("Client does not support Redirection responses.")
             ResponseType.ClientError -> {
                 val localVarError = localVarResponse as ClientError<*>
-                throw ClientException(
-                    "Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ClientException("Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}", localVarError.statusCode, localVarResponse)
             }
-
             ResponseType.ServerError -> {
                 val localVarError = localVarResponse as ServerError<*>
-                throw ServerException(
-                    "Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ServerException("Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}", localVarError.statusCode, localVarResponse)
             }
         }
     }
 
     /**
-     *
+     * 
      * This API allows you to make changes to the group parameters by submitting an updated version of the group parameters.
      * @param holdingidentityshorthash The holding identity ID of the MGM
      * @param netCordaMembershipRestV1TypesRestGroupParameters requestBody
@@ -1543,14 +1202,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class)
-    fun postMgmHoldingidentityshorthashGroupParametersWithHttpInfo(
-        holdingidentityshorthash: kotlin.String,
-        netCordaMembershipRestV1TypesRestGroupParameters: net.corda.membership.rest.v1.types.RestGroupParameters
-    ): ApiResponse<net.corda.membership.rest.v1.types.RestGroupParameters?> {
-        val localVariableConfig = postMgmHoldingidentityshorthashGroupParametersRequestConfig(
-            holdingidentityshorthash = holdingidentityshorthash,
-            netCordaMembershipRestV1TypesRestGroupParameters = netCordaMembershipRestV1TypesRestGroupParameters
-        )
+    fun postMgmHoldingidentityshorthashGroupParametersWithHttpInfo(holdingidentityshorthash: kotlin.String, netCordaMembershipRestV1TypesRestGroupParameters: net.corda.membership.rest.v1.types.RestGroupParameters) : ApiResponse<net.corda.membership.rest.v1.types.RestGroupParameters?> {
+        val localVariableConfig = postMgmHoldingidentityshorthashGroupParametersRequestConfig(holdingidentityshorthash = holdingidentityshorthash, netCordaMembershipRestV1TypesRestGroupParameters = netCordaMembershipRestV1TypesRestGroupParameters)
 
         return request<net.corda.membership.rest.v1.types.RestGroupParameters, net.corda.membership.rest.v1.types.RestGroupParameters>(
             localVariableConfig
@@ -1564,10 +1217,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @param netCordaMembershipRestV1TypesRestGroupParameters requestBody
      * @return RequestConfig
      */
-    fun postMgmHoldingidentityshorthashGroupParametersRequestConfig(
-        holdingidentityshorthash: kotlin.String,
-        netCordaMembershipRestV1TypesRestGroupParameters: net.corda.membership.rest.v1.types.RestGroupParameters
-    ): RequestConfig<net.corda.membership.rest.v1.types.RestGroupParameters> {
+    fun postMgmHoldingidentityshorthashGroupParametersRequestConfig(holdingidentityshorthash: kotlin.String, netCordaMembershipRestV1TypesRestGroupParameters: net.corda.membership.rest.v1.types.RestGroupParameters) : RequestConfig<net.corda.membership.rest.v1.types.RestGroupParameters> {
         val localVariableBody = netCordaMembershipRestV1TypesRestGroupParameters
         val localVariableQuery: MultiValueMap = mutableMapOf()
         val localVariableHeaders: MutableMap<String, String> = mutableMapOf()
@@ -1576,10 +1226,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
 
         return RequestConfig(
             method = RequestMethod.POST,
-            path = "/mgm/{holdingidentityshorthash}/group-parameters".replace(
-                "{" + "holdingidentityshorthash" + "}",
-                encodeURIComponent(holdingidentityshorthash.toString())
-            ),
+            path = "/mgm/{holdingidentityshorthash}/group-parameters".replace("{"+"holdingidentityshorthash"+"}", encodeURIComponent(holdingidentityshorthash.toString())),
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = true,
@@ -1588,9 +1235,9 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
     }
 
     /**
-     *
-     *
-     * @param holdingidentityshorthash
+     * 
+     * 
+     * @param holdingidentityshorthash 
      * @param netCordaMembershipRestV1TypesRequestPreAuthTokenRequest requestBody
      * @return net.corda.membership.rest.v1.types.response.PreAuthToken
      * @throws IllegalStateException If the request is not correctly configured
@@ -1601,14 +1248,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class, UnsupportedOperationException::class, ClientException::class, ServerException::class)
-    fun postMgmHoldingidentityshorthashPreauthtoken(
-        holdingidentityshorthash: kotlin.String,
-        netCordaMembershipRestV1TypesRequestPreAuthTokenRequest: net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
-    ): net.corda.membership.rest.v1.types.response.PreAuthToken {
-        val localVarResponse = postMgmHoldingidentityshorthashPreauthtokenWithHttpInfo(
-            holdingidentityshorthash = holdingidentityshorthash,
-            netCordaMembershipRestV1TypesRequestPreAuthTokenRequest = netCordaMembershipRestV1TypesRequestPreAuthTokenRequest
-        )
+    fun postMgmHoldingidentityshorthashPreauthtoken(holdingidentityshorthash: kotlin.String, netCordaMembershipRestV1TypesRequestPreAuthTokenRequest: net.corda.membership.rest.v1.types.request.PreAuthTokenRequest) : net.corda.membership.rest.v1.types.response.PreAuthToken {
+        val localVarResponse = postMgmHoldingidentityshorthashPreauthtokenWithHttpInfo(holdingidentityshorthash = holdingidentityshorthash, netCordaMembershipRestV1TypesRequestPreAuthTokenRequest = netCordaMembershipRestV1TypesRequestPreAuthTokenRequest)
 
         return when (localVarResponse.responseType) {
             ResponseType.Success -> (localVarResponse as Success<*>).data as net.corda.membership.rest.v1.types.response.PreAuthToken
@@ -1616,28 +1257,19 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
             ResponseType.Redirection -> throw UnsupportedOperationException("Client does not support Redirection responses.")
             ResponseType.ClientError -> {
                 val localVarError = localVarResponse as ClientError<*>
-                throw ClientException(
-                    "Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ClientException("Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}", localVarError.statusCode, localVarResponse)
             }
-
             ResponseType.ServerError -> {
                 val localVarError = localVarResponse as ServerError<*>
-                throw ServerException(
-                    "Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ServerException("Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}", localVarError.statusCode, localVarResponse)
             }
         }
     }
 
     /**
-     *
-     *
-     * @param holdingidentityshorthash
+     * 
+     * 
+     * @param holdingidentityshorthash 
      * @param netCordaMembershipRestV1TypesRequestPreAuthTokenRequest requestBody
      * @return ApiResponse<net.corda.membership.rest.v1.types.response.PreAuthToken?>
      * @throws IllegalStateException If the request is not correctly configured
@@ -1645,14 +1277,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class)
-    fun postMgmHoldingidentityshorthashPreauthtokenWithHttpInfo(
-        holdingidentityshorthash: kotlin.String,
-        netCordaMembershipRestV1TypesRequestPreAuthTokenRequest: net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
-    ): ApiResponse<net.corda.membership.rest.v1.types.response.PreAuthToken?> {
-        val localVariableConfig = postMgmHoldingidentityshorthashPreauthtokenRequestConfig(
-            holdingidentityshorthash = holdingidentityshorthash,
-            netCordaMembershipRestV1TypesRequestPreAuthTokenRequest = netCordaMembershipRestV1TypesRequestPreAuthTokenRequest
-        )
+    fun postMgmHoldingidentityshorthashPreauthtokenWithHttpInfo(holdingidentityshorthash: kotlin.String, netCordaMembershipRestV1TypesRequestPreAuthTokenRequest: net.corda.membership.rest.v1.types.request.PreAuthTokenRequest) : ApiResponse<net.corda.membership.rest.v1.types.response.PreAuthToken?> {
+        val localVariableConfig = postMgmHoldingidentityshorthashPreauthtokenRequestConfig(holdingidentityshorthash = holdingidentityshorthash, netCordaMembershipRestV1TypesRequestPreAuthTokenRequest = netCordaMembershipRestV1TypesRequestPreAuthTokenRequest)
 
         return request<net.corda.membership.rest.v1.types.request.PreAuthTokenRequest, net.corda.membership.rest.v1.types.response.PreAuthToken>(
             localVariableConfig
@@ -1662,14 +1288,11 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
     /**
      * To obtain the request config of the operation postMgmHoldingidentityshorthashPreauthtoken
      *
-     * @param holdingidentityshorthash
+     * @param holdingidentityshorthash 
      * @param netCordaMembershipRestV1TypesRequestPreAuthTokenRequest requestBody
      * @return RequestConfig
      */
-    fun postMgmHoldingidentityshorthashPreauthtokenRequestConfig(
-        holdingidentityshorthash: kotlin.String,
-        netCordaMembershipRestV1TypesRequestPreAuthTokenRequest: net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
-    ): RequestConfig<net.corda.membership.rest.v1.types.request.PreAuthTokenRequest> {
+    fun postMgmHoldingidentityshorthashPreauthtokenRequestConfig(holdingidentityshorthash: kotlin.String, netCordaMembershipRestV1TypesRequestPreAuthTokenRequest: net.corda.membership.rest.v1.types.request.PreAuthTokenRequest) : RequestConfig<net.corda.membership.rest.v1.types.request.PreAuthTokenRequest> {
         val localVariableBody = netCordaMembershipRestV1TypesRequestPreAuthTokenRequest
         val localVariableQuery: MultiValueMap = mutableMapOf()
         val localVariableHeaders: MutableMap<String, String> = mutableMapOf()
@@ -1678,10 +1301,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
 
         return RequestConfig(
             method = RequestMethod.POST,
-            path = "/mgm/{holdingidentityshorthash}/preauthtoken".replace(
-                "{" + "holdingidentityshorthash" + "}",
-                encodeURIComponent(holdingidentityshorthash.toString())
-            ),
+            path = "/mgm/{holdingidentityshorthash}/preauthtoken".replace("{"+"holdingidentityshorthash"+"}", encodeURIComponent(holdingidentityshorthash.toString())),
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = true,
@@ -1690,7 +1310,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
     }
 
     /**
-     *
+     * 
      * The suspend endpoint enables you to suspend a member.
      * @param holdingidentityshorthash The holding identity ID of the MGM of the membership group
      * @param netCordaMembershipRestV1TypesRequestSuspensionActivationParameters requestBody
@@ -1702,14 +1322,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @throws ServerException If the API returns a server error response
      */
     @Throws(IllegalStateException::class, IOException::class, UnsupportedOperationException::class, ClientException::class, ServerException::class)
-    fun postMgmHoldingidentityshorthashSuspend(
-        holdingidentityshorthash: kotlin.String,
-        netCordaMembershipRestV1TypesRequestSuspensionActivationParameters: net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
-    ): Unit {
-        val localVarResponse = postMgmHoldingidentityshorthashSuspendWithHttpInfo(
-            holdingidentityshorthash = holdingidentityshorthash,
-            netCordaMembershipRestV1TypesRequestSuspensionActivationParameters = netCordaMembershipRestV1TypesRequestSuspensionActivationParameters
-        )
+    fun postMgmHoldingidentityshorthashSuspend(holdingidentityshorthash: kotlin.String, netCordaMembershipRestV1TypesRequestSuspensionActivationParameters: net.corda.membership.rest.v1.types.request.SuspensionActivationParameters) : Unit {
+        val localVarResponse = postMgmHoldingidentityshorthashSuspendWithHttpInfo(holdingidentityshorthash = holdingidentityshorthash, netCordaMembershipRestV1TypesRequestSuspensionActivationParameters = netCordaMembershipRestV1TypesRequestSuspensionActivationParameters)
 
         return when (localVarResponse.responseType) {
             ResponseType.Success -> Unit
@@ -1717,26 +1331,17 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
             ResponseType.Redirection -> throw UnsupportedOperationException("Client does not support Redirection responses.")
             ResponseType.ClientError -> {
                 val localVarError = localVarResponse as ClientError<*>
-                throw ClientException(
-                    "Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ClientException("Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}", localVarError.statusCode, localVarResponse)
             }
-
             ResponseType.ServerError -> {
                 val localVarError = localVarResponse as ServerError<*>
-                throw ServerException(
-                    "Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ServerException("Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}", localVarError.statusCode, localVarResponse)
             }
         }
     }
 
     /**
-     *
+     * 
      * The suspend endpoint enables you to suspend a member.
      * @param holdingidentityshorthash The holding identity ID of the MGM of the membership group
      * @param netCordaMembershipRestV1TypesRequestSuspensionActivationParameters requestBody
@@ -1745,14 +1350,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @throws IOException Rethrows the OkHttp execute method exception
      */
     @Throws(IllegalStateException::class, IOException::class)
-    fun postMgmHoldingidentityshorthashSuspendWithHttpInfo(
-        holdingidentityshorthash: kotlin.String,
-        netCordaMembershipRestV1TypesRequestSuspensionActivationParameters: net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
-    ): ApiResponse<Unit?> {
-        val localVariableConfig = postMgmHoldingidentityshorthashSuspendRequestConfig(
-            holdingidentityshorthash = holdingidentityshorthash,
-            netCordaMembershipRestV1TypesRequestSuspensionActivationParameters = netCordaMembershipRestV1TypesRequestSuspensionActivationParameters
-        )
+    fun postMgmHoldingidentityshorthashSuspendWithHttpInfo(holdingidentityshorthash: kotlin.String, netCordaMembershipRestV1TypesRequestSuspensionActivationParameters: net.corda.membership.rest.v1.types.request.SuspensionActivationParameters) : ApiResponse<Unit?> {
+        val localVariableConfig = postMgmHoldingidentityshorthashSuspendRequestConfig(holdingidentityshorthash = holdingidentityshorthash, netCordaMembershipRestV1TypesRequestSuspensionActivationParameters = netCordaMembershipRestV1TypesRequestSuspensionActivationParameters)
 
         return request<net.corda.membership.rest.v1.types.request.SuspensionActivationParameters, Unit>(
             localVariableConfig
@@ -1766,21 +1365,15 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @param netCordaMembershipRestV1TypesRequestSuspensionActivationParameters requestBody
      * @return RequestConfig
      */
-    fun postMgmHoldingidentityshorthashSuspendRequestConfig(
-        holdingidentityshorthash: kotlin.String,
-        netCordaMembershipRestV1TypesRequestSuspensionActivationParameters: net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
-    ): RequestConfig<net.corda.membership.rest.v1.types.request.SuspensionActivationParameters> {
+    fun postMgmHoldingidentityshorthashSuspendRequestConfig(holdingidentityshorthash: kotlin.String, netCordaMembershipRestV1TypesRequestSuspensionActivationParameters: net.corda.membership.rest.v1.types.request.SuspensionActivationParameters) : RequestConfig<net.corda.membership.rest.v1.types.request.SuspensionActivationParameters> {
         val localVariableBody = netCordaMembershipRestV1TypesRequestSuspensionActivationParameters
         val localVariableQuery: MultiValueMap = mutableMapOf()
         val localVariableHeaders: MutableMap<String, String> = mutableMapOf()
         localVariableHeaders["Content-Type"] = "application/json"
-
+        
         return RequestConfig(
             method = RequestMethod.POST,
-            path = "/mgm/{holdingidentityshorthash}/suspend".replace(
-                "{" + "holdingidentityshorthash" + "}",
-                encodeURIComponent(holdingidentityshorthash.toString())
-            ),
+            path = "/mgm/{holdingidentityshorthash}/suspend".replace("{"+"holdingidentityshorthash"+"}", encodeURIComponent(holdingidentityshorthash.toString())),
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = true,
@@ -1789,7 +1382,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
     }
 
     /**
-     *
+     * 
      * This API allows a client certificate with a given subject to be used in mutual TLS connections.
      * @param holdingidentityshorthash The holding identity ID of the MGM.
      * @param subject The certificate subject.
@@ -1801,14 +1394,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @throws ServerException If the API returns a server error response
      */
     @Throws(IllegalStateException::class, IOException::class, UnsupportedOperationException::class, ClientException::class, ServerException::class)
-    fun putMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsSubject(
-        holdingidentityshorthash: kotlin.String,
-        subject: kotlin.String
-    ): Unit {
-        val localVarResponse = putMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsSubjectWithHttpInfo(
-            holdingidentityshorthash = holdingidentityshorthash,
-            subject = subject
-        )
+    fun putMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsSubject(holdingidentityshorthash: kotlin.String, subject: kotlin.String) : Unit {
+        val localVarResponse = putMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsSubjectWithHttpInfo(holdingidentityshorthash = holdingidentityshorthash, subject = subject)
 
         return when (localVarResponse.responseType) {
             ResponseType.Success -> Unit
@@ -1816,26 +1403,17 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
             ResponseType.Redirection -> throw UnsupportedOperationException("Client does not support Redirection responses.")
             ResponseType.ClientError -> {
                 val localVarError = localVarResponse as ClientError<*>
-                throw ClientException(
-                    "Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ClientException("Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}", localVarError.statusCode, localVarResponse)
             }
-
             ResponseType.ServerError -> {
                 val localVarError = localVarResponse as ServerError<*>
-                throw ServerException(
-                    "Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ServerException("Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}", localVarError.statusCode, localVarResponse)
             }
         }
     }
 
     /**
-     *
+     * 
      * This API allows a client certificate with a given subject to be used in mutual TLS connections.
      * @param holdingidentityshorthash The holding identity ID of the MGM.
      * @param subject The certificate subject.
@@ -1844,14 +1422,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @throws IOException Rethrows the OkHttp execute method exception
      */
     @Throws(IllegalStateException::class, IOException::class)
-    fun putMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsSubjectWithHttpInfo(
-        holdingidentityshorthash: kotlin.String,
-        subject: kotlin.String
-    ): ApiResponse<Unit?> {
-        val localVariableConfig = putMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsSubjectRequestConfig(
-            holdingidentityshorthash = holdingidentityshorthash,
-            subject = subject
-        )
+    fun putMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsSubjectWithHttpInfo(holdingidentityshorthash: kotlin.String, subject: kotlin.String) : ApiResponse<Unit?> {
+        val localVariableConfig = putMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsSubjectRequestConfig(holdingidentityshorthash = holdingidentityshorthash, subject = subject)
 
         return request<Unit, Unit>(
             localVariableConfig
@@ -1865,20 +1437,14 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      * @param subject The certificate subject.
      * @return RequestConfig
      */
-    fun putMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsSubjectRequestConfig(
-        holdingidentityshorthash: kotlin.String,
-        subject: kotlin.String
-    ): RequestConfig<Unit> {
+    fun putMgmHoldingidentityshorthashMutualTlsAllowedClientCertificateSubjectsSubjectRequestConfig(holdingidentityshorthash: kotlin.String, subject: kotlin.String) : RequestConfig<Unit> {
         val localVariableBody = null
         val localVariableQuery: MultiValueMap = mutableMapOf()
         val localVariableHeaders: MutableMap<String, String> = mutableMapOf()
-
+        
         return RequestConfig(
             method = RequestMethod.PUT,
-            path = "/mgm/{holdingidentityshorthash}/mutual-tls/allowed-client-certificate-subjects/{subject}".replace(
-                "{" + "holdingidentityshorthash" + "}",
-                encodeURIComponent(holdingidentityshorthash.toString())
-            ).replace("{" + "subject" + "}", encodeURIComponent(subject.toString())),
+            path = "/mgm/{holdingidentityshorthash}/mutual-tls/allowed-client-certificate-subjects/{subject}".replace("{"+"holdingidentityshorthash"+"}", encodeURIComponent(holdingidentityshorthash.toString())).replace("{"+"subject"+"}", encodeURIComponent(subject.toString())),
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = true,
@@ -1887,10 +1453,10 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
     }
 
     /**
-     *
-     *
-     * @param holdingidentityshorthash
-     * @param preauthtokenid
+     * 
+     * 
+     * @param holdingidentityshorthash 
+     * @param preauthtokenid 
      * @param putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest requestBody (optional)
      * @return net.corda.membership.rest.v1.types.response.PreAuthToken
      * @throws IllegalStateException If the request is not correctly configured
@@ -1901,16 +1467,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class, UnsupportedOperationException::class, ClientException::class, ServerException::class)
-    fun putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenid(
-        holdingidentityshorthash: kotlin.String,
-        preauthtokenid: kotlin.String,
-        putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest: PutMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest? = null
-    ): net.corda.membership.rest.v1.types.response.PreAuthToken {
-        val localVarResponse = putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidWithHttpInfo(
-            holdingidentityshorthash = holdingidentityshorthash,
-            preauthtokenid = preauthtokenid,
-            putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest = putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest
-        )
+    fun putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenid(holdingidentityshorthash: kotlin.String, preauthtokenid: kotlin.String, putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest: PutMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest? = null) : net.corda.membership.rest.v1.types.response.PreAuthToken {
+        val localVarResponse = putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidWithHttpInfo(holdingidentityshorthash = holdingidentityshorthash, preauthtokenid = preauthtokenid, putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest = putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest)
 
         return when (localVarResponse.responseType) {
             ResponseType.Success -> (localVarResponse as Success<*>).data as net.corda.membership.rest.v1.types.response.PreAuthToken
@@ -1918,29 +1476,20 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
             ResponseType.Redirection -> throw UnsupportedOperationException("Client does not support Redirection responses.")
             ResponseType.ClientError -> {
                 val localVarError = localVarResponse as ClientError<*>
-                throw ClientException(
-                    "Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ClientException("Client error : ${localVarError.statusCode} ${localVarError.message.orEmpty()}", localVarError.statusCode, localVarResponse)
             }
-
             ResponseType.ServerError -> {
                 val localVarError = localVarResponse as ServerError<*>
-                throw ServerException(
-                    "Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}",
-                    localVarError.statusCode,
-                    localVarResponse
-                )
+                throw ServerException("Server error : ${localVarError.statusCode} ${localVarError.message.orEmpty()} ${localVarError.body}", localVarError.statusCode, localVarResponse)
             }
         }
     }
 
     /**
-     *
-     *
-     * @param holdingidentityshorthash
-     * @param preauthtokenid
+     * 
+     * 
+     * @param holdingidentityshorthash 
+     * @param preauthtokenid 
      * @param putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest requestBody (optional)
      * @return ApiResponse<net.corda.membership.rest.v1.types.response.PreAuthToken?>
      * @throws IllegalStateException If the request is not correctly configured
@@ -1948,16 +1497,8 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class)
-    fun putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidWithHttpInfo(
-        holdingidentityshorthash: kotlin.String,
-        preauthtokenid: kotlin.String,
-        putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest: PutMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest?
-    ): ApiResponse<net.corda.membership.rest.v1.types.response.PreAuthToken?> {
-        val localVariableConfig = putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequestConfig(
-            holdingidentityshorthash = holdingidentityshorthash,
-            preauthtokenid = preauthtokenid,
-            putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest = putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest
-        )
+    fun putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidWithHttpInfo(holdingidentityshorthash: kotlin.String, preauthtokenid: kotlin.String, putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest: PutMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest?) : ApiResponse<net.corda.membership.rest.v1.types.response.PreAuthToken?> {
+        val localVariableConfig = putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequestConfig(holdingidentityshorthash = holdingidentityshorthash, preauthtokenid = preauthtokenid, putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest = putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest)
 
         return request<PutMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest, net.corda.membership.rest.v1.types.response.PreAuthToken>(
             localVariableConfig
@@ -1967,16 +1508,12 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
     /**
      * To obtain the request config of the operation putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenid
      *
-     * @param holdingidentityshorthash
-     * @param preauthtokenid
+     * @param holdingidentityshorthash 
+     * @param preauthtokenid 
      * @param putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest requestBody (optional)
      * @return RequestConfig
      */
-    fun putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequestConfig(
-        holdingidentityshorthash: kotlin.String,
-        preauthtokenid: kotlin.String,
-        putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest: PutMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest?
-    ): RequestConfig<PutMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest> {
+    fun putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequestConfig(holdingidentityshorthash: kotlin.String, preauthtokenid: kotlin.String, putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest: PutMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest?) : RequestConfig<PutMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest> {
         val localVariableBody = putMgmHoldingidentityshorthashPreauthtokenRevokePreauthtokenidRequest
         val localVariableQuery: MultiValueMap = mutableMapOf()
         val localVariableHeaders: MutableMap<String, String> = mutableMapOf()
@@ -1985,10 +1522,7 @@ class MGMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
 
         return RequestConfig(
             method = RequestMethod.PUT,
-            path = "/mgm/{holdingidentityshorthash}/preauthtoken/revoke/{preauthtokenid}".replace(
-                "{" + "holdingidentityshorthash" + "}",
-                encodeURIComponent(holdingidentityshorthash.toString())
-            ).replace("{" + "preauthtokenid" + "}", encodeURIComponent(preauthtokenid.toString())),
+            path = "/mgm/{holdingidentityshorthash}/preauthtoken/revoke/{preauthtokenid}".replace("{"+"holdingidentityshorthash"+"}", encodeURIComponent(holdingidentityshorthash.toString())).replace("{"+"preauthtokenid"+"}", encodeURIComponent(preauthtokenid.toString())),
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = true,

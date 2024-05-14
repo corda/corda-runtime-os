@@ -142,7 +142,7 @@ class RBACPermissionApi(basePath: kotlin.String = defaultBasePath, client: OkHtt
 
     /**
      * 
-     * 
+     * Returns the version of the endpoint
      * @return kotlin.Int
      * @throws IllegalStateException If the request is not correctly configured
      * @throws IOException Rethrows the OkHttp execute method exception
@@ -172,7 +172,7 @@ class RBACPermissionApi(basePath: kotlin.String = defaultBasePath, client: OkHtt
 
     /**
      * 
-     * 
+     * Returns the version of the endpoint
      * @return ApiResponse<kotlin.Int?>
      * @throws IllegalStateException If the request is not correctly configured
      * @throws IOException Rethrows the OkHttp execute method exception

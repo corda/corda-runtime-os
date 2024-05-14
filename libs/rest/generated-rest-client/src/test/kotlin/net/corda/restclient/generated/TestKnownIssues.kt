@@ -2,6 +2,7 @@ package net.corda.restclient.generated
 
 import io.javalin.Javalin
 import net.corda.restclient.CordaRestClient
+import net.corda.restclient.dto.GenerateCsrWrapperRequest
 import net.corda.restclient.generated.apis.CertificateApi
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatCode
@@ -30,28 +31,6 @@ class TestKnownIssues {
         fun teardown() {
             app.stop()
         }
-    }
-
-    /**
-     * See comment for workaround details
-     * https://r3-cev.atlassian.net/browse/ES-2162?focusedCommentId=302712
-     */
-    @Test
-    fun testPostHelloCanHandleRawStringResponse(){
-        app.post("api/v5_2/hello") { ctx ->
-            val name = ctx.queryParam("addressee") ?: "Guest"
-            ctx.header("Content-Type", "application/json")
-            ctx.result("Hello, $name! (from admin)")
-
-        }
-        val client = CordaRestClient.createHttpClient(baseUrl = "http:localhost:8888")
-
-        assertThatCode {
-            val response: String = client.helloRestClient.postHello("Foo")
-            assertThat(response).contains("Foo")
-        }
-        .withFailMessage("Has the generated api been re-generated? Re-apply workaround")
-        .doesNotThrowAnyException()
     }
 
     /**
@@ -112,6 +91,42 @@ class TestKnownIssues {
         assertThat(requestConfig.body?.values.toString())
             .contains("one.txt")
             .doesNotContain("two.txt")
+    }
+
+    /**
+     * See comment for workaround details
+     * https://r3-cev.atlassian.net/browse/ES-2162?focusedCommentId=304184
+     */
+    @Test
+    fun testCsrGenerationHandlesString() {
+        val csrResponse = "-----BEGIN CERTIFICATE REQUEST-----\n" +
+                "MIIBTjCB6gIBADBOMQswCQYDVQQGEwJHQjEPMA0GA1UEBxMGTG9uZG9uMRgwFgYD\n" +
+                "VQQKEw9QMlAgQ2VydGlmaWNhdGUxFDASBgNVBAsMC1tsb2NhbGhvc3RdMFkwEwYH\n" +
+                "KoZIzj0CAQYIKoZIzj0DAQcDQgAEUlCzufaLz5VxQ5Yvve8b/Q65RApxDjWCjmiQ\n" +
+                "gz1dncBzaS8X9QsgJ1fL7+uV3xaPmln57n2CCLlBkrIPNGk6c6A6MDgGCSqGSIb3\n" +
+                "DQEJDjErMCkwDgYDVR0PAQH/BAQDAgeAMBcGA1UdEQEB/wQNMAuCCWxvY2FsaG9z\n" +
+                "dDAUBggqhkjOPQQDAgYIKoZIzj0DAQcDSQAwRgIhALCO226sNaAwxhvIT2dnnhej\n" +
+                "oR+yXgQLjd7Gnt/LRo6eAiEAvGQxrZgM85IgngWBO033RYWVyxICmj/yepwDDNj+\n" +
+                "SDc=\n" +
+                "-----END CERTIFICATE REQUEST-----\n"
+        app.post("api/v5_2/certificate/p2p/123") {ctx ->
+            ctx.header("Content-Type", "application/json")
+            ctx.result(csrResponse)
+        }
+
+        val client = CordaRestClient.createHttpClient(baseUrl = "http:localhost:8888")
+        val requestBody = GenerateCsrWrapperRequest(
+            x500Name = "OU=[localhost], O=P2P Certificate, L=London, C=GB",
+            contextMap = null,
+            subjectAlternativeNames = listOf("localhost")
+        )
+
+        assertThatCode {
+            val response: String = client.certificatesClient.postCertificateTenantidKeyid("p2p","123", requestBody)
+            assertThat(response).contains("BEGIN CERTIFICATE REQUEST")
+        }
+            .withFailMessage("Has the generated api been re-generated? Re-apply workaround")
+            .doesNotThrowAnyException()
     }
 
 }

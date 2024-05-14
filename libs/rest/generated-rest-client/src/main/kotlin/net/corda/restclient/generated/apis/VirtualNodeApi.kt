@@ -47,7 +47,7 @@ class VirtualNodeApi(basePath: kotlin.String = defaultBasePath, client: OkHttpCl
     /**
      * 
      * This method lists all virtual nodes in the cluster.
-     * @return net.corda.restclient.dto.VirtualNodes
+     * @return net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
      * @throws IllegalStateException If the request is not correctly configured
      * @throws IOException Rethrows the OkHttp execute method exception
      * @throws UnsupportedOperationException If the API returns an informational or redirection response
@@ -56,11 +56,11 @@ class VirtualNodeApi(basePath: kotlin.String = defaultBasePath, client: OkHttpCl
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class, UnsupportedOperationException::class, ClientException::class, ServerException::class)
-    fun getVirtualnode() : net.corda.restclient.dto.VirtualNodes {
+    fun getVirtualnode() : net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes {
         val localVarResponse = getVirtualnodeWithHttpInfo()
 
         return when (localVarResponse.responseType) {
-            ResponseType.Success -> (localVarResponse as Success<*>).data as net.corda.restclient.dto.VirtualNodes
+            ResponseType.Success -> (localVarResponse as Success<*>).data as net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
             ResponseType.Informational -> throw UnsupportedOperationException("Client does not support Informational responses.")
             ResponseType.Redirection -> throw UnsupportedOperationException("Client does not support Redirection responses.")
             ResponseType.ClientError -> {
@@ -77,16 +77,16 @@ class VirtualNodeApi(basePath: kotlin.String = defaultBasePath, client: OkHttpCl
     /**
      * 
      * This method lists all virtual nodes in the cluster.
-     * @return ApiResponse<net.corda.restclient.dto.VirtualNodes?>
+     * @return ApiResponse<net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes?>
      * @throws IllegalStateException If the request is not correctly configured
      * @throws IOException Rethrows the OkHttp execute method exception
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class)
-    fun getVirtualnodeWithHttpInfo() : ApiResponse<net.corda.restclient.dto.VirtualNodes?> {
+    fun getVirtualnodeWithHttpInfo() : ApiResponse<net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes?> {
         val localVariableConfig = getVirtualnodeRequestConfig()
 
-        return request<Unit, net.corda.restclient.dto.VirtualNodes>(
+        return request<Unit, net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes>(
             localVariableConfig
         )
     }
@@ -321,7 +321,7 @@ class VirtualNodeApi(basePath: kotlin.String = defaultBasePath, client: OkHttpCl
 
     /**
      * 
-     * 
+     * Returns the version of the endpoint
      * @return kotlin.Int
      * @throws IllegalStateException If the request is not correctly configured
      * @throws IOException Rethrows the OkHttp execute method exception
@@ -351,7 +351,7 @@ class VirtualNodeApi(basePath: kotlin.String = defaultBasePath, client: OkHttpCl
 
     /**
      * 
-     * 
+     * Returns the version of the endpoint
      * @return ApiResponse<kotlin.Int?>
      * @throws IllegalStateException If the request is not correctly configured
      * @throws IOException Rethrows the OkHttp execute method exception
@@ -391,7 +391,7 @@ class VirtualNodeApi(basePath: kotlin.String = defaultBasePath, client: OkHttpCl
      * 
      * This method returns the VirtualNodeInfo for a given Holding Identity ShortHash.
      * @param holdingidentityshorthash The short hash of the holding identity; obtained during node registration
-     * @return net.corda.restclient.dto.VirtualNodeInfo
+     * @return net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
      * @throws IllegalStateException If the request is not correctly configured
      * @throws IOException Rethrows the OkHttp execute method exception
      * @throws UnsupportedOperationException If the API returns an informational or redirection response
@@ -400,11 +400,11 @@ class VirtualNodeApi(basePath: kotlin.String = defaultBasePath, client: OkHttpCl
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class, UnsupportedOperationException::class, ClientException::class, ServerException::class)
-    fun getVirtualnodeHoldingidentityshorthash(holdingidentityshorthash: kotlin.String) : net.corda.restclient.dto.VirtualNodeInfo {
+    fun getVirtualnodeHoldingidentityshorthash(holdingidentityshorthash: kotlin.String) : net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo {
         val localVarResponse = getVirtualnodeHoldingidentityshorthashWithHttpInfo(holdingidentityshorthash = holdingidentityshorthash)
 
         return when (localVarResponse.responseType) {
-            ResponseType.Success -> (localVarResponse as Success<*>).data as net.corda.restclient.dto.VirtualNodeInfo
+            ResponseType.Success -> (localVarResponse as Success<*>).data as net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
             ResponseType.Informational -> throw UnsupportedOperationException("Client does not support Informational responses.")
             ResponseType.Redirection -> throw UnsupportedOperationException("Client does not support Redirection responses.")
             ResponseType.ClientError -> {
@@ -422,16 +422,16 @@ class VirtualNodeApi(basePath: kotlin.String = defaultBasePath, client: OkHttpCl
      * 
      * This method returns the VirtualNodeInfo for a given Holding Identity ShortHash.
      * @param holdingidentityshorthash The short hash of the holding identity; obtained during node registration
-     * @return ApiResponse<net.corda.restclient.dto.VirtualNodeInfo?>
+     * @return ApiResponse<net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo?>
      * @throws IllegalStateException If the request is not correctly configured
      * @throws IOException Rethrows the OkHttp execute method exception
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class)
-    fun getVirtualnodeHoldingidentityshorthashWithHttpInfo(holdingidentityshorthash: kotlin.String) : ApiResponse<net.corda.restclient.dto.VirtualNodeInfo?> {
+    fun getVirtualnodeHoldingidentityshorthashWithHttpInfo(holdingidentityshorthash: kotlin.String) : ApiResponse<net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo?> {
         val localVariableConfig = getVirtualnodeHoldingidentityshorthashRequestConfig(holdingidentityshorthash = holdingidentityshorthash)
 
-        return request<Unit, net.corda.restclient.dto.VirtualNodeInfo>(
+        return request<Unit, net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo>(
             localVariableConfig
         )
     }

@@ -76,11 +76,11 @@ class CordaRestClient(
 
             val sslContext = SSLContext.getInstance("SSL")
             sslContext.init(null, trustAllCerts, SecureRandom())
-            val ac = ApiClient.apply {
+            val apiClientCompanion = ApiClient.apply {
                 this.username = username
                 this.password = password
             }
-            val client = ac.builder
+            val client = apiClientCompanion.builder
                 .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
                 .hostnameVerifier { _, _ -> true }
                 .build()

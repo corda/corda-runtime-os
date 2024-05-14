@@ -1,19 +1,25 @@
 package net.corda.restclient.generated.infrastructure
 
 import com.fasterxml.jackson.core.JsonParseException
-import com.fasterxml.jackson.core.type.TypeReference
-import okhttp3.FormBody
-import okhttp3.Headers.Companion.toHeaders
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.FormBody
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.ResponseBody
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.Request
+import okhttp3.Headers
+import okhttp3.Headers.Companion.toHeaders
+import okhttp3.MultipartBody
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.Response
+import java.io.BufferedWriter
 import java.io.File
+import java.io.FileWriter
+import java.io.IOException
 import java.net.URLConnection
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -21,8 +27,9 @@ import java.time.LocalTime
 import java.time.OffsetDateTime
 import java.time.OffsetTime
 import java.util.Locale
+import com.fasterxml.jackson.core.type.TypeReference
 
-val EMPTY_REQUEST: RequestBody = ByteArray(0).toRequestBody()
+ val EMPTY_REQUEST: RequestBody = ByteArray(0).toRequestBody()
 
 open class ApiClient(val baseUrl: String, val client: OkHttpClient = defaultClient) {
     companion object {
@@ -74,7 +81,7 @@ open class ApiClient(val baseUrl: String, val client: OkHttpClient = defaultClie
                         (content as Map<String, PartConfig<*>>).forEach { (name, part) ->
                             if (part.body is File) {
                                 val partHeaders = part.headers.toMutableMap() +
-                                        ("Content-Disposition" to "form-data; name=\"$name\"; filename=\"${part.body.name}\"")
+                                    ("Content-Disposition" to "form-data; name=\"$name\"; filename=\"${part.body.name}\"")
                                 val fileMediaType = guessContentTypeFromFile(part.body).toMediaTypeOrNull()
                                 addPart(
                                     partHeaders.toHeaders(),
@@ -82,7 +89,7 @@ open class ApiClient(val baseUrl: String, val client: OkHttpClient = defaultClie
                                 )
                             } else {
                                 val partHeaders = part.headers.toMutableMap() +
-                                        ("Content-Disposition" to "form-data; name=\"$name\"")
+                                    ("Content-Disposition" to "form-data; name=\"$name\"")
                                 addPart(
                                     partHeaders.toHeaders(),
                                     parameterToString(part.body).toRequestBody(null)
@@ -90,7 +97,6 @@ open class ApiClient(val baseUrl: String, val client: OkHttpClient = defaultClie
                             }
                         }
                     }.build()
-
             mediaType == FormUrlEncMediaType -> {
                 FormBody.Builder().apply {
                     // content's type *must* be Map<String, PartConfig<*>>
@@ -100,7 +106,6 @@ open class ApiClient(val baseUrl: String, val client: OkHttpClient = defaultClie
                     }
                 }.build()
             }
-
             mediaType == null || mediaType.startsWith("application/") && mediaType.endsWith("json") ->
                 if (content == null) {
                     EMPTY_REQUEST
@@ -108,7 +113,6 @@ open class ApiClient(val baseUrl: String, val client: OkHttpClient = defaultClie
                     Serializer.jacksonObjectMapper.writeValueAsString(content)
                         .toRequestBody((mediaType ?: JsonMediaType).toMediaTypeOrNull())
                 }
-
             mediaType == XmlMediaType -> throw UnsupportedOperationException("xml not currently supported.")
             mediaType == OctetMediaType && content is ByteArray ->
                 content.toRequestBody(OctetMediaType.toMediaTypeOrNull())
@@ -116,8 +120,8 @@ open class ApiClient(val baseUrl: String, val client: OkHttpClient = defaultClie
             else -> throw UnsupportedOperationException("requestBody currently only supports JSON body, byte body and File body.")
         }
 
-    protected inline fun <reified T : Any?> responseBody(body: ResponseBody?, mediaType: String? = JsonMediaType): T? {
-        if (body == null) {
+    protected inline fun <reified T: Any?> responseBody(body: ResponseBody?, mediaType: String? = JsonMediaType): T? {
+        if(body == null) {
             return null
         }
         if (T::class.java == File::class.java) {
@@ -145,9 +149,8 @@ open class ApiClient(val baseUrl: String, val client: OkHttpClient = defaultClie
                     bodyContent as? T
                 }
             }
-
             mediaType == OctetMediaType -> body.bytes() as? T
-            else -> throw UnsupportedOperationException("responseBody currently only supports JSON body.")
+            else ->  throw UnsupportedOperationException("responseBody currently only supports JSON body.")
         }
     }
 
@@ -161,7 +164,7 @@ open class ApiClient(val baseUrl: String, val client: OkHttpClient = defaultClie
         }
     }
 
-    protected inline fun <reified I, reified T : Any?> request(requestConfig: RequestConfig<I>): ApiResponse<T?> {
+    protected inline fun <reified I, reified T: Any?> request(requestConfig: RequestConfig<I>): ApiResponse<T?> {
         val httpUrl = baseUrl.toHttpUrlOrNull() ?: throw IllegalStateException("baseUrl is invalid.")
 
         // take authMethod from operation
@@ -220,26 +223,22 @@ open class ApiClient(val baseUrl: String, val client: OkHttpClient = defaultClie
                 response.code,
                 response.headers.toMultimap()
             )
-
             response.isInformational -> Informational(
                 response.message,
                 response.code,
                 response.headers.toMultimap()
             )
-
             response.isSuccessful -> Success(
                 responseBody(response.body, accept),
                 response.code,
                 response.headers.toMultimap()
             )
-
             response.isClientError -> ClientError(
                 response.message,
                 response.body?.string(),
                 response.code,
                 response.headers.toMultimap()
             )
-
             else -> ServerError(
                 response.message,
                 response.body?.string(),
@@ -255,11 +254,10 @@ open class ApiClient(val baseUrl: String, val client: OkHttpClient = defaultClie
         is Iterable<*> -> toMultiValue(value, "csv").toString()
         is OffsetDateTime, is OffsetTime, is LocalDateTime, is LocalDate, is LocalTime ->
             parseDateToQueryString(value)
-
         else -> value.toString()
     }
 
-    protected inline fun <reified T : Any> parseDateToQueryString(value: T): String {
+    protected inline fun <reified T: Any> parseDateToQueryString(value : T): String {
         /*
         .replace("\"", "") converts the json object string to an actual string for the query parameter.
         The moshi or gson adapter allows a more generic solution instead of trying to use a native

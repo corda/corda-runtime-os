@@ -46,7 +46,7 @@ class VirtualNodeMaintenanceApi(basePath: kotlin.String = defaultBasePath, clien
 
     /**
      * 
-     * 
+     * Returns the version of the endpoint
      * @return kotlin.Int
      * @throws IllegalStateException If the request is not correctly configured
      * @throws IOException Rethrows the OkHttp execute method exception
@@ -76,7 +76,7 @@ class VirtualNodeMaintenanceApi(basePath: kotlin.String = defaultBasePath, clien
 
     /**
      * 
-     * 
+     * Returns the version of the endpoint
      * @return ApiResponse<kotlin.Int?>
      * @throws IllegalStateException If the request is not correctly configured
      * @throws IOException Rethrows the OkHttp execute method exception

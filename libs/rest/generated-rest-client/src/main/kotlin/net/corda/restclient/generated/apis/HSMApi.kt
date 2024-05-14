@@ -46,7 +46,7 @@ class HSMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
 
     /**
      * 
-     * 
+     * Returns the version of the endpoint
      * @return kotlin.Int
      * @throws IllegalStateException If the request is not correctly configured
      * @throws IOException Rethrows the OkHttp execute method exception
@@ -76,7 +76,7 @@ class HSMApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClient = A
 
     /**
      * 
-     * 
+     * Returns the version of the endpoint
      * @return ApiResponse<kotlin.Int?>
      * @throws IllegalStateException If the request is not correctly configured
      * @throws IOException Rethrows the OkHttp execute method exception

@@ -14,6 +14,7 @@ import net.corda.gradle.plugin.dtos.VNode
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType
+import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.rest.v1.types.request.HostedIdentitySessionKeyAndCertificate
 import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
@@ -22,7 +23,6 @@ import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 import net.corda.membership.rest.v1.types.response.RegistrationRequestProgress
 import net.corda.restclient.CordaRestClient
 import net.corda.restclient.dto.UpdateConfigParametersString
-import net.corda.restclient.dto.VirtualNodeInfo
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.sdk.config.ClusterConfig
 import net.corda.sdk.data.Checksum

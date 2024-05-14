@@ -121,7 +121,7 @@ class RBACUserApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClien
 
     /**
      * 
-     * 
+     * Returns the version of the endpoint
      * @return kotlin.Int
      * @throws IllegalStateException If the request is not correctly configured
      * @throws IOException Rethrows the OkHttp execute method exception
@@ -151,7 +151,7 @@ class RBACUserApi(basePath: kotlin.String = defaultBasePath, client: OkHttpClien
 
     /**
      * 
-     * 
+     * Returns the version of the endpoint
      * @return ApiResponse<kotlin.Int?>
      * @throws IllegalStateException If the request is not correctly configured
      * @throws IOException Rethrows the OkHttp execute method exception

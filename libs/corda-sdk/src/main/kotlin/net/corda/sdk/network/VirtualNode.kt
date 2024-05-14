@@ -2,9 +2,9 @@ package net.corda.sdk.network
 
 import net.corda.crypto.core.ShortHash
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.JsonCreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
 import net.corda.rest.asynchronous.v1.AsyncResponse
 import net.corda.restclient.CordaRestClient
-import net.corda.restclient.dto.VirtualNodes
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.OperationalStatus

@@ -32,7 +32,6 @@ openApiGenerate {
             'ChangeVirtualNodeStateResponse'        : 'net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse',
             'ConfigSchemaVersion'                   : 'net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion',
             'CpiIdentifier'                         : 'net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier',
-            'CpiIdentifier_1'                       : 'net.corda.restclient.dto.CpiIdentifier1',
             'CpiMetadata'                           : 'net.corda.libs.cpiupload.endpoints.v1.CpiMetadata',
             'CpiUploadResponse'                     : 'net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource.CpiUploadResponse',
             'CpiUploadStatus'                       : 'net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource.CpiUploadStatus',
@@ -74,9 +73,8 @@ openApiGenerate {
             'RoleResponseType'                      : 'net.corda.libs.permissions.endpoints.v1.role.types.RoleResponseType',
             'RotatedKeysStatus'                     : 'net.corda.crypto.rest.response.RotatedKeysStatus',
             'Route'                                 : 'net.corda.libs.external.messaging.entities.Route',
-            'RouteConfiguration'                    : 'net.corda.restclient.dto.RouteConfiguration',
-            'Routes'                                : 'net.corda.restclient.dto.Routes',
-            'SecureHash'                            : 'net.corda.data.crypto.SecureHash',
+            'RouteConfiguration'                    : 'net.corda.libs.virtualnode.endpoints.v1.types.external.messaging.RouteConfiguration',
+            'Routes'                                : 'net.corda.libs.virtualnode.endpoints.v1.types.external.messaging.Routes',
             'StartFlowParameters'                   : 'net.corda.flow.rest.v1.types.request.StartFlowParameters',
             'StartableFlowsResponse'                : 'net.corda.flow.rest.v1.types.response.StartableFlowsResponse',
             'SuspensionActivationParameters'        : 'net.corda.membership.rest.v1.types.request.SuspensionActivationParameters',
@@ -85,8 +83,8 @@ openApiGenerate {
             'UpdateVirtualNodeDbRequest'            : 'net.corda.libs.virtualnode.endpoints.v1.types.UpdateVirtualNodeDbRequest',
             'UserPermissionSummaryResponseType'     : 'net.corda.libs.permissions.endpoints.v1.user.types.UserPermissionSummaryResponseType',
             'UserResponseType'                      : 'net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType',
-            'VirtualNodeInfo'                       : 'net.corda.restclient.dto.VirtualNodeInfo',
-            'VirtualNodes'                          : 'net.corda.restclient.dto.VirtualNodes'
+            'VirtualNodeInfo'                       : 'net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo',
+            'VirtualNodes'                          : 'net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes'
     ])
     configOptions.set([
             'serializationLibrary' : 'jackson'
