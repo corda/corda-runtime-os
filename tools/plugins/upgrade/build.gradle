@@ -20,7 +20,6 @@ dependencies {
     }
 
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation libs.jackson.module.kotlin
     implementation libs.jackson.datatype.jsr310
@@ -28,16 +27,33 @@ dependencies {
     implementation libs.snakeyaml
     implementation libs.unirest.java
     implementation libs.pf4j
+
     kapt libs.pf4j
 
+    implementation "org.liquibase:liquibase-core:$liquibaseVersion"
+    implementation 'javax.persistence:javax.persistence-api'
     implementation "net.corda:corda-avro-schema:$cordaApiVersion"
     implementation "net.corda:corda-topic-schema"
+
+    implementation project(':components:membership:membership-rest')
+    implementation project(':libs:crypto:crypto-core')
+    implementation project(':libs:db:db-core')
+    implementation project(':libs:membership:membership-datamodel')
+    implementation project(':libs:virtual-node:virtual-node-info')
+    implementation project(':tools:plugins:network')
+    implementation project(':tools:plugins:plugins-rest')
+    implementation project(':tools:plugins:initial-config')
     implementation project(":libs:messaging:kafka-message-bus-impl")
     implementation project(":libs:schema-registry:schema-registry")
     implementation project(":libs:serialization:serialization-avro")
     implementation project(":tools:plugins:topic-config")
     implementation project(":libs:schema-registry:schema-registry-impl")
     implementation project(":libs:utilities")
+
+    // DO NOT DISTRIBUTE DRIVERS HERE WE ARE NOT LICENSED TO DISTRIBUTE
+    // JDBC drivers are picked up in Corda 5 from a configured location, the CLI tool does not yet have this ability so
+    // the Postgres drivers are packaged within the tool itself.
+    runtimeOnly libs.postgresql.jdbc
 }
 
 cliPlugin {
