@@ -123,8 +123,13 @@ object Encoding {
         SNAPPY
     }
 
-    private val cordaPrimaryEncodings = Encodings.values().associateBy { it.primaryEncoding }
-    private val cordaMagicHeaders = Encodings.values().associateBy { it.magic.toByteArray().sequence() }
+    private val cordaMagicHeaders = Encodings.values()
+        .groupBy { it.magic.toByteArray().sequence() }
+        .mapValues { (_, encodingEnum) ->
+            encodingEnum.associateBy { encoding: Encodings ->
+                encoding.primaryEncoding
+            }
+        }
 
     @Suppress("LongParameterList")
     fun decodedBytes(
@@ -166,7 +171,7 @@ object Encoding {
         requireNotNull(magicType) { "Unknown magic header $magicByteSequence." }
 
         val primaryEncodingString = byteSequence.subSequence(5, 2).toHexString()
-        val primaryEncodingType = cordaPrimaryEncodings[primaryEncodingString]
+        val primaryEncodingType = magicType[primaryEncodingString]
             ?: throw java.lang.RuntimeException("Unknown primary encoding $primaryEncodingString.")
 
         val compressionEncodingInfo = "Compression encoding ${primaryEncodingType.compressionEncoding}, " +
