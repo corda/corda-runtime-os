@@ -56,7 +56,7 @@ class CordaRestClient(
 
 
     companion object {
-        private const val API_VERSION = "/api/v5_2" // oldest supported version
+        private const val API_VERSION = "/api/v5_3"
         fun createHttpClient(
             baseUrl: String = "https://localhost:8888",
             username: String = "admin",

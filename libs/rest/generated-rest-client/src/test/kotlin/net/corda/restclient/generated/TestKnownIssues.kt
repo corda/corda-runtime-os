@@ -40,7 +40,7 @@ class TestKnownIssues {
     @Test
     fun testGetGroupPolicyFromMgm() {
         val inputStream = File("./src/test/resources/groupPolicy.json").inputStream()
-        app.get("api/v5_2/mgm/1234/info") {ctx ->
+        app.get("api/v5_3/mgm/1234/info") {ctx ->
             ctx.header("Content-Type", "application/json")
             ctx.result(inputStream)
         }
@@ -109,7 +109,7 @@ class TestKnownIssues {
                 "oR+yXgQLjd7Gnt/LRo6eAiEAvGQxrZgM85IgngWBO033RYWVyxICmj/yepwDDNj+\n" +
                 "SDc=\n" +
                 "-----END CERTIFICATE REQUEST-----\n"
-        app.post("api/v5_2/certificate/p2p/123") {ctx ->
+        app.post("api/v5_3/certificate/p2p/123") {ctx ->
             ctx.header("Content-Type", "application/json")
             ctx.result(csrResponse)
         }
