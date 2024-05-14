@@ -8,6 +8,7 @@ import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
 import net.corda.virtualnode.OperationalStatus
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -24,16 +25,18 @@ class QueriesTasksTest : FunctionalBaseTest() {
     fun listVNodesFailsConnectionRefused() {
         appendCordaRuntimeGradlePluginExtension()
         val result = executeAndFailWithRunner(LIST_VNODES_TASK_NAME)
-        assertTrue(result.output.contains("Connect to $restHostnameWithPort"))
-        assertTrue(result.output.contains("Connection refused"))
+        assertThat(result.output)
+            .contains("connect to $restHostname")
+            .contains("Connection refused")
     }
 
     @Test
     fun listCPIsFailsConnectionRefused() {
         appendCordaRuntimeGradlePluginExtension()
         val result = executeAndFailWithRunner(LIST_CPIS_TASK_NAME)
-        assertTrue(result.output.contains("Connect to $restHostnameWithPort"))
-        assertTrue(result.output.contains("Connection refused"))
+        assertThat(result.output)
+            .contains("connect to $restHostname")
+            .contains("Connection refused")
     }
 
     @Test
