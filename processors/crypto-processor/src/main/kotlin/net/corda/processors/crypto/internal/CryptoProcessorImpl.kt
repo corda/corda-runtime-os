@@ -224,12 +224,12 @@ class CryptoProcessorImpl @Activate constructor(
             }
 
             is ConfigChangedEvent -> {
-                val clusterDbInfoService = createClusterDbInfoService()
+                val tenantInfoService = `createTenantInfoService()`()
                 val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
                 val stateManagerConfig = event.config.getConfig(STATE_MANAGER_CONFIG)
                 val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
 
-                val cryptoService = startCryptoService(cryptoConfig, clusterDbInfoService)
+                val cryptoService = startCryptoService(cryptoConfig, tenantInfoService)
 
                 stateManager?.stop()
                 val stateManager =
@@ -239,12 +239,12 @@ class CryptoProcessorImpl @Activate constructor(
 
                 (CryptoConsts.Categories.all - ENCRYPTION_SECRET).forEach { category ->
                     CryptoTenants.allClusterTenants.forEach { tenantId ->
-                        clusterDbInfoService.populate(tenantId, category, cryptoService)
+                        tenantInfoService.populate(tenantId, category, cryptoService)
                         logger.trace("Assigned SOFT HSM for $tenantId:$category")
                     }
                 }
 
-                clusterDbInfoService.populate(CryptoTenants.P2P, ENCRYPTION_SECRET, cryptoService)
+                tenantInfoService.populate(CryptoTenants.P2P, ENCRYPTION_SECRET, cryptoService)
                 logger.trace("Assigned SOFT HSM for ${CryptoTenants.P2P}:$ENCRYPTION_SECRET")
 
                 startProcessors(
@@ -254,7 +254,7 @@ class CryptoProcessorImpl @Activate constructor(
                     stateManager,
                     cordaAvroSerializationFactory,
                     cryptoService,
-                    clusterDbInfoService
+                    tenantInfoService
                 )
                 setStatus(LifecycleStatus.UP, coordinator)
             }
@@ -262,7 +262,7 @@ class CryptoProcessorImpl @Activate constructor(
     }
 
     @Suppress("ThrowsCount")
-    private fun startCryptoService(config: SmartConfig, clusterDbInfoService: TenantInfoService): CryptoService {
+    private fun startCryptoService(config: SmartConfig, tenantInfoService: TenantInfoService): CryptoService {
         logger.info("Creating instance of the {}", SoftCryptoService::class.java.name)
         val cachingConfig = config.getConfig(CACHING)
         val expireAfterAccessMins = cachingConfig.getConfig(EXPIRE_AFTER_ACCESS_MINS).getLong(DEFAULT)
@@ -341,11 +341,11 @@ class CryptoProcessorImpl @Activate constructor(
             shortHashCache = shortHashCache,
             keyPairGeneratorFactory = keyPairGeneratorFactory,
             wrappingKeyFactory = wrappingKeyFactory,
-            tenantInfoService = clusterDbInfoService
+            tenantInfoService = tenantInfoService
         )
     }
 
-    private fun createClusterDbInfoService(): TenantInfoServiceImpl {
+    private fun `createTenantInfoService()`(): TenantInfoServiceImpl {
         val emf = getClusterDbEntityManager(dbConnectionManager)
         val hsmRegistry = HSMRepositoryImpl(emf)
         return TenantInfoServiceImpl(hsmRegistry)
@@ -358,7 +358,7 @@ class CryptoProcessorImpl @Activate constructor(
         stateManager: StateManager,
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
         cryptoService: CryptoService,
-        clusterDbInfoService: TenantInfoService
+        tenantInfoService: TenantInfoService
     ) {
         val retryingConfig = cryptoConfig.retrying()
         val defaultUnmanagedWrappingKeyName = cryptoConfig.getConfig(HSM).getString(DEFAULT_WRAPPING_KEY)
@@ -390,7 +390,7 @@ class CryptoProcessorImpl @Activate constructor(
 
         createFlowOpsSubscription(coordinator, retryingConfig, cryptoService)
         createRpcOpsSubscription(coordinator, messagingConfig, retryingConfig, cryptoService)
-        createHsmRegSubscription(coordinator, messagingConfig, retryingConfig, cryptoService, clusterDbInfoService)
+        createHsmRegSubscription(coordinator, messagingConfig, retryingConfig, cryptoService, tenantInfoService)
         createRekeySubscription(
             coordinator,
             messagingConfig,
@@ -578,7 +578,7 @@ class CryptoProcessorImpl @Activate constructor(
         messagingConfig: SmartConfig,
         retryingConfig: RetryingConfig,
         cryptoService: CryptoService,
-        clusterDbInfoService: TenantInfoService
+        tenantInfoService: TenantInfoService
     ) {
         val hsmRegGroupName = "crypto.hsm.rpc.registration"
         val hsmRegClientName = "crypto.hsm.rpc.registration"
@@ -593,7 +593,7 @@ class CryptoProcessorImpl @Activate constructor(
                     responseType = HSMRegistrationResponse::class.java
                 ),
                 responderProcessor = HSMRegistrationBusProcessor(
-                    clusterDbInfoService, cryptoService, retryingConfig
+                    tenantInfoService, cryptoService, retryingConfig
                 ),
                 messagingConfig = messagingConfig
             )
