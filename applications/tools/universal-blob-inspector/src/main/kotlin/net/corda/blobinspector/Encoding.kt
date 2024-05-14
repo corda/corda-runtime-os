@@ -29,7 +29,7 @@ object Encoding {
         AMQP5GA("corda", "0400", "Corda 5 GA AMQP", 7, CompressionEncoding.CORDA1, SerializationFormat.AMQP5),
 
         // there are couple more trailing bytes "01" after primary encoding, which represents version of metadata schema.
-        METADATA00("{\"com", "7B22", "Corda 5.2.1 >= Metadata", 0, CompressionEncoding.NONE, SerializationFormat.METADATA),
+        METADATA00("{\"com", "706F", "Corda 5.2.1 >= Metadata", 0, CompressionEncoding.NONE, SerializationFormat.METADATA),
         METADATA01("corda", "0800", "Corda 5.2.1+ Metadata", 8, CompressionEncoding.NONE, SerializationFormat.METADATA)
     }
 
@@ -165,23 +165,25 @@ object Encoding {
         val magicType = cordaMagicHeaders[magicByteSequence]
         requireNotNull(magicType) { "Unknown magic header $magicByteSequence." }
 
-        val primaryEncodingType = magicType.primaryEncoding
+        val primaryEncodingString = byteSequence.subSequence(5, 2).toHexString()
+        val primaryEncodingType = cordaPrimaryEncodings[primaryEncodingString]
+            ?: throw java.lang.RuntimeException("Unknown primary encoding $primaryEncodingString.")
 
-        val compressionEncodingInfo = "Compression encoding ${magicType.compressionEncoding}, " +
-            "encoding start = ${magicType.compressionEncodingStart}, " +
-            "format = ${magicType.serializationFormat}"
+        val compressionEncodingInfo = "Compression encoding ${primaryEncodingType.compressionEncoding}, " +
+            "encoding start = ${primaryEncodingType.compressionEncodingStart}, " +
+            "format = ${primaryEncodingType.serializationFormat}"
 
-        println("Primary encoding ${magicType.description}")
+        println("Primary encoding ${primaryEncodingType.description}")
 
-        when (cordaPrimaryEncodings[primaryEncodingType]) {
-            METADATA00 -> println("$compressionEncodingInfo, Metadata Schema version = 00")
+        when (primaryEncodingType) {
+            METADATA00 -> println("$compressionEncodingInfo, Metadata schema version = 00")
             METADATA01 -> println("$compressionEncodingInfo, Metadata schema version = ${byteSequence.subSequence(7, 1).toHexString()}")
             else -> println(compressionEncodingInfo)
         }
 
-        val compressionEncoding = magicType.compressionEncoding
-        val compressionEncodingStart = magicType.compressionEncodingStart
-        val decoder = magicType.serializationFormat.decoder
+        val compressionEncoding = primaryEncodingType.compressionEncoding
+        val compressionEncodingStart = primaryEncodingType.compressionEncodingStart
+        val decoder = primaryEncodingType.serializationFormat.decoder
         return Triple(compressionEncoding, compressionEncodingStart, decoder.duplicate())
     }
 }
