@@ -89,10 +89,6 @@ class CordaRestClient(
 
             val sslContext = SSLContext.getInstance("SSL")
             sslContext.init(null, trustAllCerts, SecureRandom())
-            ApiClient.apply {
-                this.username = username
-                this.password = password
-            }
             val builder = ApiClient.builder.addInterceptor(
                 Interceptor { chain ->
                     val newRequest = chain.request().newBuilder()
