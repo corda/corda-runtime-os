@@ -25,7 +25,6 @@ import net.corda.crypto.config.impl.retrying
 import net.corda.crypto.core.ApiNames.DECRYPT_PATH
 import net.corda.crypto.core.ApiNames.ENCRYPT_PATH
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.CryptoConsts.Categories.ENCRYPTION_SECRET
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.SigningKeyInfo
@@ -236,15 +235,11 @@ class CryptoProcessorImpl @Activate constructor(
                         .also { it.start() }
                 this.stateManager = stateManager
 
-                (CryptoConsts.Categories.all - ENCRYPTION_SECRET).forEach { category ->
-                    CryptoTenants.allClusterTenants.forEach { tenantId ->
-                        tenantInfoService.populate(tenantId, category, cryptoService)
-                        logger.trace("Assigned SOFT HSM for $tenantId:$category")
-                    }
+                // If a new category is introduced, category ENCRYPTION_SECRET might need to be generated only for CryptoTenants.P2P
+                (CryptoConsts.Categories.all).forEach { category ->
+                    tenantInfoService.populate(CryptoTenants.P2P, category, cryptoService)
+                    logger.trace("Assigned SOFT HSM for $CryptoTenants.P2P:$category")
                 }
-
-                tenantInfoService.populate(CryptoTenants.P2P, ENCRYPTION_SECRET, cryptoService)
-                logger.trace("Assigned SOFT HSM for ${CryptoTenants.P2P}:$ENCRYPTION_SECRET")
 
                 startProcessors(
                     cryptoConfig,
