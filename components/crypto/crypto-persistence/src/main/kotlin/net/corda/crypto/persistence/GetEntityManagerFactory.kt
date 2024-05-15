@@ -22,7 +22,8 @@ fun getEntityManagerFactory(
         .recordCallable {
             val onCluster = ClusterCryptoDb.isReferencingClusterDb(tenantId)
             val entityManagerFactory = if (onCluster) {
-                // tenantID is P2P or cluster DB's Crypto schema is specified; let's obtain a connection to our cluster Crypto database
+                // tenantID is either P2P or cluster DB's Crypto schema is directly specified;
+                // let's obtain a connection to our cluster Crypto database
                 dbConnectionManager.getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
             } else {
                 // tenantID is a virtual node; let's connect to one of the virtual node Crypto databases

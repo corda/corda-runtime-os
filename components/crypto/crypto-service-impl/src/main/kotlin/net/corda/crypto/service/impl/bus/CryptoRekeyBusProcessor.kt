@@ -90,16 +90,15 @@ class CryptoRekeyBusProcessor(
                 }
 
                 // Root (unmanaged) keys can be used in clusterDB and vNodeDB. We need to go through all tenants and
-                // clusterDB, and check if the oldKeyAlias is used there. If yes, we will issue a new record for this key
-                // to be re-wrapped.
+                // clusterDB, and check if the wrapping keys are not wrapped with a root key specified in the
+                // defaultUnmanagedWrappingKey label. For such keys, we will issue a new record, so they will be re-wrapped.
 
                 val virtualNodeInfo = virtualNodeInfoReadService.getAll() // Get all the virtual nodes
                 val virtualNodeTenantIds = virtualNodeInfo.map { it.holdingIdentity.shortHash.toString() }
 
-                // We do not need to use separate wrapping repositories for the different cluster level tenants,
-                // since they share the cluster crypto database. So we scan over the virtual node tenants and an arbitrary
-                // choice of cluster level tenant. We pick CryptoTenants.CRYPTO as the arbitrary cluster level tenant,
-                // and we should not also check CryptoTenants.P2P and CryptoTenants.REST since if we do we'll get duplicate.
+                // Specify all vNodes and clusterDB, so we can check wrapping keys in their databases.
+                // All cluster level tenants share the same cluster crypto database. Therefore, we only specify one
+                // connection to clusterDB.
                 val allTenantIds = virtualNodeTenantIds + ClusterCryptoDb.CRYPTO_SCHEMA
                 logger.debug("Found ${allTenantIds.size} tenants; first few are: ${allTenantIds.take(10)}")
                 val targetWrappingKeys = allTenantIds.map { tenantId ->
