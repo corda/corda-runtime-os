@@ -1,0 +1,30 @@
+plugins {
+    id 'distribution'
+    id 'org.jetbrains.kotlin.jvm'
+    id 'org.jetbrains.kotlin.kapt'
+    id 'corda.cli-plugin-packager'
+}
+
+ext {
+    releasable = false
+}
+
+group 'net.corda.cli.command'
+
+dependencies {
+    compileOnly libs.jackson.module.kotlin
+    compileOnly libs.jackson.dataformat.yaml
+
+    compileOnly platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-topic-schema:$cordaApiVersion"
+    implementation libs.kafka.client
+    implementation project(':libs:corda-sdk')
+    constraints {
+        implementation(libs.slf4j.v2.api)
+    }
+
+    testImplementation libs.bundles.test
+    testImplementation libs.jackson.module.kotlin
+    testImplementation libs.jackson.dataformat.yaml
+    testImplementation libs.kafka.client
+}

@@ -1,0 +1,52 @@
+plugins {
+    id 'distribution'
+    id 'org.jetbrains.kotlin.jvm'
+    id 'org.jetbrains.kotlin.kapt'
+    id 'corda.cli-plugin-packager'
+    
+}
+
+ext {
+    releasable = false
+}
+
+group 'net.corda.cli.command'
+
+dependencies {
+    constraints {
+        implementation(libs.slf4j.v2.api)
+    }
+
+    implementation project(':libs:packaging:packaging-verify')
+    implementation project(':libs:corda-sdk')
+    implementation project(':libs:membership:schema-validation')
+    implementation project(':libs:membership:membership-common')
+
+    testImplementation libs.bundles.test
+    testImplementation project(":testing:test-utilities")
+    testImplementation project(":testing:packaging-test-utilities")
+
+    testRuntimeOnly libs.log4j.slf4j2
+}
+
+//cliPlugin {
+//    cliPluginClass = 'net.corda.cli.plugins.packaging.PackagePluginWrapper'
+//    cliPluginDescription = 'Plugin for CPB and CPI operations.'
+//}
+//
+//tasks.named("installDist") {
+//    dependsOn cliPlugin
+//    def homePath = System.properties['user.home']
+//    from cliPlugin
+//    into "$homePath/.corda/cli/plugins"
+//}
+//
+//publishing {
+//    publications {
+//        maven(MavenPublication) {
+//            artifactId "${cliPlugin.cliPluginId.get()}-cli-plugin"
+//            groupId project.group
+//            artifact cliPluginTask
+//        }
+//    }
+//}

@@ -1,0 +1,23 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'corda.common-library'
+    id 'org.jetbrains.kotlin.kapt'
+}
+
+ext {
+    releasable = false
+}
+
+ext.cordaEnableFormatting = true
+
+description 'Corda CLI plugin common utilities and data classes'
+
+group 'net.corda.cli.plugins.data'
+
+dependencies {
+    compileOnly project(':libs:crypto:crypto-core')
+    compileOnly project(':libs:corda-sdk')
+
+    testImplementation project(':libs:crypto:crypto-core')
+    testImplementation project(':libs:corda-sdk')
+}

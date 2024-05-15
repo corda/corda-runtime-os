@@ -75,7 +75,7 @@ Here we describe how to run the combined worker with a Kafka message bus and a t
     ```
 4. Create the required topics by building and executing the `topic` plugin:
     ```bash
-    ./gradlew :tools:plugins:topic-config:clean :tools:plugins:topic-config:cliPluginTask
+    ./gradlew :tools:corda-cli:commands:topic-config:clean :tools:corda-cli:commands:topic-config:cliPluginTask
     cd ../corda-cli-plugin-host/
     ./gradlew assemble
     cp ../corda-runtime-os/tools/plugins/topic-config/build/libs/topic-config-cli-plugin-*.jar ./build/plugins/

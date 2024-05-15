@@ -1,0 +1,17 @@
+plugins {
+    id 'distribution'
+    id 'org.jetbrains.kotlin.jvm'
+    id 'org.jetbrains.kotlin.kapt'
+    id 'corda.cli-plugin-packager'
+    
+}
+
+
+group 'net.corda.cli.command'
+
+dependencies {
+    implementation project(':libs:corda-sdk')
+
+    testImplementation libs.bundles.test
+    testImplementation "com.github.stefanbirkner:system-lambda:$systemLambdaVersion"
+}

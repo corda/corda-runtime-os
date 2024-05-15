@@ -1,0 +1,48 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'org.jetbrains.kotlin.kapt'
+    id 'application'
+    
+}
+
+group = 'net.corda.cli'
+version = '5.3.0.0-SNAPSHOT'
+
+mainClassName = 'net.corda.cli.application.MainKt'
+
+application {
+    mainClass = mainClassName
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+
+}
+
+var commitId = com.gradle.Utils.execAndGetStdOut "git", "rev-parse", "--verify", "HEAD"
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': mainClassName,
+                'Plugin-Git-Commit': commitId
+        )
+    }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    with jar
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            artifactId 'corda-cli'
+            groupId project.group
+            artifact jar
+        }
+    }
+}

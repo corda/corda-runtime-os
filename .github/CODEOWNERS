@@ -23,7 +23,7 @@ CODEOWNERS         @corda/infrastructure-release @corda/corda5-team-leads
 /libs/virtual-node/                             @corda/rest
 /processors/rest-processor/                     @corda/rest
 /tools/plugins/initial-rbac/                    @corda/rest
-/tools/plugins/plugins-rest/                    @corda/rest
+/tools/plugins/rest/                    @corda/rest
 /tools/plugins/virtual-node/                    @corda/rest
 /tools/plugins/cpi/                             @corda/rest
 

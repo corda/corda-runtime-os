@@ -1,0 +1,37 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'org.jetbrains.kotlin.kapt'
+}
+
+group = 'net.corda.cli.main'
+version = '5.3.0.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+subprojects {
+    apply plugin: 'org.jetbrains.kotlin.jvm'
+    apply plugin: 'org.jetbrains.kotlin.kapt'
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        implementation libs.kotlin.stdlib
+        implementation "info.picocli:picocli:$picocliVersion"
+        kapt "info.picocli:picocli:$picocliVersion"
+
+
+        testImplementation libs.kotlin.stdlib
+        testImplementation "info.picocli:picocli:$picocliVersion"
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
+kotlin {
+    jvmToolchain(17)
+}

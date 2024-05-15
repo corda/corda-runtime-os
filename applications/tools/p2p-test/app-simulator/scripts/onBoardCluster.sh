@@ -30,7 +30,7 @@ config_gateway() {
 build_cli_tool() {
    $CORDA_CLI_DIR/gradlew -p $CORDA_CLI_DIR build
 
-   $REPO_TOP_LEVEL_DIR/gradlew -p $REPO_TOP_LEVEL_DIR :tools:plugins:package:build :tools:plugins:network:build
+   $REPO_TOP_LEVEL_DIR/gradlew -p $REPO_TOP_LEVEL_DIR :tools:corda-cli:commands:package:build :tools:corda-cli:commands:network:build
 
    cp $REPO_TOP_LEVEL_DIR/tools/plugins/package/build/libs/package-cli-plugin-*.jar $REPO_TOP_LEVEL_DIR/tools/plugins/network/build/libs/network-cli*.jar $CORDA_CLI_DIR/build/plugins/
 }

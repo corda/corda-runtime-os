@@ -1,0 +1,26 @@
+plugins {
+    id 'distribution'
+    id 'org.jetbrains.kotlin.jvm'
+    id 'org.jetbrains.kotlin.kapt'
+}
+
+ext {
+    releasable = false
+}
+
+ext.cordaEnableFormatting = true
+
+group 'net.corda.cli.command'
+
+dependencies {
+
+    implementation project(":libs:virtual-node:cpi-upload-endpoints")
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-db-schema'
+
+    implementation project(":tools:corda-cli:commands:rest")
+    implementation project(':tools:corda-cli:common-utils')
+
+    testImplementation libs.bundles.test
+}
