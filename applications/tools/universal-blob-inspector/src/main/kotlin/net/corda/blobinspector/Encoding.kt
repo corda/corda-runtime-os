@@ -27,7 +27,7 @@ object Encoding {
         AMQP5GA("corda", "0400", "Corda 5 GA AMQP", 7, CompressionEncoding.CORDA1, SerializationFormat.AMQP5),
 
         // there are couple more trailing bytes "01" after primary encoding, which represents version of metadata schema.
-        METADATA00("{\"com", "706F", "Corda 5.2.1 >= Metadata", 0, CompressionEncoding.NONE, SerializationFormat.METADATA_NO_HEADER),
+        METADATA00("{\"com", "706F", "Corda 5.0+ Metadata", 0, CompressionEncoding.NONE, SerializationFormat.METADATA_NO_HEADER),
         METADATA01("corda", "0800", "Corda 5.2.1+ Metadata", 7, CompressionEncoding.NONE, SerializationFormat.METADATA)
     }
 
