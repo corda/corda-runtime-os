@@ -138,7 +138,7 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
              }
           ]
         }
-        """.trimIndent()
+            """.trimIndent()
         )
 
     private val consumerGroup = UUID.randomUUID().toString()
@@ -157,7 +157,14 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
             do {
                 val records = consumer.poll(Duration.ofMillis(timeoutMs)).let { records ->
                     logger.debug("Read {} records from topic '{}'.", records.count(), hostedIdentityTopic)
-                    records.mapNotNull { it.value() as? HostedIdentityEntry }
+                    records.map { record ->
+                        val hostedIdentityEntity = record.value() as? HostedIdentityEntry
+                        if (hostedIdentityEntity == null) {
+                            logger.error("Could not deserialize ${HostedIdentityEntity::class.java}.")
+                            return ExitCode.SOFTWARE
+                        }
+                        hostedIdentityEntity
+                    }
                 }
                 consumer.commitSync()
                 logger.trace("Read the following records from topic '{}': {}.", hostedIdentityTopic, records)
@@ -172,7 +179,12 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
             consumer.closeConsumer()
         }
         FileWriter(File("${outputDir.removeSuffix("/")}/${SQL_FILE_NAME}.sql")).use { outputFile ->
-            allRecords.forEach { persistHostedIdentity(it, outputFile) }
+            allRecords.forEach {
+                val success = persistHostedIdentity(it, outputFile)
+                if (success != ExitCode.OK) {
+                    return success
+                }
+            }
         }
         return ExitCode.OK
     }
@@ -192,7 +204,7 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
         try {
             close()
         } catch (ex: Exception) {
-            UpgradePluginWrapper.logger.error("Failed to close consumer from group '$consumerGroup'.", ex)
+            logger.error("Failed to close consumer from group '$consumerGroup'.", ex)
         }
     }
 
@@ -295,7 +307,7 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
         }
     }
 
-    private fun persistHostedIdentity(kafkaHostedIdentity: HostedIdentityEntry, file: FileWriter) {
+    private fun persistHostedIdentity(kafkaHostedIdentity: HostedIdentityEntry, file: FileWriter): Int {
         val holdingId = kafkaHostedIdentity.holdingIdentity.toCorda().shortHash.toString()
         val pemLookupResult = findAllSessionKeys(holdingId)
 
@@ -304,7 +316,7 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
             UpgradePluginWrapper.logger.error(
                 "Could not find the session key alias for ${kafkaHostedIdentity.preferredSessionKeyAndCert.sessionPublicKey}."
             )
-            return
+            return ExitCode.SOFTWARE
         }
         val useClusterLevelTlsCertificateAndKey = kafkaHostedIdentity.tlsTenantId == CryptoTenants.P2P
 
@@ -317,7 +329,7 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
             UpgradePluginWrapper.logger.error(
                 "Could not find the TLS certificate alias for: ${kafkaHostedIdentity.tlsCertificates}."
             )
-            return
+            return ExitCode.SOFTWARE
         }
 
         val entity = HostedIdentityEntity(
@@ -339,7 +351,7 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
                 UpgradePluginWrapper.logger.error(
                     "Could not find the Session certificate alias for: ${kafkaHostedIdentity.tlsCertificates}."
                 )
-                return
+                return ExitCode.SOFTWARE
             }
             val sessionCertificateAlias = sessionKeyAndCert?.sessionCertificates?.let {
                 allSessionCertificates[it.joinToString("\n")]
@@ -352,5 +364,6 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
             val sessionKeyStatement = sessionKeyEntity.toInsertStatement() + "\n"
             file.write(sessionKeyStatement)
         }
+        return ExitCode.OK
     }
 }
