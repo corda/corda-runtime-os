@@ -24,7 +24,7 @@ pipeline {
         CORDA_ARTIFACTORY_USERNAME = "${env.ARTIFACTORY_CREDENTIALS_USR}"
         CORDA_ARTIFACTORY_PASSWORD = "${env.ARTIFACTORY_CREDENTIALS_PSW}"
         CORDA_USE_CACHE = "corda-remotes"
-        KUBECONFIG=credentials("e2e-tests-credentials")
+        KUBECONFIG=credentials("kubernetes-eks-e2e-01-credentials")
         CORDA_CLI_USER_HOME="/tmp/corda-cli-home"
         GRADLE_USER_HOME = "/host_tmp/gradle"
         CORDA_REVISION = "${env.GIT_COMMIT}"
