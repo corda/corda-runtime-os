@@ -1,6 +1,5 @@
 package net.corda.blobinspector
 
-import net.corda.blobinspector.Encoding.Encodings.METADATA00
 import net.corda.blobinspector.amqp.AMQPSerializationFormatDecoder
 import net.corda.blobinspector.amqp.DynamicDescriptorRegistry
 import net.corda.blobinspector.amqp.Envelope
@@ -28,7 +27,7 @@ object Encoding {
         AMQP5GA("corda", "0400", "Corda 5 GA AMQP", 7, CompressionEncoding.CORDA1, SerializationFormat.AMQP5),
 
         // there are couple more trailing bytes "01" after primary encoding, which represents version of metadata schema.
-        METADATA00("{\"com", "706F", "Corda 5.2.1 >= Metadata", 0, CompressionEncoding.NONE, SerializationFormat.METADATA),
+        METADATA00("{\"com", "706F", "Corda 5.2.1 >= Metadata", 0, CompressionEncoding.NONE, SerializationFormat.METADATA_NO_HEADER),
         METADATA01("corda", "0800", "Corda 5.2.1+ Metadata", 7, CompressionEncoding.NONE, SerializationFormat.METADATA)
     }
 
@@ -98,9 +97,20 @@ object Encoding {
             )
         ),
         METADATA(
-            MetadataSerializationFormatDecoder { bytes, depth, includeOriginalBytes ->
-                decodedBytes(bytes, recurseDepth = depth, includeOriginalBytes = includeOriginalBytes).result
-            }
+            MetadataSerializationFormatDecoder(
+                { bytes, depth, includeOriginalBytes ->
+                    decodedBytes(bytes, recurseDepth = depth, includeOriginalBytes = includeOriginalBytes).result
+                },
+                true
+            )
+        ),
+        METADATA_NO_HEADER(
+            MetadataSerializationFormatDecoder(
+                { bytes, depth, includeOriginalBytes ->
+                    decodedBytes(bytes, recurseDepth = depth, includeOriginalBytes = includeOriginalBytes).result
+                },
+                false
+            )
         )
     }
 
@@ -142,29 +152,29 @@ object Encoding {
         fun allOverridesPresent() =
             compressionEncodingOverride != null && compressionEncodingStartOverride != null && formatOverride != null
 
-        fun overriddenEncoding(): EncodingInfo {
-            return EncodingInfo(
+        fun overriddenEncoding(): Triple<CompressionEncoding, Int, SerializationFormatDecoder> {
+            val triple = Triple(
                 CompressionEncoding.valueOf(compressionEncodingOverride!!),
                 compressionEncodingStartOverride!!,
-                SerializationFormat.valueOf(formatOverride!!).decoder.duplicate(),
-                true
+                SerializationFormat.valueOf(formatOverride!!).decoder.duplicate()
             )
+            return triple
         }
 
         val originalBytes = byteSequence.copyBytes()
-        val (compressionEncoding, compressionEncodingStart, decoder, hasHeader) = if (allOverridesPresent()) {
+        val (compressionEncoding, compressionEncodingStart, decoder) = if (allOverridesPresent()) {
             overriddenEncoding()
         } else {
             extractEncoding(byteSequence)
         }
         compressionEncoding.createStream(byteSequence.subSequence(compressionEncodingStart)).use { stream ->
-            return decoder.decode(stream, recurseDepth, originalBytes, includeOriginalBytes, hasHeader)
+            return decoder.decode(stream, recurseDepth, originalBytes, includeOriginalBytes)
         }
     }
 
     private fun extractEncoding(
         byteSequence: ByteSequence
-    ): EncodingInfo {
+    ): Triple<CompressionEncoding, Int, SerializationFormatDecoder> {
         val magicByteSequence = byteSequence.take(5)
         val magicType = cordaMagicHeaders[magicByteSequence]
         requireNotNull(magicType) { "Unknown magic header $magicByteSequence." }
@@ -184,14 +194,6 @@ object Encoding {
         val compressionEncoding = primaryEncodingType.compressionEncoding
         val compressionEncodingStart = primaryEncodingType.compressionEncodingStart
         val decoder = primaryEncodingType.serializationFormat.decoder
-        val hasHeader = primaryEncodingType != METADATA00
-        return EncodingInfo(compressionEncoding, compressionEncodingStart, decoder.duplicate(), hasHeader)
+        return Triple(compressionEncoding, compressionEncodingStart, decoder.duplicate())
     }
-
-    private data class EncodingInfo(
-        val compressionEncoding: CompressionEncoding,
-        val compressionEncodingStart: Int,
-        val decoder: SerializationFormatDecoder,
-        val hasHeader: Boolean
-    )
 }

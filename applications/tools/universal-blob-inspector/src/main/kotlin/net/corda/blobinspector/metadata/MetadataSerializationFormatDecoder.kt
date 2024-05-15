@@ -7,18 +7,15 @@ import net.corda.blobinspector.readFully
 import net.corda.blobinspector.sequence
 import java.io.InputStream
 
-class MetadataSerializationFormatDecoder(private val recurse: (ByteSequence, Int, Boolean) -> Any?) : SerializationFormatDecoder {
+class MetadataSerializationFormatDecoder(
+    private val recurse: (ByteSequence, Int, Boolean) -> Any?,
+    private val hasHeader: Boolean
+) : SerializationFormatDecoder {
     override fun duplicate(): SerializationFormatDecoder {
-        return MetadataSerializationFormatDecoder(recurse)
+        return MetadataSerializationFormatDecoder(recurse, hasHeader)
     }
 
-    override fun decode(
-        stream: InputStream,
-        recurseDepth: Int,
-        originalBytes: ByteArray,
-        includeOriginalBytes: Boolean,
-        hasHeader: Boolean
-    ): DecodedBytes {
+    override fun decode(stream: InputStream, recurseDepth: Int, originalBytes: ByteArray, includeOriginalBytes: Boolean): DecodedBytes {
         val bytes = stream.readFully()
         val version = if (hasHeader) bytes.sequence().subSequence(0, 1).toHexString() else "00"
         println("Metadata schema version = $version")
