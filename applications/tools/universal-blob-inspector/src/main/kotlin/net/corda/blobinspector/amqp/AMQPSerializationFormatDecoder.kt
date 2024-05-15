@@ -25,7 +25,13 @@ class AMQPSerializationFormatDecoder(
     }
 
     private val referencedObjects = mutableListOf<Any?>()
-    override fun decode(stream: InputStream, recurseDepth: Int, originalBytes: ByteArray, includeOriginalBytes: Boolean): DecodedBytes {
+    override fun decode(
+        stream: InputStream,
+        recurseDepth: Int,
+        originalBytes: ByteArray,
+        includeOriginalBytes: Boolean,
+        hasHeader: Boolean
+    ): DecodedBytes {
         val dataBytes: ByteBuffer = ByteBuffer.wrap(stream.readFully())
         val data = Data.Factory.create()
         val expectedSize = dataBytes.remaining()
