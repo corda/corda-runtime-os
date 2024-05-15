@@ -9,8 +9,7 @@ import net.corda.crypto.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
 import net.corda.crypto.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.CryptoTenants.P2P
-import net.corda.crypto.core.CryptoTenants.allClusterTenants
+import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.DefaultSignatureOIDMap
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHashException
@@ -436,7 +435,7 @@ class CertificatesRestResourceImpl @Activate constructor(
         x500Name: String,
     ): X500Principal {
         val name = validateNodeSessionCertificateSubject(x500Name)
-        if (tenantId == P2P) {
+        if (tenantId == CryptoTenants.P2P) {
             val exists = virtualNodeInfoReadService.getAll().any {
                 it.holdingIdentity.x500Name == name
             }
@@ -460,7 +459,8 @@ class CertificatesRestResourceImpl @Activate constructor(
     }
 
     private fun validateTenantId(tenantId: String) {
-        if (tenantId in allClusterTenants) return
+        // We have only one crypto tenant
+        if (tenantId == CryptoTenants.P2P) return
 
         try {
             ShortHash.parse(tenantId)

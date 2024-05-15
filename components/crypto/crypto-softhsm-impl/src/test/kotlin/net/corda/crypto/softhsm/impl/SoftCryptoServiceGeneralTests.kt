@@ -18,8 +18,8 @@ import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.component.test.utils.generateKeyPair
+import net.corda.crypto.core.ClusterCryptoDb
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.KeyOrderBy
 import net.corda.crypto.core.SecureHashImpl
@@ -72,7 +72,7 @@ import java.security.KeyPairGenerator
 import java.security.Provider
 import java.security.PublicKey
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.crypto.AEADBadTagException
 import javax.persistence.QueryTimeoutException
@@ -907,7 +907,7 @@ class SoftCryptoServiceGeneralTests {
         val clearKey1 = rootWrappingKey.unwrapWrappingKey(wrappedWithRoot1)
 
         // try rotating to parent key root2
-        myCryptoService.rewrapWrappingKey(CryptoTenants.CRYPTO, "alpha", "root2")
+        myCryptoService.rewrapWrappingKey(ClusterCryptoDb.CRYPTO_SCHEMA, "alpha", "root2")
         val wrappedWithRoot2 = checkNotNull(cryptoRepositoryWrapping.keys.get("alpha")).keyMaterial
         val clearKey2 = rootWrappingKey2.unwrapWrappingKey(wrappedWithRoot2)
         val exception = assertThrows<AEADBadTagException> {
@@ -918,7 +918,7 @@ class SoftCryptoServiceGeneralTests {
         assertThat(wrappedWithRoot1).isNotEqualTo(wrappedWithRoot2)
 
         // now let's rotate back to parent key root, and the clear material should be the same
-        myCryptoService.rewrapWrappingKey(CryptoTenants.CRYPTO, "alpha", "root")
+        myCryptoService.rewrapWrappingKey(ClusterCryptoDb.CRYPTO_SCHEMA, "alpha", "root")
         val wrappedWithRoot1Again = checkNotNull(cryptoRepositoryWrapping.keys.get("alpha")).keyMaterial
         val clearKey3 = rootWrappingKey.unwrapWrappingKey(wrappedWithRoot1Again)
         assertThat(clearKey3).isEqualTo(clearKey1)

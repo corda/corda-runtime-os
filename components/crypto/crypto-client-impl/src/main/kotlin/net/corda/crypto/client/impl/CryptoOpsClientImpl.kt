@@ -6,7 +6,7 @@ import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.component.impl.retry
 import net.corda.crypto.component.impl.toClientException
-import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.ClusterCryptoDb
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.SecureHashImpl
@@ -313,7 +313,7 @@ class CryptoOpsClientImpl(
             masterKeyAlias
         )
         val request = createRequest(
-            CryptoTenants.CRYPTO,
+            ClusterCryptoDb.CRYPTO_SCHEMA,
             GenerateWrappingKeyRpcCommand(
                 hsmId,
                 masterKeyAlias,
