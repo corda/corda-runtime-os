@@ -47,7 +47,8 @@ class LocallyHostedIdentitiesServiceImpl(
     private val publicKeyFactory: (Reader) -> PublicKey?,
     private val sleeper: ((Long) -> Unit),
 ) : LocallyHostedIdentitiesService {
-    @Activate constructor(
+    @Activate
+    constructor(
         @Reference(service = LifecycleCoordinatorFactory::class)
         coordinatorFactory: LifecycleCoordinatorFactory,
         @Reference(service = SubscriptionFactory::class)
@@ -64,6 +65,7 @@ class LocallyHostedIdentitiesServiceImpl(
             Thread.sleep(it)
         },
     )
+
     private companion object {
         const val FOLLOW_CHANGES_RESOURCE_NAME = "LocallyHostedIdentitiesServiceImpl.followStatusChangesByName"
         const val WAIT_FOR_CONFIG_RESOURCE_NAME = "LocallyHostedIdentitiesServiceImpl.registerComponentForUpdates"
@@ -90,6 +92,7 @@ class LocallyHostedIdentitiesServiceImpl(
                     )
                 }
             }
+
             is StopEvent -> {
                 coordinator.closeManagedResources(
                     setOf(
@@ -100,6 +103,7 @@ class LocallyHostedIdentitiesServiceImpl(
                 )
                 coordinator.updateStatus(LifecycleStatus.DOWN)
             }
+
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
                     coordinator.createManagedResource(WAIT_FOR_CONFIG_RESOURCE_NAME) {
@@ -120,6 +124,7 @@ class LocallyHostedIdentitiesServiceImpl(
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                 }
             }
+
             is ConfigChangedEvent -> {
                 coordinator.createManagedResource(SUBSCRIPTION_RESOURCE_NAME) {
                     subscriptionFactory.createCompactedSubscription(
@@ -221,7 +226,7 @@ class LocallyHostedIdentitiesServiceImpl(
         identities.values.stream()
             .map {
                 object : VersionedRecord<String, HostedIdentityEntry> {
-                    override val version = it.version
+                    override val version = it.version ?: 1
                     override val isDeleted = false
                     override val key = it.holdingIdentity.toCorda().shortHash.value
                     override val value = it
