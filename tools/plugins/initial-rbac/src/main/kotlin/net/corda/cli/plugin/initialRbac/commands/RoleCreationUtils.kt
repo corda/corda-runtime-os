@@ -35,7 +35,8 @@ internal object RoleCreationUtils {
         val restClient = CordaRestClient.createHttpClient(
             baseUrl = targetUrl,
             username = username,
-            password = password
+            password = password,
+            insecure = insecure
         )
 
         val roleId = RoleAndPermissionsCreator(restClient).createRoleAndPermissions(

@@ -194,6 +194,10 @@ tasks.named('sourcesJar') {
     dependsOn 'applyWorkarounds'
 }
 
+tasks.named('kotlinSourcesJar') {
+    dependsOn 'applyWorkarounds'
+}
+
 tasks.named('detekt') {
     dependsOn 'applyWorkarounds'
 }

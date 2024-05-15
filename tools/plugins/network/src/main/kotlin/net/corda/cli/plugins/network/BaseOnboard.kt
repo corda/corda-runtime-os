@@ -238,6 +238,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             baseUrl = targetUrl,
             username = username,
             password = password,
+            insecure = insecure
         )
     }
 

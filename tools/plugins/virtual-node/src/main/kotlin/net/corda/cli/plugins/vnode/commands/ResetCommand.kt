@@ -68,7 +68,8 @@ class ResetCommand : RestCommand(), Runnable {
         restClient = CordaRestClient.createHttpClient(
             baseUrl = targetUrl,
             username = username,
-            password = password
+            password = password,
+            insecure = insecure
         )
 
         println("Uploading CPI to host: $targetUrl")

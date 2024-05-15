@@ -39,7 +39,8 @@ class ExportGroupPolicy : Runnable, RestCommand() {
         val restClient = CordaRestClient.createHttpClient(
             baseUrl = targetUrl,
             username = username,
-            password = password
+            password = password,
+            insecure = insecure
         )
         val groupPolicyResponse = ExportGroupPolicyFromMgm(restClient).exportPolicy(holdingIdentityShortHash = holdingIdentityShortHash)
         saveLocation.parentFile.mkdirs()

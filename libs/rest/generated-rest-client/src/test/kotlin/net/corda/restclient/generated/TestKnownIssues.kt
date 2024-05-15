@@ -33,6 +33,8 @@ class TestKnownIssues {
         }
     }
 
+    private val localhost = "http:localhost:8888"
+
     /**
      * See comment for workaround details
      * https://r3-cev.atlassian.net/browse/ES-2162?focusedCommentId=302706
@@ -44,7 +46,7 @@ class TestKnownIssues {
             ctx.header("Content-Type", "application/json")
             ctx.result(inputStream)
         }
-        val client = CordaRestClient.createHttpClient(baseUrl = "http:localhost:8888")
+        val client = CordaRestClient.createHttpClient(baseUrl = localhost)
 
         assertThatCode {
             val response: String = client.mgmClient.getMgmHoldingidentityshorthashInfo("1234")
@@ -114,7 +116,7 @@ class TestKnownIssues {
             ctx.result(csrResponse)
         }
 
-        val client = CordaRestClient.createHttpClient(baseUrl = "http:localhost:8888")
+        val client = CordaRestClient.createHttpClient(baseUrl = localhost)
         val requestBody = GenerateCsrWrapperRequest(
             x500Name = "OU=[localhost], O=P2P Certificate, L=London, C=GB",
             contextMap = null,

@@ -54,7 +54,8 @@ class GroupParametersLookup(private val output: Output = ConsoleOutput()) : Rest
         val restClient = CordaRestClient.createHttpClient(
             baseUrl = targetUrl,
             username = username,
-            password = password
+            password = password,
+            insecure = insecure
         )
         return GroupParametersLookup(restClient).lookupGroupParameters(
             holdingIdentityShortHash = holdingIdentity,

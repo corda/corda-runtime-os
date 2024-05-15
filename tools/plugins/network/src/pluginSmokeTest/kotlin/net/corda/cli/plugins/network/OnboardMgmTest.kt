@@ -162,7 +162,8 @@ class OnboardMgmTest {
         val restClient = CordaRestClient.createHttpClient(
             baseUrl = targetUrl,
             username = username,
-            password = password
+            password = password,
+            insecure = true,
         )
         val cpisFromCluster = CpiUploader(restClient).getAllCpis(wait = waitDurationSeconds.seconds).cpis
         return cpisFromCluster

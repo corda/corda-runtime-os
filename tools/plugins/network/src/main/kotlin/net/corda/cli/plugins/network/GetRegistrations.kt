@@ -70,7 +70,8 @@ class GetRegistrations(private val output: Output = ConsoleOutput()) :
         val restClient = CordaRestClient.createHttpClient(
             baseUrl = targetUrl,
             username = username,
-            password = password
+            password = password,
+            insecure = insecure
         )
         return if (requestId != null) {
             listOf(RegistrationsLookup(restClient).checkRegistration(holdingIdentity, requestId!!, waitDurationSeconds.seconds))

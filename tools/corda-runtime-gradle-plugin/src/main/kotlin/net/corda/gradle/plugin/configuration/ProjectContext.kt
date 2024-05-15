@@ -69,6 +69,6 @@ class ProjectContext(val project: Project, pluginConfig: PluginConfiguration) {
     val mgmCorDappCpiFilePath: String = "$workspaceDir/$corDappCpiName.cpi"
     val certificateAuthorityFilePath: String = "$workspaceDir/ca"
 
-    val restClient: CordaRestClient = CordaRestClient.createHttpClient(cordaClusterURL, cordaRestUser, cordaRestPassword)
+    val restClient: CordaRestClient = CordaRestClient.createHttpClient(cordaClusterURL, cordaRestUser, cordaRestPassword, true)
     val logger: Logger = project.logger
 }

@@ -51,7 +51,8 @@ class AllowClientCertificate : Runnable, RestCommand() {
         val restClient = CordaRestClient.createHttpClient(
             baseUrl = targetUrl,
             username = username,
-            password = password
+            password = password,
+            insecure = insecure
         )
         val clientCertificates = ClientCertificates(restClient)
 

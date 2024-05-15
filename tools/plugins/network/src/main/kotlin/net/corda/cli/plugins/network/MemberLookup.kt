@@ -106,7 +106,8 @@ class MemberLookup(private val output: Output = ConsoleOutput()) : RestCommand()
         val restClient = CordaRestClient.createHttpClient(
             baseUrl = targetUrl,
             username = username,
-            password = password
+            password = password,
+            insecure = insecure
         )
         val holdingIdentity = getHoldingIdentity(holdingIdentityShortHash, name, group)
         return MemberLookup(restClient).lookupMember(

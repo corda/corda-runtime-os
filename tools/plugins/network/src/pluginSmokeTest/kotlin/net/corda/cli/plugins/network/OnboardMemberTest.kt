@@ -40,7 +40,8 @@ class OnboardMemberTest {
         private val restClient = CordaRestClient.createHttpClient(
             baseUrl = DEFAULT_CLUSTER.rest.uri.toString(),
             username = user,
-            password = password
+            password = password,
+            insecure = true,
         )
 
         @BeforeAll

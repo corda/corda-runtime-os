@@ -20,6 +20,8 @@ import net.corda.restclient.generated.apis.RBACUserApi
 import net.corda.restclient.generated.apis.VirtualNodeApi
 import net.corda.restclient.generated.apis.VirtualNodeMaintenanceApi
 import net.corda.restclient.generated.infrastructure.ApiClient
+import okhttp3.Credentials
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import java.net.URI
 import java.security.SecureRandom
@@ -57,10 +59,20 @@ class CordaRestClient(
 
     companion object {
         private const val API_VERSION = "/api/v5_3"
+
+        /**
+         * Create an instance of CordaRestClient with the given baseUrl, username and password.
+         *
+         * @param baseUrl The base URL of the Corda node.
+         * @param username The username to authenticate with.
+         * @param password The password to authenticate with.
+         * @param insecure Whether to allow insecure connections. Default is false.
+         */
         fun createHttpClient(
             baseUrl: String = "https://localhost:8888",
             username: String = "admin",
-            password: String = "admin"
+            password: String = "admin",
+            insecure: Boolean = false
         ): CordaRestClient {
 
             val urlWithCordaApiVersion = baseUrl + API_VERSION
@@ -81,22 +93,45 @@ class CordaRestClient(
                 this.username = username
                 this.password = password
             }
-            val client = ApiClient.builder
-                .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
-                .hostnameVerifier { _, _ -> true }
-                .build()
+            val builder = ApiClient.builder.addInterceptor(
+                Interceptor { chain ->
+                    val newRequest = chain.request().newBuilder()
+                        .addHeader("Authorization", Credentials.basic(username, password))
+                        .build()
+                    chain.proceed(newRequest)
+                }
+            )
+
+            // Disable SSL verification if insecure is true
+            if (insecure) {
+                builder
+                    .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
+                    .hostnameVerifier { _, _ -> true }
+            }
+
+            val client = builder.build()
             return CordaRestClient(urlWithCordaApiVersion, client)
         }
 
+        /**
+         * Create an instance of CordaRestClient with the given baseUrl, username and password.
+         *
+         * @param baseUrl The base URL of the Corda node as a URI.
+         * @param username The username to authenticate with.
+         * @param password The password to authenticate with.
+         * @param insecure Whether to allow insecure connections. Default is false.
+         */
         fun createHttpClient(
             baseUrl: URI = URI.create("https://localhost:8888"),
             username: String = "admin",
-            password: String = "admin"
+            password: String = "admin",
+            insecure: Boolean = false
         ): CordaRestClient {
             return createHttpClient(
                 baseUrl = baseUrl.toString(),
                 username = username,
-                password = password
+                password = password,
+                insecure = insecure
             )
         }
     }
