@@ -173,9 +173,11 @@ object Encoding {
         val primaryEncodingType = magicType[primaryEncodingString]
             ?: throw java.lang.RuntimeException("Unknown primary encoding $primaryEncodingString.")
 
-       println("Compression encoding ${primaryEncodingType.compressionEncoding}, " +
-            "encoding start = ${primaryEncodingType.compressionEncodingStart}, " +
-            "format = ${primaryEncodingType.serializationFormat}")
+        println(
+            "Compression encoding ${primaryEncodingType.compressionEncoding}, " +
+                "encoding start = ${primaryEncodingType.compressionEncodingStart}, " +
+                "format = ${primaryEncodingType.serializationFormat}"
+        )
 
         println("Primary encoding ${primaryEncodingType.description}")
 
