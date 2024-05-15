@@ -126,45 +126,77 @@ tasks.register('copyGenerated', Copy) {
     dependsOn 'openApiGenerate'
     from "${project.buildDir}/generated/src/main/kotlin/net/corda/restclient/"
     into 'src/main/kotlin/net/corda/restclient/'
-    outputs.upToDateWhen { false }
 }
-/*
 
-// Originally we had planned it so upon compilation we check to see if the spec has been updated, and if so, we run the client generation.
-// However it appears this occurs within the pipeline even when no material change is made.
-// The issue being we need to apply a number of workarounds as the raw generated code doesn't quite work.
-// See the TestKnownIssues test classes for details
+tasks.register('applyWorkaroundForCertificateApi') {
+    dependsOn 'copyGenerated'
+    doLast {
+        def targetLine = '"certificate" to PartConfig\\(body = certificate,'
+        def replacementLine = '"certificate" to PartConfig(body = certificate?.first(),'
+        def fileName = 'src/main/kotlin/net/corda/restclient/generated/apis/CertificateApi.kt'
+        file(fileName).text = file(fileName).text.replaceAll(targetLine, replacementLine)
+    }
+}
 
-Boolean specUpdated() {
-    def specFile = file("${project.rootDir}/processors/rest-processor/src/integrationTest/resources/swaggerBaseline-v5_3.json")
-    def generatedFile = file('src/main/kotlin/net/corda/restclient/generated/infrastructure/ApiClient.kt')
+tasks.register('applyWorkaroundForMGMApi') {
+    dependsOn 'copyGenerated'
+    doLast {
+        def targetLine1 = 'return request<Unit, kotlin\\.String>\\(\\s*localVariableConfig\\s*\\)'
+        def replacementLine1 = '''val response = request<Unit, Map<String, Any?>>(
+            localVariableConfig
+        )
+        val responseAsSuccess = response as Success
+        val responseString = ObjectMapper().writeValueAsString(responseAsSuccess.data)
+        return Success(responseString)'''
 
-    // Only generate and copy over new client if spec has changed
-    return (specFile.lastModified() > generatedFile.lastModified())
+        def targetLine2 = 'import com.fasterxml.jackson.annotation.JsonProperty'
+        def replacementLine2 = '''import com.fasterxml.jackson.annotation.JsonProperty\nimport com.fasterxml.jackson.databind.ObjectMapper'''
 
+        def fileName = 'src/main/kotlin/net/corda/restclient/generated/apis/MGMApi.kt'
+        file(fileName).text = file(fileName).text
+                .replaceAll(targetLine1, replacementLine1)
+                .replaceAll(targetLine2, replacementLine2)
+    }
+}
+
+tasks.register('applyWorkaroundForApiClient') {
+    dependsOn 'copyGenerated'
+    doLast {
+        def targetLine1 = 'Serializer.jacksonObjectMapper.readValue\\(bodyContent, object: TypeReference<T>\\(\\) \\{}\\)'
+        // Whitespace is important
+        def replacementLine1 = '''try {
+                    Serializer.jacksonObjectMapper.readValue(bodyContent, object : TypeReference<T>() {})
+                } catch (ignore: JsonParseException) {
+                    bodyContent as? T
+                }'''
+
+        def targetLine2 = 'import okhttp3.OkHttpClient'
+        def replacementLine2 = '''import com.fasterxml.jackson.core.JsonParseException\nimport okhttp3.OkHttpClient'''
+
+        def fileName = 'src/main/kotlin/net/corda/restclient/generated/infrastructure/ApiClient.kt'
+        file(fileName).text = file(fileName).text
+                .replaceAll(targetLine1, replacementLine1)
+                .replaceAll(targetLine2, replacementLine2)
+    }
+}
+
+tasks.register('applyWorkarounds') {
+    dependsOn 'applyWorkaroundForCertificateApi'
+    dependsOn 'applyWorkaroundForMGMApi'
+    dependsOn 'applyWorkaroundForApiClient'
 }
 
 tasks.named('compileKotlin') {
-    // Only generate and copy over new client if spec has changed
-    if (specUpdated()) {
-        dependsOn('copyGenerated')
-    }
+    dependsOn 'applyWorkarounds'
 }
 
 tasks.named('sourcesJar') {
-    // Only generate and copy over new client if spec has changed
-    if (specUpdated()) {
-        dependsOn('copyGenerated')
-    }
+    dependsOn 'applyWorkarounds'
 }
 
 tasks.named('detekt') {
-    // Only generate and copy over new client if spec has changed
-    if (specUpdated()) {
-        dependsOn('copyGenerated')
-    }
+    dependsOn 'applyWorkarounds'
 }
- */
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
     compilerOptions {

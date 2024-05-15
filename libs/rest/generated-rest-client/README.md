@@ -5,16 +5,18 @@ This client can then be used, by the SDK for example, to send requests to a runn
 
 ## Gradle lifecycle
 
-Task ordering, just run the last one manually and it will invoke the earlier ones:
+On the `compileKotlin` task we generated the client code. Task ordering:
 - Run task `deletePreviouslyGeneratedCode` to delete the generated code.
 - Run task `openApiGenerate` to generate new code in the build directory.
 - Run task `copyGenerated` to move the generated code into the main directory.
+- Run task `applyWorkarounds` to apply any necessary workarounds to the generated code. This runs subtasks for known issues.
 
 ### Re-apply workarounds
 
 During initial implementation we found a few issues where the spec and observed behaviour differ and result in exceptions being thrown. 
 We've added some test cases to cover them, so if your build is failing with "Has the generated api been re-generated? Re-apply workaround"
 take a look at the test cases, as there are links to JIRA tickets with details.  
+The `applyWorkarounds` task should have taken care of this, but may have become out of date.
 
 ## DTO
 
