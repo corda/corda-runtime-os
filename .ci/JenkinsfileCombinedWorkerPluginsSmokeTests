@@ -23,7 +23,7 @@ pipeline {
     agent {
         docker {
             image 'build-zulu-openjdk:17'
-            label 'docker'
+            label 'docker-private-network'
             registryUrl 'https://engineering-docker.software.r3.com/'
             registryCredentialsId 'artifactory-credentials'
             args '-v /tmp:/host_tmp '
