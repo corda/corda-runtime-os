@@ -20,7 +20,7 @@ PipelineUtils pipelineUtils = new PipelineUtils(this)
 GitUtils gitUtils = new GitUtils(this)
 
 @Field
-String agentLabel = 'docker'
+String agentLabel = 'docker-private-network'
 
 if (env.CHANGE_ID || gitUtils.isReleaseTag()) {
     agentLabel = 'docker-on-demand'
