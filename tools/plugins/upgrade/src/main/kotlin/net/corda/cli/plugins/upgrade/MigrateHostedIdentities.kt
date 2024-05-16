@@ -313,7 +313,7 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
 
         val preferredSessionKey = pemLookupResult[kafkaHostedIdentity.preferredSessionKeyAndCert.sessionPublicKey]
         if (preferredSessionKey == null) {
-            UpgradePluginWrapper.logger.error(
+            logger.error(
                 "Could not find the session key alias for ${kafkaHostedIdentity.preferredSessionKeyAndCert.sessionPublicKey}."
             )
             return ExitCode.SOFTWARE
@@ -326,7 +326,7 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
         )[kafkaHostedIdentity.tlsCertificates.joinToString("\n")]
 
         if (tlsCertificateChainAlias == null) {
-            UpgradePluginWrapper.logger.error(
+            logger.error(
                 "Could not find the TLS certificate alias for: ${kafkaHostedIdentity.tlsCertificates}."
             )
             return ExitCode.SOFTWARE
@@ -348,7 +348,7 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
         val allSessionCertificates = findSessionCertificateAlias(holdingId)
         for (sessionKeyAndCert in allSessionKeysAndCertificates) {
             val sessionKeyId = pemLookupResult[kafkaHostedIdentity.preferredSessionKeyAndCert.sessionPublicKey] ?: let {
-                UpgradePluginWrapper.logger.error(
+                logger.error(
                     "Could not find the Session certificate alias for: ${kafkaHostedIdentity.tlsCertificates}."
                 )
                 return ExitCode.SOFTWARE
