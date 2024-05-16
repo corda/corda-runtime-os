@@ -20,8 +20,6 @@ import net.corda.restclient.generated.apis.RBACUserApi
 import net.corda.restclient.generated.apis.VirtualNodeApi
 import net.corda.restclient.generated.apis.VirtualNodeMaintenanceApi
 import net.corda.restclient.generated.infrastructure.ApiClient
-import okhttp3.Credentials
-import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import java.net.URI
 import java.security.SecureRandom
@@ -77,29 +75,14 @@ class CordaRestClient(
 
             val urlWithCordaApiVersion = baseUrl + API_VERSION
 
-            val trustAllCerts: Array<TrustManager> = arrayOf(
-                object : X509TrustManager {
-                    override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
-                    override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {}
-                    override fun getAcceptedIssuers(): Array<X509Certificate> {
-                        return arrayOf()
-                    }
-                }
-            )
-
-            val sslContext = SSLContext.getInstance("SSL")
-            sslContext.init(null, trustAllCerts, SecureRandom())
-            val builder = ApiClient.builder.addInterceptor(
-                Interceptor { chain ->
-                    val newRequest = chain.request().newBuilder()
-                        .addHeader("Authorization", Credentials.basic(username, password))
-                        .build()
-                    chain.proceed(newRequest)
-                }
-            )
+            val builder = ApiClient.apply {
+                this.username = username
+                this.password = password
+            }.builder
 
             // Disable SSL verification if insecure is true
             if (insecure) {
+                val (trustAllCerts: Array<TrustManager>, sslContext) = prepareInsecureSettings()
                 builder
                     .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
                     .hostnameVerifier { _, _ -> true }
@@ -129,6 +112,23 @@ class CordaRestClient(
                 password = password,
                 insecure = insecure
             )
+        }
+
+        // Prepare insecure settings for SSL
+        private fun prepareInsecureSettings(): Pair<Array<TrustManager>, SSLContext> {
+            val trustAllCerts: Array<TrustManager> = arrayOf(
+                object : X509TrustManager {
+                    override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
+                    override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {}
+                    override fun getAcceptedIssuers(): Array<X509Certificate> {
+                        return arrayOf()
+                    }
+                }
+            )
+
+            val sslContext = SSLContext.getInstance("SSL")
+            sslContext.init(null, trustAllCerts, SecureRandom())
+            return Pair(trustAllCerts, sslContext)
         }
     }
 }
