@@ -286,6 +286,7 @@ open class SoftCryptoService(
         return shortHash
     }
 
+    // If tenant ID is not specified, use the identifier of a cluster crypto database
     private fun computeTenantId(context: Map<String, String>) = context.get("tenantId") ?: ClusterCryptoDb.CRYPTO_SCHEMA
 
     override fun sign(
