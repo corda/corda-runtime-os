@@ -20,8 +20,6 @@ import net.corda.restclient.generated.apis.RBACUserApi
 import net.corda.restclient.generated.apis.VirtualNodeApi
 import net.corda.restclient.generated.apis.VirtualNodeMaintenanceApi
 import net.corda.restclient.generated.infrastructure.ApiClient
-import okhttp3.Credentials
-import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import java.net.URI
 import java.security.SecureRandom

@@ -142,3 +142,73 @@ naming:
     privateVariablePattern: '(_)?[A-Za-z][_A-Za-z0-9]*'
     excludeClassPattern: '$^'
     ignoreOverridden: true
+
+performance:
+  active: true
+  ForEachOnRange:
+    active: true
+    excludes: "**/buildSrc/**"
+  SpreadOperator:
+    active: true
+    excludes: "**/buildSrc/**"
+  UnnecessaryTemporaryInstantiation:
+    active: true
+    excludes: "**/buildSrc/**"
+
+potential-bugs:
+  active: true
+  DuplicateCaseInWhenExpression:
+    active: true
+    excludes: "**/buildSrc/**"
+  EqualsWithHashCodeExist:
+    active: true
+    excludes: "**/buildSrc/**"
+  ExplicitGarbageCollectionCall:
+    active: true
+    excludes: "**/buildSrc/**"
+  UnreachableCode:
+    active: true
+    excludes: "**/buildSrc/**"
+
+style:
+  active: true
+  ForbiddenComment:
+    active: true
+    excludes: "**/buildSrc/**"
+    values: ['TODO:','FIXME:','STOPSHIP:']
+  MagicNumber:
+    active: false
+    excludes: "**/test/**,**/integration-test/**,**/integration-test-slow/**,**/*Test.kt,**/*Tests.kt,**/buildSrc/**"
+    ignoreNumbers: ['-1','0','1','2']
+    ignoreHashCodeFunction: true
+    ignorePropertyDeclaration: false
+    ignoreConstantDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreAnnotation: false
+    ignoreNamedArgument: true
+    ignoreEnums: true
+  MaxLineLength:
+    active: true
+    excludes: "**/buildSrc/**"
+    maxLineLength: 140
+    excludePackageStatements: true
+    excludeImportStatements: true
+  ModifierOrder:
+    active: true
+    excludes: "**/buildSrc/**"
+  OptionalAbstractKeyword:
+    active: true
+    excludes: "**/buildSrc/**"
+  SafeCast:
+    active: true
+    excludes: "**/buildSrc/**"
+  ThrowsCount:
+    active: true
+    excludes: "**/buildSrc/**"
+    max: 2
+  WildcardImport:
+    active: true
+    excludes: "**/buildSrc/**"
+    excludeImports: ['java.util.*','kotlinx.android.synthetic.*']
+  UnusedImports:
+    active: true
