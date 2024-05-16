@@ -41,6 +41,8 @@ internal class OutboundLinkManager(
         commonComponents.messagesPendingSession,
         clock,
         commonComponents.messageConverter,
+        publisherFactory,
+        messagingConfiguration,
     )
     private val deliveryTracker = DeliveryTracker(
         lifecycleCoordinatorFactory,

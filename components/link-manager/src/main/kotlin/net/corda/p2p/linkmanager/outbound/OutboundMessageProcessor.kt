@@ -16,6 +16,7 @@ import net.corda.data.p2p.markers.LinkManagerProcessedMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.data.p2p.markers.LinkManagerSentMarker
 import net.corda.data.p2p.markers.TtlExpiredMarker
+import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.EventLogProcessor
@@ -42,9 +43,15 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.utils.toRecord
 import net.corda.p2p.linkmanager.TraceableItem
 import net.corda.p2p.linkmanager.metrics.recordOutboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class OutboundMessageProcessor(
@@ -56,6 +63,8 @@ internal class OutboundMessageProcessor(
     private val messagesPendingSession: PendingSessionMessageQueues,
     private val clock: Clock,
     private val messageConverter: MessageConverter,
+    publisherFactory: PublisherFactory,
+    messagingConfiguration: SmartConfig,
     private val networkMessagingValidator: NetworkMessagingValidator =
         NetworkMessagingValidator(membershipGroupReaderProvider),
 ) : EventLogProcessor<String, AppMessage> {
@@ -66,6 +75,9 @@ internal class OutboundMessageProcessor(
 
     companion object {
         private const val tracingEventName = "P2P Link Manager Outbound Event"
+        private const val CLIENT_ID = "UNAUTHENTICATED_MESSAGE_REPLAYER"
+        private const val FIRST_RETRY_DELAY = 1000L
+        private const val MAX_RETRY_DELAY = 4000L
         fun recordsForNewSessions(
             state: SessionManager.SessionState.NewSessionsNeeded,
             inboundAssignmentListener: InboundAssignmentListener,
@@ -92,6 +104,18 @@ internal class OutboundMessageProcessor(
             }
         }
     }
+
+    private val publisher = publisherFactory.createPublisher(
+        PublisherConfig(CLIENT_ID), messagingConfiguration
+    ).also { it.start() }
+
+    private val scheduledExecutor =
+        Executors.newSingleThreadScheduledExecutor { runnable -> Thread(runnable, this::class.java.simpleName) }
+
+    /**
+     * Map of unauthenticated message ID to the previous republishing delay
+     */
+    private val unauthenticatedMessageReplays = ConcurrentHashMap<String, Long>()
 
     private fun ttlExpired(ttl: Instant?): Boolean {
         if (ttl == null) return false
@@ -122,7 +146,7 @@ internal class OutboundMessageProcessor(
         }
 
         val results = unauthenticatedMessages.map { (message, event) ->
-            TraceableItem(processUnauthenticatedMessage(message), event)
+            TraceableItem(processUnauthenticatedMessage(message, event), event)
         } + processAuthenticatedMessages(authenticatedMessages)
 
         for (result in results) {
@@ -192,7 +216,10 @@ internal class OutboundMessageProcessor(
         return outResult ?: inResult
     }
 
-    private fun processUnauthenticatedMessage(message: OutboundUnauthenticatedMessage): List<Record<String, *>> {
+    private fun processUnauthenticatedMessage(
+        message: OutboundUnauthenticatedMessage,
+        originalRecord: EventLogRecord<String, AppMessage>?,
+        ): List<Record<String, *>> {
         logger.debug { "Processing outbound message ${message.header.messageId} to ${message.header.destination}." }
 
         val discardReason = checkSourceAndDestinationValid(
@@ -204,7 +231,10 @@ internal class OutboundMessageProcessor(
                 "from ${message.header.source} to ${message.header.destination} as the " +
                 discardReason
             )
+            originalRecord?.scheduleRepublish(message.header.messageId)
             return emptyList()
+        } else {
+            unauthenticatedMessageReplays.remove(message.header.messageId)
         }
 
         val destinationMemberInfo = membershipGroupReaderProvider.lookup(
@@ -249,6 +279,34 @@ internal class OutboundMessageProcessor(
             )
             return listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), linkOutMessage))
         }
+    }
+
+    private fun EventLogRecord<String, AppMessage>.scheduleRepublish(messageId: String) {
+        val delay = getRepublishDelay(messageId)
+        if (delay == null) {
+            logger.debug { "Stopping republishing of outbound unauthenticated message '$messageId'." }
+            unauthenticatedMessageReplays.remove(messageId)
+        } else {
+            scheduledExecutor.schedule(
+                {
+                    logger.debug { "Republishing outbound unauthenticated message '$messageId'." }
+                    publisher.publish(listOf(toRecord()))
+                },
+                delay,
+                TimeUnit.MILLISECONDS,
+            )
+            unauthenticatedMessageReplays[messageId] = delay
+        }
+    }
+
+    private fun getRepublishDelay(messageId: String): Long? {
+        return unauthenticatedMessageReplays[messageId]?.let {
+            if (it >= MAX_RETRY_DELAY) {
+                return null
+            } else {
+                it * 2
+            }
+        } ?: FIRST_RETRY_DELAY
     }
 
     fun processReplayedAuthenticatedMessage(messageAndKey: AuthenticatedMessageAndKey): List<Record<String, *>> =

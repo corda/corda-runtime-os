@@ -26,6 +26,7 @@ import net.corda.data.p2p.markers.LinkManagerDiscardedMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.data.p2p.markers.LinkManagerProcessedMarker
 import net.corda.data.p2p.markers.TtlExpiredMarker
+import net.corda.libs.configuration.SmartConfig
 import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.schema.Schemas
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -45,11 +46,14 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import net.corda.messaging.api.publisher.Publisher
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.linkmanager.TraceableItem
 import net.corda.p2p.linkmanager.common.MessageConverter
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 
 class OutboundMessageProcessorTest {
     private val myIdentity = createTestHoldingIdentity("CN=PartyA, O=Corp, L=LDN, C=GB", "Group")
@@ -86,6 +90,11 @@ class OutboundMessageProcessorTest {
         on { validateInbound(any(), any()) } doReturn Either.Left(Unit)
         on { validateOutbound(any(), any()) } doReturn Either.Left(Unit)
     }
+    private val messagingConfig = mock<SmartConfig>()
+    private val publisher = mock<Publisher>()
+    private val publisherFactory = mock<PublisherFactory> {
+        on { createPublisher(any(), eq(messagingConfig)) } doReturn publisher
+    }
 
     private val processor = OutboundMessageProcessor(
         sessionManager,
@@ -96,7 +105,9 @@ class OutboundMessageProcessorTest {
         messagesPendingSession,
         mockTimeFacilitiesProvider.clock,
         messageConverter,
-        networkMessagingValidator
+        publisherFactory,
+        messagingConfig,
+        networkMessagingValidator,
     )
 
     private fun setupSessionManager(response: SessionManager.SessionState) {
@@ -604,6 +615,8 @@ class OutboundMessageProcessorTest {
             messagesPendingSession,
             mockTimeFacilitiesProvider.clock,
             messageConverter,
+            publisherFactory,
+            messagingConfig,
             networkMessagingValidator,
         )
 
@@ -649,6 +662,8 @@ class OutboundMessageProcessorTest {
             messagesPendingSession,
             mockTimeFacilitiesProvider.clock,
             messageConverter,
+            publisherFactory,
+            messagingConfig,
             networkMessagingValidator,
         )
 
