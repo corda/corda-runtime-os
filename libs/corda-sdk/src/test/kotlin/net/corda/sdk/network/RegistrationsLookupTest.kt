@@ -2,6 +2,7 @@ package net.corda.sdk.network
 
 import net.corda.crypto.core.ShortHash
 import net.corda.restclient.CordaRestClient
+import net.corda.restclient.generated.apis.MemberRegistrationApi
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -12,10 +13,13 @@ class RegistrationsLookupTest {
 
     @Test
     fun testIsVnodeRegistrationApprovedEmptyList() {
-        val client = CordaRestClient.createHttpClient(baseUrl = "https://localhost:8888")
-        client.memberRegistrationClient = mock {
+        val mockedMemberRegistrationClient: MemberRegistrationApi = mock {
             on { it.getMembershipHoldingidentityshorthash(any()) } doReturn emptyList()
         }
+        val client = CordaRestClient.createHttpClient(
+            baseUrl = "https://localhost:8888",
+            memberRegistrationClient = mockedMemberRegistrationClient
+        )
 
         val result = RegistrationsLookup(client).isVnodeRegistrationApproved(
             ShortHash.parse("123456789123")

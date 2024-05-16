@@ -4,6 +4,7 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
 import net.corda.libs.cpiupload.endpoints.v1.CpiMetadata
 import net.corda.libs.cpiupload.endpoints.v1.GetCPIsResponse
 import net.corda.restclient.CordaRestClient
+import net.corda.restclient.generated.apis.CPIApi
 import net.corda.sdk.data.Checksum
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -17,8 +18,7 @@ class CpiUploaderTest {
 
     @Test
     fun testCpiPreviouslyUploadedReturnsFalseNoMatch() {
-        val client = CordaRestClient.createHttpClient(baseUrl = url)
-        client.cpiClient = mock {
+        val mockCpiClient: CPIApi = mock {
             on { getCpi() } doReturn GetCPIsResponse(
                 listOf(
                     CpiMetadata(
@@ -36,6 +36,7 @@ class CpiUploaderTest {
                 )
             )
         }
+        val client = CordaRestClient.createHttpClient(baseUrl = url, cpiClient = mockCpiClient)
         val result = CpiUploader(client).cpiPreviouslyUploaded(
             cpiName = "foo",
             cpiVersion = "1.0"
@@ -45,10 +46,11 @@ class CpiUploaderTest {
 
     @Test
     fun testCpiPreviouslyUploadedReturnsFalseEmpty() {
-        val client = CordaRestClient.createHttpClient(baseUrl = url)
-        client.cpiClient = mock {
+        val mockCpiClient: CPIApi = mock {
             on { getCpi() } doReturn GetCPIsResponse(emptyList())
         }
+        val client = CordaRestClient.createHttpClient(baseUrl = url, cpiClient = mockCpiClient)
+
         val result = CpiUploader(client).cpiPreviouslyUploaded(
             cpiName = "foo",
             cpiVersion = "1.0"
@@ -58,8 +60,7 @@ class CpiUploaderTest {
 
     @Test
     fun testCpiPreviouslyUploadedReturnsTrue() {
-        val client = CordaRestClient.createHttpClient(baseUrl = url)
-        client.cpiClient = mock {
+        val mockCpiClient: CPIApi = mock {
             on { getCpi() } doReturn GetCPIsResponse(
                 listOf(
                     CpiMetadata(
@@ -77,6 +78,7 @@ class CpiUploaderTest {
                 )
             )
         }
+        val client = CordaRestClient.createHttpClient(baseUrl = url, cpiClient = mockCpiClient)
         val result = CpiUploader(client).cpiPreviouslyUploaded(
             cpiName = "foo",
             cpiVersion = "1.0"
@@ -86,8 +88,7 @@ class CpiUploaderTest {
 
     @Test
     fun testCpiChecksumExistsReturnsFalseNoMatch() {
-        val client = CordaRestClient.createHttpClient(baseUrl = url)
-        client.cpiClient = mock {
+        val mockCpiClient: CPIApi = mock {
             on { getCpi() } doReturn GetCPIsResponse(
                 listOf(
                     CpiMetadata(
@@ -105,6 +106,7 @@ class CpiUploaderTest {
                 )
             )
         }
+        val client = CordaRestClient.createHttpClient(baseUrl = url, cpiClient = mockCpiClient)
         val result = CpiUploader(client).cpiChecksumExists(
             checksum = Checksum("abc")
         )
@@ -113,8 +115,7 @@ class CpiUploaderTest {
 
     @Test
     fun testCpiChecksumExistsReturnsTrue() {
-        val client = CordaRestClient.createHttpClient(baseUrl = url)
-        client.cpiClient = mock {
+        val cpiClient: CPIApi = mock {
             on { getCpi() } doReturn GetCPIsResponse(
                 listOf(
                     CpiMetadata(
@@ -132,6 +133,7 @@ class CpiUploaderTest {
                 )
             )
         }
+        val client = CordaRestClient.createHttpClient(baseUrl = url, cpiClient = cpiClient)
         val result = CpiUploader(client).cpiChecksumExists(
             checksum = Checksum("abc")
         )
