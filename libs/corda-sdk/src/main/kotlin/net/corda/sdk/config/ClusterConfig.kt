@@ -49,7 +49,10 @@ class ClusterConfig(val restClient: CordaRestClient) {
         ) {
             val response = restClient.configurationClient.putConfigWithHttpInfo(updateConfig)
             if (response.statusCode == ResponseCode.ACCEPTED.statusCode) {
-                (response as Success<*>).data as UpdateConfigResponse
+                when (response) {
+                    is Success<*> -> response.data as UpdateConfigResponse
+                    else -> throw IllegalArgumentException("Unexpected response type: ${response::class.simpleName}")
+                }
             } else {
                 val localVarError = response as ClientError<*>
                 if (response.statusCode == ResponseCode.CONFLICT.statusCode) {

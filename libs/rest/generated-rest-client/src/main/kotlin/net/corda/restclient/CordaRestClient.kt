@@ -121,7 +121,7 @@ class CordaRestClient(
 
             // Disable SSL verification if insecure is true
             if (insecure) {
-                val sslContext = SSLContext.getInstance("SSL")
+                val sslContext = SSLContext.getInstance("TLSv1.3")
                 sslContext.init(null, trustAllCerts, SecureRandom())
                 builder
                     .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
@@ -239,8 +239,12 @@ class CordaRestClient(
         // Create a trust manager that does not validate certificate chains
         private val trustAllCerts: Array<TrustManager> = arrayOf(
             object : X509TrustManager {
-                override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
-                override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {}
+                override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {
+                    // Do nothing
+                }
+                override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {
+                    // Do nothing
+                }
                 override fun getAcceptedIssuers(): Array<X509Certificate> {
                     return arrayOf()
                 }
