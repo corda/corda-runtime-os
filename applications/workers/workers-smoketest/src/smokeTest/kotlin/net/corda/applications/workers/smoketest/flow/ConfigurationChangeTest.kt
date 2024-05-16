@@ -23,6 +23,7 @@ import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -32,6 +33,7 @@ import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.UUID
 
+@Disabled("CORE-20531 - Disabled due to flakiness")
 @Suppress("Unused", "FunctionName")
 @Order(Int.MAX_VALUE)
 @TestInstance(Lifecycle.PER_CLASS)
