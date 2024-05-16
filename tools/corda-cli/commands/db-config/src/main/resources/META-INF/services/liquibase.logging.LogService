@@ -1,1 +1,1 @@
-net.corda.cli.plugins.dbconfig.Slf4jLogService
+net.corda.cli.commands.dbconfig.Slf4jLogService

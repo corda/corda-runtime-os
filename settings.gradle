@@ -481,7 +481,9 @@ include 'testing:virtual-node-info-read-service-fake'
 include 'testing:group-policy-test-common'
 include 'tools:corda-runtime-gradle-plugin'
 include 'tools:corda-cli'
+include 'tools:corda-cli:app'
 include 'tools:corda-cli:common-utils'
+include 'tools:corda-cli:commands:cpi'
 include 'tools:corda-cli:commands:rest'
 include 'tools:corda-cli:commands:db-config'
 include 'tools:corda-cli:commands:initial-config'
@@ -492,7 +494,6 @@ include 'tools:corda-cli:commands:preinstall'
 include 'tools:corda-cli:commands:secret-config'
 include 'tools:corda-cli:commands:topic-config'
 include 'tools:corda-cli:commands:virtual-node'
-include 'tools:corda-cli:commands:cpi'
 
 // The following logic dictates if we use the composite build gradle functionality,
 // If this evaluates to true local source code will be used in place of binary dependencies.

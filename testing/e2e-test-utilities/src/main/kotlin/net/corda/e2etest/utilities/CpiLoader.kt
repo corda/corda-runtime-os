@@ -1,7 +1,7 @@
 package net.corda.e2etest.utilities
 
-import net.corda.cli.plugins.packaging.CreateCpiV2
-import net.corda.cli.plugins.packaging.signing.SigningOptions
+import net.corda.cli.commands.packaging.CreateCpiV2
+import net.corda.cli.commands.packaging.signing.SigningOptions
 import net.corda.utilities.deleteRecursively
 import net.corda.utilities.readAll
 import org.junit.jupiter.api.Assertions.assertEquals

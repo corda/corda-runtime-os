@@ -1,0 +1,11 @@
+package net.corda.cli.commands.typeconverter
+
+import net.corda.sdk.data.RequestId
+import picocli.CommandLine
+
+class RequestIdConverter : CommandLine.ITypeConverter<RequestId> {
+
+    override fun convert(value: String): RequestId {
+        return RequestId(value)
+    }
+}

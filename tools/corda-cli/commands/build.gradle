@@ -31,38 +31,38 @@ def otherPluginsTasks = subprojects.collect {
         }
     }
 
-tasks.register('copyCliFiles') {
-        def otherPluginsTasksFlattened = otherPluginsTasks.collect {
-            it.collect()
-        }.flatten()
-        logger.info("otherPluginsTasksFlattened : $otherPluginsTasksFlattened")
-        dependsOn otherPluginsTasks
-        doLast {
-            copy {
-                duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-                from configurations.named('cliHostDist')
-                into "$buildDir/cli"
-                rename('.*.jar', 'corda-cli.jar')
-            }
-            copy {
-                from otherPluginsTasks
-                into "$buildDir/cli/plugins"
-            }
-            copy {
-                from "$projectDir/installScripts"
-                into "$buildDir/cli"
-            }
-        }
-}
+//tasks.register('copyCliFiles') {
+//        def otherPluginsTasksFlattened = otherPluginsTasks.collect {
+//            it.collect()
+//        }.flatten()
+//        logger.info("otherPluginsTasksFlattened : $otherPluginsTasksFlattened")
+//        dependsOn otherPluginsTasks
+//        doLast {
+//            copy {
+//                duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+//                from configurations.named('cliHostDist')
+//                into "$buildDir/cli"
+//                rename('.*.jar', 'corda-cli.jar')
+//            }
+//            copy {
+//                from otherPluginsTasks
+//                into "$buildDir/cli/plugins"
+//            }
+//            copy {
+//                from "$projectDir/installScripts"
+//                into "$buildDir/cli"
+//            }
+//        }
+//}
 
-tasks.register("cliInstallArchive", Zip) {
-    dependsOn tasks.named('copyCliFiles')
-    from "$buildDir/cli"
-    include '*'
-    include '*/*'
-    archiveFileName = 'corda-cli-dist.zip'
-    destinationDirectory = file("$buildDir/zip")
-}
+//tasks.register("cliInstallArchive", Zip) {
+//    dependsOn tasks.named('copyCliFiles')
+//    from "$buildDir/cli"
+//    include '*'
+//    include '*/*'
+//    archiveFileName = 'corda-cli-dist.zip'
+//    destinationDirectory = file("$buildDir/zip")
+//}
 
 tasks.register("cleanDir", Delete) {
     description 'Removes any previously generated scripts'
@@ -87,12 +87,12 @@ tasks.register("cliS3Download", Copy) {
 }
 
 
-tasks.named('jar').configure {
-    finalizedBy cliInstallArchive
-    if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
-        finalizedBy cliS3Download
-    }
-}
+//tasks.named('jar').configure {
+//    finalizedBy cliInstallArchive
+//    if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
+//        finalizedBy cliS3Download
+//    }
+//}
 
 tasks.register('publishOSGiImage', DeployableContainerBuilder) {
 
@@ -101,7 +101,7 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
 
     if (cordaCliIncluded && cordaApiIncluded) {
         logger.lifecycle("corda-cli-plugin-host project detected in composite build logic, building base image from include project")
-        dependsOn gradle.includedBuild("corda-api").task(':application:jar')
+//        dependsOn gradle.includedBuild("corda-api").task(':application:jar')
         dependsOn gradle.includedBuild("corda-cli-plugin-host").task(':app:publishOSGiImage')
     }
 
@@ -170,36 +170,36 @@ if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
     }
 }
 
-publishing {
-    publications {
-        maven(MavenPublication) {
-            artifactId "corda-cli-installer"
-            groupId s3_upload_group_id
-            artifact cliInstallArchive
-        }
-        if (project.hasProperty(S3_BUCKET_URI_PROPERTY) && s3Script != null) {
-            maven(MavenPublication) {
-                artifactId "corda-cli-downloader"
-                groupId s3_upload_group_id
-                artifact s3Script
-            }
-        }
-    }
-    if (project.hasProperty(S3_BUCKET_URI_PROPERTY) && project.hasProperty('releasable')) {
-        publishing {
-            repositories {
-                maven {
-                    url = project.findProperty(S3_BUCKET_URI_PROPERTY)
-                    credentials(AwsCredentials) {
-                        accessKey "${System.getenv('AWS_ACCESS_KEY_ID')}"
-                        secretKey "${System.getenv('AWS_SECRET_ACCESS_KEY')}"
-                        sessionToken "${System.getenv('AWS_SESSION_TOKEN')}"
-                    }
-                }
-            }
-        }
-    }
-}
+//publishing {
+//    publications {
+//        maven(MavenPublication) {
+//            artifactId "corda-cli-installer"
+//            groupId s3_upload_group_id
+//            artifact cliInstallArchive
+//        }
+//        if (project.hasProperty(S3_BUCKET_URI_PROPERTY) && s3Script != null) {
+//            maven(MavenPublication) {
+//                artifactId "corda-cli-downloader"
+//                groupId s3_upload_group_id
+//                artifact s3Script
+//            }
+//        }
+//    }
+//    if (project.hasProperty(S3_BUCKET_URI_PROPERTY) && project.hasProperty('releasable')) {
+//        publishing {
+//            repositories {
+//                maven {
+//                    url = project.findProperty(S3_BUCKET_URI_PROPERTY)
+//                    credentials(AwsCredentials) {
+//                        accessKey "${System.getenv('AWS_ACCESS_KEY_ID')}"
+//                        secretKey "${System.getenv('AWS_SECRET_ACCESS_KEY')}"
+//                        sessionToken "${System.getenv('AWS_SESSION_TOKEN')}"
+//                    }
+//                }
+//            }
+//        }
+//    }
+//}
 
 subprojects {
     sourceSets {
