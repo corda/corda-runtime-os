@@ -221,7 +221,7 @@ class LocallyHostedIdentitiesServiceImpl(
         identities.values.stream()
             .map {
                 object : VersionedRecord<String, HostedIdentityEntry> {
-                    override val version = it.version
+                    override val version = it.version ?: 1
                     override val isDeleted = false
                     override val key = it.holdingIdentity.toCorda().shortHash.value
                     override val value = it

@@ -12,7 +12,7 @@ class VersionProvider : AbstractCordaCliVersionProvider()
 
 @Suppress("unused")
 class UpgradePluginWrapper : Plugin() {
-    companion object {
+    private companion object {
         val logger: Logger = LoggerFactory.getLogger(UpgradePlugin::class.java)
     }
 

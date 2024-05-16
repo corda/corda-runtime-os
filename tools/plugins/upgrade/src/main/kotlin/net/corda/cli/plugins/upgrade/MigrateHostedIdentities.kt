@@ -5,7 +5,9 @@ import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import net.corda.crypto.core.CryptoTenants
+import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.HostedIdentityEntry
+import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
 import net.corda.membership.datamodel.HostedIdentityEntity
 import net.corda.membership.datamodel.HostedIdentitySessionKeyInfoEntity
 import net.corda.membership.rest.v1.CertificateRestResource
@@ -20,6 +22,7 @@ import net.corda.schema.Schemas
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.utilities.classload.executeWithThreadContextClassLoader
 import net.corda.virtualnode.toCorda
+import org.apache.avro.Schema
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.slf4j.Logger
@@ -89,11 +92,61 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
         LoggerFactory.getLogger("SystemOut")
     }
 
+    private val oldHostedIdentityEntrySchema = Schema.Parser()
+        .addTypes(
+            mapOf(
+                HoldingIdentity::class.java.name to HoldingIdentity.`SCHEMA$`,
+                HostedIdentitySessionKeyAndCert::class.java.name to HostedIdentitySessionKeyAndCert.`SCHEMA$`
+            )
+        ).parse(
+            """
+        {
+          "type": "record",
+          "name": "HostedIdentityEntry",
+          "namespace": "net.corda.data.p2p",
+          "fields": [
+            {
+              "doc": "The Holding identity hosted in this node",
+              "name": "holdingIdentity",
+              "type": "net.corda.data.identity.HoldingIdentity"
+            },
+            {
+              "doc": "The tenant ID under which the TLS key is stored",
+              "name": "tlsTenantId",
+              "type": "string"
+            },
+            {
+              "doc": "The TLS certificates (in PEM format)",
+              "name": "tlsCertificates",
+              "type": {
+                "type": "array",
+                "items": "string"
+              }
+            },
+            {
+              "doc": "The preferred session initiation key and certificate",
+              "name": "preferredSessionKeyAndCert",
+              "type": "HostedIdentitySessionKeyAndCert"
+            },
+            {
+              "doc": "Alternative session initiation keys and certificates",
+              "name": "alternativeSessionKeysAndCerts",
+               "type": {
+                 "type": "array",
+                 "items": "HostedIdentitySessionKeyAndCert"
+               }
+             }
+          ]
+        }
+            """.trimIndent()
+        )
+
     private val consumerGroup = UUID.randomUUID().toString()
 
     override fun call(): Int {
         val consumer = executeWithThreadContextClassLoader(this::class.java.classLoader) {
             val registry = AvroSchemaRegistryImpl()
+            registry.addSchemaOnly(oldHostedIdentityEntrySchema)
             val keyDeserializer = CordaAvroDeserializerImpl(registry, {}, String::class.java)
             val valueDeserializer = CordaAvroDeserializerImpl(registry, {}, HostedIdentityEntry::class.java)
             KafkaConsumer(getKafkaProperties(), keyDeserializer, valueDeserializer)
@@ -104,7 +157,14 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
             do {
                 val records = consumer.poll(Duration.ofMillis(timeoutMs)).let { records ->
                     logger.debug("Read {} records from topic '{}'.", records.count(), hostedIdentityTopic)
-                    records.mapNotNull { it.value() as? HostedIdentityEntry }
+                    records.map { record ->
+                        val hostedIdentityEntity = record.value() as? HostedIdentityEntry
+                        if (hostedIdentityEntity == null) {
+                            logger.error("Could not deserialize ${HostedIdentityEntity::class.java}.")
+                            return ExitCode.SOFTWARE
+                        }
+                        hostedIdentityEntity
+                    }
                 }
                 consumer.commitSync()
                 logger.trace("Read the following records from topic '{}': {}.", hostedIdentityTopic, records)
@@ -119,7 +179,12 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
             consumer.closeConsumer()
         }
         FileWriter(File("${outputDir.removeSuffix("/")}/${SQL_FILE_NAME}.sql")).use { outputFile ->
-            allRecords.forEach { persistHostedIdentity(it, outputFile) }
+            allRecords.forEach {
+                val success = persistHostedIdentity(it, outputFile)
+                if (success != ExitCode.OK) {
+                    return success
+                }
+            }
         }
         return ExitCode.OK
     }
@@ -139,7 +204,7 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
         try {
             close()
         } catch (ex: Exception) {
-            UpgradePluginWrapper.logger.error("Failed to close consumer from group '$consumerGroup'.", ex)
+            logger.error("Failed to close consumer from group '$consumerGroup'.", ex)
         }
     }
 
@@ -242,16 +307,16 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
         }
     }
 
-    private fun persistHostedIdentity(kafkaHostedIdentity: HostedIdentityEntry, file: FileWriter) {
+    private fun persistHostedIdentity(kafkaHostedIdentity: HostedIdentityEntry, file: FileWriter): Int {
         val holdingId = kafkaHostedIdentity.holdingIdentity.toCorda().shortHash.toString()
         val pemLookupResult = findAllSessionKeys(holdingId)
 
         val preferredSessionKey = pemLookupResult[kafkaHostedIdentity.preferredSessionKeyAndCert.sessionPublicKey]
         if (preferredSessionKey == null) {
-            UpgradePluginWrapper.logger.error(
+            logger.error(
                 "Could not find the session key alias for ${kafkaHostedIdentity.preferredSessionKeyAndCert.sessionPublicKey}."
             )
-            return
+            return ExitCode.SOFTWARE
         }
         val useClusterLevelTlsCertificateAndKey = kafkaHostedIdentity.tlsTenantId == CryptoTenants.P2P
 
@@ -261,10 +326,10 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
         )[kafkaHostedIdentity.tlsCertificates.joinToString("\n")]
 
         if (tlsCertificateChainAlias == null) {
-            UpgradePluginWrapper.logger.error(
+            logger.error(
                 "Could not find the TLS certificate alias for: ${kafkaHostedIdentity.tlsCertificates}."
             )
-            return
+            return ExitCode.SOFTWARE
         }
 
         val entity = HostedIdentityEntity(
@@ -272,7 +337,7 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
             preferredSessionKey,
             tlsCertificateChainAlias,
             useClusterLevelTlsCertificateAndKey,
-            kafkaHostedIdentity.version
+            kafkaHostedIdentity.version ?: 1
         )
 
         val statement = entity.toInsertStatement() + "\n"
@@ -283,10 +348,10 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
         val allSessionCertificates = findSessionCertificateAlias(holdingId)
         for (sessionKeyAndCert in allSessionKeysAndCertificates) {
             val sessionKeyId = pemLookupResult[kafkaHostedIdentity.preferredSessionKeyAndCert.sessionPublicKey] ?: let {
-                UpgradePluginWrapper.logger.error(
+                logger.error(
                     "Could not find the Session certificate alias for: ${kafkaHostedIdentity.tlsCertificates}."
                 )
-                return
+                return ExitCode.SOFTWARE
             }
             val sessionCertificateAlias = sessionKeyAndCert?.sessionCertificates?.let {
                 allSessionCertificates[it.joinToString("\n")]
@@ -299,5 +364,6 @@ class MigrateHostedIdentities : RestCommand(), Callable<Int> {
             val sessionKeyStatement = sessionKeyEntity.toInsertStatement() + "\n"
             file.write(sessionKeyStatement)
         }
+        return ExitCode.OK
     }
 }
