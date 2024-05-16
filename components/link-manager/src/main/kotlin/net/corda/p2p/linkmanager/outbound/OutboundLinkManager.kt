@@ -3,6 +3,7 @@ package net.corda.p2p.linkmanager.outbound
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
@@ -43,6 +44,8 @@ internal class OutboundLinkManager(
         PublisherConfig(OUTBOUND_MESSAGE_PROCESSOR_ID),
         messagingConfiguration
     )
+    private val scheduledExecutor =
+        Executors.newSingleThreadScheduledExecutor { runnable -> Thread(runnable, OUTBOUND_MESSAGE_PROCESSOR_ID) }
     private val outboundMessageProcessor = OutboundMessageProcessor(
         commonComponents.sessionManager,
         linkManagerHostingMap,
@@ -53,7 +56,7 @@ internal class OutboundLinkManager(
         clock,
         commonComponents.messageConverter,
         publisher,
-        Executors.newSingleThreadScheduledExecutor { runnable -> Thread(runnable, OUTBOUND_MESSAGE_PROCESSOR_ID) }
+        scheduledExecutor,
     )
     private val deliveryTracker = DeliveryTracker(
         lifecycleCoordinatorFactory,
@@ -76,7 +79,7 @@ internal class OutboundLinkManager(
         )
     }
 
-    override val dominoTile = SubscriptionDominoTile(
+    private val subscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         outboundMessageSubscription,
         subscriptionConfig,
@@ -84,11 +87,23 @@ internal class OutboundLinkManager(
             deliveryTracker.dominoTile.coordinatorName,
             commonComponents.dominoTile.coordinatorName,
             commonComponents.inboundAssignmentListener.dominoTile.coordinatorName,
-            publisher.dominoTile.coordinatorName,
         ),
         managedChildren = setOf(
             deliveryTracker.dominoTile.toNamedLifecycle(),
-            publisher.dominoTile.toNamedLifecycle(),
+        )
+    )
+
+    override val dominoTile = ComplexDominoTile(
+        this.javaClass.simpleName,
+        lifecycleCoordinatorFactory,
+        onClose = { scheduledExecutor.shutdown() },
+        dependentChildren = setOf(
+            subscriptionTile.coordinatorName,
+            publisher.dominoTile.coordinatorName,
+        ),
+        managedChildren = setOf(
+            subscriptionTile.toNamedLifecycle(),
+            publisher.dominoTile.toNamedLifecycle()
         )
     )
 }
