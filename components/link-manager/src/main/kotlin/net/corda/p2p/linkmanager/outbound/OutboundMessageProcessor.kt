@@ -45,7 +45,6 @@ import java.time.Instant
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.utils.toRecord
 import net.corda.p2p.linkmanager.TraceableItem
 import net.corda.p2p.linkmanager.metrics.recordOutboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
@@ -290,7 +289,17 @@ internal class OutboundMessageProcessor(
             scheduledExecutor.schedule(
                 {
                     logger.debug { "Republishing outbound unauthenticated message '$messageId'." }
-                    publisher.publish(listOf(toRecord()))
+                    publisher.publish(
+                        listOf(
+                            Record(
+                                topic = this.topic,
+                                key = this.key,
+                                value = this.value,
+                                timestamp = this.timestamp,
+                                headers = this.headers
+                            )
+                        )
+                    )
                 },
                 delay,
                 TimeUnit.MILLISECONDS,
