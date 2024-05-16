@@ -6,9 +6,7 @@ This client can then be used, by the SDK for example, to send requests to a runn
 ## Gradle lifecycle
 
 On the `compileKotlin` task we generated the client code. Task ordering:
-- Run task `deletePreviouslyGeneratedCode` to delete the generated code.
 - Run task `openApiGenerate` to generate new code in the build directory.
-- Run task `copyGenerated` to move the generated code into the main directory.
 - Run task `applyWorkarounds` to apply any necessary workarounds to the generated code. This runs subtasks for known issues.
 
 ### Re-apply workarounds

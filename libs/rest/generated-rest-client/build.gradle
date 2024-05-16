@@ -9,11 +9,13 @@ ext {
     releasable = false
 }
 
+def generatedRestClientDir = layout.buildDirectory.dir('generated')
+
 openApiGenerate {
     generatorName = 'kotlin'
     library = 'jvm-okhttp4'
     inputSpec = "${project.rootDir}/processors/rest-processor/src/integrationTest/resources/swaggerBaseline-v5_3.json"
-    outputDir = "${project.buildDir}/generated"
+    outputDir = generatedRestClientDir.get().getAsFile().getAbsolutePath()
     generateApiDocumentation = false
     generateModelDocumentation = false
     generateApiTests = false
@@ -111,35 +113,33 @@ dependencies {
     testImplementation libs.javalin
 }
 
-tasks.register('deletePreviouslyGeneratedCode', Delete) {
-    delete 'src/main/kotlin/net/corda/restclient/generated/'
-    delete "${project.buildDir}/generated/"
-}
-
 tasks.named('openApiGenerate') {
-    dependsOn 'deletePreviouslyGeneratedCode'
     outputs.upToDateWhen { false }
     outputs.cacheIf { false }
 }
 
-tasks.register('copyGenerated', Copy) {
-    dependsOn 'openApiGenerate'
-    from "${project.buildDir}/generated/src/main/kotlin/net/corda/restclient/"
-    into 'src/main/kotlin/net/corda/restclient/'
+
+// Pick up the generated code so we can use it in src/main & src/test
+sourceSets {
+    main {
+        java {
+            srcDirs generatedRestClientDir
+        }
+    }
 }
 
 tasks.register('applyWorkaroundForCertificateApi') {
-    dependsOn 'copyGenerated'
+    dependsOn 'openApiGenerate'
     doLast {
         def targetLine = '"certificate" to PartConfig\\(body = certificate,'
         def replacementLine = '"certificate" to PartConfig(body = certificate?.first(),'
-        def fileName = 'src/main/kotlin/net/corda/restclient/generated/apis/CertificateApi.kt'
+        def fileName = "${project.buildDir}/generated/src/main/kotlin/net/corda/restclient/generated/apis/CertificateApi.kt"
         file(fileName).text = file(fileName).text.replaceAll(targetLine, replacementLine)
     }
 }
 
 tasks.register('applyWorkaroundForMGMApi') {
-    dependsOn 'copyGenerated'
+    dependsOn 'openApiGenerate'
     doLast {
         def targetLine1 = 'return request<Unit, kotlin\\.String>\\(\\s*localVariableConfig\\s*\\)'
         def replacementLine1 = '''val response = request<Unit, Map<String, Any?>>(
@@ -152,7 +152,7 @@ tasks.register('applyWorkaroundForMGMApi') {
         def targetLine2 = 'import com.fasterxml.jackson.annotation.JsonProperty'
         def replacementLine2 = '''import com.fasterxml.jackson.annotation.JsonProperty\nimport com.fasterxml.jackson.databind.ObjectMapper'''
 
-        def fileName = 'src/main/kotlin/net/corda/restclient/generated/apis/MGMApi.kt'
+        def fileName = "${project.buildDir}/generated/src/main/kotlin/net/corda/restclient/generated/apis/MGMApi.kt"
         file(fileName).text = file(fileName).text
                 .replaceAll(targetLine1, replacementLine1)
                 .replaceAll(targetLine2, replacementLine2)
@@ -160,7 +160,7 @@ tasks.register('applyWorkaroundForMGMApi') {
 }
 
 tasks.register('applyWorkaroundForApiClient') {
-    dependsOn 'copyGenerated'
+    dependsOn 'openApiGenerate'
     doLast {
         def targetLine1 = 'Serializer.jacksonObjectMapper.readValue\\(bodyContent, object: TypeReference<T>\\(\\) \\{}\\)'
         // Whitespace is important
@@ -173,7 +173,7 @@ tasks.register('applyWorkaroundForApiClient') {
         def targetLine2 = 'import okhttp3.OkHttpClient'
         def replacementLine2 = '''import com.fasterxml.jackson.core.JsonParseException\nimport okhttp3.OkHttpClient'''
 
-        def fileName = 'src/main/kotlin/net/corda/restclient/generated/infrastructure/ApiClient.kt'
+        def fileName = "${project.buildDir}/generated/src/main/kotlin/net/corda/restclient/generated/infrastructure/ApiClient.kt"
         file(fileName).text = file(fileName).text
                 .replaceAll(targetLine1, replacementLine1)
                 .replaceAll(targetLine2, replacementLine2)
@@ -192,6 +192,8 @@ tasks.named('compileKotlin') {
 
 tasks.named('sourcesJar') {
     dependsOn 'applyWorkarounds'
+    // Ensure generated code is added to jar
+    inputs.files(generatedRestClientDir)
 }
 
 tasks.named('kotlinSourcesJar') {
