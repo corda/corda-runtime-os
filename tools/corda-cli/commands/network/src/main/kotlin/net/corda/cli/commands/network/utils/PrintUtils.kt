@@ -7,8 +7,8 @@ import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.datatype.jsr310.deser.InstantDeserializer
 import com.fasterxml.jackson.datatype.jsr310.ser.InstantSerializer
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import net.corda.cli.plugins.network.output.ConsoleOutput
-import net.corda.cli.plugins.network.output.Output
+import net.corda.cli.commands.network.output.ConsoleOutput
+import net.corda.cli.commands.network.output.Output
 import java.time.Instant
 
 object PrintUtils {

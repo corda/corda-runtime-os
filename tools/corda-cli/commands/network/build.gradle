@@ -28,7 +28,7 @@ dependencies {
     implementation project(':libs:virtual-node:virtual-node-info')
     implementation 'net.corda:corda-config-schema'
     implementation project(":tools:corda-cli:commands:package")
-    implementation project(':tools:corda-cli:commands:rest')
+    implementation project(':tools:corda-cli:commands:rest-command')
     implementation project(':tools:corda-cli:common-utils')
 
     testImplementation libs.bundles.test

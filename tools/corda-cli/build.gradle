@@ -16,18 +16,6 @@ application {
 dependencies {
 
     implementation project(':tools:corda-cli:app')
-    implementation project(':tools:corda-cli:common-utils')
-    implementation project(':tools:corda-cli:commands:cpi')
-    implementation project(':tools:corda-cli:commands:rest')
-    implementation project(':tools:corda-cli:commands:db-config')
-    implementation project(':tools:corda-cli:commands:initial-config')
-    implementation project(':tools:corda-cli:commands:initial-rbac')
-    implementation project(':tools:corda-cli:commands:network')
-    implementation project(':tools:corda-cli:commands:package')
-    implementation project(':tools:corda-cli:commands:preinstall')
-    implementation project(':tools:corda-cli:commands:secret-config')
-    implementation project(':tools:corda-cli:commands:topic-config')
-    implementation project(':tools:corda-cli:commands:virtual-node')
 
     implementation libs.kotlin.stdlib
     implementation "info.picocli:picocli:$picocliVersion"

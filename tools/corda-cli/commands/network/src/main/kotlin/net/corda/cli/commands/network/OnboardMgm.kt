@@ -1,6 +1,6 @@
 package net.corda.cli.commands.network
 
-import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
+import net.corda.cli.commands.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.membership.rest.v1.MGMRestResource

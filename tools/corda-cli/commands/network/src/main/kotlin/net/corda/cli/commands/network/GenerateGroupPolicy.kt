@@ -3,10 +3,10 @@ package net.corda.cli.commands.network
 import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import net.corda.cli.plugins.network.output.ConsoleOutput
-import net.corda.cli.plugins.network.output.Output
-import net.corda.cli.plugins.network.utils.PrintUtils.printJsonOutput
-import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
+import net.corda.cli.commands.network.output.ConsoleOutput
+import net.corda.cli.commands.network.output.Output
+import net.corda.cli.commands.network.utils.PrintUtils.printJsonOutput
+import net.corda.cli.commands.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.cli.commands.typeconverter.X500NameConverter
 import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.sdk.network.GenerateStaticGroupPolicy

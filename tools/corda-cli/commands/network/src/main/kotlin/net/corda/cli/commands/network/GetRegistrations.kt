@@ -1,11 +1,11 @@
 package net.corda.cli.commands.network
 
 import net.corda.cli.commands.common.RestCommand
-import net.corda.cli.plugins.network.output.ConsoleOutput
-import net.corda.cli.plugins.network.output.Output
-import net.corda.cli.plugins.network.utils.HoldingIdentityUtils.getHoldingIdentity
-import net.corda.cli.plugins.network.utils.PrintUtils.printJsonOutput
-import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
+import net.corda.cli.commands.network.output.ConsoleOutput
+import net.corda.cli.commands.network.output.Output
+import net.corda.cli.commands.network.utils.HoldingIdentityUtils.getHoldingIdentity
+import net.corda.cli.commands.network.utils.PrintUtils.printJsonOutput
+import net.corda.cli.commands.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.cli.commands.typeconverter.RequestIdConverter
 import net.corda.cli.commands.typeconverter.ShortHashConverter
 import net.corda.cli.commands.typeconverter.X500NameConverter

@@ -7,18 +7,10 @@ ext.cordaEnableFormatting = true
 group 'net.corda.cli.command'
 
 dependencies {
-    implementation project(":tools:corda-cli:commands:rest")
-    compileOnly(project(":libs:virtual-node:cpi-upload-endpoints")) {
-        exclude module: 'rest'
-    }
-    compileOnly (project(':libs:corda-sdk')) {
-        exclude module: 'cpi-upload-endpoints'
-        exclude module: 'rest-client'
-    }
-    compileOnly(project(':libs:rest:rest-client')) {
-        exclude module: 'rest'
-    }
-    compileOnly project(':libs:rest:rest')
+    implementation project(":tools:corda-cli:commands:rest-command")
+    implementation project(":libs:virtual-node:cpi-upload-endpoints")
+    implementation project(':libs:corda-sdk')
+    implementation project(':libs:rest:rest-client')
     compileOnly platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':tools:corda-cli:common-utils')
 

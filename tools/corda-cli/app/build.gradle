@@ -1,0 +1,28 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'org.jetbrains.kotlin.kapt'
+    id 'application'
+}
+
+group = 'net.corda.cli'
+version = '5.3.0.0-SNAPSHOT'
+
+mainClassName = 'net.corda.cli.application.AppKt'
+
+application {
+    mainClass = mainClassName
+}
+
+dependencies {
+    implementation project(':tools:corda-cli:common-utils')
+    implementation project(':tools:corda-cli:commands:cpi')
+    implementation project(':tools:corda-cli:commands:db-config')
+    implementation project(':tools:corda-cli:commands:initial-config')
+    implementation project(':tools:corda-cli:commands:initial-rbac')
+    implementation project(':tools:corda-cli:commands:network')
+    implementation project(':tools:corda-cli:commands:package')
+    implementation project(':tools:corda-cli:commands:preinstall')
+    implementation project(':tools:corda-cli:commands:secret-config')
+    implementation project(':tools:corda-cli:commands:topic-config')
+    implementation project(':tools:corda-cli:commands:virtual-node')
+}

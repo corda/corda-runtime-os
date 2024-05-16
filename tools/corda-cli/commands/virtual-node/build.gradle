@@ -17,7 +17,7 @@ dependencies {
     implementation 'net.corda:corda-db-schema'
 
     implementation project(':libs:corda-sdk')
-    implementation project(":tools:corda-cli:commands:rest")
+    implementation project(":tools:corda-cli:commands:rest-command")
     implementation project(":tools:corda-cli:common-utils")
 
     implementation libs.liquibase

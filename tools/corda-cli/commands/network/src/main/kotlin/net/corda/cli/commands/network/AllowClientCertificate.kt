@@ -1,7 +1,7 @@
 package net.corda.cli.commands.network
 
 import net.corda.cli.commands.common.RestCommand
-import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
+import net.corda.cli.commands.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.cli.commands.typeconverter.ShortHashConverter
 import net.corda.cli.commands.typeconverter.X500NameConverter
 import net.corda.crypto.core.ShortHash

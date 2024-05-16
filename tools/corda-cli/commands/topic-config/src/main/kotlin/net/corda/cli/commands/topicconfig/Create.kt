@@ -14,7 +14,7 @@ class Create(
 ) {
 
     @CommandLine.ParentCommand
-    var topic: TopicCommand.Topic? = null
+    var topic: TopicCommand? = null
 
     @CommandLine.Option(
         names = ["-r", "--replicas"],
