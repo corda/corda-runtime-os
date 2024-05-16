@@ -20,6 +20,8 @@ import net.corda.restclient.generated.apis.RBACUserApi
 import net.corda.restclient.generated.apis.VirtualNodeApi
 import net.corda.restclient.generated.apis.VirtualNodeMaintenanceApi
 import net.corda.restclient.generated.infrastructure.ApiClient
+import okhttp3.Credentials
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import java.net.URI
 import java.security.SecureRandom
@@ -59,6 +61,11 @@ class CordaRestClient(
 
         /**
          * Create an instance of CordaRestClient with the given baseUrl, username and password.
+         * Please note, if you use this multiple times with different credentials, you will be overwriting the previous credentials.
+         * e.g.
+         * val adminClient = createHttpClient(baseUrl, "admin", adminPassword)
+         * val userClient = createHttpClient(baseUrl, "user", userPassword)
+         * The `adminClient` will have the credentials of the `userClient` after the second call.
          *
          * @param baseUrl The base URL of the Corda node.
          * @param username The username to authenticate with.
@@ -156,6 +163,11 @@ class CordaRestClient(
 
         /**
          * Create an instance of CordaRestClient with the given baseUrl, username and password.
+         * Please note, if you use this multiple times with different credentials, you will be overwriting the previous credentials.
+         * e.g.
+         * val adminClient = createHttpClient(baseUrl, "admin", adminPassword)
+         * val userClient = createHttpClient(baseUrl, "user", userPassword)
+         * The `adminClient` will have the credentials of the `userClient` after the second call.
          *
          * @param baseUrl The base URL of the Corda node as a URI.
          * @param username The username to authenticate with.

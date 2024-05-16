@@ -3,13 +3,11 @@ package net.corda.cli.plugins.network
 import net.corda.cli.plugins.network.utils.HoldingIdentityUtils
 import net.corda.cli.plugins.network.utils.inferCpiName
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
-import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
 import net.corda.restclient.CordaRestClient
 import net.corda.sdk.network.MgmGeneratePreAuth
 import net.corda.sdk.packaging.CpiUploader
-import net.corda.sdk.rest.RestClientUtils
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
