@@ -194,6 +194,9 @@ tasks.named('sourcesJar') {
     dependsOn 'applyWorkarounds'
     // Ensure generated code is added to jar
     inputs.files(generatedRestClientDir)
+    mustRunAfter 'compileJava'
+    mustRunAfter 'compileTestJava'
+    mustRunAfter 'compileIntegrationTestJava'
 }
 
 tasks.named('kotlinSourcesJar') {
