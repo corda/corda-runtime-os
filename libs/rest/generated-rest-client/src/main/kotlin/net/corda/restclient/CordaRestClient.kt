@@ -121,7 +121,8 @@ class CordaRestClient(
 
             // Disable SSL verification if insecure is true
             if (insecure) {
-                val (trustAllCerts: Array<TrustManager>, sslContext) = prepareInsecureSettings()
+                val sslContext = SSLContext.getInstance("SSL")
+                sslContext.init(null, trustAllCerts, SecureRandom())
                 builder
                     .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
                     .hostnameVerifier { _, _ -> true }
@@ -235,21 +236,15 @@ class CordaRestClient(
             )
         }
 
-        // Prepare insecure settings for SSL
-        private fun prepareInsecureSettings(): Pair<Array<TrustManager>, SSLContext> {
-            val trustAllCerts: Array<TrustManager> = arrayOf(
-                object : X509TrustManager {
-                    override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
-                    override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {}
-                    override fun getAcceptedIssuers(): Array<X509Certificate> {
-                        return arrayOf()
-                    }
+        // Create a trust manager that does not validate certificate chains
+        private val trustAllCerts: Array<TrustManager> = arrayOf(
+            object : X509TrustManager {
+                override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
+                override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {}
+                override fun getAcceptedIssuers(): Array<X509Certificate> {
+                    return arrayOf()
                 }
-            )
-
-            val sslContext = SSLContext.getInstance("SSL")
-            sslContext.init(null, trustAllCerts, SecureRandom())
-            return Pair(trustAllCerts, sslContext)
-        }
+            }
+        )
     }
 }
