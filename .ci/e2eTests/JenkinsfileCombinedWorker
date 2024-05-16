@@ -20,10 +20,10 @@ PipelineUtils pipelineUtils = new PipelineUtils(this)
 GitUtils gitUtils = new GitUtils(this)
 
 @Field
-String agentLabel = 'docker'
+String agentLabel = 'docker-private-network'
 
 if (env.CHANGE_ID || gitUtils.isReleaseTag()) {
-    agentLabel = 'docker-on-demand'
+    agentLabel = 'docker-on-demand-private-network'
 }
 
 pipeline {
@@ -50,7 +50,7 @@ pipeline {
         CORDA_DEV_POSTGRES_PASSWORD="${env.POSTGRES_CREDENTIALS_PSW}"
         CORDA_DEV_CLUSTER_DB_NAME="${postgresDb}"
         CORDA_USE_CACHE = "corda-remotes"
-        KUBECONFIG = credentials("e2e-tests-credentials")
+        KUBECONFIG = credentials("kubernetes-eks-e2e-01-credentials")
         CORDA_CLI_USER_HOME = "/tmp/corda-cli-home"
         CORDA_GRADLE_SCAN_KEY = credentials('gradle-build-scans-key')
         GRADLE_USER_HOME = "/host_tmp/gradle"
@@ -77,7 +77,7 @@ pipeline {
         }
         stage('create DBs') {
             environment {
-                KUBECONFIG = credentials('e2e-tests-credentials')
+                KUBECONFIG = credentials('kubernetes-eks-e2e-01-credentials')
             }
             steps {
                 script {
