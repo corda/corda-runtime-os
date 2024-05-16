@@ -1,5 +1,4 @@
 plugins {
-    
     id 'corda.common-library'
 }
 
@@ -13,6 +12,6 @@ dependencies {
     compileOnly "net.corda:corda-base"
     compileOnly platform("net.corda:corda-api:$cordaApiVersion")
 
-    api project(':libs:rest:rest-client')
-    api project(':libs:corda-sdk')
+//    api project(':libs:rest:rest-client')
+//    api project(':libs:corda-sdk')
 }

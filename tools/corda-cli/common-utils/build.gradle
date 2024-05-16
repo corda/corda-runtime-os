@@ -1,7 +1,5 @@
 plugins {
-    id 'org.jetbrains.kotlin.jvm'
     id 'corda.common-library'
-    id 'org.jetbrains.kotlin.kapt'
 }
 
 ext {

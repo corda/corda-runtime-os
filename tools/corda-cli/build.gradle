@@ -1,13 +1,25 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm'
     id 'org.jetbrains.kotlin.kapt'
+    id 'application'
 }
 
-group = 'net.corda.cli.main'
+group = 'net.corda.cli'
 version = '5.3.0.0-SNAPSHOT'
 
-repositories {
-    mavenCentral()
+mainClassName = 'net.corda.cli.application.MainKt'
+
+application {
+    mainClass = mainClassName
+}
+
+dependencies {
+    implementation libs.kotlin.stdlib
+    implementation "info.picocli:picocli:$picocliVersion"
+    kapt "info.picocli:picocli:$picocliVersion"
+
+    testImplementation libs.kotlin.stdlib
+    testImplementation "info.picocli:picocli:$picocliVersion"
 }
 
 subprojects {
@@ -20,9 +32,9 @@ subprojects {
 
     dependencies {
         implementation libs.kotlin.stdlib
+        implementation libs.slf4j.v2.api
         implementation "info.picocli:picocli:$picocliVersion"
         kapt "info.picocli:picocli:$picocliVersion"
-
 
         testImplementation libs.kotlin.stdlib
         testImplementation "info.picocli:picocli:$picocliVersion"
@@ -32,6 +44,32 @@ subprojects {
 test {
     useJUnitPlatform()
 }
-kotlin {
-    jvmToolchain(17)
-}
+
+var commitId = com.gradle.Utils.execAndGetStdOut "git", "rev-parse", "--verify", "HEAD"
+
+//jar {
+//    manifest {
+//        attributes(
+//                'Main-Class': mainClassName,
+//                'Plugin-Git-Commit': commitId
+//        )
+//    }
+//    from {
+//        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+//        project(':tools:corda-cli:commands:cpi').sourceSets.main.output
+//    }
+////    subprojects.each { subproject ->
+////        from subproject.sourceSets.main.output
+////    }
+//    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+//}
+
+//publishing {
+//    publications {
+//        maven(MavenPublication) {
+//            artifactId 'corda-cli'
+//            groupId project.group
+//            artifact jar
+//        }
+//    }
+//}

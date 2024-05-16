@@ -1,9 +1,8 @@
 package net.corda.cli.plugins.common
 
-import org.pf4j.ExtensionPoint
 import picocli.CommandLine.Option
 
-abstract class RestCommand : ExtensionPoint {
+abstract class RestCommand {
 
     @Option(
         names = ["-t", "--target"],

@@ -27,7 +27,6 @@ class VirtualNodeCliPlugin : Plugin() {
         logger.debug("stopping virtual node plugin")
     }
 
-    @Extension
     @CommandLine.Command(
         name = "vnode",
         subcommands = [ResetCommand::class, PlatformMigration::class],
@@ -35,7 +34,7 @@ class VirtualNodeCliPlugin : Plugin() {
         description = ["Manages a virtual node"],
         versionProvider = VersionProvider::class
     )
-    class PluginEntryPoint : CordaCliPlugin
+    class PluginEntryPoint
 }
 
 /**

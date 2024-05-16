@@ -1,11 +1,3 @@
-plugins {
-    id 'distribution'
-    id 'org.jetbrains.kotlin.jvm'
-    id 'org.jetbrains.kotlin.kapt'
-    id 'corda.cli-plugin-packager'
-    
-}
-
 ext {
     releasable = false
 }
@@ -27,8 +19,6 @@ dependencies {
     implementation project(':libs:corda-sdk')
     implementation project(":tools:corda-cli:commands:rest")
     implementation project(":tools:corda-cli:common-utils")
-    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
-    compileOnly libs.pf4j
 
     implementation libs.liquibase
     constraints {
