@@ -1,0 +1,79 @@
+def applyPluginSmokeTestConfig = { Project project ->
+    sourceSets {
+        pluginSmokeTest {
+            java {
+                srcDirs += ['src/pluginSmokeTest/java']
+            }
+            kotlin {
+                srcDirs += ['src/pluginSmokeTest/kotlin']
+            }
+            resources {
+                srcDirs = ['src/pluginSmokeTest/resources']
+            }
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
+        }
+    }
+
+    kotlin {
+        target {
+            java
+            compilations.pluginSmokeTest {
+                associateWith compilations.main
+                associateWith compilations.test
+
+                configurations {
+                    pluginSmokeTestApi.extendsFrom testApi
+                    pluginSmokeTestImplementation.extendsFrom testImplementation
+                    pluginSmokeTestRuntimeOnly.extendsFrom testRuntimeOnly
+                }
+            }
+        }
+    }
+
+    tasks.register('pluginSmokeTest', Test) {
+        description = "Runs smoke tests for Corda CLI plugins."
+        group = "verification"
+
+        testClassesDirs = project.sourceSets["pluginSmokeTest"].output.classesDirs
+        classpath = project.sourceSets["pluginSmokeTest"].runtimeClasspath
+
+        def combinedWorker = project.getProperties().getOrDefault("isCombinedWorker", true).toBoolean()
+        println "Running tests against ${combinedWorker ? "combined worker" : "Kubernetes cluster"}"
+
+        // Note these port values have to match what is setup as part of port forwarding at cluster bootstrap time.
+        // E.g. during Jenkins pipeline setup.
+        def combinedWorkerUrl = "http://localhost:7004/"
+        def cryptoWorkerUrl = project.getProperties().getOrDefault("cryptoWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7001/")
+        systemProperty "cryptoWorkerUrl", cryptoWorkerUrl
+        println "Crypto worker url: $cryptoWorkerUrl"
+        def restWorkerUrl = project.getProperties().getOrDefault("restWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7002/")
+        systemProperty "restWorkerUrl", restWorkerUrl
+        println "REST worker url: $restWorkerUrl"
+        def flowWorkerUrl = project.getProperties().getOrDefault("flowWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7003/")
+        systemProperty "flowWorkerUrl", flowWorkerUrl
+        println "Flow worker url: $flowWorkerUrl"
+        def flowMapperWorkerUrl = project.getProperties().getOrDefault("flowMapperWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7004/")
+        systemProperty "flowMapperWorkerUrl", flowMapperWorkerUrl
+        println "Flow Mapper worker url: $flowMapperWorkerUrl"
+        def verificationWorkerUrl = project.getProperties().getOrDefault("verificationWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7005/")
+        systemProperty "verificationWorkerUrl", verificationWorkerUrl
+        println "Verification worker url: $verificationWorkerUrl"
+        def dbWorkerUrl = project.getProperties().getOrDefault("dbWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7006/")
+        systemProperty "dbWorkerUrl", dbWorkerUrl
+        println "DB worker url: $dbWorkerUrl"
+        def persistenceWorkerUrl = project.getProperties().getOrDefault("persistenceWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7007/")
+        systemProperty "persistenceWorkerUrl", persistenceWorkerUrl
+        println "Persistence worker url: $persistenceWorkerUrl"
+        def uniquenessWorkerUrl = project.getProperties().getOrDefault("uniquenessWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7008/")
+        systemProperty "uniquenessWorkerUrl", uniquenessWorkerUrl
+
+        jvmArgs '--add-opens', 'java.base/java.lang.reflect=ALL-UNNAMED'
+    }
+}
+
+project("plugins") {
+    subprojects(applyPluginSmokeTestConfig)
+}
+
+project("corda-runtime-gradle-plugin", applyPluginSmokeTestConfig)
