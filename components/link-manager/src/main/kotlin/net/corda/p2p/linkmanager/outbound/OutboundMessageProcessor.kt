@@ -16,7 +16,7 @@ import net.corda.data.p2p.markers.LinkManagerProcessedMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.data.p2p.markers.LinkManagerSentMarker
 import net.corda.data.p2p.markers.TtlExpiredMarker
-import net.corda.libs.configuration.SmartConfig
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.EventLogProcessor
@@ -43,13 +43,11 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
-import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.p2p.linkmanager.TraceableItem
 import net.corda.p2p.linkmanager.metrics.recordOutboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -62,8 +60,8 @@ internal class OutboundMessageProcessor(
     private val messagesPendingSession: PendingSessionMessageQueues,
     private val clock: Clock,
     private val messageConverter: MessageConverter,
-    publisherFactory: PublisherFactory,
-    messagingConfiguration: SmartConfig,
+    private val publisher: PublisherWithDominoLogic,
+    private val scheduledExecutor: ScheduledExecutorService,
     private val networkMessagingValidator: NetworkMessagingValidator =
         NetworkMessagingValidator(membershipGroupReaderProvider),
 ) : EventLogProcessor<String, AppMessage> {
@@ -74,7 +72,6 @@ internal class OutboundMessageProcessor(
 
     companion object {
         private const val tracingEventName = "P2P Link Manager Outbound Event"
-        private const val CLIENT_ID = "UNAUTHENTICATED_MESSAGE_REPLAYER"
         private const val FIRST_RETRY_DELAY = 1000L
         private const val MAX_RETRY_DELAY = 4000L
         fun recordsForNewSessions(
@@ -103,13 +100,6 @@ internal class OutboundMessageProcessor(
             }
         }
     }
-
-    private val publisher = publisherFactory.createPublisher(
-        PublisherConfig(CLIENT_ID), messagingConfiguration
-    ).also { it.start() }
-
-    private val scheduledExecutor =
-        Executors.newSingleThreadScheduledExecutor { runnable -> Thread(runnable, this::class.java.simpleName) }
 
     /**
      * Map of unauthenticated message ID to the previous republishing delay
