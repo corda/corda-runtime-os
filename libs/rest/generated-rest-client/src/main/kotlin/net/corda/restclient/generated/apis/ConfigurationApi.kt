@@ -186,7 +186,7 @@ class ConfigurationApi(basePath: kotlin.String = defaultBasePath, client: OkHttp
     /**
      * 
      * This method updates a section of the cluster configuration.
-     * @param netCordaRestclientDtoUpdateConfigParametersString requestBody
+     * @param netCordaRestclientDtoUpdateConfigParametersObjectNode requestBody
      * @return net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
      * @throws IllegalStateException If the request is not correctly configured
      * @throws IOException Rethrows the OkHttp execute method exception
@@ -196,8 +196,8 @@ class ConfigurationApi(basePath: kotlin.String = defaultBasePath, client: OkHttp
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class, UnsupportedOperationException::class, ClientException::class, ServerException::class)
-    fun putConfig(netCordaRestclientDtoUpdateConfigParametersString: net.corda.restclient.dto.UpdateConfigParametersString) : net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse {
-        val localVarResponse = putConfigWithHttpInfo(netCordaRestclientDtoUpdateConfigParametersString = netCordaRestclientDtoUpdateConfigParametersString)
+    fun putConfig(netCordaRestclientDtoUpdateConfigParametersObjectNode: net.corda.restclient.dto.UpdateConfigParametersObjectNode) : net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse {
+        val localVarResponse = putConfigWithHttpInfo(netCordaRestclientDtoUpdateConfigParametersObjectNode = netCordaRestclientDtoUpdateConfigParametersObjectNode)
 
         return when (localVarResponse.responseType) {
             ResponseType.Success -> (localVarResponse as Success<*>).data as net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
@@ -217,17 +217,17 @@ class ConfigurationApi(basePath: kotlin.String = defaultBasePath, client: OkHttp
     /**
      * 
      * This method updates a section of the cluster configuration.
-     * @param netCordaRestclientDtoUpdateConfigParametersString requestBody
+     * @param netCordaRestclientDtoUpdateConfigParametersObjectNode requestBody
      * @return ApiResponse<net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse?>
      * @throws IllegalStateException If the request is not correctly configured
      * @throws IOException Rethrows the OkHttp execute method exception
      */
     @Suppress("UNCHECKED_CAST")
     @Throws(IllegalStateException::class, IOException::class)
-    fun putConfigWithHttpInfo(netCordaRestclientDtoUpdateConfigParametersString: net.corda.restclient.dto.UpdateConfigParametersString) : ApiResponse<net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse?> {
-        val localVariableConfig = putConfigRequestConfig(netCordaRestclientDtoUpdateConfigParametersString = netCordaRestclientDtoUpdateConfigParametersString)
+    fun putConfigWithHttpInfo(netCordaRestclientDtoUpdateConfigParametersObjectNode: net.corda.restclient.dto.UpdateConfigParametersObjectNode) : ApiResponse<net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse?> {
+        val localVariableConfig = putConfigRequestConfig(netCordaRestclientDtoUpdateConfigParametersObjectNode = netCordaRestclientDtoUpdateConfigParametersObjectNode)
 
-        return request<net.corda.restclient.dto.UpdateConfigParametersString, net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse>(
+        return request<net.corda.restclient.dto.UpdateConfigParametersObjectNode, net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse>(
             localVariableConfig
         )
     }
@@ -235,11 +235,11 @@ class ConfigurationApi(basePath: kotlin.String = defaultBasePath, client: OkHttp
     /**
      * To obtain the request config of the operation putConfig
      *
-     * @param netCordaRestclientDtoUpdateConfigParametersString requestBody
+     * @param netCordaRestclientDtoUpdateConfigParametersObjectNode requestBody
      * @return RequestConfig
      */
-    fun putConfigRequestConfig(netCordaRestclientDtoUpdateConfigParametersString: net.corda.restclient.dto.UpdateConfigParametersString) : RequestConfig<net.corda.restclient.dto.UpdateConfigParametersString> {
-        val localVariableBody = netCordaRestclientDtoUpdateConfigParametersString
+    fun putConfigRequestConfig(netCordaRestclientDtoUpdateConfigParametersObjectNode: net.corda.restclient.dto.UpdateConfigParametersObjectNode) : RequestConfig<net.corda.restclient.dto.UpdateConfigParametersObjectNode> {
+        val localVariableBody = netCordaRestclientDtoUpdateConfigParametersObjectNode
         val localVariableQuery: MultiValueMap = mutableMapOf()
         val localVariableHeaders: MutableMap<String, String> = mutableMapOf()
         localVariableHeaders["Content-Type"] = "application/json"

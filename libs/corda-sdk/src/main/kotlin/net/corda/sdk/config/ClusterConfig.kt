@@ -5,7 +5,7 @@ import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
 import net.corda.libs.configuration.exception.WrongConfigVersionException
 import net.corda.rest.ResponseCode
 import net.corda.restclient.CordaRestClient
-import net.corda.restclient.dto.UpdateConfigParametersString
+import net.corda.restclient.dto.UpdateConfigParametersObjectNode
 import net.corda.restclient.generated.infrastructure.ClientError
 import net.corda.restclient.generated.infrastructure.Success
 import net.corda.schema.configuration.ConfigKeys.RootConfigKey
@@ -40,7 +40,7 @@ class ClusterConfig(val restClient: CordaRestClient) {
      * @return a UpdateConfigResponse if successful, or an exception
      */
     fun updateConfig(
-        updateConfig: UpdateConfigParametersString,
+        updateConfig: UpdateConfigParametersObjectNode,
         wait: Duration = 10.seconds
     ): UpdateConfigResponse {
         return executeWithRetry(

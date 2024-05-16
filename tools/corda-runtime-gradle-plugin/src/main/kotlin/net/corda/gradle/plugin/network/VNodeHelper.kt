@@ -22,7 +22,7 @@ import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 import net.corda.membership.rest.v1.types.response.RegistrationRequestProgress
 import net.corda.restclient.CordaRestClient
-import net.corda.restclient.dto.UpdateConfigParametersString
+import net.corda.restclient.dto.UpdateConfigParametersObjectNode
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.sdk.config.ClusterConfig
 import net.corda.sdk.data.Checksum
@@ -298,10 +298,10 @@ class VNodeHelper {
                     objectMapper.createObjectNode().put("mode", "OFF"),
                 ),
         )
-        val payload = UpdateConfigParametersString(
+        val payload = UpdateConfigParametersObjectNode(
             section = "corda.p2p.gateway",
             version = currentConfig.version,
-            config = objectMapper.writeValueAsString(newConfig),
+            config = newConfig,
             schemaVersion = ConfigSchemaVersion(major = currentConfig.schemaVersion.major, minor = currentConfig.schemaVersion.minor),
         )
         clusterConfig.updateConfig(updateConfig = payload)

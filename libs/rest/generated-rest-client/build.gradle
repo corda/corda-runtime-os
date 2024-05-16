@@ -78,7 +78,7 @@ openApiGenerate {
             'StartFlowParameters'                   : 'net.corda.flow.rest.v1.types.request.StartFlowParameters',
             'StartableFlowsResponse'                : 'net.corda.flow.rest.v1.types.response.StartableFlowsResponse',
             'SuspensionActivationParameters'        : 'net.corda.membership.rest.v1.types.request.SuspensionActivationParameters',
-            'UpdateConfigParameters'                : 'net.corda.restclient.dto.UpdateConfigParametersString',
+            'UpdateConfigParameters'                : 'net.corda.restclient.dto.UpdateConfigParametersObjectNode',
             'UpdateConfigResponse'                  : 'net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse',
             'UpdateVirtualNodeDbRequest'            : 'net.corda.libs.virtualnode.endpoints.v1.types.UpdateVirtualNodeDbRequest',
             'UserPermissionSummaryResponseType'     : 'net.corda.libs.permissions.endpoints.v1.user.types.UserPermissionSummaryResponseType',
