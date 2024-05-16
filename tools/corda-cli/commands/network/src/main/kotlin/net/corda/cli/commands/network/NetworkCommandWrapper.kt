@@ -4,7 +4,7 @@ import picocli.CommandLine
 
 
 @Suppress("unused")
-class NetworkCommand {
+class NetworkCommandWrapper {
 
     @CommandLine.Command(
         name = "network",

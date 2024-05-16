@@ -14,7 +14,7 @@ import picocli.CommandLine.Parameters
             "See 'type' for more information."],
     mixinStandardHelpOptions = true,
 )
-class SecretConfigPlugin {
+class SecretConfigCommand {
     enum class SecretsServiceType {
         CORDA, VAULT
     }

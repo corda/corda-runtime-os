@@ -7,7 +7,7 @@ plugins {
 group = 'net.corda.cli'
 version = '5.3.0.0-SNAPSHOT'
 
-mainClassName = 'net.corda.cli.application.MainKt'
+mainClassName = 'net.corda.cli.application.AppKt'
 
 application {
     mainClass = mainClassName
@@ -50,22 +50,28 @@ test {
 
 var commitId = com.gradle.Utils.execAndGetStdOut "git", "rev-parse", "--verify", "HEAD"
 
-//jar {
-//    manifest {
-//        attributes(
-//                'Main-Class': mainClassName,
-//                'Plugin-Git-Commit': commitId
-//        )
-//    }
-//    from {
-//        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-//        project(':tools:corda-cli:commands:cpi').sourceSets.main.output
-//    }
-////    subprojects.each { subproject ->
-////        from subproject.sourceSets.main.output
-////    }
-//    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-//}
+jar {
+    manifest {
+        attributes(
+                'Main-Class': mainClassName,
+                'Plugin-Git-Commit': commitId
+        )
+    }
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } } {
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+        exclude "META-INF/*.EC"
+        exclude "META-INF/INDEX.LIST"
+        exclude "META-INF/versions/*/module-info.class"
+        exclude "META-INF/org/apache/logging/log4j/core/config/plugins/Log4j2Plugins.dat"
+        exclude "module-info.class"
+    }
+    subprojects.each { subproject ->
+        from subproject.sourceSets.main.output
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
 
 //publishing {
 //    publications {

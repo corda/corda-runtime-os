@@ -18,4 +18,4 @@ import picocli.CommandLine
     mixinStandardHelpOptions = true,
     description = ["Creates common RBAC roles"],
 )
-class InitialRbacPlugin
+class InitialRbacCommand

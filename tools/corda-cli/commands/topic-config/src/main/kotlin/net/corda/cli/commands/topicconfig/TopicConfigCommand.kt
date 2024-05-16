@@ -11,7 +11,7 @@ import java.util.Properties
     description = ["Plugin for Kafka topic operations."],
     mixinStandardHelpOptions = true,
 )
-class TopicCommand {
+class TopicConfigCommand {
 
     companion object {
         val classLoader: ClassLoader = this::class.java.classLoader

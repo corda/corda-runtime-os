@@ -10,11 +10,11 @@ import picocli.CommandLine
     mixinStandardHelpOptions = true
 )
 class Create(
-    cl: ClassLoader = TopicCommand.classLoader
+    cl: ClassLoader = TopicConfigCommand.classLoader
 ) {
 
     @CommandLine.ParentCommand
-    var topic: TopicCommand? = null
+    var topic: TopicConfigCommand? = null
 
     @CommandLine.Option(
         names = ["-r", "--replicas"],

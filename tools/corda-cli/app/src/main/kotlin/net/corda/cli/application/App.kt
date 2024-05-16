@@ -1,5 +1,15 @@
 package net.corda.cli.application
 
+import net.corda.cli.commands.cpi.CPICliCommand
+import net.corda.cli.commands.dbconfig.DatabaseBootstrapAndUpgradeCommand
+import net.corda.cli.commands.initialRbac.InitialRbacCommand
+import net.corda.cli.commands.initialconfig.InitialConfigCommand
+import net.corda.cli.commands.network.NetworkCommandWrapper
+import net.corda.cli.commands.packaging.PackageCommand
+import net.corda.cli.commands.preinstall.PreInstallCommand
+import net.corda.cli.commands.secretconfig.SecretConfigCommand
+import net.corda.cli.commands.topicconfig.TopicConfigCommand
+import net.corda.cli.commands.vnode.VirtualNodeComand
 import picocli.CommandLine
 import kotlin.system.exitProcess
 
@@ -14,7 +24,11 @@ class VersionProvider : AbstractCordaCliVersionProvider()
     versionProvider = VersionProvider::class
 )
 class Command {
-    @CommandLine.Option(names = ["-h", "--help", "-?", "-help"], usageHelp = true, description = ["Display help and exit."])
+    @CommandLine.Option(
+        names = ["-h", "--help", "-?", "-help"],
+        usageHelp = true,
+        description = ["Display help and exit."]
+    )
     @Suppress("unused")
     var help = false
 
@@ -34,9 +48,17 @@ object App {
     fun run(vararg args: String) {
 
         val commandLine = CommandLine(Command())
-//        cordaCliPlugins.forEach { cordaCliPlugin ->
-//            commandLine.addSubcommand(cordaCliPlugin)
-//        }
+        commandLine.addSubcommand(CPICliCommand())
+        commandLine.addSubcommand(DatabaseBootstrapAndUpgradeCommand())
+        commandLine.addSubcommand(InitialConfigCommand())
+        commandLine.addSubcommand(InitialRbacCommand())
+        commandLine.addSubcommand(NetworkCommandWrapper.NetworkCommand())
+        commandLine.addSubcommand(NetworkCommandWrapper.MgmCommand())
+        commandLine.addSubcommand(PackageCommand())
+        commandLine.addSubcommand(PreInstallCommand())
+        commandLine.addSubcommand(SecretConfigCommand())
+        commandLine.addSubcommand(TopicConfigCommand())
+        commandLine.addSubcommand(VirtualNodeComand())
 
         val commandResult = commandLine
             .setCaseInsensitiveEnumValuesAllowed(true)

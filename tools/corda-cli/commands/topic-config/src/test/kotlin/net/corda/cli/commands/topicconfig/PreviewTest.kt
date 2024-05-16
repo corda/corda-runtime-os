@@ -37,7 +37,7 @@ class PreviewTest {
     private fun command() : Preview {
         val preview = Preview()
         preview.create = Create()
-        preview.create!!.topic = TopicCommand.Topic()
+        preview.create!!.topic = TopicConfigCommand.Topic()
         preview.create!!.kafkaUsers = mapOf(
             "crypto" to "A",
             "db" to "B",
