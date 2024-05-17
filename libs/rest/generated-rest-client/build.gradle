@@ -207,6 +207,10 @@ tasks.named('detekt') {
     dependsOn 'applyWorkarounds'
 }
 
+tasks.named('jacocoTestReport') {
+    dependsOn 'compileIntegrationTestJava'
+}
+
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
     compilerOptions {
         allWarningsAsErrors = false
