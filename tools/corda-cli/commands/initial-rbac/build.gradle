@@ -10,6 +10,5 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-rbac-schema'
     implementation project(":tools:corda-cli:commands:rest-command")
-    implementation project(':libs:corda-sdk')
     implementation project(':libs:permissions:permission-endpoint')
 }

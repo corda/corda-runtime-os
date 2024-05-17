@@ -1,8 +1,6 @@
 group 'net.corda.cli.command'
 
 dependencies {
-    implementation project(':libs:corda-sdk')
-
     testImplementation libs.bundles.test
     testImplementation "com.github.stefanbirkner:system-lambda:$systemLambdaVersion"
 }

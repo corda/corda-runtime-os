@@ -20,7 +20,6 @@ dependencies {
 
     implementation project(':components:membership:membership-rest')
     implementation project(':libs:configuration:configuration-endpoints')
-    implementation project(':libs:corda-sdk')
     implementation project(':libs:membership:membership-common')
     implementation project(':libs:rest:json-serialization')
     implementation project(':libs:virtual-node:cpi-upload-endpoints')
