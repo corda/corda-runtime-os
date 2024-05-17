@@ -85,7 +85,14 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     }
 
     private val caHome: File = File(File(File(System.getProperty("user.home")), ".corda"), "ca")
-    protected lateinit var restClient: CordaRestClient
+    protected val restClient: CordaRestClient by lazy {
+        CordaRestClient.createHttpClient(
+            baseUrl = targetUrl,
+            username = username,
+            password = password,
+            insecure = insecure
+        )
+    }
 
     internal class OnboardException(message: String) : Exception(message)
 
@@ -233,17 +240,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         }
     }
 
-    private fun initialiseRestClient() {
-        restClient = CordaRestClient.createHttpClient(
-            baseUrl = targetUrl,
-            username = username,
-            password = password,
-            insecure = insecure
-        )
-    }
-
     protected fun configureGateway() {
-        initialiseRestClient()
         val clusterConfig = ClusterConfig(restClient)
         val currentConfig = clusterConfig.getCurrentConfig(configSection = RootConfigKey.P2P_GATEWAY, wait = waitDurationSeconds.seconds)
         val rawConfig = currentConfig.configWithDefaults

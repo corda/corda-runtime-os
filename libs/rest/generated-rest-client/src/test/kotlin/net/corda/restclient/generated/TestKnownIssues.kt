@@ -19,12 +19,11 @@ class TestKnownIssues {
 
     companion object {
         private lateinit var app: Javalin
-        private val port = 8899
 
         @BeforeAll
         @JvmStatic
         fun setup() {
-            app = Javalin.create().start(port)
+            app = Javalin.create().start(0)
         }
 
         @AfterAll
@@ -34,7 +33,7 @@ class TestKnownIssues {
         }
     }
 
-    private val localhost = "http:localhost:$port"
+    private val localhost = "http:localhost:${app.port()}"
 
     /**
      * See comment for workaround details

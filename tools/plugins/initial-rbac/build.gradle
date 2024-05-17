@@ -23,6 +23,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-rbac-schema'
+    implementation libs.jackson.datatype.jsr310
 
     implementation project(":tools:plugins:plugins-rest")
     implementation project(':libs:corda-sdk')
