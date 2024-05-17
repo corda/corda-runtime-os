@@ -1,8 +1,6 @@
 package net.corda.p2p.linkmanager.outbound
 
 import net.corda.data.identity.HoldingIdentity
-import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.messaging.api.records.EventLogRecord
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.SessionPartitions
@@ -14,19 +12,26 @@ import net.corda.data.p2p.app.InboundUnauthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
 import net.corda.data.p2p.app.OutboundUnauthenticatedMessageHeader
+import net.corda.data.p2p.markers.AppMessageMarker
+import net.corda.data.p2p.markers.LinkManagerDiscardedMarker
+import net.corda.data.p2p.markers.LinkManagerProcessedMarker
+import net.corda.data.p2p.markers.LinkManagerReceivedMarker
+import net.corda.data.p2p.markers.TtlExpiredMarker
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
+import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import net.corda.messaging.api.records.EventLogRecord
+import net.corda.messaging.api.records.Record
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationResult
+import net.corda.p2p.linkmanager.TraceableItem
+import net.corda.p2p.linkmanager.common.MessageConverter
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
+import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueues
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.mockMembersAndGroups
-import net.corda.data.p2p.markers.AppMessageMarker
-import net.corda.data.p2p.markers.LinkManagerDiscardedMarker
-import net.corda.data.p2p.markers.LinkManagerReceivedMarker
-import net.corda.data.p2p.markers.LinkManagerProcessedMarker
-import net.corda.data.p2p.markers.TtlExpiredMarker
-import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.schema.Schemas
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.MockTimeFacilitiesProvider
@@ -37,19 +42,18 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
-import net.corda.membership.lib.exceptions.BadGroupPolicyException
-import net.corda.messaging.api.records.Record
-import net.corda.p2p.linkmanager.TraceableItem
-import net.corda.p2p.linkmanager.common.MessageConverter
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doThrow
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 
 class OutboundMessageProcessorTest {
     private val myIdentity = createTestHoldingIdentity("CN=PartyA, O=Corp, L=LDN, C=GB", "Group")
@@ -86,6 +90,8 @@ class OutboundMessageProcessorTest {
         on { validateInbound(any(), any()) } doReturn Either.Left(Unit)
         on { validateOutbound(any(), any()) } doReturn Either.Left(Unit)
     }
+    private val publisher = mock<PublisherWithDominoLogic>()
+    private val scheduledExecutorService = mock<ScheduledExecutorService>()
 
     private val processor = OutboundMessageProcessor(
         sessionManager,
@@ -96,7 +102,9 @@ class OutboundMessageProcessorTest {
         messagesPendingSession,
         mockTimeFacilitiesProvider.clock,
         messageConverter,
-        networkMessagingValidator
+        publisher,
+        scheduledExecutorService,
+        networkMessagingValidator,
     )
 
     private fun setupSessionManager(response: SessionManager.SessionState) {
@@ -604,6 +612,8 @@ class OutboundMessageProcessorTest {
             messagesPendingSession,
             mockTimeFacilitiesProvider.clock,
             messageConverter,
+            publisher,
+            scheduledExecutorService,
             networkMessagingValidator,
         )
 
@@ -649,6 +659,8 @@ class OutboundMessageProcessorTest {
             messagesPendingSession,
             mockTimeFacilitiesProvider.clock,
             messageConverter,
+            publisher,
+            scheduledExecutorService,
             networkMessagingValidator,
         )
 
@@ -777,6 +789,41 @@ class OutboundMessageProcessorTest {
         )
 
         assertThat(records).isEmpty()
+    }
+
+    @Test
+    fun `dropped outbound unauthenticated messages are scheduled to be republished`() {
+        whenever(
+            networkMessagingValidator.validateOutbound(any(), any())
+        ).doReturn(Either.Right("foo-bar"))
+        val payload = "test"
+        val unauthenticatedMsg = OutboundUnauthenticatedMessage(
+            OutboundUnauthenticatedMessageHeader(
+                remoteIdentity.toAvro(),
+                localIdentity.toAvro(),
+                "subsystem",
+                "messageId",
+            ),
+            ByteBuffer.wrap(payload.toByteArray()),
+        )
+        val appMessage = AppMessage(unauthenticatedMsg)
+
+        processor.onNext(
+            listOf(
+                EventLogRecord(
+                    Schemas.P2P.P2P_OUT_TOPIC,
+                    "key",
+                    appMessage,
+                    1,
+                    0
+                )
+            )
+        )
+
+        val publishCaptor = argumentCaptor<Runnable>()
+        verify(scheduledExecutorService).schedule(publishCaptor.capture(), eq(500L), eq(TimeUnit.MILLISECONDS))
+        publishCaptor.firstValue.run()
+        verify(publisher).publish(listOf(Record(Schemas.P2P.P2P_OUT_TOPIC, "key", appMessage)))
     }
 
     @Test

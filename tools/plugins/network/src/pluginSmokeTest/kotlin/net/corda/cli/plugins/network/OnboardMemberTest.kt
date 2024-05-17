@@ -13,13 +13,11 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import picocli.CommandLine
 import java.io.File
 import java.util.UUID
 
-@Disabled
 class OnboardMemberTest {
     companion object {
         private const val CPB_FILE = "test-cordapp.cpb"
