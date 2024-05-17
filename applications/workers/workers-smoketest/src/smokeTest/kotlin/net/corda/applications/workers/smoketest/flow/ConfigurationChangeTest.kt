@@ -37,6 +37,7 @@ import java.util.UUID
 @TestInstance(Lifecycle.PER_CLASS)
 @Isolated("As this test updates the config which affects running cluster")
 class ConfigurationChangeTest : ClusterReadiness by ClusterReadinessChecker() {
+//    change
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
