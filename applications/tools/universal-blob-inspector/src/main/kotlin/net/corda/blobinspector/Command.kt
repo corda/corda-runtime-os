@@ -30,7 +30,7 @@ class Command : Callable<Int> {
     override fun call(): Int {
         val bytes = (inputFile?.let { FileInputStream(it) } ?: System.`in`).readFully().sequence()
         val decoded = Encoding.decodedBytes(bytes, includeOriginalBytes, encoding, encodingStart, format)
-        println(decoded.result)
+        println(decoded.result.prettyPrint())
         return 0
     }
 }

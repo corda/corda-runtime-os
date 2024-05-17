@@ -8,39 +8,68 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class AppTest {
+
     @Test
     fun parseCashSignedTransaction() {
-        run("cash-stx-db.blob")
+        val(exitCode, output) = runInSeparateJVM("cash-stx-db.blob")
+        assertTrue(exitCode == 0)
+        assertTrue(output.contains("Corda OS 4+ / ENT 3+ AMQP"))
     }
 
     @Test
     fun parseCashWireTransaction() {
-        run("cash-wtx.blob")
+        val(exitCode, output) = runInSeparateJVM("cash-wtx.blob")
+        assertTrue(exitCode == 0)
+        assertTrue(output.contains("Corda OS 4+ / ENT 3+ AMQP"))
     }
 
     @Test
     fun parseNetworkParameters() {
-        run("network-parameters")
+        val(exitCode, output) = runInSeparateJVM("network-parameters")
+        assertTrue(exitCode == 0)
+        assertTrue(output.contains("Corda OS 4+ / ENT 3+ AMQP"))
     }
 
     @Test
     fun parseNetworkNodeInfo() {
-        run("node-info")
+        val(exitCode, output) = runInSeparateJVM("node-info")
+        assertTrue(exitCode == 0)
+        assertTrue(output.contains("Corda OS 4+ / ENT 3+ AMQP"))
     }
 
     @Test
     fun parseOlderCpk() {
-        run("OlderCpk.bin")
+        val(exitCode, output) = runInSeparateJVM("OlderCpk.bin")
+        assertTrue(exitCode == 0)
+        assertTrue(output.contains("Corda 5 GA AMQP"))
     }
 
     @Test
     fun parseUpgradingCpk() {
-        run("UpgradingCpk.bin")
+        val(exitCode, output) = runInSeparateJVM("UpgradingCpk.bin")
+        assertTrue(exitCode == 0)
+        assertTrue(output.contains("Corda 5 GA AMQP"))
     }
 
     @Test
     fun parseC5WireTx() {
-        run("C5WireTx.bin")
+        val(exitCode, output) = runInSeparateJVM("C5WireTx.bin")
+        assertTrue(exitCode == 0)
+        assertTrue(output.contains("Corda 5 GA AMQP"))
+    }
+
+    @Test
+    fun parseMetadataV0() {
+        val(exitCode, output) = runInSeparateJVM("metadatav0.bin")
+        assertTrue(exitCode == 0)
+        assertTrue(output.contains("Metadata schema version = 00"))
+    }
+
+    @Test
+    fun parseMetadataV1() {
+        val(exitCode, output) = runInSeparateJVM("metadatav1.bin")
+        assertTrue(exitCode == 0)
+        assertTrue(output.contains("Metadata schema version = 01"))
     }
 
     @Test
@@ -55,15 +84,6 @@ class AppTest {
         val(exitCode, output) = runInSeparateJVM("C5WireTx.bin")
         assertTrue(exitCode == 0)
         assertTrue(output.contains("_bytes"))
-    }
-
-    private fun run(resourceName: String, includeOriginalBytes: Boolean = true) {
-        val bytes = this.javaClass.getResourceAsStream(resourceName)?.readFully()?.sequence()
-        requireNotNull(bytes) {
-            "Couldn't read resource: $resourceName"
-        }
-        val decoded = Encoding.decodedBytes(bytes, includeOriginalBytes)
-        println(decoded.result.prettyPrint())
     }
 
     private fun runInSeparateJVM(binaryFileName: String, flags: List<String> = emptyList()): Pair<Int, String> {
