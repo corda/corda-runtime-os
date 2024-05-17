@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
+import java.net.URI
 import kotlin.time.Duration.Companion.seconds
 
 @Command(
@@ -66,7 +67,7 @@ class ResetCommand : RestCommand(), Runnable {
         }
 
         restClient = CordaRestClient.createHttpClient(
-            baseUrl = targetUrl,
+            baseUrl = URI.create(targetUrl),
             username = username,
             password = password,
             insecure = insecure

@@ -10,6 +10,7 @@ import net.corda.sdk.network.ClientCertificates
 import net.corda.v5.base.types.MemberX500Name
 import picocli.CommandLine.Command
 import picocli.CommandLine.Parameters
+import java.net.URI
 import kotlin.time.Duration.Companion.seconds
 
 @Command(
@@ -49,7 +50,7 @@ class AllowClientCertificate : Runnable, RestCommand() {
         }
 
         val restClient = CordaRestClient.createHttpClient(
-            baseUrl = targetUrl,
+            baseUrl = URI.create(targetUrl),
             username = username,
             password = password,
             insecure = insecure

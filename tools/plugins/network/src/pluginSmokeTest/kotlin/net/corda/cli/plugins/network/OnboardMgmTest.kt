@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import picocli.CommandLine
 import java.io.File
+import java.net.URI
 import java.util.UUID
 import kotlin.time.Duration.Companion.seconds
 
@@ -160,7 +161,7 @@ class OnboardMgmTest {
 
     private fun OnboardMgm.getExistingCpiHash(): String {
         val restClient = CordaRestClient.createHttpClient(
-            baseUrl = targetUrl,
+            baseUrl = URI.create(targetUrl),
             username = username,
             password = password,
             insecure = true,

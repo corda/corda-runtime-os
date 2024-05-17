@@ -14,8 +14,6 @@ import java.time.Instant
 
 class CpiUploaderTest {
 
-    private val url = "https://localhost:8888"
-
     @Test
     fun testCpiPreviouslyUploadedReturnsFalseNoMatch() {
         val mockCpiClient: CPIApi = mock {
@@ -36,7 +34,7 @@ class CpiUploaderTest {
                 )
             )
         }
-        val client = CordaRestClient.createHttpClient(baseUrl = url, cpiClient = mockCpiClient)
+        val client = CordaRestClient.createHttpClient(cpiClient = mockCpiClient)
         val result = CpiUploader(client).cpiPreviouslyUploaded(
             cpiName = "foo",
             cpiVersion = "1.0"
@@ -49,7 +47,7 @@ class CpiUploaderTest {
         val mockCpiClient: CPIApi = mock {
             on { getCpi() } doReturn GetCPIsResponse(emptyList())
         }
-        val client = CordaRestClient.createHttpClient(baseUrl = url, cpiClient = mockCpiClient)
+        val client = CordaRestClient.createHttpClient(cpiClient = mockCpiClient)
 
         val result = CpiUploader(client).cpiPreviouslyUploaded(
             cpiName = "foo",
@@ -78,7 +76,7 @@ class CpiUploaderTest {
                 )
             )
         }
-        val client = CordaRestClient.createHttpClient(baseUrl = url, cpiClient = mockCpiClient)
+        val client = CordaRestClient.createHttpClient(cpiClient = mockCpiClient)
         val result = CpiUploader(client).cpiPreviouslyUploaded(
             cpiName = "foo",
             cpiVersion = "1.0"
@@ -106,7 +104,7 @@ class CpiUploaderTest {
                 )
             )
         }
-        val client = CordaRestClient.createHttpClient(baseUrl = url, cpiClient = mockCpiClient)
+        val client = CordaRestClient.createHttpClient(cpiClient = mockCpiClient)
         val result = CpiUploader(client).cpiChecksumExists(
             checksum = Checksum("abc")
         )
@@ -133,7 +131,7 @@ class CpiUploaderTest {
                 )
             )
         }
-        val client = CordaRestClient.createHttpClient(baseUrl = url, cpiClient = cpiClient)
+        val client = CordaRestClient.createHttpClient(cpiClient = cpiClient)
         val result = CpiUploader(client).cpiChecksumExists(
             checksum = Checksum("abc")
         )

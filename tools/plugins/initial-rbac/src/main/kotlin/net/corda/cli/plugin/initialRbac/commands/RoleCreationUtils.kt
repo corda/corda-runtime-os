@@ -7,6 +7,7 @@ import net.corda.sdk.bootstrap.rbac.PermissionTemplate
 import net.corda.sdk.bootstrap.rbac.RoleAndPermissionsCreator
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.net.URI
 import kotlin.time.Duration.Companion.seconds
 
 internal object RoleCreationUtils {
@@ -33,7 +34,7 @@ internal object RoleCreationUtils {
         val start = System.currentTimeMillis()
 
         val restClient = CordaRestClient.createHttpClient(
-            baseUrl = targetUrl,
+            baseUrl = URI.create(targetUrl),
             username = username,
             password = password,
             insecure = insecure

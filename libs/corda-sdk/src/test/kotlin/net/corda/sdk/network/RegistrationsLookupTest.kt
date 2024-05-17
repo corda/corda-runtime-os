@@ -16,10 +16,7 @@ class RegistrationsLookupTest {
         val mockedMemberRegistrationClient: MemberRegistrationApi = mock {
             on { it.getMembershipHoldingidentityshorthash(any()) } doReturn emptyList()
         }
-        val client = CordaRestClient.createHttpClient(
-            baseUrl = "https://localhost:8888",
-            memberRegistrationClient = mockedMemberRegistrationClient
-        )
+        val client = CordaRestClient.createHttpClient(memberRegistrationClient = mockedMemberRegistrationClient)
 
         val result = RegistrationsLookup(client).isVnodeRegistrationApproved(
             ShortHash.parse("123456789123")

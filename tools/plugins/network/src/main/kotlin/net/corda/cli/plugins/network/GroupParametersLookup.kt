@@ -14,6 +14,7 @@ import net.corda.restclient.CordaRestClient
 import net.corda.sdk.network.GroupParametersLookup
 import net.corda.v5.base.types.MemberX500Name
 import picocli.CommandLine
+import java.net.URI
 import kotlin.time.Duration.Companion.seconds
 
 @CommandLine.Command(
@@ -52,7 +53,7 @@ class GroupParametersLookup(private val output: Output = ConsoleOutput()) : Rest
     private fun performGroupParametersLookup(): RestGroupParameters {
         val holdingIdentity = getHoldingIdentity(holdingIdentityShortHash, name, group)
         val restClient = CordaRestClient.createHttpClient(
-            baseUrl = targetUrl,
+            baseUrl = URI.create(targetUrl),
             username = username,
             password = password,
             insecure = insecure

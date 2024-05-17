@@ -9,6 +9,7 @@ import net.corda.sdk.network.ExportGroupPolicyFromMgm
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
+import java.net.URI
 
 @Command(
     name = "export-group-policy",
@@ -37,7 +38,7 @@ class ExportGroupPolicy : Runnable, RestCommand() {
 
     private fun exportGroupPolicy() {
         val restClient = CordaRestClient.createHttpClient(
-            baseUrl = targetUrl,
+            baseUrl = URI.create(targetUrl),
             username = username,
             password = password,
             insecure = insecure

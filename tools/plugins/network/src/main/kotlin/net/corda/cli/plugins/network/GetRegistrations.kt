@@ -16,6 +16,7 @@ import net.corda.sdk.data.RequestId
 import net.corda.sdk.network.RegistrationsLookup
 import net.corda.v5.base.types.MemberX500Name
 import picocli.CommandLine
+import java.net.URI
 import kotlin.time.Duration.Companion.seconds
 
 @CommandLine.Command(
@@ -68,7 +69,7 @@ class GetRegistrations(private val output: Output = ConsoleOutput()) :
     private fun getRegistrations(): List<RestRegistrationRequestStatus> {
         val holdingIdentity = getHoldingIdentity(holdingIdentityShortHash, name, group)
         val restClient = CordaRestClient.createHttpClient(
-            baseUrl = targetUrl,
+            baseUrl = URI.create(targetUrl),
             username = username,
             password = password,
             insecure = insecure

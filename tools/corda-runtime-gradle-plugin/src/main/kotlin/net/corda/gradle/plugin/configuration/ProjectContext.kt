@@ -4,6 +4,7 @@ import net.corda.gradle.plugin.cordalifecycle.EnvironmentSetupHelper
 import net.corda.restclient.CordaRestClient
 import org.gradle.api.Project
 import org.gradle.api.logging.Logger
+import java.net.URI
 
 /**
  * Class which holds all the context properties for the gradle build. This is split between:
@@ -69,6 +70,6 @@ class ProjectContext(val project: Project, pluginConfig: PluginConfiguration) {
     val mgmCorDappCpiFilePath: String = "$workspaceDir/$corDappCpiName.cpi"
     val certificateAuthorityFilePath: String = "$workspaceDir/ca"
 
-    val restClient: CordaRestClient = CordaRestClient.createHttpClient(cordaClusterURL, cordaRestUser, cordaRestPassword, true)
+    val restClient: CordaRestClient = CordaRestClient.createHttpClient(URI.create(cordaClusterURL), cordaRestUser, cordaRestPassword, true)
     val logger: Logger = project.logger
 }

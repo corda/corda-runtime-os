@@ -14,6 +14,7 @@ import net.corda.restclient.CordaRestClient
 import net.corda.sdk.network.MemberLookup
 import net.corda.v5.base.types.MemberX500Name
 import picocli.CommandLine
+import java.net.URI
 import kotlin.time.Duration.Companion.seconds
 
 @CommandLine.Command(
@@ -104,7 +105,7 @@ class MemberLookup(private val output: Output = ConsoleOutput()) : RestCommand()
 
     private fun performMembersLookup(): List<RestMemberInfo> {
         val restClient = CordaRestClient.createHttpClient(
-            baseUrl = targetUrl,
+            baseUrl = URI.create(targetUrl),
             username = username,
             password = password,
             insecure = insecure

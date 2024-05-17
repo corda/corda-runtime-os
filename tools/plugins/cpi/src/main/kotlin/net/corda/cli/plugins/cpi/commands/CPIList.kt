@@ -6,6 +6,7 @@ import net.corda.sdk.packaging.CpiUploader
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine.Command
+import java.net.URI
 import kotlin.system.exitProcess
 import kotlin.time.Duration.Companion.seconds
 
@@ -26,7 +27,7 @@ class CPIList : RestCommand(), Runnable {
 
     override fun run() {
         val restClient = CordaRestClient.createHttpClient(
-            baseUrl = targetUrl,
+            baseUrl = URI.create(targetUrl),
             username = username,
             password = password,
             insecure = insecure

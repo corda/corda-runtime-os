@@ -36,7 +36,7 @@ class OnboardMemberTest {
         private lateinit var cpbLocation: String
         private lateinit var defaulGroupPolicyLocation: String
         private val restClient = CordaRestClient.createHttpClient(
-            baseUrl = DEFAULT_CLUSTER.rest.uri.toString(),
+            baseUrl = DEFAULT_CLUSTER.rest.uri,
             username = user,
             password = password,
             insecure = true,

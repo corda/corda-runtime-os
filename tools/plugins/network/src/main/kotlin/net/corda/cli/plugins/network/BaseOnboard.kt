@@ -87,7 +87,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     private val caHome: File = File(File(File(System.getProperty("user.home")), ".corda"), "ca")
     protected val restClient: CordaRestClient by lazy {
         CordaRestClient.createHttpClient(
-            baseUrl = targetUrl,
+            baseUrl = URI.create(targetUrl),
             username = username,
             password = password,
             insecure = insecure

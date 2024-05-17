@@ -10,6 +10,7 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import java.io.File
+import java.net.URI
 
 class TestKnownIssues {
     /*
@@ -33,7 +34,7 @@ class TestKnownIssues {
         }
     }
 
-    private val localhost = "http:localhost:${app.port()}"
+    private val localhost = URI.create("http:localhost:${app.port()}")
 
     /**
      * See comment for workaround details

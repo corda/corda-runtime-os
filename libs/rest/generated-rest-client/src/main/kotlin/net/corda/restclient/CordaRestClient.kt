@@ -92,7 +92,7 @@ class CordaRestClient(
          */
         @Suppress("LongParameterList")
         fun createHttpClient(
-            baseUrl: String = "https://localhost:8888",
+            baseUrl: URI = URI.create("https://localhost:8888"),
             username: String = "admin",
             password: String = "admin",
             insecure: Boolean = false,
@@ -117,7 +117,7 @@ class CordaRestClient(
             virtualNodeMaintenanceClient: VirtualNodeMaintenanceApi? = null
         ): CordaRestClient {
 
-            val urlWithCordaApiVersion = baseUrl + API_VERSION
+            val urlWithCordaApiVersion = baseUrl.toString() + API_VERSION
 
             val builder = ApiClient.apply {
                 this.username = username
@@ -156,93 +156,6 @@ class CordaRestClient(
                 rbacUserClient = rbacUserClient ?: RBACUserApi(urlWithCordaApiVersion, client),
                 virtualNodeClient = virtualNodeClient ?: VirtualNodeApi(urlWithCordaApiVersion, client),
                 virtualNodeMaintenanceClient = virtualNodeMaintenanceClient ?: VirtualNodeMaintenanceApi(urlWithCordaApiVersion, client)
-            )
-        }
-
-        /**
-         * Create an instance of CordaRestClient with the given baseUrl, username and password.
-         * Please note, if you use this multiple times with different credentials, you will be overwriting the previous credentials.
-         * e.g.
-         * val adminClient = createHttpClient(baseUrl, "admin", adminPassword)
-         * val userClient = createHttpClient(baseUrl, "user", userPassword)
-         * The `adminClient` will have the credentials of the `userClient` after the second call.
-         *
-         * @param baseUrl The base URL of the Corda node as a URI.
-         * @param username The username to authenticate with.
-         * @param password The password to authenticate with.
-         * @param insecure Whether to allow insecure connections. Default is false.
-         * @param certificatesClient The CertificateApi instance to use. If null, a new instance will be created.
-         * @param configurationClient The ConfigurationApi instance to use. If null, a new instance will be created.
-         * @param cpiClient The CPIApi instance to use. If null, a new instance will be created.
-         * @param flowInfoClient The FlowInfoApi instance to use. If null, a new instance will be created.
-         * @param flowManagementClient The FlowManagementApi instance to use. If null, a new instance will be created.
-         * @param helloRestClient The HelloRestApi instance to use. If null, a new instance will be created.
-         * @param hsmClient The HSMApi instance to use. If null, a new instance will be created.
-         * @param keyManagementClient The KeyManagementApi instance to use. If null, a new instance will be created.
-         * @param keyRotationClient The KeyRotationApi instance to use. If null, a new instance will be created.
-         * @param memberLookupClient The MemberLookupApi instance to use. If null, a new instance will be created.
-         * @param memberRegistrationClient The MemberRegistrationApi instance to use. If null, a new instance will be created.
-         * @param mgmAdminClient The MGMAdminApi instance to use. If null, a new instance will be created.
-         * @param mgmClient The MGMApi instance to use. If null, a new instance will be created.
-         * @param networkClient The NetworkApi instance to use. If null, a new instance will be created.
-         * @param rbacPermissionClient The RBACPermissionApi instance to use. If null, a new instance will be created.
-         * @param rbacRoleClient The RBACRoleApi instance to use. If null, a new instance will be created.
-         * @param rbacUserClient The RBACUserApi instance to use. If null, a new instance will be created.
-         * @param virtualNodeClient The VirtualNodeApi instance to use. If null, a new instance will be created.
-         * @param virtualNodeMaintenanceClient The VirtualNodeMaintenanceApi instance to use. If null, a new instance will be created.
-         * @return CordaRestClient instance.
-         */
-        @Suppress("LongParameterList")
-        fun createHttpClient(
-            baseUrl: URI = URI.create("https://localhost:8888"),
-            username: String = "admin",
-            password: String = "admin",
-            insecure: Boolean = false,
-            certificatesClient: CertificateApi? = null,
-            configurationClient: ConfigurationApi? = null,
-            cpiClient: CPIApi? = null,
-            flowInfoClient: FlowInfoApi? = null,
-            flowManagementClient: FlowManagementApi? = null,
-            helloRestClient: HelloRestApi? = null,
-            hsmClient: HSMApi? = null,
-            keyManagementClient: KeyManagementApi? = null,
-            keyRotationClient: KeyRotationApi? = null,
-            memberLookupClient: MemberLookupApi? = null,
-            memberRegistrationClient: MemberRegistrationApi? = null,
-            mgmAdminClient: MGMAdminApi? = null,
-            mgmClient: MGMApi? = null,
-            networkClient: NetworkApi? = null,
-            rbacPermissionClient: RBACPermissionApi? = null,
-            rbacRoleClient: RBACRoleApi? = null,
-            rbacUserClient: RBACUserApi? = null,
-            virtualNodeClient: VirtualNodeApi? = null,
-            virtualNodeMaintenanceClient: VirtualNodeMaintenanceApi? = null
-
-        ): CordaRestClient {
-            return createHttpClient(
-                baseUrl = baseUrl.toString(),
-                username = username,
-                password = password,
-                insecure = insecure,
-                certificatesClient = certificatesClient,
-                configurationClient = configurationClient,
-                cpiClient = cpiClient,
-                flowInfoClient = flowInfoClient,
-                flowManagementClient = flowManagementClient,
-                helloRestClient = helloRestClient,
-                hsmClient = hsmClient,
-                keyManagementClient = keyManagementClient,
-                keyRotationClient = keyRotationClient,
-                memberLookupClient = memberLookupClient,
-                memberRegistrationClient = memberRegistrationClient,
-                mgmAdminClient = mgmAdminClient,
-                mgmClient = mgmClient,
-                networkClient = networkClient,
-                rbacPermissionClient = rbacPermissionClient,
-                rbacRoleClient = rbacRoleClient,
-                rbacUserClient = rbacUserClient,
-                virtualNodeClient = virtualNodeClient,
-                virtualNodeMaintenanceClient = virtualNodeMaintenanceClient
             )
         }
 
