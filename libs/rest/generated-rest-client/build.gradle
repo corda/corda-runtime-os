@@ -97,6 +97,7 @@ dependencies {
     implementation libs.kotlin.stdlib
     implementation libs.jackson.dataformat.yaml
     implementation libs.jackson.databind
+    implementation libs.jackson.datatype.jsr310
     implementation libs.jackson.module.kotlin
     implementation libs.okHttp
     implementation project(':components:crypto:crypto-rest')
