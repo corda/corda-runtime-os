@@ -87,9 +87,11 @@ internal class OutboundLinkManager(
             deliveryTracker.dominoTile.coordinatorName,
             commonComponents.dominoTile.coordinatorName,
             commonComponents.inboundAssignmentListener.dominoTile.coordinatorName,
+            publisher.dominoTile.coordinatorName,
         ),
         managedChildren = setOf(
             deliveryTracker.dominoTile.toNamedLifecycle(),
+            publisher.dominoTile.toNamedLifecycle(),
         )
     )
 
@@ -99,11 +101,9 @@ internal class OutboundLinkManager(
         onClose = { scheduledExecutor.shutdown() },
         dependentChildren = setOf(
             subscriptionTile.coordinatorName,
-            publisher.dominoTile.coordinatorName,
         ),
         managedChildren = setOf(
             subscriptionTile.toNamedLifecycle(),
-            publisher.dominoTile.toNamedLifecycle()
         )
     )
 }

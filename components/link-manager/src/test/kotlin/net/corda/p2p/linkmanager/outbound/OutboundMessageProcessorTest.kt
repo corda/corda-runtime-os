@@ -821,7 +821,7 @@ class OutboundMessageProcessorTest {
         )
 
         val publishCaptor = argumentCaptor<Runnable>()
-        verify(scheduledExecutorService).schedule(publishCaptor.capture(), eq(1000L), eq(TimeUnit.MILLISECONDS))
+        verify(scheduledExecutorService).schedule(publishCaptor.capture(), eq(500L), eq(TimeUnit.MILLISECONDS))
         publishCaptor.firstValue.run()
         verify(publisher).publish(listOf(Record(Schemas.P2P.P2P_OUT_TOPIC, "key", appMessage)))
     }

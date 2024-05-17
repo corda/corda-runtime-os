@@ -72,8 +72,8 @@ internal class OutboundMessageProcessor(
 
     companion object {
         private const val tracingEventName = "P2P Link Manager Outbound Event"
-        private const val FIRST_RETRY_DELAY = 1000L
-        private const val MAX_RETRY_DELAY = 4000L
+        private const val FIRST_RETRY_DELAY = 500L
+        private const val MAX_RETRY_DELAY = 2000L
         fun recordsForNewSessions(
             state: SessionManager.SessionState.NewSessionsNeeded,
             inboundAssignmentListener: InboundAssignmentListener,
@@ -271,7 +271,7 @@ internal class OutboundMessageProcessor(
     }
 
     private fun EventLogRecord<String, AppMessage>.scheduleRepublish(messageId: String) {
-        val delay = getRepublishDelay(messageId)
+        val delay = unauthenticatedMessageReplays.compute(messageId) { _, previous -> getRepublishDelay(previous) }
         if (delay == null) {
             logger.debug { "Stopping republishing of outbound unauthenticated message '$messageId'." }
             unauthenticatedMessageReplays.remove(messageId)
@@ -294,19 +294,16 @@ internal class OutboundMessageProcessor(
                 delay,
                 TimeUnit.MILLISECONDS,
             )
-            unauthenticatedMessageReplays[messageId] = delay
         }
     }
 
-    private fun getRepublishDelay(messageId: String): Long? {
-        return unauthenticatedMessageReplays[messageId]?.let {
-            if (it >= MAX_RETRY_DELAY) {
-                return null
-            } else {
-                it * 2
-            }
-        } ?: FIRST_RETRY_DELAY
-    }
+    private fun getRepublishDelay(previousDelay: Long?): Long? = previousDelay?.let {
+        if (it >= MAX_RETRY_DELAY) {
+            return null
+        } else {
+            it * 2
+        }
+    } ?: FIRST_RETRY_DELAY
 
     fun processReplayedAuthenticatedMessage(messageAndKey: AuthenticatedMessageAndKey): List<Record<String, *>> =
         processAuthenticatedMessages(listOf(TraceableItem(messageAndKey, null)), true).flatMap { it.item }
