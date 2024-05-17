@@ -1,10 +1,9 @@
 package net.corda.cli.commands.network
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.cli.plugins.network.utils.HoldingIdentityUtils
+import net.corda.cli.commands.network.utils.HoldingIdentityUtils
 import net.corda.crypto.core.ShortHash
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
-import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
@@ -14,7 +13,7 @@ import picocli.CommandLine
 import java.io.File
 import java.util.UUID
 
-class GroupParametersLookupTest {
+class ExportGroupPolicyTest {
     companion object {
         private lateinit var outputStub: OutputStub
 
@@ -54,8 +53,9 @@ class GroupParametersLookupTest {
     }
 
     @Test
-    fun `group parameters lookup with holding identity returns correct result`() {
-        CommandLine(GroupParametersLookup(outputStub)).execute(
+    fun `exporting group policy correctly saves file to default location`() {
+        groupPolicyFile.delete()
+        CommandLine(ExportGroupPolicy()).execute(
             "-h=$holdingIdentity",
             targetUrl,
             user,
@@ -63,41 +63,28 @@ class GroupParametersLookupTest {
             INSECURE,
         )
 
-        val output = outputStub.printedOutput?.get("parameters")
-        assertThat(output).isNotNull
-        assertThat(output!!.get(EPOCH_KEY).asText()).isEqualTo("1")
+        assertThat(groupPolicyFile.exists()).isTrue
+        assertThat(ObjectMapper().readTree(groupPolicyFile.inputStream()).get("groupId")).isNotNull
     }
 
     @Test
-    fun `group parameters lookup with name and group ID returns correct result`() {
-        val groupId = ObjectMapper().readTree(groupPolicyFile.inputStream()).get("groupId").asText()
+    fun `exporting group policy correctly saves file to provided location`() {
+        val groupPolicyLocation = "${System.getProperty("user.home")}/.corda/gp/test.json"
+        val groupPolicyFile = File(
+                File(File(File(System.getProperty("user.home")), ".corda"), "gp"),
+        "test.json",
+        )
+        groupPolicyFile.delete()
 
-        CommandLine(GroupParametersLookup(outputStub)).execute(
-            "-n=$mgmName",
-            "-g=$groupId",
+        CommandLine(ExportGroupPolicy()).execute(
+            "-h=$holdingIdentity",
+            "--save=$groupPolicyLocation",
             targetUrl,
             user,
             password,
             INSECURE,
         )
-
-        val output = outputStub.printedOutput?.get("parameters")
-        assertThat(output).isNotNull
-        assertThat(output!!.get(EPOCH_KEY).asText()).isEqualTo("1")
-    }
-
-    @Test
-    fun `group parameters lookup with only name provided uses group ID of last created group`() {
-        CommandLine(GroupParametersLookup(outputStub)).execute(
-            "-n=$mgmName",
-            targetUrl,
-            user,
-            password,
-            INSECURE,
-        )
-
-        val output = outputStub.printedOutput?.get("parameters")
-        assertThat(output).isNotNull
-        assertThat(output!!.get(EPOCH_KEY).asText()).isEqualTo("1")
+        assertThat(groupPolicyFile.exists()).isTrue
+        assertThat(ObjectMapper().readTree(groupPolicyFile.inputStream()).get("groupId")).isNotNull
     }
 }

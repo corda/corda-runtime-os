@@ -34,5 +34,5 @@ dependencies {
     testImplementation libs.bundles.test
     testImplementation "com.github.stefanbirkner:system-lambda:1.2.1"
 
-    pluginSmokeTestImplementation project(':testing:e2e-test-utilities')
+    toolsSmokeTestImplementation project(':testing:e2e-test-utilities')
 }

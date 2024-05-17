@@ -1,7 +1,7 @@
 package net.corda.cli.commands.network
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.cli.plugins.network.utils.HoldingIdentityUtils
+import net.corda.cli.commands.network.utils.HoldingIdentityUtils
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat

@@ -25,7 +25,7 @@ Next add a `cliPlugin` configuration:
 
 ```groovy
 cliPlugin {
-    cliPluginClass = 'net.corda.cli.plugins.mypackage.MyClass'
+    cliPluginClass = 'net.corda.cli.commands.mypackage.MyClass'
     cliPluginDescription = 'Plugin for ...'
 }
 ```

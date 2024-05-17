@@ -5,7 +5,6 @@ plugins {
 }
 
 group = 'net.corda.cli'
-version = '5.3.0.0-SNAPSHOT'
 
 mainClassName = 'net.corda.cli.application.AppKt'
 
@@ -25,6 +24,7 @@ dependencies {
     testImplementation "info.picocli:picocli:$picocliVersion"
 }
 
+
 subprojects {
     apply plugin: 'org.jetbrains.kotlin.jvm'
     apply plugin: 'org.jetbrains.kotlin.kapt'
@@ -42,6 +42,7 @@ subprojects {
         testImplementation libs.kotlin.stdlib
         testImplementation "info.picocli:picocli:$picocliVersion"
     }
+
 }
 
 test {
@@ -57,6 +58,8 @@ jar {
                 'Plugin-Git-Commit': commitId
         )
     }
+    archiveVersion = project.version
+
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } } {
         exclude "META-INF/*.SF"
         exclude "META-INF/*.DSA"

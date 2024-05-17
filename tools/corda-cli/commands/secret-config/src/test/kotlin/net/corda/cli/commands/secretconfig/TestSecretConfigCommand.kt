@@ -14,7 +14,7 @@ class TestSecretConfigCommand {
     @Test
     fun `create CORDA type secret Config`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = SecretConfigCommand.PluginEntryPoint()
+        val app = SecretConfigCommand()
 
         val outText = SystemLambda.tapSystemOutNormalized {
             CommandLine(
@@ -30,7 +30,7 @@ class TestSecretConfigCommand {
     @Test
     fun `create VAULT type secret Config`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = SecretConfigCommand.PluginEntryPoint()
+        val app = SecretConfigCommand()
 
         val outText = SystemLambda.tapSystemOutNormalized {
             CommandLine(
@@ -46,7 +46,7 @@ class TestSecretConfigCommand {
     @Test
     fun testDecryption() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = SecretConfigCommand.PluginEntryPoint()
+        val app = SecretConfigCommand()
 
         val outText = SystemLambda.tapSystemOutNormalized {
             CommandLine(
@@ -70,7 +70,7 @@ class TestSecretConfigCommand {
     fun testBadCommandline(caseName: String, args: Array<String>, expectedError: String) {
         args.hashCode()
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = SecretConfigCommand.PluginEntryPoint()
+        val app = SecretConfigCommand()
 
         val outText = SystemLambda.tapSystemErrNormalized {
             CommandLine(

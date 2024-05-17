@@ -22,7 +22,7 @@ dependencies {
 }
 
 //cliPlugin {
-//    cliPluginClass = 'net.corda.cli.plugins.packaging.PackagePluginWrapper'
+//    cliPluginClass = 'net.corda.cli.commands.packaging.PackagePluginWrapper'
 //    cliPluginDescription = 'Plugin for CPB and CPI operations.'
 //}
 //

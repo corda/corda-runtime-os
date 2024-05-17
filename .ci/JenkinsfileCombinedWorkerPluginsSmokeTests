@@ -117,7 +117,7 @@ pipeline {
                     timeout(time: 30, unit: 'MINUTES')
                 }
                 steps {
-                   gradlew('pluginSmoketest -PisCombinedWorker=true')
+                   gradlew('toolsSmokeTest -PisCombinedWorker=true')
                 }
                 post {
                     always {

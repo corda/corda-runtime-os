@@ -1,7 +1,7 @@
 package net.corda.cli.commands.network
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
-import net.corda.cli.plugins.network.utils.HoldingIdentityUtils
+import net.corda.cli.commands.network.utils.HoldingIdentityUtils
 import net.corda.crypto.core.ShortHash
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.membership.lib.MemberInfoExtension

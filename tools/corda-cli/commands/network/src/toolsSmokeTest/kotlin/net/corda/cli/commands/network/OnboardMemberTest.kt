@@ -1,7 +1,7 @@
 package net.corda.cli.commands.network
 
-import net.corda.cli.plugins.network.utils.HoldingIdentityUtils
-import net.corda.cli.plugins.network.utils.inferCpiName
+import net.corda.cli.commands.network.utils.HoldingIdentityUtils
+import net.corda.cli.commands.network.utils.inferCpiName
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.membership.lib.MemberInfoExtension

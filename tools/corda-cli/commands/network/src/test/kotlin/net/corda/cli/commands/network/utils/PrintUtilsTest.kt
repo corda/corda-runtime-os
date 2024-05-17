@@ -3,7 +3,7 @@ package net.corda.cli.commands.network.utils
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.contains
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import net.corda.cli.plugins.network.output.Output
+import net.corda.cli.commands.network.output.Output
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow

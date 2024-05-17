@@ -2,7 +2,7 @@ package net.corda.cli.commands.network
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.cli.plugins.network.output.Output
+import net.corda.cli.commands.network.output.Output
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.v5.base.types.MemberX500Name
 
