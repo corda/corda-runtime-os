@@ -27,9 +27,13 @@ class Command : Callable<Int> {
     @CommandLine.Option(names = ["-b", "--skipWritingBytes"], description = ["Skip writing original bytes."])
     var includeOriginalBytes: Boolean = true
 
+    @CommandLine.Option(names = ["-v", "--verbose"], description = ["Show more information about the json."])
+    var beVerbose: Boolean = false
+
     override fun call(): Int {
         val bytes = (inputFile?.let { FileInputStream(it) } ?: System.`in`).readFully().sequence()
-        val decoded = Encoding.decodedBytes(bytes, includeOriginalBytes, encoding, encodingStart, format)
+        val (decoded, description) = Encoding.decodedBytes(bytes, includeOriginalBytes, beVerbose, encoding, encodingStart, format)
+        if (description != null) println(description)
         println(decoded.result.prettyPrint())
         return 0
     }

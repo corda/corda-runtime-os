@@ -9,21 +9,26 @@ import net.corda.blobinspector.sequence
 import java.io.InputStream
 
 class MetadataSerializationFormatDecoder(
-    private val recurse: (ByteSequence, Int, Boolean) -> Any?,
+    private val recurse: (ByteSequence, Int, Boolean, Boolean) -> Any?,
     private val hasHeader: Boolean
 ) : SerializationFormatDecoder {
     override fun duplicate(): SerializationFormatDecoder {
         return MetadataSerializationFormatDecoder(recurse, hasHeader)
     }
 
-    override fun decode(stream: InputStream, recurseDepth: Int, originalBytes: ByteArray, includeOriginalBytes: Boolean): DecodedBytes {
+    override fun decode(
+        stream: InputStream,
+        recurseDepth: Int,
+        originalBytes: ByteArray,
+        includeOriginalBytes: Boolean,
+        beVerbose: Boolean
+    ): DecodedBytes {
         val bytes = stream.readFully()
         val (version, jsonBytes) = extractVersionAndBytes(bytes)
-        println("Metadata schema version = $version")
         val objectMapper = ObjectMapper()
         val jsonMap = objectMapper.readValue(jsonBytes.decodeToString(), Map::class.java)
 
-        val rendering: MutableMap<String, Any?> = mutableMapOf("_value" to jsonMap)
+        val rendering: MutableMap<String, Any?> = mutableMapOf("_value" to jsonMap, "_version" to version)
         if (includeOriginalBytes) {
             rendering["_bytes"] = originalBytes
         }
