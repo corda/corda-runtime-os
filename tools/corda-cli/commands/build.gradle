@@ -4,32 +4,11 @@ plugins {
 
 group 'net.corda.cli.command'
 
-//configurations {
-//    cliHostDist
-//}
-
 var commitId = com.gradle.Utils.execAndGetStdOut "git", "rev-parse", "--verify", "HEAD"
-//subprojects {
-//    pluginManager.withPlugin('corda.cli-plugin-packager') {
-//        cliPlugin {
-//            cliPluginGitCommitId = "$commitId"
-//        }
-//    }
-//}
-
-//dependencies {
-//    cliHostDist "net.corda.cli.host:corda-cli:${pluginHostVersion}"
-//}
 
 def S3_BUCKET_URI_PROPERTY = 'maven.repo.s3'
 def S3_BUCKET_GROUP_ID_PROPERTY = 'maven.repo.groupId'
 def s3_upload_group_id = project.hasProperty(S3_BUCKET_GROUP_ID_PROPERTY) ? "${project.findProperty(S3_BUCKET_GROUP_ID_PROPERTY)}" : project.group
-
-def otherPluginsTasks = subprojects.collect {
-        it.tasks.matching {
-            task -> task.name == 'cliPluginTask' // Module `rest` will not have this task
-        }
-    }
 
 //tasks.register('copyCliFiles') {
 //        def otherPluginsTasksFlattened = otherPluginsTasks.collect {

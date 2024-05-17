@@ -73,7 +73,7 @@ docker compose -p kafka-cluster up -d
 
 Create the required topics by building and executing the `topic` plugin: 
 ```bash
-./gradlew :tools:corda-cli:commands:topic-config:clean :tools:corda-cli:commands:topic-config:cliPluginTask
+./gradlew :tools:corda-cli:clean :tools:corda-cli:commands:topic-config:build
 cd ../corda-cli-plugin-host/
 ./gradlew assemble
 cp ../corda-runtime-os/tools/plugins/topic-config/build/libs/topic-config-cli-plugin-*.jar ./build/plugins/

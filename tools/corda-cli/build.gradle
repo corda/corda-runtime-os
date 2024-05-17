@@ -1,6 +1,7 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm'
     id 'org.jetbrains.kotlin.kapt'
+    id 'corda.common-publishing'
     id 'application'
 }
 
@@ -52,12 +53,14 @@ test {
 var commitId = com.gradle.Utils.execAndGetStdOut "git", "rev-parse", "--verify", "HEAD"
 
 jar {
+    dependsOn ':libs:corda-sdk:jar'
     manifest {
         attributes(
                 'Main-Class': mainClassName,
                 'Plugin-Git-Commit': commitId
         )
     }
+    archiveBaseName = 'corda-cli'
     archiveVersion = project.version
 
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } } {
@@ -85,3 +88,9 @@ jar {
 //        }
 //    }
 //}
+
+
+artifacts {
+    archives jar
+}
+
