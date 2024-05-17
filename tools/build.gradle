@@ -1,4 +1,4 @@
-def applyPluginSmokeTestConfig = { Project project ->
+subprojects {
     sourceSets {
         pluginSmokeTest {
             java {
@@ -71,9 +71,3 @@ def applyPluginSmokeTestConfig = { Project project ->
         jvmArgs '--add-opens', 'java.base/java.lang.reflect=ALL-UNNAMED'
     }
 }
-
-project("plugins") {
-    subprojects(applyPluginSmokeTestConfig)
-}
-
-project("corda-runtime-gradle-plugin", applyPluginSmokeTestConfig)
