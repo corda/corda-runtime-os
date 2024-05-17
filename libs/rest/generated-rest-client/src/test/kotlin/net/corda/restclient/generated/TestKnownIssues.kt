@@ -19,11 +19,12 @@ class TestKnownIssues {
 
     companion object {
         private lateinit var app: Javalin
+        private val port = 8899
 
         @BeforeAll
         @JvmStatic
         fun setup() {
-            app = Javalin.create().start(8888)
+            app = Javalin.create().start(port)
         }
 
         @AfterAll
@@ -33,7 +34,7 @@ class TestKnownIssues {
         }
     }
 
-    private val localhost = "http:localhost:8888"
+    private val localhost = "http:localhost:$port"
 
     /**
      * See comment for workaround details
@@ -129,6 +130,26 @@ class TestKnownIssues {
         }
             .withFailMessage("Has the generated api been re-generated? Re-apply workaround")
             .doesNotThrowAnyException()
+    }
+
+    /**
+     * The generated client can't deserialize the Instant type natively
+     * The suggested fix is to add the dependency on libs.jackson.datatype.jsr310
+     * After adding the dependency this now works locally, but still fails on Jenkins
+    */
+    @Test
+    fun testGetRole() {
+        val response = """
+            [{"id":"62badb8b-1836-4a89-901a-fd6b65906a67","version":0,"updateTimestamp":"2024-05-17T08:33:07.602Z","roleName":"Default System Admin","groupVisibility":null,"permissions":[{"id":"4b3477d9-b812-4ae5-bcb1-5537c7a373d5","createdTimestamp":"2024-05-17T08:33:07.692Z"}]}]
+        """.trimIndent()
+        app.get("api/v5_3/role") {ctx ->
+            ctx.header("Content-Type", "application/json")
+            ctx.result(response)
+        }
+        val client = CordaRestClient.createHttpClient(baseUrl = localhost)
+        val roles = client.rbacRoleClient.getRole()
+        assertThat(roles).isNotEmpty
+        assertThat(roles.first().updateTimestamp).isNotNull
     }
 
 }

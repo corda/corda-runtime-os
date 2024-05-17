@@ -38,7 +38,7 @@ internal object RoleCreationUtils {
             password = password,
             insecure = insecure
         )
-
+        logger.info("Mic check 1,2.")
         val roleId = RoleAndPermissionsCreator(restClient).createRoleAndPermissions(
             roleToCreate = CreateRoleType(
                 roleName = roleName,
