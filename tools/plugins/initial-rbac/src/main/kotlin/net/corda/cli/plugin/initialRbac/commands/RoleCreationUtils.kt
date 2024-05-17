@@ -38,7 +38,7 @@ internal object RoleCreationUtils {
             password = password,
             insecure = insecure
         )
-        logger.info("Mic check 1,2.")
+
         val roleId = RoleAndPermissionsCreator(restClient).createRoleAndPermissions(
             roleToCreate = CreateRoleType(
                 roleName = roleName,
@@ -56,5 +56,14 @@ internal object RoleCreationUtils {
         )
 
         return 0
+    }
+
+    private fun isJacksonJsr310Present(): Boolean {
+        return try {
+            Class.forName("com.fasterxml.jackson.datatype.jsr310.JavaTimeModule")
+            true
+        } catch (e: ClassNotFoundException) {
+            false
+        }
     }
 }
