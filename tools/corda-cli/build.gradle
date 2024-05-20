@@ -184,10 +184,10 @@ jar {
     manifest {
         attributes(
                 'Main-Class': mainClassName,
-                'Plugin-Name': 'Corda CLI',
-                'Plugin-Version': "${project.version}",
-                'Plugin-Git-Commit': commitId,
-                'Plugin-Provider': 'R3',
+                'Tool-Name': 'Corda CLI',
+                'Tool-Version': "${project.version}",
+                'Tool-Git-Commit': commitId,
+                'Tool-Provider': 'R3',
         )
     }
     archiveBaseName = 'corda-cli'

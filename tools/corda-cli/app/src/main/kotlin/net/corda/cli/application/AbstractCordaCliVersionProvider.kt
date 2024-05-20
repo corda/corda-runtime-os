@@ -7,10 +7,10 @@ import java.util.jar.Manifest
  * An abstract class that will read version information out of the plugin manifest.
  *
  * Builds version information using these attributes:
- * - Plugin-Name
- * - Plugin-Version
- * - Plugin-Provider
- * - Plugin-Git-Commit
+ * - Tool-Name
+ * - Tool-Version
+ * - Tool-Provider
+ * - Tool-Git-Commit
  *
  * To apply, inherit from this class:
  *
@@ -26,9 +26,9 @@ abstract class AbstractCordaCliVersionProvider : IVersionProvider {
         ?.use {
             Manifest(it).mainAttributes.run {
                 arrayOf(
-                    "${getValue("Plugin-Name")} ${getValue("Plugin-Version")}",
-                    "Provider: ${getValue("Plugin-Provider")}",
-                    "Commit ID: ${getValue("Plugin-Git-Commit")}"
+                    "${getValue("Tool-Name")} ${getValue("Tool-Version")}",
+                    "Provider: ${getValue("Tool-Provider")}",
+                    "Commit ID: ${getValue("Tool-Git-Commit")}"
                 )
             }
         } ?: emptyArray()
