@@ -366,9 +366,9 @@ class UtxoFinalityFlowV1(
         }
 
         if (log.isDebugEnabled) {
-            log.debug(
+            log.debug {
                 "Successfully notarized transaction $transactionId using notary $notary and received ${notarySignatures.size} signature(s)"
-            )
+            }
         }
 
         return notarizedTransaction to notarySignatures
