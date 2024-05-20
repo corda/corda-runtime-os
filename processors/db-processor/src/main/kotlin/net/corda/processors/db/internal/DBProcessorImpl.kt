@@ -306,6 +306,7 @@ class DBProcessorImpl @Activate constructor(
         coordinator: LifecycleCoordinator
     ) {
         // Creates and starts the rest of the reconcilers
+        log.info("--- Creating reconcilers ---")
         reconcilers.onConfigChanged(event)
 
         val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
