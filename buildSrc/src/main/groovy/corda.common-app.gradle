@@ -102,7 +102,12 @@ private def addSystemPackagesExtra(
                 if (isBundle(mainAttributes)) {
                     mainAttributes.getValue(EXPORT_PACKAGE)?.with { exportPackage ->
                         aQute.bnd.header.OSGiHeader.parseHeader(exportPackage).each { exportEntry ->
-                            final def export = exportEntry.key + ";" + exportEntry.value.toString()
+
+                            def key = exportEntry.key
+                            if (exportEntry.key.endsWith("~")) {
+                                key = exportEntry.key.substring(0, exportEntry.key.length() - 1)
+                            }
+                            final def export = key + ";" + exportEntry.value.toString()
                             systemBundleExtraSet.add(export)
                             logger.info "OSGI $export included as system package extra."
                         }
