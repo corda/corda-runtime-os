@@ -138,7 +138,8 @@ private def addSystemPackagesExtra(
             "javax.transaction;version=1.2.0",
             "javax.xml.stream;version=1.0",
             "javax.xml.stream.events;version=1.0",
-            "javax.xml.stream.util;version=1.0"
+            "javax.xml.stream.util;version=1.0",
+            "org.slf4j.spi;version=\"1.7.36\"",
     ]
     jdkExtraPackages.each { export -> systemBundleExtraSet.add(export) }
 }
