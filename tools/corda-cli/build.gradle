@@ -99,7 +99,7 @@ tasks.register("cliS3Download", Copy) {
 }
 
 tasks.register('publishOSGiImage', DeployableContainerBuilder) {
-    useShortName = false
+    useShortName = true
     setEntry = true
     overrideEntryName = 'cli'
     overrideContainerName = 'cli'
