@@ -1,7 +1,5 @@
 package net.corda.crypto.core
 
-import net.corda.crypto.core.CryptoTenants.allClusterTenants
-
 /**
  * Defines constants defining the cluster level tenant ids and a helper function.
  * Cluster level tenants are those that can own an asymmetric key pairs.
@@ -29,5 +27,6 @@ object ClusterCryptoDb {
     /**
      * Returns true if the given schema is referencing cluster Crypto database.
      */
-    fun isReferencingClusterDb(schema: String) = schema == SCHEMA_NAME || allClusterTenants.contains(schema)
+    fun isReferencingClusterDb(schema: String) =
+        schema == SCHEMA_NAME || CryptoTenants.allClusterTenants.contains(schema)
 }
