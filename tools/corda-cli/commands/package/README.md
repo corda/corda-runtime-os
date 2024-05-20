@@ -1,6 +1,6 @@
-# Package Plugin
+# Package Command
 
-This is a plug-in for [Corda CLI plug-in host](https://github.com/corda/corda-cli-plugin-host) for working with CPB and CPI files.
+This is a command for working with CPB and CPI files.
 
 ## Examples
 
@@ -10,8 +10,8 @@ These commands assume you have access to ./corda-cli.sh
 
 ```shell
 # Generate two self-signed signing keys to show how we select one key among multiple
-keytool -genkeypair -alias "signing key 1" -keystore signingkeys.pfx -storepass "keystore password" -dname "CN=CPI Plugin Example - Signing Key 1, O=R3, L=London, C=GB" -keyalg RSA -storetype pkcs12 -validity 4000
-keytool -genkeypair -alias "signing key 2" -keystore signingkeys.pfx -storepass "keystore password" -dname "CN=CPI Plugin Example - Signing Key 2, O=R3, L=London, C=GB" -keyalg RSA -storetype pkcs12 -validity 4000
+keytool -genkeypair -alias "signing key 1" -keystore signingkeys.pfx -storepass "keystore password" -dname "CN=CPI Command Example - Signing Key 1, O=R3, L=London, C=GB" -keyalg RSA -storetype pkcs12 -validity 4000
+keytool -genkeypair -alias "signing key 2" -keystore signingkeys.pfx -storepass "keystore password" -dname "CN=CPI Command Example - Signing Key 2, O=R3, L=London, C=GB" -keyalg RSA -storetype pkcs12 -validity 4000
 ```
 
 ### Trust the gradle plugin default signing key
@@ -38,7 +38,7 @@ keytool -importcert -keystore signingkeys.pfx -storepass "keystore password" -no
 
 ### Trust your own signing key
 
-The plugin does not currently trust the signing keys within the keystore when doing signature verification. To trust those keys, export them as certificates and import them into the keystore.
+The command does not currently trust the signing keys within the keystore when doing signature verification. To trust those keys, export them as certificates and import them into the keystore.
 
 ```shell
 keytool -exportcert --keystore signingkeys.pfx --storepass "keystore password" -alias "signing key 1" -rfc -file signingkey1.crt

@@ -1,6 +1,6 @@
-# CPI CLI Plugin
+# CPI CLI Command
 
-This plugin upload the CPI using Corda CLI
+This command uploads the CPI using Corda CLI
 
 ## commands
 - cpi

@@ -19,25 +19,3 @@ dependencies {
 
     testRuntimeOnly libs.log4j.slf4j2
 }
-
-//cliPlugin {
-//    cliPluginClass = 'net.corda.cli.commands.packaging.PackagePluginWrapper'
-//    cliPluginDescription = 'Plugin for CPB and CPI operations.'
-//}
-//
-//tasks.named("installDist") {
-//    dependsOn cliPlugin
-//    def homePath = System.properties['user.home']
-//    from cliPlugin
-//    into "$homePath/.corda/cli/plugins"
-//}
-//
-//publishing {
-//    publications {
-//        maven(MavenPublication) {
-//            artifactId "${cliPlugin.cliPluginId.get()}-cli-plugin"
-//            groupId project.group
-//            artifact cliPluginTask
-//        }
-//    }
-//}

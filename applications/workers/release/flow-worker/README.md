@@ -21,7 +21,7 @@ You have built a CPB with the flow you want to use for running the flow worker:
 ```
 
 2) Generate a GroupPolicy file for the CPB. This can be done using the
-   corda-cli.  https://github.com/corda/corda-cli-plugin-host/tree/release/version-1.0.0/plugins/package
+   [corda-cli](../../../../tools/corda-cli/README.md) tool. 
    More information about GroupPolicy files can be found at https://github.com/corda/corda-runtime-os/wiki/Group-Policy.
    Example command to generate a GroupPolicy:
 

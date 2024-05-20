@@ -67,6 +67,7 @@ tasks.register('copyCliFiles') {
         }
         copy {
             from "$projectDir/installScripts"
+            from "$projectDir/runScripts"
             into "$buildDir/cli"
         }
     }
@@ -102,6 +103,7 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     useShortName = false
     setEntry = true
     overrideEntryName = 'cli'
+    overrideContainerName = 'cli'
 
     def cordaApiIncluded = gradle.includedBuilds.collect { it.name == "corda-api" }.contains(true)
 

@@ -521,15 +521,6 @@ if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
         }
     }
 }
-if (compositeBuild.toBoolean() && file(cordaCliHostLocation).exists()) {
-    includeBuild(cordaCliHostLocation) {
-        dependencySubstitution {
-            substitute module("net.corda.cli.host:corda-cli") using project(":app")
-            substitute module("net.corda.cli.host:api") using project(":api")
-            substitute module("net.corda.cli.host:plugins") using project(":plugins")
-        }
-    }
-}
 
 gradleEnterprise {
     server = gradleEnterpriseUrl

@@ -1,7 +1,7 @@
 package net.corda.cli.commands.initialRbac.commands
 
-import net.corda.cli.commands.initialRbac.commands.RoleCreationUtils.checkOrCreateRole
 import net.corda.cli.commands.common.RestCommand
+import net.corda.cli.commands.initialRbac.commands.RoleCreationUtils.checkOrCreateRole
 import net.corda.sdk.bootstrap.rbac.Permissions.cordaDeveloper
 import picocli.CommandLine
 import java.util.concurrent.Callable

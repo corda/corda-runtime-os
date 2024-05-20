@@ -1,17 +1,5 @@
 
-# Pre-install Plugin for the Corda CLI
-
-Preinstall checks for corda. To run the plugin using the Corda CLI Plugin Host, first compile the plugin like so:
-
-	./gradlew clean :tools:corda-cli:commands:preinstall:build
-
-Then copy the build files from `corda-runtime-os` to `corda-cli-plugin-host`:
-
-	cp ./corda-runtime-os/tools/plugins/preinstall/build/libs/preinstall-cli-plugin-*.jar ./corda-cli-plugin-host/build/plugins/ 
-
-Finally, you can run the plugin from the cli plugin host with:
-
-	./gradlew run --args="preinstall <subcommand> [options] <path>"
+# Pre-install Command for the Corda CLI
 
 ## check-limits
 Check the resource limits have been assigned correctly.

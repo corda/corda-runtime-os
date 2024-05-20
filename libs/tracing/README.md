@@ -73,14 +73,11 @@ Here we describe how to run the combined worker with a Kafka message bus and a t
     ```shell
     docker compose -p kafka-cluster up -d
     ```
-4. Create the required topics by building and executing the `topic` plugin:
+4. Create the required topics by building and executing the `topic` command of `corda-cli`:
     ```bash
-    ./gradlew :tools:corda-cli:commands:topic-config:clean :tools:corda-cli:commands:topic-config:cliPluginTask
-    cd ../corda-cli-plugin-host/
-    ./gradlew assemble
-    cp ../corda-runtime-os/tools/plugins/topic-config/build/libs/topic-config-cli-plugin-*.jar ./build/plugins/
-    ./build/generatedScripts/corda-cli.sh topic -b=localhost:9092 create connect
-    cd ../corda-runtime-os/
+    ./gradlew :tools:corda-cli:clean :tools:corda-cli:build
+    cp ../corda-runtime-os/tools/corda-cli/build/cli/* ./build/cli/
+    ./build/cli/corda-cli.sh topic -b=localhost:9092 create connect
     ```
 5. Open a terminal in `corda-runtime-os/metrics` and run `docker compose up`
 6. Build combined worker with kafka support:

@@ -1244,10 +1244,10 @@
                         },
                         "repository": {
                             "type": "string",
-                            "default": "corda-os-plugins",
+                            "default": "corda-os-cli",
                             "title": "CLI image repository",
                             "examples": [
-                                "corda-os-plugins"
+                                "corda-os-cli"
                             ],
                             "minLength": 1
                         },
@@ -1262,7 +1262,7 @@
                     },
                     "examples": [{
                         "registry": "",
-                        "repository": "corda-os-plugins",
+                        "repository": "corda-os-cli",
                         "tag": ""
                     }]
                 },

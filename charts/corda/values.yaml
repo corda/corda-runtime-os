@@ -538,7 +538,7 @@ bootstrap:
     # -- CLI image registry; defaults to image.registry
     registry: ""
     # -- CLI image repository
-    repository: "corda-os-plugins"
+    repository: "corda-os-cli"
     # -- CLI default tag; defaults to image.tag
     tag: ""
 

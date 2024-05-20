@@ -2,7 +2,6 @@ package net.corda.cli.commands.network
 
 import picocli.CommandLine
 
-
 @Suppress("unused")
 class NetworkCommandWrapper {
 
