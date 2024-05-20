@@ -100,17 +100,13 @@ tasks.register("cliS3Download", Copy) {
 
 tasks.register('publishOSGiImage', DeployableContainerBuilder) {
 
-    def cordaCliIncluded = gradle.includedBuilds.collect { it.name == "corda-cli-plugin-host" }.contains(true)
     def cordaApiIncluded = gradle.includedBuilds.collect { it.name == "corda-api" }.contains(true)
 
-    if (cordaCliIncluded && cordaApiIncluded) {
-        logger.lifecycle("corda-cli-plugin-host project detected in composite build logic, building base image from include project")
-//        dependsOn gradle.includedBuild("corda-api").task(':application:jar')
-        dependsOn gradle.includedBuild("corda-cli-plugin-host").task(':app:publishOSGiImage')
+    if (cordaApiIncluded) {
+        dependsOn gradle.includedBuild("corda-api").task(':application:jar')
+//        dependsOn gradle.includedBuild("corda-cli-plugin-host").task(':app:publishOSGiImage')
     }
 
-    it.sourceFiles.setFrom(otherPluginsTasks)
-    it.subDir = "plugins/"
     it.setEntry = false
     if (project.hasProperty('jibRemotePublish')) {
         remotePublish = jibRemotePublish.toBoolean()
@@ -135,21 +131,25 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
         baseImageName = cliBaseImage
     } else {
         // cater for local composite build
-        baseImageName = (cordaCliIncluded) ? "corda-os-docker-dev.software.r3.com/corda-os-cli" : "corda-os-docker.software.r3.com/corda-os-cli"
+//        baseImageName = (cordaCliIncluded) ? "corda-os-docker-dev.software.r3.com/corda-os-cli" : "corda-os-docker.software.r3.com/corda-os-cli"
+        // TODO Paf - perhaps this is wrong?
+        baseImageName = (cordaApiIncluded) ? "corda-os-docker-dev.software.r3.com/corda-os-cli" : "corda-os-docker.software.r3.com/corda-os-cli"
     }
 
     if (project.hasProperty('cliBaseTag')) {
         baseImageTag = cliBaseTag
     }
     // TODO Paf: figure out what to do with this
-//    else {
-//        String cliVersion = pluginHostVersion.replaceAll(/(.*\d)\D*$/, '$1') // drop suffix i.e beta-+
-//        if (['RC', 'GA'].contains(System.getenv('RELEASE_TYPE'))) {
-//            it.baseImageTag = cliVersion
-//        } else {
+    else {
+        String cliVersion = "${project.version}"
+        if (['RC', 'GA'].contains(System.getenv('RELEASE_TYPE'))) {
+            it.baseImageTag = cliVersion
+        } else {
 //            it.baseImageTag = (cordaCliIncluded) ? "latest-local-${cliVersion}" : "unstable-${cliVersion}"
-//        }
-//    }
+            // TODO Paf - perhaps this is wrong?
+            it.baseImageTag = (cordaApiIncluded) ? "latest-local-${cliVersion}" : "unstable-${cliVersion}"
+        }
+    }
 
     if (project.hasProperty('useDockerDaemon')) {
         useDaemon = useDockerDaemon.toBoolean()
@@ -162,6 +162,9 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     if (project.hasProperty('targetPlatform')) {
         targetPlatform = project.property('targetPlatform').toString()
     }
+
+    println "======================"
+    println it.baseImageName.get()
 }
 
 def s3Script = null
