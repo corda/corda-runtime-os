@@ -24,6 +24,7 @@ import net.corda.crypto.config.impl.WRAPPING_KEYS
 import net.corda.crypto.config.impl.retrying
 import net.corda.crypto.core.ApiNames.DECRYPT_PATH
 import net.corda.crypto.core.ApiNames.ENCRYPT_PATH
+import net.corda.crypto.core.ClusterCryptoDb
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.CryptoTenants
@@ -169,7 +170,7 @@ class CryptoProcessorImpl @Activate constructor(
 
     // We are making the below coordinator visible to be able to test the processor as if it were a `Lifecycle`
     // using `LifecycleTest` API
-    // TODO - can we remove VisibleForTesting here? and go back to lifecycleCorodinator being private
+    // TODO - can we remove VisibleForTesting here? and go back to lifecycleCoordinator being private
     @get:VisibleForTesting
     internal val lifecycleCoordinator =
         coordinatorFactory.createCoordinator<CryptoProcessor>(dependentComponents, ::eventHandler)
@@ -344,7 +345,7 @@ class CryptoProcessorImpl @Activate constructor(
 
     private fun createTenantInfoService(): TenantInfoServiceImpl {
         val emf = getEntityManagerFactory(
-            CryptoTenants.CRYPTO,
+            ClusterCryptoDb.SCHEMA_NAME,
             dbConnectionManager,
             virtualNodeInfoReadService,
             jpaEntitiesRegistry

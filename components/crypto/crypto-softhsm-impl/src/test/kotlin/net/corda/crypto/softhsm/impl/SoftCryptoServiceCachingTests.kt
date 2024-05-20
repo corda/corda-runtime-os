@@ -6,8 +6,8 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.cipher.suite.sha256Bytes
+import net.corda.crypto.core.ClusterCryptoDb
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.TenantInfoService
@@ -87,7 +87,7 @@ class SoftCryptoServiceCachingTests {
             digestService = PlatformDigestServiceImpl(schemeMetadata),
             wrappingRepositoryFactory = {
                 when (it) {
-                    CryptoTenants.CRYPTO -> clusterWrappingRepository
+                    ClusterCryptoDb.SCHEMA_NAME -> clusterWrappingRepository
                     else -> vnodeWrappingRepository
                 }
             },

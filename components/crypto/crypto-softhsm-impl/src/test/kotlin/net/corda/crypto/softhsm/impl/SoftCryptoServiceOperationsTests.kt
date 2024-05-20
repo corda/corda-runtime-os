@@ -12,6 +12,7 @@ import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.component.test.utils.generateKeyPair
+import net.corda.crypto.core.ClusterCryptoDb
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.WrappingKeyImpl
@@ -51,7 +52,7 @@ import java.security.InvalidParameterException
 import java.security.KeyPairGenerator
 import java.security.Provider
 import java.security.PublicKey
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -111,7 +112,7 @@ class SoftCryptoServiceOperationsTests {
         private val cryptoService = SoftCryptoService(
             wrappingRepositoryFactory = {
                 when (it) {
-                    CryptoTenants.CRYPTO -> clusterWrappingRepository
+                    ClusterCryptoDb.SCHEMA_NAME -> clusterWrappingRepository
                     tenantId -> tenantWrappingRepository
                     else -> throw InvalidParameterException(it)
                 }
