@@ -11,7 +11,7 @@ import picocli.CommandLine
     mixinStandardHelpOptions = true,
     description = ["Manages a virtual node"],
 )
-class VirtualNodeComand
+class VirtualNodeCommand
 
 /**
  * Plugins are loaded with a PF4J class loader, and as such seemingly are their declared dependencies.
@@ -24,7 +24,7 @@ class VirtualNodeComand
  */
 internal fun withPluginClassLoader(block: () -> Unit) {
     val originalThreadContextClassLoader = Thread.currentThread().contextClassLoader
-    val pluginClassLoader = VirtualNodeComand::class.java.classLoader
+    val pluginClassLoader = VirtualNodeCommand::class.java.classLoader
 
     Thread.currentThread().contextClassLoader = pluginClassLoader
     try {

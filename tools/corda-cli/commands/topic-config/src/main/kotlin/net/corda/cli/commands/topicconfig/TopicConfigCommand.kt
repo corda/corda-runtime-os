@@ -8,7 +8,7 @@ import java.util.Properties
 @CommandLine.Command(
     name = "topic",
     subcommands = [Create::class],
-    description = ["Plugin for Kafka topic operations."],
+    description = ["Command for Kafka topic operations."],
     mixinStandardHelpOptions = true,
 )
 class TopicConfigCommand {

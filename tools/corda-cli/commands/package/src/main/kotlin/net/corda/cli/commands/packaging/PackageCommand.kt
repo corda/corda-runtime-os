@@ -7,6 +7,6 @@ import picocli.CommandLine
     name = "package",
     subcommands = [CreateCpiV2::class, Verify::class, CreateCpb::class, SignCpx::class],
     mixinStandardHelpOptions = true,
-    description = ["Plugin for CPB, CPI operations."],
+    description = ["Command for CPB, CPI operations."],
 )
 class PackageCommand

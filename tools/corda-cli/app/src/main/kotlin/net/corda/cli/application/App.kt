@@ -9,7 +9,7 @@ import net.corda.cli.commands.packaging.PackageCommand
 import net.corda.cli.commands.preinstall.PreInstallCommand
 import net.corda.cli.commands.secretconfig.SecretConfigCommand
 import net.corda.cli.commands.topicconfig.TopicConfigCommand
-import net.corda.cli.commands.vnode.VirtualNodeComand
+import net.corda.cli.commands.vnode.VirtualNodeCommand
 import picocli.CommandLine
 import kotlin.system.exitProcess
 
@@ -58,7 +58,7 @@ object App {
         commandLine.addSubcommand(PreInstallCommand())
         commandLine.addSubcommand(SecretConfigCommand())
         commandLine.addSubcommand(TopicConfigCommand())
-        commandLine.addSubcommand(VirtualNodeComand())
+        commandLine.addSubcommand(VirtualNodeCommand())
 
         val commandResult = commandLine
             .setCaseInsensitiveEnumValuesAllowed(true)

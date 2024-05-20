@@ -14,7 +14,7 @@ import picocli.CommandLine
 
 /**
  * Some of the functionality is also covered in [net.corda.sdk.packaging.signing.CpxSignerTest];
- * While coverage overlaps, we need the present set of tests to cover the specific CLI plugin functionality.
+ * While coverage overlaps, we need the present set of tests to cover the specific CLI command functionality.
  */
 class SignCpbTest {
 

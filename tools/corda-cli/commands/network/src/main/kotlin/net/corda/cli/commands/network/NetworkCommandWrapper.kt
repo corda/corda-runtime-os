@@ -16,7 +16,7 @@ class NetworkCommandWrapper {
         ],
         hidden = true,
         mixinStandardHelpOptions = true,
-        description = ["Plugin for interacting with a network."],
+        description = ["Command for interacting with a network."],
     )
     class NetworkCommand
 
@@ -26,7 +26,7 @@ class NetworkCommandWrapper {
             GenerateGroupPolicy::class,
         ],
         mixinStandardHelpOptions = true,
-        description = ["Plugin for membership operations."],
+        description = ["Command for membership operations."],
     )
     class MgmCommand
 }

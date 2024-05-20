@@ -39,5 +39,13 @@ The Corda CLI has the following commands:
 - [topic](commands/topic-config/)
 - [vnode](commands/virtual-node/README.md)
 
+## Setup/Build
+
+Run `./gradlew build`
+This will create the following:
+- `corda-cli.jar` in the `build/cli/` directory, including start and install scripts
+- raw jar in the `build/libs/` directory
+- `corda-cli-dist.zip` in the `build/zip/` directory
+
 ## Testing
 Smoke tests in individual Corda CLI command directories under `toolsSmokeTest` are run against the Combined Worker, intended to be triggered manually during development. There is also a nightly Jenkins job that runs these tests on the release branch. In the future, it may be included as a PR-gate.

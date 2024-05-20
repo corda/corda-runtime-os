@@ -166,6 +166,10 @@ if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
 
 jar {
     dependsOn ':libs:corda-sdk:jar'
+    subprojects.each { subproject ->
+        dependsOn subproject.tasks.jar
+    }
+
     finalizedBy 'cliInstallArchive'
     if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
         finalizedBy 'cliS3Download'

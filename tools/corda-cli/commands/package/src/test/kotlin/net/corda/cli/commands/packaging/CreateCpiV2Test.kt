@@ -25,7 +25,7 @@ import java.io.File
 
 /**
  * Some of the functionality is also covered in [net.corda.sdk.packaging.CpiV2CreatorTest];
- * While coverage overlaps, we need the present set of tests to cover the specific CLI plugin functionality.
+ * While coverage overlaps, we need the present set of tests to cover the specific CLI command functionality.
  */
 class CreateCpiV2Test {
 

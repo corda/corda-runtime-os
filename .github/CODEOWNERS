@@ -22,10 +22,10 @@ CODEOWNERS         @corda/infrastructure-release @corda/corda5-team-leads
 /libs/permissions/                              @corda/rest
 /libs/virtual-node/                             @corda/rest
 /processors/rest-processor/                     @corda/rest
-/tools/plugins/initial-rbac/                    @corda/rest
-/tools/plugins/rest/                    @corda/rest
-/tools/plugins/virtual-node/                    @corda/rest
-/tools/plugins/cpi/                             @corda/rest
+/tools/corda-cli/commands/initial-rbac/         @corda/rest
+/tools/corda-cli/commands/rest/                 @corda/rest
+/tools/corda-cli/commands/virtual-node/         @corda/rest
+/tools/corda-cli/commands/cpi/                  @corda/rest
 
 # Helm charts for BLT team
 /charts/                                @corda/infrastructure-release
@@ -43,8 +43,8 @@ CODEOWNERS         @corda/infrastructure-release @corda/corda5-team-leads
 /libs/membership/                                               @corda/corda-platform-network-team
 /libs/p2p-crypto/                                               @corda/corda-platform-network-team
 /libs/layered-property-map/                                     @corda/corda-platform-network-team
-/tools/plugins/mgm/                                             @corda/corda-platform-network-team
-/tools/plugins/network/                                         @corda/corda-platform-network-team
+/tools/corda-cli/commands/mgm/                                  @corda/corda-platform-network-team
+/tools/corda-cli/commands/network/                              @corda/corda-platform-network-team
 /applications/tools/p2p-test/                                   @corda/corda-platform-network-team
 
 # Modules to be audited by Sandboxing SMEs
@@ -71,7 +71,7 @@ CODEOWNERS         @corda/infrastructure-release @corda/corda5-team-leads
 /libs/serialization/                                            @corda/packaging
 /libs/virtual-node/cpi-*                                        @corda/packaging
 /testing/packaging-test-utilities/                              @corda/packaging
-/tools/plugins/package                                          @corda/packaging
+/tools/corda-cli/commands/package                               @corda/packaging
 
 # Modules to be audited by DB SMEs
 /components/db/                                                 @corda/db
@@ -80,7 +80,7 @@ CODEOWNERS         @corda/infrastructure-release @corda/corda5-team-leads
 /libs/db/                                                       @corda/db
 /processors/db/                                                 @corda/db
 /testing/persistence-testkit/                                   @corda/db
-/tools/plugins/db-config                                        @corda/db
+/tools/corda-cli/commands/db-config                             @corda/db
 
 # Modules to be audited by Flow Worker team
 /components/flow/                                               @corda/flow-worker
