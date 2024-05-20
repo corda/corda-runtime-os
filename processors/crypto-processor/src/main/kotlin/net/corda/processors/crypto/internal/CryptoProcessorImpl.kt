@@ -235,12 +235,6 @@ class CryptoProcessorImpl @Activate constructor(
                         .also { it.start() }
                 this.stateManager = stateManager
 
-                // If a new category is introduced, category ENCRYPTION_SECRET might need to be generated only for CryptoTenants.P2P
-                (CryptoConsts.Categories.all).forEach { category ->
-                    tenantInfoService.populate(CryptoTenants.P2P, category, cryptoService)
-                    logger.trace("Assigned SOFT HSM for $CryptoTenants.P2P:$category")
-                }
-
                 // If a new cluster tenant is introduced, category `CryptoConsts.Categories.ENCRYPTION_SECRET`
                 // might need to be generated only for CryptoTenants.P2P
                 (CryptoConsts.Categories.all).forEach { category ->
