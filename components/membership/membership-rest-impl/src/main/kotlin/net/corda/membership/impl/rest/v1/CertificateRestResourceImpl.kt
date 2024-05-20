@@ -8,6 +8,7 @@ import net.corda.crypto.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.CryptoTenants.allClusterTenants
 import net.corda.crypto.core.DefaultSignatureOIDMap
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHashException
@@ -471,8 +472,7 @@ class CertificateRestResourceImpl @Activate constructor(
     }
 
     private fun validateTenantId(tenantId: String) {
-        // We have only one crypto tenant
-        if (tenantId == CryptoTenants.P2P) return
+        if (tenantId in allClusterTenants) return
 
         try {
             ShortHash.parse(tenantId)
