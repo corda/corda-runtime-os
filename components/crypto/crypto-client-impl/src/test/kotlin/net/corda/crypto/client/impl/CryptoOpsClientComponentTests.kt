@@ -735,7 +735,7 @@ class CryptoOpsClientComponentTests {
         assertEquals(masterKeyAlias, command.masterKeyAlias)
         assertTrue(command.failIfExists)
         assertOperationContext(command.context)
-        assertRequestContext(result, ClusterCryptoDb.CRYPTO_SCHEMA)
+        assertRequestContext(result, ClusterCryptoDb.SCHEMA_NAME)
     }
 
     @Test

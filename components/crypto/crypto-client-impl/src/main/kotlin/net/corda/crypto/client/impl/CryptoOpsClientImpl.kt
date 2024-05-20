@@ -313,7 +313,7 @@ class CryptoOpsClientImpl(
             masterKeyAlias
         )
         val request = createRequest(
-            ClusterCryptoDb.CRYPTO_SCHEMA,
+            ClusterCryptoDb.SCHEMA_NAME,
             GenerateWrappingKeyRpcCommand(
                 hsmId,
                 masterKeyAlias,

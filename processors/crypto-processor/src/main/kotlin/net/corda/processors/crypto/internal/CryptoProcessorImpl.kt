@@ -345,7 +345,7 @@ class CryptoProcessorImpl @Activate constructor(
 
     private fun createTenantInfoService(): TenantInfoServiceImpl {
         val emf = getEntityManagerFactory(
-            ClusterCryptoDb.CRYPTO_SCHEMA,
+            ClusterCryptoDb.SCHEMA_NAME,
             dbConnectionManager,
             virtualNodeInfoReadService,
             jpaEntitiesRegistry

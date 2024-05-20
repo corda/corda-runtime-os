@@ -99,7 +99,7 @@ class CryptoRekeyBusProcessor(
                 // Specify all vNodes and clusterDB, so we can check wrapping keys in their databases.
                 // All cluster level tenants share the same cluster crypto database. Therefore, we only specify one
                 // connection to clusterDB.
-                val allTenantIds = virtualNodeTenantIds + ClusterCryptoDb.CRYPTO_SCHEMA
+                val allTenantIds = virtualNodeTenantIds + ClusterCryptoDb.SCHEMA_NAME
                 logger.debug("Found ${allTenantIds.size} tenants; first few are: ${allTenantIds.take(10)}")
                 val targetWrappingKeys = allTenantIds.map { tenantId ->
                     try {

@@ -907,7 +907,7 @@ class SoftCryptoServiceGeneralTests {
         val clearKey1 = rootWrappingKey.unwrapWrappingKey(wrappedWithRoot1)
 
         // try rotating to parent key root2
-        myCryptoService.rewrapWrappingKey(ClusterCryptoDb.CRYPTO_SCHEMA, "alpha", "root2")
+        myCryptoService.rewrapWrappingKey(ClusterCryptoDb.SCHEMA_NAME, "alpha", "root2")
         val wrappedWithRoot2 = checkNotNull(cryptoRepositoryWrapping.keys.get("alpha")).keyMaterial
         val clearKey2 = rootWrappingKey2.unwrapWrappingKey(wrappedWithRoot2)
         val exception = assertThrows<AEADBadTagException> {
@@ -918,7 +918,7 @@ class SoftCryptoServiceGeneralTests {
         assertThat(wrappedWithRoot1).isNotEqualTo(wrappedWithRoot2)
 
         // now let's rotate back to parent key root, and the clear material should be the same
-        myCryptoService.rewrapWrappingKey(ClusterCryptoDb.CRYPTO_SCHEMA, "alpha", "root")
+        myCryptoService.rewrapWrappingKey(ClusterCryptoDb.SCHEMA_NAME, "alpha", "root")
         val wrappedWithRoot1Again = checkNotNull(cryptoRepositoryWrapping.keys.get("alpha")).keyMaterial
         val clearKey3 = rootWrappingKey.unwrapWrappingKey(wrappedWithRoot1Again)
         assertThat(clearKey3).isEqualTo(clearKey1)

@@ -87,7 +87,7 @@ class SoftCryptoServiceCachingTests {
             digestService = PlatformDigestServiceImpl(schemeMetadata),
             wrappingRepositoryFactory = {
                 when (it) {
-                    ClusterCryptoDb.CRYPTO_SCHEMA -> clusterWrappingRepository
+                    ClusterCryptoDb.SCHEMA_NAME -> clusterWrappingRepository
                     else -> vnodeWrappingRepository
                 }
             },

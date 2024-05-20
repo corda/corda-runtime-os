@@ -24,10 +24,10 @@ object CryptoTenants {
  * Defines identifier for a cluster crypto database and a helper function.
  */
 object ClusterCryptoDb {
-    const val CRYPTO_SCHEMA = "crypto"
+    const val SCHEMA_NAME = "crypto"
 
     /**
      * Returns true if the given schema is referencing cluster Crypto database.
      */
-    fun isReferencingClusterDb(schema: String) = schema == CRYPTO_SCHEMA || allClusterTenants.contains(schema)
+    fun isReferencingClusterDb(schema: String) = schema == SCHEMA_NAME || allClusterTenants.contains(schema)
 }

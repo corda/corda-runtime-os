@@ -31,7 +31,7 @@ class SigningRepositoryImplTests {
         val dbConnectionManager = mock<DbConnectionManager> {
             on { getOrCreateEntityManagerFactory(any<CordaDb>(), any()) } doReturn entityManagerFactory
         }
-        val tenant = ClusterCryptoDb.CRYPTO_SCHEMA
+        val tenant = ClusterCryptoDb.SCHEMA_NAME
         makeMockSigningRepository(tenant, dbConnectionManager).use { repo ->
             assertThat(repo::class.simpleName).isEqualTo("SigningRepositoryImpl")
             verify(dbConnectionManager).getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)

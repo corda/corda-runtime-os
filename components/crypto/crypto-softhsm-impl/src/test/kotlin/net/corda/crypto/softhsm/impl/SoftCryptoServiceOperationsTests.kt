@@ -112,7 +112,7 @@ class SoftCryptoServiceOperationsTests {
         private val cryptoService = SoftCryptoService(
             wrappingRepositoryFactory = {
                 when (it) {
-                    ClusterCryptoDb.CRYPTO_SCHEMA -> clusterWrappingRepository
+                    ClusterCryptoDb.SCHEMA_NAME -> clusterWrappingRepository
                     tenantId -> tenantWrappingRepository
                     else -> throw InvalidParameterException(it)
                 }
