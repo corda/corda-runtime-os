@@ -40,7 +40,7 @@ class ConfigReconciler(
     }
 
     override fun updateInterval(intervalMillis: Long) {
-        log.debug("Config reconciliation interval set to $intervalMillis ms")
+        log.info("Config reconciliation interval set to $intervalMillis ms")
 
         if (dbReconciler == null) {
             dbReconciler =
