@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@5.3') _
+@Library('corda-shared-build-pipeline-steps@pavel/es-1843/remove-dependency-of-pf4j-in-corda-cli') _
 
 cordaPipelineKubernetesAgent(
     dailyBuildCron: 'H H/6 * * *',
