@@ -80,8 +80,13 @@ object Encoding {
         KRYO1(KryoSerializationFormatDecoder()),
         AMQP1(
             AMQPSerializationFormatDecoder(
-                { bytes, depth, includeOriginalBytes ->
-                    decodedBytes(bytes, recurseDepth = depth, includeOriginalBytes = includeOriginalBytes).result
+                { bytes, depth, includeOriginalBytes, beVerbose ->
+                    decodedBytes(
+                        bytes,
+                        recurseDepth = depth,
+                        includeOriginalBytes = includeOriginalBytes,
+                        beVerbose = beVerbose
+                    ).result
                 },
                 { data -> Envelope.get(data) },
                 { DynamicDescriptorRegistry() }
@@ -89,8 +94,13 @@ object Encoding {
         ),
         AMQP5(
             AMQPSerializationFormatDecoder(
-                { bytes, depth, includeOriginalBytes ->
-                    decodedBytes(bytes, recurseDepth = depth, includeOriginalBytes = includeOriginalBytes).result
+                { bytes, depth, includeOriginalBytes, beVerbose ->
+                    decodedBytes(
+                        bytes,
+                        recurseDepth = depth,
+                        includeOriginalBytes = includeOriginalBytes,
+                        beVerbose = beVerbose
+                    ).result
                 },
                 { data -> Envelope.get(data, osgiBundles = true) },
                 { DynamicDescriptorRegistry(lenientBuiltIns = true) }
@@ -98,16 +108,26 @@ object Encoding {
         ),
         METADATA(
             MetadataSerializationFormatDecoder(
-                { bytes, depth, includeOriginalBytes ->
-                    decodedBytes(bytes, recurseDepth = depth, includeOriginalBytes = includeOriginalBytes).result
+                { bytes, depth, includeOriginalBytes, beVerbose ->
+                    decodedBytes(
+                        bytes,
+                        recurseDepth = depth,
+                        includeOriginalBytes = includeOriginalBytes,
+                        beVerbose = beVerbose
+                    ).result
                 },
                 true
             )
         ),
         METADATA_NO_HEADER(
             MetadataSerializationFormatDecoder(
-                { bytes, depth, includeOriginalBytes ->
-                    decodedBytes(bytes, recurseDepth = depth, includeOriginalBytes = includeOriginalBytes).result
+                { bytes, depth, includeOriginalBytes, beVerbose ->
+                    decodedBytes(
+                        bytes,
+                        recurseDepth = depth,
+                        includeOriginalBytes = includeOriginalBytes,
+                        beVerbose = beVerbose
+                    ).result
                 },
                 false
             )
@@ -144,6 +164,7 @@ object Encoding {
     fun decodedBytes(
         byteSequence: ByteSequence,
         includeOriginalBytes: Boolean,
+        beVerbose: Boolean,
         compressionEncodingOverride: String? = null,
         compressionEncodingStartOverride: Int? = null,
         formatOverride: String? = null,
@@ -153,6 +174,7 @@ object Encoding {
             compressionEncodingOverride != null && compressionEncodingStartOverride != null && formatOverride != null
 
         fun overriddenEncoding(): Triple<CompressionEncoding, Int, SerializationFormatDecoder> {
+            if (beVerbose) println("Overridden encoding")
             val triple = Triple(
                 CompressionEncoding.valueOf(compressionEncodingOverride!!),
                 compressionEncodingStartOverride!!,
@@ -165,15 +187,16 @@ object Encoding {
         val (compressionEncoding, compressionEncodingStart, decoder) = if (allOverridesPresent()) {
             overriddenEncoding()
         } else {
-            extractEncoding(byteSequence)
+            extractEncoding(byteSequence, beVerbose)
         }
         compressionEncoding.createStream(byteSequence.subSequence(compressionEncodingStart)).use { stream ->
-            return decoder.decode(stream, recurseDepth, originalBytes, includeOriginalBytes)
+            return decoder.decode(stream, recurseDepth, originalBytes, includeOriginalBytes, beVerbose)
         }
     }
 
     private fun extractEncoding(
-        byteSequence: ByteSequence
+        byteSequence: ByteSequence,
+        beVerbose: Boolean
     ): Triple<CompressionEncoding, Int, SerializationFormatDecoder> {
         val magicByteSequence = byteSequence.take(5)
         val magicType = cordaMagicHeaders[magicByteSequence]
@@ -183,13 +206,7 @@ object Encoding {
         val primaryEncodingType = magicType[primaryEncodingString]
             ?: throw java.lang.RuntimeException("Unknown primary encoding $primaryEncodingString.")
 
-        println(
-            "Compression encoding ${primaryEncodingType.compressionEncoding}, " +
-                "encoding start = ${primaryEncodingType.compressionEncodingStart}, " +
-                "format = ${primaryEncodingType.serializationFormat}"
-        )
-
-        println("Primary encoding ${primaryEncodingType.description}")
+        if (beVerbose) println("Primary encoding ${primaryEncodingType.description}")
 
         val compressionEncoding = primaryEncodingType.compressionEncoding
         val compressionEncodingStart = primaryEncodingType.compressionEncodingStart

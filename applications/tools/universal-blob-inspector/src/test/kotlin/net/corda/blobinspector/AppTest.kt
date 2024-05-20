@@ -11,49 +11,49 @@ class AppTest {
 
     @Test
     fun parseCashSignedTransaction() {
-        val(exitCode, output) = runInSeparateJVM("cash-stx-db.blob")
+        val(exitCode, output) = runInSeparateJVM("cash-stx-db.blob", listOf("-v"))
         assertTrue(exitCode == 0)
         assertTrue(output.contains("Corda OS 4+ / ENT 3+ AMQP"))
     }
 
     @Test
     fun parseCashWireTransaction() {
-        val(exitCode, output) = runInSeparateJVM("cash-wtx.blob")
+        val(exitCode, output) = runInSeparateJVM("cash-wtx.blob", listOf("-v"))
         assertTrue(exitCode == 0)
         assertTrue(output.contains("Corda OS 4+ / ENT 3+ AMQP"))
     }
 
     @Test
     fun parseNetworkParameters() {
-        val(exitCode, output) = runInSeparateJVM("network-parameters")
+        val(exitCode, output) = runInSeparateJVM("network-parameters", listOf("-v"))
         assertTrue(exitCode == 0)
         assertTrue(output.contains("Corda OS 4+ / ENT 3+ AMQP"))
     }
 
     @Test
     fun parseNetworkNodeInfo() {
-        val(exitCode, output) = runInSeparateJVM("node-info")
+        val(exitCode, output) = runInSeparateJVM("node-info", listOf("-v"))
         assertTrue(exitCode == 0)
         assertTrue(output.contains("Corda OS 4+ / ENT 3+ AMQP"))
     }
 
     @Test
     fun parseOlderCpk() {
-        val(exitCode, output) = runInSeparateJVM("OlderCpk.bin")
+        val(exitCode, output) = runInSeparateJVM("OlderCpk.bin", listOf("-v"))
         assertTrue(exitCode == 0)
         assertTrue(output.contains("Corda 5 GA AMQP"))
     }
 
     @Test
     fun parseUpgradingCpk() {
-        val(exitCode, output) = runInSeparateJVM("UpgradingCpk.bin")
+        val(exitCode, output) = runInSeparateJVM("UpgradingCpk.bin", listOf("-v"))
         assertTrue(exitCode == 0)
         assertTrue(output.contains("Corda 5 GA AMQP"))
     }
 
     @Test
     fun parseC5WireTx() {
-        val(exitCode, output) = runInSeparateJVM("C5WireTx.bin")
+        val(exitCode, output) = runInSeparateJVM("C5WireTx.bin", listOf("-v"))
         assertTrue(exitCode == 0)
         assertTrue(output.contains("Corda 5 GA AMQP"))
     }
@@ -62,14 +62,15 @@ class AppTest {
     fun parseMetadataV0() {
         val(exitCode, output) = runInSeparateJVM("metadatav0.bin")
         assertTrue(exitCode == 0)
-        assertTrue(output.contains("Metadata schema version = 00"))
+        assertTrue(output.contains("\"_version\" : \"00\""))
     }
 
     @Test
     fun parseMetadataV1() {
         val(exitCode, output) = runInSeparateJVM("metadatav1.bin")
+        println("output:\n$output")
         assertTrue(exitCode == 0)
-        assertTrue(output.contains("Metadata schema version = 01"))
+        assertTrue(output.contains("\"_version\" : \"01\""))
     }
 
     @Test
@@ -84,6 +85,13 @@ class AppTest {
         val(exitCode, output) = runInSeparateJVM("C5WireTx.bin")
         assertTrue(exitCode == 0)
         assertTrue(output.contains("_bytes"))
+    }
+
+    @Test
+    fun runNonVerboseMode() {
+        val(exitCode, output) = runInSeparateJVM("C5WireTx.bin")
+        assertTrue(exitCode == 0)
+        assertTrue(output.startsWith("{"))
     }
 
     private fun runInSeparateJVM(binaryFileName: String, flags: List<String> = emptyList()): Pair<Int, String> {
