@@ -241,6 +241,15 @@ class CryptoProcessorImpl @Activate constructor(
                     logger.trace("Assigned SOFT HSM for $CryptoTenants.P2P:$category")
                 }
 
+                // If a new cluster tenant is introduced, category `CryptoConsts.Categories.ENCRYPTION_SECRET`
+                // might need to be generated only for CryptoTenants.P2P
+                (CryptoConsts.Categories.all).forEach { category ->
+                    CryptoTenants.allClusterTenants.forEach { tenantId ->
+                        tenantInfoService.populate(tenantId, category, cryptoService)
+                        logger.trace("Assigned SOFT HSM for $tenantId:$category")
+                    }
+                }
+
                 startProcessors(
                     cryptoConfig,
                     messagingConfig,
