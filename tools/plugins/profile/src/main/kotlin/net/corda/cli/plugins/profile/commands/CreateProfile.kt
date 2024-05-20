@@ -46,7 +46,7 @@ class CreateProfile : Runnable {
         properties.forEach { property ->
             val (key, value) = property.split("=")
             if (!ProfileUtils.isValidKey(key)) {
-                val error = "Invalid key '$key'. Allowed keys are: ${ProfileUtils.VALID_KEYS}"
+                val error = "Invalid key '$key'. Allowed keys are:\n ${ProfileUtils.getProfileKeysWithDescriptions()}"
                 sysErr.error(error)
                 throw IllegalArgumentException(error)
             }
@@ -63,6 +63,5 @@ class CreateProfile : Runnable {
 
         ProfileUtils.saveProfiles(profiles)
         sysOut.info("Profile '$profileName' created successfully.")
-        println("Profile '$profileName' created successfully.")
     }
 }

@@ -6,13 +6,13 @@ import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import java.io.File
 
-enum class ProfileKey {
-    REST_USERNAME,
-    REST_PASSWORD,
-    ENDPOINT,
-    JDBC_USERNAME,
-    JDBC_PASSWORD,
-    DATABASE_URL
+enum class ProfileKey(val description: String) {
+    REST_USERNAME("Username for REST API"),
+    REST_PASSWORD("Password for REST API"),
+    REST_ENDPOINT("Endpoint for the REST API"),
+    JDBC_USERNAME("Username for JDBC connection"),
+    JDBC_PASSWORD("Password for JDBC connection"),
+    DATABASE_URL("URL for the database")
 }
 
 object ProfileUtils {
@@ -35,5 +35,11 @@ object ProfileUtils {
     fun saveProfiles(profiles: Map<String, Any>) {
         profileFile.parentFile.mkdirs()
         objectMapper.writeValue(profileFile, profiles)
+    }
+
+    fun getProfileKeysWithDescriptions(): String {
+        return ProfileKey.values().joinToString("\n") { key ->
+            "${key.name.lowercase()}: ${key.description},"
+        }
     }
 }

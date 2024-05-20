@@ -50,7 +50,7 @@ test {
 
 cliPlugin {
     cliPluginClass = 'net.corda.cli.plugins.profile.ProfilePluginWrapper'
-    cliPluginDescription = 'Plugin for ...'
+    cliPluginDescription = 'Plugin for user-defined profile management.'
 }
 
 tasks.named("installDist") {

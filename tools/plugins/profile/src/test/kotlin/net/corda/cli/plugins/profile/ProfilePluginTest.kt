@@ -18,6 +18,7 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.nio.file.Path
+import kotlin.test.assertContains
 
 class ProfilePluginTest {
 
@@ -45,14 +46,14 @@ class ProfilePluginTest {
     fun `test create profile`() {
         val createProfile = CreateProfile()
         createProfile.profileName = "test-profile"
-        createProfile.properties = arrayOf("endpoint=http://localhost:1234", "rest_username=testuser", "rest_password=testpassword")
+        createProfile.properties = arrayOf("rest_endpoint=http://localhost:1234", "rest_username=testuser", "rest_password=testpassword")
 
         createProfile.run()
 
         val profiles = ProfileUtils.loadProfiles()
         assertTrue(profiles.containsKey("test-profile"), "Created profile should exist")
         val profile = profiles["test-profile"] as Map<*, *>
-        assertEquals("http://localhost:1234", profile["endpoint"])
+        assertEquals("http://localhost:1234", profile["rest_endpoint"])
         assertEquals("testuser", profile["rest_username"])
         assertNotEquals("testpassword", profile["rest_password"], "Password should be encrypted")
     }
@@ -63,14 +64,19 @@ class ProfilePluginTest {
             "test-profile" to mapOf(
                 "endpoint" to "http://localhost:1234",
                 "rest_username" to "testuser",
-                "rest_password" to "testpassword"
+                "rest_password" to "testpassword",
+                "rest_password_salt" to "testsalt"
             )
         )
         ProfileUtils.saveProfiles(profiles)
 
         val createProfile = CreateProfile()
         createProfile.profileName = "test-profile"
-        createProfile.properties = arrayOf("endpoint=http://localhost:5678", "rest_username=newuser", "rest_password=newpassword")
+        createProfile.properties = arrayOf(
+            "rest_endpoint=http://localhost:5678",
+            "rest_username=newuser",
+            "rest_password=newpassword",
+        )
 
         // user input to overwrite the existing profile
         System.setIn(ByteArrayInputStream("y\n".toByteArray()))
@@ -79,7 +85,7 @@ class ProfilePluginTest {
 
         val updatedProfiles = ProfileUtils.loadProfiles()
         val profile = updatedProfiles["test-profile"] as Map<*, *>
-        assertEquals("http://localhost:5678", profile["endpoint"])
+        assertEquals("http://localhost:5678", profile["rest_endpoint"])
         assertEquals("newuser", profile["rest_username"])
         assertNotEquals("newpassword", profile["rest_password"], "Password should be encrypted")
     }
@@ -88,13 +94,13 @@ class ProfilePluginTest {
     fun `test create profile with invalid key`() {
         val createProfile = CreateProfile()
         createProfile.profileName = "test-profile"
-        createProfile.properties = arrayOf("endpoint=http://localhost:1234", "invalid_key=value")
+        createProfile.properties = arrayOf("rest_endpoint=http://localhost:1234", "invalid_key=value")
 
         val exception = assertThrows(IllegalArgumentException::class.java) {
             createProfile.run()
         }
 
-        assertEquals("Invalid key 'invalid_key'. Allowed keys are: ${ProfileUtils.VALID_KEYS}", exception.message)
+        assertContains(exception.message.toString(), "Invalid key 'invalid_key'. Allowed keys are:")
         assertFalse(profileFilePath.toFile().exists(), "Profile file should not be created")
     }
 
@@ -103,16 +109,20 @@ class ProfilePluginTest {
         // Setup a test profile
         val profiles = mutableMapOf<String, Any>(
             "test-profile" to mapOf(
-                "endpoint" to "http://localhost:1234",
+                "rest_endpoint" to "http://localhost:1234",
                 "rest_username" to "testuser",
-                "rest_password" to "testpassword"
+                "rest_password" to "testpassword",
+                "rest_password_salt" to "testsalt"
             )
         )
         ProfileUtils.saveProfiles(profiles)
 
         val updateProfile = UpdateProfile()
         updateProfile.profileName = "test-profile"
-        updateProfile.properties = arrayOf("rest_username=updateduser", "rest_password=updatedpassword")
+        updateProfile.properties = arrayOf(
+            "rest_username=updateduser",
+            "rest_password=updatedpassword",
+        )
 
         updateProfile.run()
 
@@ -123,13 +133,42 @@ class ProfilePluginTest {
     }
 
     @Test
+    fun `test idempotence of UpdateProfile with initial creation`() {
+        val initialProfiles = ProfileUtils.loadProfiles()
+        assertFalse(initialProfiles.containsKey("test-profile"))
+
+        val updateProfile = UpdateProfile()
+        updateProfile.profileName = "test-profile"
+        updateProfile.properties = arrayOf(
+            "rest_username=updateduser",
+            "rest_password=updatedpassword",
+        )
+
+        // Run UpdateProfile command for the first time, should create the profile
+        updateProfile.run()
+
+        val updatedProfiles1 = ProfileUtils.loadProfiles()
+        val profile1 = updatedProfiles1["test-profile"] as Map<*, *>
+
+        // Run UpdateProfile command for the second time, should not change the profile
+        updateProfile.run()
+
+        val updatedProfiles2 = ProfileUtils.loadProfiles()
+        val profile2 = updatedProfiles2["test-profile"] as Map<*, *>
+
+        // Check that the state of the profile remains the same after the second run
+        assertEquals(profile1, profile2)
+    }
+
+    @Test
     fun `test delete profile`() {
         // Setup test profile
         val profiles = mutableMapOf<String, Any>(
             "test-profile" to mapOf(
-                "endpoint" to "http://localhost:1234",
+                "rest_endpoint" to "http://localhost:1234",
                 "rest_username" to "testuser",
-                "rest_password" to "testpassword"
+                "rest_password" to "testpassword",
+                "rest_password_salt" to "testsalt"
             )
         )
         ProfileUtils.saveProfiles(profiles)
@@ -162,8 +201,8 @@ class ProfilePluginTest {
     fun `test list profiles`() {
         // Create test profiles
         val profiles = mutableMapOf<String, Any>(
-            "profile1" to mapOf("endpoint" to "http://localhost:1234"),
-            "profile2" to mapOf("endpoint" to "http://localhost:5678")
+            "profile1" to mapOf("rest_endpoint" to "http://localhost:1234"),
+            "profile2" to mapOf("rest_endpoint" to "http://localhost:5678")
         )
         ProfileUtils.saveProfiles(profiles)
 
