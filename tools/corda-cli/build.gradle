@@ -99,7 +99,7 @@ tasks.register("cliS3Download", Copy) {
 }
 
 tasks.register('publishOSGiImage', DeployableContainerBuilder) {
-
+//    dependsOn jar
     def cordaApiIncluded = gradle.includedBuilds.collect { it.name == "corda-api" }.contains(true)
 
     if (cordaApiIncluded) {
@@ -107,6 +107,7 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
 //        dependsOn gradle.includedBuild("corda-cli-plugin-host").task(':app:publishOSGiImage')
     }
 
+    it.sourceFiles = files(jar.archiveFile)
     it.setEntry = false
     if (project.hasProperty('jibRemotePublish')) {
         remotePublish = jibRemotePublish.toBoolean()
@@ -163,8 +164,7 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
         targetPlatform = project.property('targetPlatform').toString()
     }
 
-    println "======================"
-    println it.baseImageName.get()
+    println "====================== " + it.baseImageName.get() + "  " + it.baseImageTag.get()
 }
 
 def s3Script = null
