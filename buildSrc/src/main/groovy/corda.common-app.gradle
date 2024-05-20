@@ -91,6 +91,9 @@ private def addSystemPackagesExtra(
 ) {
     artifacts.each { resolvedArtifact ->
         final File file = resolvedArtifact.file
+
+        println file
+
         if (isJar(file)) {
             new JarFile(
                     resolvedArtifact.file,
@@ -100,7 +103,9 @@ private def addSystemPackagesExtra(
                 Attributes mainAttributes = jarFile.manifest.mainAttributes
                 if (isBundle(mainAttributes)) {
                     mainAttributes.getValue(EXPORT_PACKAGE)?.with { exportPackage ->
-                        aQute.bnd.header.OSGiHeader.parseHeader(exportPackage).entrySet().each { exportEntry ->
+                        println exportPackage
+                        println aQute.bnd.header.OSGiHeader.parseHeader(exportPackage)
+                        aQute.bnd.header.OSGiHeader.parseHeader(exportPackage).each { exportEntry ->
                             final def export = exportEntry.key + ";" + exportEntry.value.toString()
                             systemBundleExtraSet.add(export)
                             logger.info "OSGI $export included as system package extra."
