@@ -223,7 +223,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         }
 
         sourceFiles.forEach{
-            def jarName = useShortName
+            def jarName = useShortName.get()
                     ? it.name.replace("corda-", "").replace("-${project.version}", "")
                     : it.name
             Files.copy(Paths.get(it.path), Paths.get("${containerizationDir.toString()}/$jarName"), StandardCopyOption.REPLACE_EXISTING)

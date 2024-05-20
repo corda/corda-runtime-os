@@ -99,16 +99,17 @@ tasks.register("cliS3Download", Copy) {
 }
 
 tasks.register('publishOSGiImage', DeployableContainerBuilder) {
-//    dependsOn jar
+    useShortName = false
+    setEntry = true
+    overrideEntryName = 'cli'
+
     def cordaApiIncluded = gradle.includedBuilds.collect { it.name == "corda-api" }.contains(true)
 
     if (cordaApiIncluded) {
         dependsOn gradle.includedBuild("corda-api").task(':application:jar')
-//        dependsOn gradle.includedBuild("corda-cli-plugin-host").task(':app:publishOSGiImage')
     }
 
     it.sourceFiles = files(jar.archiveFile)
-    it.setEntry = false
     if (project.hasProperty('jibRemotePublish')) {
         remotePublish = jibRemotePublish.toBoolean()
     }
@@ -127,31 +128,6 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
         preTest = isPreTest.toBoolean()
     }
 
-    // Has to be different as jenkins will always try use zulu
-    if (project.hasProperty('cliBaseImage')) {
-        baseImageName = cliBaseImage
-    } else {
-        // cater for local composite build
-//        baseImageName = (cordaCliIncluded) ? "corda-os-docker-dev.software.r3.com/corda-os-cli" : "corda-os-docker.software.r3.com/corda-os-cli"
-        // TODO Paf - perhaps this is wrong?
-        baseImageName = (cordaApiIncluded) ? "corda-os-docker-dev.software.r3.com/corda-os-cli" : "corda-os-docker.software.r3.com/corda-os-cli"
-    }
-
-    if (project.hasProperty('cliBaseTag')) {
-        baseImageTag = cliBaseTag
-    }
-    // TODO Paf: figure out what to do with this
-    else {
-        String cliVersion = "${project.version}"
-        if (['RC', 'GA'].contains(System.getenv('RELEASE_TYPE'))) {
-            it.baseImageTag = cliVersion
-        } else {
-//            it.baseImageTag = (cordaCliIncluded) ? "latest-local-${cliVersion}" : "unstable-${cliVersion}"
-            // TODO Paf - perhaps this is wrong?
-            it.baseImageTag = (cordaApiIncluded) ? "latest-local-${cliVersion}" : "unstable-${cliVersion}"
-        }
-    }
-
     if (project.hasProperty('useDockerDaemon')) {
         useDaemon = useDockerDaemon.toBoolean()
     }
@@ -164,7 +140,16 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
         targetPlatform = project.property('targetPlatform').toString()
     }
 
-    println "====================== " + it.baseImageName.get() + "  " + it.baseImageTag.get()
+    if (project.hasProperty('multiArchSupport')) {
+        multiArch = multiArchSupport.toBoolean()
+    }
+    if (project.hasProperty('targetPlatform')) {
+        targetPlatform = project.property('targetPlatform').toString()
+    }
+
+    environment = Map.of(
+            "CORDA_CLI_HOME_DIR", "/opt/override"
+    )
 }
 
 def s3Script = null
