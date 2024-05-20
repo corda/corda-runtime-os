@@ -164,7 +164,6 @@ if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
 }
 
 jar {
-//    dependsOn ':libs:corda-sdk:jar'
     dependsOn configurations.runtimeClasspath
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } } {
         exclude "META-INF/*.SF"
