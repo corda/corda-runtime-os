@@ -25,6 +25,7 @@ import net.corda.e2etest.utilities.startRestFlow
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.junit.jupiter.api.TestInstance
@@ -109,7 +110,7 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
     }
 
 
-    @Test
+    @RepeatedTest(100)
     fun `Utxo Ledger - create a transaction containing states and finalize it then evolve it`(testInfo: TestInfo) {
         val idGenerator = TestRequestIdGenerator(testInfo)
         val input = "test input"
