@@ -65,7 +65,7 @@ class HostedIdentityReconciler(
     }
 
     override fun updateInterval(intervalMillis: Long) {
-        logger.debug { "Config reconciliation interval set to $intervalMillis ms" }
+        logger.info("Config reconciliation interval set to $intervalMillis ms")
 
         if (dbReconciler == null) {
             dbReconciler =
