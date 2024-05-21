@@ -1,6 +1,5 @@
 package net.corda.cli.commands.vnode.commands
 
-import net.corda.cli.commands.vnode.withPluginClassLoader
 import net.corda.sdk.vnode.VNodeDbSchemaGenerator
 import picocli.CommandLine
 import picocli.CommandLine.ExitCode
@@ -60,9 +59,7 @@ class PlatformMigration : Callable<Int> {
         val generator = VNodeDbSchemaGenerator()
         val jdbcConnectionParams = VNodeDbSchemaGenerator.JdbcConnectionParams(jdbcUrl, user, password)
 
-        withPluginClassLoader {
-            generator.generateVNodeMigrationSqlFile(holdingIdFilename, outputFilename, jdbcConnectionParams)
-        }
+        generator.generateVNodeMigrationSqlFile(holdingIdFilename, outputFilename, jdbcConnectionParams)
 
         return ExitCode.OK
     }
