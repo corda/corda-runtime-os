@@ -146,6 +146,7 @@ class LocallyHostedIdentitiesWriterImpl@Activate constructor(
 
     private fun onConfigChangedEventReceived(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
         logger.debug { "Creating resources" }
+        logger.info("Taking coordinator DOWN due to config changed event")
         coordinator.updateStatus(LifecycleStatus.DOWN)
         lock.withLock {
             coordinator.createManagedResource(PUBLISHER_RESOURCE_NAME) {
