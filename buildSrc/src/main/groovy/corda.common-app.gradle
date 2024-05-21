@@ -91,7 +91,6 @@ private def addSystemPackagesExtra(
 ) {
     artifacts.each { resolvedArtifact ->
         final File file = resolvedArtifact.file
-
         if (isJar(file)) {
             new JarFile(
                     resolvedArtifact.file,
