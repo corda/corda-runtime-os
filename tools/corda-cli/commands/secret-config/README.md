@@ -1,6 +1,6 @@
-# Secret Config plug-in
+# Secret Config command
 
-This plug-in uses the encrypting secrets service from Corda5 runtime to secure config values.
+This command uses the encrypting secrets service from Corda5 runtime to secure config values.
 
 ```
 Usage: secret-config [-p=<passphrase>] [-s=<salt>] <value> [COMMAND]

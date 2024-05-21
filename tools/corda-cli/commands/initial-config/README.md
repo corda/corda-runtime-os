@@ -1,4 +1,4 @@
-# Initial Configuration Plug-in
+# Initial Configuration Command
 
 This command creates the SQL files for installing the initial configuration we need to get the HTTP gateway 
 for the API up and running.

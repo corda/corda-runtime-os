@@ -1,4 +1,4 @@
-# Initial Role Based Access Control (RBAC) Plug-in
+# Initial Role Based Access Control (RBAC) command
 
 Given C5 cluster operational this command allows creating common cluster-wide RBAC roles to enable execution of some common
 operations like:
