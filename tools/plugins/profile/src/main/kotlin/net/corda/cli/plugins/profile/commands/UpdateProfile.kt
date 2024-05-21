@@ -30,6 +30,36 @@ class UpdateProfile : Runnable {
 
     private val passwordService = PasswordServiceImpl(SecureRandom())
 
+    private fun processProperty(profile: MutableMap<String, Any>, property: String) {
+        val (key, value) = property.split("=")
+        if (!ProfileUtils.isValidKey(key)) {
+            val error = "Invalid key '$key'. Allowed keys are:\n ${ProfileUtils.getProfileKeysWithDescriptions()}"
+            sysErr.error(error)
+            throw IllegalArgumentException(error)
+        }
+
+        if (key.lowercase().contains("password")) {
+            if (profile.containsKey(key)) {
+                val oldHash = profile[key] as String
+                val oldSalt = profile["${key}_salt"] as String
+                val oldPasswordHash = PasswordHash(oldSalt, oldHash)
+
+                // only update salt and hash if the password has changed
+                if (!passwordService.verifies(value, oldPasswordHash)) {
+                    val passwordHash = passwordService.saltAndHash(value)
+                    profile[key] = passwordHash.value
+                    profile["${key}_salt"] = passwordHash.salt
+                }
+            } else {
+                val passwordHash = passwordService.saltAndHash(value)
+                profile[key] = passwordHash.value
+                profile["${key}_salt"] = passwordHash.salt
+            }
+        } else {
+            profile[key] = value
+        }
+    }
+
     override fun run() {
         val profiles = ProfileUtils.loadProfiles().toMutableMap()
 
@@ -42,32 +72,7 @@ class UpdateProfile : Runnable {
         }
 
         properties.forEach { property ->
-            val (key, value) = property.split("=")
-            if (!ProfileUtils.isValidKey(key)) {
-                val error = "Invalid key '$key'. Allowed keys are:\n ${ProfileUtils.getProfileKeysWithDescriptions()}"
-                sysErr.error(error)
-                throw IllegalArgumentException(error)
-            }
-            if (key.lowercase().contains("password")) {
-                if (profile.containsKey(key)) {
-                    val oldHash = profile[key] as String
-                    val oldSalt = profile["${key}_salt"] as String
-                    val oldPasswordHash = PasswordHash(oldSalt, oldHash)
-
-                    // only update salt and hash if the password has changed
-                    if (!passwordService.verifies(value, oldPasswordHash)) {
-                        val passwordHash = passwordService.saltAndHash(value)
-                        profile[key] = passwordHash.value
-                        profile["${key}_salt"] = passwordHash.salt
-                    }
-                } else {
-                    val passwordHash = passwordService.saltAndHash(value)
-                    profile[key] = passwordHash.value
-                    profile["${key}_salt"] = passwordHash.salt
-                }
-            } else {
-                profile[key] = value
-            }
+            processProperty(profile, property)
         }
 
         profiles[profileName] = profile
