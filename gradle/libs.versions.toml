@@ -111,7 +111,6 @@ postgresql-jdbc = { group = "org.postgresql", name = "postgresql", version.ref =
 slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4jVersion" }
 slf4j-jul = { group = "org.slf4j", name = "jul-to-slf4j", version.ref = "slf4jVersion" }
 slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4jVersion" }
-slf4j-v2-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4jV2Version" }
 snakeyaml = { group = "org.yaml", name = "snakeyaml", version.ref = "snakeyamlVersion" }
 typesafe-config = { group = "com.typesafe", name = "config", version.ref = "typeSafeConfigVersion" }
 unirest-java = { group = "com.konghq", name = "unirest-java", version.ref = "unirestVersion"}
