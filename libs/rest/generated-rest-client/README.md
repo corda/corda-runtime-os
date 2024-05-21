@@ -1,6 +1,6 @@
-# Generated Rest Client
+# Generated REST Client
 
-This module takes the OpenAPI specification and generates an OkHttp rest client from it.  
+This module takes the OpenAPI specification and generates an OkHttp REST client from it.  
 This client can then be used, by the SDK for example, to send requests to a running Corda instance.
 
 ## Gradle lifecycle

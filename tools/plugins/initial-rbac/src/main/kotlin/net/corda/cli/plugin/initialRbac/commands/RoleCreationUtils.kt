@@ -58,13 +58,4 @@ internal object RoleCreationUtils {
 
         return 0
     }
-
-    private fun isJacksonJsr310Present(): Boolean {
-        return try {
-            Class.forName("com.fasterxml.jackson.datatype.jsr310.JavaTimeModule")
-            true
-        } catch (e: ClassNotFoundException) {
-            false
-        }
-    }
 }

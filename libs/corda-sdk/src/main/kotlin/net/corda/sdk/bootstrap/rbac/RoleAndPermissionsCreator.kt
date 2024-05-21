@@ -38,10 +38,10 @@ class RoleAndPermissionsCreator(val restClient: CordaRestClient) {
             restClient.rbacRoleClient.getRole()
         }
 
-        val exitingRole = allRoles.singleOrNull { it.roleName == roleToCreate.roleName }
-        if (exitingRole != null) {
+        val existingRole = allRoles.singleOrNull { it.roleName == roleToCreate.roleName }
+        if (existingRole != null) {
             logger.info("${roleToCreate.roleName} already exists - nothing to do.")
-            return exitingRole
+            return existingRole
         }
 
         val createRoleResponse = restClient.rbacRoleClient.postRole(roleToCreate)
