@@ -41,8 +41,8 @@ The Corda CLI has the following commands:
 
 ## Setup/Build
 
-Run `./gradlew build`
-This will create the following:
+Run `./gradlew :tools:corda-cli:build`
+This will create the following in this module's build directory:
 - `corda-cli.jar` in the `build/cli/` directory, including start and install scripts
 - raw jar in the `build/libs/` directory
 - `corda-cli-dist.zip` in the `build/zip/` directory

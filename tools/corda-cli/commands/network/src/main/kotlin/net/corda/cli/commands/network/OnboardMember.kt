@@ -34,7 +34,7 @@ class OnboardMember : Runnable, BaseOnboard() {
     @Option(
         names = ["--cpb-file", "-b"],
         description = [
-            "Location of a CPB file. The Command will generate a CPI signed with default options when a CPB is " +
+            "Location of a CPB file. The command will generate a CPI signed with default options when a CPB is " +
                 "provided. Use either --cpb-file or --cpi-hash.",
         ],
     )

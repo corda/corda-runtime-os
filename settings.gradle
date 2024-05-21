@@ -66,7 +66,6 @@ pluginManagement {
 plugins {
     id 'com.gradle.common-custom-user-data-gradle-plugin'
     id 'com.gradle.enterprise'
-    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.5.0'
 }
 
 rootProject.name = 'corda-runtime-os'

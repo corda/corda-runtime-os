@@ -35,7 +35,7 @@ class Command {
 }
 
 /**
- * A boot class that starts picocli and loads in plugin sub commands.
+ * A boot class that starts picocli and loads the sub commands.
  */
 object App {
 

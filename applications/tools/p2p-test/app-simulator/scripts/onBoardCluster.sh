@@ -43,7 +43,7 @@ build_cpi() {
    keytool -genkeypair -alias "signing key 1" -keystore "$WORKING_DIR"/signingkeys.pfx -storepass "keystore password" -dname "cn=CPI Plugin Example - Signing Key 1, o=R3, L=London, c=GB" -keyalg RSA -storetype pkcs12 -validity 4000
    keytool -importcert -keystore "$WORKING_DIR"/signingkeys.pfx -storepass "keystore password" -noprompt -alias gradle-plugin-default-key -file "$SCRIPT_DIR/gradle-plugin-default-key.pem"
 
-   $REPO_TOP_LEVEL_DIR/build/cli/corda-cli.sh package create-cpi --cpb "$WORKING_DIR"/test-cordapp-$CORDA_VERSION-SNAPSHOT-package.cpb --group-policy $1 --cpi-name "test cordapp $2" --cpi-version "1.0.0.0-SNAPSHOT" --file "$WORKING_DIR"/test-cordapp-5.0.0.0-SNAPSHOT-package.cpi --keystore "$WORKING_DIR"/signingkeys.pfx --storepass "keystore password" --key "signing key 1"
+   $REPO_TOP_LEVEL_DIR/tools/corda-cli/build/cli/corda-cli.sh package create-cpi --cpb "$WORKING_DIR"/test-cordapp-$CORDA_VERSION-SNAPSHOT-package.cpb --group-policy $1 --cpi-name "test cordapp $2" --cpi-version "1.0.0.0-SNAPSHOT" --file "$WORKING_DIR"/test-cordapp-5.0.0.0-SNAPSHOT-package.cpi --keystore "$WORKING_DIR"/signingkeys.pfx --storepass "keystore password" --key "signing key 1"
 }
 
 trust_cpi_keys() {

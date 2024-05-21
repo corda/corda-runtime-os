@@ -4,7 +4,7 @@ import picocli.CommandLine.IVersionProvider
 import java.util.jar.Manifest
 
 /**
- * An abstract class that will read version information out of the plugin manifest.
+ * A class that will read version information out of the manifest.
  *
  * Builds version information using these attributes:
  * - Tool-Name
@@ -14,9 +14,7 @@ import java.util.jar.Manifest
  *
  * To apply, inherit from this class:
  *
- *   class VersionProvider : AbstractCordaCliVersionProvider()
- *
- * Then add to your command annotation:
+ * Add to your command annotation:
  *
  *   versionProvider = VersionProvider::class
  */

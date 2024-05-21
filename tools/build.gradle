@@ -37,7 +37,7 @@ subprojects {
     }
 
     tasks.register('toolsSmokeTest', Test) {
-        description = "Runs smoke tests for Corda CLI plugins."
+        description = "Runs smoke tests for Corda CLI commands."
         group = "verification"
 
         testClassesDirs = project.sourceSets["toolsSmokeTest"].output.classesDirs
