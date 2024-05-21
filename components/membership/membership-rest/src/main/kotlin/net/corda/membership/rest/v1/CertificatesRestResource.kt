@@ -274,8 +274,8 @@ interface CertificatesRestResource : RestResource {
      * subjectAlternativeNames = ["localhost"], contextMap = {"signatureSpec": "SHA256withECDSA"})
      * ```
      *
-     * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
-     * services, or the value 'rest' for a cluster-level tenant of the REST.
+     * @param tenantId Can either be a holding identity ID or the value 'p2p' for a cluster-level tenant of the P2P
+     * services.
      * @param keyId Identifier of the public key that will be included in the certificate.
      * @param x500Name The X.500 name that will be the subject associated with the request.
      * @param subjectAlternativeNames Optional. Used to specify additional subject names.
@@ -291,8 +291,8 @@ interface CertificatesRestResource : RestResource {
     )
     fun generateCsr(
         @RestPathParameter(
-            description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST"
+            description = "Can either be a holding identity ID or the value 'p2p' for a cluster-level" +
+                " tenant of the P2P services"
         )
         tenantId: String,
         @RestPathParameter(description = "Identifier of the public key that will be included in the certificate")

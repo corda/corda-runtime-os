@@ -30,8 +30,8 @@ interface HsmRestResource : RestResource {
      * hsmOps.assignedHsm(tenantId = "p2p", category = "TLS")
      * ```
      *
-     * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
-     * services, or the value 'rest' for a cluster-level tenant of the REST.
+     * @param tenantId Can either be a holding identity ID or the value 'p2p' for a cluster-level tenant of the P2P
+     * services.
      * @param category The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT',
      * 'TLS', or 'JWT_KEY'.
      *
@@ -52,8 +52,8 @@ interface HsmRestResource : RestResource {
     )
     fun assignedHsm(
         @RestPathParameter(
-            description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST"
+            description = "Can either be a holding identity ID or the value 'p2p' for a cluster-level" +
+                " tenant of the P2P services"
         )
         tenantId: String,
         @RestPathParameter(
@@ -74,8 +74,8 @@ interface HsmRestResource : RestResource {
      * hsmOps.assignSoftHsm(tenantId = "p2p", category = "CI")
      * ```
      *
-     * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
-     * services, or the value 'rest' for a cluster-level tenant of the REST.
+     * @param tenantId Can either be a holding identity ID or the value 'p2p' for a cluster-level tenant of the P2P
+     * services.
      * @param category The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT',
      * 'TLS', or 'JWT_KEY'.
      *
@@ -96,8 +96,8 @@ interface HsmRestResource : RestResource {
     )
     fun assignSoftHsm(
         @RestPathParameter(
-            description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST"
+            description = "Can either be a holding identity ID or the value 'p2p' for a cluster-level" +
+                " tenant of the P2P services"
         )
         tenantId: String,
         @RestPathParameter(
