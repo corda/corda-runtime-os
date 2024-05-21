@@ -54,6 +54,7 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":libs:utilities")

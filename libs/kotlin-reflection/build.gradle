@@ -43,6 +43,7 @@ dependencies {
     compileOnly "org.ow2.asm:asm:$asmVersion"
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
 
     testCompileOnly 'org.jetbrains:annotations'
     testImplementation libs.assertj.core
