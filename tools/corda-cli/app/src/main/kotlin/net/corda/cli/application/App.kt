@@ -17,11 +17,9 @@ fun main(vararg args: String) {
     App.run(*args)
 }
 
-class VersionProvider : AbstractCordaCliVersionProvider()
-
 @CommandLine.Command(
     name = "corda-cli",
-    versionProvider = VersionProvider::class
+    versionProvider = CordaCliVersionProvider::class
 )
 class Command {
     @CommandLine.Option(

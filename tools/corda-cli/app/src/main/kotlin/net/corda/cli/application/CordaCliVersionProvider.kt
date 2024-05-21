@@ -20,7 +20,7 @@ import java.util.jar.Manifest
  *
  *   versionProvider = VersionProvider::class
  */
-abstract class AbstractCordaCliVersionProvider : IVersionProvider {
+internal class CordaCliVersionProvider : IVersionProvider {
     override fun getVersion(): Array<String> = this.javaClass
         .getResourceAsStream("/META-INF/MANIFEST.MF")
         ?.use {
