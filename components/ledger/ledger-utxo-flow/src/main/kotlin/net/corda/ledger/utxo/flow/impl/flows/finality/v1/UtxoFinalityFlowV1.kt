@@ -16,6 +16,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionWithDependencies
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.debug
+import net.corda.utilities.info
 import net.corda.utilities.trace
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
@@ -122,7 +123,7 @@ class UtxoFinalityFlowV1(
     @Suspendable
     private fun persistUnverifiedTransaction() {
         persistenceService.persist(initialTransaction, TransactionStatus.UNVERIFIED)
-        log.debug { "Recorded transaction with initial signatures $transactionId" }
+        log.info { "Recorded transaction with initial signatures $transactionId" }
     }
 
     // Send initialTransaction, transferAdditionalSignatures, and filteredTransactionsAndSignatures

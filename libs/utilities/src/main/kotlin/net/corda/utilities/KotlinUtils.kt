@@ -25,6 +25,10 @@ inline fun Logger.debug(msg: () -> String) {
     if (isDebugEnabled) debug(msg())
 }
 
+inline fun Logger.info(msg: () -> String) {
+    info(msg())
+}
+
 /**
  * Extension method for easier construction of [Duration]s in terms of integer days: `val twoDays = 2.days`.
  * @see Duration.ofDays
