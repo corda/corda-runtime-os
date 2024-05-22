@@ -85,7 +85,7 @@ object Permissions {
         "Create vNode" to "POST:/api/$VERSION_PATH_REGEX/virtualnode",
         "Get all vNodes" to "GET:/api/$VERSION_PATH_REGEX/virtualnode",
         "Get a vNode" to "GET:/api/$VERSION_PATH_REGEX/virtualnode/$VNODE_SHORT_HASH_REGEX",
-        "Get operation status of vNode" to "GET:/api/$VERSION_PATH_REGEX/virtualnode/status/$length12_hexstring_regex",
+        "Get operation status of vNode" to "GET:/api/$VERSION_PATH_REGEX/virtualnode/status/[a-fA-F0-9]{12,64}",
         "Update vNode" to "PUT:/api/$VERSION_PATH_REGEX/virtualnode/$VNODE_SHORT_HASH_REGEX",
         "Update virtual node state" to "PUT:/api/$VERSION_PATH_REGEX/virtualnode/$VNODE_SHORT_HASH_REGEX/state/${VNODE_STATE_REGEX}",
         "Upgrade virtual node's CPI" to "PUT:/api/$VERSION_PATH_REGEX/virtualnode/$VNODE_SHORT_HASH_REGEX/cpi/$length12_hexstring_regex",
