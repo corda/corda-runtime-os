@@ -111,10 +111,6 @@ pipeline {
             steps {
                 script {
                     pipelineUtils.waitForServiceToBeUp('http://localhost:7004/status', 20, 3)
-
-                    sh "jps"
-                    def pid = sh(returnStdout: true, script: 'jps | grep jar')
-                    sh "jstack ${pid.split(' ')[0]}"
                 }
             }
         }
@@ -131,7 +127,6 @@ pipeline {
                     }
                     aborted {
                         script {
-                            sh "jps"
                             def pid = sh(returnStdout: true, script: 'jps | grep jar')
                             sh "jstack ${pid.split(' ')[0]}"
                         }
@@ -145,7 +140,6 @@ pipeline {
                     findBuildScans()
                     pipelineUtils.getPodLogs("postgres")
                     pipelineUtils.dropPostgresDB(postgresCredentialsId, env.CORDA_DEV_CLUSTER_DB_NAME)
-                    sh 'jps'
             }
             archiveArtifacts artifacts: 'forward.txt, workerLogs.txt, podLogs.txt', allowEmptyArchive: true
             sh 'rm -f forward.txt workerLogs.txt podLogs.txt'
