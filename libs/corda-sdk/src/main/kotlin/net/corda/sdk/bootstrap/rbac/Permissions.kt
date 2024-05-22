@@ -114,7 +114,9 @@ object Permissions {
         "Configure a holding identity as network participant" to "PUT:/api/$VERSION_PATH_REGEX/network/setup/$length12_hexstring_regex",
 
         // Key permissions
-        "Generate key pair" to "POST:/api/$VERSION_PATH_REGEX/key/$generic_string_regex/alias/$generic_string_regex/category/$generic_string_regex/scheme/$generic_string_regex",
+        "Generate key pair" to
+            "POST:/api/$VERSION_PATH_REGEX/key/" +
+            "$generic_string_regex/alias/$generic_string_regex/category/$generic_string_regex/scheme/$generic_string_regex",
         "Get keys" to "GET:/api/$VERSION_PATH_REGEX/key/$generic_string_regex",
         "Get key schemes" to "GET:/api/$VERSION_PATH_REGEX/key/$generic_string_regex/schemes/$generic_string_regex",
         "Get key in PEM format" to "GET:/api/$VERSION_PATH_REGEX/key/$generic_string_regex/$length12_hexstring_regex",
