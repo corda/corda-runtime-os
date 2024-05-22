@@ -1,8 +1,8 @@
 plugins {
     id 'java-gradle-plugin'
+    id 'corda.javadoc-generation'
     id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'org.jetbrains.kotlin.jvm'
-    id 'corda.javadoc-generation'
 }
 
 ext {
@@ -45,6 +45,12 @@ gradlePlugin {
 
 publishing {
     publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifact(javadocJar) {
+                classifier "javadoc"
+            }
+        }
         configureEach {
             pom {
                 name = 'corda-runtime-gradle-plugin'
