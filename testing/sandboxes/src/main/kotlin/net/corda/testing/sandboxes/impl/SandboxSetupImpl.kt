@@ -246,7 +246,6 @@ class SandboxSetupImpl @Activate constructor(
         cleanups.addFirst(closeable)
     }
 
-    // This is getting called by OSGi when this service is getting cleaned up
     @Deactivate
     private fun stop() {
         componentContext.bundleContext.removeServiceListener(serviceListener)
