@@ -37,6 +37,7 @@ gradlePlugin {
             id = 'net.corda.gradle.plugin'
             implementationClass = 'net.corda.gradle.plugin.CordaRuntimeGradlePlugin'
             displayName = 'corda-runtime-gradle-plugin'
+            description = 'A Gradle plugin that wraps a subset of the SDK functions to facilitate their use in developer and CI scenarios.'
         }
     }
     automatedPublishing = true
