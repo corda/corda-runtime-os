@@ -103,6 +103,7 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-base'
+    implementation libs.commonsio
 
     implementation libs.slf4j.api
 

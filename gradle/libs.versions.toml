@@ -6,7 +6,7 @@ apacheCommonsCompressVersion = "1.26.2"
 bouncycastleVersion = "1.78.1"
 braveVersion = "6.0.3"
 caffeineVersion = "3.1.8"
-commonsioVersion = "2.16.1"
+commonsioVersion = "1.3.2"
 guavaVersion = "33.2.1-jre"
 hikariCpVersion = "5.1.0"
 jacksonVersion = "2.17.1"
@@ -67,7 +67,7 @@ bouncycastle-prov = { group = "org.bouncycastle", name = "bcprov-jdk18on", versi
 brave-context-slf4j = { group = "io.zipkin.brave", name = "brave-context-slf4j", version.ref = "braveVersion" }
 brave-instrumentation-servlet = { group = "io.zipkin.brave", name = "brave-instrumentation-servlet", version.ref = "braveVersion" }
 caffeine = { group = "com.github.ben-manes.caffeine", name = "caffeine", version.ref = "caffeineVersion" }
-commonsio = { group = "org.apache.commons.io", name = "io", version.ref = "commonsioVersion" }
+commonsio = { group = "org.apache.commons", name = "commons-io", version.ref = "commonsioVersion" }
 guava = { group = "com.google.guava", name = "guava", version.ref = "guavaVersion" }
 hikaricp = { group = "com.zaxxer", name = "HikariCP", version.ref = "hikariCpVersion" }
 jackson-annotations = { group = "com.fasterxml.jackson.core", name = "jackson-annotations", version.ref = "jacksonVersion" }
