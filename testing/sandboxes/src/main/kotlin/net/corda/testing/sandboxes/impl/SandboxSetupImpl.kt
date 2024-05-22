@@ -211,33 +211,27 @@ class SandboxSetupImpl @Activate constructor(
     override fun <T> getService(serviceType: Class<T>, filter: String?, timeout: Long): T {
         val bundleContext = componentContext.bundleContext
 
-        val ref = bundleContext.getServiceReferences(serviceType, filter).maxOrNull()
+        var ref = bundleContext.getServiceReferences(serviceType, filter).maxOrNull()
 
-        // The below "prototype" string should be made ServiceScope.PROTOTYPE but OSGi complains then
-        if (ref != null && (ref.getProperty(Constants.SERVICE_SCOPE) as? String) == "prototype") {
-            println("PROTOTYPE service ${serviceType.canonicalName}")
-            val service = bundleContext.getService(ref)!!
+        var service: T? = ref?.let { bundleContext.getService(it) }
+        if (service != null) {
             withCleanup { bundleContext.ungetService(ref) }
             return service
         } else {
-            println("NON PROTOTYPE service ${serviceType.canonicalName}")
-            var service: T? = ref?.let { bundleContext.getService(it) }
-            if (service == null) {
-                val future = sandboxSetupManagedServices.computeIfAbsent(
-                    "[${serviceType.canonicalName}]"
-                ) {
-                    println("Client registering service ${serviceType.canonicalName}")
-                    CompletableFuture<Any>()
-                }
-                println("Client waiting on service ${serviceType.canonicalName}")
-                service = future.get() as T
+            val future = sandboxSetupManagedServices.computeIfAbsent(
+                "[${serviceType.canonicalName}]"
+            ) {
+                println("Client registering service ${serviceType.canonicalName}")
+                CompletableFuture<Any>()
             }
+            println("Client waiting on service ${serviceType.canonicalName}")
+            service = future.get() as T
 
             println("Client got service ${serviceType.canonicalName}")
 
-            val ref0 = bundleContext.getServiceReferences(serviceType, filter).maxOrNull()!!
-            withCleanup { bundleContext.ungetService(ref0) }
-            return service as T
+            ref = bundleContext.getServiceReferences(serviceType, filter).maxOrNull()!!
+            withCleanup { bundleContext.ungetService(ref) }
+            return service
         }
     }
 
