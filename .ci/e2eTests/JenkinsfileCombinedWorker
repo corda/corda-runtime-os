@@ -111,6 +111,7 @@ pipeline {
             steps {
                 script {
                     pipelineUtils.waitForServiceToBeUp('http://localhost:7004/status', 20, 3)
+                    sh "jps" 
                 }
             }
         }
