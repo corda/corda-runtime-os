@@ -42,7 +42,7 @@ class CreateProfile : Runnable {
             }
         }
 
-        val profile = mutableMapOf<String, Any>()
+        val profile = mutableMapOf<String, String>()
         properties.forEach { property ->
             val (key, value) = property.split("=")
             if (!ProfileUtils.isValidKey(key)) {

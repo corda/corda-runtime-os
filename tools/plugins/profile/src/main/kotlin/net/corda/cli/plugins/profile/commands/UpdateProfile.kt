@@ -30,7 +30,7 @@ class UpdateProfile : Runnable {
 
     private val passwordService = PasswordServiceImpl(SecureRandom())
 
-    private fun processProperty(profile: MutableMap<String, Any>, property: String) {
+    private fun processProperty(profile: MutableMap<String, String>, property: String) {
         val (key, value) = property.split("=")
         if (!ProfileUtils.isValidKey(key)) {
             val error = "Invalid key '$key'. Allowed keys are:\n ${ProfileUtils.getProfileKeysWithDescriptions()}"
@@ -64,11 +64,11 @@ class UpdateProfile : Runnable {
         val profiles = ProfileUtils.loadProfiles().toMutableMap()
 
         val profile = if (profiles.containsKey(profileName)) {
-            ProfileUtils.objectMapper.readValue<MutableMap<String, Any>>(
+            ProfileUtils.objectMapper.readValue<MutableMap<String, String>>(
                 ProfileUtils.objectMapper.writeValueAsString(profiles[profileName])
             )
         } else {
-            mutableMapOf<String, Any>()
+            mutableMapOf()
         }
 
         properties.forEach { property ->

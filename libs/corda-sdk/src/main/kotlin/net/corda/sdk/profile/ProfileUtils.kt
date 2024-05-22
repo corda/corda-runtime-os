@@ -1,5 +1,6 @@
 package net.corda.sdk.profile
 
+import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
@@ -25,10 +26,14 @@ object ProfileUtils {
     }
 
     fun loadProfiles(): Map<String, Any> {
-        return if (profileFile.exists()) {
-            objectMapper.readValue(profileFile, jacksonTypeRef<Map<String, Any>>())
-        } else {
-            emptyMap()
+        return try {
+            if (profileFile.exists()) {
+                objectMapper.readValue(profileFile, jacksonTypeRef<Map<String, Any>>())
+            } else {
+                emptyMap()
+            }
+        } catch (e: JsonProcessingException) {
+            throw IllegalArgumentException("Invalid profile.yaml file format", e)
         }
     }
 
