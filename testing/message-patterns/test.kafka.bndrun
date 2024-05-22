@@ -30,6 +30,7 @@
     bnd.identity;id='net.corda.kafka-topic-admin-impl',\
     bnd.identity;id='net.corda.lifecycle-impl',\
     bnd.identity;id='net.corda.test-state-manager',\
+    bnd.identity;id='org.apache.commons.lang3',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='slf4j.simple',\
