@@ -114,7 +114,7 @@ pipeline {
 
                     sh "jps"
                     def pid = sh(returnStdout: true, script: 'jps | grep jar')
-                    echo "${pid.split(' ')[0]}"
+                    sh "jstack ${pid.split(' ')[0]}"
                 }
             }
         }
@@ -123,13 +123,16 @@ pipeline {
                     timeout(time: 30, unit: 'MINUTES')
                 }
                 steps {
-                    script {
-                        gradlew('smoketest -PisCombinedWorker=true')
-                    }
+                    gradlew('smoketest -PisCombinedWorker=true')
                 }
                 post {
                     always {
                         junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
+                    }
+                    aborted {
+                        sh "jps"
+                        def pid = sh(returnStdout: true, script: 'jps | grep jar')
+                        sh "jstack ${pid.split(' ')[0]}"
                     }
                 }
         }
