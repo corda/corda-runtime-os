@@ -9,6 +9,10 @@ object Permissions {
 
     private const val VERSION_PATH_REGEX = "v[_a-zA-Z0-9]{1,30}"
 
+    // temporary regex for testing
+    private const val generic_string_regex = "[-._a-zA-Z0-9]{1,255}"
+    private const val length12_hexstring_regex = "[a-fA-F0-9]{12}"
+
     val cordaDeveloper: Map<String, String> = listOf(
         "Force CPI upload" to "POST:/api/$VERSION_PATH_REGEX/maintenance/virtualnode/forcecpiupload",
         "Resync the virtual node vault" to
@@ -72,17 +76,56 @@ object Permissions {
     ).toMap()
 
     val vNodeCreator: Map<String, String> = listOf(
-        // CPI related
+        // CPI permissions
         "Get all CPIs" to "GET:/api/$VERSION_PATH_REGEX/cpi",
         "CPI upload" to "POST:/api/$VERSION_PATH_REGEX/cpi",
         "CPI upload status" to "GET:/api/$VERSION_PATH_REGEX/cpi/status/$UUID_REGEX",
 
-        // vNode related
+        // vNode permissions
         "Create vNode" to "POST:/api/$VERSION_PATH_REGEX/virtualnode",
         "Get all vNodes" to "GET:/api/$VERSION_PATH_REGEX/virtualnode",
         "Get a vNode" to "GET:/api/$VERSION_PATH_REGEX/virtualnode/$VNODE_SHORT_HASH_REGEX",
-        "Update vNode" to "PUT:/api/$VERSION_PATH_REGEX/virtualnode/$VNODE_SHORT_HASH_REGEX", // TBC
-        "Update virtual node state" to "PUT:/api/$VERSION_PATH_REGEX/virtualnode/$VNODE_SHORT_HASH_REGEX/state/${VNODE_STATE_REGEX}"
+        "Get operation status of vNode" to "GET:/api/$VERSION_PATH_REGEX/virtualnode/status/$UUID_REGEX",
+        "Update vNode" to "PUT:/api/$VERSION_PATH_REGEX/virtualnode/$VNODE_SHORT_HASH_REGEX",
+        "Update virtual node state" to "PUT:/api/$VERSION_PATH_REGEX/virtualnode/$VNODE_SHORT_HASH_REGEX/state/${VNODE_STATE_REGEX}",
+        "Upgrade virtual node's CPI" to "PUT:/api/$VERSION_PATH_REGEX/virtualnode/$VNODE_SHORT_HASH_REGEX/cpi/$length12_hexstring_regex",
+        "Update virtual node database" to "PUT:/api/$VERSION_PATH_REGEX/virtualnode/$VNODE_SHORT_HASH_REGEX/db",
+        "Get crypto creation schema SQL" to "GET:/api/$VERSION_PATH_REGEX/virtualnode/create/db/crypto",
+        "Get uniqueness creation schema SQL" to "GET:/api/$VERSION_PATH_REGEX/virtualnode/create/db/uniqueness",
+        "Get vault creation schema SQL" to "GET:/api/$VERSION_PATH_REGEX/virtualnode/create/db/vault/$length12_hexstring_regex",
+        "Get migration schema SQL" to "GET:/api/$VERSION_PATH_REGEX/virtualnode/$VNODE_SHORT_HASH_REGEX/db/vault/$length12_hexstring_regex",
+
+        // Certificate permissions
+        "Import certificate" to "PUT:/api/$VERSION_PATH_REGEX/certificate/cluster/$generic_string_regex",
+        "Get all certificate aliases" to "GET:/api/$VERSION_PATH_REGEX/certificate/cluster/$generic_string_regex",
+        "Get certificate by alias" to "GET:/api/$VERSION_PATH_REGEX/certificate/cluster/$generic_string_regex/$generic_string_regex",
+        "Generate CSR for tenant" to "POST:/api/$VERSION_PATH_REGEX/certificate/p2p/.*",
+
+        // HSM permissions
+        "Get HSM info" to "GET:/api/$VERSION_PATH_REGEX/hsm/$generic_string_regex/$generic_string_regex",
+        "Assign soft HSM to tenant" to "POST:/api/$VERSION_PATH_REGEX/hsm/soft/$generic_string_regex/$generic_string_regex",
+
+        // Member permissions
+        "Start registration" to "POST:/api/$VERSION_PATH_REGEX/membership/$length12_hexstring_regex",
+        "Get registration status" to "GET:/api/$VERSION_PATH_REGEX/membership/$length12_hexstring_regex/$UUID_REGEX",
+        "Get all members in membership group" to "GET:/api/$VERSION_PATH_REGEX/members/$length12_hexstring_regex",
+
+        // Network permissions
+        "Configure a holding identity as network participant" to "PUT:/api/$VERSION_PATH_REGEX/network/setup/$length12_hexstring_regex",
+
+        // Key permissions
+        "Generate key pair" to "POST:/api/$VERSION_PATH_REGEX/key/$generic_string_regex/alias/$generic_string_regex/category/$generic_string_regex/scheme/$generic_string_regex",
+        "Get keys" to "GET:/api/$VERSION_PATH_REGEX/key/$generic_string_regex",
+        "Get key schemes" to "GET:/api/$VERSION_PATH_REGEX/key/$generic_string_regex/schemes/$generic_string_regex",
+        "Get key in PEM format" to "GET:/api/$VERSION_PATH_REGEX/key/$generic_string_regex/$length12_hexstring_regex",
+
+        // MGM permission
+        "Get group policy" to "GET:/api/$VERSION_PATH_REGEX/mgm/$generic_string_regex/info",
+
+        // Flow permissions
+        "Get all flows status for holding identity" to "GET:/api/$VERSION_PATH_REGEX/flow/$length12_hexstring_regex",
+        "Get flow status" to "GET:/api/$VERSION_PATH_REGEX/flow/$length12_hexstring_regex/$UUID_REGEX",
+
     ).toMap()
 }
 
