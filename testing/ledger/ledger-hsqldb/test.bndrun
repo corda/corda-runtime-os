@@ -7,6 +7,16 @@
 # Enable debugging.
 # -runjdb: 5055
 
+-runsystempackages: \
+    org.slf4j.event;uses:="org.slf4j,org.slf4j.helpers";version=2.0.13,\
+    org.slf4j.event;version=1.7.36,\
+    org.slf4j.helpers;uses:="org.slf4j,org.slf4j.event,org.slf4j.spi";version=2.0.13,\
+    org.slf4j.helpers;version=1.7.36,\
+    org.slf4j.spi;uses:="org.slf4j,org.slf4j.event,org.slf4j.helpers";version=2.0.13,\
+    org.slf4j.spi;version=1.7.36,\
+    org.slf4j;uses:="org.slf4j.event,org.slf4j.helpers,org.slf4j.spi";version=2.0.13,\
+    org.slf4j;version=1.7.36
+
 -runproperties: \
     org.slf4j.simpleLogger.defaultLogLevel=info,\
     org.slf4j.simpleLogger.showShortLogName=true,\

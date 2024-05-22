@@ -10,6 +10,14 @@
     javax.xml.stream;version=1.0.0,\
     javax.xml.stream.events;version=1.0.0,\
     javax.xml.stream.util;version=1.0.0,\
+    org.slf4j.event;uses:="org.slf4j,org.slf4j.helpers";version=2.0.13,\
+    org.slf4j.event;version=1.7.36,\
+    org.slf4j.helpers;uses:="org.slf4j,org.slf4j.event,org.slf4j.spi";version=2.0.13,\
+    org.slf4j.helpers;version=1.7.36,\
+    org.slf4j.spi;uses:="org.slf4j,org.slf4j.event,org.slf4j.helpers";version=2.0.13,\
+    org.slf4j.spi;version=1.7.36,\
+    org.slf4j;uses:="org.slf4j.event,org.slf4j.helpers,org.slf4j.spi";version=2.0.13,\
+    org.slf4j;version=1.7.36,\
     sun.security.x509
 
 -runproperties: \
