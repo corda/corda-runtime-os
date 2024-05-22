@@ -207,6 +207,7 @@ class SandboxSetupImpl @Activate constructor(
      * this reference when we've finished with it to allow the
      * service to be destroyed.
      */
+    @Suppress("unchecked_cast")
     override fun <T> getService(serviceType: Class<T>, filter: String?, timeout: Long): T {
         val bundleContext = componentContext.bundleContext
 
@@ -221,9 +222,7 @@ class SandboxSetupImpl @Activate constructor(
         } else {
             println("NON PROTOTYPE service ${serviceType.canonicalName}")
             var service: T? = ref?.let { bundleContext.getService(it) }
-            if (service != null) {
-                println("Found existing service ${service}")
-            } else {
+            if (service == null) {
                 val future = sandboxSetupManagedServices.computeIfAbsent(
                     "[${serviceType.canonicalName}]"
                 ) {
