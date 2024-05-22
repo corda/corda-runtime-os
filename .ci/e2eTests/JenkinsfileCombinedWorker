@@ -152,5 +152,5 @@ def gradleCmd() {
 def gradlew(String... args) {
     def allArgs = args.join(' ')
     sh "${gradleCmd()} ${allArgs} ${GRADLE_PERFORMANCE_TUNING}"
-    sh "echo $!"
+    sh "echo \$!"
 }
