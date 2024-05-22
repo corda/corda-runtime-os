@@ -127,6 +127,7 @@ pipeline {
                     }
                     aborted {
                         script {
+                            sh "jps" 
                             def pid = sh(returnStdout: true, script: 'jps | grep corda-combined-worker-.*\\.jar')
                             sh "jstack ${pid.split(' ')[0]}"
                         }
