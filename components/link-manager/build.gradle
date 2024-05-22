@@ -64,6 +64,7 @@ dependencies {
     implementation "net.corda:corda-topic-schema"
     implementation libs.typesafe.config
     implementation libs.caffeine
+    implementation libs.commonsio
     implementation libs.jackson.module.kotlin
     implementation libs.jackson.datatype.jsr310
     implementation project(":components:membership:group-policy")
