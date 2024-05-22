@@ -119,7 +119,9 @@ pipeline {
                     timeout(time: 30, unit: 'MINUTES')
                 }
                 steps {
-                   gradlew('smoketest -PisCombinedWorker=true')
+                    gradlew('smoketest -PisCombinedWorker=true')
+                    def pid = sh(returnStdout: true, script: 'jps | grep jar | grep -o [0-9]*')
+                    echo "${pid}"
                 }
                 post {
                     always {
@@ -152,6 +154,4 @@ def gradleCmd() {
 def gradlew(String... args) {
     def allArgs = args.join(' ')
     sh "${gradleCmd()} ${allArgs} ${GRADLE_PERFORMANCE_TUNING}"
-    def pid = sh(returnStdout: true, script: 'jps | grep jar | grep -o [0-9]*')
-    echo "${pid}"
 }
