@@ -11,6 +11,9 @@ import net.corda.testing.sandboxes.impl.SandboxSetupImpl.Companion.INSTALLER_NAM
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
+import org.osgi.framework.Constants
+import org.osgi.framework.ServiceEvent
+import org.osgi.framework.ServiceListener
 import org.osgi.framework.wiring.BundleRevision
 import org.osgi.framework.wiring.BundleRevision.PACKAGE_NAMESPACE
 import org.osgi.framework.wiring.BundleRevision.TYPE_FRAGMENT
@@ -31,7 +34,8 @@ import java.util.Collections.unmodifiableSet
 import java.util.Deque
 import java.util.Hashtable
 import java.util.LinkedList
-import java.util.concurrent.TimeoutException
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("unused")
 @Component(
@@ -82,6 +86,37 @@ class SandboxSetupImpl @Activate constructor(
             "net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent"
         ))
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
+    private val sandboxSetupManagedServices =
+        ConcurrentHashMap<String, CompletableFuture<Any>>()
+
+    private val serviceListener = ServiceListener { serviceEvent: ServiceEvent ->
+        println("Incoming event for ${serviceEvent.serviceReference} with type: ${serviceEvent.type}")
+        when (serviceEvent.type) {
+            ServiceEvent.REGISTERED -> {
+                println("${serviceEvent.serviceReference} registered")
+                val service = componentContext.bundleContext.getService(serviceEvent.serviceReference)
+                val future = sandboxSetupManagedServices.computeIfAbsent(
+                    "${serviceEvent.serviceReference}"
+                ) {
+                    println("Server registering service ${serviceEvent.serviceReference}")
+                    CompletableFuture<Any>()
+                }
+                future.complete(service)
+            }
+
+            ServiceEvent.UNREGISTERING -> {
+                println("${serviceEvent.serviceReference} unregistered")
+                sandboxSetupManagedServices["${serviceEvent.serviceReference}"] = CompletableFuture()
+            }
+
+            else -> {}
+        }
+    }
+
+    init {
+        componentContext.bundleContext.addServiceListener(serviceListener)
     }
 
     private val cleanups: Deque<AutoCloseable> = LinkedList()
@@ -174,27 +209,46 @@ class SandboxSetupImpl @Activate constructor(
      */
     override fun <T> getService(serviceType: Class<T>, filter: String?, timeout: Long): T {
         val bundleContext = componentContext.bundleContext
-        var remainingMillis = timeout.coerceAtLeast(0)
-        while (true) {
-            bundleContext.getServiceReferences(serviceType, filter).maxOrNull()?.let { ref ->
-                val service = bundleContext.getService(ref)
-                if (service != null) {
-                    withCleanup { bundleContext.ungetService(ref) }
-                    return service
+
+        val ref = bundleContext.getServiceReferences(serviceType, filter).maxOrNull()
+
+        // The below "prototype" string should be made ServiceScope.PROTOTYPE but OSGi complains then
+        if (ref != null && (ref.getProperty(Constants.SERVICE_SCOPE) as? String) == "prototype") {
+            println("PROTOTYPE service ${serviceType.canonicalName}")
+            val service = bundleContext.getService(ref)!!
+            withCleanup { bundleContext.ungetService(ref) }
+            return service
+        } else {
+            println("NON PROTOTYPE service ${serviceType.canonicalName}")
+            var service: T? = ref?.let { bundleContext.getService(it) }
+            if (service != null) {
+                println("Found existing service ${service}")
+            } else {
+                val future = sandboxSetupManagedServices.computeIfAbsent(
+                    "[${serviceType.canonicalName}]"
+                ) {
+                    println("Client registering service ${serviceType.canonicalName}")
+                    CompletableFuture<Any>()
                 }
+                println("Client waiting on service ${serviceType.canonicalName}")
+                service = future.get() as T
             }
-            if (remainingMillis <= 0) {
-                break
-            }
-            val waitMillis = remainingMillis.coerceAtMost(WAIT_MILLIS)
-            Thread.sleep(waitMillis)
-            remainingMillis -= waitMillis
+
+            println("Client got service ${serviceType.canonicalName}")
+
+            val ref0 = bundleContext.getServiceReferences(serviceType, filter).maxOrNull()!!
+            withCleanup { bundleContext.ungetService(ref0) }
+            return service as T
         }
-        val serviceDescription = serviceType.name + (filter?.let { f -> ", filter=$f" } ?: "")
-        throw TimeoutException("Service $serviceDescription did not arrive in $timeout milliseconds")
     }
 
     override fun withCleanup(closeable: AutoCloseable) {
         cleanups.addFirst(closeable)
+    }
+
+    // This is getting called by OSGi when this service is getting cleaned up
+    @Deactivate
+    private fun stop() {
+        componentContext.bundleContext.removeServiceListener(serviceListener)
     }
 }
