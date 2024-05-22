@@ -37,6 +37,7 @@
     bnd.identity;id='net.bytebuddy.byte-buddy',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
+    bnd.identity;id='org.apache.commons.io',\
     bnd.identity;id='org.apache.commons.lang3',\
     bnd.identity;id='org.hsqldb.hsqldb',\
     bnd.identity;id='org.osgi.service.jdbc',\
