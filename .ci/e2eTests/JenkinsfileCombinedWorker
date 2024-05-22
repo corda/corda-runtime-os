@@ -121,6 +121,7 @@ pipeline {
                 steps {
                     script {
                         gradlew('smoketest -PisCombinedWorker=true')
+                        sh "jps"
                         def pid = sh(returnStdout: true, script: 'jps | grep jar | grep -o [0-9]*')
                         echo "${pid}"
                     }
