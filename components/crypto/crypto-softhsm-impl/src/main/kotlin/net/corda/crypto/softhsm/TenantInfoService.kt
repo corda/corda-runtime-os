@@ -15,7 +15,7 @@ interface TenantInfoService {
     /**
      * Populate settings for a specific category on a specific tenant, and return those settings.
      * 
-     * @param tenantId the tenant (virtual node or special purpose cluster level 
+     * @param tenantId the tenant (virtual node or special purpose cluster-level tenant)
      * @param category indicates what the keys will be used for, and should be one of the constants 
      *                 defined in CryptoConsts.Categories
      * @param cryptoService a reference to the crypto service, which is used to allocate a wrapping key
