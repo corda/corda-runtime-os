@@ -151,8 +151,7 @@ def gradleCmd() {
 
 def gradlew(String... args) {
     def allArgs = args.join(' ')
-    sh """
-        ${gradleCmd()} ${allArgs} ${GRADLE_PERFORMANCE_TUNING}
-        jps
-    """
+    sh "${gradleCmd()} ${allArgs} ${GRADLE_PERFORMANCE_TUNING}"
+    def pid = sh(returnStdout: true, script: "jps | grep 'corda-combined-worker-.*\.jar' | grep -o '[0-9]*'")
+    echo "${pid}"
 }
