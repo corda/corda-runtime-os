@@ -130,9 +130,11 @@ pipeline {
                         junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
                     }
                     aborted {
-                        sh "jps"
-                        def pid = sh(returnStdout: true, script: 'jps | grep jar')
-                        sh "jstack ${pid.split(' ')[0]}"
+                        script {
+                            sh "jps"
+                            def pid = sh(returnStdout: true, script: 'jps | grep jar')
+                            sh "jstack ${pid.split(' ')[0]}"
+                        }
                     }
                 }
         }
