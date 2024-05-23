@@ -103,16 +103,16 @@ class SandboxSetupImpl @Activate constructor(
                     it.replace(Regex("(^( )*(\\[)*)|(]( )*)"), "")
                 }
 
+        val serviceRef = serviceEvent.serviceReference
         when (serviceEvent.type) {
             ServiceEvent.REGISTERED -> {
-                println("${serviceEvent.serviceReference} registered")
-                val service = componentContext.bundleContext.getService(serviceEvent.serviceReference)
+                val service = componentContext.bundleContext.getService(serviceRef)
 
                 serviceNames.forEach { serviceName ->
                     val future = servicesYetToArrive.computeIfAbsent(
                         serviceName
                     ) {
-                        println("Server registering service ${serviceEvent.serviceReference}")
+                        println("Server registering service $serviceRef")
                         CompletableFuture<Any>()
                     }
                     future.complete(service)
@@ -120,7 +120,7 @@ class SandboxSetupImpl @Activate constructor(
             }
 
             ServiceEvent.UNREGISTERING -> {
-                println("${serviceEvent.serviceReference} unregistered")
+                println("Server unregistering service $serviceRef")
 
                 serviceNames.forEach { serviceName ->
                     servicesYetToArrive[serviceName] = CompletableFuture()
