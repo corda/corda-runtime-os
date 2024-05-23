@@ -414,14 +414,16 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     ) {
         when {
             listener != null -> {
+                log.info("Subscribing to topic: $topics with $listener.")
                 consumer.subscribe(topics, listener.toKafkaListener(config.topicPrefix))
             }
-
             defaultListener != null -> {
+                log.info("Stage: Subscribe: Subscribing to topic: $topics with default listener: ${defaultListener}.")
                 consumer.subscribe(topics, defaultListener?.toKafkaListener(config.topicPrefix))
             }
 
             else -> {
+                log.info("Stage: Subscribe: Subscribing to topic: $topics with no listener.")
                 consumer.subscribe(topics)
             }
         }
