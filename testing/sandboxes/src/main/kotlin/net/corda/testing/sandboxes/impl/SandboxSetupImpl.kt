@@ -11,7 +11,6 @@ import net.corda.testing.sandboxes.impl.SandboxSetupImpl.Companion.INSTALLER_NAM
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
-import org.osgi.framework.Constants
 import org.osgi.framework.ServiceEvent
 import org.osgi.framework.ServiceListener
 import org.osgi.framework.wiring.BundleRevision
