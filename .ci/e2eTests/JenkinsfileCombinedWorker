@@ -22,7 +22,10 @@ GitUtils gitUtils = new GitUtils(this)
 @Field
 String agentLabel = 'docker-private-network'
 
-def pid
+@Field
+Boolean smoketestsRunning = true
+
+def threadDump
 
 if (env.CHANGE_ID || gitUtils.isReleaseTag()) {
     agentLabel = 'docker-on-demand-private-network'
@@ -113,17 +116,29 @@ pipeline {
             steps {
                 script {
                     pipelineUtils.waitForServiceToBeUp('http://localhost:7004/status', 20, 3)
-                    sh "jps" 
-                    pid = sh(returnStdout: true, script: 'jps | grep corda-combined-worker-.*\\.jar')
                 }
             }
         }
-        stage('smoketests') {
+        stages {
+            stage('capture thread dumps') {
+                steps {
+                    script {
+                        sh "jps" 
+                        def pid = sh(returnStdout: true, script: 'jps | grep corda-combined-worker-.*\\.jar')
+                        while (smoketestsRunning) {
+                            threadDump = sh(returnStdout: true, script: "jstack ${pid.split(' ')[0]}")
+                            sh 'sleep 1' 
+                        }
+                    }
+                }
+            }
+            stage('smoketests') {
                 options {
                     timeout(time: 30, unit: 'MINUTES')
                 }
                 steps {
                     gradlew('smoketest -PisCombinedWorker=true')
+                    smoketestsRunning = false
                 }
                 post {
                     always {
@@ -131,11 +146,11 @@ pipeline {
                     }
                     aborted {
                         script {
-                            sh "jps" 
-                            sh "jstack ${pid.split(' ')[0]}"
+                            println threadDump
                         }
                     }
                 }
+            }
         }
     }
     post {
