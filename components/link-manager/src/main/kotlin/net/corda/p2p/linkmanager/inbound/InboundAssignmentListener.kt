@@ -54,9 +54,17 @@ internal class InboundAssignmentListener(
             }
         }
         if (partitions.isNotEmpty()) {
+            logger.info("Stage 2: Partitions assigned: $partitions. inboundAssignmentListener going UP.")
             dominoTile.updateState(LifecycleStatus.UP)
             callCallbacks()
+        } else {
+            logger.error("No partitions assigned.")
         }
+    }
+
+    override fun start() {
+        logger.info("Stage 1: Start called on Inbound Assignment Listener.")
+        super.start()
     }
 
     fun getCurrentlyAssignedPartitions(): Set<Int> {
