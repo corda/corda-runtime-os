@@ -120,38 +120,42 @@ pipeline {
             }
         }
         stages {
-            stage('capture thread dumps') {
-                steps {
-                    script {
-                        sh "jps" 
-                        def pid = sh(returnStdout: true, script: 'jps | grep corda-combined-worker-.*\\.jar')
-                        while (smoketestsRunning) {
-                            try {
-                                threadDump = sh(returnStdout: true, script: "jstack ${pid.split(' ')[0]}")
-                            } catch (Exception e) {
-                                smoketestsRunning = false
+            stage('smoketests') {
+                parallel {
+                    stage('capture thread dumps') {
+                        steps {
+                            script {
+                                sh "jps" 
+                                def pid = sh(returnStdout: true, script: 'jps | grep corda-combined-worker-.*\\.jar')
+                                while (smoketestsRunning) {
+                                    try {
+                                        threadDump = sh(returnStdout: true, script: "jstack ${pid.split(' ')[0]}")
+                                    } catch (Exception e) {
+                                        smoketestsRunning = false
+                                    }
+                                    sh 'sleep 1' 
+                                }
                             }
-                            sh 'sleep 1' 
                         }
                     }
-                }
-            }
-            stage('smoketests') {
-                options {
-                    timeout(time: 30, unit: 'MINUTES')
-                }
-                steps {
-                    gradlew('smoketest -PisCombinedWorker=true')
-                    smoketestsRunning = false
-                }
-                post {
-                    always {
-                        junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
-                    }
-                    aborted {
-                        script {
+                    stage('smoketests') {
+                        options {
+                            timeout(time: 30, unit: 'MINUTES')
+                        }
+                        steps {
+                            gradlew('smoketest -PisCombinedWorker=true')
                             smoketestsRunning = false
-                            println threadDump
+                        }
+                        post {
+                            always {
+                                junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
+                            }
+                            aborted {
+                                script {
+                                    smoketestsRunning = false
+                                    println threadDump
+                                }
+                            }
                         }
                     }
                 }
