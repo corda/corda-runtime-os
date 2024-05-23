@@ -256,13 +256,13 @@ class SandboxSetupImpl @Activate constructor(
             val future = servicesYetToArrive.computeIfAbsent(
                 serviceName
             ) {
-                println("Client registering service ${serviceType.canonicalName}")
+                println("Client registering service $serviceName")
                 CompletableFuture<Any>()
             }
-            println("Client waiting on service ${serviceType.canonicalName}")
+            println("Client waiting on service $serviceName")
             service = future.get() as T
 
-            println("Client got service ${serviceType.canonicalName}")
+            println("Client got service $serviceName")
 
             ref = bundleContext.getServiceReferences(serviceType, filter).maxOrNull()
             ref?.let {
