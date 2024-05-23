@@ -4,6 +4,7 @@ import net.corda.blobinspector.amqp.AMQPSerializationFormatDecoder
 import net.corda.blobinspector.amqp.DynamicDescriptorRegistry
 import net.corda.blobinspector.amqp.Envelope
 import net.corda.blobinspector.kryo.KryoSerializationFormatDecoder
+import net.corda.blobinspector.metadata.MetadataSerializationFormatDecoder
 import org.iq80.snappy.SnappyFramedInputStream
 import java.io.InputStream
 import java.util.zip.DeflaterInputStream
@@ -11,18 +12,23 @@ import java.util.zip.DeflaterInputStream
 object Encoding {
     val cordaMagic = "corda".toByteArray().sequence()
 
+    @Suppress("LongParameterList")
     private enum class Encodings(
+        val magic: String,
         val primaryEncoding: String,
-        @Suppress(
-            "Unused"
-        ) val description: String,
+        @Suppress("Unused")
+        val description: String,
         val compressionEncodingStart: Int,
         val compressionEncoding: CompressionEncoding,
         val serializationFormat: SerializationFormat
     ) {
-        KRYO1("0001", "Corda 1+ Kryo", 7, CompressionEncoding.CORDA1, SerializationFormat.KRYO1),
-        AMQP_ENT3("0100", "Corda OS 4+ / ENT 3+ AMQP", 7, CompressionEncoding.CORDA1, SerializationFormat.AMQP1),
-        AMQP5GA("0400", "Corda 5 GA AMQP", 7, CompressionEncoding.CORDA1, SerializationFormat.AMQP5)
+        KRYO1("corda", "0001", "Corda 1+ Kryo", 7, CompressionEncoding.CORDA1, SerializationFormat.KRYO1),
+        AMQP_ENT3("corda", "0100", "Corda OS 4+ / ENT 3+ AMQP", 7, CompressionEncoding.CORDA1, SerializationFormat.AMQP1),
+        AMQP5GA("corda", "0400", "Corda 5 GA AMQP", 7, CompressionEncoding.CORDA1, SerializationFormat.AMQP5),
+
+        // there are couple more trailing bytes "01" after primary encoding, which represents version of metadata schema.
+        METADATA00("{\"com", "706F", "Corda 5.0+ Metadata", 0, CompressionEncoding.NONE, SerializationFormat.METADATA_NO_HEADER),
+        METADATA01("corda", "0800", "Corda 5.2.1+ Metadata", 7, CompressionEncoding.NONE, SerializationFormat.METADATA)
     }
 
     private enum class CompressionEncoding {
@@ -73,26 +79,58 @@ object Encoding {
     private enum class SerializationFormat(val decoder: SerializationFormatDecoder) {
         KRYO1(KryoSerializationFormatDecoder()),
         AMQP1(
-            AMQPSerializationFormatDecoder({ bytes, depth, includeOriginalBytes ->
-                decodedBytes(
-                    bytes,
-                    recurseDepth = depth,
-                    includeOriginalBytes = includeOriginalBytes
-                ).result
-            }, { data -> Envelope.get(data) }, {
-                DynamicDescriptorRegistry()
-            })
+            AMQPSerializationFormatDecoder(
+                { bytes, depth, includeOriginalBytes, beVerbose ->
+                    decodedBytes(
+                        bytes,
+                        recurseDepth = depth,
+                        includeOriginalBytes = includeOriginalBytes,
+                        beVerbose = beVerbose
+                    ).result
+                },
+                { data -> Envelope.get(data) },
+                { DynamicDescriptorRegistry() }
+            )
         ),
         AMQP5(
-            AMQPSerializationFormatDecoder({ bytes, depth, includeOriginalBytes ->
-                decodedBytes(
-                    bytes,
-                    recurseDepth = depth,
-                    includeOriginalBytes = includeOriginalBytes
-                ).result
-            }, { data -> Envelope.get(data, osgiBundles = true) }, {
-                DynamicDescriptorRegistry(lenientBuiltIns = true)
-            })
+            AMQPSerializationFormatDecoder(
+                { bytes, depth, includeOriginalBytes, beVerbose ->
+                    decodedBytes(
+                        bytes,
+                        recurseDepth = depth,
+                        includeOriginalBytes = includeOriginalBytes,
+                        beVerbose = beVerbose
+                    ).result
+                },
+                { data -> Envelope.get(data, osgiBundles = true) },
+                { DynamicDescriptorRegistry(lenientBuiltIns = true) }
+            )
+        ),
+        METADATA(
+            MetadataSerializationFormatDecoder(
+                { bytes, depth, includeOriginalBytes, beVerbose ->
+                    decodedBytes(
+                        bytes,
+                        recurseDepth = depth,
+                        includeOriginalBytes = includeOriginalBytes,
+                        beVerbose = beVerbose
+                    ).result
+                },
+                true
+            )
+        ),
+        METADATA_NO_HEADER(
+            MetadataSerializationFormatDecoder(
+                { bytes, depth, includeOriginalBytes, beVerbose ->
+                    decodedBytes(
+                        bytes,
+                        recurseDepth = depth,
+                        includeOriginalBytes = includeOriginalBytes,
+                        beVerbose = beVerbose
+                    ).result
+                },
+                false
+            )
         )
     }
 
@@ -114,12 +152,19 @@ object Encoding {
         SNAPPY
     }
 
-    private val cordaPrimaryEncodings = Encodings.values().associateBy { it.primaryEncoding }
+    private val cordaMagicHeaders = Encodings.values()
+        .groupBy { it.magic.toByteArray().sequence() }
+        .mapValues { (_, encodings: List<Encodings>) ->
+            encodings.associateBy { encoding: Encodings ->
+                encoding.primaryEncoding
+            }
+        }
 
     @Suppress("LongParameterList")
     fun decodedBytes(
         byteSequence: ByteSequence,
         includeOriginalBytes: Boolean,
+        beVerbose: Boolean,
         compressionEncodingOverride: String? = null,
         compressionEncodingStartOverride: Int? = null,
         formatOverride: String? = null,
@@ -129,44 +174,39 @@ object Encoding {
             compressionEncodingOverride != null && compressionEncodingStartOverride != null && formatOverride != null
 
         fun overriddenEncoding(): Triple<CompressionEncoding, Int, SerializationFormatDecoder> {
+            if (beVerbose) println("Overridden encoding")
             val triple = Triple(
                 CompressionEncoding.valueOf(compressionEncodingOverride!!),
                 compressionEncodingStartOverride!!,
                 SerializationFormat.valueOf(formatOverride!!).decoder.duplicate()
             )
-            println("Overridden compression encoding ${triple.first}, encoding start = ${triple.second}, format = $formatOverride")
             return triple
         }
 
         val originalBytes = byteSequence.copyBytes()
-
         val (compressionEncoding, compressionEncodingStart, decoder) = if (allOverridesPresent()) {
             overriddenEncoding()
         } else {
-            if (byteSequence.take(5) != cordaMagic) {
-                @Suppress("TooGenericExceptionThrown")
-                throw RuntimeException(
-                    "Blob does not begin with 'corda' as expected.  Not a Corda blob?  Try overrides?"
-                )
-            }
-            extractEncoding(byteSequence)
+            extractEncoding(byteSequence, beVerbose)
         }
-
         compressionEncoding.createStream(byteSequence.subSequence(compressionEncodingStart)).use { stream ->
-            return decoder.decode(stream, recurseDepth, originalBytes, includeOriginalBytes)
+            return decoder.decode(stream, recurseDepth, originalBytes, includeOriginalBytes, beVerbose)
         }
     }
 
-    private fun extractEncoding(byteSequence: ByteSequence): Triple<CompressionEncoding, Int, SerializationFormatDecoder> {
+    private fun extractEncoding(
+        byteSequence: ByteSequence,
+        beVerbose: Boolean
+    ): Triple<CompressionEncoding, Int, SerializationFormatDecoder> {
+        val magicByteSequence = byteSequence.take(5)
+        val magicType = cordaMagicHeaders[magicByteSequence]
+        requireNotNull(magicType) { "Unknown magic header $magicByteSequence." }
+
         val primaryEncodingString = byteSequence.subSequence(5, 2).toHexString()
-        val primaryEncodingType = cordaPrimaryEncodings[primaryEncodingString]
+        val primaryEncodingType = magicType[primaryEncodingString]
             ?: throw java.lang.RuntimeException("Unknown primary encoding $primaryEncodingString.")
-        println("Primary encoding ${primaryEncodingType.description}")
-        println(
-            "Compression encoding ${primaryEncodingType.compressionEncoding}, " +
-                "encoding start = ${primaryEncodingType.compressionEncodingStart}, " +
-                "format = ${primaryEncodingType.serializationFormat}"
-        )
+
+        if (beVerbose) println("Primary encoding ${primaryEncodingType.description}")
 
         val compressionEncoding = primaryEncodingType.compressionEncoding
         val compressionEncodingStart = primaryEncodingType.compressionEncodingStart

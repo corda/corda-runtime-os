@@ -238,8 +238,9 @@ fun ClusterInfo.whenNoKeyExists(
 /**
  * This method triggers rotation of keys for master and managed crypto wrapping keys.
  * It takes 2 input parameters, the tenantId (in string type) and the status code (Int type)
- *   @param tenantId The tenantId whose wrapping keys will be rotated, or value 'master' for master wrapping key
- *          rotation, or one of the values 'p2p', 'rest', 'crypto' for corresponding cluster-level tenant rotation.
+ *  @param tenantId The tenantId whose wrapping keys will be rotated. The tenantId can either be
+ *          a holding identity ID, the value 'master' for master wrapping key or the value 'p2p' for corresponding
+ *          cluster-level services.
  *   @param expectedHttpStatusCode Status code that should be displayed when the API is hit,
  *   helps to validate both positive or negative scenarios.
  */
@@ -256,9 +257,9 @@ fun ClusterInfo.rotateCryptoWrappingKeys(
 /**
  * This method fetch the status of keys for master and managed crypto wrapping key rotation.
  * It takes 2 input parameters, the tenantId (in String type) and the status code (in Int type)
- *  @param tenantId The tenantId of which the status of the last key rotation will be shown. TenantId can either be
- *         a holding identity ID, the value 'master' for master wrapping key or one of the values 'p2p', 'rest',
- *         'crypto' for corresponding cluster-level services.
+ *  @param tenantId The tenantId of which the status of the last key rotation will be shown. The tenantId can either be
+ *         a holding identity ID, the value 'master' for master wrapping key or the value 'p2p' for corresponding
+ *         cluster-level services.
  *  @param expectedHttpStatusCode Status code that should be displayed when the API is hit,
  *      helps to validate both positive or negative scenarios.
  */

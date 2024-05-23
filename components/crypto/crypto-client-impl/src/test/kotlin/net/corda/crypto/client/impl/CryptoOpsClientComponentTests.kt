@@ -14,6 +14,7 @@ import net.corda.crypto.component.test.utils.act
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.component.test.utils.reportDownComponents
 import net.corda.crypto.component.test.utils.signData
+import net.corda.crypto.core.ClusterCryptoDb
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
@@ -21,7 +22,6 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_AFTER_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
-import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
@@ -735,7 +735,7 @@ class CryptoOpsClientComponentTests {
         assertEquals(masterKeyAlias, command.masterKeyAlias)
         assertTrue(command.failIfExists)
         assertOperationContext(command.context)
-        assertRequestContext(result, CryptoTenants.CRYPTO)
+        assertRequestContext(result, ClusterCryptoDb.SCHEMA_NAME)
     }
 
     @Test
