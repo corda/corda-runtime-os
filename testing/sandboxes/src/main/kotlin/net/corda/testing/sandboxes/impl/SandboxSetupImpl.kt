@@ -87,7 +87,7 @@ class SandboxSetupImpl @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val sandboxSetupManagedServices =
+    private val servicesYetToArrive =
         ConcurrentHashMap<String, CompletableFuture<Any>>()
 
     private val serviceListener = ServiceListener { serviceEvent: ServiceEvent ->
@@ -96,7 +96,7 @@ class SandboxSetupImpl @Activate constructor(
             ServiceEvent.REGISTERED -> {
                 println("${serviceEvent.serviceReference} registered")
                 val service = componentContext.bundleContext.getService(serviceEvent.serviceReference)
-                val future = sandboxSetupManagedServices.computeIfAbsent(
+                val future = servicesYetToArrive.computeIfAbsent(
                     "${serviceEvent.serviceReference}"
                 ) {
                     println("Server registering service ${serviceEvent.serviceReference}")
@@ -107,7 +107,7 @@ class SandboxSetupImpl @Activate constructor(
 
             ServiceEvent.UNREGISTERING -> {
                 println("${serviceEvent.serviceReference} unregistered")
-                sandboxSetupManagedServices["${serviceEvent.serviceReference}"] = CompletableFuture()
+                servicesYetToArrive["${serviceEvent.serviceReference}"] = CompletableFuture()
             }
 
             else -> {}
@@ -217,7 +217,7 @@ class SandboxSetupImpl @Activate constructor(
             withCleanup { bundleContext.ungetService(ref) }
             return service
         } else {
-            val future = sandboxSetupManagedServices.computeIfAbsent(
+            val future = servicesYetToArrive.computeIfAbsent(
                 "[${serviceType.canonicalName}]"
             ) {
                 println("Client registering service ${serviceType.canonicalName}")
