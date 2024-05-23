@@ -91,21 +91,22 @@ class SandboxSetupImpl @Activate constructor(
 
     private val serviceListener = ServiceListener { serviceEvent: ServiceEvent ->
         println("Incoming event for ${serviceEvent.serviceReference} with type: ${serviceEvent.type}")
+
+        // Service implementation objects can be registered in OSGi under multiple services.
+        // In which case register the service impl object under each service.
+        val serviceNames =
+            serviceEvent
+                .serviceReference
+                .toString()
+                .split(',')
+                .map {
+                    it.replace(Regex("(^( )*(\\[)*)|(]( )*)"), "")
+                }
+
         when (serviceEvent.type) {
             ServiceEvent.REGISTERED -> {
                 println("${serviceEvent.serviceReference} registered")
                 val service = componentContext.bundleContext.getService(serviceEvent.serviceReference)
-
-                // Service implementation objects can be registered in OSGi under multiple services.
-                // In which case register the service impl object under each service.
-                val serviceNames =
-                    serviceEvent
-                        .serviceReference
-                        .toString()
-                        .split(',')
-                        .map {
-                            it.replace(Regex("(^( )*(\\[)*)|(]( )*)"), "")
-                        }
 
                 serviceNames.forEach { serviceName ->
                     val future = servicesYetToArrive.computeIfAbsent(
@@ -120,7 +121,10 @@ class SandboxSetupImpl @Activate constructor(
 
             ServiceEvent.UNREGISTERING -> {
                 println("${serviceEvent.serviceReference} unregistered")
-                servicesYetToArrive["${serviceEvent.serviceReference}"] = CompletableFuture()
+
+                serviceNames.forEach { serviceName ->
+                    servicesYetToArrive[serviceName] = CompletableFuture()
+                }
             }
 
             else -> {}
@@ -242,7 +246,7 @@ class SandboxSetupImpl @Activate constructor(
 
         var ref = bundleContext.getServiceReferences(serviceType, filter).maxOrNull()
 
-        val mapKey = serviceType.canonicalName!!
+        val serviceName = serviceType.canonicalName!!
 
         var service: T? = ref?.let { bundleContext.getService(it) }
         if (service != null) {
@@ -250,7 +254,7 @@ class SandboxSetupImpl @Activate constructor(
             return service
         } else {
             val future = servicesYetToArrive.computeIfAbsent(
-                mapKey
+                serviceName
             ) {
                 println("Client registering service ${serviceType.canonicalName}")
                 CompletableFuture<Any>()
