@@ -40,6 +40,7 @@ dependencies {
     integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     integrationTestRuntimeOnly libs.slf4j.simple
+    integrationTestRuntimeOnly project(':libs:slf4jv1')
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
 
     integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
