@@ -126,7 +126,11 @@ pipeline {
                         sh "jps" 
                         def pid = sh(returnStdout: true, script: 'jps | grep corda-combined-worker-.*\\.jar')
                         while (smoketestsRunning) {
-                            threadDump = sh(returnStdout: true, script: "jstack ${pid.split(' ')[0]}")
+                            try {
+                                threadDump = sh(returnStdout: true, script: "jstack ${pid.split(' ')[0]}")
+                            } catch (Exception e) {
+                                smoketestsRunning = false
+                            }
                             sh 'sleep 1' 
                         }
                     }
@@ -146,6 +150,7 @@ pipeline {
                     }
                     aborted {
                         script {
+                            smoketestsRunning = false
                             println threadDump
                         }
                     }
