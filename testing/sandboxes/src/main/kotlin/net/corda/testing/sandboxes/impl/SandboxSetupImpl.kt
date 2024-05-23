@@ -96,8 +96,8 @@ class SandboxSetupImpl @Activate constructor(
                 println("${serviceEvent.serviceReference} registered")
                 val service = componentContext.bundleContext.getService(serviceEvent.serviceReference)
 
-                // Service implementation objects can be registered in OSGi under multiple service names.
-                // In which case register the service impl object under all names.
+                // Service implementation objects can be registered in OSGi under multiple services.
+                // In which case register the service impl object under each service.
                 val serviceNames =
                     serviceEvent
                         .serviceReference
