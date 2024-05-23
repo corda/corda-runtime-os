@@ -133,7 +133,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
         val currentNotaryServiceName = currentNotaryContext
             .parse(NOTARY_SERVICE_NAME, MemberX500Name::class.java)
         val currentNotaryBackchainRequired = currentNotaryContext
-            .parse(NOTARY_SERVICE_BACKCHAIN_REQUIRED, Boolean::class.java)
+            .parseOrNull(NOTARY_SERVICE_BACKCHAIN_REQUIRED, Boolean::class.java) ?: true
 
         require(currentNotaryServiceName == txDetails.notaryName) {
             "Notary service on the transaction ${txDetails.notaryName} does not match the notary service represented" +
