@@ -37,7 +37,6 @@ subprojects {
         implementation project(':libs:corda-sdk')
 
         implementation libs.kotlin.stdlib
-        implementation libs.slf4j.v2.api
         implementation "info.picocli:picocli:$picocliVersion"
         kapt "info.picocli:picocli:$picocliVersion"
 

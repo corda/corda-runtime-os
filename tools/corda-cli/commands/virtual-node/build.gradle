@@ -20,9 +20,6 @@ dependencies {
     implementation project(":tools:corda-cli:common-utils")
 
     implementation libs.liquibase
-    constraints {
-        implementation(libs.slf4j.v2.api)
-    }
 
     // DO NOT DISTRIBUTE DRIVERS HERE WE ARE NOT LICENSED TO DISTRIBUTE
     // JDBC drivers are picked up in Corda 5 from a configured location, the CLI tool does not yet have this ability so

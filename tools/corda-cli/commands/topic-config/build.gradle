@@ -11,9 +11,6 @@ dependencies {
     compileOnly platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-topic-schema:$cordaApiVersion"
     implementation libs.kafka.client
-    constraints {
-        implementation(libs.slf4j.v2.api)
-    }
 
     testImplementation libs.bundles.test
     testImplementation libs.jackson.module.kotlin

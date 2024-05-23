@@ -5,10 +5,6 @@ ext {
 group 'net.corda.cli.command'
 
 dependencies {
-    constraints {
-        implementation(libs.slf4j.v2.api)
-    }
-
     implementation project(':libs:packaging:packaging-verify')
     implementation project(':libs:membership:schema-validation')
     implementation project(':libs:membership:membership-common')
@@ -16,6 +12,4 @@ dependencies {
     testImplementation libs.bundles.test
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:packaging-test-utilities")
-
-    testRuntimeOnly libs.log4j.slf4j2
 }

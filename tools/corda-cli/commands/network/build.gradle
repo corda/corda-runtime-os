@@ -7,10 +7,6 @@ group 'net.corda.cli.command'
 ext.cordaEnableFormatting = true
 
 dependencies {
-    constraints {
-        implementation libs.slf4j.v2.api
-    }
-
     implementation libs.jackson.module.kotlin
     implementation libs.jackson.datatype.jsr310
     implementation libs.snakeyaml
