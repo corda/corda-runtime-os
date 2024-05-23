@@ -34,7 +34,8 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
 //        UnirestHttpsClient(clusterInfo.rest.uri, clusterInfo.rest.user, clusterInfo.rest.password)
 //
 //    private fun createUser(){
-//        client1.post("/api/$REST_API_VERSION_PATH/user", createRbacUserBody(true, "VNodeCreatorUser", "VNodeCreatorUser", "VNodeCreatorUser", null, null))
+//        client1.post("/api/$REST_API_VERSION_PATH/user",
+//        createRbacUserBody(true, "VNodeCreatorUser", "VNodeCreatorUser", "VNodeCreatorUser", null, null))
 //        val roles = client1.get("/api/$REST_API_VERSION_PATH/role")
 //        val vNodeCreatorRoleId = roles.body.toJson().first { it["roleName"].toString().contains("VNodeCreatorRole") }["id"]
 //        client1.put("/api/$REST_API_VERSION_PATH/user/VNodeCreatorUser/role/$vNodeCreatorRoleId", "")
