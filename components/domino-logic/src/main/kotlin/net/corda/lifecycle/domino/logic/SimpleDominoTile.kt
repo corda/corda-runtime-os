@@ -8,6 +8,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import org.slf4j.LoggerFactory
 
@@ -62,6 +63,9 @@ class SimpleDominoTile(
             when (event) {
                 is StopEvent -> {
                     updateState(LifecycleStatus.DOWN)
+                }
+                is StartEvent -> {
+                    logger.info("Stage 1: StartEvent on Inbound Assignment Listener.")
                 }
             }
         }
