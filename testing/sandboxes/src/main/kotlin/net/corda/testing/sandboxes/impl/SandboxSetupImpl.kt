@@ -87,8 +87,7 @@ class SandboxSetupImpl @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val servicesYetToArrive =
-        ConcurrentHashMap<String, CompletableFuture<Any>>()
+    private val servicesYetToArrive = ConcurrentHashMap<String, CompletableFuture<Any>>()
 
     private val serviceListener = ServiceListener { serviceEvent: ServiceEvent ->
         println("Incoming event for ${serviceEvent.serviceReference} with type: ${serviceEvent.type}")
@@ -96,13 +95,27 @@ class SandboxSetupImpl @Activate constructor(
             ServiceEvent.REGISTERED -> {
                 println("${serviceEvent.serviceReference} registered")
                 val service = componentContext.bundleContext.getService(serviceEvent.serviceReference)
-                val future = servicesYetToArrive.computeIfAbsent(
-                    "${serviceEvent.serviceReference}"
-                ) {
-                    println("Server registering service ${serviceEvent.serviceReference}")
-                    CompletableFuture<Any>()
+
+                // Service implementation objects can be registered in OSGi under multiple service names.
+                // In which case register the service impl object under all names.
+                val serviceNames =
+                    serviceEvent
+                        .serviceReference
+                        .toString()
+                        .split(',')
+                        .map {
+                            it.replace(Regex("(^( )*(\\[)*)|(]( )*)"), "")
+                        }
+
+                serviceNames.forEach { serviceName ->
+                    val future = servicesYetToArrive.computeIfAbsent(
+                        serviceName
+                    ) {
+                        println("Server registering service ${serviceEvent.serviceReference}")
+                        CompletableFuture<Any>()
+                    }
+                    future.complete(service)
                 }
-                future.complete(service)
             }
 
             ServiceEvent.UNREGISTERING -> {
@@ -114,8 +127,22 @@ class SandboxSetupImpl @Activate constructor(
         }
     }
 
+    private val filter = "(|" +
+            "(objectClass=net.corda.cpiinfo.read.CpiInfoReadService)" +
+            "(objectClass=net.corda.ledger.verification.tests.helpers.VirtualNodeService)" +
+            "(objectClass=net.corda.sandboxtests.SandboxFactory)" +
+            "(objectClass=net.corda.testing.sandboxes.testkit.VirtualNodeService)" +
+            "(objectClass=net.corda.db.persistence.testkit.components.VirtualNodeService)" +
+            "(objectClass=net.corda.testing.sandboxes.VirtualNodeLoader)" +
+            "(objectClass=net.corda.flow.pipeline.sandbox.FlowSandboxService)" +
+            ")"
+
     init {
-        componentContext.bundleContext.addServiceListener(serviceListener)
+        componentContext.bundleContext
+            .addServiceListener(
+                serviceListener,
+                filter
+            )
     }
 
     private val cleanups: Deque<AutoCloseable> = LinkedList()
@@ -197,6 +224,9 @@ class SandboxSetupImpl @Activate constructor(
             }
         }
 
+        servicesYetToArrive.clear()
+//        componentContext.bundleContext.removeServiceListener(serviceListener)
+
         logger.info("Shutdown complete")
     }
 
@@ -212,13 +242,15 @@ class SandboxSetupImpl @Activate constructor(
 
         var ref = bundleContext.getServiceReferences(serviceType, filter).maxOrNull()
 
+        val mapKey = serviceType.canonicalName!!
+
         var service: T? = ref?.let { bundleContext.getService(it) }
         if (service != null) {
             withCleanup { bundleContext.ungetService(ref) }
             return service
         } else {
             val future = servicesYetToArrive.computeIfAbsent(
-                "[${serviceType.canonicalName}]"
+                mapKey
             ) {
                 println("Client registering service ${serviceType.canonicalName}")
                 CompletableFuture<Any>()
@@ -228,18 +260,16 @@ class SandboxSetupImpl @Activate constructor(
 
             println("Client got service ${serviceType.canonicalName}")
 
-            ref = bundleContext.getServiceReferences(serviceType, filter).maxOrNull()!!
-            withCleanup { bundleContext.ungetService(ref) }
+            ref = bundleContext.getServiceReferences(serviceType, filter).maxOrNull()
+            ref?.let {
+                withCleanup { bundleContext.ungetService(ref) }
+            }
+
             return service
         }
     }
 
     override fun withCleanup(closeable: AutoCloseable) {
         cleanups.addFirst(closeable)
-    }
-
-    @Deactivate
-    private fun stop() {
-        componentContext.bundleContext.removeServiceListener(serviceListener)
     }
 }
