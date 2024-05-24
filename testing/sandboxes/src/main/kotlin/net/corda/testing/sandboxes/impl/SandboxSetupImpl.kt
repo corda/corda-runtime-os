@@ -139,9 +139,14 @@ class SandboxSetupImpl @Activate constructor(
             "(objectClass=net.corda.db.persistence.testkit.components.VirtualNodeService)" +
             "(objectClass=net.corda.testing.sandboxes.VirtualNodeLoader)" +
             "(objectClass=net.corda.flow.pipeline.sandbox.FlowSandboxService)" +
+            "(objectClass=net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent)" +
+            "(objectClass=net.corda.sandboxgroupcontext.test.VirtualNodeService)" +
+            "(objectClass=net.corda.serialization.amqp.test.SandboxFactory)" +
+            "(objectClass=net.corda.kryoserialization.test.SandboxManagementService)" +
             ")"
 
     init {
+        println("--- INITIALISING ---")
         componentContext.bundleContext
             .addServiceListener(
                 serviceListener,
@@ -202,6 +207,14 @@ class SandboxSetupImpl @Activate constructor(
      * the framework to create new instances of it.
      */
     override fun start() {
+        componentContext.bundleContext.removeServiceListener(serviceListener)
+        servicesYetToArrive.clear()
+        componentContext.bundleContext
+            .addServiceListener(
+                serviceListener,
+                filter
+            )
+
         componentContext.enableComponent(CpiLoader.COMPONENT_NAME)
     }
 
@@ -228,8 +241,8 @@ class SandboxSetupImpl @Activate constructor(
             }
         }
 
+        componentContext.bundleContext.removeServiceListener(serviceListener)
         servicesYetToArrive.clear()
-//        componentContext.bundleContext.removeServiceListener(serviceListener)
 
         logger.info("Shutdown complete")
     }
