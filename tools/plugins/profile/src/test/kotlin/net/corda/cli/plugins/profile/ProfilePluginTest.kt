@@ -4,6 +4,7 @@ import net.corda.cli.plugins.profile.commands.CreateProfile
 import net.corda.cli.plugins.profile.commands.DeleteProfile
 import net.corda.cli.plugins.profile.commands.ListProfile
 import net.corda.cli.plugins.profile.commands.UpdateProfile
+import net.corda.libs.configuration.secret.SecretEncryptionUtil
 import net.corda.sdk.profile.ProfileUtils
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -18,6 +19,7 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.nio.file.Path
+import java.util.UUID
 import kotlin.test.assertContains
 
 class ProfilePluginTest {
@@ -107,12 +109,15 @@ class ProfilePluginTest {
     @Test
     fun `test update profile`() {
         // Setup a test profile
+        val secretEncryptionUtil = SecretEncryptionUtil()
+        val salt = UUID.randomUUID().toString()
+
         val profiles = mutableMapOf<String, Any>(
             "test-profile" to mapOf(
                 "rest_endpoint" to "http://localhost:1234",
                 "rest_username" to "testuser",
-                "rest_password" to "testpassword",
-                "rest_password_salt" to "testsalt"
+                "rest_password" to secretEncryptionUtil.encrypt("testpassword", salt, salt),
+                "rest_password_salt" to salt
             )
         )
         ProfileUtils.saveProfiles(profiles)
@@ -163,12 +168,15 @@ class ProfilePluginTest {
     @Test
     fun `test delete profile`() {
         // Setup test profile
+        val secretEncryptionUtil = SecretEncryptionUtil()
+        val salt = UUID.randomUUID().toString()
+
         val profiles = mutableMapOf<String, Any>(
             "test-profile" to mapOf(
                 "rest_endpoint" to "http://localhost:1234",
                 "rest_username" to "testuser",
-                "rest_password" to "testpassword",
-                "rest_password_salt" to "testsalt"
+                "rest_password" to secretEncryptionUtil.encrypt("testpassword", salt, salt),
+                "rest_password_salt" to salt
             )
         )
         ProfileUtils.saveProfiles(profiles)

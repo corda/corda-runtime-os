@@ -1,12 +1,12 @@
 package net.corda.cli.plugins.profile.commands
 
-import net.corda.permissions.password.impl.PasswordServiceImpl
+import net.corda.libs.configuration.secret.SecretEncryptionUtil
 import net.corda.sdk.profile.ProfileUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import picocli.CommandLine.Option
-import java.security.SecureRandom
+import java.util.UUID
 
 @CommandLine.Command(
     name = "create",
@@ -27,7 +27,8 @@ class CreateProfile : Runnable {
     @Option(names = ["-p", "--property"], description = ["Profile property (key=value)"], required = true)
     lateinit var properties: Array<String>
 
-    private val passwordService = PasswordServiceImpl(SecureRandom())
+    private val secretEncryptionUtil = SecretEncryptionUtil()
+    private val salt = UUID.randomUUID().toString()
 
     override fun run() {
         logger.debug("Creating profile: $profileName")
@@ -51,9 +52,9 @@ class CreateProfile : Runnable {
                 throw IllegalArgumentException(error)
             }
             if (key.lowercase().contains("password")) {
-                val passwordHash = passwordService.saltAndHash(value)
-                profile[key] = passwordHash.value
-                profile["${key}_salt"] = passwordHash.salt
+                val encryptedPassword = secretEncryptionUtil.encrypt(value, salt, salt)
+                profile[key] = encryptedPassword
+                profile["${key}_salt"] = salt
             } else {
                 profile[key] = value
             }

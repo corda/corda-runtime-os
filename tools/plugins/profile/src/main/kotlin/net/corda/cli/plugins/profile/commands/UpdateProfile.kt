@@ -1,14 +1,13 @@
 package net.corda.cli.plugins.profile.commands
 
 import com.fasterxml.jackson.module.kotlin.readValue
-import net.corda.permissions.password.PasswordHash
-import net.corda.permissions.password.impl.PasswordServiceImpl
+import net.corda.libs.configuration.secret.SecretEncryptionUtil
 import net.corda.sdk.profile.ProfileUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import picocli.CommandLine.Option
-import java.security.SecureRandom
+import java.util.UUID
 
 @CommandLine.Command(
     name = "update",
@@ -28,7 +27,8 @@ class UpdateProfile : Runnable {
     @Option(names = ["-p", "--property"], description = ["Profile property (key=value)"])
     var properties: Array<String> = emptyArray()
 
-    private val passwordService = PasswordServiceImpl(SecureRandom())
+    private val secretEncryptionUtil = SecretEncryptionUtil()
+    private val salt = UUID.randomUUID().toString()
 
     private fun processProperty(profile: MutableMap<String, String>, property: String) {
         val (key, value) = property.split("=")
@@ -40,20 +40,20 @@ class UpdateProfile : Runnable {
 
         if (key.lowercase().contains("password")) {
             if (profile.containsKey(key)) {
-                val oldHash = profile[key] as String
+                val oldEncryptedPassword = profile[key] as String
                 val oldSalt = profile["${key}_salt"] as String
-                val oldPasswordHash = PasswordHash(oldSalt, oldHash)
+                val oldPassword = secretEncryptionUtil.decrypt(oldEncryptedPassword, oldSalt, oldSalt)
 
-                // only update salt and hash if the password has changed
-                if (!passwordService.verifies(value, oldPasswordHash)) {
-                    val passwordHash = passwordService.saltAndHash(value)
-                    profile[key] = passwordHash.value
-                    profile["${key}_salt"] = passwordHash.salt
+                // only update salt and encrypted password if the password has changed
+                if (value != oldPassword) {
+                    val encryptedPassword = secretEncryptionUtil.encrypt(value, salt, salt)
+                    profile[key] = encryptedPassword
+                    profile["${key}_salt"] = salt
                 }
             } else {
-                val passwordHash = passwordService.saltAndHash(value)
-                profile[key] = passwordHash.value
-                profile["${key}_salt"] = passwordHash.salt
+                val encryptedPassword = secretEncryptionUtil.encrypt(value, salt, salt)
+                profile[key] = encryptedPassword
+                profile["${key}_salt"] = salt
             }
         } else {
             profile[key] = value
