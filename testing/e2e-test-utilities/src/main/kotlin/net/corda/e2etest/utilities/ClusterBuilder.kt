@@ -2,6 +2,7 @@ package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import net.corda.e2etest.utilities.RbacTestUtils.createVNodeCreatorUser
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.tracing.configureTracing
 import net.corda.tracing.trace
@@ -24,7 +25,6 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     internal companion object {
         init {
             configureTracing("E2eClusterTracing", null, null, emptyMap())
-            RbacTestUtils.createVNodeCreatorUser()
         }
     }
 
@@ -43,6 +43,11 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
 
     private val client: HttpsClient =
         UnirestHttpsClient(clusterInfo.rest.uri, clusterInfo.rest.user, clusterInfo.rest.password)
+
+    private val vNodeCreatorClient: HttpsClient by lazy {
+        createVNodeCreatorUser()
+        UnirestHttpsClient(clusterInfo.rest.uri, "vnodecreatoruser", "vnodecreatoruser")
+    }
 
     private data class VNodeCreateBody(
         val cpiFileChecksum: String,
@@ -856,17 +861,9 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
 
 }
 
-class CustomUserCluster(private val loginName: String, private val password: String) : ClusterInfo() {
-    override val id = "B"
-    override val rest: RestEndpointInfo
-        get() {
-            return super.rest.copy(user = loginName, password = password)
-        }
-}
-
 fun <T> cluster(
     initialize: ClusterBuilder.() -> T,
-): T = CustomUserCluster("vnodecreatoruser", "vnodecreatoruser").cluster(initialize)
+): T = DEFAULT_CLUSTER.cluster(initialize)
 
 fun <T> ClusterInfo.cluster(
     initialize: ClusterBuilder.() -> T

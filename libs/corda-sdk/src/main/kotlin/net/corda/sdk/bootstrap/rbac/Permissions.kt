@@ -10,8 +10,23 @@ object Permissions {
     private const val VERSION_PATH_REGEX = "v[_a-zA-Z0-9]{1,30}"
 
     // temporary regex for testing
-    private const val generic_string_regex = "[-._a-zA-Z0-9]{1,255}"
-    private const val length12_hexstring_regex = "[a-fA-F0-9]{12}"
+    private const val CPI_FILE_CHECKSUM_REGEX = "[a-fA-F0-9]{12}"
+    private const val CERTIFICATE_USAGE_REGEX = "^(p2p-tls|p2p-session|code-signer)$"
+    private const val TENANT_ID_REGEX = "[a-fA-F0-9]{12}|p2p"
+    private const val KEY_ID_REGEX = "[a-fA-F0-9]{12}"
+    private const val HSM_CATEGORY_REGEX = "ACCOUNTS|CI|LEDGER|NOTARY|SESSION_INIT|TLS|JWT_KEY"
+    private const val ALIAS_REGEX = "[-._A-Za-z0-9]{1,255}"
+    private const val KEY_SCHEME_REGEX =
+        """
+            CORDA.RSA
+            |CORDA.ECDSA.SECP256K1
+            |CORDA.ECDSA.SECP256R1
+            |CORDA.EDDSA.ED25519
+            |CORDA.X25519
+            |CORDA.SM2
+            |CORDA.GOST3410.GOST3411
+            |CORDA.SPHINCS-256
+            """
 
     val cordaDeveloper: Map<String, String> = listOf(
         "Force CPI upload" to "POST:/api/$VERSION_PATH_REGEX/maintenance/virtualnode/forcecpiupload",
@@ -85,48 +100,47 @@ object Permissions {
         "Create vNode" to "POST:/api/$VERSION_PATH_REGEX/virtualnode",
         "Get all vNodes" to "GET:/api/$VERSION_PATH_REGEX/virtualnode",
         "Get a vNode" to "GET:/api/$VERSION_PATH_REGEX/virtualnode/$VNODE_SHORT_HASH_REGEX",
-        "Get operation status of vNode" to "GET:/api/$VERSION_PATH_REGEX/virtualnode/status/[a-fA-F0-9]{12,64}",
-        "Update vNode" to "PUT:/api/$VERSION_PATH_REGEX/virtualnode/$VNODE_SHORT_HASH_REGEX",
-        "Update virtual node state" to "PUT:/api/$VERSION_PATH_REGEX/virtualnode/$VNODE_SHORT_HASH_REGEX/state/${VNODE_STATE_REGEX}",
-        "Upgrade virtual node's CPI" to "PUT:/api/$VERSION_PATH_REGEX/virtualnode/$VNODE_SHORT_HASH_REGEX/cpi/$length12_hexstring_regex",
+        "Get operation status of vNode" to "GET:/api/$VERSION_PATH_REGEX/virtualnode/status/[a-fA-F0-9]{64}",
+        "Update virtual node state" to "PUT:/api/$VERSION_PATH_REGEX/virtualnode/$VNODE_SHORT_HASH_REGEX/state/$VNODE_STATE_REGEX",
+        "Upgrade virtual node's CPI" to "PUT:/api/$VERSION_PATH_REGEX/virtualnode/$VNODE_SHORT_HASH_REGEX/cpi/$CPI_FILE_CHECKSUM_REGEX",
         "Update virtual node database" to "PUT:/api/$VERSION_PATH_REGEX/virtualnode/$VNODE_SHORT_HASH_REGEX/db",
         "Get crypto creation schema SQL" to "GET:/api/$VERSION_PATH_REGEX/virtualnode/create/db/crypto",
         "Get uniqueness creation schema SQL" to "GET:/api/$VERSION_PATH_REGEX/virtualnode/create/db/uniqueness",
-        "Get vault creation schema SQL" to "GET:/api/$VERSION_PATH_REGEX/virtualnode/create/db/vault/$length12_hexstring_regex",
-        "Get migration schema SQL" to "GET:/api/$VERSION_PATH_REGEX/virtualnode/$VNODE_SHORT_HASH_REGEX/db/vault/$length12_hexstring_regex",
+        "Get vault creation schema SQL" to "GET:/api/$VERSION_PATH_REGEX/virtualnode/create/db/vault/$CPI_FILE_CHECKSUM_REGEX",
+        "Get migration schema SQL" to "GET:/api/$VERSION_PATH_REGEX/virtualnode/$VNODE_SHORT_HASH_REGEX/db/vault/$CPI_FILE_CHECKSUM_REGEX",
 
         // Certificate permissions
-        "Import certificate" to "PUT:/api/$VERSION_PATH_REGEX/certificate/cluster/$generic_string_regex",
-        "Get all certificate aliases" to "GET:/api/$VERSION_PATH_REGEX/certificate/cluster/$generic_string_regex",
-        "Get certificate by alias" to "GET:/api/$VERSION_PATH_REGEX/certificate/cluster/$generic_string_regex/$generic_string_regex",
-        "Generate CSR for tenant" to "POST:/api/$VERSION_PATH_REGEX/certificate/p2p/.*",
+        "Import certificate" to "PUT:/api/$VERSION_PATH_REGEX/certificate/cluster/$CERTIFICATE_USAGE_REGEX",
+        "Get all certificate aliases" to "GET:/api/$VERSION_PATH_REGEX/certificate/cluster/$CERTIFICATE_USAGE_REGEX",
+        "Get certificate by alias" to "GET:/api/$VERSION_PATH_REGEX/certificate/cluster/$VNODE_SHORT_HASH_REGEX/$CERTIFICATE_USAGE_REGEX",
+        "Generate CSR for tenant" to "POST:/api/$VERSION_PATH_REGEX/certificate/$TENANT_ID_REGEX/$KEY_ID_REGEX",
 
         // HSM permissions
-        "Get HSM info" to "GET:/api/$VERSION_PATH_REGEX/hsm/$generic_string_regex/$generic_string_regex",
-        "Assign soft HSM to tenant" to "POST:/api/$VERSION_PATH_REGEX/hsm/soft/$generic_string_regex/$generic_string_regex",
-
-        // Member permissions
-        "Start registration" to "POST:/api/$VERSION_PATH_REGEX/membership/$length12_hexstring_regex",
-        "Get registration status" to "GET:/api/$VERSION_PATH_REGEX/membership/$length12_hexstring_regex/$UUID_REGEX",
-        "Get all members in membership group" to "GET:/api/$VERSION_PATH_REGEX/members/$length12_hexstring_regex",
-
-        // Network permissions
-        "Configure a holding identity as network participant" to "PUT:/api/$VERSION_PATH_REGEX/network/setup/$length12_hexstring_regex",
+        "Get HSM info" to "GET:/api/$VERSION_PATH_REGEX/hsm/$TENANT_ID_REGEX/$HSM_CATEGORY_REGEX",
+        "Assign soft HSM to tenant" to "POST:/api/$VERSION_PATH_REGEX/hsm/soft/$TENANT_ID_REGEX/$HSM_CATEGORY_REGEX",
 
         // Key permissions
         "Generate key pair" to
-            "POST:/api/$VERSION_PATH_REGEX/key/" +
-            "$generic_string_regex/alias/$generic_string_regex/category/$generic_string_regex/scheme/$generic_string_regex",
-        "Get keys" to "GET:/api/$VERSION_PATH_REGEX/key/$generic_string_regex",
-        "Get key schemes" to "GET:/api/$VERSION_PATH_REGEX/key/$generic_string_regex/schemes/$generic_string_regex",
-        "Get key in PEM format" to "GET:/api/$VERSION_PATH_REGEX/key/$generic_string_regex/$length12_hexstring_regex",
+                "POST:/api/$VERSION_PATH_REGEX/key/" +
+                "$TENANT_ID_REGEX/alias/$ALIAS_REGEX/category/$HSM_CATEGORY_REGEX/scheme/$KEY_SCHEME_REGEX",
+        "Get keys" to "GET:/api/$VERSION_PATH_REGEX/key/$TENANT_ID_REGEX",
+        "Get key schemes" to "GET:/api/$VERSION_PATH_REGEX/key/$TENANT_ID_REGEX/schemes/$HSM_CATEGORY_REGEX",
+        "Get key in PEM format" to "GET:/api/$VERSION_PATH_REGEX/key/$TENANT_ID_REGEX/$KEY_ID_REGEX",
+
+        // Member permissions
+        "Start registration" to "POST:/api/$VERSION_PATH_REGEX/membership/$VNODE_SHORT_HASH_REGEX",
+        "Get registration status" to "GET:/api/$VERSION_PATH_REGEX/membership/$VNODE_SHORT_HASH_REGEX/$UUID_REGEX",
+        "Get all members in membership group" to "GET:/api/$VERSION_PATH_REGEX/members/$VNODE_SHORT_HASH_REGEX",
 
         // MGM permission
-        "Get group policy" to "GET:/api/$VERSION_PATH_REGEX/mgm/$generic_string_regex/info",
+        "Get group policy" to "GET:/api/$VERSION_PATH_REGEX/mgm/$VNODE_SHORT_HASH_REGEX/info",
+
+        // Network permissions
+        "Configure a holding identity as network participant" to "PUT:/api/$VERSION_PATH_REGEX/network/setup/$VNODE_SHORT_HASH_REGEX",
 
         // Flow permissions
-        "Get all flows status for holding identity" to "GET:/api/$VERSION_PATH_REGEX/flow/$length12_hexstring_regex",
-        "Get flow status" to "GET:/api/$VERSION_PATH_REGEX/flow/$length12_hexstring_regex/$UUID_REGEX",
+        "Get all flows status for holding identity" to "GET:/api/$VERSION_PATH_REGEX/flow/$VNODE_SHORT_HASH_REGEX",
+        "Get flow status" to "GET:/api/$VERSION_PATH_REGEX/flow/$VNODE_SHORT_HASH_REGEX/$UUID_REGEX",
 
     ).toMap()
 }
