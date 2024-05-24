@@ -326,7 +326,7 @@ def verifyApp = tasks.register('verifyApp', Resolve) {
     writeOnChanges = false
 
     //  bnd attempts to use ~/ for caching if this is unavailable the build will fail.
-    System.setProperty('bnd.home.dir', "$rootDir/bnd/")
+    System.setProperty('bnd.home.dir', "${getLayout().getBuildDirectory().getAsFile().get().absolutePath}/bnd/")
 }
 
 @CompileStatic
