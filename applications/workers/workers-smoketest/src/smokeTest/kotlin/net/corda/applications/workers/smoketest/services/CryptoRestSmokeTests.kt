@@ -24,15 +24,15 @@ import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.messagebus.kafka.serialization.CordaAvroSerializationFactoryImpl
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
-import net.corda.test.util.time.AutoTickTestClock
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
-import org.junit.jupiter.api.Assertions
+import org.eclipse.jetty.http.HttpMethod
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.URI
 import java.net.http.HttpClient
@@ -61,9 +61,9 @@ class CryptoRestSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
     companion object {
         const val TEST_CPI_NAME = "ledger-utxo-demo-app"
         const val TEST_CPB_LOCATION = "/META-INF/ledger-utxo-demo-app.cpb"
-        private const val POD_CLOCK_DIFF_TOLLERENCE_SECONDS = 10L
+        private const val POD_CLOCK_DIFF_TOLERANCE_SECONDS = 10L
 
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val testRunUniqueId = UUID.randomUUID()
@@ -78,6 +78,7 @@ class CryptoRestSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
 
     private val externalEventContext: ExternalEventContext = createExternalEventContext()
     private lateinit var cryptoRequestContext: CryptoRequestContext
+    private lateinit var cryptoUrl: String
 
     private fun createExternalEventContext(): ExternalEventContext {
         val simpleContext = KeyValuePairList(
@@ -113,6 +114,8 @@ class CryptoRestSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
         val aliceActualHoldingId = getOrCreateVirtualNodeFor(aliceX500, cpiName)
         assertThat(aliceActualHoldingId).isEqualTo(aliceHoldingId)
         registerStaticMember(aliceHoldingId)
+
+        cryptoUrl = "${System.getProperty("cryptoWorkerUrl")}api/$PLATFORM_VERSION/crypto"
     }
 
     @BeforeEach
@@ -122,16 +125,10 @@ class CryptoRestSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
 
     @Test
     fun `REST endpoint accepts a request and returns back a response`() {
-        val url = "${System.getProperty("cryptoWorkerUrl")}api/$PLATFORM_VERSION/crypto"
-
-        logger.info("crypto url: $url")
         val serializedPayload = avroSerializer.serialize(generateByIdsFlowOpsRequest())
 
-        val request = HttpRequest.newBuilder()
-            .uri(URI.create(url))
-            .headers("Content-Type", "application/octet-stream")
-            .POST(HttpRequest.BodyPublishers.ofByteArray(serializedPayload))
-            .build()
+        val request = buildHttpRequest(cryptoUrl, serializedPayload, HttpMethod.POST)
+
         val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
 
         assertThat(response.statusCode()).isEqualTo(200).withFailMessage("status code on response: ${response.statusCode()} url: $url")
@@ -150,16 +147,10 @@ class CryptoRestSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
 
     @Test
     fun `REST endpoint accepts a request and returns back an error response with 200 status`() {
-        val url = "${System.getProperty("cryptoWorkerUrl")}api/$PLATFORM_VERSION/crypto"
-
-        logger.info("crypto url: $url")
         val serializedPayload = avroSerializer.serialize(generateByIdsFlowOpsRequest(returnError = true))
 
-        val request = HttpRequest.newBuilder()
-            .uri(URI.create(url))
-            .headers("Content-Type", "application/octet-stream")
-            .POST(HttpRequest.BodyPublishers.ofByteArray(serializedPayload))
-            .build()
+        val request = buildHttpRequest(cryptoUrl, serializedPayload, HttpMethod.POST)
+
         val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
 
         assertThat(response.statusCode()).isEqualTo(200).withFailMessage("status code on response: ${response.statusCode()} url: $url")
@@ -176,16 +167,10 @@ class CryptoRestSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
 
     @Test
     fun `REST endpoint does not accept request and returns back a 500 error`() {
-        val url = "${System.getProperty("cryptoWorkerUrl")}api/$PLATFORM_VERSION/crypto"
-
-        logger.info("crypto url: $url")
         val serializedPayload = avroSerializer.serialize(generateByIdsFlowOpsRequest())
 
-        val request = HttpRequest.newBuilder()
-            .uri(URI.create(url))
-            .headers("Content-Type", "application/octet-stream")
-            .PUT(HttpRequest.BodyPublishers.ofByteArray(serializedPayload))
-            .build()
+        val request = buildHttpRequest(cryptoUrl, serializedPayload, HttpMethod.PUT)
+
         val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
 
         assertThat(response.statusCode()).isEqualTo(404).withFailMessage("status code on response: ${response.statusCode()} url: $url")
@@ -230,12 +215,20 @@ class CryptoRestSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
         assertEquals(expected.requestingComponent, actual.requestingComponent)
         assertEquals(expected.requestTimestamp, actual.requestTimestamp)
         assertThat(actual.responseTimestamp.toEpochMilli())
-            .isGreaterThanOrEqualTo(expected.requestTimestamp.minusSeconds(POD_CLOCK_DIFF_TOLLERENCE_SECONDS).toEpochMilli())
-            .isLessThanOrEqualTo(now.plusSeconds(POD_CLOCK_DIFF_TOLLERENCE_SECONDS).toEpochMilli())
+            .isGreaterThanOrEqualTo(expected.requestTimestamp.minusSeconds(POD_CLOCK_DIFF_TOLERANCE_SECONDS).toEpochMilli())
+            .isLessThanOrEqualTo(now.plusSeconds(POD_CLOCK_DIFF_TOLERANCE_SECONDS).toEpochMilli())
         assertSoftly { softly ->
             softly.assertThat(actual.other.items.size).isEqualTo(expected.other.items.size)
             softly.assertThat(actual.other.items.containsAll(expected.other.items))
             softly.assertThat(expected.other.items.containsAll(actual.other.items))
         }
+    }
+
+    private fun buildHttpRequest(url: String, payload: ByteArray?, method: HttpMethod): HttpRequest {
+        return HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .headers("Content-Type", "application/octet-stream")
+            .method(method.toString(), HttpRequest.BodyPublishers.ofByteArray(payload))
+            .build()
     }
 }
