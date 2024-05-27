@@ -62,8 +62,6 @@ class CryptoRestSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
         const val TEST_CPI_NAME = "ledger-utxo-demo-app"
         const val TEST_CPB_LOCATION = "/META-INF/ledger-utxo-demo-app.cpb"
         private const val POD_CLOCK_DIFF_TOLERANCE_SECONDS = 10L
-
-        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val testRunUniqueId = UUID.randomUUID()
@@ -94,9 +92,7 @@ class CryptoRestSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
             .build()
     }
 
-    private val staticMemberList = listOf(
-        aliceX500
-    )
+    private val staticMemberList = listOf(aliceX500)
 
     @BeforeAll
     fun beforeAll() {
@@ -128,18 +124,10 @@ class CryptoRestSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
         val serializedPayload = avroSerializer.serialize(generateByIdsFlowOpsRequest())
 
         val request = buildHttpRequest(cryptoUrl, serializedPayload, HttpMethod.POST)
-
-        val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
-
-        assertThat(response.statusCode()).isEqualTo(200).withFailMessage("status code on response: ${response.statusCode()} url: $url")
-
-        val responseBody: ByteArray = response.body()
-        val responseEvent = avroFlowEventDeserializer.deserialize(responseBody)
-
-        assertThat(responseEvent).isNotNull
+        val response = sendRequestAndReturnValidResponse(request)
 
         val deserializedExternalEventResponse =
-            avroCryptoDeserializer.deserialize((responseEvent?.payload as ExternalEventResponse).payload.array())
+            avroCryptoDeserializer.deserialize(response.payload.array())
 
         assertThat(deserializedExternalEventResponse).isNotNull
         assertResponseContext(cryptoRequestContext, deserializedExternalEventResponse.context)
@@ -150,19 +138,10 @@ class CryptoRestSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
         val serializedPayload = avroSerializer.serialize(generateByIdsFlowOpsRequest(returnError = true))
 
         val request = buildHttpRequest(cryptoUrl, serializedPayload, HttpMethod.POST)
+        val response = sendRequestAndReturnValidResponse(request)
 
-        val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
-
-        assertThat(response.statusCode()).isEqualTo(200).withFailMessage("status code on response: ${response.statusCode()} url: $url")
-
-        val responseBody: ByteArray = response.body()
-        val responseEvent = avroFlowEventDeserializer.deserialize(responseBody)
-
-        assertThat(responseEvent).isNotNull
-
-        val externalEventResponse = responseEvent?.payload as ExternalEventResponse
-        assertThat(externalEventResponse.payload).isNull()
-        assertThat(externalEventResponse.error).isNotNull()
+        assertThat(response.payload).isNull()
+        assertThat(response.error).isNotNull()
     }
 
     @Test
@@ -170,10 +149,11 @@ class CryptoRestSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
         val serializedPayload = avroSerializer.serialize(generateByIdsFlowOpsRequest())
 
         val request = buildHttpRequest(cryptoUrl, serializedPayload, HttpMethod.PUT)
-
         val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
 
-        assertThat(response.statusCode()).isEqualTo(404).withFailMessage("status code on response: ${response.statusCode()} url: $url")
+        assertThat(response.statusCode())
+            .isEqualTo(404)
+            .withFailMessage("status code on response: ${response.statusCode()} url: $cryptoUrl")
     }
 
     /**
@@ -230,5 +210,20 @@ class CryptoRestSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
             .headers("Content-Type", "application/octet-stream")
             .method(method.toString(), HttpRequest.BodyPublishers.ofByteArray(payload))
             .build()
+    }
+
+    private fun sendRequestAndReturnValidResponse(request: HttpRequest): ExternalEventResponse {
+        val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
+
+        assertThat(response.statusCode())
+            .isEqualTo(200)
+            .withFailMessage("status code on response: ${response.statusCode()} url: $cryptoUrl")
+
+        val responseBody: ByteArray = response.body()
+        val responseEvent = avroFlowEventDeserializer.deserialize(responseBody)
+
+        assertThat(responseEvent).isNotNull
+
+        return responseEvent!!.payload as ExternalEventResponse
     }
 }
