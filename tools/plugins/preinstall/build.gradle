@@ -10,7 +10,6 @@ group 'net.corda.cli.deployment'
 dependencies {
     kapt "info.picocli:picocli:$picocliVersion"
 
-    implementation libs.slf4j.api
     implementation project(':libs:corda-sdk')
 
     testImplementation libs.bundles.test
