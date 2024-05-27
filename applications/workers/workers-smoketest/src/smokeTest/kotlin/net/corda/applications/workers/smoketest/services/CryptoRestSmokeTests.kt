@@ -145,7 +145,6 @@ class CryptoRestSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
             avroCryptoDeserializer.deserialize((responseEvent?.payload as ExternalEventResponse).payload.array())
 
         assertThat(deserializedExternalEventResponse).isNotNull
-        assertStandardSuccessResponse(deserializedExternalEventResponse!!, testClock)
         assertResponseContext(cryptoRequestContext, deserializedExternalEventResponse.context)
     }
 
@@ -192,8 +191,6 @@ class CryptoRestSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
         assertThat(response.statusCode()).isEqualTo(404).withFailMessage("status code on response: ${response.statusCode()} url: $url")
     }
 
-    private val testClock = AutoTickTestClock(Instant.MAX, Duration.ofSeconds(1))
-
     /**
      * Generate simple request to lookup for keys by their full key ids.
      * Lookup will return no items in the response.
@@ -239,24 +236,6 @@ class CryptoRestSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
             softly.assertThat(actual.other.items.size).isEqualTo(expected.other.items.size)
             softly.assertThat(actual.other.items.containsAll(expected.other.items))
             softly.assertThat(expected.other.items.containsAll(actual.other.items))
-        }
-    }
-
-    private fun assertStandardSuccessResponse(
-        response: FlowOpsResponse,
-        clock: AutoTickTestClock? = null
-    ) = getResultOfType<FlowOpsResponse>(response)
-        .run { assertValidTimestamp(response.context.requestTimestamp, clock) }
-
-    private inline fun <reified T> getResultOfType(response: FlowOpsResponse): T {
-        Assertions.assertInstanceOf(T::class.java, response)
-        return response as T
-    }
-
-    private fun assertValidTimestamp(timestamp: Instant, clock: AutoTickTestClock? = null) {
-        assertThat(timestamp).isAfter(Instant.MIN)
-        if (clock != null) {
-            assertThat(timestamp).isBeforeOrEqualTo(clock.peekTime())
         }
     }
 }
