@@ -32,8 +32,6 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -130,7 +128,7 @@ class CryptoRestSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
             avroCryptoDeserializer.deserialize(response.payload.array())
 
         assertThat(deserializedExternalEventResponse).isNotNull
-        assertResponseContext(cryptoRequestContext, deserializedExternalEventResponse.context)
+        assertResponseContext(cryptoRequestContext, deserializedExternalEventResponse!!.context)
     }
 
     @Test
