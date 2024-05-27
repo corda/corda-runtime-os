@@ -177,7 +177,7 @@ class CreateConnectTest {
     fun `kafka server address is mandatory`() {
         val command = CreateConnect().apply {
             create = Create()
-            create?.topic = TopicPlugin.Topic()
+            create?.topic = TopicPlugin()
         }
         val baos = ByteArrayOutputStream()
         System.setOut(PrintStream(baos))
@@ -192,7 +192,7 @@ class CreateConnectTest {
 
     private fun getCommandWithGeneratedConfig() = CreateConnect().apply {
         create = Create()
-        create!!.topic = TopicPlugin.Topic()
+        create!!.topic = TopicPlugin()
         create!!.topic!!.namePrefix = "prefix."
         create!!.kafkaUsers = mapOf("crypto" to "Chris", "db" to "Dan", "flow" to "Fiona", "membership" to "Mo")
     }
@@ -201,7 +201,7 @@ class CreateConnectTest {
         val configFile = this::class.java.classLoader.getResource("short_generated_topic_config.yaml")!!.toURI()
         configFilePath = Paths.get(configFile).toString()
         create = Create()
-        create!!.topic = TopicPlugin.Topic()
+        create!!.topic = TopicPlugin()
         create!!.topic!!.namePrefix = "prefix."
     }
 
@@ -209,7 +209,7 @@ class CreateConnectTest {
         val configFile = this::class.java.classLoader.getResource("short_generated_topic_config.yaml")!!.toURI()
         configFilePath = Paths.get(configFile).toString()
         create = Create()
-        create!!.topic = TopicPlugin.Topic()
+        create!!.topic = TopicPlugin()
         create!!.topic!!.namePrefix = "prefix."
         val overrideFile = this::class.java.classLoader.getResource("override_topic_config.yaml")!!.toURI()
         create!!.overrideFilePath = Paths.get(overrideFile).toString()
