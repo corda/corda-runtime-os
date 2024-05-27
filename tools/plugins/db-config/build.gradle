@@ -2,7 +2,6 @@ plugins {
     id 'distribution'
     id 'org.jetbrains.kotlin.jvm'
     id 'org.jetbrains.kotlin.kapt'
-    id 'corda.cli-plugin-packager'
 }
 
 ext {
@@ -13,9 +12,6 @@ group 'net.corda.cli.deployment'
 
 dependencies {
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
-    compileOnly libs.pf4j
-    compileOnly "net.corda.cli.host:api:$pluginHostVersion"
-    kapt libs.pf4j
     kapt "info.picocli:picocli:$picocliVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -24,9 +20,7 @@ dependencies {
     implementation 'javax.persistence:javax.persistence-api'
     implementation project(':libs:corda-sdk')
     implementation libs.liquibase
-    constraints {
-        implementation(libs.slf4j.v2.api)
-    }
+    implementation(libs.slf4j.v2.api)
 
     // DO NOT DISTRIBUTE DRIVERS HERE WE ARE NOT LICENSED TO DISTRIBUTE
     // JDBC drivers are picked up in Corda 5 from a configured location, the CLI tool does not yet have this ability so
@@ -35,18 +29,4 @@ dependencies {
 
     testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
     testImplementation libs.bundles.test
-    testImplementation libs.pf4j
-    testCompileOnly "net.corda.cli.host:api:$pluginHostVersion"
-}
-
-cliPlugin {
-    cliPluginClass = 'net.corda.cli.plugins.dbconfig.DatabaseBootstrapAndUpgrade'
-    cliPluginDescription = 'Plugin for generating the initial database migrations.'
-}
-
-tasks.named("installDist") {
-    dependsOn cliPlugin
-    def homePath = System.properties['user.home']
-    from cliPlugin
-    into "$homePath/.corda/cli/plugins"
 }

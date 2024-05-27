@@ -9,12 +9,10 @@ import picocli.CommandLine
     subcommands = [Preview::class, CreateConnect::class],
     mixinStandardHelpOptions = true
 )
-class Create(
-    cl: ClassLoader = TopicPlugin.classLoader
-) {
+class Create {
 
     @CommandLine.ParentCommand
-    var topic: TopicPlugin.Topic? = null
+    var topic: TopicPlugin? = null
 
     @CommandLine.Option(
         names = ["-r", "--replicas"],
@@ -40,7 +38,7 @@ class Create(
     )
     var kafkaUsers: Map<String, String> = emptyMap()
 
-    val topicConfigCreator = TopicConfigCreator(classLoader = cl)
+    val topicConfigCreator = TopicConfigCreator()
 
     fun getTopicConfigsForPreview(): TopicConfigCreator.PreviewTopicConfigurations {
         return topicConfigCreator.applyOverrides(

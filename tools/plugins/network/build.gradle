@@ -2,8 +2,6 @@ plugins {
     id 'distribution'
     id 'org.jetbrains.kotlin.jvm'
     id 'org.jetbrains.kotlin.kapt'
-    id 'corda.cli-plugin-packager'
-    id 'corda.common-publishing'
 }
 
 ext {
@@ -15,20 +13,12 @@ group 'net.corda.cli.deployment'
 ext.cordaEnableFormatting = true
 
 dependencies {
-    constraints {
-        implementation libs.slf4j.v2.api
-    }
-
-    compileOnly "net.corda.cli.host:api:$pluginHostVersion"
-
     implementation libs.jackson.module.kotlin
     implementation libs.jackson.datatype.jsr310
     implementation libs.snakeyaml
     implementation libs.unirest.java
     implementation project(":libs:crypto:certificate-generation")
     implementation project(':libs:crypto:cipher-suite')
-    implementation libs.pf4j
-    kapt libs.pf4j
 
     implementation project(':components:membership:membership-rest')
     implementation project(':libs:configuration:configuration-endpoints')
@@ -45,31 +35,7 @@ dependencies {
     implementation project(':tools:plugins:common-utils')
 
     testImplementation libs.bundles.test
-    testImplementation "net.corda.cli.host:api:$pluginHostVersion"
-    testImplementation libs.pf4j
     testImplementation "com.github.stefanbirkner:system-lambda:1.2.1"
 
     pluginSmokeTestImplementation project(':testing:e2e-test-utilities')
-}
-
-cliPlugin {
-    cliPluginClass = 'net.corda.cli.plugins.network.NetworkPluginWrapper'
-    cliPluginDescription = 'Plugin for network operations.'
-}
-
-tasks.named("installDist") {
-    dependsOn cliPlugin
-    def homePath = System.properties['user.home']
-    from cliPlugin
-    into "$homePath/.corda/cli/plugins"
-}
-
-publishing {
-    publications {
-        maven(MavenPublication) {
-            artifactId "${cliPlugin.cliPluginId.get()}-cli-plugin"
-            groupId project.group
-            artifact cliPluginTask
-        }
-    }
 }

@@ -52,7 +52,6 @@
         <Logger name="org.apache.kafka" level="warn"/>
         <Logger name="org.eclipse.jetty" level="warn"/>
         <Logger name="org.hibernate" level="warn"/>
-        <Logger name="org.pf4j" level="warn"/>
 
         <!-- default to info for OSGi logging -->
         <Logger name="net.corda.osgi.framework.OSGiFrameworkWrap" level="info"/>
