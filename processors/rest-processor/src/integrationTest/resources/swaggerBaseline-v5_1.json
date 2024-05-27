@@ -439,11 +439,11 @@
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST",
+          "description" : "Can either be a holding identity ID or the value 'p2p' for a cluster-level tenant of the P2P services",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST",
+            "description" : "Can either be a holding identity ID or the value 'p2p' for a cluster-level tenant of the P2P services",
             "nullable" : false,
             "example" : "string"
           }
@@ -1110,11 +1110,11 @@
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST",
+          "description" : "Can either be a holding identity ID or the value 'p2p' for a cluster-level tenant of the P2P services",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST",
+            "description" : "Can either be a holding identity ID or the value 'p2p' for a cluster-level tenant of the P2P services",
             "nullable" : false,
             "example" : "string"
           }
@@ -1158,11 +1158,11 @@
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST",
+          "description" : "Can either be a holding identity ID or the value 'p2p' for a cluster-level tenant of the P2P services",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST",
+            "description" : "Can either be a holding identity ID or the value 'p2p' for a cluster-level tenant of the P2P services",
             "nullable" : false,
             "example" : "string"
           }
@@ -1235,11 +1235,11 @@
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST",
+          "description" : "Can either be a holding identity ID or the value 'p2p' for a cluster-level tenant of the P2P services",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST",
+            "description" : "Can either be a holding identity ID or the value 'p2p' for a cluster-level tenant of the P2P services",
             "nullable" : false,
             "example" : "string"
           }
@@ -1392,11 +1392,11 @@
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST",
+          "description" : "Can either be a holding identity ID or the value 'p2p' for a cluster-level tenant of the P2P services",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST",
+            "description" : "Can either be a holding identity ID or the value 'p2p' for a cluster-level tenant of the P2P services",
             "nullable" : false,
             "example" : "string"
           }
@@ -1462,11 +1462,11 @@
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST",
+          "description" : "Can either be a holding identity ID or the value 'p2p' for a cluster-level tenant of the P2P services",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST",
+            "description" : "Can either be a holding identity ID or the value 'p2p' for a cluster-level tenant of the P2P services",
             "nullable" : false,
             "example" : "string"
           }
@@ -1516,11 +1516,11 @@
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST",
+          "description" : "Can either be a holding identity ID or the value 'p2p' for a cluster-level tenant of the P2P services",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST",
+            "description" : "Can either be a holding identity ID or the value 'p2p' for a cluster-level tenant of the P2P services",
             "nullable" : false,
             "example" : "string"
           }

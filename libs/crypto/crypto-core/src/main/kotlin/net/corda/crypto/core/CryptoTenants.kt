@@ -1,32 +1,32 @@
 package net.corda.crypto.core
 
 /**
- * Defines constants defining the cluster level tenant ids and some helper functions.
+ * Defines constants defining the cluster-level tenant ids and a helper function.
+ * Cluster level tenants are those that can own an asymmetric key pairs.
  */
 object CryptoTenants {
-
-    /**
-     * Tenant id used by the crypto services in some cases to attribute the ownership of the operation however
-     * that tenant does not own any asymmetric key pairs, that's why it's not included in the [allClusterTenants] variable.
-     */
-    const val CRYPTO: String = "crypto"
-
     /**
      * Tenant id of the P2P services.
      */
     const val P2P: String = "p2p"
 
     /**
-     * Lists all cluster level tenants which can own asymmetric key pairs
+     * Lists all cluster-level tenants.
      */
     val allClusterTenants: Set<String> = setOf(
         P2P,
-        // TODO should CRYPTO be here?
     )
+}
+
+/**
+ * Defines identifier for a cluster crypto database and a helper function.
+ */
+object ClusterCryptoDb {
+    const val SCHEMA_NAME = "crypto"
 
     /**
-     * Returns true if the tenant is one of the cluster's.
+     * Returns true if the given schema is referencing cluster Crypto database.
      */
-    fun isClusterTenant(tenantId: String) =
-        tenantId == CRYPTO || allClusterTenants.contains(tenantId)
+    fun isReferencingClusterDb(schema: String) =
+        schema == SCHEMA_NAME || CryptoTenants.allClusterTenants.contains(schema)
 }

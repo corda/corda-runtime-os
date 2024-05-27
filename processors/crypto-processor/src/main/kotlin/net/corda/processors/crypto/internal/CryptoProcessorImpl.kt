@@ -24,8 +24,8 @@ import net.corda.crypto.config.impl.WRAPPING_KEYS
 import net.corda.crypto.config.impl.retrying
 import net.corda.crypto.core.ApiNames.DECRYPT_PATH
 import net.corda.crypto.core.ApiNames.ENCRYPT_PATH
+import net.corda.crypto.core.ClusterCryptoDb
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.CryptoConsts.Categories.ENCRYPTION_SECRET
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.SigningKeyInfo
@@ -170,7 +170,7 @@ class CryptoProcessorImpl @Activate constructor(
 
     // We are making the below coordinator visible to be able to test the processor as if it were a `Lifecycle`
     // using `LifecycleTest` API
-    // TODO - can we remove VisibleForTesting here? and go back to lifecycleCorodinator being private
+    // TODO - can we remove VisibleForTesting here? and go back to lifecycleCoordinator being private
     @get:VisibleForTesting
     internal val lifecycleCoordinator =
         coordinatorFactory.createCoordinator<CryptoProcessor>(dependentComponents, ::eventHandler)
@@ -236,15 +236,14 @@ class CryptoProcessorImpl @Activate constructor(
                         .also { it.start() }
                 this.stateManager = stateManager
 
-                (CryptoConsts.Categories.all - ENCRYPTION_SECRET).forEach { category ->
+                // If a new cluster tenant is introduced, category `CryptoConsts.Categories.ENCRYPTION_SECRET`
+                // might need to be generated only for CryptoTenants.P2P
+                (CryptoConsts.Categories.all).forEach { category ->
                     CryptoTenants.allClusterTenants.forEach { tenantId ->
                         tenantInfoService.populate(tenantId, category, cryptoService)
                         logger.trace("Assigned SOFT HSM for $tenantId:$category")
                     }
                 }
-
-                tenantInfoService.populate(CryptoTenants.P2P, ENCRYPTION_SECRET, cryptoService)
-                logger.trace("Assigned SOFT HSM for ${CryptoTenants.P2P}:$ENCRYPTION_SECRET")
 
                 startProcessors(
                     cryptoConfig,
@@ -346,7 +345,7 @@ class CryptoProcessorImpl @Activate constructor(
 
     private fun createTenantInfoService(): TenantInfoServiceImpl {
         val emf = getEntityManagerFactory(
-            CryptoTenants.CRYPTO,
+            ClusterCryptoDb.SCHEMA_NAME,
             dbConnectionManager,
             virtualNodeInfoReadService,
             jpaEntitiesRegistry
