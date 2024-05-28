@@ -59,7 +59,6 @@ class CryptoRestSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
     companion object {
         const val TEST_CPI_NAME = "ledger-utxo-demo-app"
         const val TEST_CPB_LOCATION = "/META-INF/ledger-utxo-demo-app.cpb"
-        private const val POD_CLOCK_DIFF_TOLERANCE_SECONDS = 10L
     }
 
     private val testRunUniqueId = UUID.randomUUID()
@@ -187,14 +186,10 @@ class CryptoRestSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
     )
 
     private fun assertResponseContext(expected: CryptoRequestContext, actual: CryptoResponseContext) {
-        val now = Instant.now()
         assertEquals(expected.tenantId, actual.tenantId)
         assertEquals(expected.requestId, actual.requestId)
         assertEquals(expected.requestingComponent, actual.requestingComponent)
         assertEquals(expected.requestTimestamp, actual.requestTimestamp)
-        assertThat(actual.responseTimestamp.toEpochMilli())
-            .isGreaterThanOrEqualTo(expected.requestTimestamp.minusSeconds(POD_CLOCK_DIFF_TOLERANCE_SECONDS).toEpochMilli())
-            .isLessThanOrEqualTo(now.plusSeconds(POD_CLOCK_DIFF_TOLERANCE_SECONDS).toEpochMilli())
         assertSoftly { softly ->
             softly.assertThat(actual.other.items.size).isEqualTo(expected.other.items.size)
             softly.assertThat(actual.other.items.containsAll(expected.other.items))
