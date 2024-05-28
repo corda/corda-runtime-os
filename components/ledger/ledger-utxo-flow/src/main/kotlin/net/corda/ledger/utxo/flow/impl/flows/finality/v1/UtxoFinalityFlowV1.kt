@@ -285,7 +285,7 @@ class UtxoFinalityFlowV1(
             if (log.isTraceEnabled) {
                 log.info {
                     "Notarizing transaction $transactionId using pluggable notary client flow of " +
-                            "${notarizationFlow::class.java.name} with notary $notary. Attempt number $attemptNumber"
+                        "${notarizationFlow::class.java.name} with notary $notary. Attempt number $attemptNumber"
                 }
             }
             flowEngine.subFlow(notarizationFlow)
@@ -301,13 +301,13 @@ class UtxoFinalityFlowV1(
             } catch (e: NotaryExceptionGeneral) {
                 log.info {
                     "Received general error from notarization for transaction: ${transaction.id} on attempt: $attemptNumber. " +
-                            "Error: ${e.message} Retrying notarisation."
+                        "Error: ${e.message} Retrying notarisation."
                 }
                 continue
             } catch (e: NotaryExceptionUnknown) {
                 log.info {
                     "Received unknown error from notarization for transaction: ${transaction.id} on attempt: $attemptNumber. " +
-                            "Error: ${e.message} Retrying notarisation."
+                        "Error: ${e.message} Retrying notarisation."
                 }
                 continue
             } catch (e: CordaRuntimeException) {
@@ -322,7 +322,7 @@ class UtxoFinalityFlowV1(
                     Payload.Failure<List<DigitalSignatureAndMetadata>>(message, failureReason.value),
                     sessions.toSet()
                 )
-                log.info{ message }
+                log.info { message }
                 throw e
             }
         }
@@ -330,14 +330,14 @@ class UtxoFinalityFlowV1(
         if (log.isTraceEnabled) {
             log.info {
                 "Received ${notarySignatures.size} signature(s) from notary $notary after requesting notarization of transaction " +
-                        transactionId
+                    transactionId
             }
         }
 
         if (notarySignatures.isEmpty()) {
             val message =
                 "Notary $notary did not return any signatures after requesting notarization of transaction $transactionId"
-            log.info{ message }
+            log.info { message }
             persistInvalidTransaction(transaction)
             flowMessaging.sendAll(
                 Payload.Failure<List<DigitalSignatureAndMetadata>>(
