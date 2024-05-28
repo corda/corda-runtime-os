@@ -64,9 +64,7 @@ class UpdateProfile : Runnable {
         val profiles = ProfileUtils.loadProfiles().toMutableMap()
 
         val profile = if (profiles.containsKey(profileName)) {
-            ProfileUtils.objectMapper.readValue<MutableMap<String, String>>(
-                ProfileUtils.objectMapper.writeValueAsString(profiles[profileName])
-            )
+            ProfileUtils.getProfileProperties(profileName, profiles)
         } else {
             mutableMapOf()
         }

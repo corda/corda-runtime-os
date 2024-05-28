@@ -22,9 +22,7 @@ class ListProfile : Runnable {
     private val secretEncryptionUtil = SecretEncryptionUtil()
 
     private fun printProfile(profileName: String, profiles: MutableMap<String, Any>) {
-        val profileProps = ProfileUtils.objectMapper.readValue<MutableMap<String, String>>(
-            ProfileUtils.objectMapper.writeValueAsString(profiles[profileName])
-        )
+        val profileProps = ProfileUtils.getProfileProperties(profileName, profiles)
 
         sysOut.info("- $profileName")
         profileProps.forEach { (key, value) ->

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import java.io.File
 
@@ -17,9 +18,17 @@ enum class ProfileKey(val description: String) {
 }
 
 object ProfileUtils {
-    val objectMapper = ObjectMapper(YAMLFactory()).registerKotlinModule()
-    var profileFile = File(System.getProperty("user.home"), ".corda/cli/profile.yaml")
-    val VALID_KEYS = ProfileKey.values().map { it.name.lowercase() }
+    private val objectMapper = ObjectMapper(YAMLFactory()).registerKotlinModule()
+    private var profileFile: File
+    private val VALID_KEYS = ProfileKey.values().map { it.name.lowercase() }
+
+    init {
+        profileFile = File(System.getProperty("user.home"), ".corda/cli/profile.yaml")
+    }
+
+    fun initialize(file: File) {
+        profileFile = file
+    }
 
     fun isValidKey(key: String): Boolean {
         return VALID_KEYS.contains(key)
@@ -40,6 +49,10 @@ object ProfileUtils {
     fun saveProfiles(profiles: Map<String, Any>) {
         profileFile.parentFile.mkdirs()
         objectMapper.writeValue(profileFile, profiles)
+    }
+
+    fun getProfileProperties(profileName: String, profiles: Map<String, Any>): MutableMap<String, String> {
+        return objectMapper.readValue(objectMapper.writeValueAsString(profiles[profileName]))
     }
 
     fun getProfileKeysWithDescriptions(): String {

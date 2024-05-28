@@ -34,7 +34,7 @@ class ProfilePluginTest {
     @BeforeEach
     fun setup() {
         profileFilePath = tempDir.resolve("profile.yaml")
-        ProfileUtils.profileFile = profileFilePath.toFile()
+        ProfileUtils.initialize(profileFilePath.toFile())
         System.setOut(PrintStream(outContent))
     }
 
