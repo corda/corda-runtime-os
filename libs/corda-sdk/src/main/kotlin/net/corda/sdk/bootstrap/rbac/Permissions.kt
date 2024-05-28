@@ -117,7 +117,7 @@ object Permissions {
         // Certificate permissions
         "Import certificate" to "PUT:/api/$VERSION_PATH_REGEX/certificate/cluster/$CERTIFICATE_USAGE_REGEX",
         "Get all certificate aliases" to "GET:/api/$VERSION_PATH_REGEX/certificate/cluster/$CERTIFICATE_USAGE_REGEX",
-        "Get certificate by alias" to "GET:/api/$VERSION_PATH_REGEX/certificate/cluster/$VNODE_SHORT_HASH_REGEX/$CERTIFICATE_USAGE_REGEX",
+        "Get certificate chain by alias" to "GET:/api/$VERSION_PATH_REGEX/certificate/cluster/$CERTIFICATE_USAGE_REGEX/$ALIAS_REGEX",
         "Generate CSR for tenant" to "POST:/api/$VERSION_PATH_REGEX/certificate/$TENANT_ID_REGEX/$KEY_ID_REGEX",
 
         // HSM permissions
