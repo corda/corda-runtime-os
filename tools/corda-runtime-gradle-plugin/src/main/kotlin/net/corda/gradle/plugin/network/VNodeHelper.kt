@@ -1,6 +1,3 @@
-@file:Suppress("DEPRECATION")
-// used for CertificatesRestResource and KeysRestResource
-
 package net.corda.gradle.plugin.network
 
 import com.fasterxml.jackson.databind.DeserializationFeature
@@ -15,26 +12,17 @@ import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.gradle.plugin.dtos.VNode
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
-import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
-import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
-import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
-import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 import net.corda.membership.lib.MemberInfoExtension
-import net.corda.membership.rest.v1.CertificatesRestResource
-import net.corda.membership.rest.v1.HsmRestResource
-import net.corda.membership.rest.v1.KeysRestResource
-import net.corda.membership.rest.v1.MemberRegistrationRestResource
-import net.corda.membership.rest.v1.NetworkRestResource
 import net.corda.membership.rest.v1.types.request.HostedIdentitySessionKeyAndCertificate
 import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 import net.corda.membership.rest.v1.types.response.RegistrationRequestProgress
-import net.corda.rest.client.RestClient
-import net.corda.rest.json.serialization.JsonObjectAsString
+import net.corda.restclient.CordaRestClient
+import net.corda.restclient.dto.UpdateConfigParametersObjectNode
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.sdk.config.ClusterConfig
 import net.corda.sdk.data.Checksum
@@ -44,10 +32,10 @@ import net.corda.sdk.network.MemberRole
 import net.corda.sdk.network.RegistrationRequest
 import net.corda.sdk.network.RegistrationRequester
 import net.corda.sdk.network.VirtualNode
+import net.corda.sdk.network.writeToTempFile
 import net.corda.sdk.packaging.CpiUploader
 import net.corda.v5.base.types.MemberX500Name
 import java.io.File
-import java.net.HttpURLConnection
 import java.net.URI
 
 class VNodeHelper {
@@ -70,13 +58,12 @@ class VNodeHelper {
     }
 
     fun createVNode(
-        uploaderRestClient: RestClient<CpiUploadRestResource>,
-        restClient: RestClient<VirtualNodeRestResource>,
+        restClient: CordaRestClient,
         vNode: VNode,
         cpiUploadStatusFilePath: String
     ) {
         val cpiCheckSum = readCpiChecksumFromFile(cpiUploadStatusFilePath)
-        if (!CpiUploader().cpiChecksumExists(restClient = uploaderRestClient, checksum = cpiCheckSum)) {
+        if (!CpiUploader(restClient).cpiChecksumExists(checksum = cpiCheckSum)) {
             throw CordaRuntimeGradlePluginException("CPI $cpiCheckSum not uploaded.")
         }
 
@@ -90,14 +77,7 @@ class VNodeHelper {
             uniquenessDdlConnection = null,
             uniquenessDmlConnection = null,
         )
-        val response = VirtualNode().create(
-            restClient = restClient,
-            request = request
-        )
-        val responseStatusCode = response.responseCode.statusCode
-        if (responseStatusCode != HttpURLConnection.HTTP_ACCEPTED) {
-            throw CordaRuntimeGradlePluginException("Creation of virtual node failed with response status: $responseStatusCode")
-        }
+        VirtualNode(restClient).create(request = request)
     }
 
     /**
@@ -137,11 +117,7 @@ class VNodeHelper {
      */
     @Suppress("LongParameterList")
     fun getRegistrationRequest(
-        hsmRestClient: RestClient<HsmRestResource>,
-        keyRestClient: RestClient<KeysRestResource>,
-        certificateRestClient: RestClient<CertificatesRestResource>,
-        configRestClient: RestClient<ConfigRestResource>,
-        networkRestClient: RestClient<NetworkRestResource>,
+        restClient: CordaRestClient,
         vNode: VNode,
         holdingId: ShortHash,
         clusterURI: URI,
@@ -151,19 +127,14 @@ class VNodeHelper {
         caHome = File(certificateAuthorityFilePath)
         return if (vNode.mgmNode == "true") {
             getMgmRegRequest(
-                hsmRestClient = hsmRestClient,
-                keyRestClient = keyRestClient,
-                certificateRestClient = certificateRestClient,
-                configRestClient = configRestClient,
+                restClient = restClient,
                 holdingId = holdingId,
                 clusterURI = clusterURI
             )
         } else if (vNode.serviceX500Name == null) {
             if (isDynamicNetwork) {
                 getDynamicMemberRegRequest(
-                    hsmRestClient = hsmRestClient,
-                    keyRestClient = keyRestClient,
-                    networkRestClient = networkRestClient,
+                    restClient = restClient,
                     holdingId = holdingId
                 )
             } else {
@@ -181,9 +152,7 @@ class VNodeHelper {
                     MemberInfoExtension.NOTARY_SERVICE_PROTOCOL to flowProtocolValue
                 )
                 getDynamicNotaryRegRequest(
-                    hsmRestClient = hsmRestClient,
-                    keyRestClient = keyRestClient,
-                    networkRestClient = networkRestClient,
+                    restClient = restClient,
                     holdingId = holdingId,
                     customProperties = customProps
                 )
@@ -201,27 +170,24 @@ class VNodeHelper {
      * Registers an individual Vnode
      */
     fun registerVNode(
-        registrationRestClient: RestClient<MemberRegistrationRestResource>,
+        restClient: CordaRestClient,
         registrationRequest: MemberRegistrationRequest,
         shortHash: ShortHash
     ): RegistrationRequestProgress {
-        return RegistrationRequester().requestRegistration(
-            restClient = registrationRestClient,
+        return RegistrationRequester(restClient).requestRegistration(
             memberRegistrationRequest = registrationRequest,
             holdingId = shortHash
         )
     }
 
     internal fun getDynamicNotaryRegRequest(
-        hsmRestClient: RestClient<HsmRestResource>,
-        keyRestClient: RestClient<KeysRestResource>,
-        networkRestClient: RestClient<NetworkRestResource>,
+        restClient: CordaRestClient,
         holdingId: ShortHash,
         customProperties: Map<String, String>
     ): MemberRegistrationRequest {
-        val sessionKey = generateKey(hsmRestClient, keyRestClient, holdingId, CryptoConsts.Categories.KeyCategory.SESSION_INIT_KEY)
-        val notaryKey = generateKey(hsmRestClient, keyRestClient, holdingId, CryptoConsts.Categories.KeyCategory.NOTARY_KEY)
-        configureNodeAsNetworkParticipant(networkRestClient, sessionKey, holdingId)
+        val sessionKey = generateKey(restClient, holdingId, CryptoConsts.Categories.KeyCategory.SESSION_INIT_KEY)
+        val notaryKey = generateKey(restClient, holdingId, CryptoConsts.Categories.KeyCategory.NOTARY_KEY)
+        configureNodeAsNetworkParticipant(restClient, sessionKey, holdingId)
         return RegistrationRequest().createNotaryRegistrationRequest(
             preAuthToken = null,
             roles = setOf(MemberRole.NOTARY),
@@ -233,14 +199,12 @@ class VNodeHelper {
     }
 
     private fun getDynamicMemberRegRequest(
-        hsmRestClient: RestClient<HsmRestResource>,
-        keyRestClient: RestClient<KeysRestResource>,
-        networkRestClient: RestClient<NetworkRestResource>,
+        restClient: CordaRestClient,
         holdingId: ShortHash
     ): MemberRegistrationRequest {
-        val sessionKey = generateKey(hsmRestClient, keyRestClient, holdingId, CryptoConsts.Categories.KeyCategory.SESSION_INIT_KEY)
-        val ledgerKey = generateKey(hsmRestClient, keyRestClient, holdingId, CryptoConsts.Categories.KeyCategory.LEDGER_KEY)
-        configureNodeAsNetworkParticipant(networkRestClient, sessionKey, holdingId)
+        val sessionKey = generateKey(restClient, holdingId, CryptoConsts.Categories.KeyCategory.SESSION_INIT_KEY)
+        val ledgerKey = generateKey(restClient, holdingId, CryptoConsts.Categories.KeyCategory.LEDGER_KEY)
+        configureNodeAsNetworkParticipant(restClient, sessionKey, holdingId)
         return RegistrationRequest().createMemberRegistrationRequest(
             preAuthToken = null,
             roles = null,
@@ -252,7 +216,7 @@ class VNodeHelper {
     }
 
     private fun configureNodeAsNetworkParticipant(
-        networkRestClient: RestClient<NetworkRestResource>,
+        restClient: CordaRestClient,
         sessionKey: KeyPairIdentifier,
         holdingId: ShortHash
     ) {
@@ -266,8 +230,7 @@ class VNodeHelper {
                 ),
             ),
         )
-        RegistrationRequester().configureAsNetworkParticipant(
-            restClient = networkRestClient,
+        RegistrationRequester(restClient).configureAsNetworkParticipant(
             request = request,
             holdingId = holdingId,
         )
@@ -275,17 +238,14 @@ class VNodeHelper {
 
     @Suppress("LongParameterList")
     private fun getMgmRegRequest(
-        hsmRestClient: RestClient<HsmRestResource>,
-        keyRestClient: RestClient<KeysRestResource>,
-        certificateRestClient: RestClient<CertificatesRestResource>,
-        configRestClient: RestClient<ConfigRestResource>,
+        restClient: CordaRestClient,
         holdingId: ShortHash,
         clusterURI: URI
     ): MemberRegistrationRequest {
-        val sessionKey = generateKey(hsmRestClient, keyRestClient, holdingId, CryptoConsts.Categories.KeyCategory.SESSION_INIT_KEY)
-        val preAuthKey = generateKey(hsmRestClient, keyRestClient, holdingId, CryptoConsts.Categories.KeyCategory.PRE_AUTH_KEY)
-        setupTlsKeyAndSignCsr(keyRestClient, certificateRestClient, clusterURI)
-        disableCrl(configRestClient)
+        val sessionKey = generateKey(restClient, holdingId, CryptoConsts.Categories.KeyCategory.SESSION_INIT_KEY)
+        val preAuthKey = generateKey(restClient, holdingId, CryptoConsts.Categories.KeyCategory.PRE_AUTH_KEY)
+        setupTlsKeyAndSignCsr(restClient, clusterURI)
+        disableCrl(restClient)
         return RegistrationRequest().createMgmRegistrationRequest(
             mtls = false,
             p2pGatewayUrls = p2pGatewayUrls,
@@ -296,36 +256,30 @@ class VNodeHelper {
     }
 
     fun generateSessionKey(
-        hsmRestClient: RestClient<HsmRestResource>,
-        keyRestClient: RestClient<KeysRestResource>,
+        restClient: CordaRestClient,
         holdingId: ShortHash
     ): KeyPairIdentifier {
-        return Keys().assignSoftHsmAndGenerateKey(
-            hsmRestClient = hsmRestClient,
-            keysRestClient = keyRestClient,
+        return Keys(restClient).assignSoftHsmAndGenerateKey(
             holdingIdentityShortHash = holdingId,
             category = CryptoConsts.Categories.KeyCategory.SESSION_INIT_KEY
         )
     }
 
     fun generateKey(
-        hsmRestClient: RestClient<HsmRestResource>,
-        keyRestClient: RestClient<KeysRestResource>,
+        restClient: CordaRestClient,
         holdingId: ShortHash,
         category: CryptoConsts.Categories.KeyCategory
     ): KeyPairIdentifier {
-        return Keys().assignSoftHsmAndGenerateKey(
-            hsmRestClient = hsmRestClient,
-            keysRestClient = keyRestClient,
+        return Keys(restClient).assignSoftHsmAndGenerateKey(
             holdingIdentityShortHash = holdingId,
             category = category
         )
     }
 
-    private fun disableCrl(restClient: RestClient<ConfigRestResource>) {
-        val clusterConfig = ClusterConfig()
+    private fun disableCrl(restClient: CordaRestClient) {
+        val clusterConfig = ClusterConfig(restClient)
         val objectMapper = ObjectMapper()
-        val currentConfig = clusterConfig.getCurrentConfig(restClient = restClient, configSection = ConfigKeys.RootConfigKey.P2P_GATEWAY)
+        val currentConfig = clusterConfig.getCurrentConfig(configSection = ConfigKeys.RootConfigKey.P2P_GATEWAY)
         val rawConfig = currentConfig.configWithDefaults
         val rawConfigJson = objectMapper.readTree(rawConfig)
         val sslConfig = rawConfigJson["sslConfig"]
@@ -344,34 +298,34 @@ class VNodeHelper {
                     objectMapper.createObjectNode().put("mode", "OFF"),
                 ),
         )
-        val payload = UpdateConfigParameters(
+        val payload = UpdateConfigParametersObjectNode(
             section = "corda.p2p.gateway",
             version = currentConfig.version,
-            config = JsonObjectAsString(objectMapper.writeValueAsString(newConfig)),
+            config = newConfig,
             schemaVersion = ConfigSchemaVersion(major = currentConfig.schemaVersion.major, minor = currentConfig.schemaVersion.minor),
         )
-        clusterConfig.updateConfig(restClient = restClient, updateConfig = payload)
+        clusterConfig.updateConfig(updateConfig = payload)
     }
 
     private fun setupTlsKeyAndSignCsr(
-        keyRestClient: RestClient<KeysRestResource>,
-        certificateRestClient: RestClient<CertificatesRestResource>,
+        restClient: CordaRestClient,
         cordaClusterUri: URI
     ) {
-        if (!Keys().hasTlsKey(restClient = keyRestClient)) {
-            val tlsKey = Keys().generateTlsKey(restClient = keyRestClient)
+        val keysHelper = Keys(restClient)
+        if (!keysHelper.hasTlsKey()) {
+            val tlsKey = keysHelper.generateTlsKey()
 
-            val clientCertificates = ClientCertificates()
+            val clientCertificates = ClientCertificates(restClient)
             val p2pHosts = cordaClusterUri.host
 
             val csrCertRequest = clientCertificates.generateP2pCsr(
-                restClient = certificateRestClient,
                 tlsKey = tlsKey,
                 subjectX500Name = MemberX500Name.parse("CN=CordaOperator, C=GB, L=London, O=Org"),
                 p2pHostNames = listOf(p2pHosts),
             )
-            val certificate = certificateAuthority.signCsr(csrCertRequest).toPem().byteInputStream()
-            clientCertificates.uploadTlsCertificate(restClient = certificateRestClient, certificate = certificate)
+            certificateAuthority.signCsr(csrCertRequest).toPem().writeToTempFile("CSR.csr").also {
+                clientCertificates.uploadTlsCertificate(certificateFile = it)
+            }
         }
     }
 }

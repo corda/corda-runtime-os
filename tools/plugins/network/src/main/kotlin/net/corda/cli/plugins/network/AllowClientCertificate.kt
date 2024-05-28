@@ -5,12 +5,12 @@ import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.cli.plugins.typeconverter.ShortHashConverter
 import net.corda.cli.plugins.typeconverter.X500NameConverter
 import net.corda.crypto.core.ShortHash
-import net.corda.membership.rest.v1.MGMRestResource
+import net.corda.restclient.CordaRestClient
 import net.corda.sdk.network.ClientCertificates
-import net.corda.sdk.rest.RestClientUtils
 import net.corda.v5.base.types.MemberX500Name
 import picocli.CommandLine.Command
 import picocli.CommandLine.Parameters
+import java.net.URI
 import kotlin.time.Duration.Companion.seconds
 
 @Command(
@@ -49,20 +49,25 @@ class AllowClientCertificate : Runnable, RestCommand() {
             return
         }
 
-        val restClient = RestClientUtils.createRestClient(
-            MGMRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
+        val restClient = CordaRestClient.createHttpClient(
+            baseUrl = URI.create(targetUrl),
             username = username,
             password = password,
-            targetUrl = targetUrl
+            insecure = insecure
         )
-        val clientCertificates = ClientCertificates()
+        val clientCertificates = ClientCertificates(restClient)
 
         println("Allowing certificates...")
-        clientCertificates.allowMutualTlsForSubjects(restClient, mgmShortHash, subjects, waitDurationSeconds.seconds)
+        clientCertificates.allowMutualTlsForSubjects(
+            holdingIdentityShortHash = mgmShortHash,
+            subjects = subjects,
+            wait = waitDurationSeconds.seconds
+        )
         println("Success!")
-        clientCertificates.listMutualTlsClientCertificates(restClient, mgmShortHash, waitDurationSeconds.seconds).forEach { subject ->
+        clientCertificates.listMutualTlsClientCertificates(
+            holdingIdentityShortHash = mgmShortHash,
+            wait = waitDurationSeconds.seconds
+        ).forEach { subject ->
             println("Certificate with subject $subject is allowed")
         }
     }

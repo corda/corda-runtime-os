@@ -1,9 +1,8 @@
 package net.corda.sdk.network
 
 import net.corda.crypto.core.ShortHash
-import net.corda.membership.rest.v1.MemberRegistrationRestResource
-import net.corda.rest.client.RestClient
-import net.corda.rest.client.RestConnection
+import net.corda.restclient.CordaRestClient
+import net.corda.restclient.generated.apis.MemberRegistrationApi
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -14,13 +13,12 @@ class RegistrationsLookupTest {
 
     @Test
     fun testIsVnodeRegistrationApprovedEmptyList() {
-        val mockedMemberRegistrations = mock<MemberRegistrationRestResource> {
-            on { checkRegistrationProgress(any()) } doReturn emptyList()
+        val mockedMemberRegistrationClient: MemberRegistrationApi = mock {
+            on { it.getMembershipHoldingidentityshorthash(any()) } doReturn emptyList()
         }
-        val restConnection = mock<RestConnection<MemberRegistrationRestResource>> { on { proxy } doReturn mockedMemberRegistrations }
-        val mockedRestClient = mock<RestClient<MemberRegistrationRestResource>> { on { start() } doReturn restConnection }
-        val result = RegistrationsLookup().isVnodeRegistrationApproved(
-            restClient = mockedRestClient,
+        val client = CordaRestClient.createHttpClient(memberRegistrationClient = mockedMemberRegistrationClient)
+
+        val result = RegistrationsLookup(client).isVnodeRegistrationApproved(
             ShortHash.parse("123456789123")
         )
         Assertions.assertThat(result).isFalse

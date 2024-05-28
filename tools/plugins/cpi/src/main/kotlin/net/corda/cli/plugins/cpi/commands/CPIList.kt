@@ -1,12 +1,12 @@
 package net.corda.cli.plugins.cpi.commands
 
 import net.corda.cli.plugins.common.RestCommand
-import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
+import net.corda.restclient.CordaRestClient
 import net.corda.sdk.packaging.CpiUploader
-import net.corda.sdk.rest.RestClientUtils.createRestClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine.Command
+import java.net.URI
 import kotlin.system.exitProcess
 import kotlin.time.Duration.Companion.seconds
 
@@ -26,18 +26,15 @@ class CPIList : RestCommand(), Runnable {
     }
 
     override fun run() {
-        val restClient = createRestClient(
-            CpiUploadRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
+        val restClient = CordaRestClient.createHttpClient(
+            baseUrl = URI.create(targetUrl),
             username = username,
             password = password,
-            targetUrl = targetUrl
+            insecure = insecure
         )
 
         val result = try {
-            CpiUploader().getAllCpis(
-                restClient = restClient,
+            CpiUploader(restClient).getAllCpis(
                 wait = waitDurationSeconds.seconds
             )
         } catch (e: Exception) {

@@ -1,17 +1,16 @@
 package net.corda.cli.plugins.cpi.commands
 
 import net.corda.cli.plugins.common.RestCommand
-import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
-import net.corda.rest.client.RestClient
+import net.corda.restclient.CordaRestClient
 import net.corda.sdk.data.Checksum
 import net.corda.sdk.data.RequestId
 import net.corda.sdk.packaging.CpiUploader
-import net.corda.sdk.rest.RestClientUtils.createRestClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
+import java.net.URI
 import kotlin.system.exitProcess
 import kotlin.time.Duration.Companion.seconds
 
@@ -44,6 +43,8 @@ class CPIUpload : RestCommand(), Runnable {
     )
     var wait: Boolean = false
 
+    lateinit var restClient: CordaRestClient
+
     override fun run() {
         val cpi = File(cpiFilePath)
         if (!cpi.isFile || !cpi.exists()) {
@@ -54,21 +55,16 @@ class CPIUpload : RestCommand(), Runnable {
             sysErr.error("File type must be .cpi")
             exitProcess(1)
         }
-        val restClient = createRestClient(
-            CpiUploadRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
+        restClient = CordaRestClient.createHttpClient(
+            baseUrl = URI.create(targetUrl),
             username = username,
             password = password,
-            targetUrl = targetUrl
+            insecure = insecure
         )
         val cpiUploadResult = try {
             sysOut.info("Uploading CPI to host: $targetUrl")
-            CpiUploader().uploadCPI(
-                restClient = restClient,
-                cpi = cpi.inputStream(),
-                cpiName = cpi.name,
-                wait = waitDurationSeconds.seconds
+            CpiUploader(restClient).uploadCPI(
+                cpi = cpi,
             ).let { RequestId(it.id) }
         } catch (e: Exception) {
             sysErr.error(e.message, e)
@@ -76,19 +72,18 @@ class CPIUpload : RestCommand(), Runnable {
             exitProcess(2)
         }
         if (wait) {
-            pollForOKStatus(cpiUploadResult, restClient)
+            pollForOKStatus(cpiUploadResult)
         } else {
             sysOut.info("The ID returned from the CPI upload request is $cpiUploadResult")
         }
     }
 
     @Suppress("NestedBlockDepth")
-    private fun pollForOKStatus(cpiUploadResult: RequestId, restClient: RestClient<CpiUploadRestResource>) {
+    private fun pollForOKStatus(cpiUploadResult: RequestId) {
         val checksum: Checksum
         sysOut.info("Polling for result.")
         try {
-            checksum = CpiUploader().cpiChecksum(
-                restClient = restClient,
+            checksum = CpiUploader(restClient).cpiChecksum(
                 uploadRequestId = cpiUploadResult,
                 wait = waitDurationSeconds.seconds
             )
