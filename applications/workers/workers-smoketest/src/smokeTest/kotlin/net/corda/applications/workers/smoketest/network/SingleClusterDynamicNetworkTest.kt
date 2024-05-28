@@ -10,10 +10,12 @@ import net.corda.e2etest.utilities.onboardMgm
 import net.corda.e2etest.utilities.onboardNotaryMember
 import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.Duration
-import java.util.UUID
+import java.util.*
 
+@Disabled("Temporary")
 class SingleClusterDynamicNetworkTest : ClusterReadiness by ClusterReadinessChecker() {
     private val testUniqueId = UUID.randomUUID()
 

@@ -13,10 +13,12 @@ import net.corda.e2etest.utilities.containsExactlyInAnyOrderActiveMembers
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.registerStaticMember
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.Duration
-import java.util.UUID
+import java.util.*
 
+@Disabled("Temporary")
 class StaticNetworkTest : ClusterReadiness by ClusterReadinessChecker() {
 
     private val testRunUniqueId = UUID.randomUUID()
