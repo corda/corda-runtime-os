@@ -16,7 +16,6 @@ group 'net.corda.cli.plugins.data'
 
 dependencies {
     compileOnly libs.kotlin.stdlib
-    compileOnly "net.corda.cli.host:api:$pluginHostVersion"
     kapt "info.picocli:picocli:$picocliVersion"
     compileOnly "info.picocli:picocli:$picocliVersion"
     compileOnly project(':libs:crypto:crypto-core')

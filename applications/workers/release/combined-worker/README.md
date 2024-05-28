@@ -73,12 +73,8 @@ docker compose -p kafka-cluster up -d
 
 Create the required topics by building and executing the `topic` plugin: 
 ```bash
-./gradlew :tools:plugins:topic-config:clean :tools:plugins:topic-config:cliPluginTask
-cd ../corda-cli-plugin-host/
-./gradlew assemble
-cp ../corda-runtime-os/tools/plugins/topic-config/build/libs/topic-config-cli-plugin-*.jar ./build/plugins/
-./build/generatedScripts/corda-cli.sh topic -b=localhost:9092 create connect
-cd ../corda-runtime-os/
+./gradlew :tools:corda-cli:clean :tools:corda-cli:build
+./tools/corda-cli/build/cli/corda-cli.sh topic -b=localhost:9092 create connect
 ```
 
 ### Using custom TLS certificate for REST

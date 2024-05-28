@@ -2,8 +2,6 @@ plugins {
     id 'distribution'
     id 'org.jetbrains.kotlin.jvm'
     id 'org.jetbrains.kotlin.kapt'
-    id 'corda.cli-plugin-packager'
-    id 'corda.common-publishing'
 }
 
 ext {
@@ -24,35 +22,8 @@ dependencies {
     implementation project(":tools:plugins:plugins-rest")
     implementation project(':tools:plugins:common-utils')
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
-    compileOnly libs.pf4j
-    compileOnly "net.corda.cli.host:api:$pluginHostVersion"
 
-    kapt libs.pf4j
     kapt "info.picocli:picocli:$picocliVersion"
 
     testImplementation libs.bundles.test
-    testImplementation libs.pf4j
-    testCompileOnly "net.corda.cli.host:api:$pluginHostVersion"
-}
-
-cliPlugin {
-    cliPluginClass = 'net.corda.cli.plugins.cpi.CPICliPlugin'
-    cliPluginDescription = 'A CLI plug-in for operations on cpis'
-}
-
-tasks.named("installDist") {
-    dependsOn cliPlugin
-    def homePath = System.properties['user.home']
-    from cliPlugin
-    into "$homePath/.corda/cli/plugins"
-}
-
-publishing {
-    publications {
-        maven(MavenPublication) {
-            artifactId "${cliPlugin.cliPluginId.get()}-cli-plugin"
-            groupId project.group
-            artifact cliPluginTask
-        }
-    }
 }

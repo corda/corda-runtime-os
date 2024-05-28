@@ -1,10 +1,5 @@
 # Network Plugin
-This is a plug-in for [Corda CLI plugin host](https://github.com/corda/corda-cli-plugin-host) for membership operations.
-
-> The commands below assume you have access to corda-cli.sh   
-> To use this plugin, build the JAR with `./gradlew :tools:plugins:network:build`, move the JAR to 
-> `corda-cli-plugin-host/build/plugins/` and run the commands as shown below by locating corda-cli.sh in 
-> `corda-cli-plugin-host/build/generatedScripts/`.
+This is a plug-in for `corda-cli` for membership operations.
 
 # Static Network Operations
 

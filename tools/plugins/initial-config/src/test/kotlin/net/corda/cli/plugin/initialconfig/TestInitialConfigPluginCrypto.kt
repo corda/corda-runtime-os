@@ -18,7 +18,7 @@ class TestInitialConfigPluginCrypto {
     @Test
     fun `Should output missing options`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = InitialConfigPlugin.PluginEntryPoint()
+        val app = InitialConfigPlugin()
         val outText = SystemLambda.tapSystemErrNormalized {
             CommandLine(
                 app
@@ -41,7 +41,7 @@ class TestInitialConfigPluginCrypto {
     @Test
     fun `Should output missing options when targeting Hashicorp Vault`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = InitialConfigPlugin.PluginEntryPoint()
+        val app = InitialConfigPlugin()
         val outText = SystemLambda.tapSystemErrNormalized {
             CommandLine(
                 app
@@ -57,7 +57,7 @@ class TestInitialConfigPluginCrypto {
     @Test
     fun `Should be able to create default initial crypto configuration with defined wrapping key`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = InitialConfigPlugin.PluginEntryPoint()
+        val app = InitialConfigPlugin()
         val outText = SystemLambda.tapSystemOutNormalized {
             CommandLine(
                 app
@@ -83,7 +83,7 @@ class TestInitialConfigPluginCrypto {
     @Test
     fun `Should be able to create default initial crypto configuration with random wrapping key`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = InitialConfigPlugin.PluginEntryPoint()
+        val app = InitialConfigPlugin()
         val outText = SystemLambda.tapSystemOutNormalized {
             CommandLine(
                 app
@@ -109,7 +109,7 @@ class TestInitialConfigPluginCrypto {
     @Test
     fun `Should be able to create vault initial crypto configuration with single random wrapping key`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = InitialConfigPlugin.PluginEntryPoint()
+        val app = InitialConfigPlugin()
         val outText = SystemLambda.tapSystemOutNormalized {
             CommandLine(
                 app
@@ -139,7 +139,7 @@ class TestInitialConfigPluginCrypto {
     @Test
     fun `Should be able to create vault initial crypto configuration with two random wrapping keys`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = InitialConfigPlugin.PluginEntryPoint()
+        val app = InitialConfigPlugin()
         val outText = SystemLambda.tapSystemOutNormalized {
             CommandLine(
                 app
@@ -174,7 +174,7 @@ class TestInitialConfigPluginCrypto {
     @Test
     fun `Should fail to create vault initial crypto configuration with insufficient keys specified`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = InitialConfigPlugin.PluginEntryPoint()
+        val app = InitialConfigPlugin()
         val outText = SystemLambda.tapSystemErrNormalized {
             CommandLine(
                 app

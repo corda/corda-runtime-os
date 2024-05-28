@@ -21,13 +21,13 @@ You have built a CPB with the flow you want to use for running the flow worker:
 ```
 
 2) Generate a GroupPolicy file for the CPB. This can be done using the
-   corda-cli.  https://github.com/corda/corda-cli-plugin-host/tree/release/version-1.0.0/plugins/package
+   corda-cli. 
    More information about GroupPolicy files can be found at https://github.com/corda/corda-runtime-os/wiki/Group-Policy.
    Example command to generate a GroupPolicy:
 
 ```shell
-./gradlew build
-./build/generatedScripts/corda-cli.sh mgm groupPolicy --name="CN=Alice, OU=Application, O=R3, L=London, C=GB" --name="CN=Bob, OU=Application, O=R3, L=London, C=GB" --endpoint-protocol=1 --endpoint="http://localhost:1080" >> GroupPolicy.json
+./gradlew :tools:corda-cli:build
+./tools/corda-cli/build/cli/corda-cli.sh /corda-cli.sh mgm groupPolicy --name="CN=Alice, OU=Application, O=R3, L=London, C=GB" --name="CN=Bob, OU=Application, O=R3, L=London, C=GB" --endpoint-protocol=1 --endpoint="http://localhost:1080" >> GroupPolicy.json
 ```  
 
 In the same directory as your built CBP add the file called ```GroupPolicy.json``` (the name is case-sensitive)

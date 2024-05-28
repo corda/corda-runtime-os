@@ -26,9 +26,6 @@ mssqlDriverVersion = "11.2.3.jre17"
 postgresDriverVersion = "42.7.3"
 # SLF4J cannot be ugraded to 2.x due to CorDapps requiring the 1.7 <= x < 2.0
 slf4jVersion = { strictly = "1.7.36" }
-# The CLI plugins use SLF4J version 2 because PF4j requires it
-# Since slf4jVersion is "strictly" enforced from `corda-api`, in order to override version we need to specify
-# version strictly here as well
 slf4jV2Version = { strictly = "2.0.6" }
 snakeyamlVersion = "2.2"
 # Please also update SWAGGERUI.version in net.corda.rest.server.impl.internal.OptionalDependency
@@ -40,7 +37,6 @@ snappyJavaVersion="1.1.10.5"
 typeSafeConfigVersion = "1.4.3"
 okHttpVersion = { strictly = "4.9.2" }
 okioVersion = { strictly = "3.4.0" }
-pf4jVersion = "3.11.1"
 unirestVersion = "3.14.5"
 zipkinCoreVersion = "2.27.1"
 zipkinReporterVersion = "3.4.0"
@@ -112,7 +108,6 @@ mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mo
 mockito-kotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version.ref = "mockitoKotlinVersion" }
 mssql-jdbc = { group = "com.microsoft.sqlserver", name = "mssql-jdbc", version.ref = "mssqlDriverVersion" }
 nimbus-sdk = { group = "com.nimbusds", name = "oauth2-oidc-sdk", version.ref = "nimbusVersion" }
-pf4j = { group = "org.pf4j", name = "pf4j", version.ref = "pf4jVersion" }
 postgresql-jdbc = { group = "org.postgresql", name = "postgresql", version.ref = "postgresDriverVersion" }
 slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4jVersion" }
 slf4j-jul = { group = "org.slf4j", name = "jul-to-slf4j", version.ref = "slf4jVersion" }

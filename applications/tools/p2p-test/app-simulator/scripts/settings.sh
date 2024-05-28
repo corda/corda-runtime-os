@@ -1,5 +1,5 @@
 #!/bin/bash
-# Settings for the P2P Deployment as Enviroment Varaibles
+# Settings for the P2P Deployment as Environment Variables
 
 # Prefix the K8s namespace of each corda cluster
 NAMESPACE_PREFIX="${USER//./}"
