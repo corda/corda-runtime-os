@@ -1,6 +1,5 @@
 package net.corda.cli.plugins.profile.commands
 
-import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.libs.configuration.secret.SecretEncryptionUtil
 import net.corda.sdk.profile.ProfileUtils
 import org.slf4j.Logger
