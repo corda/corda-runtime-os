@@ -32,7 +32,7 @@ private val log =
 object SchemaModelToOpenApiSchemaConverter {
     @Suppress("ComplexMethod")
     fun convert(schemaModel: SchemaModel): Schema<Any> {
-        log.trace { """Convert schemaModel "$schemaModel" to schema.""" }
+        log.info ("""Convert schemaModel "$schemaModel" to schema.""" )
         return when (schemaModel) {
             is SchemaEnumModel -> convertBaseSchemaModel(schemaModel).apply {
                 schemaModel.enum?.forEach { this.addEnumItemObject(it) }
@@ -65,7 +65,7 @@ object SchemaModelToOpenApiSchemaConverter {
                 `$ref`(schemaModel.ref)
             }
             is JsonSchemaModel -> ComposedSchema().apply {
-                description = "Can be any value - string, number, boolean, array or object."
+                description = "Can be any value - string, number, boolean, array or object." // THis need to be udpate it can only be an object
                 example = "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
                 anyOf(
                     listOf(
