@@ -1,6 +1,7 @@
 package net.corda.sdk.bootstrap.rbac
 
 import net.corda.rbac.schema.RbacKeys
+import net.corda.rbac.schema.RbacKeys.CLIENT_REQ_REGEX
 import net.corda.rbac.schema.RbacKeys.UUID_REGEX
 import net.corda.rbac.schema.RbacKeys.VNODE_SHORT_HASH_REGEX
 import net.corda.rbac.schema.RbacKeys.VNODE_STATE_REGEX
@@ -11,21 +12,25 @@ object Permissions {
 
     // temporary regex for testing
     private const val CPI_FILE_CHECKSUM_REGEX = "[a-fA-F0-9]{12}"
-    private const val CERTIFICATE_USAGE_REGEX = "^(p2p-tls|p2p-session|code-signer)$"
-    private const val TENANT_ID_REGEX = "[a-fA-F0-9]{12}|p2p"
+
+    // Status request ID for vNode creation is 12 chars long and for vNode upgrade is 36 chars long
+    private const val VNODE_STATUS_REQ_REGEX = "([a-fA-F0-9]{36}|[a-fA-F0-9]{12})"
+
+    private const val CERTIFICATE_USAGE_REGEX = "(p2p-tls|p2p-session|code-signer)"
+    private const val TENANT_ID_REGEX = "([a-fA-F0-9]{12}|p2p)"
     private const val KEY_ID_REGEX = "[a-fA-F0-9]{12}"
-    private const val HSM_CATEGORY_REGEX = "ACCOUNTS|CI|LEDGER|NOTARY|SESSION_INIT|TLS|JWT_KEY"
+    private const val HSM_CATEGORY_REGEX = "(ACCOUNTS|CI|LEDGER|NOTARY|SESSION_INIT|TLS|JWT_KEY)"
     private const val ALIAS_REGEX = "[-._A-Za-z0-9]{1,255}"
     private const val KEY_SCHEME_REGEX =
         """
-            CORDA.RSA
+            (CORDA.RSA
             |CORDA.ECDSA.SECP256K1
             |CORDA.ECDSA.SECP256R1
             |CORDA.EDDSA.ED25519
             |CORDA.X25519
             |CORDA.SM2
             |CORDA.GOST3410.GOST3411
-            |CORDA.SPHINCS-256
+            |CORDA.SPHINCS-256)
             """
 
     val cordaDeveloper: Map<String, String> = listOf(
@@ -49,7 +54,7 @@ object Permissions {
             ),
             PermissionTemplate(
                 "Get status for a specific flow",
-                "GET:/api/$VERSION_PATH_REGEX/flow/$vNodeShortHash/${RbacKeys.CLIENT_REQ_REGEX}",
+                "GET:/api/$VERSION_PATH_REGEX/flow/$vNodeShortHash/$CLIENT_REQ_REGEX",
                 null
             ),
             PermissionTemplate(
@@ -100,7 +105,7 @@ object Permissions {
         "Create vNode" to "POST:/api/$VERSION_PATH_REGEX/virtualnode",
         "Get all vNodes" to "GET:/api/$VERSION_PATH_REGEX/virtualnode",
         "Get a vNode" to "GET:/api/$VERSION_PATH_REGEX/virtualnode/$VNODE_SHORT_HASH_REGEX",
-        "Get operation status of vNode" to "GET:/api/$VERSION_PATH_REGEX/virtualnode/status/[a-fA-F0-9]{64}",
+        "Get operation status of vNode" to "GET:/api/$VERSION_PATH_REGEX/virtualnode/status/$VNODE_STATUS_REQ_REGEX",
         "Update virtual node state" to "PUT:/api/$VERSION_PATH_REGEX/virtualnode/$VNODE_SHORT_HASH_REGEX/state/$VNODE_STATE_REGEX",
         "Upgrade virtual node's CPI" to "PUT:/api/$VERSION_PATH_REGEX/virtualnode/$VNODE_SHORT_HASH_REGEX/cpi/$CPI_FILE_CHECKSUM_REGEX",
         "Update virtual node database" to "PUT:/api/$VERSION_PATH_REGEX/virtualnode/$VNODE_SHORT_HASH_REGEX/db",
@@ -140,7 +145,7 @@ object Permissions {
 
         // Flow permissions
         "Get all flows status for holding identity" to "GET:/api/$VERSION_PATH_REGEX/flow/$VNODE_SHORT_HASH_REGEX",
-        "Get flow status" to "GET:/api/$VERSION_PATH_REGEX/flow/$VNODE_SHORT_HASH_REGEX/$UUID_REGEX",
+        "Get flow status" to "GET:/api/$VERSION_PATH_REGEX/flow/$VNODE_SHORT_HASH_REGEX/$CLIENT_REQ_REGEX",
 
     ).toMap()
 }

@@ -88,22 +88,28 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
 
     fun delete(cmd: String) = client.delete(cmd)
 
+    @Suppress("LongParameterList")
     private fun uploadCpiResource(
         cmd: String,
         cpbResourceName: String?,
         groupPolicy: String,
         cpiName: String,
-        cpiVersion: String
+        cpiVersion: String,
+        forceUpload: Boolean = false
     ): SimpleResponse {
         return CpiLoader.get(cpbResourceName, groupPolicy, cpiName, cpiVersion).use {
-            client.postMultiPart(cmd, emptyMap(), mapOf("upload" to HttpsClientFileUpload(it, cpiName)))
+            if (forceUpload) {
+                client.postMultiPart(cmd, emptyMap(), mapOf("upload" to HttpsClientFileUpload(it, cpiName)))
+            } else {
+                vNodeCreatorClient.postMultiPart(cmd, emptyMap(), mapOf("upload" to HttpsClientFileUpload(it, cpiName)))
+            }
         }
     }
 
     private fun uploadUnmodifiedResource(cmd: String, resourceName: String): SimpleResponse {
         val fileName = Paths.get(resourceName).fileName.toString()
         return CpiLoader.getRawResource(resourceName).use {
-            client.postMultiPart(cmd, emptyMap(), mapOf("upload" to HttpsClientFileUpload(it, fileName)))
+            vNodeCreatorClient.postMultiPart(cmd, emptyMap(), mapOf("upload" to HttpsClientFileUpload(it, fileName)))
         }
     }
 
@@ -122,7 +128,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     private fun InputStream.uploadCertificateInputStream(
         cmd: String, alias: String, fileName: String
     ) = use {
-        client.putMultiPart(
+        vNodeCreatorClient.putMultiPart(
             cmd,
             mapOf("alias" to alias),
             mapOf("certificate" to HttpsClientFileUpload(it, fileName))
@@ -176,7 +182,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         )
 
     fun getCertificateChain(usage: String, alias: String) =
-        client.get("/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/cluster/$usage/$alias")
+        vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/cluster/$usage/$alias")
 
     /**
      * Returns the correct path for certificate rest resource based on the rest api version we use.
@@ -224,11 +230,11 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         groupPolicy: String,
         cpiName: String,
         cpiVersion: String = "1.0.0.0-SNAPSHOT"
-    ) = uploadCpiResource("/api/$REST_API_VERSION_PATH/cpi/", cpbResourceName, groupPolicy, cpiName, cpiVersion)
+    ) = uploadCpiResource("/api/$REST_API_VERSION_PATH/cpi/", cpbResourceName, groupPolicy, cpiName, cpiVersion, false)
 
     @Suppress("unused")
     fun updateVirtualNodeState(holdingIdHash: String, newState: String) =
-        put("/api/$REST_API_VERSION_PATH/virtualnode/$holdingIdHash/state/$newState", "")
+        vNodeCreatorClient.put("/api/$REST_API_VERSION_PATH/virtualnode/$holdingIdHash/state/$newState", "")
 
     @Suppress("unused")
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
@@ -244,7 +250,8 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
             cpbResourceName,
             getDefaultStaticNetworkGroupPolicy(groupId, staticMemberNames),
             cpiName,
-            cpiVersion
+            cpiVersion,
+            true
         )
 
     @Suppress("unused")
@@ -253,7 +260,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         post("/api/$REST_API_VERSION_PATH/maintenance/virtualnode/$virtualNodeShortId/vault-schema/force-resync", "")
 
     /** Return the status for the given request id */
-    fun cpiStatus(id: String) = client.get("/api/$REST_API_VERSION_PATH/cpi/status/$id")
+    fun cpiStatus(id: String) = vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/cpi/status/$id")
 
     /** List all CPIs in the system */
     fun cpiList() = client.get("/api/$REST_API_VERSION_PATH/cpi")
@@ -417,22 +424,22 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     @Suppress("unused")
     /** Get schema SQL to create crypto DB */
     fun getCryptoSchemaSql() =
-        get("/api/$REST_API_VERSION_PATH/virtualnode/create/db/crypto")
+        vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/virtualnode/create/db/crypto")
 
     @Suppress("unused")
     /** Get schema SQL to create uniqueness DB */
     fun getUniquenessSchemaSql() =
-        get("/api/$REST_API_VERSION_PATH/virtualnode/create/db/uniqueness")
+        vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/virtualnode/create/db/uniqueness")
 
     @Suppress("unused")
     /** Get schema SQL to create vault and CPI DB */
     fun getVaultSchemaSql(cpiChecksum: String) =
-        get("/api/$REST_API_VERSION_PATH/virtualnode/create/db/vault/$cpiChecksum")
+        vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/virtualnode/create/db/vault/$cpiChecksum")
 
     @Suppress("unused")
     /** Get schema SQL to update vault and CPI DB */
     fun getUpdateSchemaSql(virtualNodeShortHash: String, newCpiChecksum: String) =
-        get("/api/$REST_API_VERSION_PATH/virtualnode/$virtualNodeShortHash/db/vault/$newCpiChecksum")
+        vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/virtualnode/$virtualNodeShortHash/db/vault/$newCpiChecksum")
 
     private data class DeprecatedVNodeCreateBody(
         val cpiFileChecksum: String,
@@ -506,7 +513,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         x500Name: String,
         externalDBConnectionParams: JsonExternalDBConnectionParams? = null
     ) =
-        post(
+        vNodeCreatorClient.post(
             "/api/$REST_API_VERSION_PATH/virtualnode",
             vNodeBody(
                 cpiHash,
@@ -525,7 +532,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         holdingIdShortHash: String,
         externalDBConnectionParams: JsonExternalDBConnectionParams? = null
     ) =
-        put(
+        vNodeCreatorClient.put(
             "/api/$REST_API_VERSION_PATH/virtualnode/$holdingIdShortHash/db",
             vNodeChangeConnectionStringsBody(
                 externalDBConnectionParams?.cryptoDdlConnection,
@@ -541,20 +548,20 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     @Suppress("unused")
     /** Trigger upgrade of a virtual node's CPI to the given  */
     fun vNodeUpgrade(virtualNodeShortHash: String, targetCpiFileChecksum: String) =
-        put("/api/$REST_API_VERSION_PATH/virtualnode/$virtualNodeShortHash/cpi/$targetCpiFileChecksum", "")
+        vNodeCreatorClient.put("/api/$REST_API_VERSION_PATH/virtualnode/$virtualNodeShortHash/cpi/$targetCpiFileChecksum", "")
 
     @Suppress("unused")
     fun getVNodeOperationStatus(requestId: String) =
-        get("/api/$REST_API_VERSION_PATH/virtualnode/status/$requestId")
+        vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/virtualnode/status/$requestId")
 
     /** List all virtual nodes */
-    fun vNodeList() = client.get("/api/$REST_API_VERSION_PATH/virtualnode")
+    fun vNodeList() = vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/virtualnode")
 
-    /** List all virtual nodes */
+    /** Gets virtual node info for a specified holding ID */
     fun getVNode(holdingIdentityShortHash: String) =
-        client.get("/api/$REST_API_VERSION_PATH/virtualnode/$holdingIdentityShortHash")
+        vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/virtualnode/$holdingIdentityShortHash")
 
-    fun getVNodeStatus(requestId: String) = client.get("/api/$REST_API_VERSION_PATH/virtualnode/status/$requestId")
+    fun getVNodeStatus(requestId: String) = vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/virtualnode/status/$requestId")
 
     /**
      * Register a member to the network.
@@ -586,7 +593,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     )
 
     fun register(holdingIdShortHash: String, registrationContext: String) =
-        post(
+        vNodeCreatorClient.post(
             "/api/$REST_API_VERSION_PATH/membership/$holdingIdShortHash",
             registrationContext
         )
@@ -595,17 +602,17 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         get("/api/$REST_API_VERSION_PATH/membership/$holdingIdShortHash")
 
     fun getRegistrationStatus(holdingIdShortHash: String, registrationId: String) =
-        get("/api/$REST_API_VERSION_PATH/membership/$holdingIdShortHash/$registrationId")
+        vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/membership/$holdingIdShortHash/$registrationId")
 
     fun addSoftHsmToVNode(holdingIdentityShortHash: String, category: String) =
-        post("/api/$REST_API_VERSION_PATH/hsm/soft/$holdingIdentityShortHash/$category", body = "")
+        vNodeCreatorClient.post("/api/$REST_API_VERSION_PATH/hsm/soft/$holdingIdentityShortHash/$category", body = "")
 
     fun createKey(holdingIdentityShortHash: String, alias: String, category: String, scheme: String) =
         if (REST_API_VERSION_PATH == RestApiVersion.C5_0.versionPath) {
             // Used to test RestApiVersion.C5_0 CertificateRestResource, remove after LTS
             deprecatedCreateKey(holdingIdentityShortHash, alias, category, scheme)
         } else {
-            post(
+            vNodeCreatorClient.post(
                 "/api/$REST_API_VERSION_PATH/key/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme",
                 body = ""
             )
@@ -618,8 +625,9 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
             body = ""
         )
 
+    @Suppress("unused")
     fun getKey(tenantId: String, keyId: String) =
-        get("/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.keyPath()}/$tenantId/$keyId")
+        vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.keyPath()}/$tenantId/$keyId")
 
     fun getKey(
         tenantId: String,
@@ -652,11 +660,11 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
 
     /** Get status of a flow */
     fun flowStatus(holdingIdentityShortHash: String, clientRequestId: String) =
-        get("/api/$REST_API_VERSION_PATH/flow/$holdingIdentityShortHash/$clientRequestId")
+        vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/flow/$holdingIdentityShortHash/$clientRequestId")
 
     /** Get status of multiple flows */
     fun multipleFlowStatus(holdingIdentityShortHash: String, status: String? = null) =
-        get("/api/$REST_API_VERSION_PATH/flow/$holdingIdentityShortHash/?status=$status")
+        vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/flow/$holdingIdentityShortHash/?status=$status")
 
     /** Get result of a flow execution */
     fun flowResult(holdingIdentityShortHash: String, clientRequestId: String) =
@@ -845,7 +853,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
                     $sessionKeysSection
                 }
             """.trimIndent()
-        return put(
+        return vNodeCreatorClient.put(
             "/api/$REST_API_VERSION_PATH/network/setup/$holdingIdentityShortHash",
             body = body
         )
