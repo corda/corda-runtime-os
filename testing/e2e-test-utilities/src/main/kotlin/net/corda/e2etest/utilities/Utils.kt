@@ -35,7 +35,13 @@ fun truncateLongHash(shortHash: String): String {
     return shortHash.substring(0, 12)
 }
 
-fun String.toJson(): JsonNode = ObjectMapper().readTree(this)
+fun String.toJson(): JsonNode {
+    return try {
+        ObjectMapper().readTree(this)
+    } catch (exception: Exception) {
+        throw Exception("Json body: $this", exception)
+    }
+}
 
 fun <K, V> Map<K, V>.toJsonString(): String = ObjectMapper().writeValueAsString(this)
 
