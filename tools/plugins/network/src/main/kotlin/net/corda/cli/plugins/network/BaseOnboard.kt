@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package net.corda.cli.plugins.network
 
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -14,22 +12,14 @@ import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.data.certificates.CertificateUsage
-import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
-import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
-import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
-import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.JsonCreateVirtualNodeRequest
-import net.corda.membership.rest.v1.CertificatesRestResource
-import net.corda.membership.rest.v1.HsmRestResource
-import net.corda.membership.rest.v1.KeysRestResource
-import net.corda.membership.rest.v1.MemberRegistrationRestResource
-import net.corda.membership.rest.v1.NetworkRestResource
 import net.corda.membership.rest.v1.types.request.HostedIdentitySessionKeyAndCertificate
 import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
-import net.corda.rest.json.serialization.JsonObjectAsString
+import net.corda.restclient.CordaRestClient
+import net.corda.restclient.dto.UpdateConfigParametersObjectNode
 import net.corda.schema.configuration.ConfigKeys.RootConfigKey
 import net.corda.sdk.config.ClusterConfig
 import net.corda.sdk.data.Checksum
@@ -39,9 +29,9 @@ import net.corda.sdk.network.Keys
 import net.corda.sdk.network.RegistrationRequester
 import net.corda.sdk.network.RegistrationsLookup
 import net.corda.sdk.network.VirtualNode
+import net.corda.sdk.network.writeToTempFile
 import net.corda.sdk.packaging.CpiUploader
 import net.corda.sdk.packaging.KeyStoreHelper
-import net.corda.sdk.rest.RestClientUtils.createRestClient
 import net.corda.v5.base.types.MemberX500Name
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
@@ -95,22 +85,19 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     }
 
     private val caHome: File = File(File(File(System.getProperty("user.home")), ".corda"), "ca")
+    protected val restClient: CordaRestClient by lazy {
+        CordaRestClient.createHttpClient(
+            baseUrl = URI.create(targetUrl),
+            username = username,
+            password = password,
+            insecure = insecure
+        )
+    }
 
     internal class OnboardException(message: String) : Exception(message)
 
-    protected fun uploadCpi(cpi: File, cpiName: String): Checksum {
-        val restClient = createRestClient(
-            CpiUploadRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
-            username = username,
-            password = password,
-            targetUrl = targetUrl
-        )
-
-        // Cpi upload can take longer than the default 10 seconds, wait for minimum of 30
-        val longerWaitValue = getLongerWait()
-        val uploadId = with(CpiUploader().uploadCPI(restClient, cpi.inputStream(), cpiName, longerWaitValue)) {
+    protected fun uploadCpi(cpi: File): Checksum {
+        val uploadId = with(CpiUploader(restClient).uploadCPI(cpi)) {
             RequestId(this.id)
         }
         return checkCpiStatus(uploadId)
@@ -125,15 +112,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     }
 
     private fun checkCpiStatus(id: RequestId): Checksum {
-        val restClient = createRestClient(
-            CpiUploadRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
-            username = username,
-            password = password,
-            targetUrl = targetUrl
-        )
-        return CpiUploader().cpiChecksum(restClient = restClient, uploadRequestId = id, wait = waitDurationSeconds.seconds)
+        return CpiUploader(restClient).cpiChecksum(uploadRequestId = id, wait = waitDurationSeconds.seconds)
     }
 
     protected abstract val cpiFileChecksum: Checksum
@@ -141,14 +120,6 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     protected abstract val memberRegistrationRequest: MemberRegistrationRequest
 
     protected val holdingId: ShortHash by lazy {
-        val restClient = createRestClient(
-            VirtualNodeRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
-            username = username,
-            password = password,
-            targetUrl = targetUrl
-        )
         val request = JsonCreateVirtualNodeRequest(
             x500Name = name.toString(),
             cpiFileChecksum = cpiFileChecksum.value,
@@ -160,31 +131,13 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             uniquenessDmlConnection = null,
         )
         val longerWait = getLongerWait()
-        val shortHashId = VirtualNode().createAndWaitForActive(restClient, request, longerWait)
+        val shortHashId = VirtualNode(restClient).createAndWaitForActive(request, longerWait)
         println("Holding identity short hash of '$name' is: '$shortHashId'")
         shortHashId
     }
 
     protected fun assignSoftHsmAndGenerateKey(category: KeyCategory): KeyPairIdentifier {
-        val hsmRestClient = createRestClient(
-            HsmRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
-            username = username,
-            password = password,
-            targetUrl = targetUrl
-        )
-        val keyRestClient = createRestClient(
-            KeysRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
-            username = username,
-            password = password,
-            targetUrl = targetUrl
-        )
-        return Keys().assignSoftHsmAndGenerateKey(
-            hsmRestClient = hsmRestClient,
-            keysRestClient = keyRestClient,
+        return Keys(restClient).assignSoftHsmAndGenerateKey(
             holdingIdentityShortHash = holdingId,
             category = category,
             wait = waitDurationSeconds.seconds
@@ -221,52 +174,30 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     }
 
     protected fun createTlsKeyIdNeeded() {
-        val keyRestClient = createRestClient(
-            KeysRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
-            username = username,
-            password = password,
-            targetUrl = targetUrl
-        )
-        val keys = Keys()
-        val hasKeys = keys.hasTlsKey(restClient = keyRestClient, wait = waitDurationSeconds.seconds)
+        val keys = Keys(restClient)
+        val hasKeys = keys.hasTlsKey(wait = waitDurationSeconds.seconds)
 
         if (hasKeys) return
 
-        val tlsKeyId = keys.generateTlsKey(restClient = keyRestClient, wait = waitDurationSeconds.seconds)
+        val tlsKeyId = keys.generateTlsKey()
 
-        val certificateRestClient = createRestClient(
-            CertificatesRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
-            username = username,
-            password = password,
-            targetUrl = targetUrl
-        )
-        val clientCertificates = ClientCertificates()
-
+        val clientCertificates = ClientCertificates(restClient)
         val csrCertRequest = clientCertificates.generateP2pCsr(
-            certificateRestClient,
-            tlsKeyId,
-            certificateSubject,
-            p2pHosts,
-            waitDurationSeconds.seconds
+            tlsKey = tlsKeyId,
+            subjectX500Name = certificateSubject,
+            p2pHostNames = p2pHosts
         )
-        val certificate = ca.signCsr(csrCertRequest).toPem().byteInputStream()
-        clientCertificates.uploadTlsCertificate(certificateRestClient, certificate, P2P_TLS_CERTIFICATE_ALIAS, waitDurationSeconds.seconds)
+
+        ca.signCsr(csrCertRequest).toPem().writeToTempFile("CSR.csr").also {
+            clientCertificates.uploadTlsCertificate(
+                certificateFile = it,
+                alias = P2P_TLS_CERTIFICATE_ALIAS,
+                wait = waitDurationSeconds.seconds
+            )
+        }
     }
 
     protected fun setupNetwork() {
-        val restClient = createRestClient(
-            NetworkRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
-            username = username,
-            password = password,
-            targetUrl = targetUrl
-        )
-
         val request = HostedIdentitySetupRequest(
             p2pTlsCertificateChainAlias = P2P_TLS_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = true,
@@ -277,9 +208,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                 ),
             ),
         )
-
-        RegistrationRequester().configureAsNetworkParticipant(
-            restClient = restClient,
+        RegistrationRequester(restClient).configureAsNetworkParticipant(
             request = request,
             holdingId = holdingId,
             wait = waitDurationSeconds.seconds
@@ -287,16 +216,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     }
 
     protected fun register(waitForFinalStatus: Boolean = true) {
-        val restClient = createRestClient(
-            MemberRegistrationRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
-            username = username,
-            password = password,
-            targetUrl = targetUrl
-        )
-        val response = RegistrationRequester().requestRegistration(
-            restClient = restClient,
+        val response = RegistrationRequester(restClient).requestRegistration(
             memberRegistrationRequest = memberRegistrationRequest,
             holdingId = holdingId
         )
@@ -312,8 +232,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         // Registrations can take longer than the default 10 seconds, wait for minimum of 30
         val longerWaitValue = getLongerWait()
         if (waitForFinalStatus) {
-            RegistrationsLookup().waitForRegistrationApproval(
-                restClient = restClient,
+            RegistrationsLookup(restClient).waitForRegistrationApproval(
                 registrationId = registrationId,
                 holdingId = holdingId,
                 wait = longerWaitValue
@@ -322,16 +241,8 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     }
 
     protected fun configureGateway() {
-        val restClient = createRestClient(
-            ConfigRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
-            username = username,
-            password = password,
-            targetUrl = targetUrl
-        )
-        val clusterConfig = ClusterConfig()
-        val currentConfig = clusterConfig.getCurrentConfig(restClient, RootConfigKey.P2P_GATEWAY, waitDurationSeconds.seconds)
+        val clusterConfig = ClusterConfig(restClient)
+        val currentConfig = clusterConfig.getCurrentConfig(configSection = RootConfigKey.P2P_GATEWAY, wait = waitDurationSeconds.seconds)
         val rawConfig = currentConfig.configWithDefaults
         val rawConfigJson = json.readTree(rawConfig)
         val sslConfig = rawConfigJson["sslConfig"]
@@ -344,24 +255,23 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         }
 
         if ((currentMode != "OFF") || (currentTlsType != tlsType)) {
-            val objectMapper = ObjectMapper()
-            val newConfig = objectMapper.createObjectNode()
+            val newConfig = json.createObjectNode()
             newConfig.set<ObjectNode>(
                 "sslConfig",
-                objectMapper.createObjectNode()
+                json.createObjectNode()
                     .put("tlsType", tlsType.uppercase())
                     .set<ObjectNode>(
                         "revocationCheck",
                         json.createObjectNode().put("mode", "OFF"),
                     ),
             )
-            val payload = UpdateConfigParameters(
+            val payload = UpdateConfigParametersObjectNode(
                 section = "corda.p2p.gateway",
                 version = currentConfig.version,
-                config = JsonObjectAsString(objectMapper.writeValueAsString(newConfig)),
+                config = newConfig,
                 schemaVersion = ConfigSchemaVersion(major = currentConfig.schemaVersion.major, minor = currentConfig.schemaVersion.minor),
             )
-            clusterConfig.updateConfig(restClient = restClient, updateConfig = payload, wait = waitDurationSeconds.seconds)
+            clusterConfig.updateConfig(updateConfig = payload, wait = waitDurationSeconds.seconds)
         }
     }
 
@@ -395,42 +305,26 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     }
 
     protected fun uploadSigningCertificates() {
-        val restClient = createRestClient(
-            CertificatesRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
-            username = username,
-            password = password,
-            targetUrl = targetUrl
-        )
-
         val keyStore = KeyStore.getInstance(
             keyStoreFile,
             SIGNING_KEY_STORE_PASSWORD.toCharArray(),
         )
-        keyStore.getCertificate(GRADLE_PLUGIN_DEFAULT_KEY_ALIAS)
-            ?.toPem()
-            ?.byteInputStream()
-            ?.use { certificate ->
-                ClientCertificates().uploadCertificate(
-                    restClient = restClient,
-                    certificate = certificate,
-                    usage = CertificateUsage.CODE_SIGNER,
-                    alias = GRADLE_PLUGIN_DEFAULT_KEY_ALIAS,
-                    wait = waitDurationSeconds.seconds
-                )
-            }
-        keyStore.getCertificate(SIGNING_KEY_ALIAS)
-            ?.toPem()
-            ?.byteInputStream()
-            ?.use { certificate ->
-                ClientCertificates().uploadCertificate(
-                    restClient = restClient,
-                    certificate = certificate,
-                    usage = CertificateUsage.CODE_SIGNER,
-                    alias = "signingkey1-2022",
-                    wait = waitDurationSeconds.seconds
-                )
-            }
+        keyStore.getCertificate(GRADLE_PLUGIN_DEFAULT_KEY_ALIAS)?.toPem()?.writeToTempFile("defaultGradleFile.pem")?.also {
+            ClientCertificates(restClient).uploadClusterCertificate(
+                certificateFile = it,
+                usage = CertificateUsage.CODE_SIGNER,
+                alias = GRADLE_PLUGIN_DEFAULT_KEY_ALIAS,
+                wait = waitDurationSeconds.seconds
+            )
+        }
+
+        keyStore.getCertificate(SIGNING_KEY_ALIAS)?.toPem()?.writeToTempFile("signingKey.pem")?.also {
+            ClientCertificates(restClient).uploadClusterCertificate(
+                certificateFile = it,
+                usage = CertificateUsage.CODE_SIGNER,
+                alias = "signingkey1-2022",
+                wait = waitDurationSeconds.seconds
+            )
+        }
     }
 }

@@ -14,16 +14,16 @@ ext.cordaEnableFormatting = true
 group 'net.corda.cli.deployment'
 
 dependencies {
-
-    implementation project(":libs:virtual-node:virtual-node-endpoints-maintenance")
-    implementation project(":libs:virtual-node:cpi-upload-endpoints")
-    implementation project(':libs:crypto:crypto-core')
-    implementation project(":libs:db:db-admin-impl")
-
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation 'net.corda:corda-db-schema'
+    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
 
     implementation project(':libs:corda-sdk')
+    implementation project(':libs:crypto:crypto-core')
+    implementation project(":libs:db:db-admin-impl")
+    implementation project(':libs:rest:generated-rest-client')
+    implementation project(":libs:virtual-node:virtual-node-endpoints-maintenance")
+    implementation project(":libs:virtual-node:cpi-upload-endpoints")
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-db-schema'
     implementation project(":tools:plugins:plugins-rest")
     implementation project(":tools:plugins:common-utils")
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'

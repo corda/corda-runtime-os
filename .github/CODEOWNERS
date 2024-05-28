@@ -103,3 +103,8 @@ CODEOWNERS         @corda/infrastructure-release @corda/corda5-team-leads
 # This needs to be after the ledger rules to partially override those
 /components/ledger/ledger-utxo-token-cache                      @corda/rest
 /components/ledger/ledger-utxo-flow/src/main/kotlin/net/corda/ledger/utxo/impl/token @corda/rest
+
+# Modules to be audited by Tooling team
+/libs/corda-sdk/                                             @corda/test-tooling
+/libs/rest/generated-rest-client/                            @corda/test-tooling
+/tools/corda-runtime-gradle-plugin/                          @corda/test-tooling

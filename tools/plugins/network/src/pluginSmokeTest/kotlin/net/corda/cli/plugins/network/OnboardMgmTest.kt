@@ -5,6 +5,7 @@ import net.corda.cli.plugins.network.utils.HoldingIdentityUtils
 import net.corda.crypto.core.ShortHash
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
+import net.corda.restclient.CordaRestClient
 import net.corda.sdk.packaging.CpiUploader
 import net.corda.sdk.rest.RestClientUtils
 import net.corda.v5.base.types.MemberX500Name
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import picocli.CommandLine
 import java.io.File
+import java.net.URI
 import java.util.UUID
 import kotlin.time.Duration.Companion.seconds
 
@@ -158,15 +160,13 @@ class OnboardMgmTest {
     }
 
     private fun OnboardMgm.getExistingCpiHash(): String {
-        val restClient = RestClientUtils.createRestClient(
-            CpiUploadRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
+        val restClient = CordaRestClient.createHttpClient(
+            baseUrl = URI.create(targetUrl),
             username = username,
             password = password,
-            targetUrl = targetUrl
+            insecure = true,
         )
-        val cpisFromCluster = CpiUploader().getAllCpis(restClient = restClient, wait = waitDurationSeconds.seconds).cpis
+        val cpisFromCluster = CpiUploader(restClient).getAllCpis(wait = waitDurationSeconds.seconds).cpis
         return cpisFromCluster
             .first { it.groupPolicy?.contains("CREATE_ID") == true }
             .cpiFileChecksum

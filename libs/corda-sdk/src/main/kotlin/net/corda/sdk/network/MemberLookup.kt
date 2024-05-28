@@ -1,18 +1,16 @@
 package net.corda.sdk.network
 
 import net.corda.crypto.core.ShortHash
-import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.response.RestMemberInfoList
-import net.corda.rest.client.RestClient
+import net.corda.restclient.CordaRestClient
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-class MemberLookup {
+class MemberLookup(val restClient: CordaRestClient) {
 
     /**
      * Look up the Member details
-     * @param restClient of type RestClient<MemberLookupRestResource>
      * @param holdingIdentityShortHash the holding identity of the node
      * @param commonName optional search criteria
      * @param organization optional search criteria
@@ -26,7 +24,6 @@ class MemberLookup {
      */
     @Suppress("LongParameterList")
     fun lookupMember(
-        restClient: RestClient<MemberLookupRestResource>,
         holdingIdentityShortHash: ShortHash,
         commonName: String?,
         organization: String?,
@@ -37,23 +34,20 @@ class MemberLookup {
         status: List<String> = listOf("ACTIVE"),
         wait: Duration = 10.seconds
     ): RestMemberInfoList {
-        return restClient.use { client ->
-            executeWithRetry(
-                waitDuration = wait,
-                operationName = "Lookup member"
-            ) {
-                val resource = client.start().proxy
-                resource.lookupV51(
-                    holdingIdentityShortHash.value,
-                    commonName,
-                    organization,
-                    organizationUnit,
-                    locality,
-                    state,
-                    country,
-                    status,
-                )
-            }
+        return executeWithRetry(
+            waitDuration = wait,
+            operationName = "Lookup member"
+        ) {
+            restClient.memberLookupClient.getMembersHoldingidentityshorthash(
+                holdingidentityshorthash = holdingIdentityShortHash.value,
+                cn = commonName,
+                o = organization,
+                ou = organizationUnit,
+                l = locality,
+                st = state,
+                c = country,
+                statuses = status
+            )
         }
     }
 }
