@@ -1,0 +1,32 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'org.jetbrains.kotlin.kapt'
+    id 'application'
+}
+
+group = 'net.corda.cli'
+
+mainClassName = 'net.corda.cli.application.AppKt'
+
+application {
+    mainClass = mainClassName
+}
+
+dependencies {
+    implementation libs.kotlin.stdlib
+    implementation libs.slf4j.v2.api
+    implementation "info.picocli:picocli:$picocliVersion"
+    kapt "info.picocli:picocli:$picocliVersion"
+
+    implementation project(':tools:plugins:common-utils')
+    implementation project(':tools:plugins:cpi')
+    implementation project(':tools:plugins:db-config')
+    implementation project(':tools:plugins:initial-config')
+    implementation project(':tools:plugins:initial-rbac')
+    implementation project(':tools:plugins:network')
+    implementation project(':tools:plugins:package')
+    implementation project(':tools:plugins:preinstall')
+    implementation project(':tools:plugins:secret-config')
+    implementation project(':tools:plugins:topic-config')
+    implementation project(':tools:plugins:virtual-node')
+}
