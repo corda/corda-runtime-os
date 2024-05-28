@@ -80,7 +80,7 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     setEntry = true
     overrideEntryName = 'cli'
     // the image used by helm charts is "corda-os-plugins"
-    overrideContainerName = 'plugin'
+    overrideContainerName = 'plugins'
 
     def cordaApiIncluded = gradle.includedBuilds.collect { it.name == "corda-api" }.contains(true)
 
