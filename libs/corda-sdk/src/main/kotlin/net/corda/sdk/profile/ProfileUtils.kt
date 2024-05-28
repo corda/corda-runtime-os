@@ -34,10 +34,10 @@ object ProfileUtils {
         return VALID_KEYS.contains(key)
     }
 
-    fun loadProfiles(): Map<String, Any> {
+    fun loadProfiles(): Map<String, Map<String, String>> {
         return try {
             if (profileFile.exists()) {
-                objectMapper.readValue(profileFile, jacksonTypeRef<Map<String, Any>>())
+                objectMapper.readValue(profileFile, jacksonTypeRef<Map<String, Map<String, String>>>())
             } else {
                 emptyMap()
             }
@@ -49,10 +49,6 @@ object ProfileUtils {
     fun saveProfiles(profiles: Map<String, Any>) {
         profileFile.parentFile.mkdirs()
         objectMapper.writeValue(profileFile, profiles)
-    }
-
-    fun getProfileProperties(profileName: String, profiles: Map<String, Any>): MutableMap<String, String> {
-        return objectMapper.readValue(objectMapper.writeValueAsString(profiles[profileName]))
     }
 
     fun getProfileKeysWithDescriptions(): String {

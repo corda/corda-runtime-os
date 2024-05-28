@@ -62,7 +62,7 @@ class ProfilePluginTest {
 
     @Test
     fun `test create profile with existing name`() {
-        val profiles = mutableMapOf<String, Any>(
+        val profiles = mutableMapOf(
             "test-profile" to mapOf(
                 "endpoint" to "http://localhost:1234",
                 "rest_username" to "testuser",
@@ -112,7 +112,7 @@ class ProfilePluginTest {
         val secretEncryptionUtil = SecretEncryptionUtil()
         val salt = UUID.randomUUID().toString()
 
-        val profiles = mutableMapOf<String, Any>(
+        val profiles = mutableMapOf(
             "test-profile" to mapOf(
                 "rest_endpoint" to "http://localhost:1234",
                 "rest_username" to "testuser",
@@ -171,7 +171,7 @@ class ProfilePluginTest {
         val secretEncryptionUtil = SecretEncryptionUtil()
         val salt = UUID.randomUUID().toString()
 
-        val profiles = mutableMapOf<String, Any>(
+        val profiles = mutableMapOf(
             "test-profile" to mapOf(
                 "rest_endpoint" to "http://localhost:1234",
                 "rest_username" to "testuser",
@@ -208,7 +208,7 @@ class ProfilePluginTest {
     @Test
     fun `test list profiles`() {
         // Create test profiles
-        val profiles = mutableMapOf<String, Any>(
+        val profiles = mutableMapOf(
             "profile1" to mapOf("rest_endpoint" to "http://localhost:1234"),
             "profile2" to mapOf("rest_endpoint" to "http://localhost:5678")
         )
