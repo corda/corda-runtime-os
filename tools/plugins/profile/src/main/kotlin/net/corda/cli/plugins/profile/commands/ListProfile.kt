@@ -8,7 +8,7 @@ import picocli.CommandLine
 
 @CommandLine.Command(
     name = "list",
-    description = ["List all profiles."],
+    description = ["List all profiles and profile properties."],
     mixinStandardHelpOptions = true
 )
 class ListProfile : Runnable {
@@ -16,6 +16,9 @@ class ListProfile : Runnable {
     private companion object {
         val sysOut: Logger = LoggerFactory.getLogger("SystemOut")
     }
+
+    @CommandLine.Option(names = ["-e", "--encrypted"], description = ["Show passwords in encrypted form"])
+    var showEncrypted: Boolean = false
 
     private val secretEncryptionUtil = SecretEncryptionUtil()
 
@@ -29,8 +32,12 @@ class ListProfile : Runnable {
             if (key.lowercase().contains("password")) {
                 val salt = profile["${key}_salt"]
                 if (salt != null) {
-                    val decryptedPassword = secretEncryptionUtil.decrypt(value, salt, salt)
-                    sysOut.info("  $key: $decryptedPassword")
+                    if (showEncrypted) {
+                        sysOut.info("  $key: $value")
+                    } else {
+                        val decryptedPassword = secretEncryptionUtil.decrypt(value, salt, salt)
+                        sysOut.info("  $key: $decryptedPassword")
+                    }
                 } else {
                     sysOut.info("  $key: Unable to decrypt password")
                 }

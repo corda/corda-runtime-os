@@ -1,6 +1,7 @@
 package net.corda.cli.plugins.profile.commands
 
 import net.corda.libs.configuration.secret.SecretEncryptionUtil
+import net.corda.sdk.profile.ProfileKey
 import net.corda.sdk.profile.ProfileUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -31,8 +32,8 @@ class UpdateProfile : Runnable {
 
     private fun processProperty(profile: MutableMap<String, String>, property: String) {
         val (key, value) = property.split("=")
-        if (!ProfileUtils.isValidKey(key)) {
-            val error = "Invalid key '$key'. Allowed keys are:\n ${ProfileUtils.getProfileKeysWithDescriptions()}"
+        if (!ProfileKey.isValidKey(key)) {
+            val error = "Invalid key '$key'. Allowed keys are:\n ${ProfileKey.getKeysWithDescriptions()}"
             sysErr.error(error)
             throw IllegalArgumentException(error)
         }

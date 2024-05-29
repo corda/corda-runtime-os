@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import java.io.File
 
@@ -14,13 +13,29 @@ enum class ProfileKey(val description: String) {
     REST_ENDPOINT("Endpoint for the REST API"),
     JDBC_USERNAME("Username for JDBC connection"),
     JDBC_PASSWORD("Password for JDBC connection"),
-    DATABASE_URL("URL for the database")
+    DATABASE_URL("URL for the database");
+
+    companion object {
+        private val validKeys: List<String> by lazy { values().map { it.name.lowercase() } }
+        private val cachedDescriptions: String by lazy {
+            values().joinToString("\n") { key ->
+                "${key.name.lowercase()}: ${key.description},"
+            }
+        }
+
+        fun isValidKey(key: String): Boolean {
+            return validKeys.contains(key.lowercase())
+        }
+
+        fun getKeysWithDescriptions(): String {
+            return cachedDescriptions
+        }
+    }
 }
 
 object ProfileUtils {
     private val objectMapper = ObjectMapper(YAMLFactory()).registerKotlinModule()
     private var profileFile: File
-    private val VALID_KEYS = ProfileKey.values().map { it.name.lowercase() }
 
     init {
         profileFile = File(System.getProperty("user.home"), ".corda/cli/profile.yaml")
@@ -28,10 +43,6 @@ object ProfileUtils {
 
     fun initialize(file: File) {
         profileFile = file
-    }
-
-    fun isValidKey(key: String): Boolean {
-        return VALID_KEYS.contains(key)
     }
 
     fun loadProfiles(): Map<String, Map<String, String>> {
@@ -49,11 +60,5 @@ object ProfileUtils {
     fun saveProfiles(profiles: Map<String, Any>) {
         profileFile.parentFile.mkdirs()
         objectMapper.writeValue(profileFile, profiles)
-    }
-
-    fun getProfileKeysWithDescriptions(): String {
-        return ProfileKey.values().joinToString("\n") { key ->
-            "${key.name.lowercase()}: ${key.description},"
-        }
     }
 }

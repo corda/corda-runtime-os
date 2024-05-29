@@ -17,7 +17,6 @@ class DeleteProfile : Runnable {
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val sysOut: Logger = LoggerFactory.getLogger("SystemOut")
-        val sysErr: Logger = LoggerFactory.getLogger("SystemErr")
     }
 
     @Option(names = ["-n", "--name"], description = ["Profile name"], required = true)
