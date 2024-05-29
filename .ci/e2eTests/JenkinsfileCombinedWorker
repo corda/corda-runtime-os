@@ -121,22 +121,6 @@ pipeline {
         }
         stage('smoketests') {
             parallel {
-                stage('capture thread dumps') {
-                    steps {
-                        script {
-                            sh "jps" 
-                            def pid = sh(returnStdout: true, script: 'jps | grep corda-combined-worker-.*\\.jar')
-                            while (smoketestsRunning) {
-                                try {
-                                    threadDump = sh(returnStdout: true, script: "jstack ${pid.split(' ')[0]}")
-                                } catch (Exception e) {
-                                    smoketestsRunning = false
-                                }
-                                sh 'sleep 1' 
-                            }
-                        }
-                    }
-                }
                 stage('smoketests') {
                     options {
                         timeout(time: 30, unit: 'MINUTES')
@@ -159,8 +143,40 @@ pipeline {
                         }
                     }
                 }
+                stage('capture thread dumps') {
+                    options {
+                        timeout(time: 30, unit: 'MINUTES')
+                    }
+                    steps {
+                        script {
+                            def pid
+                            if (isUnix()) {
+                                sh "jps" 
+                                pid = sh(returnStdout: true, script: 'jps | grep corda-combined-worker-.*\\.jar')
+                            } 
+                            else {
+                                bat "jps"
+                                pid = bat(returnStdout: true, script: '@jps | findstr corda-combined-worker-.*\\.jar')
+                            }
+                            while (smoketestsRunning) {
+                                try {
+                                    if (isUnix()) {
+                                        threadDump = sh(returnStdout: true, script: "jstack ${pid.split(' ')[0]}")
+                                        sh 'sleep 1'
+                                    } 
+                                    else {
+                                        threadDump = bat(returnStdout: true, script: "@jstack ${pid.split(' ')[0]}")
+                                        sleep(1) // sleep for 1 second
+                                    }
+                                } catch (Exception e) {
+                                    smoketestsRunning = false
+                                }
+                            }
+                        }
+                    }
+                }
             }
-        }
+        } 
     }
     post {
         always {
