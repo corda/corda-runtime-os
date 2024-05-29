@@ -6,6 +6,9 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import java.io.File
+import java.io.IOException
+
+data class CliProfile(val properties: Map<String, String>)
 
 enum class ProfileKey(val description: String) {
     REST_USERNAME("Username for REST API"),
@@ -45,10 +48,13 @@ object ProfileUtils {
         profileFile = file
     }
 
-    fun loadProfiles(): Map<String, Map<String, String>> {
+    fun loadProfiles(): Map<String, CliProfile> {
         return try {
             if (profileFile.exists()) {
-                objectMapper.readValue(profileFile, jacksonTypeRef<Map<String, Map<String, String>>>())
+                val profilesMap = objectMapper.readValue(profileFile, jacksonTypeRef<Map<String, Map<String, String>>>())
+                profilesMap.mapValues { (_, properties) ->
+                    CliProfile(properties)
+                }
             } else {
                 emptyMap()
             }
@@ -57,8 +63,14 @@ object ProfileUtils {
         }
     }
 
-    fun saveProfiles(profiles: Map<String, Any>) {
-        profileFile.parentFile.mkdirs()
-        objectMapper.writeValue(profileFile, profiles)
+    fun saveProfiles(profiles: Map<String, CliProfile>) {
+        try {
+            val profilesMap = profiles.mapValues { (_, profile) ->
+                profile.properties
+            }
+            objectMapper.writeValue(profileFile, profilesMap)
+        } catch (e: IOException) {
+            throw IOException("Failed to save profiles to file", e)
+        }
     }
 }

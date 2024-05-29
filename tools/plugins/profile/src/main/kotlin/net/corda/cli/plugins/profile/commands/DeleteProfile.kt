@@ -24,7 +24,7 @@ class DeleteProfile : Runnable {
 
     override fun run() {
         logger.debug("Deleting profile: $profileName")
-        val profiles = loadProfiles()
+        val profiles = loadProfiles().toMutableMap()
 
         sysOut.info("Are you sure you want to delete profile '$profileName'? (y/n)")
         val confirmation = readlnOrNull()
@@ -33,10 +33,9 @@ class DeleteProfile : Runnable {
             return
         }
 
-        val updatedProfiles = profiles.toMutableMap()
-        updatedProfiles.remove(profileName)
+        profiles.remove(profileName)
 
-        saveProfiles(updatedProfiles)
+        saveProfiles(profiles)
         sysOut.info("Profile '$profileName' deleted.")
     }
 }

@@ -22,6 +22,7 @@ class ListProfile : Runnable {
 
     private val secretEncryptionUtil = SecretEncryptionUtil()
 
+    @Suppress("NestedBlockDepth")
     private fun printProfile(profile: Map<String, String>) {
         profile.forEach { (key, value) ->
             if (key.lowercase().endsWith("_salt")) {
@@ -56,7 +57,7 @@ class ListProfile : Runnable {
             sysOut.info("Available profiles:")
             profiles.keys.forEach { profileName ->
                 sysOut.info("- $profileName")
-                printProfile(profiles[profileName]!!)
+                printProfile(profiles[profileName]!!.properties)
             }
         }
     }

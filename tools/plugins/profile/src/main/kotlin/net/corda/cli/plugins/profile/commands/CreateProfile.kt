@@ -1,6 +1,7 @@
 package net.corda.cli.plugins.profile.commands
 
 import net.corda.libs.configuration.secret.SecretEncryptionUtil
+import net.corda.sdk.profile.CliProfile
 import net.corda.sdk.profile.ProfileKey
 import net.corda.sdk.profile.ProfileUtils
 import org.slf4j.Logger
@@ -44,7 +45,7 @@ class CreateProfile : Runnable {
             }
         }
 
-        val profile = mutableMapOf<String, String>()
+        val profileProperties = mutableMapOf<String, String>()
         properties.forEach { property ->
             val (key, value) = property.split("=")
             if (!ProfileKey.isValidKey(key)) {
@@ -54,14 +55,14 @@ class CreateProfile : Runnable {
             }
             if (key.lowercase().contains("password")) {
                 val encryptedPassword = secretEncryptionUtil.encrypt(value, salt, salt)
-                profile[key] = encryptedPassword
-                profile["${key}_salt"] = salt
+                profileProperties[key] = encryptedPassword
+                profileProperties["${key}_salt"] = salt
             } else {
-                profile[key] = value
+                profileProperties[key] = value
             }
         }
 
-        profiles[profileName] = profile
+        profiles[profileName] = CliProfile(profileProperties)
 
         ProfileUtils.saveProfiles(profiles)
         sysOut.info("Profile '$profileName' created successfully.")

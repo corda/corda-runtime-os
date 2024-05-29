@@ -5,6 +5,7 @@ import net.corda.cli.plugins.profile.commands.DeleteProfile
 import net.corda.cli.plugins.profile.commands.ListProfile
 import net.corda.cli.plugins.profile.commands.UpdateProfile
 import net.corda.libs.configuration.secret.SecretEncryptionUtil
+import net.corda.sdk.profile.CliProfile
 import net.corda.sdk.profile.ProfileUtils
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -53,20 +54,22 @@ class ProfilePluginTest {
 
         val profiles = ProfileUtils.loadProfiles()
         assertTrue(profiles.containsKey("test-profile"), "Created profile should exist")
-        val profile = profiles["test-profile"] as Map<*, *>
-        assertEquals("http://localhost:1234", profile["rest_endpoint"])
-        assertEquals("testuser", profile["rest_username"])
-        assertNotEquals("testpassword", profile["rest_password"], "Password should be encrypted")
+        val profileProperties = profiles["test-profile"]!!.properties
+        assertEquals("http://localhost:1234", profileProperties["rest_endpoint"])
+        assertEquals("testuser", profileProperties["rest_username"])
+        assertNotEquals("testpassword", profileProperties["rest_password"], "Password should be encrypted")
     }
 
     @Test
     fun `test create profile with existing name`() {
         val profiles = mutableMapOf(
-            "test-profile" to mapOf(
-                "endpoint" to "http://localhost:1234",
-                "rest_username" to "testuser",
-                "rest_password" to "testpassword",
-                "rest_password_salt" to "testsalt"
+            "test-profile" to CliProfile(
+                mapOf(
+                    "endpoint" to "http://localhost:1234",
+                    "rest_username" to "testuser",
+                    "rest_password" to "testpassword",
+                    "rest_password_salt" to "testsalt"
+                )
             )
         )
         ProfileUtils.saveProfiles(profiles)
@@ -85,10 +88,10 @@ class ProfilePluginTest {
         createProfile.run()
 
         val updatedProfiles = ProfileUtils.loadProfiles()
-        val profile = updatedProfiles["test-profile"] as Map<*, *>
-        assertEquals("http://localhost:5678", profile["rest_endpoint"])
-        assertEquals("newuser", profile["rest_username"])
-        assertNotEquals("newpassword", profile["rest_password"], "Password should be encrypted")
+        val profileProperties = updatedProfiles["test-profile"]!!.properties
+        assertEquals("http://localhost:5678", profileProperties["rest_endpoint"])
+        assertEquals("newuser", profileProperties["rest_username"])
+        assertNotEquals("newpassword", profileProperties["rest_password"], "Password should be encrypted")
     }
 
     @Test
@@ -112,11 +115,13 @@ class ProfilePluginTest {
         val salt = UUID.randomUUID().toString()
 
         val profiles = mutableMapOf(
-            "test-profile" to mapOf(
-                "rest_endpoint" to "http://localhost:1234",
-                "rest_username" to "testuser",
-                "rest_password" to secretEncryptionUtil.encrypt("testpassword", salt, salt),
-                "rest_password_salt" to salt
+            "test-profile" to CliProfile(
+                mapOf(
+                    "rest_endpoint" to "http://localhost:1234",
+                    "rest_username" to "testuser",
+                    "rest_password" to secretEncryptionUtil.encrypt("testpassword", salt, salt),
+                    "rest_password_salt" to salt
+                )
             )
         )
         ProfileUtils.saveProfiles(profiles)
@@ -131,9 +136,9 @@ class ProfilePluginTest {
         updateProfile.run()
 
         val updatedProfiles = ProfileUtils.loadProfiles()
-        val profile = updatedProfiles["test-profile"] as Map<*, *>
-        assertEquals("updateduser", profile["rest_username"])
-        assertNotEquals("updatedpassword", profile["rest_password"], "Password should be encrypted")
+        val profileProperties = updatedProfiles["test-profile"]!!.properties
+        assertEquals("updateduser", profileProperties["rest_username"])
+        assertNotEquals("updatedpassword", profileProperties["rest_password"], "Password should be encrypted")
     }
 
     @Test
@@ -143,11 +148,13 @@ class ProfilePluginTest {
         val salt = UUID.randomUUID().toString()
 
         val profiles = mutableMapOf(
-            "test-profile" to mapOf(
-                "rest_endpoint" to "http://localhost:1234",
-                "rest_username" to "testuser",
-                "rest_password" to secretEncryptionUtil.encrypt("testpassword", salt, salt),
-                "rest_password_salt" to salt
+            "test-profile" to CliProfile(
+                mapOf(
+                    "rest_endpoint" to "http://localhost:1234",
+                    "rest_username" to "testuser",
+                    "rest_password" to secretEncryptionUtil.encrypt("testpassword", salt, salt),
+                    "rest_password_salt" to salt
+                )
             )
         )
         ProfileUtils.saveProfiles(profiles)
@@ -168,8 +175,8 @@ class ProfilePluginTest {
     fun `test list profiles`() {
         // Create test profiles
         val profiles = mutableMapOf(
-            "profile1" to mapOf("rest_endpoint" to "http://localhost:1234"),
-            "profile2" to mapOf("rest_endpoint" to "http://localhost:5678")
+            "profile1" to CliProfile(mapOf("rest_endpoint" to "http://localhost:1234")),
+            "profile2" to CliProfile(mapOf("rest_endpoint" to "http://localhost:5678"))
         )
         ProfileUtils.saveProfiles(profiles)
 

@@ -1,6 +1,7 @@
 package net.corda.cli.plugins.profile.commands
 
 import net.corda.libs.configuration.secret.SecretEncryptionUtil
+import net.corda.sdk.profile.CliProfile
 import net.corda.sdk.profile.ProfileKey
 import net.corda.sdk.profile.ProfileUtils
 import org.slf4j.Logger
@@ -37,7 +38,6 @@ class UpdateProfile : Runnable {
             sysErr.error(error)
             throw IllegalArgumentException(error)
         }
-
         if (key.lowercase().contains("password")) {
             val encryptedPassword = secretEncryptionUtil.encrypt(value, salt, salt)
             profile[key] = encryptedPassword
@@ -51,7 +51,7 @@ class UpdateProfile : Runnable {
         val profiles = ProfileUtils.loadProfiles().toMutableMap()
 
         val profile = if (profiles.containsKey(profileName)) {
-            profiles[profileName]?.toMutableMap()!!
+            profiles[profileName]?.properties?.toMutableMap()!!
         } else {
             mutableMapOf()
         }
@@ -60,7 +60,7 @@ class UpdateProfile : Runnable {
             processProperty(profile, property)
         }
 
-        profiles[profileName] = profile
+        profiles[profileName] = CliProfile(profile)
 
         ProfileUtils.saveProfiles(profiles)
         sysOut.info("Profile '$profileName' updated successfully.")
