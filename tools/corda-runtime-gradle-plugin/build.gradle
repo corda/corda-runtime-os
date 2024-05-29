@@ -44,6 +44,7 @@ dependencies {
     testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinCoroutinesVersion"
 
     pluginSmokeTestImplementation project(':testing:e2e-test-utilities')
+    integrationTestImplementation project(':testing:e2e-test-utilities')
 }
 
 integrationTest {

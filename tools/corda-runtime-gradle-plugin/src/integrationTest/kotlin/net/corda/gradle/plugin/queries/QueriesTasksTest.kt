@@ -1,6 +1,7 @@
 package net.corda.gradle.plugin.queries
 
 import net.corda.gradle.plugin.FunctionalBaseTest
+import net.corda.gradle.plugin.TestExecutionConditions
 import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
 import net.corda.libs.cpiupload.endpoints.v1.CpiMetadata
 import net.corda.libs.cpiupload.endpoints.v1.GetCPIsResponse
@@ -13,15 +14,20 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertAll
+import org.junit.jupiter.api.condition.DisabledIf
 import java.time.Instant
 
 class QueriesTasksTest : FunctionalBaseTest() {
+
+    fun isRestApiReachable() = TestExecutionConditions.isRestApiReachable()
+
     @Test
     fun shouldContainSupportingTasks() {
         assertNotNull(executeWithRunner("tasks", "--group", CLUSTER_QUERY_GROUP).tasks)
     }
 
     @Test
+    @DisabledIf("isRestApiReachable")
     fun listVNodesFailsConnectionRefused() {
         appendCordaRuntimeGradlePluginExtension()
         val result = executeAndFailWithRunner(LIST_VNODES_TASK_NAME)
@@ -31,6 +37,7 @@ class QueriesTasksTest : FunctionalBaseTest() {
     }
 
     @Test
+    @DisabledIf("isRestApiReachable")
     fun listCPIsFailsConnectionRefused() {
         appendCordaRuntimeGradlePluginExtension()
         val result = executeAndFailWithRunner(LIST_CPIS_TASK_NAME)
