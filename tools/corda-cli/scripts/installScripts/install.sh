@@ -11,7 +11,7 @@ echo "Creating corda-cli dir at cliHome"
 mkdir -p $cliHome
 
 echo "Copying files and plugins"
-cp -R $zipdir/* $cliHome
+cp corda-cli.cmd corda-cli.sh corda-cli.jar $cliHome
 
 echo "Creating corda-cli Script"
 echo "java \"\$@\"" > $cliHome/corda-cli.sh

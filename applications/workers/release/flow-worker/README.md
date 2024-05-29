@@ -27,7 +27,7 @@ You have built a CPB with the flow you want to use for running the flow worker:
 
 ```shell
 ./gradlew :tools:corda-cli:build
-./tools/corda-cli/build/cli/corda-cli.sh /corda-cli.sh mgm groupPolicy --name="CN=Alice, OU=Application, O=R3, L=London, C=GB" --name="CN=Bob, OU=Application, O=R3, L=London, C=GB" --endpoint-protocol=1 --endpoint="http://localhost:1080" >> GroupPolicy.json
+./tools/corda-cli/build/cli/corda-cli.sh mgm groupPolicy --name="CN=Alice, OU=Application, O=R3, L=London, C=GB" --name="CN=Bob, OU=Application, O=R3, L=London, C=GB" --endpoint-protocol=1 --endpoint="http://localhost:1080" >> GroupPolicy.json
 ```  
 
 In the same directory as your built CBP add the file called ```GroupPolicy.json``` (the name is case-sensitive)
