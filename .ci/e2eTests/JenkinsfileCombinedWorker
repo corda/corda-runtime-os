@@ -128,16 +128,15 @@ pipeline {
                     steps {
                         script {
                             gradlew('smoketest -PisCombinedWorker=true')
-                            smoketestsRunning = false
                         }
                     }
                     post {
                         always {
+                            smoketestsRunning = false
                             junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
                         }
                         aborted {
                             script {
-                                smoketestsRunning = false
                                 println threadDump
                             }
                         }
