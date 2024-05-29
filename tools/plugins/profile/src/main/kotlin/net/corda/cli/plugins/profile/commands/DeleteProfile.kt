@@ -27,12 +27,6 @@ class DeleteProfile : Runnable {
         logger.debug("Deleting profile: $profileName")
         val profiles = loadProfiles()
 
-        if (!profiles.containsKey(profileName)) {
-            val errorMessage = "Profile '$profileName' does not exist."
-            sysErr.error(errorMessage)
-            throw IllegalArgumentException(errorMessage)
-        }
-
         sysOut.info("Are you sure you want to delete profile '$profileName'? (y/n)")
         val confirmation = readlnOrNull()
         if (confirmation?.lowercase() != "y") {

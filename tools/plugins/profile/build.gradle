@@ -40,10 +40,6 @@ dependencies {
     testRuntimeOnly libs.log4j.slf4j2
 }
 
-repositories {
-    mavenCentral()
-}
-
 test {
     useJUnitPlatform()
 }

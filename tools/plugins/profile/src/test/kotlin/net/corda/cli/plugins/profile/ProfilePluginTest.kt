@@ -41,7 +41,6 @@ class ProfilePluginTest {
     @AfterEach
     fun cleanup() {
         System.setOut(originalOut)
-        outContent.reset()
     }
 
     @Test
@@ -138,34 +137,6 @@ class ProfilePluginTest {
     }
 
     @Test
-    fun `test idempotence of UpdateProfile with initial creation`() {
-        val initialProfiles = ProfileUtils.loadProfiles()
-        assertFalse(initialProfiles.containsKey("test-profile"))
-
-        val updateProfile = UpdateProfile()
-        updateProfile.profileName = "test-profile"
-        updateProfile.properties = arrayOf(
-            "rest_username=updateduser",
-            "rest_password=updatedpassword",
-        )
-
-        // Run UpdateProfile command for the first time, should create the profile
-        updateProfile.run()
-
-        val updatedProfiles1 = ProfileUtils.loadProfiles()
-        val profile1 = updatedProfiles1["test-profile"] as Map<*, *>
-
-        // Run UpdateProfile command for the second time, should not change the profile
-        updateProfile.run()
-
-        val updatedProfiles2 = ProfileUtils.loadProfiles()
-        val profile2 = updatedProfiles2["test-profile"] as Map<*, *>
-
-        // Check that the state of the profile remains the same after the second run
-        assertEquals(profile1, profile2)
-    }
-
-    @Test
     fun `test delete profile`() {
         // Setup test profile
         val secretEncryptionUtil = SecretEncryptionUtil()
@@ -191,18 +162,6 @@ class ProfilePluginTest {
 
         val updatedProfiles = ProfileUtils.loadProfiles()
         assertFalse(updatedProfiles.containsKey("test-profile"), "Deleted profile should not exist")
-    }
-
-    @Test
-    fun `test delete non-existing profile`() {
-        val deleteProfile = DeleteProfile()
-        deleteProfile.profileName = "non-existing-profile"
-
-        val exception = assertThrows(IllegalArgumentException::class.java) {
-            deleteProfile.run()
-        }
-
-        assertEquals("Profile 'non-existing-profile' does not exist.", exception.message)
     }
 
     @Test

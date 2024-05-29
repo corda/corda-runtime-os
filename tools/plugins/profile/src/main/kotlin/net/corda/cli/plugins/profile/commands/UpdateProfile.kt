@@ -38,22 +38,9 @@ class UpdateProfile : Runnable {
         }
 
         if (key.lowercase().contains("password")) {
-            if (profile.containsKey(key)) {
-                val oldEncryptedPassword = profile[key] as String
-                val oldSalt = profile["${key}_salt"] as String
-                val oldPassword = secretEncryptionUtil.decrypt(oldEncryptedPassword, oldSalt, oldSalt)
-
-                // only update salt and encrypted password if the password has changed
-                if (value != oldPassword) {
-                    val encryptedPassword = secretEncryptionUtil.encrypt(value, salt, salt)
-                    profile[key] = encryptedPassword
-                    profile["${key}_salt"] = salt
-                }
-            } else {
-                val encryptedPassword = secretEncryptionUtil.encrypt(value, salt, salt)
-                profile[key] = encryptedPassword
-                profile["${key}_salt"] = salt
-            }
+            val encryptedPassword = secretEncryptionUtil.encrypt(value, salt, salt)
+            profile[key] = encryptedPassword
+            profile["${key}_salt"] = salt
         } else {
             profile[key] = value
         }
