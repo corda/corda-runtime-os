@@ -284,7 +284,7 @@ class UtxoFinalityFlowV1(
 
             log.trace {
                 "Notarizing transaction $transactionId using pluggable notary client flow of " +
-                        "${notarizationFlow::class.java.name} with notary $notary. Attempt number $attemptNumber"
+                    "${notarizationFlow::class.java.name} with notary $notary. Attempt number $attemptNumber"
             }
 
             flowEngine.subFlow(notarizationFlow)
@@ -328,7 +328,7 @@ class UtxoFinalityFlowV1(
 
         log.trace {
             "Received ${notarySignatures.size} signature(s) from notary $notary after requesting notarization of transaction " +
-                    transactionId
+                transactionId
         }
 
         if (notarySignatures.isEmpty()) {
