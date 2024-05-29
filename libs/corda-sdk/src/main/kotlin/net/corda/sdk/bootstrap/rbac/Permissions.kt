@@ -16,6 +16,7 @@ object Permissions {
     // Status request ID for vNode creation is 12 chars long and for vNode upgrade is 36 chars long
     private const val VNODE_STATUS_REQ_REGEX = "([a-fA-F0-9]{36}|[a-fA-F0-9]{12})"
 
+    private const val FLOW_STATE_REGEX = "[_a-zA-Z0-9]{3,255}"
     private const val CERTIFICATE_USAGE_REGEX = "(p2p-tls|p2p-session|code-signer)"
     private const val TENANT_ID_REGEX = "([a-fA-F0-9]{12}|p2p)"
     private const val KEY_ID_REGEX = "[a-fA-F0-9]{12}"
@@ -143,6 +144,7 @@ object Permissions {
 
         // Flow permissions
         "Get all flows status for holding identity" to "GET:/api/$VERSION_PATH_REGEX/flow/$VNODE_SHORT_HASH_REGEX",
+        "Get status of multiple flows" to "GET:/api/$VERSION_PATH_REGEX/flow/$VNODE_SHORT_HASH_REGEX/?status=$FLOW_STATE_REGEX",
         "Get flow status" to "GET:/api/$VERSION_PATH_REGEX/flow/$VNODE_SHORT_HASH_REGEX/$CLIENT_REQ_REGEX",
 
     ).toMap()
