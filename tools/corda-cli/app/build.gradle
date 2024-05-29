@@ -29,4 +29,5 @@ dependencies {
     implementation project(':tools:plugins:secret-config')
     implementation project(':tools:plugins:topic-config')
     implementation project(':tools:plugins:virtual-node')
+    implementation project(':tools:plugins:profile')
 }

@@ -3,7 +3,6 @@ plugins {
     id 'distribution'
     id 'org.jetbrains.kotlin.jvm'
     id 'org.jetbrains.kotlin.kapt'
-    id 'corda.cli-plugin-packager'
     id 'corda.common-publishing'
 }
 
@@ -16,52 +15,19 @@ ext.cordaEnableFormatting = true
 group 'net.corda.cli.deployment'
 
 dependencies {
-    constraints {
-        implementation(libs.slf4j.v2.api)
-    }
-
-    compileOnly "net.corda.cli.host:api:$pluginHostVersion"
-
     implementation libs.jackson.module.kotlin
     implementation libs.jackson.dataformat.yaml
-    implementation libs.pf4j
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:corda-sdk')
-    kapt libs.pf4j
 
-    testImplementation "net.corda.cli.host:api:$pluginHostVersion"
     testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
-    testImplementation libs.pf4j
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:packaging-test-utilities")
 
     testImplementation libs.bundles.test
     testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
-    testRuntimeOnly libs.log4j.slf4j2
 }
 
 test {
     useJUnitPlatform()
-}
-
-cliPlugin {
-    cliPluginClass = 'net.corda.cli.plugins.profile.ProfilePluginWrapper'
-    cliPluginDescription = 'Plugin for user-defined profile management.'
-}
-
-tasks.named("installDist") {
-    dependsOn cliPlugin
-    def homePath = System.properties['user.home']
-    from cliPlugin
-    into "$homePath/.corda/cli/plugins"
-}
-
-publishing {
-    publications {
-        maven(MavenPublication) {
-            artifactId "${cliPlugin.cliPluginId.get()}-cli-plugin"
-            groupId project.group
-            artifact cliPluginTask
-        }
-    }
 }

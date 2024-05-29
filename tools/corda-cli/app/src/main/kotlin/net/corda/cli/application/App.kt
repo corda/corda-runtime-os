@@ -8,6 +8,7 @@ import net.corda.cli.plugins.dbconfig.DatabaseBootstrapAndUpgrade
 import net.corda.cli.plugins.network.NetworkPluginWrapper
 import net.corda.cli.plugins.packaging.PackagePlugin
 import net.corda.cli.plugins.preinstall.PreInstallPlugin
+import net.corda.cli.plugins.profile.ProfilePlugin
 import net.corda.cli.plugins.topicconfig.TopicPlugin
 import net.corda.cli.plugins.vnode.VirtualNodeCliPlugin
 import picocli.CommandLine
@@ -57,6 +58,7 @@ object App {
         commandLine.addSubcommand(SecretConfigPlugin())
         commandLine.addSubcommand(TopicPlugin())
         commandLine.addSubcommand(VirtualNodeCliPlugin())
+        commandLine.addSubcommand(ProfilePlugin())
 
         val commandResult = commandLine
             .setCaseInsensitiveEnumValuesAllowed(true)
