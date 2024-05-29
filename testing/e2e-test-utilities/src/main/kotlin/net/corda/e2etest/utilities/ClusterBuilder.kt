@@ -2,7 +2,6 @@ package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import net.corda.e2etest.utilities.RbacTestUtils.createVNodeCreatorUser
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.tracing.configureTracing
 import net.corda.tracing.trace
@@ -29,24 +28,42 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     }
 
     private val logger = LoggerFactory.getLogger("ClusterBuilder - ${clusterInfo.id}")
-
-//    private val client1: HttpsClient =
-//        UnirestHttpsClient(clusterInfo.rest.uri, clusterInfo.rest.user, clusterInfo.rest.password)
-//
-//    private fun createUser(){
-//        client1.post("/api/$REST_API_VERSION_PATH/user",
-//        createRbacUserBody(true, "VNodeCreatorUser", "VNodeCreatorUser", "VNodeCreatorUser", null, null))
-//        val roles = client1.get("/api/$REST_API_VERSION_PATH/role")
-//        val vNodeCreatorRoleId = roles.body.toJson().first { it["roleName"].toString().contains("VNodeCreatorRole") }["id"]
-//        client1.put("/api/$REST_API_VERSION_PATH/user/VNodeCreatorUser/role/$vNodeCreatorRoleId", "")
-//    }
+    private val vNodeCreatorName = "vnodecreatoruser"
 
     private val client: HttpsClient =
         UnirestHttpsClient(clusterInfo.rest.uri, clusterInfo.rest.user, clusterInfo.rest.password)
 
+    private val checkVNodeCreatorRoleExists =
+        getRbacRoles().body.toJson().firstOrNull { it["roleName"].toString().contains("VNodeCreatorRole") }
+
+    private val checkVNodeCreatorUserDoesNotExist =
+        getRbacUser(vNodeCreatorName).body.contains("User '$vNodeCreatorName' not found")
+
     private val vNodeCreatorClient: HttpsClient by lazy {
-        createVNodeCreatorUser()
-        UnirestHttpsClient(clusterInfo.rest.uri, "vnodecreatoruser", "vnodecreatoruser")
+        if (checkVNodeCreatorRoleExists != null && checkVNodeCreatorUserDoesNotExist) {
+            assertWithRetry {
+                command {
+                    createRbacUser(
+                        true,
+                        vNodeCreatorName,
+                        vNodeCreatorName,
+                        vNodeCreatorName,
+                        null,
+                        null
+                    )
+                }
+                condition { it.code == 201 }
+            }
+            assertWithRetry {
+                command {
+                    assignRoleToUser(vNodeCreatorName, checkVNodeCreatorRoleExists["id"].textValue())
+                }
+                condition { it.code == 200 }
+            }
+            UnirestHttpsClient(clusterInfo.rest.uri, "vnodecreatoruser", "vnodecreatoruser")
+        } else {
+            client
+        }
     }
 
     private data class VNodeCreateBody(

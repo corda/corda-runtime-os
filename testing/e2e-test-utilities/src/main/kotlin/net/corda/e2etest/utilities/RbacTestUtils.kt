@@ -6,46 +6,6 @@ import java.time.Instant
 
 object RbacTestUtils {
 
-    fun createVNodeCreatorUser() {
-        ClusterBInfo.cluster {
-            val vNodeCreatorUser = "vnodecreatoruser"
-            println("hello")
-            println(getRbacUser(vNodeCreatorUser))
-            if (getRbacUser(vNodeCreatorUser ).body.contains("User '$vNodeCreatorUser' not found")) {
-                assertWithRetry {
-                    command {
-                        createRbacUser(
-                            true,
-                            vNodeCreatorUser,
-                            vNodeCreatorUser,
-                            vNodeCreatorUser,
-                            null,
-                            null
-                        )
-                    }
-                    condition {
-                        println(it)
-                        it.code == 201
-                    }
-                }
-                val roles = getRbacRoles()
-                println(roles.body.toJson())
-                val vNodeCreatorRoleId =
-                    roles.body.toJson().first { it["roleName"].toString().contains("VNodeCreatorRole") }["id"].textValue()
-                println(vNodeCreatorRoleId)
-                assertWithRetry {
-                    command {
-                        assignRoleToUser(vNodeCreatorUser, vNodeCreatorRoleId)
-                    }
-                    condition {
-                        println(it)
-                        it.code == 200
-                    }
-                }
-            }
-        }
-    }
-
     fun getAllRbacRoles(): List<RbacRole> {
         return DEFAULT_CLUSTER.cluster {
             val bodyAsString = assertWithRetryIgnoringExceptions {
