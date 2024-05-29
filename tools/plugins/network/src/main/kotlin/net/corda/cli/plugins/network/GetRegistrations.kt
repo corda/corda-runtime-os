@@ -10,13 +10,13 @@ import net.corda.cli.plugins.typeconverter.RequestIdConverter
 import net.corda.cli.plugins.typeconverter.ShortHashConverter
 import net.corda.cli.plugins.typeconverter.X500NameConverter
 import net.corda.crypto.core.ShortHash
-import net.corda.membership.rest.v1.MemberRegistrationRestResource
 import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
+import net.corda.restclient.CordaRestClient
 import net.corda.sdk.data.RequestId
 import net.corda.sdk.network.RegistrationsLookup
-import net.corda.sdk.rest.RestClientUtils.createRestClient
 import net.corda.v5.base.types.MemberX500Name
 import picocli.CommandLine
+import java.net.URI
 import kotlin.time.Duration.Companion.seconds
 
 @CommandLine.Command(
@@ -68,18 +68,16 @@ class GetRegistrations(private val output: Output = ConsoleOutput()) :
 
     private fun getRegistrations(): List<RestRegistrationRequestStatus> {
         val holdingIdentity = getHoldingIdentity(holdingIdentityShortHash, name, group)
-        val restClient = createRestClient(
-            MemberRegistrationRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
+        val restClient = CordaRestClient.createHttpClient(
+            baseUrl = URI.create(targetUrl),
             username = username,
             password = password,
-            targetUrl = targetUrl
+            insecure = insecure
         )
         return if (requestId != null) {
-            listOf(RegistrationsLookup().checkRegistration(restClient, holdingIdentity, requestId!!, waitDurationSeconds.seconds))
+            listOf(RegistrationsLookup(restClient).checkRegistration(holdingIdentity, requestId!!, waitDurationSeconds.seconds))
         } else {
-            RegistrationsLookup().checkRegistrations(restClient, holdingIdentity, waitDurationSeconds.seconds)
+            RegistrationsLookup(restClient).checkRegistrations(holdingIdentity, waitDurationSeconds.seconds)
         }
     }
 

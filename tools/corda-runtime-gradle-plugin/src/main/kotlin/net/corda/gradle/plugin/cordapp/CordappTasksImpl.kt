@@ -1,6 +1,3 @@
-@file:Suppress("DEPRECATION")
-// used for CertificatesRestResource
-
 package net.corda.gradle.plugin.cordapp
 
 import com.fasterxml.jackson.databind.DeserializationFeature
@@ -12,14 +9,6 @@ import net.corda.gradle.plugin.dtos.GroupPolicyDTO
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
 import net.corda.gradle.plugin.network.NetworkTasksImpl
 import net.corda.gradle.plugin.network.VNodeHelper
-import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
-import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
-import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
-import net.corda.membership.rest.v1.CertificatesRestResource
-import net.corda.membership.rest.v1.HsmRestResource
-import net.corda.membership.rest.v1.KeysRestResource
-import net.corda.membership.rest.v1.MGMRestResource
-import net.corda.membership.rest.v1.NetworkRestResource
 import net.corda.membership.rest.v1.types.request.HostedIdentitySessionKeyAndCertificate
 import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
 import net.corda.sdk.network.ClientCertificates
@@ -28,7 +17,6 @@ import net.corda.sdk.network.Keys.Companion.P2P_TLS_CERTIFICATE_ALIAS
 import net.corda.sdk.network.RegistrationRequester
 import net.corda.sdk.network.VirtualNode
 import net.corda.sdk.packaging.KeyStoreHelper
-import net.corda.sdk.rest.RestClientUtils
 import net.corda.v5.base.types.MemberX500Name
 import java.io.File
 import java.io.FileInputStream
@@ -173,23 +161,8 @@ class CordappTasksImpl(var pc: ProjectContext) {
             uploadCerts()
         }
 
-        val uploaderRestClient = RestClientUtils.createRestClient(
-            CpiUploadRestResource::class,
-            insecure = true,
-            username = pc.cordaRestUser,
-            password = pc.cordaRestPassword,
-            targetUrl = pc.cordaClusterURL
-        )
-        val forceUploaderRestClient = RestClientUtils.createRestClient(
-            VirtualNodeMaintenanceRestResource::class,
-            insecure = true,
-            username = pc.cordaRestUser,
-            password = pc.cordaRestPassword,
-            targetUrl = pc.cordaClusterURL
-        )
         val cpiChecksum = helper.uploadCpi(
-            uploaderRestClient,
-            forceUploaderRestClient,
+            pc.restClient,
             pc.corDappCpiFilePath,
             pc.corDappCpiName,
             pc.project.version.toString(),
@@ -198,8 +171,7 @@ class CordappTasksImpl(var pc: ProjectContext) {
         )
         pc.logger.quiet("CPI ${pc.corDappCpiName} uploaded: ${cpiChecksum.value}")
         val notaryChecksum = helper.uploadCpi(
-            uploaderRestClient,
-            forceUploaderRestClient,
+            pc.restClient,
             pc.notaryCpiFilePath,
             pc.notaryCpiName,
             pc.project.version.toString(),
@@ -207,43 +179,30 @@ class CordappTasksImpl(var pc: ProjectContext) {
             pc.cpiUploadTimeout
         )
         pc.logger.quiet("CPI ${pc.notaryCpiName} uploaded: ${notaryChecksum.value}")
-        uploaderRestClient.close()
-        forceUploaderRestClient.close()
     }
 
     private fun uploadCerts() {
-        val clientCertificate = ClientCertificates()
-        val certificateRestClient = RestClientUtils.createRestClient(
-            CertificatesRestResource::class,
-            insecure = true,
-            username = pc.cordaRestUser,
-            password = pc.cordaRestPassword,
-            targetUrl = pc.cordaClusterURL
-        )
-        clientCertificate.uploadCertificate(
-            restClient = certificateRestClient,
-            certificate = File(pc.gradleDefaultCertFilePath).inputStream(),
+        val clientCertificate = ClientCertificates(pc.restClient)
+        clientCertificate.uploadClusterCertificate(
+            certificateFile = File(pc.gradleDefaultCertFilePath),
             usage = CertificateUsage.CODE_SIGNER,
             alias = pc.gradleDefaultCertAlias
         )
         pc.logger.quiet("Certificate '${pc.gradleDefaultCertAlias}' uploaded.")
 
-        clientCertificate.uploadCertificate(
-            restClient = certificateRestClient,
-            certificate = File(pc.keystoreCertFilePath).inputStream(),
+        clientCertificate.uploadClusterCertificate(
+            certificateFile = File(pc.keystoreCertFilePath),
             usage = CertificateUsage.CODE_SIGNER,
             alias = pc.keystoreAlias
         )
         pc.logger.quiet("Certificate '${pc.keystoreAlias}' uploaded.")
 
-        clientCertificate.uploadCertificate(
-            restClient = certificateRestClient,
-            certificate = File(pc.r3RootCertFile).inputStream(),
+        clientCertificate.uploadClusterCertificate(
+            certificateFile = File(pc.r3RootCertFile),
             usage = CertificateUsage.CODE_SIGNER,
             alias = pc.r3RootCertKeyAlias
         )
         pc.logger.quiet("Certificate '${pc.r3RootCertKeyAlias}' uploaded.")
-        certificateRestClient.close()
     }
 
     fun deployMgmCpi() {
@@ -261,23 +220,8 @@ class CordappTasksImpl(var pc: ProjectContext) {
         )
         uploadCerts()
 
-        val uploaderRestClient = RestClientUtils.createRestClient(
-            CpiUploadRestResource::class,
-            insecure = true,
-            username = pc.cordaRestUser,
-            password = pc.cordaRestPassword,
-            targetUrl = pc.cordaClusterURL
-        )
-        val forceUploaderRestClient = RestClientUtils.createRestClient(
-            VirtualNodeMaintenanceRestResource::class,
-            insecure = true,
-            username = pc.cordaRestUser,
-            password = pc.cordaRestPassword,
-            targetUrl = pc.cordaClusterURL
-        )
         val cpiChecksum = DeployCpiHelper().uploadCpi(
-            uploaderRestClient,
-            forceUploaderRestClient,
+            pc.restClient,
             pc.mgmCorDappCpiFilePath,
             cpiName,
             pc.project.version.toString(),
@@ -285,43 +229,17 @@ class CordappTasksImpl(var pc: ProjectContext) {
             pc.cpiUploadTimeout
         )
         pc.logger.quiet("CPI $cpiName uploaded: ${cpiChecksum.value}")
-        uploaderRestClient.close()
-        forceUploaderRestClient.close()
 
         val mgmVNode = pc.networkConfig.getMgmNode()!!
         NetworkTasksImpl(pc).createVNodes(requiredNodes = listOf(mgmVNode))
         pc.logger.quiet("Registering MGM")
         NetworkTasksImpl(pc).registerVNodes(requiredNodes = listOf(mgmVNode))
         val mgmHoldingId = getMgmHoldingId()
-        val hsmRestClient = RestClientUtils.createRestClient(
-            HsmRestResource::class,
-            insecure = true,
-            username = pc.cordaRestUser,
-            password = pc.cordaRestPassword,
-            targetUrl = pc.cordaClusterURL
-        )
-        val keyRestClient = RestClientUtils.createRestClient(
-            KeysRestResource::class,
-            insecure = true,
-            username = pc.cordaRestUser,
-            password = pc.cordaRestPassword,
-            targetUrl = pc.cordaClusterURL
-        )
         val sessionKeyId = VNodeHelper().generateSessionKey(
-            hsmRestClient = hsmRestClient,
-            keyRestClient = keyRestClient,
+            restClient = pc.restClient,
             holdingId = mgmHoldingId
         )
-        hsmRestClient.close()
-        keyRestClient.close()
 
-        val networkRestClient = RestClientUtils.createRestClient(
-            NetworkRestResource::class,
-            insecure = true,
-            username = pc.cordaRestUser,
-            password = pc.cordaRestPassword,
-            targetUrl = pc.cordaClusterURL
-        )
         val request = HostedIdentitySetupRequest(
             p2pTlsCertificateChainAlias = P2P_TLS_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = true,
@@ -332,24 +250,14 @@ class CordappTasksImpl(var pc: ProjectContext) {
                 ),
             ),
         )
-        RegistrationRequester().configureAsNetworkParticipant(
-            restClient = networkRestClient,
+        RegistrationRequester(pc.restClient).configureAsNetworkParticipant(
             request = request,
             holdingId = mgmHoldingId,
         )
-        networkRestClient.close()
     }
 
     private fun getMgmHoldingId(): ShortHash {
-        val vNodeRestClient = RestClientUtils.createRestClient(
-            VirtualNodeRestResource::class,
-            insecure = true,
-            username = pc.cordaRestUser,
-            password = pc.cordaRestPassword,
-            targetUrl = pc.cordaClusterURL
-        )
-        val existingNodes = VirtualNode().getAllVirtualNodes(vNodeRestClient).virtualNodes
-        vNodeRestClient.close()
+        val existingNodes = VirtualNode(pc.restClient).getAllVirtualNodes().virtualNodes
         val nodeDetails = VNodeHelper().findMatchingVNodeFromList(existingNodes = existingNodes, pc.networkConfig.getMgmNode()!!)
         return ShortHash.parse(nodeDetails.holdingIdentity.shortHash)
     }
@@ -357,15 +265,7 @@ class CordappTasksImpl(var pc: ProjectContext) {
     fun extractGroupPolicyFromMgm() {
         pc.logger.quiet("Extracting policy from MGM")
         val mgmHoldingId = getMgmHoldingId()
-        val restClient = RestClientUtils.createRestClient(
-            MGMRestResource::class,
-            insecure = true,
-            username = pc.cordaRestUser,
-            password = pc.cordaRestPassword,
-            targetUrl = pc.cordaClusterURL
-        )
-        val groupPolicyResponse = ExportGroupPolicyFromMgm().exportPolicy(restClient = restClient, holdingIdentityShortHash = mgmHoldingId)
-        restClient.close()
+        val groupPolicyResponse = ExportGroupPolicyFromMgm(pc.restClient).exportPolicy(holdingIdentityShortHash = mgmHoldingId)
         val groupPolicyFile = File(pc.groupPolicyFilePath)
         PrintHelper.writeGroupPolicyToFile(groupPolicyFile, ObjectMapper().readTree(groupPolicyResponse))
         pc.logger.quiet("Group policy file created at $groupPolicyFile")

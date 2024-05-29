@@ -4,13 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.cli.plugins.typeconverter.ShortHashConverter
 import net.corda.crypto.core.ShortHash
-import net.corda.membership.rest.v1.MGMRestResource
+import net.corda.restclient.CordaRestClient
 import net.corda.sdk.network.ExportGroupPolicyFromMgm
-import net.corda.sdk.rest.RestClientUtils.createRestClient
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
-import kotlin.time.Duration.Companion.seconds
+import java.net.URI
 
 @Command(
     name = "export-group-policy",
@@ -38,19 +37,13 @@ class ExportGroupPolicy : Runnable, RestCommand() {
     }
 
     private fun exportGroupPolicy() {
-        val restClient = createRestClient(
-            MGMRestResource::class,
-            insecure = insecure,
-            minimumServerProtocolVersion = minimumServerProtocolVersion,
+        val restClient = CordaRestClient.createHttpClient(
+            baseUrl = URI.create(targetUrl),
             username = username,
             password = password,
-            targetUrl = targetUrl
+            insecure = insecure
         )
-        val groupPolicyResponse = ExportGroupPolicyFromMgm().exportPolicy(
-            restClient,
-            holdingIdentityShortHash,
-            wait = waitDurationSeconds.seconds
-        )
+        val groupPolicyResponse = ExportGroupPolicyFromMgm(restClient).exportPolicy(holdingIdentityShortHash = holdingIdentityShortHash)
         saveLocation.parentFile.mkdirs()
         val objectMapper = ObjectMapper()
         objectMapper.writerWithDefaultPrettyPrinter()

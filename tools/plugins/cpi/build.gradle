@@ -16,6 +16,7 @@ group 'net.corda.cli.deployment'
 
 dependencies {
 
+    implementation project(':libs:rest:generated-rest-client')
     implementation project(":libs:virtual-node:cpi-upload-endpoints")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")

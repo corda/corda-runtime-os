@@ -4,9 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import kong.unirest.Unirest
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
-import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
-import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
-import net.corda.rest.client.RestClient
+import net.corda.restclient.CordaRestClient
 import net.corda.sdk.data.Checksum
 import net.corda.sdk.data.RequestId
 import net.corda.sdk.packaging.CpiUploader
@@ -27,22 +25,19 @@ class DeployCpiHelper {
 
     @Suppress("LongParameterList")
     fun uploadCpi(
-        uploaderRestClient: RestClient<CpiUploadRestResource>,
-        forceUploaderRestClient: RestClient<VirtualNodeMaintenanceRestResource>,
+        restClient: CordaRestClient,
         cpiFilePath: String,
         cpiName: String,
         cpiVersion: String,
         cpiChecksumFilePath: String,
         cpiUploadTimeout: Long
     ): Checksum {
-        val cpiUploader = CpiUploader()
+        val cpiUploader = CpiUploader(restClient)
         val cpiFile = File(cpiFilePath)
         val requestId =
             try {
                 cpiUploader.uploadCpiEvenIfExists(
-                    uploadRestClient = uploaderRestClient,
-                    forceUploadRestClient = forceUploaderRestClient,
-                    cpi = cpiFile.inputStream(),
+                    cpi = cpiFile,
                     cpiName = cpiName,
                     cpiVersion = cpiVersion,
                     wait = cpiUploadTimeout.toDuration(DurationUnit.MILLISECONDS)
@@ -52,7 +47,6 @@ class DeployCpiHelper {
             }
 
         val cpiChecksum = cpiUploader.cpiChecksum(
-            restClient = uploaderRestClient,
             uploadRequestId = RequestId(requestId),
             wait = cpiUploadTimeout.toDuration(DurationUnit.MILLISECONDS)
         )

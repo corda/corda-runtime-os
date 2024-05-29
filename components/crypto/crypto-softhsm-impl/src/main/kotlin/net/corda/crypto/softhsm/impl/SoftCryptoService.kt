@@ -17,10 +17,10 @@ import net.corda.crypto.cipher.suite.getParamsSafely
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
+import net.corda.crypto.core.ClusterCryptoDb
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.Categories.ENCRYPTION_SECRET
 import net.corda.crypto.core.CryptoService
-import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
@@ -41,9 +41,9 @@ import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.SigningRepositoryFactory
 import net.corda.crypto.softhsm.TenantInfoService
+import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.crypto.softhsm.WrappingRepositoryFactory
 import net.corda.crypto.softhsm.deriveSupportedSchemes
-import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -286,7 +286,8 @@ open class SoftCryptoService(
         return shortHash
     }
 
-    private fun computeTenantId(context: Map<String, String>) = context.get("tenantId") ?: CryptoTenants.CRYPTO
+    // If tenant ID is not specified, use the identifier of a cluster crypto database
+    private fun computeTenantId(context: Map<String, String>) = context.get("tenantId") ?: ClusterCryptoDb.SCHEMA_NAME
 
     override fun sign(
         tenantId: String,

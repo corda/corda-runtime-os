@@ -8,6 +8,7 @@ import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
 import net.corda.virtualnode.OperationalStatus
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -24,16 +25,18 @@ class QueriesTasksTest : FunctionalBaseTest() {
     fun listVNodesFailsConnectionRefused() {
         appendCordaRuntimeGradlePluginExtension()
         val result = executeAndFailWithRunner(LIST_VNODES_TASK_NAME)
-        assertTrue(result.output.contains("Connect to $restHostnameWithPort"))
-        assertTrue(result.output.contains("Connection refused"))
+        assertThat(result.output)
+            .contains("connect to $restHostname")
+            .contains("Connection refused")
     }
 
     @Test
     fun listCPIsFailsConnectionRefused() {
         appendCordaRuntimeGradlePluginExtension()
         val result = executeAndFailWithRunner(LIST_CPIS_TASK_NAME)
-        assertTrue(result.output.contains("Connect to $restHostnameWithPort"))
-        assertTrue(result.output.contains("Connection refused"))
+        assertThat(result.output)
+            .contains("connect to $restHostname")
+            .contains("Connection refused")
     }
 
     @Test
@@ -101,7 +104,7 @@ class QueriesTasksTest : FunctionalBaseTest() {
             )
         }.let { VirtualNodes(it) }
 
-        app.get("/api/v1/virtualnode") { ctx -> ctx.json(vNodeResponsePayload) }
+        app.get("/api/v5_3/virtualnode") { ctx -> ctx.json(vNodeResponsePayload) }
     }
 
     private fun mockGetCPIResponse(inputs: List<String>) {
@@ -119,14 +122,14 @@ class QueriesTasksTest : FunctionalBaseTest() {
                 timestamp = Instant.now()
             )
         }.let { GetCPIsResponse(it) }
-        app.get("/api/v1/cpi") { ctx -> ctx.json(responseToUse) }
+        app.get("/api/v5_3/cpi") { ctx -> ctx.json(responseToUse) }
     }
 
     private fun mockGetCPIProtocolVersion() {
-        app.get("/api/v1/cpi/getprotocolversion") { ctx -> ctx.result("1") }
+        app.get("/api/v5_3/cpi/getprotocolversion") { ctx -> ctx.result("1") }
     }
 
     private fun mockGetVirtualNodeProtocolVersion() {
-        app.get("/api/v1/virtualnode/getprotocolversion") { ctx -> ctx.result("1") }
+        app.get("/api/v5_3/virtualnode/getprotocolversion") { ctx -> ctx.result("1") }
     }
 }

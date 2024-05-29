@@ -27,8 +27,8 @@ interface KeyRotationRestResource : RestResource {
     /**
      * The [getKeyRotationStatus] gets the latest key rotation status for [tenantId] if one exists.
      *
-     * @param tenantId Can either be a holding identity ID, the value 'master' for master wrapping key or one of the
-     *       values 'p2p', 'rest', 'crypto' for corresponding cluster-level services.
+     * @param tenantId Can either be a holding identity ID, the value 'master' for master wrapping key, or the value
+     *      'p2p' for a cluster-level tenant of the P2P services.
      *
      * @return Total number of keys which need rotating grouped by tenantId or tenantId's wrapping keys and
      *      the number of already re-wrapped keys.
@@ -41,17 +41,17 @@ interface KeyRotationRestResource : RestResource {
         responseDescription = "Number of keys which need rotating grouped by tenantId or tenantId's wrapping keys.",
     )
     fun getKeyRotationStatus(
-        @RestPathParameter(description = "Can either be a holding identity ID, the value 'master' for master wrapping " +
-                "key or one of the values 'rest', 'crypto' for corresponding cluster-level services.  NOTE: the 'p2p' "+
-                "tenant ID does not support key rotation and should not be used.")
+        @RestPathParameter(description = "Can either be a holding identity ID, the value 'master' for master " +
+                "wrapping key, or the value 'p2p' for a cluster-level tenant of the P2P services"
+        )
         tenantId: String
     ): KeyRotationStatusResponse
 
     /**
      * Initiates a master wrapping key, a cluster-level tenant wrapping key or a vNode wrapping key rotation process.
      *
-     * @param tenantId Can either be a holding identity ID, the value 'master' for master wrapping key or one of the
-     *       values 'p2p', 'rest', 'crypto' for corresponding cluster-level services.
+     * @param tenantId Can either be a holding identity ID, the value 'master' for master wrapping key, or the value
+     *      'p2p' for a cluster-level tenant of the P2P services.
      *
      * @return Key rotation response where the requestId is the unique ID for the key rotation start request.
      *
@@ -67,9 +67,9 @@ interface KeyRotationRestResource : RestResource {
         successCode = SC_ACCEPTED,
     )
     fun startKeyRotation(
-        @RestPathParameter(description = "Can either be a holding identity ID, the value 'master' for master wrapping " +
-                "key or one of the values 'rest', 'crypto' for corresponding cluster-level services.  NOTE: the" +
-                " 'p2p' tenant ID does not support key rotation and should not be used.")
+        @RestPathParameter(description = "Can either be a holding identity ID, the value 'master' for master " +
+                "wrapping key, or the value 'p2p' for a cluster-level tenant of the P2P services"
+        )
         tenantId: String
     ): ResponseEntity<KeyRotationResponse>
 }

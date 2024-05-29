@@ -15,7 +15,7 @@ jcipAnnotationsVersion = "1.0_2"
 # Once Javalin version is upgraded to the latest, this override may be removed.
 jettyVersion = "9.4.54.v20240208"
 micrometerVersion = "1.12.4"
-nimbusVersion = "11.10.1"
+nimbusVersion = "11.12"
 kafkaClientVersion = "3.6.1_1"
 kubernetesClientVersion = "6.11.0"
 log4jVersion = "2.23.0"
@@ -40,7 +40,7 @@ snappyJavaVersion="1.1.10.5"
 typeSafeConfigVersion = "1.4.3"
 okHttpVersion = { strictly = "4.9.2" }
 okioVersion = { strictly = "3.4.0" }
-pf4jVersion = "3.10.0"
+pf4jVersion = "3.11.1"
 unirestVersion = "3.14.5"
 zipkinCoreVersion = "2.27.1"
 zipkinReporterVersion = "3.4.0"
@@ -62,6 +62,7 @@ cyclonedxVersion = "1.8.2"
 dokkaVersion = "1.9.10"
 testLoggerVersion = "4.0.0"
 sonarVersion = "5.0.0.4638"
+openApiGeneratorVersion = "7.4.0"
 
 [libraries]
 apache-commons-codec = { group = "commons-codec", name = "commons-codec", version.ref = "apacheCommonsCodecVersion" }
@@ -154,3 +155,4 @@ cyclonedx-bom = { id = "org.cyclonedx.bom", version.ref = "cyclonedxVersion" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokkaVersion" }
 test-logger = { id = "com.adarshr.test-logger", version.ref = "testLoggerVersion" }
 sonar = { id = "org.sonarqube", version.ref = "sonarVersion" }
+openapi-generator = { id = "org.openapi.generator", version.ref = "openApiGeneratorVersion" }
