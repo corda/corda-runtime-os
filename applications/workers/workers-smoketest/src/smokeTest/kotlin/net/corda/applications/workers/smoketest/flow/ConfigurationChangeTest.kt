@@ -23,7 +23,6 @@ import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -31,9 +30,8 @@ import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.parallel.Isolated
 import org.slf4j.LoggerFactory
 import java.time.Duration
-import java.util.*
+import java.util.UUID
 
-@Disabled("Temporary")
 @Suppress("Unused", "FunctionName")
 @Order(Int.MAX_VALUE)
 @TestInstance(Lifecycle.PER_CLASS)

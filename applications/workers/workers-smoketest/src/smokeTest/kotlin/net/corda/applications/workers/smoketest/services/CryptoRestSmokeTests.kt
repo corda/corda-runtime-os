@@ -30,7 +30,6 @@ import org.eclipse.jetty.http.HttpMethod
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.net.URI
@@ -44,7 +43,6 @@ import java.util.UUID
 /**
  * Tests for the Crypto REST service
  */
-@Disabled("Temporary")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CryptoRestSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
     private val httpClient: HttpClient = HttpClient.newBuilder()

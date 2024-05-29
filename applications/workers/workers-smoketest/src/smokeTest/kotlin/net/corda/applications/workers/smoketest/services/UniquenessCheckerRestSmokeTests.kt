@@ -27,7 +27,6 @@ import net.corda.uniqueness.utils.UniquenessAssertions
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.slf4j.LoggerFactory
@@ -40,13 +39,12 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
-import java.util.*
+import java.util.UUID
 import kotlin.random.Random
 
 /**
  * Tests for the UniquenessChecker REST service
  */
-@Disabled("Temporary")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class UniquenessCheckerRestSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
     private val httpClient: HttpClient = HttpClient.newBuilder()

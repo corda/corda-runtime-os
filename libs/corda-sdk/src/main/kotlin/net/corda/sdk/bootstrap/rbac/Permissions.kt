@@ -19,19 +19,17 @@ object Permissions {
     private const val CERTIFICATE_USAGE_REGEX = "(p2p-tls|p2p-session|code-signer)"
     private const val TENANT_ID_REGEX = "([a-fA-F0-9]{12}|p2p)"
     private const val KEY_ID_REGEX = "[a-fA-F0-9]{12}"
-    private const val HSM_CATEGORY_REGEX = "(ACCOUNTS|CI|LEDGER|NOTARY|SESSION_INIT|TLS|JWT_KEY)"
+    private const val HSM_CATEGORY_REGEX = "(ACCOUNTS|CI|LEDGER|NOTARY|PRE_AUTH|SESSION_INIT|TLS|JWT_KEY)"
     private const val ALIAS_REGEX = "[-._A-Za-z0-9]{1,255}"
     private const val KEY_SCHEME_REGEX =
-        """
-            (CORDA.RSA
-            |CORDA.ECDSA.SECP256K1
-            |CORDA.ECDSA.SECP256R1
-            |CORDA.EDDSA.ED25519
-            |CORDA.X25519
-            |CORDA.SM2
-            |CORDA.GOST3410.GOST3411
-            |CORDA.SPHINCS-256)
-            """
+        "(CORDA\\.RSA" +
+                "|CORDA\\.ECDSA\\.SECP256K1" +
+                "|CORDA\\.ECDSA\\.SECP256R1" +
+                "|CORDA\\.EDDSA\\.ED25519" +
+                "|CORDA\\.X25519" +
+                "|CORDA\\.SM2" +
+                "|CORDA\\.GOST3410\\.GOST3411" +
+                "|CORDA\\.SPHINCS-256)"
 
     val cordaDeveloper: Map<String, String> = listOf(
         "Force CPI upload" to "POST:/api/$VERSION_PATH_REGEX/maintenance/virtualnode/forcecpiupload",
