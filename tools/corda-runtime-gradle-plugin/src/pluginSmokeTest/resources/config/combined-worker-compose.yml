@@ -1,0 +1,80 @@
+version: '2.1'
+services:
+  postgresql:
+    image: postgres:14.10
+    healthcheck:
+      test: pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    tty: true
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=cordacluster
+    ports:
+      - 5432:5432
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    healthcheck:
+      test: kafka-topics --bootstrap-server kafka:29092 --list
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    ports:
+      - 9092:9092
+    environment:
+      KAFKA_NODE_ID: 1
+      CLUSTER_ID: ZDFiZmU3ODUyMzRiNGI3NG
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,DOCKER_INTERNAL://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,DOCKER_INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,DOCKER_INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER_INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+  kafka-create-topics:
+    image: corda-os-docker.software.r3.com/corda-os-plugins:${CORDA_RUNTIME_VERSION}
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command: [
+      "topic",
+      "-b=kafka:29092",
+      "create",
+      "connect"
+    ]
+
+  corda:
+    image: corda-os-docker.software.r3.com/corda-os-combined-worker-kafka:${CORDA_RUNTIME_VERSION}
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      kafka-create-topics:
+        condition: service_completed_successfully
+    environment:
+      JAVA_TOOL_OPTIONS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+    command: [
+      "-mbus.busType=KAFKA",
+      "-mbootstrap.servers=kafka:29092",
+      "-spassphrase=password",
+      "-ssalt=salt",
+      "-ddatabase.user=user",
+      "-ddatabase.pass=password",
+      "-ddatabase.jdbc.url=jdbc:postgresql://postgresql:5432/cordacluster",
+      "-ddatabase.jdbc.directory=/opt/jdbc-driver/"
+    ]
+    ports:
+      - 8888:8888
+      - 7004:7004
+      - 5005:5005
