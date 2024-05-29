@@ -57,7 +57,9 @@ class ListProfile : Runnable {
             sysOut.info("Available profiles:")
             profiles.keys.forEach { profileName ->
                 sysOut.info("- $profileName")
-                printProfile(profiles[profileName]!!.properties)
+                profiles[profileName]?.let {
+                    printProfile(it.properties)
+                }
             }
         }
     }
