@@ -17,6 +17,47 @@ repositories {
     mavenCentral()
 }
 
+
+sourceSets {
+    endToEndTest {
+        java {
+            srcDirs += ['src/endToEndTest/java']
+        }
+        kotlin {
+            srcDirs += ['src/endToEndTest/kotlin']
+        }
+        resources {
+            srcDirs = ['src/endToEndTest/resources']
+        }
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+
+kotlin {
+    target {
+        java
+        compilations.endToEndTest {
+            associateWith compilations.main
+            associateWith compilations.test
+
+            configurations {
+                endToEndTestApi.extendsFrom testApi
+                endToEndTestImplementation.extendsFrom testImplementation
+                endToEndTestRuntimeOnly.extendsFrom testRuntimeOnly
+            }
+        }
+    }
+}
+
+tasks.register('endToEndTest', Test) {
+    description = "Runs end-to-end tests for Corda Runtime Gradle Plugin."
+    group = "verification"
+
+    testClassesDirs = project.sourceSets["endToEndTest"].output.classesDirs
+    classpath = project.sourceSets["endToEndTest"].runtimeClasspath
+}
+
 dependencies {
     implementation libs.jackson.module.kotlin
     implementation libs.jackson.datatype.jsr310
@@ -43,6 +84,7 @@ dependencies {
     testImplementation libs.javalin
     testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinCoroutinesVersion"
 
+    endToEndTestImplementation project(':testing:e2e-test-utilities')
 }
 
 integrationTest {
