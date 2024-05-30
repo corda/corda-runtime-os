@@ -11,6 +11,8 @@ import java.io.FileNotFoundException
 import java.io.InputStream
 import java.nio.file.Paths
 import java.time.Instant
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 /**
  *  All functions return a [SimpleResponse] if not explicitly declared.
@@ -29,43 +31,51 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
 
     private val logger = LoggerFactory.getLogger("ClusterBuilder - ${clusterInfo.id}")
     private val vNodeCreatorName = "vnodecreatoruser"
+    private val lock = ReentrantLock()
 
     private val client: HttpsClient =
         UnirestHttpsClient(clusterInfo.rest.uri, clusterInfo.rest.user, clusterInfo.rest.password)
 
-    private val checkVNodeCreatorRoleExists =
-        getRbacRoles().body.toJson().firstOrNull { it["roleName"].toString().contains("VNodeCreatorRole") }
+    private fun checkVNodeCreatorRoleExists(): JsonNode? {
+        return getRbacRoles().body.toJson().firstOrNull { it["roleName"].toString().contains("VNodeCreatorRole") }
+    }
 
-    private var checkVNodeCreatorUserDoesNotExist =
-        getRbacUser(vNodeCreatorName).body.contains("User '$vNodeCreatorName' not found")
+    private var vNodeCreatorUserDoesNotExist = true
+
+    private fun checkVNodeCreatorUserDoesNotExist(): Boolean {
+        return getRbacUser(vNodeCreatorName).body.contains("User '$vNodeCreatorName' not found")
+    }
 
     private val vNodeCreatorClient: HttpsClient by lazy {
-        if (checkVNodeCreatorRoleExists != null && checkVNodeCreatorUserDoesNotExist) {
-            assertWithRetry {
-                command {
-                    createRbacUser(
-                        true,
-                        vNodeCreatorName,
-                        vNodeCreatorName,
-                        vNodeCreatorName,
-                        null,
-                        null
-                    )
+        lock.withLock {
+            checkVNodeCreatorUserDoesNotExist()
+            if (checkVNodeCreatorRoleExists() != null && vNodeCreatorUserDoesNotExist) {
+                assertWithRetry {
+                    command {
+                        createRbacUser(
+                            true,
+                            vNodeCreatorName,
+                            vNodeCreatorName,
+                            vNodeCreatorName,
+                            null,
+                            null
+                        )
+                    }
+                    condition { it.code == 201 }
                 }
-                condition { it.code == 201 }
-            }
 
-            checkVNodeCreatorUserDoesNotExist = false
+                vNodeCreatorUserDoesNotExist = false
 
-            assertWithRetry {
-                command {
-                    assignRoleToUser(vNodeCreatorName, checkVNodeCreatorRoleExists["id"].textValue())
+                assertWithRetry {
+                    command {
+                        assignRoleToUser(vNodeCreatorName, checkVNodeCreatorRoleExists()!!["id"].textValue())
+                    }
+                    condition { it.code == 200 }
                 }
-                condition { it.code == 200 }
+                UnirestHttpsClient(clusterInfo.rest.uri, "vnodecreatoruser", "vnodecreatoruser")
+            } else {
+                client
             }
-            UnirestHttpsClient(clusterInfo.rest.uri, "vnodecreatoruser", "vnodecreatoruser")
-        } else {
-            client
         }
     }
 
