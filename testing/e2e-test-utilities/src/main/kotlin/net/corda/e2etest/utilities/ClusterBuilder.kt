@@ -36,7 +36,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     private val checkVNodeCreatorRoleExists =
         getRbacRoles().body.toJson().firstOrNull { it["roleName"].toString().contains("VNodeCreatorRole") }
 
-    private val checkVNodeCreatorUserDoesNotExist =
+    private var checkVNodeCreatorUserDoesNotExist =
         getRbacUser(vNodeCreatorName).body.contains("User '$vNodeCreatorName' not found")
 
     private val vNodeCreatorClient: HttpsClient by lazy {
@@ -54,6 +54,9 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
                 }
                 condition { it.code == 201 }
             }
+
+            checkVNodeCreatorUserDoesNotExist = false
+
             assertWithRetry {
                 command {
                     assignRoleToUser(vNodeCreatorName, checkVNodeCreatorRoleExists["id"].textValue())
