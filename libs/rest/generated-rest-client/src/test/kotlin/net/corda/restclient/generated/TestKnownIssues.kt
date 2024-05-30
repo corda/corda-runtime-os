@@ -3,7 +3,6 @@ package net.corda.restclient.generated
 import io.javalin.Javalin
 import net.corda.restclient.CordaRestClient
 import net.corda.restclient.dto.GenerateCsrWrapperRequest
-import net.corda.restclient.generated.apis.CertificateApi
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatCode
 import org.junit.jupiter.api.AfterAll
@@ -55,45 +54,6 @@ class TestKnownIssues {
         }
         .withFailMessage("Has the generated api been re-generated? Re-apply workaround")
         .doesNotThrowAnyException()
-    }
-
-    /**
-     * See comment for workaround details
-     * https://r3-cev.atlassian.net/browse/ES-2162?focusedCommentId=303584
-     */
-    @Test
-    fun testClusterCertRequestHandlesListCorrectly() {
-        val requestConfig = CertificateApi().putCertificateClusterUsageRequestConfig(
-            alias = null,
-            usage = "",
-            certificate = listOf(
-                File("one.txt"),
-                File("two.txt")
-            )
-        )
-        assertThat(requestConfig.body?.values.toString())
-            .contains("one.txt")
-            .doesNotContain("two.txt")
-    }
-
-    /**
-     * See comment for workaround details
-     * https://r3-cev.atlassian.net/browse/ES-2162?focusedCommentId=303584
-     */
-    @Test
-    fun testVNodeCertRequestHandlesListCorrectly() {
-        val requestConfig = CertificateApi().putCertificateVnodeHoldingidentityidUsageRequestConfig(
-            alias = null,
-            usage = "",
-            certificate = listOf(
-                File("one.txt"),
-                File("two.txt")
-            ),
-            holdingidentityid = ""
-        )
-        assertThat(requestConfig.body?.values.toString())
-            .contains("one.txt")
-            .doesNotContain("two.txt")
     }
 
     /**
