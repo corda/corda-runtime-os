@@ -4510,7 +4510,7 @@
             "example" : "string"
           },
           "json" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Json object.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"
@@ -5287,7 +5287,7 @@
             "example" : "string"
           },
           "requestBody" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Json object.",
             "nullable" : false,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "anyOf" : [ {
@@ -5351,7 +5351,7 @@
         "type" : "object",
         "properties" : {
           "config" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Json object.",
             "nullable" : false,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "anyOf" : [ {

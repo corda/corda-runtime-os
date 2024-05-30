@@ -4873,7 +4873,7 @@
             "example" : "string"
           },
           "json" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Json object.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"
@@ -5146,37 +5146,37 @@
             "example" : "string"
           },
           "cryptoDdlConnection" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Json object.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"
           },
           "cryptoDmlConnection" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Json object.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"
           },
           "uniquenessDdlConnection" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Json object.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"
           },
           "uniquenessDmlConnection" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Json object.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"
           },
           "vaultDdlConnection" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Json object.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"
           },
           "vaultDmlConnection" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Json object.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"
@@ -5784,7 +5784,7 @@
             "example" : "string"
           },
           "requestBody" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Json object.",
             "nullable" : false,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"
@@ -5835,7 +5835,7 @@
         "type" : "object",
         "properties" : {
           "config" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Json object.",
             "nullable" : false,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"
@@ -5886,37 +5886,37 @@
         "type" : "object",
         "properties" : {
           "cryptoDdlConnection" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Json object.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"
           },
           "cryptoDmlConnection" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Json object.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"
           },
           "uniquenessDdlConnection" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Json object.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"
           },
           "uniquenessDmlConnection" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Json object.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"
           },
           "vaultDdlConnection" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Json object.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"
           },
           "vaultDmlConnection" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Json object.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"

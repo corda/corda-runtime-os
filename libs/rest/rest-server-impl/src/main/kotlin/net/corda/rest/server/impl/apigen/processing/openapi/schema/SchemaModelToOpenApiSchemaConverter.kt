@@ -65,18 +65,9 @@ object SchemaModelToOpenApiSchemaConverter {
                 `$ref`(schemaModel.ref)
             }
             is JsonSchemaModel -> ComposedSchema().apply {
-                description = "Can be any value - string, number, boolean, array or object." // THis need to be udpate it can only be an object
+                description = "Json object."
                 example = "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
-                anyOf(
-                    listOf(
-                        StringSchema(),
-                        NumberSchema(),
-                        IntegerSchema(),
-                        BooleanSchema(),
-                        ArraySchema(),
-                        ObjectSchema(),
-                    )
-                )
+                ObjectSchema()
             }
             else -> convertBaseSchemaModel(schemaModel)
         }.also {
