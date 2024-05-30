@@ -133,27 +133,6 @@ tasks.register('applyWorkaroundForCertificateApi') {
     }
 }
 
-tasks.register('applyWorkaroundForMGMApi') {
-    dependsOn 'openApiGenerate'
-    doLast {
-        def targetLine1 = 'return request<Unit, kotlin\\.String>\\(\\s*localVariableConfig\\s*\\)'
-        def replacementLine1 = '''val response = request<Unit, Map<String, Any?>>(
-            localVariableConfig
-        )
-        val responseAsSuccess = response as Success
-        val responseString = ObjectMapper().writeValueAsString(responseAsSuccess.data)
-        return Success(responseString)'''
-
-        def targetLine2 = 'import com.fasterxml.jackson.annotation.JsonProperty(?!\nimport com.fasterxml.jackson.databind.ObjectMapper)'
-        def replacementLine2 = '''import com.fasterxml.jackson.annotation.JsonProperty\nimport com.fasterxml.jackson.databind.ObjectMapper'''
-
-        def fileName = "${project.buildDir}/generated/src/main/kotlin/net/corda/restclient/generated/apis/MGMApi.kt"
-        file(fileName).text = file(fileName).text
-                .replaceAll(targetLine1, replacementLine1)
-                .replaceAll(targetLine2, replacementLine2)
-    }
-}
-
 tasks.register('applyWorkaroundForApiClient') {
     dependsOn 'openApiGenerate'
     doLast {
@@ -187,7 +166,6 @@ tasks.register('applyWorkaroundForSerializer') {
 
 tasks.register('applyWorkarounds') {
     dependsOn 'applyWorkaroundForCertificateApi'
-    dependsOn 'applyWorkaroundForMGMApi'
     dependsOn 'applyWorkaroundForApiClient'
     dependsOn 'applyWorkaroundForSerializer'
 }
