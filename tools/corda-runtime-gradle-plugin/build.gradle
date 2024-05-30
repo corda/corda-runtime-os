@@ -84,7 +84,6 @@ dependencies {
     testImplementation libs.javalin
     testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinCoroutinesVersion"
 
-    integrationTestImplementation project(':testing:e2e-test-utilities')
     endToEndTestImplementation project(':testing:e2e-test-utilities')
 }
 
