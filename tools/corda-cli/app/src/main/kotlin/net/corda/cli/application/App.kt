@@ -45,20 +45,20 @@ object App {
     lateinit var spec: CommandLine.Model.CommandSpec
 
     fun run(vararg args: String) {
-
+//        LoggerStream.redirectSystemAndErrorOut()
         val commandLine = CommandLine(Command())
-        commandLine.addSubcommand(CPICliPlugin())
+        commandLine.addSubcommand(VirtualNodeCliPlugin())
+        commandLine.addSubcommand(PackagePlugin())
         commandLine.addSubcommand(DatabaseBootstrapAndUpgrade())
+        commandLine.addSubcommand(PreInstallPlugin())
+        commandLine.addSubcommand(ProfilePlugin())
+        commandLine.addSubcommand(TopicPlugin())
+        commandLine.addSubcommand(SecretConfigPlugin())
+        commandLine.addSubcommand(CPICliPlugin())
         commandLine.addSubcommand(InitialConfigPlugin())
         commandLine.addSubcommand(InitialRbacPlugin())
         commandLine.addSubcommand(NetworkPluginWrapper.NetworkPlugin())
         commandLine.addSubcommand(NetworkPluginWrapper.MgmPlugin())
-        commandLine.addSubcommand(PackagePlugin())
-        commandLine.addSubcommand(PreInstallPlugin())
-        commandLine.addSubcommand(SecretConfigPlugin())
-        commandLine.addSubcommand(TopicPlugin())
-        commandLine.addSubcommand(VirtualNodeCliPlugin())
-        commandLine.addSubcommand(ProfilePlugin())
 
         val commandResult = commandLine
             .setCaseInsensitiveEnumValuesAllowed(true)

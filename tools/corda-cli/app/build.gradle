@@ -14,20 +14,20 @@ application {
 
 dependencies {
     implementation libs.kotlin.stdlib
-    implementation libs.slf4j.v2.api
+
     implementation "info.picocli:picocli:$picocliVersion"
     kapt "info.picocli:picocli:$picocliVersion"
 
-    implementation project(':tools:plugins:common-utils')
-    implementation project(':tools:plugins:cpi')
-    implementation project(':tools:plugins:db-config')
-    implementation project(':tools:plugins:initial-config')
-    implementation project(':tools:plugins:initial-rbac')
-    implementation project(':tools:plugins:network')
-    implementation project(':tools:plugins:package')
-    implementation project(':tools:plugins:preinstall')
-    implementation project(':tools:plugins:secret-config')
-    implementation project(':tools:plugins:topic-config')
-    implementation project(':tools:plugins:virtual-node')
-    implementation project(':tools:plugins:profile')
+    api project(':tools:plugins:common-utils')
+    api project(':tools:plugins:cpi')
+    api project(':tools:plugins:db-config')
+    api project(':tools:plugins:initial-config')
+    api project(':tools:plugins:initial-rbac')
+    api project(':tools:plugins:network')
+    api project(':tools:plugins:package')
+    api project(':tools:plugins:preinstall')
+    api project(':tools:plugins:secret-config')
+    api project(':tools:plugins:topic-config')
+    api project(':tools:plugins:virtual-node')
+    api project(':tools:plugins:profile')
 }
