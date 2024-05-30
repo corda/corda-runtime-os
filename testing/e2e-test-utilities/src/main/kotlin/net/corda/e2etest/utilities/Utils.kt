@@ -39,7 +39,7 @@ fun String.toJson(): JsonNode {
     return try {
         ObjectMapper().readTree(this)
     } catch (exception: Exception) {
-        throw Exception("Json body: $this", exception)
+        throw IllegalArgumentException("Json body: $this", exception)
     }
 }
 
