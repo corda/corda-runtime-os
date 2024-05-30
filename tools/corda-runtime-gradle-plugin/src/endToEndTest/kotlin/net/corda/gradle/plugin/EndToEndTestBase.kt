@@ -2,16 +2,15 @@ package net.corda.gradle.plugin
 
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import org.gradle.testkit.runner.BuildResult
-import org.gradle.testkit.runner.BuildTask
 import org.gradle.testkit.runner.GradleRunner
-import org.gradle.testkit.runner.TaskOutcome
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
 
 // https://docs.gradle.org/current/userguide/test_kit.html
-abstract class SmokeTestBase {
+abstract class EndToEndTestBase {
+    // TODO based on integrationTest/kotlin/net/corda/gradle/plugin/FunctionalBaseTest.kt
+    //  for now contains only necessary methods and properties
 
     @field:TempDir
     lateinit var projectDir: File
@@ -33,7 +32,7 @@ abstract class SmokeTestBase {
 
             """.trimIndent()
         )
-        val sourceConfigFolder = File("src/pluginSmokeTest/resources/")
+        val sourceConfigFolder = File("src/endToEndTest/resources/")
         val targetConfigFolder = File("$projectDir/")
         sourceConfigFolder.absoluteFile.copyRecursively(targetConfigFolder)
     }
@@ -99,13 +98,6 @@ abstract class SmokeTestBase {
         buildFile.writeText(newContent)
     }
 
-    /**
-     * Allow tests to edit the network config file
-     */
-    fun getNetworkConfigFile() : File {
-        return File("$projectDir/$networkPath")
-    }
-
     fun executeWithRunner(vararg args: String): BuildResult {
         return GradleRunner
             .create()
@@ -122,9 +114,5 @@ abstract class SmokeTestBase {
             .withProjectDir(projectDir)
             .withArguments(*args)
             .buildAndFail()
-    }
-
-    fun BuildTask.assertTaskSucceeded() {
-        assertTrue(outcome == TaskOutcome.SUCCESS, "The task '$path' is expected to be successful")
     }
 }

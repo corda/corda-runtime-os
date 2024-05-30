@@ -1,17 +1,12 @@
 package net.corda.gradle.plugin.queries
 
-import net.corda.gradle.plugin.SmokeTestBase
+import net.corda.gradle.plugin.EndToEndTestBase
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
-class QueriesSmokeTest : SmokeTestBase() {
+class QueriesSmokeTest : EndToEndTestBase() {
     @Test
-    @Disabled("Tests to be added by https://r3-cev.atlassian.net/browse/ES-2344")
-    fun `fake test`() {}
-
-    @Test
-    fun `list vNodes is successful`() {
+    fun listVNodesIsSuccessful() {
         appendCordaRuntimeGradlePluginExtension()
         val result = executeWithRunner(LIST_VNODES_TASK_NAME, "--info")
         assertThat(result.output)
@@ -19,7 +14,7 @@ class QueriesSmokeTest : SmokeTestBase() {
     }
 
     @Test
-    fun `list CPIs is successful`() {
+    fun listCPIsIsSuccessful() {
         appendCordaRuntimeGradlePluginExtension()
         val result = executeWithRunner(LIST_CPIS_TASK_NAME)
         assertThat(result.output)
