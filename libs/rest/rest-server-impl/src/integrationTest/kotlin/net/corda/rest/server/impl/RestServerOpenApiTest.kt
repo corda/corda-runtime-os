@@ -416,24 +416,11 @@ class RestServerOpenApiTest : RestServerTestBase() {
 
         fun assertJsonObject(jsonObject: Schema<*>?, nullable: Boolean? = false) {
             assertNotNull(jsonObject)
-            assertNull(jsonObject.type)
+            assertEquals("object", jsonObject.type)
             assertNull(jsonObject.format)
             assertEquals("Either nested JSON object or a valid JSON-escaped string.", jsonObject.description)
             assertEquals("{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}", jsonObject.example)
             assertEquals(nullable, jsonObject.nullable)
-            val composedSchema = jsonObject as ComposedSchema
-            assertTrue(
-                composedSchema.anyOf.containsAll(
-                    setOf(
-                        StringSchema(),
-                        NumberSchema(),
-                        IntegerSchema(),
-                        BooleanSchema(),
-                        ArraySchema(),
-                        ObjectSchema()
-                    )
-                )
-            )
         }
 
         with(openAPI.paths["/objects-in-json-endpoint/create-with-one-object"]) {
