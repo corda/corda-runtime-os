@@ -5341,7 +5341,8 @@
             "description" : "Can be any value - string, number, boolean, array or object.",
             "nullable" : false,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "type" : "object",
+            "type" : "object"
+          },
           "schemaVersion" : {
             "$ref" : "#/components/schemas/ConfigSchemaVersion"
           },
