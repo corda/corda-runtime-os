@@ -3,6 +3,7 @@ package net.corda.restclient.generated
 import io.javalin.Javalin
 import net.corda.restclient.CordaRestClient
 import net.corda.restclient.dto.GenerateCsrWrapperRequest
+import net.corda.restclient.generated.apis.CertificateApi
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatCode
 import org.junit.jupiter.api.AfterAll
@@ -54,6 +55,21 @@ class TestKnownIssues {
         }
         .withFailMessage("Has the generated api been re-generated? Re-apply workaround")
         .doesNotThrowAnyException()
+    }
+
+    @Test
+    fun testClusterCertRequestHandlesListCorrectly() {
+        val requestConfig = CertificateApi().putCertificateClusterUsageRequestConfig(
+            alias = null,
+            usage = "",
+            certificate = listOf(
+                File("one.txt"),
+                File("two.txt")
+            )
+        )
+        assertThat(requestConfig.body?.values.toString())
+            .contains("one.txt")
+            .contains("two.txt")
     }
 
     /**
