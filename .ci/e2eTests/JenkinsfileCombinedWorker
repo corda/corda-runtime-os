@@ -132,7 +132,9 @@ pipeline {
                     }
                     post {
                         always {
-                            smoketestsRunning = false
+                            script {
+                                smoketestsRunning = false
+                            }
                             junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
                         }
                         aborted {
