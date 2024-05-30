@@ -61,7 +61,7 @@ object SchemaModelToOpenApiSchemaConverter {
                 `$ref`(schemaModel.ref)
             }
             is JsonSchemaModel -> ComposedSchema().apply {
-                description = "JSON object."
+                description = "Either nested JSON object or a valid JSON-escaped string."
                 example = "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
                 ObjectSchema()
             }

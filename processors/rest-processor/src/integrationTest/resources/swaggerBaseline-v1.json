@@ -4408,7 +4408,7 @@
             "example" : "string"
           },
           "json" : {
-            "description" : "JSON object.",
+            "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"
@@ -5185,7 +5185,7 @@
             "example" : "string"
           },
           "requestBody" : {
-            "description" : "JSON object.",
+            "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : false,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"
@@ -5236,7 +5236,7 @@
         "type" : "object",
         "properties" : {
           "config" : {
-            "description" : "JSON object.",
+            "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : false,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"

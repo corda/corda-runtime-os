@@ -92,6 +92,6 @@ internal class SchemaModelToOpenApiSchemaConverterTest {
         val result = SchemaModelToOpenApiSchemaConverter.convert(model)
 
         assertEquals("{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}", result.example)
-        assertEquals("JSON object.", result.description)
+        assertEquals("Either nested JSON object or a valid JSON-escaped string.", result.description)
     }
 }
