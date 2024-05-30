@@ -144,7 +144,7 @@ tasks.register('applyWorkaroundForMGMApi') {
         val responseString = ObjectMapper().writeValueAsString(responseAsSuccess.data)
         return Success(responseString)'''
 
-        def targetLine2 = 'import com.fasterxml.jackson.annotation.JsonProperty'
+        def targetLine2 = 'import com.fasterxml.jackson.annotation.JsonProperty(?!\nimport com.fasterxml.jackson.databind.ObjectMapper)'
         def replacementLine2 = '''import com.fasterxml.jackson.annotation.JsonProperty\nimport com.fasterxml.jackson.databind.ObjectMapper'''
 
         def fileName = "${project.buildDir}/generated/src/main/kotlin/net/corda/restclient/generated/apis/MGMApi.kt"
@@ -165,7 +165,7 @@ tasks.register('applyWorkaroundForApiClient') {
                     bodyContent as? T
                 }'''
 
-        def targetLine2 = 'import okhttp3.OkHttpClient'
+        def targetLine2 = '(?<!import com.fasterxml.jackson.core.JsonParseException\n)import okhttp3.OkHttpClient'
         def replacementLine2 = '''import com.fasterxml.jackson.core.JsonParseException\nimport okhttp3.OkHttpClient'''
 
         def fileName = "${project.buildDir}/generated/src/main/kotlin/net/corda/restclient/generated/infrastructure/ApiClient.kt"

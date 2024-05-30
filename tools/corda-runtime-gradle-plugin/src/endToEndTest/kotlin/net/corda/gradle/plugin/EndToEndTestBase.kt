@@ -1,42 +1,25 @@
 package net.corda.gradle.plugin
 
-import io.javalin.Javalin
+import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import org.gradle.testkit.runner.BuildResult
-import org.gradle.testkit.runner.BuildTask
 import org.gradle.testkit.runner.GradleRunner
-import org.gradle.testkit.runner.TaskOutcome
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
 
 // https://docs.gradle.org/current/userguide/test_kit.html
-abstract class FunctionalBaseTest : Javalin() {
+abstract class EndToEndTestBase {
+    // TODO based on integrationTest/kotlin/net/corda/gradle/plugin/FunctionalBaseTest.kt
+    //  for now contains only necessary methods and properties
+
     @field:TempDir
     lateinit var projectDir: File
     protected lateinit var buildFile: File
     private lateinit var networkPath: String
 
-    protected var restHostname = "localhost"
-    protected var restPort = 8888
-    protected val restHostnameWithPort get() = "$restHostname:$restPort"
-
-    protected lateinit var app: Javalin
-
-    protected fun startMockedApp() {
-        app.start(restHostname, restPort)
-    }
-
-    @BeforeEach
-    fun createMockedApp() {
-        app = create()
-    }
-
-    @AfterEach
-    fun stopMockedApp() {
-        if (::app.isInitialized) app.stop()
-    }
+    private val targetUrl = DEFAULT_CLUSTER.rest.uri
+    private val user = DEFAULT_CLUSTER.rest.user
+    private val password = DEFAULT_CLUSTER.rest.password
 
     @BeforeEach
     fun setup() {
@@ -49,13 +32,12 @@ abstract class FunctionalBaseTest : Javalin() {
 
             """.trimIndent()
         )
-        val sourceConfigFolder = File("src/integrationTest/resources/")
+        val sourceConfigFolder = File("src/endToEndTest/resources/")
         val targetConfigFolder = File("$projectDir/")
         sourceConfigFolder.absoluteFile.copyRecursively(targetConfigFolder)
     }
 
     fun appendCordaRuntimeGradlePluginExtension(
-        restProtocol: String = "https",
         appendArtifactoryCredentials: Boolean = false,
         isStaticNetwork: Boolean = true
     ) {
@@ -69,9 +51,9 @@ abstract class FunctionalBaseTest : Javalin() {
         buildFile.appendText(
             """
             cordaRuntimeGradlePlugin {
-                cordaClusterURL = "$restProtocol://$restHostnameWithPort"
-                cordaRestUser = "admin"
-                cordaRestPasswd ="admin"
+                cordaClusterURL = "$targetUrl"
+                cordaRestUser = "$user"
+                cordaRestPasswd ="$password"
                 notaryVersion = "5.3.0.0-HC01"
                 runtimeVersion = "5.3.0.0-HC01"
                 composeFilePath = "config/combined-worker-compose.yml"
@@ -116,13 +98,6 @@ abstract class FunctionalBaseTest : Javalin() {
         buildFile.writeText(newContent)
     }
 
-    /**
-     * Allow tests to edit the network config file
-     */
-    fun getNetworkConfigFile() : File {
-        return File("$projectDir/$networkPath")
-    }
-
     fun executeWithRunner(vararg args: String): BuildResult {
         return GradleRunner
             .create()
@@ -139,9 +114,5 @@ abstract class FunctionalBaseTest : Javalin() {
             .withProjectDir(projectDir)
             .withArguments(*args)
             .buildAndFail()
-    }
-
-    fun BuildTask.assertTaskSucceeded() {
-        assertTrue(outcome == TaskOutcome.SUCCESS, "The task '$path' is expected to be successful")
     }
 }
