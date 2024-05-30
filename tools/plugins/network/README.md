@@ -193,5 +193,5 @@ This is a sub-command under the `operate` command for exporting the group policy
 To export the group policy file, use the following command:
 
 ```shell 
-./corda-cli.sh network operate export-group-policy -h <holding-id> --save <group-policy-file-path> --user=admin --password=admin --target=https://localhost:8888
+./corda-cli.sh network operate export-group-policy -h <holding-id>  --save <group-policy-file-path> --user=admin --password=admin --target=https://localhost:8888
 ```
