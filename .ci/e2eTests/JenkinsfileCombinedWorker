@@ -22,6 +22,11 @@ GitUtils gitUtils = new GitUtils(this)
 @Field
 String agentLabel = 'docker-private-network'
 
+@Field
+Boolean smoketestsRunning = true
+
+def threadDump
+
 if (env.CHANGE_ID || gitUtils.isReleaseTag()) {
     agentLabel = 'docker-on-demand-private-network'
 }
@@ -115,18 +120,64 @@ pipeline {
             }
         }
         stage('smoketests') {
-                options {
-                    timeout(time: 30, unit: 'MINUTES')
-                }
-                steps {
-                   gradlew('smoketest -PisCombinedWorker=true')
-                }
-                post {
-                    always {
-                        junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
+            parallel {
+                stage('smoketests') {
+                    options {
+                        timeout(time: 30, unit: 'MINUTES')
+                    }
+                    steps {
+                        script {
+                            gradlew('smoketest -PisCombinedWorker=true')
+                        }
+                    }
+                    post {
+                        always {
+                            script {
+                                smoketestsRunning = false
+                            }
+                            junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
+                        }
+                        aborted {
+                            script {
+                                println threadDump
+                            }
+                        }
                     }
                 }
-        }
+                stage('capture thread dumps') {
+                    options {
+                        timeout(time: 30, unit: 'MINUTES')
+                    }
+                    steps {
+                        script {
+                            def pid
+                            if (isUnix()) {
+                                sh "jps" 
+                                pid = sh(returnStdout: true, script: 'jps | grep corda-combined-worker-.*\\.jar')
+                            } 
+                            else {
+                                bat "jps"
+                                pid = bat(returnStdout: true, script: '@jps | findstr corda-combined-worker-.*\\.jar')
+                            }
+                            while (smoketestsRunning) {
+                                try {
+                                    if (isUnix()) {
+                                        threadDump = sh(returnStdout: true, script: "jstack ${pid.split(' ')[0]}")
+                                        sh 'sleep 1'
+                                    } 
+                                    else {
+                                        threadDump = bat(returnStdout: true, script: "@jstack ${pid.split(' ')[0]}")
+                                        sleep(1) // sleep for 1 second
+                                    }
+                                } catch (Exception e) {
+                                    smoketestsRunning = false
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } 
     }
     post {
         always {
