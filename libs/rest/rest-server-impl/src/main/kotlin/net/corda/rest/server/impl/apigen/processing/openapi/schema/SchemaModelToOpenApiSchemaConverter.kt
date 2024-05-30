@@ -32,7 +32,7 @@ private val log =
 object SchemaModelToOpenApiSchemaConverter {
     @Suppress("ComplexMethod")
     fun convert(schemaModel: SchemaModel): Schema<Any> {
-        log.info ("""Convert schemaModel "$schemaModel" to schema.""" )
+        log.trace { """Convert schemaModel "$schemaModel" to schema.""" }
         return when (schemaModel) {
             is SchemaEnumModel -> convertBaseSchemaModel(schemaModel).apply {
                 schemaModel.enum?.forEach { this.addEnumItemObject(it) }
