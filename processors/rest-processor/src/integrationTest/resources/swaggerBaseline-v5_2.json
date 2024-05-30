@@ -4920,7 +4920,7 @@
             "example" : "string"
           },
           "json" : {
-            "description" : "Json object.",
+            "description" : "JSON object.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"
@@ -5778,7 +5778,7 @@
             "example" : "string"
           },
           "requestBody" : {
-            "description" : "Json object.",
+            "description" : "JSON object.",
             "nullable" : false,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"
@@ -5829,7 +5829,7 @@
         "type" : "object",
         "properties" : {
           "config" : {
-            "description" : "Json object.",
+            "description" : "JSON object.",
             "nullable" : false,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"
@@ -5880,37 +5880,37 @@
         "type" : "object",
         "properties" : {
           "cryptoDdlConnection" : {
-            "description" : "Json object.",
+            "description" : "JSON object.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"
           },
           "cryptoDmlConnection" : {
-            "description" : "Json object.",
+            "description" : "JSON object.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"
           },
           "uniquenessDdlConnection" : {
-            "description" : "Json object.",
+            "description" : "JSON object.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"
           },
           "uniquenessDmlConnection" : {
-            "description" : "Json object.",
+            "description" : "JSON object.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"
           },
           "vaultDdlConnection" : {
-            "description" : "Json object.",
+            "description" : "JSON object.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"
           },
           "vaultDmlConnection" : {
-            "description" : "Json object.",
+            "description" : "JSON object.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             "type" : "object"

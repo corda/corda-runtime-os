@@ -215,7 +215,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
             assertNull(this.nullable)
 
             val contentProperty = this.properties["content"]
-            assertThat(contentProperty?.description).isEqualTo("Json object.")
+            assertThat(contentProperty?.description).isEqualTo("JSON object.")
         }
 
         with(openAPI.components.schemas["EchoResponse"]) {
@@ -223,7 +223,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
             assertNull(this.nullable)
 
             val contentProperty = this.properties["content"]
-            assertThat(contentProperty?.description).isEqualTo("Json object.")
+            assertThat(contentProperty?.description).isEqualTo("JSON object.")
         }
     }
 
@@ -418,7 +418,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
             assertNotNull(jsonObject)
             assertNull(jsonObject.type)
             assertNull(jsonObject.format)
-            assertEquals("Json object.", jsonObject.description)
+            assertEquals("JSON object.", jsonObject.description)
             assertEquals("{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}", jsonObject.example)
             assertEquals(nullable, jsonObject.nullable)
             val composedSchema = jsonObject as ComposedSchema
