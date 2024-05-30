@@ -191,7 +191,6 @@ tasks.register('applyWorkaroundForSerializer') {
 }
 
 tasks.register('applyWorkarounds') {
-//    dependsOn 'applyWorkaroundForCertificateApi'
     dependsOn 'applyWorkaroundForMGMApi'
     dependsOn 'applyWorkaroundForApiClient'
     dependsOn 'applyWorkaroundForSerializer'
