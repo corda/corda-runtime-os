@@ -45,8 +45,7 @@ class TestKnownIssues {
         val inputStream = File("./src/test/resources/groupPolicy.json").inputStream()
         app.get("api/v5_3/mgm/1234/info") {ctx ->
             ctx.header("Content-Type", "application/json")
-//            ctx.result(inputStream)
-            ctx.json(inputStream)
+            ctx.result(inputStream)
         }
         val client = CordaRestClient.createHttpClient(baseUrl = localhost)
 
