@@ -9,11 +9,7 @@ object TestExecutionConditions {
     private val password = DEFAULT_CLUSTER.rest.password
 
     private val cordaRestClient by lazy { CordaRestClient.createHttpClient(targetUrl, user, password, insecure = true) }
-    private val isHelloEndpointReachable: Boolean by lazy {
-        runCatching {
-            cordaRestClient.helloRestClient.postHello("Hello, Corda!")
-        }.isSuccess
-    }
 
-    fun isRestApiReachable(): Boolean = isHelloEndpointReachable
+    fun isRestApiReachable(): Boolean =
+        runCatching { cordaRestClient.helloRestClient.postHello("Hello, Corda!") }.isSuccess
 }
