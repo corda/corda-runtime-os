@@ -27,11 +27,14 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         init {
             configureTracing("E2eClusterTracing", null, null, emptyMap())
         }
+
     }
 
     private val logger = LoggerFactory.getLogger("ClusterBuilder - ${clusterInfo.id}")
     private val vNodeCreatorName = "vnodecreatoruser"
     private val lock = ReentrantLock()
+
+
 
     private val client: HttpsClient =
         UnirestHttpsClient(clusterInfo.rest.uri, clusterInfo.rest.user, clusterInfo.rest.password)
@@ -42,8 +45,8 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
 
     private var vNodeCreatorUserDoesNotExist = true
 
-    private fun checkVNodeCreatorUserDoesNotExist(): Boolean {
-        return getRbacUser(vNodeCreatorName).body.contains("User '$vNodeCreatorName' not found")
+    private fun checkVNodeCreatorUserDoesNotExist(){
+        vNodeCreatorUserDoesNotExist = getRbacUser(vNodeCreatorName).body.contains("User '$vNodeCreatorName' not found")
     }
 
     private val vNodeCreatorClient: HttpsClient by lazy {
