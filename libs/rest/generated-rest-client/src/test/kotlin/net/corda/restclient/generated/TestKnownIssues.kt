@@ -45,7 +45,8 @@ class TestKnownIssues {
         val inputStream = File("./src/test/resources/groupPolicy.json").inputStream()
         app.get("api/v5_3/mgm/1234/info") {ctx ->
             ctx.header("Content-Type", "application/json")
-            ctx.result(inputStream)
+//            ctx.result(inputStream)
+            ctx.json(inputStream)
         }
         val client = CordaRestClient.createHttpClient(baseUrl = localhost)
 
@@ -53,7 +54,7 @@ class TestKnownIssues {
             val response: String = client.mgmClient.getMgmHoldingidentityshorthashInfo("1234")
             assertThat(response).contains("groupId")
         }
-        .withFailMessage("Has the generated api been re-generated? Re-apply workaround")
+//        .withFailMessage("Has the generated api been re-generated? Re-apply workaround")
         .doesNotThrowAnyException()
     }
 
