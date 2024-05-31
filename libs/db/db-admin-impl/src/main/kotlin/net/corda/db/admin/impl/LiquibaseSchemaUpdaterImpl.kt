@@ -31,8 +31,10 @@ class LiquibaseSchemaUpdaterImpl(
         tag: String?
     ) {
         val scopeObjects = mapOf(
-            Scope.Attr.resourceAccessor.name to lb.resourceAccessor
+            Scope.Attr.resourceAccessor.name to lb.resourceAccessor,
+            Scope.Attr.classLoader.name to lb::class.java.classLoader
         )
+        println(System.getProperty("java.class.path"))
         Scope.child(scopeObjects) {
             if (sql != null) {
                 commandScopeFactory(UpdateSqlCommandStep.COMMAND_NAME).configure(lb, tag).also {

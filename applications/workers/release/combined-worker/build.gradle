@@ -125,6 +125,8 @@ dependencies {
         exclude group: 'org.apache.felix'
         exclude group: 'org.osgi'
     }
+
+    runtimeClasspath libs.liquibase
 }
 
 // Download drivers into this folder - if you change this folder
