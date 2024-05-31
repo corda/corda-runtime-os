@@ -9,6 +9,7 @@ import org.assertj.core.api.Assertions.assertThatCode
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.platform.commons.logging.LoggerFactory
 import java.io.File
 import java.net.URI
 
@@ -32,9 +33,20 @@ class TestKnownIssues {
         fun teardown() {
             app.stop()
         }
+
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val localhost = URI.create("http:localhost:${app.port()}")
+
+    private fun assertThatCodeDoesNotThrowAnyException(code: () -> Any) {
+        try {
+            assertThatCode { code() }.doesNotThrowAnyException()
+        } catch (e: AssertionError) {
+            logger.warn { "Has the generated api been re-generated? Re-apply workaround" }
+            throw e
+        }
+    }
 
     /**
      * See comment for workaround details
@@ -49,12 +61,10 @@ class TestKnownIssues {
         }
         val client = CordaRestClient.createHttpClient(baseUrl = localhost)
 
-        assertThatCode {
+        assertThatCodeDoesNotThrowAnyException {
             val response: String = client.mgmClient.getMgmHoldingidentityshorthashInfo("1234")
             assertThat(response).contains("groupId")
         }
-//        .withFailMessage("Has the generated api been re-generated? Re-apply workaround")
-        .doesNotThrowAnyException()
     }
 
     /**
@@ -124,12 +134,10 @@ class TestKnownIssues {
             subjectAlternativeNames = listOf("localhost")
         )
 
-        assertThatCode {
+        assertThatCodeDoesNotThrowAnyException {
             val response: String = client.certificatesClient.postCertificateTenantidKeyid("p2p","123", requestBody)
             assertThat(response).contains("BEGIN CERTIFICATE REQUEST")
         }
-            .withFailMessage("Has the generated api been re-generated? Re-apply workaround")
-            .doesNotThrowAnyException()
     }
 
     /**
