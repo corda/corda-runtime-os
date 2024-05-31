@@ -31,6 +31,7 @@ val signingCertLock = ReentrantLock()
 fun ClusterInfo.conditionallyUploadCpiSigningCertificate() = cluster {
     signingCertLock.withLock {
         val hasCertificateChain = assertWithRetryIgnoringExceptions {
+            timeout(60.seconds)
             interval(1.seconds)
             command { getCertificateChain(CODE_SIGNER_CERT_USAGE, CODE_SIGNER_CERT_ALIAS) }
             condition {
@@ -43,7 +44,7 @@ fun ClusterInfo.conditionallyUploadCpiSigningCertificate() = cluster {
         if (!hasCertificateChain) {
             assertWithRetryIgnoringExceptions {
                 // Certificate upload can be slow in the combined worker, especially after it has just started up.
-                timeout(30.seconds)
+                timeout(60.seconds)
                 interval(2.seconds)
                 command { importCertificate(CODE_SIGNER_CERT, CODE_SIGNER_CERT_USAGE, CODE_SIGNER_CERT_ALIAS) }
                 condition { it.code == ResponseCode.NO_CONTENT.statusCode }
