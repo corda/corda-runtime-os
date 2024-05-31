@@ -8,6 +8,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatCode
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.platform.commons.logging.LoggerFactory
 import java.io.File
@@ -62,9 +63,17 @@ class TestKnownIssues {
         val client = CordaRestClient.createHttpClient(baseUrl = localhost)
 
         assertThatCodeDoesNotThrowAnyException {
-            val response: String = client.mgmClient.getMgmHoldingidentityshorthashInfo("1234")
-            assertThat(response).contains("groupId")
+            val response = client.mgmClient.getMgmHoldingidentityshorthashInfo("1234")
+            assertThat(response.toString()).contains("groupId")
         }
+    }
+
+    @Test
+    @Disabled
+    fun foo() {
+        val client = CordaRestClient.createHttpClient(insecure = true).certificatesClient
+        val response = client.getCertificateClusterUsageAlias("p2p-tls", "p2p-tls-cert")
+        println(response)
     }
 
     /**
@@ -137,6 +146,15 @@ class TestKnownIssues {
         assertThatCodeDoesNotThrowAnyException {
             val response: String = client.certificatesClient.postCertificateTenantidKeyid("p2p","123", requestBody)
             assertThat(response).contains("BEGIN CERTIFICATE REQUEST")
+        }
+    }
+
+    @Test
+    @Disabled
+    fun testVNodeCreateDbVault() {
+        val client = CordaRestClient.createHttpClient(insecure = true).virtualNodeClient
+        assertThatCodeDoesNotThrowAnyException {
+            client.getVirtualnodeCreateDbVaultCpichecksum("5B5916F977B8")
         }
     }
 
