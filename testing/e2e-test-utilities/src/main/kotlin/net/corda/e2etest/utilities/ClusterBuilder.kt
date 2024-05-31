@@ -27,14 +27,11 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         init {
             configureTracing("E2eClusterTracing", null, null, emptyMap())
         }
-
+        private val lock = ReentrantLock()
     }
 
     private val logger = LoggerFactory.getLogger("ClusterBuilder - ${clusterInfo.id}")
     private val vNodeCreatorName = "vnodecreatoruser"
-    private val lock = ReentrantLock()
-
-
 
     private val client: HttpsClient =
         UnirestHttpsClient(clusterInfo.rest.uri, clusterInfo.rest.user, clusterInfo.rest.password)
@@ -43,16 +40,17 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         return getRbacRoles().body.toJson().firstOrNull { it["roleName"].toString().contains("VNodeCreatorRole") }
     }
 
-    private var vNodeCreatorUserDoesNotExist = true
-
-    private fun checkVNodeCreatorUserDoesNotExist(){
-        vNodeCreatorUserDoesNotExist = getRbacUser(vNodeCreatorName).body.contains("User '$vNodeCreatorName' not found")
+    private fun checkVNodeCreatorUserDoesNotExist(): Boolean {
+        return getRbacUser(vNodeCreatorName).body.contains("User '$vNodeCreatorName' not found")
     }
 
     private val vNodeCreatorClient: HttpsClient by lazy {
         lock.withLock {
-            checkVNodeCreatorUserDoesNotExist()
-            if (checkVNodeCreatorRoleExists() != null && vNodeCreatorUserDoesNotExist) {
+            val vNodeCreatorRole = checkVNodeCreatorRoleExists()
+            if (vNodeCreatorRole != null && checkVNodeCreatorUserDoesNotExist()) {
+                logger.info(
+                    "Creating user '$vNodeCreatorName' with role '${vNodeCreatorRole["roleName"].textValue()}'"
+                )
                 assertWithRetry {
                     command {
                         createRbacUser(
@@ -67,11 +65,9 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
                     condition { it.code == 201 }
                 }
 
-                vNodeCreatorUserDoesNotExist = false
-
                 assertWithRetry {
                     command {
-                        assignRoleToUser(vNodeCreatorName, checkVNodeCreatorRoleExists()!!["id"].textValue())
+                        assignRoleToUser(vNodeCreatorName, vNodeCreatorRole["id"].textValue())
                     }
                     condition { it.code == 200 }
                 }
