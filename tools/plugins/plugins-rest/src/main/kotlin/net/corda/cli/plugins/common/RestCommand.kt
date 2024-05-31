@@ -1,6 +1,8 @@
 package net.corda.cli.plugins.common
 
-import net.corda.sdk.profile.ProfileParameterConsumer
+import net.corda.sdk.profile.CliProfile
+import net.corda.sdk.profile.ProfileKey
+import net.corda.sdk.profile.ProfileUtils
 import picocli.CommandLine.Option
 
 abstract class RestCommand {
@@ -15,7 +17,6 @@ abstract class RestCommand {
         names = ["-t", "--target"],
         required = false,
         description = ["The target address of the REST Endpoint (e.g. `https://host:port`)"],
-        parameterConsumer = ProfileParameterConsumer::class
     )
     lateinit var targetUrl: String
 
@@ -23,7 +24,6 @@ abstract class RestCommand {
         names = ["-u", "--user"],
         required = false,
         description = ["REST user name"],
-        parameterConsumer = ProfileParameterConsumer::class
     )
     lateinit var username: String
 
@@ -31,7 +31,6 @@ abstract class RestCommand {
         names = ["-p", "--password"],
         required = false,
         description = ["REST password"],
-        parameterConsumer = ProfileParameterConsumer::class
     )
     lateinit var password: String
 
@@ -59,29 +58,42 @@ abstract class RestCommand {
     )
     var insecure: Boolean = false
 
-    init {
-        if (::profileName.isInitialized) {
-            println("profileName: $profileName")
+    open fun run() {
+        checkAndSetProfileParams()
+    }
+
+    open fun call(): Int {
+        checkAndSetProfileParams()
+        return 0
+    }
+
+    @Suppress("ThrowsCount")
+    private fun checkAndSetProfileParams() {
+        val profile = if (::profileName.isInitialized) ProfileUtils.getProfile(profileName) else CliProfile(emptyMap())
+
+
+        username = if (::username.isInitialized) {
+            username
         } else {
-            println("profileName has not been initialized")
+            profile.properties[ProfileKey.REST_USERNAME.name.lowercase()]
+                ?: throw IllegalArgumentException("username must be provided either directly or through a profile.")
         }
 
-        if (::username.isInitialized) {
-            println(", username: $username")
+        password = if (::password.isInitialized) {
+            password
         } else {
-            println("username has not been initialized")
+            if (!profile.properties.containsKey(ProfileKey.REST_PASSWORD.name.lowercase())) {
+                throw IllegalArgumentException("password must be provided either directly or through a profile.")
+            } else {
+                ProfileUtils.getPasswordProperty(profile, ProfileKey.REST_PASSWORD.name.lowercase())
+            }
         }
 
-        if (::password.isInitialized) {
-            println("password: $password, ")
+        targetUrl = if (::targetUrl.isInitialized) {
+            targetUrl
         } else {
-            println("password has not been initialized")
-        }
-
-        if (::targetUrl.isInitialized) {
-            println("targetUrl: $targetUrl")
-        } else {
-            println("targetUrl has not been initialized")
+            profile.properties[ProfileKey.REST_ENDPOINT.name.lowercase()]
+                ?: throw IllegalArgumentException("targetUrl must be provided either directly or through a profile.")
         }
     }
 }

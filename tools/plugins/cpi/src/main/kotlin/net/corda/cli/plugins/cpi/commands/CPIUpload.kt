@@ -46,7 +46,7 @@ class CPIUpload : RestCommand(), Runnable {
     lateinit var restClient: CordaRestClient
 
     override fun run() {
-        println("password: $password, username: $username, targetUrl: $targetUrl")
+        super.run()
         val cpi = File(cpiFilePath)
         if (!cpi.isFile || !cpi.exists()) {
             sysErr.error("Path: '$cpiFilePath' is not an existing file")

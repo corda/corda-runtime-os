@@ -5,11 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
-import picocli.CommandLine
-import picocli.CommandLine
+import net.corda.libs.configuration.secret.SecretEncryptionUtil
 import java.io.File
 import java.io.IOException
-import java.util.*
 
 data class CliProfile(val properties: Map<String, String>)
 
@@ -35,28 +33,6 @@ enum class ProfileKey(val description: String) {
 
         fun getKeysWithDescriptions(): String {
             return cachedDescriptions
-        }
-    }
-}
-
-class ProfileParameterConsumer : CommandLine.IParameterConsumer {
-    override fun consumeParameters(args: Stack<String>?, argSpec: CommandLine.Model.ArgSpec?, commandSpec: CommandLine.Model.CommandSpec?) {
-        println("Consuming parameters")
-        val value = args?.pop()
-        println("value: $value, argSpec: ${argSpec?.paramLabel().strip()}")
-
-        if (value == null) {
-            val profileOption = commandSpec?.findOption("profile")
-            val profileName = profileOption?.getValue() as String?
-            println("profileName: $profileName, argSpec: ${argSpec?.paramLabel()}")
-            if (profileName == null) {
-                throw IllegalArgumentException("${argSpec?.paramLabel()} must be provided either directly or through a profile.")
-            }
-            val profile = ProfileUtils.getProfile(profileName)
-            val profileValueForOption = profile[argSpec?.paramLabel()]
-            argSpec?.setValue(profileValueForOption)
-        } else {
-            argSpec?.setValue(value)
         }
     }
 }
@@ -99,9 +75,26 @@ object ProfileUtils {
         }
     }
 
-    fun getProfile(profileName: String): Map<String, String> {
+    fun getProfile(profileName: String): CliProfile {
         val profiles = loadProfiles()
-        @Suppress("UNCHECKED_CAST")
-        return (profiles[profileName] as? Map<String, String>) ?: emptyMap()
+        val profile = profiles[profileName]
+        if (profile == null) {
+            throw IllegalArgumentException("Profile with name $profileName does not exist.")
+        }
+        return profile
+    }
+
+    fun getPasswordProperty(profile: CliProfile, propertyName: String): String {
+        val encryptedPassword = profile.properties[propertyName]
+        if (encryptedPassword == null) {
+            throw IllegalArgumentException("Property with name $propertyName does not exist.")
+        }
+        val salt = profile.properties["${propertyName}_salt"]
+        if (salt == null) {
+            throw IllegalArgumentException("Salt for property $propertyName does not exist.")
+        }
+        val secretEncryptionUtil = SecretEncryptionUtil()
+        val decryptedPassword = secretEncryptionUtil.decrypt(encryptedPassword, salt, salt)
+        return decryptedPassword
     }
 }
