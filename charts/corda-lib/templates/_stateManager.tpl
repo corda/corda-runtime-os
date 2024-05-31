@@ -109,7 +109,7 @@
               echo "Generating Database Specification for Database '{{ $dbId }}'..."
               JDBC_URL={{ include "corda.db.connectionUrl" $databaseConfig | quote }}
               mkdir /tmp/database-{{ $workerKebabCase }}-{{ $stateTypeKebabCase }}
-              java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
+              java -Dlog4j.debug=false -jar /opt/override/cli.jar database spec \
                 -s "statemanager" -g "statemanager:{{ $schemaName }}" \
                 -u "${BOOTSTRAP_CONFIG_DB_USERNAME}" -p "${BOOTSTRAP_CONFIG_DB_PASSWORD}" \
                 --jdbc-url "${JDBC_URL}" \

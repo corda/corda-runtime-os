@@ -1,7 +1,6 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm'
     id 'corda.common-library'
-    id 'org.jetbrains.kotlin.kapt'
 }
 
 ext {
@@ -16,7 +15,6 @@ group 'net.corda.cli.plugins.data'
 
 dependencies {
     compileOnly libs.kotlin.stdlib
-    kapt "info.picocli:picocli:$picocliVersion"
     compileOnly "info.picocli:picocli:$picocliVersion"
     compileOnly project(':libs:crypto:crypto-core')
     compileOnly project(':libs:corda-sdk')

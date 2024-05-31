@@ -1,14 +1,13 @@
 plugins {
     id 'distribution'
     id 'org.jetbrains.kotlin.jvm'
-    id 'org.jetbrains.kotlin.kapt'
+    id 'corda.common-publishing'
 }
 
 
 group 'net.corda.cli.deployment'
 
 dependencies {
-    kapt "info.picocli:picocli:$picocliVersion"
 
     implementation project(':libs:corda-sdk')
 

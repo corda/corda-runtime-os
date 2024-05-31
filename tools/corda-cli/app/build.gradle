@@ -1,6 +1,5 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm'
-    id 'org.jetbrains.kotlin.kapt'
     id 'application'
 }
 
@@ -16,7 +15,6 @@ dependencies {
     implementation libs.kotlin.stdlib
 
     implementation "info.picocli:picocli:$picocliVersion"
-    kapt "info.picocli:picocli:$picocliVersion"
 
     api project(':tools:plugins:common-utils')
     api project(':tools:plugins:cpi')

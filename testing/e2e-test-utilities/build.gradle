@@ -27,7 +27,7 @@ dependencies {
     implementation project(':libs:crypto:certificate-generation')
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:crypto:crypto-utils')
-    implementation project(':tools:corda-cli')
+    implementation project(':tools:plugins:package')
     implementation project(":testing:packaging-test-utilities")
     implementation project(':testing:test-utilities')
 

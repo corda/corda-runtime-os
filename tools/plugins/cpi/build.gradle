@@ -1,7 +1,7 @@
 plugins {
     id 'distribution'
     id 'org.jetbrains.kotlin.jvm'
-    id 'org.jetbrains.kotlin.kapt'
+    id 'corda.common-publishing'
 }
 
 ext {
@@ -23,8 +23,6 @@ dependencies {
     implementation project(":tools:plugins:plugins-rest")
     implementation project(':tools:plugins:common-utils')
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
-
-    kapt "info.picocli:picocli:$picocliVersion"
 
     testImplementation libs.bundles.test
 }

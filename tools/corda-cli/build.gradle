@@ -1,6 +1,5 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm'
-    id 'org.jetbrains.kotlin.kapt'
     id 'corda.common-publishing'
     id 'application'
 }
@@ -18,7 +17,6 @@ dependencies {
 
     implementation libs.kotlin.stdlib
     implementation "info.picocli:picocli:$picocliVersion"
-    kapt "info.picocli:picocli:$picocliVersion"
 
     testImplementation libs.kotlin.stdlib
     testImplementation "info.picocli:picocli:$picocliVersion"

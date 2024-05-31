@@ -8,8 +8,7 @@ group 'net.corda.cli.deployment'
 subprojects {
     dependencies {
         implementation libs.kotlin.stdlib
-        implementation libs.slf4j.api
-        implementation libs.logback.classic
+        implementation libs.log4j.slf4j
         implementation "info.picocli:picocli:$picocliVersion"
     }
 }

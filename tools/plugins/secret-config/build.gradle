@@ -1,7 +1,7 @@
 plugins {
     id 'distribution'
     id 'org.jetbrains.kotlin.jvm'
-    id 'org.jetbrains.kotlin.kapt'
+    id 'corda.common-publishing'
 }
 
 ext {
@@ -13,8 +13,6 @@ group 'net.corda.cli.deployment'
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
-
-    kapt "info.picocli:picocli:$picocliVersion"
 
     implementation project(':libs:corda-sdk')
 
