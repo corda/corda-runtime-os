@@ -4920,23 +4920,10 @@
             "example" : "string"
           },
           "json" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "anyOf" : [ {
-              "type" : "string"
-            }, {
-              "type" : "number"
-            }, {
-              "type" : "integer",
-              "format" : "int32"
-            }, {
-              "type" : "boolean"
-            }, {
-              "type" : "array"
-            }, {
-              "type" : "object"
-            } ]
+            "type" : "object"
           },
           "timestamp" : {
             "type" : "string",
@@ -5791,23 +5778,10 @@
             "example" : "string"
           },
           "requestBody" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : false,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "anyOf" : [ {
-              "type" : "string"
-            }, {
-              "type" : "number"
-            }, {
-              "type" : "integer",
-              "format" : "int32"
-            }, {
-              "type" : "boolean"
-            }, {
-              "type" : "array"
-            }, {
-              "type" : "object"
-            } ]
+            "type" : "object"
           }
         },
         "description" : "\n                Information required to start a flow for this holdingId, including:\n                clientRequestId: a client provided flow identifier\n                flowClassName: fully qualified class name of the flow to start\n                requestBody: optional start arguments string passed to the flow; defaults to an empty string\n            "
@@ -5855,23 +5829,10 @@
         "type" : "object",
         "properties" : {
           "config" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : false,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "anyOf" : [ {
-              "type" : "string"
-            }, {
-              "type" : "number"
-            }, {
-              "type" : "integer",
-              "format" : "int32"
-            }, {
-              "type" : "boolean"
-            }, {
-              "type" : "array"
-            }, {
-              "type" : "object"
-            } ]
+            "type" : "object"
           },
           "schemaVersion" : {
             "$ref" : "#/components/schemas/ConfigSchemaVersion"
@@ -5919,118 +5880,40 @@
         "type" : "object",
         "properties" : {
           "cryptoDdlConnection" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "anyOf" : [ {
-              "type" : "string"
-            }, {
-              "type" : "number"
-            }, {
-              "type" : "integer",
-              "format" : "int32"
-            }, {
-              "type" : "boolean"
-            }, {
-              "type" : "array"
-            }, {
-              "type" : "object"
-            } ]
+            "type" : "object"
           },
           "cryptoDmlConnection" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "anyOf" : [ {
-              "type" : "string"
-            }, {
-              "type" : "number"
-            }, {
-              "type" : "integer",
-              "format" : "int32"
-            }, {
-              "type" : "boolean"
-            }, {
-              "type" : "array"
-            }, {
-              "type" : "object"
-            } ]
+            "type" : "object"
           },
           "uniquenessDdlConnection" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "anyOf" : [ {
-              "type" : "string"
-            }, {
-              "type" : "number"
-            }, {
-              "type" : "integer",
-              "format" : "int32"
-            }, {
-              "type" : "boolean"
-            }, {
-              "type" : "array"
-            }, {
-              "type" : "object"
-            } ]
+            "type" : "object"
           },
           "uniquenessDmlConnection" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "anyOf" : [ {
-              "type" : "string"
-            }, {
-              "type" : "number"
-            }, {
-              "type" : "integer",
-              "format" : "int32"
-            }, {
-              "type" : "boolean"
-            }, {
-              "type" : "array"
-            }, {
-              "type" : "object"
-            } ]
+            "type" : "object"
           },
           "vaultDdlConnection" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "anyOf" : [ {
-              "type" : "string"
-            }, {
-              "type" : "number"
-            }, {
-              "type" : "integer",
-              "format" : "int32"
-            }, {
-              "type" : "boolean"
-            }, {
-              "type" : "array"
-            }, {
-              "type" : "object"
-            } ]
+            "type" : "object"
           },
           "vaultDmlConnection" : {
-            "description" : "Can be any value - string, number, boolean, array or object.",
+            "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "anyOf" : [ {
-              "type" : "string"
-            }, {
-              "type" : "number"
-            }, {
-              "type" : "integer",
-              "format" : "int32"
-            }, {
-              "type" : "boolean"
-            }, {
-              "type" : "array"
-            }, {
-              "type" : "object"
-            } ]
+            "type" : "object"
           }
         },
         "description" : "Details of the virtual node to be updated"

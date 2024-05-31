@@ -3,13 +3,8 @@ package net.corda.rest.server.impl
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.media.ArraySchema
-import io.swagger.v3.oas.models.media.BooleanSchema
 import io.swagger.v3.oas.models.media.ComposedSchema
-import io.swagger.v3.oas.models.media.IntegerSchema
-import io.swagger.v3.oas.models.media.NumberSchema
-import io.swagger.v3.oas.models.media.ObjectSchema
 import io.swagger.v3.oas.models.media.Schema
-import io.swagger.v3.oas.models.media.StringSchema
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.server.impl.internal.OptionalDependency
 import net.corda.rest.server.impl.utils.compact
@@ -215,7 +210,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
             assertNull(this.nullable)
 
             val contentProperty = this.properties["content"]
-            assertThat(contentProperty?.description).isEqualTo("Can be any value - string, number, boolean, array or object.")
+            assertThat(contentProperty?.description).isEqualTo("Either nested JSON object or a valid JSON-escaped string.")
         }
 
         with(openAPI.components.schemas["EchoResponse"]) {
@@ -223,7 +218,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
             assertNull(this.nullable)
 
             val contentProperty = this.properties["content"]
-            assertThat(contentProperty?.description).isEqualTo("Can be any value - string, number, boolean, array or object.")
+            assertThat(contentProperty?.description).isEqualTo("Either nested JSON object or a valid JSON-escaped string.")
         }
     }
 
@@ -416,24 +411,11 @@ class RestServerOpenApiTest : RestServerTestBase() {
 
         fun assertJsonObject(jsonObject: Schema<*>?, nullable: Boolean? = false) {
             assertNotNull(jsonObject)
-            assertNull(jsonObject.type)
+            assertEquals("object", jsonObject.type)
             assertNull(jsonObject.format)
-            assertEquals("Can be any value - string, number, boolean, array or object.", jsonObject.description)
+            assertEquals("Either nested JSON object or a valid JSON-escaped string.", jsonObject.description)
             assertEquals("{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}", jsonObject.example)
             assertEquals(nullable, jsonObject.nullable)
-            val composedSchema = jsonObject as ComposedSchema
-            assertTrue(
-                composedSchema.anyOf.containsAll(
-                    setOf(
-                        StringSchema(),
-                        NumberSchema(),
-                        IntegerSchema(),
-                        BooleanSchema(),
-                        ArraySchema(),
-                        ObjectSchema()
-                    )
-                )
-            )
         }
 
         with(openAPI.paths["/objects-in-json-endpoint/create-with-one-object"]) {

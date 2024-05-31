@@ -476,7 +476,7 @@ class ResourceToOpenApiSpecMapperTest {
         assertEquals("body", openApiQueryParameter.`in`)
         assertEquals(null, openApiQueryParameter.schema.type)
         assertEquals(null, openApiQueryParameter.schema.format)
-        assertEquals("Can be any value - string, number, boolean, array or object.", openApiQueryParameter.schema.description)
+        assertEquals("Either nested JSON object or a valid JSON-escaped string.", openApiQueryParameter.schema.description)
         assertEquals(
             "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
             openApiQueryParameter.schema.example
