@@ -45,7 +45,9 @@ object App {
     lateinit var spec: CommandLine.Model.CommandSpec
 
     fun run(vararg args: String) {
-//        LoggerStream.redirectSystemAndErrorOut()
+        // Setup loggers to redirect sysOut and sysErr
+        LoggerStream.redirectSystemAndErrorOut()
+
         val commandLine = CommandLine(Command())
         commandLine.addSubcommand(VirtualNodeCliPlugin())
         commandLine.addSubcommand(PackagePlugin())

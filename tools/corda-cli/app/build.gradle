@@ -13,6 +13,7 @@ application {
 
 dependencies {
     implementation libs.kotlin.stdlib
+    implementation libs.log4j.slf4j
 
     implementation "info.picocli:picocli:$picocliVersion"
 
