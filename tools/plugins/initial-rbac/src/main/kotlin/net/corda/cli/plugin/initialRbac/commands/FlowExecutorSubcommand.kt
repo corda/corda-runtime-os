@@ -29,6 +29,7 @@ class FlowExecutorSubcommand : RestCommand(), Callable<Int> {
     lateinit var vnodeShortHash: String
 
     override fun call(): Int {
+        super.call()
         if (!wildcardMatch(vnodeShortHash, VNODE_SHORT_HASH_REGEX)) {
             throw IllegalArgumentException(
                 """Supplied vNode ID "$vnodeShortHash" is invalid,""" +

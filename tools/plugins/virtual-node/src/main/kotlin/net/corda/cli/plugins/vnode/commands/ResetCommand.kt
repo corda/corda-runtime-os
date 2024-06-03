@@ -55,6 +55,7 @@ class ResetCommand : RestCommand(), Runnable {
     lateinit var restClient: CordaRestClient
 
     override fun run() {
+        super.run()
         if (resync.isNotEmpty() && !wait) {
             println("You cannot use the resync option without waiting")
             return

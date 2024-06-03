@@ -24,6 +24,7 @@ const val USER_ADMIN_ROLE = "UserAdminRole"
 class UserAdminSubcommand : RestCommand(), Callable<Int> {
 
     override fun call(): Int {
+        super.call()
         return checkOrCreateRole(USER_ADMIN_ROLE, userAdmin)
     }
 }

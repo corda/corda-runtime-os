@@ -33,6 +33,7 @@ class ExportGroupPolicy : Runnable, RestCommand() {
     lateinit var holdingIdentityShortHash: ShortHash
 
     override fun run() {
+        super.run()
         exportGroupPolicy()
     }
 
