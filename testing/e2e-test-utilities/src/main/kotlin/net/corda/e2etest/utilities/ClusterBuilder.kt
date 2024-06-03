@@ -33,7 +33,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     private val logger = LoggerFactory.getLogger("ClusterBuilder - ${clusterInfo.id}")
     private val vNodeCreatorName = "vnodecreatoruser"
 
-    internal val adminClient: HttpsClient =
+    val adminClient: HttpsClient =
         UnirestHttpsClient(clusterInfo.rest.uri, clusterInfo.rest.user, clusterInfo.rest.password)
 
     private fun checkVNodeCreatorRoleExists(): JsonNode? {
