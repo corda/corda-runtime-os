@@ -34,6 +34,15 @@ enum class ProfileKey(val description: String) {
         fun getKeysWithDescriptions(): String {
             return cachedDescriptions
         }
+
+        const val CONST_KEYS_WITH_DESCRIPTIONS: String = """
+            rest_username: Username for REST API,
+            rest_password: Password for REST API,
+            rest_endpoint: Endpoint for the REST API,
+            jdbc_username: Username for JDBC connection,
+            jdbc_password: Password for JDBC connection,
+            database_url: URL for the database,
+        """
     }
 }
 

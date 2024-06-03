@@ -26,7 +26,11 @@ class CreateProfile : Runnable {
     @Option(names = ["-n", "--name"], description = ["Profile name"], required = true)
     lateinit var profileName: String
 
-    @Option(names = ["-p", "--property"], description = ["Profile property (key=value)"], required = true)
+    @Option(
+        names = ["-p", "--property"],
+        description = ["Profile property (key=value). Valid keys are: ${ProfileKey.CONST_KEYS_WITH_DESCRIPTIONS}"],
+        required = true
+    )
     lateinit var properties: Array<String>
 
     private val secretEncryptionUtil = SecretEncryptionUtil()

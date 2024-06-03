@@ -25,7 +25,10 @@ class UpdateProfile : Runnable {
     @Option(names = ["-n", "--name"], description = ["Profile name"], required = true)
     lateinit var profileName: String
 
-    @Option(names = ["-p", "--property"], description = ["Profile property (key=value)"])
+    @Option(
+        names = ["-p", "--property"],
+        description = ["Profile property (key=value). Valid keys are: ${ProfileKey.CONST_KEYS_WITH_DESCRIPTIONS}"],
+    )
     var properties: Array<String> = emptyArray()
 
     private val secretEncryptionUtil = SecretEncryptionUtil()

@@ -71,7 +71,6 @@ abstract class RestCommand {
     private fun checkAndSetProfileParams() {
         val profile = if (::profileName.isInitialized) ProfileUtils.getProfile(profileName) else CliProfile(emptyMap())
 
-
         username = if (::username.isInitialized) {
             username
         } else {
