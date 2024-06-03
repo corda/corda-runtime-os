@@ -135,14 +135,20 @@ tasks.register('applyWorkaroundForCertificateApi') {
 
 tasks.register('applyWorkaroundForStringResponseType') {
     dependsOn 'openApiGenerate'
-    doLast {
-        def targetLine = 'Serializer.jacksonObjectMapper.readValue\\(bodyContent, object: TypeReference<T>\\(\\) \\{}\\)'
-        // Whitespace is important
-        def replacementLine = '''// do not attempt to deserialize String return type
-                if (T::class.java == String::class.java) bodyContent as? T
-                else Serializer.jacksonObjectMapper.readValue(bodyContent, object : TypeReference<T>() {})'''
 
-        def fileName = "${project.buildDir}/generated/src/main/kotlin/net/corda/restclient/generated/infrastructure/ApiClient.kt"
+    def targetLine = 'Serializer.jacksonObjectMapper.readValue\\(bodyContent, object: TypeReference<T>\\(\\) \\{}\\)'
+    // Whitespace is important
+    def replacementLine = '''// do not attempt to deserialize String return type
+                if (T::class.java == String::class.java) bodyContent as? T
+                else Serializer.jacksonObjectMapper.readValue(bodyContent, object: TypeReference<T>() {})'''
+
+    def fileName = "${project.buildDir}/generated/src/main/kotlin/net/corda/restclient/generated/infrastructure/ApiClient.kt"
+
+    inputs.file(fileName)
+    outputs.file(fileName)
+    outputs.upToDateWhen { file(fileName).text.contains(replacementLine) }
+
+    doLast {
         file(fileName).text = file(fileName).text
                 .replaceAll(targetLine, replacementLine)
     }
