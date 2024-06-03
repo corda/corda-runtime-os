@@ -8,7 +8,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatCode
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.platform.commons.logging.LoggerFactory
 import java.io.File
@@ -51,7 +50,7 @@ class TestKnownIssues {
 
     /**
      * See comment for workaround details
-     * https://r3-cev.atlassian.net/browse/ES-2162?focusedCommentId=302706
+     * https://r3-cev.atlassian.net/browse/ES-2378?focusedCommentId=306841
      */
     @Test
     fun testGetGroupPolicyFromMgm() {
@@ -63,17 +62,9 @@ class TestKnownIssues {
         val client = CordaRestClient.createHttpClient(baseUrl = localhost)
 
         assertThatCodeDoesNotThrowAnyException {
-            val response = client.mgmClient.getMgmHoldingidentityshorthashInfo("1234")
-            assertThat(response.toString()).contains("groupId")
+            val response: String = client.mgmClient.getMgmHoldingidentityshorthashInfo("1234")
+            assertThat(response).contains("\"groupId\"")
         }
-    }
-
-    @Test
-    @Disabled
-    fun foo() {
-        val client = CordaRestClient.createHttpClient(insecure = true).certificatesClient
-        val response = client.getCertificateClusterUsageAlias("p2p-tls", "p2p-tls-cert")
-        println(response)
     }
 
     /**
@@ -117,7 +108,7 @@ class TestKnownIssues {
 
     /**
      * See comment for workaround details
-     * https://r3-cev.atlassian.net/browse/ES-2162?focusedCommentId=304184
+     * https://r3-cev.atlassian.net/browse/ES-2378?focusedCommentId=306841
      */
     @Test
     fun testCsrGenerationHandlesString() {
@@ -149,15 +140,6 @@ class TestKnownIssues {
         }
     }
 
-    @Test
-    @Disabled
-    fun testVNodeCreateDbVaultResponseHandlesString() {
-        val client = CordaRestClient.createHttpClient(insecure = true).virtualNodeClient
-        assertThatCodeDoesNotThrowAnyException {
-            client.getVirtualnodeCreateDbVaultCpichecksum("5B5916F977B8")
-        }
-    }
-
     /**
      * The generated client can't deserialize the Instant type natively
      * The suggested fix is to add the dependency on libs.jackson.datatype.jsr310
@@ -177,5 +159,4 @@ class TestKnownIssues {
         assertThat(roles).isNotEmpty
         assertThat(roles.first().updateTimestamp).isNotNull
     }
-
 }
