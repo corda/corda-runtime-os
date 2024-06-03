@@ -16,11 +16,6 @@
     </Appenders>
 
     <Loggers>
-        <!-- avoid duplicated logs with additivity=false -->
-        <Logger name="org.pf4j" level="${sys:logLevel:-info}" additivity="false">
-            <AppenderRef ref="LogToFile"/>
-        </Logger>
-
         <Logger name="SystemErr" level="error" additivity="false">
             <AppenderRef ref="LogToConsoleErr"/>
             <AppenderRef ref="LogToFile"/>
