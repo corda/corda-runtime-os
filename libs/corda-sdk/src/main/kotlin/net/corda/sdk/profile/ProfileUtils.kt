@@ -97,4 +97,13 @@ object ProfileUtils {
         val decryptedPassword = secretEncryptionUtil.decrypt(encryptedPassword, salt, salt)
         return decryptedPassword
     }
+
+    fun getDbConnectionDetails(profile: CliProfile): Triple<String?, String?, String?> {
+        val jdbcUrl = profile.properties[ProfileKey.DATABASE_URL.name.lowercase()]
+        val user = profile.properties[ProfileKey.JDBC_USERNAME.name.lowercase()]
+        val password = profile.properties[ProfileKey.JDBC_PASSWORD.name.lowercase()]?.let {
+            getPasswordProperty(profile, ProfileKey.JDBC_PASSWORD.name.lowercase())
+        }
+        return Triple(jdbcUrl, user, password)
+    }
 }

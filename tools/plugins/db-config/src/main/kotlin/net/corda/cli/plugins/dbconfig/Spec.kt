@@ -4,6 +4,7 @@ import net.corda.sdk.bootstrap.dbconfig.DbSchemaGenerator
 import net.corda.sdk.bootstrap.dbconfig.DbSchemaGenerator.Companion.DEFAULT_CHANGELOG_PATH
 import net.corda.sdk.bootstrap.dbconfig.DbSchemaGenerator.Companion.DEFAULT_SCHEMA_OPTIONS
 import net.corda.sdk.bootstrap.dbconfig.DbSchemaGenerator.Companion.SCHEMA_OPTIONS
+import net.corda.sdk.profile.ProfileUtils
 import picocli.CommandLine
 import java.nio.file.Path
 
@@ -58,6 +59,13 @@ class Spec(
     var outputDir: String = "."
 
     @CommandLine.Option(
+        names = ["--profile"],
+        required = false,
+        description = ["Profile name"]
+    )
+    var profileName: String? = null
+
+    @CommandLine.Option(
         names = ["--jdbc-url"],
         description = ["JDBC Url of database. If not specified runs in offline mode"]
     )
@@ -76,6 +84,13 @@ class Spec(
     var password: String? = null
 
     override fun run() {
+        if (profileName != null) {
+            val (profileJdbcUrl, profileUser, profilePassword) = ProfileUtils.getDbConnectionDetails(ProfileUtils.getProfile(profileName!!))
+            this.jdbcUrl = this.jdbcUrl ?: profileJdbcUrl
+            this.user = this.user ?: profileUser
+            this.password = this.password ?: profilePassword
+        }
+
         val generator = DbSchemaGenerator(config = config).apply {
             jdbcUrl = this@Spec.jdbcUrl
             user = this@Spec.user

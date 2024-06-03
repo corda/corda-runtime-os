@@ -7,6 +7,7 @@ import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
 import net.corda.libs.configuration.secret.SecretsCreateService
 import net.corda.sdk.bootstrap.initial.createConfigDbConfig
 import net.corda.sdk.bootstrap.initial.toInsertStatement
+import net.corda.sdk.profile.ProfileUtils
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
@@ -75,6 +76,13 @@ class DbConfigSubcommand : Runnable {
     var validationTimeout: Int = 5
 
     @Option(
+        names = ["--profile"],
+        required = false,
+        description = ["Profile name"]
+    )
+    var profileName: String? = null
+
+    @Option(
         names = ["-u", "--user"],
         required = true,
         description = ["User name for the database connection. Required."]
@@ -141,6 +149,14 @@ class DbConfigSubcommand : Runnable {
     var type: SecretsServiceType = SecretsServiceType.CORDA
 
     override fun run() {
+        if (profileName != null) {
+            val (profileJdbcUrl, profileUsername, profilePassword) =
+                ProfileUtils.getDbConnectionDetails(ProfileUtils.getProfile(profileName!!))
+            this.jdbcUrl = this.jdbcUrl ?: profileJdbcUrl
+            this.username = this.username ?: profileUsername
+            this.password = this.password ?: profilePassword
+        }
+
         val secretsService: SecretsCreateService = when (type) {
             SecretsServiceType.CORDA -> EncryptionSecretsServiceImpl(
                 checkParamPassed(passphrase)
