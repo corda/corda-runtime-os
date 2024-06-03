@@ -1,36 +1,23 @@
 package net.corda.sdk.bootstrap.rbac
 
 import net.corda.rbac.schema.RbacKeys
+import net.corda.rbac.schema.RbacKeys.ALIAS_REGEX
+import net.corda.rbac.schema.RbacKeys.CERTIFICATE_USAGE_REGEX
 import net.corda.rbac.schema.RbacKeys.CLIENT_REQ_REGEX
+import net.corda.rbac.schema.RbacKeys.CPI_FILE_CHECKSUM_REGEX
+import net.corda.rbac.schema.RbacKeys.FLOW_STATE_REGEX
+import net.corda.rbac.schema.RbacKeys.HSM_CATEGORY_REGEX
+import net.corda.rbac.schema.RbacKeys.KEY_ID_REGEX
+import net.corda.rbac.schema.RbacKeys.KEY_SCHEME_REGEX
+import net.corda.rbac.schema.RbacKeys.TENANT_ID_REGEX
 import net.corda.rbac.schema.RbacKeys.UUID_REGEX
 import net.corda.rbac.schema.RbacKeys.VNODE_SHORT_HASH_REGEX
 import net.corda.rbac.schema.RbacKeys.VNODE_STATE_REGEX
+import net.corda.rbac.schema.RbacKeys.VNODE_STATUS_REQ_REGEX
 
 object Permissions {
 
     private const val VERSION_PATH_REGEX = "v[_a-zA-Z0-9]{1,30}"
-
-    // temporary regex for testing
-    private const val CPI_FILE_CHECKSUM_REGEX = "[a-fA-F0-9]{12}"
-
-    // Status request ID for vNode creation is 12 chars long and for vNode upgrade is 36 chars long
-    private const val VNODE_STATUS_REQ_REGEX = "([a-fA-F0-9]{36}|[a-fA-F0-9]{12})"
-
-    private const val FLOW_STATE_REGEX = "[_a-zA-Z0-9]{3,255}"
-    private const val CERTIFICATE_USAGE_REGEX = "(p2p-tls|p2p-session|code-signer)"
-    private const val TENANT_ID_REGEX = "([a-fA-F0-9]{12}|p2p)"
-    private const val KEY_ID_REGEX = "[a-fA-F0-9]{12}"
-    private const val HSM_CATEGORY_REGEX = "(ACCOUNTS|CI|LEDGER|NOTARY|PRE_AUTH|SESSION_INIT|TLS|JWT_KEY)"
-    private const val ALIAS_REGEX = "[-._A-Za-z0-9]{1,255}"
-    private const val KEY_SCHEME_REGEX =
-        "(CORDA\\.RSA" +
-            "|CORDA\\.ECDSA\\.SECP256K1" +
-            "|CORDA\\.ECDSA\\.SECP256R1" +
-            "|CORDA\\.EDDSA\\.ED25519" +
-            "|CORDA\\.X25519" +
-            "|CORDA\\.SM2" +
-            "|CORDA\\.GOST3410\\.GOST3411" +
-            "|CORDA\\.SPHINCS-256)"
 
     val cordaDeveloper: Map<String, String> = listOf(
         "Force CPI upload" to "POST:/api/$VERSION_PATH_REGEX/maintenance/virtualnode/forcecpiupload",
