@@ -151,7 +151,7 @@ class TestKnownIssues {
 
     @Test
     @Disabled
-    fun testVNodeCreateDbVault() {
+    fun testVNodeCreateDbVaultResponseHandlesString() {
         val client = CordaRestClient.createHttpClient(insecure = true).virtualNodeClient
         assertThatCodeDoesNotThrowAnyException {
             client.getVirtualnodeCreateDbVaultCpichecksum("5B5916F977B8")
