@@ -44,7 +44,7 @@ unzip corda-cli.zip
 usr=$(id -u)
 grp=$(id -g)
 # generate script
-echo "java -Dpf4j.pluginsDir=$cliHome/plugins -jar $cliHome/corda-cli.jar \"\$@\"" > corda-cli.sh
+echo "java -jar $cliHome/corda-cli.jar \"\$@\"" > corda-cli.sh
 chmod 755 corda-cli.sh
 
 sudo bash -c """
