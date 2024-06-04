@@ -15,7 +15,6 @@ class ExportGroupPolicyFromMgm(
     fun exportPolicy(
         holdingIdentityShortHash: ShortHash
     ): String {
-        // TODO add waiting mechanism??
         return restClient.mgmClient.getMgmHoldingidentityshorthashInfo(holdingidentityshorthash = holdingIdentityShortHash.value)
     }
 }

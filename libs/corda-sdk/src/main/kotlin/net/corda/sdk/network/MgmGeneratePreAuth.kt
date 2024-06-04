@@ -17,7 +17,6 @@ class MgmGeneratePreAuth(val restClient: CordaRestClient) {
         holdingIdentityShortHash: ShortHash,
         request: PreAuthTokenRequest
     ): PreAuthToken {
-        // TODO add waiting mechanism??
         return restClient.mgmClient.postMgmHoldingidentityshorthashPreauthtoken(holdingIdentityShortHash.value, request)
     }
 }

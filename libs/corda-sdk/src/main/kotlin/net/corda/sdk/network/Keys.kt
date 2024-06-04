@@ -31,7 +31,6 @@ class Keys(val restClient: CordaRestClient) {
         scheme: String = ECDSA_SECP256R1_CODE_NAME,
         wait: Duration = 10.seconds
     ): KeyPairIdentifier {
-        // TODO add wait/retry mechanism??
         restClient.hsmClient.postHsmSoftTenantidCategory(holdingIdentityShortHash.value, category.value)
 
         val keyAlias = "$holdingIdentityShortHash-$category"
@@ -74,7 +73,6 @@ class Keys(val restClient: CordaRestClient) {
         category: KeyCategory,
         scheme: String = ECDSA_SECP256R1_CODE_NAME,
     ): KeyPairIdentifier {
-        // TODO add wait/retry mechanism??
         return restClient.keyManagementClient.postKeyTenantidAliasAliasCategoryHsmcategorySchemeScheme(
             tenantId,
             alias,

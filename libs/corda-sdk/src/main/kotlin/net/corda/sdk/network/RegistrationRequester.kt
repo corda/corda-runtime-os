@@ -21,7 +21,6 @@ class RegistrationRequester(val restClient: CordaRestClient) {
         memberRegistrationRequest: MemberRegistrationRequest,
         holdingId: ShortHash,
     ): RegistrationRequestProgress {
-        // TODO add wait/retry mechanism??
         return restClient.memberRegistrationClient.postMembershipHoldingidentityshorthash(holdingId.value, memberRegistrationRequest)
     }
 
