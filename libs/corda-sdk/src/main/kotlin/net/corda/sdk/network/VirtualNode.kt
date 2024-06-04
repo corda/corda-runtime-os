@@ -21,6 +21,7 @@ class VirtualNode(val restClient: CordaRestClient) {
     fun create(
         request: JsonCreateVirtualNodeRequest,
     ): AsyncResponse {
+        // TODO add wait/retry mechanism??
         return restClient.virtualNodeClient.postVirtualnode(request)
     }
 
@@ -63,6 +64,7 @@ class VirtualNode(val restClient: CordaRestClient) {
     fun resyncVault(
         holdingId: ShortHash,
     ) {
+        // TODO add wait/retry mechanism??
         restClient.virtualNodeMaintenanceClient.postMaintenanceVirtualnodeVirtualnodeshortidVaultSchemaForceResync(holdingId.value)
     }
 

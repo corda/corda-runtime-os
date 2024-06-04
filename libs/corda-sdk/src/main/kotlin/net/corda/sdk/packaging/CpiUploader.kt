@@ -20,6 +20,7 @@ class CpiUploader(val restClient: CordaRestClient) {
     fun uploadCPI(
         cpi: File,
     ): CpiUploadRestResource.CpiUploadResponse {
+        // TODO previously used executeWithRetry, but there's no state to wait for
         return restClient.cpiClient.postCpi(cpi)
     }
 
@@ -100,6 +101,7 @@ class CpiUploader(val restClient: CordaRestClient) {
     fun forceCpiUpload(
         cpiFile: File
     ): CpiUploadRestResource.CpiUploadResponse {
+        // TODO previously used executeWithRetry, but there's no state to wait for?
         return restClient.virtualNodeMaintenanceClient.postMaintenanceVirtualnodeForcecpiupload(cpiFile)
     }
 
