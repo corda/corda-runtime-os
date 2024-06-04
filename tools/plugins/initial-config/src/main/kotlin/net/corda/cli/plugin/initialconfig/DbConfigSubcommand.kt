@@ -152,9 +152,9 @@ class DbConfigSubcommand : Runnable {
         if (profileName != null) {
             val (profileJdbcUrl, profileUsername, profilePassword) =
                 ProfileUtils.getDbConnectionDetails(ProfileUtils.getProfile(profileName!!))
-            this.jdbcUrl = this.jdbcUrl ?: profileJdbcUrl
-            this.username = this.username ?: profileUsername
-            this.password = this.password ?: profilePassword
+            jdbcUrl = jdbcUrl ?: profileJdbcUrl
+            username = username ?: profileUsername
+            password = password ?: profilePassword
         }
 
         val secretsService: SecretsCreateService = when (type) {

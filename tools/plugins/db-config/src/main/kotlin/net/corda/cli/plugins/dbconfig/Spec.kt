@@ -86,9 +86,9 @@ class Spec(
     override fun run() {
         if (profileName != null) {
             val (profileJdbcUrl, profileUser, profilePassword) = ProfileUtils.getDbConnectionDetails(ProfileUtils.getProfile(profileName!!))
-            this.jdbcUrl = this.jdbcUrl ?: profileJdbcUrl
-            this.user = this.user ?: profileUser
-            this.password = this.password ?: profilePassword
+            jdbcUrl = jdbcUrl ?: profileJdbcUrl
+            user = user ?: profileUser
+            password = password ?: profilePassword
         }
 
         val generator = DbSchemaGenerator(config = config).apply {
