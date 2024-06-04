@@ -38,7 +38,7 @@ fun ClusterInfo.generateCsr(
             }
         } else {
             command {
-                adminClient.post(
+                vNodeCreatorClient.post(
                     "/api/${restApiVersion.versionPath}/certificate/$tenantId/$keyId",
                     ObjectMapper().writeValueAsString(payload)
                 )

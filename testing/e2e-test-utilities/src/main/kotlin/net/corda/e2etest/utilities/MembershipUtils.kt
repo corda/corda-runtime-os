@@ -428,7 +428,7 @@ fun ClusterInfo.lookup(
         interval(1.seconds)
         command {
             val additionalQuery = statuses.joinToString(prefix = "?", separator = "&") { "statuses=$it" }
-            adminClient.get("/api/$REST_API_VERSION_PATH/members/$holdingId$additionalQuery")
+            vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/members/$holdingId$additionalQuery")
         }
         condition { it.code == ResponseCode.OK.statusCode }
     }
