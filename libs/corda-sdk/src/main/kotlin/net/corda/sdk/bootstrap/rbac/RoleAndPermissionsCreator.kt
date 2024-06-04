@@ -45,7 +45,13 @@ class RoleAndPermissionsCreator(val restClient: CordaRestClient) {
         }
 
         val createRoleResponse = restClient.rbacRoleClient.postRole(roleToCreate)
-        // TODO wait for role to be created
+        executeWithRetry(
+            waitDuration = wait,
+            operationName = "Wait until role '${createRoleResponse.id}' is created"
+        ) {
+            restClient.rbacRoleClient.getRoleId(createRoleResponse.id)
+        }
+
         val bulkRequest = BulkCreatePermissionsRequestType(
             permissionsToCreate.map { entry ->
                 CreatePermissionType(
@@ -57,8 +63,16 @@ class RoleAndPermissionsCreator(val restClient: CordaRestClient) {
             }.toSet(),
             setOf(createRoleResponse.id)
         )
-        restClient.rbacPermissionClient.postPermissionBulk(bulkRequest)
-        // TODO wait for permissions to be created ??
+        val createdPermissions = restClient.rbacPermissionClient.postPermissionBulk(bulkRequest).permissionIds
+        executeWithRetry(
+            waitDuration = wait,
+            operationName = "Wait until permissions are created"
+        ) {
+            val getRoleResponse = restClient.rbacRoleClient.getRoleId(createRoleResponse.id)
+            val rolePermissions = getRoleResponse.permissions.map { it.id }
+            if (!rolePermissions.containsAll(createdPermissions))
+                throw IllegalStateException("Not all permissions created, expected $createdPermissions, got $rolePermissions")
+        }
 
         return createRoleResponse
     }
