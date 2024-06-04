@@ -132,11 +132,12 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         }
     }
 
-    private fun uploadCertificateResource(cmd: String, resourceName: String, alias: String) =
+    private fun uploadCertificateResource(cmd: String, resourceName: String, alias: String, deprecated: Boolean = false) =
         getInputStream(resourceName).uploadCertificateInputStream(
             cmd,
             alias,
-            Paths.get(resourceName).fileName.toString()
+            Paths.get(resourceName).fileName.toString(),
+            deprecated
         )
 
 
@@ -145,9 +146,14 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
 
 
     private fun InputStream.uploadCertificateInputStream(
-        cmd: String, alias: String, fileName: String
+        cmd: String, alias: String, fileName: String, deprecated: Boolean = false
     ) = use {
-        vNodeCreatorClient.putMultiPart(
+        val client = if (deprecated) {
+            adminClient
+        } else {
+            vNodeCreatorClient
+        }
+        client.putMultiPart(
             cmd,
             mapOf("alias" to alias),
             mapOf("certificate" to HttpsClientFileUpload(it, fileName))
@@ -171,7 +177,8 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         uploadCertificateResource(
             "/api/${RestApiVersion.C5_0.versionPath}/certificates/cluster/$usage",
             resourceName,
-            alias
+            alias,
+            true
         )
 
     /**
