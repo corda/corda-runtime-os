@@ -158,6 +158,7 @@ class HostedIdentityReconcilerTest {
         cryptoOpsClient,
         keyEncodingService,
         virtualNodeInfoReadService,
+        mock()
     )
 
     @Test

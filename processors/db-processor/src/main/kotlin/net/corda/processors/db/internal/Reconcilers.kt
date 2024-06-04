@@ -139,6 +139,7 @@ class Reconcilers(
         cryptoOpsClient,
         keyEncodingService,
         virtualNodeInfoReadService,
+        jpaEntitiesRegistry,
     )
 
     fun stop() {

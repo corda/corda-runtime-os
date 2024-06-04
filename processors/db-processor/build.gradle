@@ -36,6 +36,7 @@ dependencies {
     implementation project(":components:membership:locally-hosted-identities-service")
     implementation project(':components:membership:mtls-mgm-allowed-list-reader-writer')
     implementation project(':libs:chunking:chunking-datamodel')
+    implementation project(':libs:crypto:crypto-flow')
     implementation project(':libs:membership:certificates-common')
     implementation project(':libs:membership:certificates-datamodel')
     implementation project(':libs:configuration:configuration-core')
@@ -62,6 +63,9 @@ dependencies {
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-db-schema'
     implementation 'net.corda:corda-notary-plugin'
+    implementation project(':libs:cache:cache-caffeine')
+
+    implementation libs.caffeine
 
     runtimeOnly 'net.corda:corda-ledger-consensual'
 

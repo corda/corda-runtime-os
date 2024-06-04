@@ -1,5 +1,8 @@
 package net.corda.processors.db.internal.reconcile.db
 
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
+import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoTenants.P2P
@@ -32,11 +35,16 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.stream.Stream
 import javax.persistence.EntityManager
+import net.corda.cache.caffeine.CacheFactoryImpl
+import net.corda.crypto.flow.CryptoFlowOpsTransformer
+import net.corda.db.schema.CordaDb
+import net.corda.membership.certificates.datamodel.Certificate
+import net.corda.orm.JpaEntitiesRegistry
 
 @Suppress("LongParameterList")
 class HostedIdentityReconciler(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    dbConnectionManager: DbConnectionManager,
+    private val dbConnectionManager: DbConnectionManager,
     private val reconcilerFactory: ReconcilerFactory,
     private val reconcilerReader: ReconcilerReader<String, HostedIdentityEntry>,
     private val reconcilerWriter: ReconcilerWriter<String, HostedIdentityEntry>,
@@ -44,8 +52,10 @@ class HostedIdentityReconciler(
     private val cryptoOpsClient: CryptoOpsClient,
     private val keyEncodingService: KeyEncodingService,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-) : ReconcilerWrapper {
+    private val jpaEntitiesRegistry: JpaEntitiesRegistry,
+    ) : ReconcilerWrapper {
     private companion object {
+        private const val CACHE_SIZE = 1024L
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val dependencies = setOf(
             LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
@@ -63,6 +73,16 @@ class HostedIdentityReconciler(
     private val reconciliationContextFactory = {
         Stream.of(ClusterReconciliationContext(dbConnectionManager))
     }
+
+    private data class CertificateKey(
+        val tenantId: String,
+        val sessionKeyId: ShortHash,
+    )
+
+    private val cachedCertificates: Cache<CertificateKey, String> = CacheFactoryImpl().build(
+        "P2P-inbound-sessions-cache",
+        Caffeine.newBuilder().maximumSize(CACHE_SIZE)
+    )
 
     override fun updateInterval(intervalMillis: Long) {
         logger.debug { "Config reconciliation interval set to $intervalMillis ms" }
@@ -109,10 +129,10 @@ class HostedIdentityReconciler(
         val identityQuery = entityManager.criteriaBuilder.createQuery(HostedIdentityEntity::class.java)
         val identityRoot = identityQuery.from(HostedIdentityEntity::class.java)
         identityQuery.select(identityRoot)
-        val hostedIdentityEntities = entityManager.createQuery(identityQuery).resultList.map {
+        val hostedIdentityEntities = entityManager.createQuery(identityQuery).resultList.stream().map {
             it.toHostedIdentityEntry(entityManager)
         }
-        return hostedIdentityEntities.stream().toVersionedRecords()
+        return hostedIdentityEntities.toVersionedRecords()
     }
 
     private fun HostedIdentityEntity.toHostedIdentityEntry(em: EntityManager): HostedIdentityEntry {
@@ -161,12 +181,23 @@ class HostedIdentityReconciler(
         }
     }
 
+    private val entitiesSet by lazy {
+        jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
+            ?: throw CordaRuntimeException(
+                "persistenceUnitName '${CordaDb.Vault.persistenceUnitName}' is not registered."
+            )
+    }
+
     private fun HostedIdentitySessionKeyInfoEntity.toSessionKeyAndCertificate(): HostedIdentitySessionKeyAndCert {
         val holdingId = ShortHash.of(holdingIdentityShortHash)
-        val sessionCertificate = sessionCertificateAlias?.let {
-            getCertificates(
-                holdingId, CertificateUsage.P2P_SESSION, it
-            )
+
+        val vnodeEntityManager = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingId)?.let {
+            VirtualNodeReconciliationContext(dbConnectionManager, entitiesSet, it)
+        }?.getOrCreateEntityManager() ?: throw CertificatesResourceNotFoundException("Virtual Node with '$holdingIdentityShortHash' not found.")
+
+        val sessionCertificate = sessionCertificateAlias?.let { alias ->
+            vnodeEntityManager.find(Certificate::class.java, alias)?.rawCertificate?.toPemCertificateChain()
+                ?: throw CertificatesResourceNotFoundException("Certificate with '$alias' not found.")
         }
         return HostedIdentitySessionKeyAndCert.newBuilder()
             .setSessionPublicKey(
@@ -195,9 +226,15 @@ class HostedIdentityReconciler(
         tenantId: String,
         sessionKeyId: ShortHash,
     ): String {
-        return cryptoOpsClient.lookupKeysByIds(tenantId, listOf(sessionKeyId)).firstOrNull()
-            ?.toPem()
-            ?: throw CertificatesResourceNotFoundException("Can not find session key for $tenantId")
+        val cachedCertificate = cachedCertificates.getIfPresent(CertificateKey(tenantId, sessionKeyId))
+        return if (cachedCertificate != null) {
+            cachedCertificate
+        } else {
+            val certificate = cryptoOpsClient.lookupKeysByIds(tenantId, listOf(sessionKeyId)).firstOrNull()?.toPem()
+                ?: throw CertificatesResourceNotFoundException("Can not find session key for $tenantId")
+            cachedCertificates.put(CertificateKey(tenantId, sessionKeyId), certificate)
+            certificate
+        }
     }
 
     private fun CryptoSigningKey.toPem(): String {
