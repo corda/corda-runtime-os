@@ -22,7 +22,7 @@ enum class ProfileKey(val description: String) {
     companion object {
         private val validKeys: List<String> by lazy { values().map { it.name.lowercase() } }
         private val cachedDescriptions: String by lazy {
-            values().joinToString("\n") { key ->
+            values().joinToString(System.lineSeparator()) { key ->
                 "${key.name.lowercase()}: ${key.description},"
             }
         }
@@ -35,6 +35,7 @@ enum class ProfileKey(val description: String) {
             return cachedDescriptions
         }
 
+        // Repeating enum names/descriptions since it has to be compile-time const to be usable in PicoCLI annotations.
         const val CONST_KEYS_WITH_DESCRIPTIONS: String = """
             rest_username: Username for REST API,
             rest_password: Password for REST API,
@@ -87,16 +88,12 @@ object ProfileUtils {
     fun getProfile(profileName: String): CliProfile {
         val profiles = loadProfiles()
         val profile = profiles[profileName]
-        if (profile == null) {
-            throw IllegalArgumentException("Profile with name $profileName does not exist.")
-        }
-        return profile
+        return requireNotNull(profile) { "Profile with name $profileName does not exist."}
     }
 
     fun getPasswordProperty(profile: CliProfile, propertyName: String): String {
-        val encryptedPassword = profile.properties[propertyName]
-        if (encryptedPassword == null) {
-            throw IllegalArgumentException("Property with name $propertyName does not exist.")
+        val encryptedPassword = requireNotNull(profile.properties[propertyName]) {
+            "Property with name $propertyName does not exist."
         }
         val salt = profile.properties["${propertyName}_salt"]
         if (salt == null) {

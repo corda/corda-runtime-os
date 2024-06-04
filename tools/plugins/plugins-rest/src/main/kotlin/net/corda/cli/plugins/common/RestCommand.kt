@@ -35,13 +35,6 @@ abstract class RestCommand {
     lateinit var password: String
 
     @Option(
-        names = ["-pv", "--protocol-version"],
-        required = false,
-        description = ["Minimum protocol version. Defaults to 1 if missing."]
-    )
-    var minimumServerProtocolVersion: Int = 1
-
-    @Option(
         names = ["-y", "--yield"],
         required = false,
         description = [
@@ -67,32 +60,32 @@ abstract class RestCommand {
         return 0
     }
 
-    @Suppress("ThrowsCount")
     private fun checkAndSetProfileParams() {
         val profile = if (profileName != null) ProfileUtils.getProfile(profileName!!) else CliProfile(emptyMap())
 
         username = if (::username.isInitialized) {
             username
         } else {
-            profile.properties[ProfileKey.REST_USERNAME.name.lowercase()]
-                ?: throw IllegalArgumentException("username must be provided either directly or through a profile.")
+            requireNotNull(profile.properties[ProfileKey.REST_USERNAME.name.lowercase()]) {
+                "username must be provided either directly or through a profile."
+            }
         }
 
         password = if (::password.isInitialized) {
             password
         } else {
-            if (!profile.properties.containsKey(ProfileKey.REST_PASSWORD.name.lowercase())) {
-                throw IllegalArgumentException("password must be provided either directly or through a profile.")
-            } else {
-                ProfileUtils.getPasswordProperty(profile, ProfileKey.REST_PASSWORD.name.lowercase())
+            requireNotNull(profile.properties[ProfileKey.REST_PASSWORD.name.lowercase()]) {
+                "password must be provided either directly or through a profile."
             }
+            ProfileUtils.getPasswordProperty(profile, ProfileKey.REST_PASSWORD.name.lowercase())
         }
 
         targetUrl = if (::targetUrl.isInitialized) {
             targetUrl
         } else {
-            profile.properties[ProfileKey.REST_ENDPOINT.name.lowercase()]
-                ?: throw IllegalArgumentException("targetUrl must be provided either directly or through a profile.")
+            requireNotNull(profile.properties[ProfileKey.REST_ENDPOINT.name.lowercase()]) {
+                "targetUrl must be provided either directly or through a profile."
+            }
         }
     }
 }
