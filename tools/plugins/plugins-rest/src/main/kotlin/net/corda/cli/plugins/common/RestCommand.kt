@@ -11,7 +11,7 @@ abstract class RestCommand {
         required = false,
         description = ["Profile name"]
     )
-    lateinit var profileName: String
+    var profileName: String? = null
 
     @Option(
         names = ["-t", "--target"],
@@ -69,7 +69,7 @@ abstract class RestCommand {
 
     @Suppress("ThrowsCount")
     private fun checkAndSetProfileParams() {
-        val profile = if (::profileName.isInitialized) ProfileUtils.getProfile(profileName) else CliProfile(emptyMap())
+        val profile = if (profileName != null) ProfileUtils.getProfile(profileName!!) else CliProfile(emptyMap())
 
         username = if (::username.isInitialized) {
             username
