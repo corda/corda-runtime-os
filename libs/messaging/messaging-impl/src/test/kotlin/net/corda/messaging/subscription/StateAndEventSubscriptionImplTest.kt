@@ -1,10 +1,5 @@
 package net.corda.messaging.subscription
 
-import java.time.Duration
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.CordaTopicPartition
@@ -41,6 +36,11 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Duration
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 class StateAndEventSubscriptionImplTest {
 
@@ -558,5 +558,6 @@ class StateAndEventSubscriptionImplTest {
         verify(producer, never()).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, never()).commitTransaction()
         verify(chunkSerializerService, never()).getChunkKeysToClear(any(), anyOrNull(), anyOrNull())
+        verify(stateAndEventConsumer.resetEventOffsetPosition(), times(1))
     }
 }
