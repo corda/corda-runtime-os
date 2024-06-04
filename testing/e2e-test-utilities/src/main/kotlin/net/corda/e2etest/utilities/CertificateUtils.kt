@@ -31,7 +31,7 @@ fun ClusterInfo.generateCsr(
         interval(1.seconds)
         if (restApiVersion == RestApiVersion.C5_0) {
             command {
-                adminClient.post(
+                initialClient.post(
                     "/api/${RestApiVersion.C5_0.versionPath}/certificates/$tenantId/$keyId",
                     ObjectMapper().writeValueAsString(payload)
                 )

@@ -116,7 +116,7 @@ private fun ClusterInfo.createApprovalRuleCommon(
 
     assertWithRetry {
         interval(1.seconds)
-        command { adminClient.post(urlFn(), ObjectMapper().writeValueAsString(payload)) }
+        command { initialClient.post(urlFn(), ObjectMapper().writeValueAsString(payload)) }
         condition { it.code == ResponseCode.OK.statusCode }
     }.toJson()["ruleId"].textValue()
 }
@@ -147,7 +147,7 @@ private fun ClusterInfo.delete(
 ) = cluster {
     assertWithRetry {
         interval(1.seconds)
-        command { adminClient.delete(urlFn()) }
+        command { initialClient.delete(urlFn()) }
         condition { it.code == ResponseCode.NO_CONTENT.statusCode }
     }
 }
@@ -172,7 +172,7 @@ fun ClusterInfo.createPreAuthToken(
     assertWithRetryIgnoringExceptions {
         interval(1.seconds)
         command {
-            adminClient.post(
+            initialClient.post(
                 "/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/preauthtoken",
                 ObjectMapper().writeValueAsString(payload)
             )
@@ -194,7 +194,7 @@ fun ClusterInfo.revokePreAuthToken(
         assertWithRetry {
             interval(1.seconds)
             command {
-                adminClient.put(
+                initialClient.put(
                 "/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/preauthtoken/revoke/$tokenId",
                 "{\"remarks\": \"$remark\"}"
                 )
@@ -223,7 +223,7 @@ fun ClusterInfo.getPreAuthTokens(
     val query = queries.joinToString(prefix = "?", separator = "&")
     assertWithRetryIgnoringExceptions {
         interval(1.seconds)
-        command { adminClient.get("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/preauthtoken$query") }
+        command { initialClient.get("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/preauthtoken$query") }
         condition { it.code == ResponseCode.OK.statusCode }
     }.toJson()
 }
@@ -245,7 +245,7 @@ fun ClusterInfo.waitForPendingRegistrationReviews(
         assertWithRetryIgnoringExceptions {
             timeout(2.minutes)
             interval(3.seconds)
-            command { adminClient.get("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/registrations$query") }
+            command { initialClient.get("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/registrations$query") }
             condition {
                 val json = it.toJson().firstOrNull()
                 it.code == ResponseCode.OK.statusCode
@@ -267,7 +267,7 @@ fun ClusterInfo.approveRegistration(
     cluster {
         assertWithRetry {
             interval(1.seconds)
-            command { adminClient.post("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/approve/$registrationId", "") }
+            command { initialClient.post("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/approve/$registrationId", "") }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
         }
     }
@@ -284,7 +284,7 @@ fun ClusterInfo.declineRegistration(
     cluster {
         assertWithRetry {
             interval(1.seconds)
-            command { adminClient.post(
+            command { initialClient.post(
                 "/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/decline/$registrationId",
                 "{\"reason\": \"Declined by automated test with runId $testRunUniqueId.\"}")
             }
@@ -349,7 +349,7 @@ fun ClusterInfo.suspendMember(
         timeout(15.seconds)
         interval(1.seconds)
         command {
-            adminClient.post(
+            initialClient.post(
                 "/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/suspend",
                 "{ \"x500Name\": \"$x500Name\", \"serialNumber\": $serialNumber }"
             )
@@ -374,7 +374,7 @@ fun ClusterInfo.deprecatedSuspendMember(
         timeout(15.seconds)
         interval(1.seconds)
         command {
-            adminClient.post(
+            initialClient.post(
                 "/api/${RestApiVersion.C5_0.versionPath}/mgm/$mgmHoldingId/suspend",
                 "{ \"x500Name\": \"$x500Name\", \"serialNumber\": $serialNumber }"
             )
@@ -397,7 +397,7 @@ fun ClusterInfo.activateMember(
         timeout(15.seconds)
         interval(1.seconds)
         command {
-            adminClient.post(
+            initialClient.post(
                 "/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/activate",
                 "{ \"x500Name\": \"$x500Name\", \"serialNumber\": $serialNumber }"
             )
@@ -422,7 +422,7 @@ fun ClusterInfo.deprecatedActivateMember(
         timeout(15.seconds)
         interval(1.seconds)
         command {
-            adminClient.post(
+            initialClient.post(
                 "/api/${RestApiVersion.C5_0.versionPath}/mgm/$mgmHoldingId/activate",
                 "{ \"x500Name\": \"$x500Name\", \"serialNumber\": $serialNumber }"
             )
@@ -446,7 +446,7 @@ fun ClusterInfo.updateGroupParameters(
         timeout(15.seconds)
         interval(1.seconds)
         command {
-            adminClient.post(
+            initialClient.post(
                 "/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/group-parameters",
                 ObjectMapper().writeValueAsString(payload)
             )
@@ -469,7 +469,7 @@ fun ClusterInfo.allowClientCertificates(certificatePem: String, mgmHoldingId: St
             timeout(15.seconds)
             interval(1.seconds)
             command {
-                adminClient.put(endpoint,"")
+                initialClient.put(endpoint,"")
             }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
         }
