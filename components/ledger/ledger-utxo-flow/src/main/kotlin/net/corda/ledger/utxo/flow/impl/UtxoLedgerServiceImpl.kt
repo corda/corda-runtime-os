@@ -59,9 +59,8 @@ import java.time.Instant
  * A service implementation class which is typically injected in to any cordApp which wishes to interact with
  * the UTXO ledger.
  *
- * Therefore the methods of this class are always running from within flow sandboxes, and are subject
- * to the limitations of flows. In particular since flows use Quasar every method that can block must be annotated.
- * @Suspendable and since it is not possible to annotate lambdas they sometimes cannot be used.
+ * Therefore, the methods of this class are always running from within flow sandboxes, and are subject
+ * to the limitations of flows. Since flows use Quasar, every method that can block must be annotated @Suspendable.
  */
 
 @Suppress("LongParameterList", "TooManyFunctions")

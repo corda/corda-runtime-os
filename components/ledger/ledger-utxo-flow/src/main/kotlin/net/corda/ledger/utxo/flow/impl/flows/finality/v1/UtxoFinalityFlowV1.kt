@@ -86,7 +86,7 @@ class UtxoFinalityFlowV1(
         val transferAdditionalSignatures = sessions.size > 1
 
         addTransactionIdToFlowContext(flowEngine, transactionId)
-        log.trace("Starting finality flow for transaction: {}", transactionId)
+        log.trace { "Starting finality flow for transaction: $transactionId" }
         verifyExistingSignatures(initialTransaction)
         verifyTransaction(initialTransaction)
 
@@ -115,7 +115,7 @@ class UtxoFinalityFlowV1(
         val (notarizedTransaction, notarySignatures) = notarize(transaction, filteredTransactionsAndSignatures)
         persistNotarizedTransaction(notarizedTransaction)
         sendNotarySignaturesToCounterparties(notarySignatures)
-        log.trace("Finalisation of transaction {} has been finished.", transactionId)
+        log.trace { "Finalisation of transaction $transactionId has been finished." }
         return notarizedTransaction
     }
 
@@ -281,13 +281,12 @@ class UtxoFinalityFlowV1(
                 pluggableNotaryDetails,
                 NotarizationType.WRITE
             )
-            // `log.trace {}` and `log.debug {}` are not used in this method due to a Quasar issue.
-            if (log.isTraceEnabled) {
-                log.trace(
-                    "Notarizing transaction $transactionId using pluggable notary client flow of " +
-                        "${notarizationFlow::class.java.name} with notary $notary. Attempt number $attemptNumber"
-                )
+
+            log.trace {
+                "Notarizing transaction $transactionId using pluggable notary client flow of " +
+                    "${notarizationFlow::class.java.name} with notary $notary. Attempt number $attemptNumber"
             }
+
             flowEngine.subFlow(notarizationFlow)
         }
 
@@ -327,11 +326,9 @@ class UtxoFinalityFlowV1(
             }
         }
 
-        if (log.isTraceEnabled) {
-            log.trace(
-                "Received ${notarySignatures.size} signature(s) from notary $notary after requesting notarization of transaction " +
-                    transactionId
-            )
+        log.trace {
+            "Received ${notarySignatures.size} signature(s) from notary $notary after requesting notarization of transaction " +
+                transactionId
         }
 
         if (notarySignatures.isEmpty()) {
@@ -365,10 +362,8 @@ class UtxoFinalityFlowV1(
             }
         }
 
-        if (log.isDebugEnabled) {
-            log.debug(
-                "Successfully notarized transaction $transactionId using notary $notary and received ${notarySignatures.size} signature(s)"
-            )
+        log.debug {
+            "Successfully notarized transaction $transactionId using notary $notary and received ${notarySignatures.size} signature(s)"
         }
 
         return notarizedTransaction to notarySignatures
