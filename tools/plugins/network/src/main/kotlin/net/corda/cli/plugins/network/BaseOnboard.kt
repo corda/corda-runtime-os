@@ -227,7 +227,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             throw OnboardException("Could not submit registration request: ${response.memberInfoSubmitted}")
         }
 
-        println("Registration ID for '$name' is '$registrationId'")
+        println("Registration ID for '$name' is '${registrationId.value}'")
 
         // Registrations can take longer than the default 10 seconds, wait for minimum of 30
         val longerWaitValue = getLongerWait()
