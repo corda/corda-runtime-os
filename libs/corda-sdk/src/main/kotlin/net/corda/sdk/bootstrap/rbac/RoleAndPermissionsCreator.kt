@@ -45,6 +45,7 @@ class RoleAndPermissionsCreator(val restClient: CordaRestClient) {
         }
 
         val createRoleResponse = restClient.rbacRoleClient.postRole(roleToCreate)
+        // TODO wait for role to be created
         val bulkRequest = BulkCreatePermissionsRequestType(
             permissionsToCreate.map { entry ->
                 CreatePermissionType(
@@ -57,6 +58,7 @@ class RoleAndPermissionsCreator(val restClient: CordaRestClient) {
             setOf(createRoleResponse.id)
         )
         restClient.rbacPermissionClient.postPermissionBulk(bulkRequest)
+        // TODO wait for permissions to be created ??
 
         return createRoleResponse
     }
