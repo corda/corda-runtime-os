@@ -70,8 +70,9 @@ class RoleAndPermissionsCreator(val restClient: CordaRestClient) {
         ) {
             val getRoleResponse = restClient.rbacRoleClient.getRoleId(createRoleResponse.id)
             val rolePermissions = getRoleResponse.permissions.map { it.id }
-            if (!rolePermissions.containsAll(createdPermissions))
+            if (!rolePermissions.containsAll(createdPermissions)) {
                 throw IllegalStateException("Not all permissions created, expected $createdPermissions, got $rolePermissions")
+            }
         }
 
         return createRoleResponse

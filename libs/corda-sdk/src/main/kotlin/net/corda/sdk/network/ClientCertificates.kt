@@ -85,7 +85,7 @@ class ClientCertificates(val restClient: CordaRestClient) {
             contextMap = null,
             subjectAlternativeNames = p2pHostNames.map { it.toString() }
         )
-        // TODO: Add a retry mechanism (check that key exists)
+        // TODO Add a retry mechanism (check that key exists)
         val csr = restClient.certificatesClient.postCertificateTenantidKeyid(
             tenantid = "p2p",
             keyid = tlsKey.id,
