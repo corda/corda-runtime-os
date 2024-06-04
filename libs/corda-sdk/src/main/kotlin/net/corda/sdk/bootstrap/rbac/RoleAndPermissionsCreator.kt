@@ -63,7 +63,8 @@ class RoleAndPermissionsCreator(val restClient: CordaRestClient) {
             }.toSet(),
             setOf(createRoleResponse.id)
         )
-        val createdPermissions = restClient.rbacPermissionClient.postPermissionBulk(bulkRequest).permissionIds
+        val createPermissionsResponse = restClient.rbacPermissionClient.postPermissionBulk(bulkRequest)
+        val createdPermissions = createPermissionsResponse.permissionIds
         executeWithRetry(
             waitDuration = wait,
             operationName = "Wait until permissions are created"
