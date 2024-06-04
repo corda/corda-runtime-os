@@ -1,5 +1,5 @@
 #!/bin/bash
-# Settings for the P2P Deployment as Enviroment Varaibles
+# Settings for the P2P Deployment as Environment Variables
 
 # Prefix the K8s namespace of each corda cluster
 NAMESPACE_PREFIX="${USER//./}"
@@ -88,7 +88,6 @@ CA_JAR=$CA_DIR/build/bin/corda-fake-ca*.jar
 APP_SIMULATOR_DIR=$REPO_TOP_LEVEL_DIR/applications/tools/p2p-test/app-simulator/
 APP_SIMULATOR_CHART_DIR=$APP_SIMULATOR_DIR/charts/app-simulator
 APP_SIMULATOR_DB_CHART_DIR=$APP_SIMULATOR_DIR/charts/app-simulator-db
-CORDA_CLI_DIR="$REPO_TOP_LEVEL_DIR/../corda-cli-plugin-host"
 
 # X500Names
 MGM_X500_NAME="C=GB,L=London,O=MGM"

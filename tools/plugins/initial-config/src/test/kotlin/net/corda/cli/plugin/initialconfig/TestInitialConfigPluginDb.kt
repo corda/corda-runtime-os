@@ -9,7 +9,7 @@ class TestInitialConfigPluginDb {
     @Test
     fun testDbConfigCreationMissingOptions() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = InitialConfigPlugin.PluginEntryPoint()
+        val app = InitialConfigPlugin()
 
         val outText = SystemLambda.tapSystemErrNormalized {
             CommandLine(
@@ -22,7 +22,7 @@ class TestInitialConfigPluginDb {
     @Test
     fun testDbConfigCreationCorda() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = InitialConfigPlugin.PluginEntryPoint()
+        val app = InitialConfigPlugin()
 
         val outText = SystemLambda.tapSystemOutNormalized {
             CommandLine(
@@ -64,7 +64,7 @@ class TestInitialConfigPluginDb {
     @Test
     fun `test DbConfig creation with MinPoolSize`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = InitialConfigPlugin.PluginEntryPoint()
+        val app = InitialConfigPlugin()
 
         val outText = SystemLambda.tapSystemOutNormalized {
             CommandLine(
@@ -97,7 +97,7 @@ class TestInitialConfigPluginDb {
     @Test
     fun testDbConfigCreationVault() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = InitialConfigPlugin.PluginEntryPoint()
+        val app = InitialConfigPlugin()
 
         val outText = SystemLambda.tapSystemOutNormalized {
             CommandLine(
@@ -134,7 +134,7 @@ class TestInitialConfigPluginDb {
     // Running the command via command line applies additional escaping
     @Test
     fun `test DbConfig creation via command line with escaped string`() {
-        val app = InitialConfigPlugin.PluginEntryPoint()
+        val app = InitialConfigPlugin()
 
         val outText = SystemLambda.tapSystemOutNormalized {
             CommandLine(

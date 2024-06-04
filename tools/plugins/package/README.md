@@ -1,6 +1,6 @@
 # Package Plugin
 
-This is a plug-in for [Corda CLI plug-in host](https://github.com/corda/corda-cli-plugin-host) for working with CPB and CPI files.
+This is a plug-in for `corda-cli` for working with CPB and CPI files.
 
 ## Examples
 

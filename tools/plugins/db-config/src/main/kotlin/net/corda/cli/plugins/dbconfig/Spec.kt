@@ -82,7 +82,6 @@ class Spec(
             password = this@Spec.password
             clearChangeLog = this@Spec.clearChangeLog ?: false
             databaseChangeLogFile = this@Spec.databaseChangeLogFile
-            classLoaderWorkaround = DatabaseBootstrapAndUpgrade.classLoader
         }
 
         generator.generateSqlFilesForSchemas(

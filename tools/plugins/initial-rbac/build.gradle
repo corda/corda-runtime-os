@@ -1,8 +1,7 @@
 plugins {
     id 'distribution'
     id 'org.jetbrains.kotlin.jvm'
-    id 'org.jetbrains.kotlin.kapt'
-    id 'corda.cli-plugin-packager'
+    id 'corda.common-publishing'
 }
 
 ext {
@@ -16,11 +15,6 @@ group 'net.corda.cli.deployment'
 dependencies {
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
 
-    compileOnly "net.corda.cli.host:api:$pluginHostVersion"
-    compileOnly libs.pf4j
-    kapt libs.pf4j
-    kapt "info.picocli:picocli:$picocliVersion"
-
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-rbac-schema'
     implementation libs.jackson.datatype.jsr310
@@ -31,9 +25,4 @@ dependencies {
     implementation project(':libs:permissions:permission-endpoint')
 
     testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
-}
-
-cliPlugin {
-    cliPluginClass = 'net.corda.cli.plugin.initialRbac.InitialRbacPlugin'
-    cliPluginDescription = 'A CLI plug-in to create common RBAC roles'
 }

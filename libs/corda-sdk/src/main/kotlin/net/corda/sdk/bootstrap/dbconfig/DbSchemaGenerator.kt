@@ -63,9 +63,6 @@ class DbSchemaGenerator(
     var user: String? = null
     var password: String? = null
 
-    // This is a workaround to make liquibase play nicely with the logger that's on the class loader
-    var classLoaderWorkaround: ClassLoader = this::class.java.classLoader
-
     fun generateSqlFilesForSchemas(
         schemasToGenerate: List<String> = DEFAULT_SCHEMA_OPTIONS,
         generateSchemaSql: List<String>? = null,
@@ -92,9 +89,6 @@ class DbSchemaGenerator(
         val schemaType = checkNotNull(test.find(filename)).groupValues.last()
         val outputFileName = "${outputDir.removeSuffix("/")}/$schemaType.sql"
 
-        val oldCl = Thread.currentThread().contextClassLoader
-        Thread.currentThread().contextClassLoader = classLoaderWorkaround
-
         config.writerFactory(outputFileName).use { outputFile ->
             writeSchemaToFile(
                 checkNotNull(schemaNameByType[schemaType]) { "Cannot find schema name from schema type derived from path" },
@@ -103,7 +97,6 @@ class DbSchemaGenerator(
                 !generateSchemaSql.isNullOrEmpty()
             )
         }
-        Thread.currentThread().contextClassLoader = oldCl
     }
 
     private fun processSchemaNameByTypeMap(generateSchemaSql: List<String>?) =

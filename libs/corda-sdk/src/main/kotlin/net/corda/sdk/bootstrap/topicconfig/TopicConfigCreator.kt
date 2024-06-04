@@ -14,10 +14,8 @@ import java.nio.file.Paths
 import java.util.jar.JarEntry
 import java.util.jar.JarFile
 
-class TopicConfigCreator(
-    val classLoader: ClassLoader
-) {
-    private val resourceGetter: (String) -> List<URL> = { path -> classLoader.getResources(path).toList().filterNotNull() }
+class TopicConfigCreator {
+    private val resourceGetter: (String) -> List<URL> = { path -> this.javaClass.classLoader.getResources(path).toList().filterNotNull() }
 
     data class TopicConfig(
         val name: String,

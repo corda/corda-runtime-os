@@ -12,7 +12,6 @@ ext {
 }
 
 dependencies {
-    compileOnly "net.corda.cli.host:api:$pluginHostVersion"
     compileOnly libs.jackson.dataformat.yaml
 
     implementation project(':components:membership:membership-rest')

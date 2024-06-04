@@ -11,8 +11,6 @@ ext.cordaEnableFormatting = true
 
 dependencies {
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
-    compileOnly "net.corda.cli.host:api:$pluginHostVersion"
-    compileOnly libs.pf4j
 
     compileOnly "net.corda:corda-base"
     compileOnly platform("net.corda:corda-api:$cordaApiVersion")

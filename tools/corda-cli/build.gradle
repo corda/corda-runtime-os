@@ -1,0 +1,216 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'corda.common-publishing'
+    id 'application'
+}
+
+group = 'net.corda.cli.deployment'
+
+mainClassName = 'net.corda.cli.application.AppKt'
+
+application {
+    mainClass = mainClassName
+}
+
+dependencies {
+    implementation project(':tools:corda-cli:app')
+
+    implementation libs.kotlin.stdlib
+    implementation "info.picocli:picocli:$picocliVersion"
+
+    testImplementation libs.kotlin.stdlib
+    testImplementation "info.picocli:picocli:$picocliVersion"
+}
+
+test {
+    useJUnitPlatform()
+}
+
+var commitId = com.gradle.Utils.execAndGetStdOut "git", "rev-parse", "--verify", "HEAD"
+def S3_BUCKET_URI_PROPERTY = 'maven.repo.s3'
+def S3_BUCKET_GROUP_ID_PROPERTY = 'maven.repo.groupId'
+def s3_upload_group_id = project.hasProperty(S3_BUCKET_GROUP_ID_PROPERTY) ? "${project.findProperty(S3_BUCKET_GROUP_ID_PROPERTY)}" : project.group
+
+
+tasks.register('copyCliFiles') {
+    doLast {
+        copy {
+            duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+            from jar
+            into "$buildDir/cli"
+            rename('.*.jar', 'corda-cli.jar')
+        }
+        copy {
+            from "$projectDir/scripts/installScripts"
+            from "$projectDir/scripts/runScripts"
+            into "$buildDir/cli"
+        }
+    }
+}
+
+tasks.register("cliInstallArchive", Zip) {
+    dependsOn tasks.named('copyCliFiles')
+    from "$buildDir/cli"
+    include '*'
+    include '*/*'
+    archiveFileName = 'corda-cli-dist.zip'
+    destinationDirectory = file("$buildDir/zip")
+}
+
+tasks.register("cliS3Download", Copy) {
+    dependsOn cleanDir
+    description 'Copy corda-cli install scripts to a location in build dir and update to use correct version'
+    if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
+        def s3Url = System.getenv('HTTPS_PATH') + '/' + s3_upload_group_id.replace('.', '/') + "/corda-cli-downloader/$version/corda-cli-downloader-$version"
+        logger.info("S3 Https URL: $s3Url")
+        from 'installScripts'
+        into 'build/generatedScripts'
+        filter {
+            String line -> line.replaceAll("TEMPLATE_URL", s3Url)
+        }
+    } else {
+        logger.info("parameter S3_BUCKET_URI_PROPERTY is required! e.g. -Pmaven.repo.s3=https://demo.s3.com/example/bucket, Taking no action for :cliS3Download")
+    }
+}
+
+tasks.register('publishOSGiImage', DeployableContainerBuilder) {
+    useShortName = true
+    setEntry = true
+    overrideEntryName = 'cli'
+    // the image used by helm charts is "corda-os-plugins"
+    overrideContainerName = 'plugins'
+
+    def cordaApiIncluded = gradle.includedBuilds.collect { it.name == "corda-api" }.contains(true)
+
+    if (cordaApiIncluded) {
+        dependsOn gradle.includedBuild("corda-api").task(':application:jar')
+    }
+
+    it.sourceFiles = files(jar.archiveFile)
+    if (project.hasProperty('jibRemotePublish')) {
+        remotePublish = jibRemotePublish.toBoolean()
+    }
+    if (project.hasProperty('doDockerHubPublish')) {
+        dockerHubPublish = doDockerHubPublish.toBoolean()
+    }
+    if (project.hasProperty('isReleaseCandidate')) {
+        releaseCandidate = isReleaseCandidate.toBoolean()
+    }
+
+    if (project.hasProperty('isNightly')) {
+        nightlyBuild = isNightly.toBoolean()
+    }
+
+    if (project.hasProperty('isPreTest')) {
+        preTest = isPreTest.toBoolean()
+    }
+
+    if (project.hasProperty('useDockerDaemon')) {
+        useDaemon = useDockerDaemon.toBoolean()
+    }
+
+    if (project.hasProperty('multiArchSupport')) {
+        multiArch = multiArchSupport.toBoolean()
+    }
+
+    if (project.hasProperty('targetPlatform')) {
+        targetPlatform = project.property('targetPlatform').toString()
+    }
+
+    if (project.hasProperty('multiArchSupport')) {
+        multiArch = multiArchSupport.toBoolean()
+    }
+    if (project.hasProperty('targetPlatform')) {
+        targetPlatform = project.property('targetPlatform').toString()
+    }
+
+    environment = Map.of(
+            "CORDA_CLI_HOME_DIR", "/opt/override"
+    )
+}
+
+def s3Script = null
+if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
+    s3Script = artifacts.add('archives', file("$project.buildDir/generatedScripts/corda-cli-downloader.sh")) {
+        builtBy('cliS3Download')
+    }
+    artifacts {
+        cliInstallArchive
+    }
+}
+
+jar {
+    dependsOn configurations.runtimeClasspath
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } } {
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+        exclude "META-INF/*.EC"
+        exclude "META-INF/INDEX.LIST"
+        exclude "META-INF/versions/*/module-info.class"
+        exclude "META-INF/org/apache/logging/log4j/core/config/plugins/Log4j2Plugins.dat"
+        exclude "module-info.class"
+    }
+
+
+    finalizedBy 'cliInstallArchive'
+    if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
+        finalizedBy 'cliS3Download'
+    }
+    manifest {
+        attributes(
+                'Main-Class': mainClassName,
+                'Tool-Name': 'Corda CLI',
+                'Tool-Version': "${project.version}",
+                'Tool-Git-Commit': commitId,
+                'Tool-Provider': 'R3',
+        )
+    }
+    archiveBaseName = 'corda-cli'
+    archiveVersion = project.version
+
+
+    subprojects.each { subproject ->
+        from subproject.sourceSets.main.output
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            artifactId "corda-cli-installer"
+            groupId s3_upload_group_id
+            artifact cliInstallArchive
+        }
+        if (project.hasProperty(S3_BUCKET_URI_PROPERTY) && s3Script != null) {
+            maven(MavenPublication) {
+                artifactId "corda-cli-downloader"
+                groupId s3_upload_group_id
+                artifact s3Script
+            }
+        }
+    }
+    if (project.hasProperty(S3_BUCKET_URI_PROPERTY) && project.hasProperty('releasable')) {
+        publishing {
+            repositories {
+                maven {
+                    url = project.findProperty(S3_BUCKET_URI_PROPERTY)
+                    credentials(AwsCredentials) {
+                        accessKey "${System.getenv('AWS_ACCESS_KEY_ID')}"
+                        secretKey "${System.getenv('AWS_SECRET_ACCESS_KEY')}"
+                        sessionToken "${System.getenv('AWS_SESSION_TOKEN')}"
+                    }
+                }
+            }
+        }
+    }
+}
+
+tasks.named("installDist") {
+    dependsOn jar
+    def homePath = System.properties['user.home']
+    from jar
+    into "$homePath/.corda/cli/"
+}
