@@ -14,7 +14,7 @@ echo "Copying files and plugins"
 cp -R $zipdir/* $cliHome
 
 echo "Creating corda-cli Script"
-echo "java \"\$@\"" > $cliHome/corda-cli.sh
+echo "java -jar $cliHome/corda-cli.jar \"\$@\"" > corda-cli.sh
 
 chmod 755 $cliHome/corda-cli.sh
 
