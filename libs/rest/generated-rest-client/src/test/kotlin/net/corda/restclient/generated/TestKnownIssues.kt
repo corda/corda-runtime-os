@@ -68,8 +68,8 @@ class TestKnownIssues {
     }
 
     /**
-     * See comment for workaround details
-     * https://r3-cev.atlassian.net/browse/ES-2162?focusedCommentId=303584
+     * This is a known limitation with the OpenApi generator
+     * https://r3-cev.atlassian.net/browse/ES-2383?focusedCommentId=307181
      */
     @Test
     fun testClusterCertRequestHandlesListCorrectly() {
@@ -87,8 +87,8 @@ class TestKnownIssues {
     }
 
     /**
-     * See comment for workaround details
-     * https://r3-cev.atlassian.net/browse/ES-2162?focusedCommentId=303584
+     * This is a known limitation with the OpenApi generator
+     * https://r3-cev.atlassian.net/browse/ES-2383?focusedCommentId=307181
      */
     @Test
     fun testVNodeCertRequestHandlesListCorrectly() {
