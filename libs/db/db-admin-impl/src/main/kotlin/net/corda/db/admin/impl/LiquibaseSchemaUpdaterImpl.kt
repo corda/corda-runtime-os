@@ -32,8 +32,7 @@ class LiquibaseSchemaUpdaterImpl(
         tag: String?
     ) {
         val scopeObjects = mapOf(
-            Scope.Attr.resourceAccessor.name to lb.resourceAccessor,
-            Scope.Attr.classLoader.name to FilenameUtils::class.java.classLoader
+            Scope.Attr.resourceAccessor.name to lb.resourceAccessor
         )
         Scope.child(scopeObjects) {
             val classLoaderScopeObjects = mapOf(Scope.Attr.resourceAccessor.name to lb::class.java.classLoader)
