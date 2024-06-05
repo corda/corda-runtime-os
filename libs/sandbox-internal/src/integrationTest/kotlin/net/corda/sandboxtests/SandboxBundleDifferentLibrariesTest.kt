@@ -37,7 +37,7 @@ class SandboxBundleDifferentLibrariesTest {
     ) {
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            sandboxFactory = setup.fetchService(timeout = 60000)
+            sandboxFactory = setup.fetchService(timeout = 10000)
         }
     }
 
