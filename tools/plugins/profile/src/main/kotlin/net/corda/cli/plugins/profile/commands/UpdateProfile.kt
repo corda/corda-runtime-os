@@ -37,7 +37,7 @@ class UpdateProfile : Runnable {
     private fun processProperty(profile: MutableMap<String, String>, property: String) {
         val (key, value) = property.split("=")
         if (!ProfileKey.isValidKey(key)) {
-            val error = "Invalid key '$key'. Allowed keys are:\n ${ProfileKey.getKeysWithDescriptions()}"
+            val error = "Invalid key '$key'. Allowed keys are:\n ${ProfileKey.CONST_KEYS_WITH_DESCRIPTIONS}"
             sysErr.error(error)
             throw IllegalArgumentException(error)
         }
