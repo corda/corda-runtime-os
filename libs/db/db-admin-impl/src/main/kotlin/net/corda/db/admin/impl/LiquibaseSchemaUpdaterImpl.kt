@@ -17,6 +17,7 @@ import liquibase.command.core.helpers.DbUrlConnectionArgumentsCommandStep
 import liquibase.command.core.helpers.ShowSummaryArgument
 import liquibase.io.WriterOutputStream
 import net.corda.db.admin.LiquibaseSchemaUpdater
+import org.apache.commons.io.FilenameUtils
 import java.io.Writer
 
 class LiquibaseSchemaUpdaterImpl(
@@ -32,9 +33,8 @@ class LiquibaseSchemaUpdaterImpl(
     ) {
         val scopeObjects = mapOf(
             Scope.Attr.resourceAccessor.name to lb.resourceAccessor,
-            Scope.Attr.classLoader.name to lb::class.java.classLoader
+            Scope.Attr.classLoader.name to FilenameUtils::class.java.classLoader
         )
-        println(System.getProperty("java.class.path"))
         Scope.child(scopeObjects) {
             if (sql != null) {
                 commandScopeFactory(UpdateSqlCommandStep.COMMAND_NAME).configure(lb, tag).also {
@@ -44,11 +44,15 @@ class LiquibaseSchemaUpdaterImpl(
                             GlobalConfiguration.OUTPUT_FILE_ENCODING.currentValue
                         )
                     )
-                    it.execute()
+                    Scope.child(mapOf(Scope.Attr.classLoader.name to lb::class.java.classLoader)) {
+                        it.execute()
+                    }
                 }
             } else {
                 commandScopeFactory(UpdateCommandStep.COMMAND_NAME).configure(lb, tag).also {
-                    it.execute()
+                    Scope.child(mapOf(Scope.Attr.classLoader.name to lb::class.java.classLoader)) {
+                        it.execute()
+                    }
                 }
             }
         }
