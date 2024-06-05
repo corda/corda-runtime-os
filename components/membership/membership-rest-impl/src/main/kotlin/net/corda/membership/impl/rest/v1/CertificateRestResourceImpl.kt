@@ -68,6 +68,7 @@ import java.net.URISyntaxException
 import java.security.PublicKey
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
+import java.time.Instant
 import javax.security.auth.x500.X500Principal
 
 @Suppress("LongParameterList")
@@ -347,12 +348,18 @@ class CertificateRestResourceImpl @Activate constructor(
             details = mapOf("usage" to "Unknown usage: $usage")
         )
 
+        val startTime = Instant.now()
+        logger.info("Start get certificate chain for alias $alias at $startTime")
+
         return tryWithExceptionHandling(logger, "get certificate chain") {
             certificatesClient.retrieveCertificates(
                 holdingIdentityShortHash,
                 usageType,
                 alias
             )
+        }.also {
+            logger.info("End get certificate chain for alias $alias at ${Instant.now()}. " +
+                    "Duration: ${Instant.now().toEpochMilli() - startTime.toEpochMilli()} ms")
         } ?: throw ResourceNotFoundException(alias, "alias")
     }
 
