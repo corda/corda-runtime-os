@@ -30,7 +30,7 @@ enum class ProfileKey {
             database_url: URL for the database,
         """
 
-        private val validKeys: List<String> by lazy { values().map { it.name.lowercase() } }
+        private val validKeys: Set<String> by lazy { values().map { it.name.lowercase() }.toSet() }
 
         fun isValidKey(key: String): Boolean {
             return validKeys.contains(key.lowercase())
