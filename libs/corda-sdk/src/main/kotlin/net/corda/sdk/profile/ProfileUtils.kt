@@ -86,13 +86,12 @@ object ProfileUtils {
         val encryptedPassword = requireNotNull(profile.properties[propertyName]) {
             "Property with name $propertyName does not exist."
         }
-        val salt = profile.properties["${propertyName}_salt"]
-        if (salt == null) {
-            throw IllegalArgumentException("Salt for property $propertyName does not exist.")
+        val salt = requireNotNull(profile.properties["${propertyName}_salt"]) {
+            "Salt for property $propertyName does not exist."
         }
+
         val secretEncryptionUtil = SecretEncryptionUtil()
-        val decryptedPassword = secretEncryptionUtil.decrypt(encryptedPassword, salt, salt)
-        return decryptedPassword
+        return secretEncryptionUtil.decrypt(encryptedPassword, salt, salt)
     }
 
     fun getDbConnectionDetails(profile: CliProfile): Triple<String?, String?, String?> {
