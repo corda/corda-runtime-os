@@ -17,6 +17,7 @@ import liquibase.command.core.helpers.DbUrlConnectionArgumentsCommandStep
 import liquibase.command.core.helpers.ShowSummaryArgument
 import liquibase.io.WriterOutputStream
 import net.corda.db.admin.LiquibaseSchemaUpdater
+import org.apache.commons.io.FilenameUtils
 import java.io.Writer
 
 class LiquibaseSchemaUpdaterImpl(
@@ -31,7 +32,8 @@ class LiquibaseSchemaUpdaterImpl(
         tag: String?
     ) {
         val scopeObjects = mapOf(
-            Scope.Attr.resourceAccessor.name to lb.resourceAccessor
+            Scope.Attr.resourceAccessor.name to lb.resourceAccessor,
+            Scope.Attr.classLoader.name to FilenameUtils::class.java.classLoader
         )
         Scope.child(scopeObjects) {
             val classLoaderScopeObjects = mapOf(Scope.Attr.resourceAccessor.name to lb::class.java.classLoader)
