@@ -76,7 +76,7 @@ fun ClusterInfo.exportGroupPolicy(
     assertWithRetryIgnoringExceptions {
         interval(2.seconds)
         timeout(30.seconds)
-        command { vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/info") }
+        command { initialClient.get("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/info") }
         condition { it.code == ResponseCode.OK.statusCode }
     }.body
 }
