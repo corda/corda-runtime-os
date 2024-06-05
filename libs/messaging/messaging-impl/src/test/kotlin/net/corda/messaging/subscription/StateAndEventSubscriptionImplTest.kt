@@ -558,6 +558,6 @@ class StateAndEventSubscriptionImplTest {
         verify(producer, never()).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, never()).commitTransaction()
         verify(chunkSerializerService, never()).getChunkKeysToClear(any(), anyOrNull(), anyOrNull())
-        verify(stateAndEventConsumer.resetEventOffsetPosition(), times(1))
+        verify(stateAndEventConsumer, times(1)).resetEventOffsetPosition()
     }
 }
