@@ -27,11 +27,11 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         init {
             configureTracing("E2eClusterTracing", null, null, emptyMap())
         }
+        private const val vNodeCreatorName = "vnodecreatoruser"
         private val lock = ReentrantLock()
     }
 
     private val logger = LoggerFactory.getLogger("ClusterBuilder - ${clusterInfo.id}")
-    private val vNodeCreatorName = "vnodecreatoruser"
 
     val initialClient: HttpsClient =
         UnirestHttpsClient(clusterInfo.rest.uri, clusterInfo.rest.user, clusterInfo.rest.password)
@@ -71,7 +71,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
                     }
                     condition { it.code == 200 }
                 }
-                UnirestHttpsClient(clusterInfo.rest.uri, "vnodecreatoruser", "vnodecreatoruser")
+                UnirestHttpsClient(clusterInfo.rest.uri, vNodeCreatorName, vNodeCreatorName)
             } else {
                 initialClient
             }
@@ -289,7 +289,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     fun cpiStatus(id: String) = vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/cpi/status/$id")
 
     /** List all CPIs in the system */
-    fun cpiList() = initialClient.get("/api/$REST_API_VERSION_PATH/cpi")
+    fun cpiList() = vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/cpi")
 
     @Suppress("LongParameterList")
     private fun vNodeBody(
