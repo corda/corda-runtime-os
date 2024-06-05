@@ -16,7 +16,6 @@ Copy-Item -Path ".\*" -Destination $cliHomeDir -Recurse
 
 Write-Output "Creating corda-cli Script"
 $cliCommand = "`"$ENV:JAVA_HOME\bin\java`" -jar `"$cliHomeDir\corda-cli.jar`" %*"
-New-Item "$cliHomeDir\corda-cli.cmd" -ItemType File -Value $cliCommand
 
 if($addToPath) {
 
