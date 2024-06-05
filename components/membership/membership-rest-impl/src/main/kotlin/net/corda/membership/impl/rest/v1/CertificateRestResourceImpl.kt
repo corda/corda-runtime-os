@@ -358,8 +358,10 @@ class CertificateRestResourceImpl @Activate constructor(
                 alias
             )
         }.also {
-            logger.info("End get certificate chain for alias $alias at ${Instant.now()}. " +
-                    "Duration: ${Instant.now().toEpochMilli() - startTime.toEpochMilli()} ms")
+            logger.info(
+                "End get certificate chain for alias $alias at ${Instant.now()}. " +
+                    "Duration: ${Instant.now().toEpochMilli() - startTime.toEpochMilli()} ms"
+            )
         } ?: throw ResourceNotFoundException(alias, "alias")
     }
 
