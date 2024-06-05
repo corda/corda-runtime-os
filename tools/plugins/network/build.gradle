@@ -13,8 +13,6 @@ group 'net.corda.cli.deployment'
 ext.cordaEnableFormatting = true
 
 dependencies {
-    compileOnly "net.corda.cli.host:api:$pluginHostVersion"
-
     implementation libs.jackson.module.kotlin
     implementation libs.jackson.datatype.jsr310
     implementation libs.snakeyaml

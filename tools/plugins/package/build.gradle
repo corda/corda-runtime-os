@@ -11,8 +11,6 @@ ext {
 group 'net.corda.cli.deployment'
 
 dependencies {
-    compileOnly "net.corda.cli.host:api:$pluginHostVersion"
-
     implementation project(':libs:packaging:packaging-verify')
     implementation project(':libs:corda-sdk')
     implementation project(':libs:membership:schema-validation')
@@ -23,26 +21,4 @@ dependencies {
     testImplementation project(":testing:packaging-test-utilities")
 
     testRuntimeOnly libs.log4j.slf4j
-}
-
-cliPlugin {
-    cliPluginClass = 'net.corda.cli.plugins.packaging.PackagePluginWrapper'
-    cliPluginDescription = 'Plugin for CPB and CPI operations.'
-}
-
-tasks.named("installDist") {
-    dependsOn cliPlugin
-    def homePath = System.properties['user.home']
-    from cliPlugin
-    into "$homePath/.corda/cli/plugins"
-}
-
-publishing {
-    publications {
-        maven(MavenPublication) {
-            artifactId "${cliPlugin.cliPluginId.get()}-cli-plugin"
-            groupId project.group
-            artifact cliPluginTask
-        }
-    }
 }
