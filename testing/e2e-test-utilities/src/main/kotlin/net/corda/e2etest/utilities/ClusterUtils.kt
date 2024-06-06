@@ -31,7 +31,6 @@ val signingCertLock = ReentrantLock()
 fun ClusterInfo.conditionallyUploadCpiSigningCertificate() = cluster {
     signingCertLock.withLock {
         val hasCertificateChain = assertWithRetryIgnoringExceptions {
-            timeout(30.seconds)
             interval(1.seconds)
             command { getCertificateChain(CODE_SIGNER_CERT_USAGE, CODE_SIGNER_CERT_ALIAS) }
             condition {
