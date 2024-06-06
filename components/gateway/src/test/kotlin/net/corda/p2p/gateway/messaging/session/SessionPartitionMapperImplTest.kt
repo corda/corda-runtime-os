@@ -58,7 +58,7 @@ class SessionPartitionMapperImplTest {
             "2" to SessionPartitions(listOf(3, 4))
         )
 
-        val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, config)
+        val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, mock(), config)
         doReturn(true).whenever(dominoTile.constructed().last()).isRunning
 
         processor.firstValue.onSnapshot(partitionsMapping)
@@ -75,7 +75,7 @@ class SessionPartitionMapperImplTest {
     @Test
     fun `getPartitions cannot be invoked, when component is not running`() {
         val sessionId = "test-session-id"
-        val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, config)
+        val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, mock(), config)
 
         assertThatThrownBy { sessionPartitionMapper.getPartitions(sessionId) }
             .isInstanceOf(IllegalStateException::class.java)
@@ -92,7 +92,7 @@ class SessionPartitionMapperImplTest {
 
     @Test
     fun `onSnapshot will complete the resource created future`() {
-        val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, config)
+        val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, mock(), config)
 
         processor.firstValue.onSnapshot(emptyMap())
         assertThat(sessionPartitionMapper.future.isDone).isTrue
@@ -101,7 +101,7 @@ class SessionPartitionMapperImplTest {
 
     @Test
     fun `empty record will remove the partition`() {
-        val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, config)
+        val sessionPartitionMapper = SessionPartitionMapperImpl(factory, subscriptionFactory, mock(), config)
         doReturn(true).whenever(dominoTile.constructed().last()).isRunning
         processor.firstValue.onSnapshot(mapOf("session" to SessionPartitions(listOf(3))))
 

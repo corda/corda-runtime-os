@@ -1,5 +1,6 @@
 package net.corda.lifecycle.domino.logic.util
 
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -27,7 +28,9 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 
 class SubscriptionDominoTileBaseTest {
-
+    private companion object {
+        const val CONFIG_KEY = "configKey"
+    }
     private val subscriptionName = LifecycleCoordinatorName("sub-name", "1")
     private val subscriptionRegistration = mock<RegistrationHandle>()
     private val childrenOneRegistration = mock<RegistrationHandle>()
@@ -115,6 +118,7 @@ class SubscriptionDominoTileBaseTest {
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenOneRegistration, LifecycleStatus.UP), coordinator)
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenTwoRegistration, LifecycleStatus.UP), coordinator)
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenThreeRegistration, LifecycleStatus.UP), coordinator)
+        handler.lastValue.processEvent(ConfigChangedEvent(setOf(CONFIG_KEY), emptyMap()), coordinator)
         verify(subscription, times(1)).start()
         assertThat(subscriptionTile.isRunning).isFalse
 
@@ -127,6 +131,7 @@ class SubscriptionDominoTileBaseTest {
         val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, { subscription }, subscriptionConfig, emptySet(), emptySet())
 
         subscriptionTile.start()
+        handler.lastValue.processEvent(ConfigChangedEvent(setOf(CONFIG_KEY), emptyMap()), coordinator)
         verify(subscription, times(1)).start()
 
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenOneRegistration, LifecycleStatus.UP), coordinator)
@@ -151,6 +156,7 @@ class SubscriptionDominoTileBaseTest {
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenTwoRegistration, LifecycleStatus.UP), coordinator)
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenThreeRegistration, LifecycleStatus.UP), coordinator)
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.UP), coordinator)
+        handler.lastValue.processEvent(ConfigChangedEvent(setOf(CONFIG_KEY), emptyMap()), coordinator)
 
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenTwoRegistration, LifecycleStatus.DOWN), coordinator)
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenThreeRegistration, LifecycleStatus.DOWN), coordinator)
@@ -174,6 +180,7 @@ class SubscriptionDominoTileBaseTest {
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenTwoRegistration, LifecycleStatus.UP), coordinator)
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenThreeRegistration, LifecycleStatus.UP), coordinator)
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.UP), coordinator)
+        handler.lastValue.processEvent(ConfigChangedEvent(setOf(CONFIG_KEY), emptyMap()), coordinator)
 
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenTwoRegistration, LifecycleStatus.ERROR), coordinator)
         verify(coordinator, atLeast(1)).closeManagedResources(setOf(SubscriptionDominoTileBase.SUBSCRIPTION))
@@ -196,6 +203,7 @@ class SubscriptionDominoTileBaseTest {
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenTwoRegistration, LifecycleStatus.UP), coordinator)
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenThreeRegistration, LifecycleStatus.UP), coordinator)
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.UP), coordinator)
+        handler.lastValue.processEvent(ConfigChangedEvent(setOf(CONFIG_KEY), emptyMap()), coordinator)
 
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.ERROR), coordinator)
         assertThat(subscriptionTile.status).isEqualTo(LifecycleStatus.ERROR)
@@ -214,6 +222,7 @@ class SubscriptionDominoTileBaseTest {
         subscriptionConfig: SubscriptionConfig,
         dependentChildren: Collection<LifecycleCoordinatorName>,
         managedChildren: Collection<NamedLifecycle>
-    ): SubscriptionDominoTileBase(coordinatorFactory, subscription, subscriptionConfig, dependentChildren, managedChildren)
-
+    ): SubscriptionDominoTileBase(
+        coordinatorFactory, subscription, subscriptionConfig, mock(), CONFIG_KEY, dependentChildren, managedChildren
+    )
 }

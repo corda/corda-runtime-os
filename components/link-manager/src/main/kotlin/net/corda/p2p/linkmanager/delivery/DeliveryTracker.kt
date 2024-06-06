@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
+import net.corda.schema.configuration.ConfigKeys.P2P_LINK_MANAGER_CONFIG
 
 @Suppress("LongParameterList")
 internal class DeliveryTracker(
@@ -78,6 +79,8 @@ internal class DeliveryTracker(
         coordinatorFactory,
         messageTrackerSubscription,
         subscriptionConfig,
+        configReadService,
+        P2P_LINK_MANAGER_CONFIG,
         setOf(
             replayScheduler.dominoTile.coordinatorName,
             LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),

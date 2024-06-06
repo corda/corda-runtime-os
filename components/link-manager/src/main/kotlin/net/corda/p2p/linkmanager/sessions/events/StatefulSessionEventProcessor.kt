@@ -3,6 +3,7 @@ package net.corda.p2p.linkmanager.sessions.events
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.p2p.event.SessionCreated
 import net.corda.data.p2p.event.SessionDeleted
 import net.corda.data.p2p.event.SessionDirection
@@ -27,6 +28,7 @@ import net.corda.p2p.linkmanager.sessions.metadata.InboundSessionStatus
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionMetadata.Companion.toOutbound
 import net.corda.p2p.linkmanager.sessions.metadata.OutboundSessionStatus
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.ConfigKeys.P2P_LINK_MANAGER_CONFIG
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -37,7 +39,7 @@ internal class StatefulSessionEventProcessor(
     messagingConfiguration: SmartConfig,
     private val stateManager: StateManager,
     private val stateConvertor: StateConvertor,
-
+    configurationReadService: ConfigurationReadService,
     val sessionCache: SessionCache,
     private val sessionManagerImpl: SessionManagerImpl,
 ): LifecycleWithDominoTile {
@@ -152,6 +154,8 @@ internal class StatefulSessionEventProcessor(
         coordinatorFactory,
         sessionPartitionSubscription,
         subscriptionConfig,
+        configurationReadService,
+        P2P_LINK_MANAGER_CONFIG,
         emptySet(),
         emptySet()
     )

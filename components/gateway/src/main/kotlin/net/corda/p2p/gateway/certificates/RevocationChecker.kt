@@ -29,11 +29,14 @@ import java.security.cert.PKIXBuilderParameters
 import java.security.cert.PKIXRevocationChecker
 import java.security.cert.X509CertSelector
 import java.util.concurrent.CompletableFuture
+import net.corda.configuration.read.ConfigurationReadService
+import net.corda.schema.configuration.ConfigKeys.P2P_LINK_MANAGER_CONFIG
 
 class RevocationChecker(
     subscriptionFactory: SubscriptionFactory,
     messagingConfig: SmartConfig,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    configurationReadService: ConfigurationReadService,
     certificateFactory: CertificateFactory = CertificateFactory.getInstance(certificateFactoryType),
     certPathValidator: CertPathValidator = CertPathValidator.getInstance(certificateAlgorithm)
 ): LifecycleWithDominoTile {
@@ -148,6 +151,8 @@ class RevocationChecker(
         lifecycleCoordinatorFactory,
         subscription,
         subscriptionConfig,
+        configurationReadService,
+        P2P_LINK_MANAGER_CONFIG,
         emptySet(),
         emptySet()
     )

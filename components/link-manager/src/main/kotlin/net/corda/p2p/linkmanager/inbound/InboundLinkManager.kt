@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.inbound
 
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -11,6 +12,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.common.CommonComponents
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.ConfigKeys.P2P_LINK_MANAGER_CONFIG
 import net.corda.utilities.time.Clock
 
 @Suppress("LongParameterList")
@@ -22,6 +24,7 @@ internal class InboundLinkManager(
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
     clock: Clock,
+    configurationReadService: ConfigurationReadService
 ) : LifecycleWithDominoTile {
     companion object {
         private const val INBOUND_MESSAGE_PROCESSOR_GROUP = "inbound_message_processor_group"
@@ -46,6 +49,8 @@ internal class InboundLinkManager(
         lifecycleCoordinatorFactory,
         inboundMessageSubscription,
         subscriptionConfig,
+        configurationReadService,
+        P2P_LINK_MANAGER_CONFIG,
         dependentChildren = listOf(
             LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
             LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),

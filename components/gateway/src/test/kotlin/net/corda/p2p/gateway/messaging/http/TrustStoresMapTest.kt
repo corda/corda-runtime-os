@@ -80,6 +80,7 @@ class TrustStoresMapTest {
         lifecycleCoordinatorFactory,
         subscriptionFactory,
         nodeConfiguration,
+        mock(),
         certificateFactory
     )
 

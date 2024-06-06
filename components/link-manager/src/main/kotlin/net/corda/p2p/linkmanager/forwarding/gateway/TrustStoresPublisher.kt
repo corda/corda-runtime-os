@@ -24,12 +24,15 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
+import net.corda.configuration.read.ConfigurationReadService
+import net.corda.schema.configuration.ConfigKeys.P2P_LINK_MANAGER_CONFIG
 
 @Suppress("LongParameterList")
 internal class TrustStoresPublisher(
     subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    configurationReadService: ConfigurationReadService,
     messagingConfiguration: SmartConfig,
 ) : LifecycleWithDominoTile {
 
@@ -60,6 +63,8 @@ internal class TrustStoresPublisher(
         lifecycleCoordinatorFactory,
         subscription,
         subscriptionConfig,
+        configurationReadService,
+        P2P_LINK_MANAGER_CONFIG,
         emptyList(),
         emptyList(),
     )

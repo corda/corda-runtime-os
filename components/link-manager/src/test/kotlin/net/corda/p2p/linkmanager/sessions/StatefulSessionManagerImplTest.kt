@@ -112,6 +112,7 @@ class StatefulSessionManagerImplTest {
         mock(),
         coordinatorFactory,
         stateManager,
+        mock(),
         sessionManagerImpl,
         stateConvertor,
         clock,

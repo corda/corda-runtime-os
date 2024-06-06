@@ -19,11 +19,14 @@ import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import net.corda.configuration.read.ConfigurationReadService
+import net.corda.schema.configuration.ConfigKeys.P2P_LINK_MANAGER_CONFIG
 
 internal class TrustStoresMap(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
+    configurationReadService: ConfigurationReadService,
     private val certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
 ) :
     LifecycleWithDominoTile {
@@ -49,6 +52,8 @@ internal class TrustStoresMap(
         lifecycleCoordinatorFactory,
         subscription,
         subscriptionConfig,
+        configurationReadService,
+        P2P_LINK_MANAGER_CONFIG,
         emptyList(),
         emptyList()
     )

@@ -105,7 +105,8 @@ class LinkManagerHostingMapImplTest {
     private val testObject = LinkManagerHostingMapImpl(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
-        configuration
+        configuration,
+        mock()
     )
 
     @AfterEach

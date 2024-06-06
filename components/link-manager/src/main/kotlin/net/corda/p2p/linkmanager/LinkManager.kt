@@ -48,6 +48,7 @@ class LinkManager(
             lifecycleCoordinatorFactory,
             subscriptionFactory,
             messagingConfiguration,
+            configurationReaderService,
         ),
     clock: Clock = UTCClock()
 ) : LifecycleWithDominoTile {
@@ -97,7 +98,8 @@ class LinkManager(
         subscriptionFactory = subscriptionFactory,
         messagingConfiguration = messagingConfiguration,
         clock = clock,
-    )
+        configurationReadService = configurationReaderService,
+        )
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,

@@ -105,6 +105,7 @@ internal class CommonComponents(
             messagingConfiguration,
             lifecycleCoordinatorFactory,
             stateManager,
+            configurationReaderService,
             SessionManagerImpl(
                 groupPolicyProvider,
                 membershipGroupReaderProvider,
@@ -150,6 +151,7 @@ internal class CommonComponents(
         subscriptionFactory,
         publisherFactory,
         lifecycleCoordinatorFactory,
+        configurationReaderService,
         messagingConfiguration,
     ).also {
         groupPolicyProvider.registerListener(LISTENER_NAME) { holdingIdentity, groupPolicy ->
@@ -160,6 +162,7 @@ internal class CommonComponents(
     private val tlsCertificatesPublisher = TlsCertificatesPublisher(
         subscriptionFactory,
         publisherFactory,
+        configurationReaderService,
         lifecycleCoordinatorFactory,
         messagingConfiguration,
     ).also {
@@ -172,6 +175,7 @@ internal class CommonComponents(
         lifecycleCoordinatorFactory,
         messagingConfiguration,
         groupPolicyProvider,
+        configurationReaderService,
     )
 
     private val externalDependencies = listOf(

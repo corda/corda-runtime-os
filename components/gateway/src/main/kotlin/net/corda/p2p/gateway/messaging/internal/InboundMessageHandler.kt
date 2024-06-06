@@ -85,11 +85,13 @@ internal class InboundMessageHandler(
     private val sessionPartitionMapper = SessionPartitionMapperImpl(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
-        messagingConfiguration
+        configurationReaderService,
+        messagingConfiguration,
     )
 
     private val dynamicCertificateSubjectStore = DynamicCertificateSubjectStore(
         lifecycleCoordinatorFactory,
+        configurationReaderService,
         subscriptionFactory,
         messagingConfiguration
     )

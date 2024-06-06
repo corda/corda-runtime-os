@@ -60,6 +60,7 @@ import java.security.MessageDigest
 import java.time.Duration
 import java.util.Base64
 import java.util.UUID
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage as AvroInitiatorHandshakeMessage
 import net.corda.data.p2p.crypto.InitiatorHelloMessage as AvroInitiatorHelloMessage
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage as AvroResponderHandshakeMessage
@@ -72,6 +73,7 @@ internal class StatefulSessionManagerImpl(
     messagingConfig: SmartConfig,
     coordinatorFactory: LifecycleCoordinatorFactory,
     stateManager: StateManager,
+    configurationReadService: ConfigurationReadService,
     private val sessionManagerImpl: SessionManagerImpl,
     private val stateConvertor: StateConvertor,
     private val clock: Clock,
@@ -1183,6 +1185,7 @@ internal class StatefulSessionManagerImpl(
         messagingConfig,
         stateManager,
         stateConvertor,
+        configurationReadService,
         sessionCache,
         sessionManagerImpl,
     )

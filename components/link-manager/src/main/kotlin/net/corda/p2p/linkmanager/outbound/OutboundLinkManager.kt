@@ -19,6 +19,7 @@ import net.corda.p2p.linkmanager.delivery.DeliveryTracker
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock
 import java.util.concurrent.Executors
+import net.corda.schema.configuration.ConfigKeys.P2P_LINK_MANAGER_CONFIG
 
 @Suppress("LongParameterList")
 internal class OutboundLinkManager(
@@ -83,6 +84,8 @@ internal class OutboundLinkManager(
         lifecycleCoordinatorFactory,
         outboundMessageSubscription,
         subscriptionConfig,
+        configurationReaderService,
+        P2P_LINK_MANAGER_CONFIG,
         dependentChildren = listOf(
             deliveryTracker.dominoTile.coordinatorName,
             commonComponents.dominoTile.coordinatorName,

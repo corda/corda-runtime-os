@@ -23,11 +23,14 @@ import net.corda.virtualnode.toCorda
 import java.nio.ByteBuffer
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import net.corda.configuration.read.ConfigurationReadService
+import net.corda.schema.configuration.ConfigKeys.P2P_LINK_MANAGER_CONFIG
 
 internal class LinkManagerHostingMapImpl(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
     configuration: SmartConfig,
+    configurationReadService: ConfigurationReadService,
 ) : LinkManagerHostingMap {
     companion object {
         private const val GROUP_NAME = "linkmanager_stub_hosting_map"
@@ -57,6 +60,8 @@ internal class LinkManagerHostingMapImpl(
         lifecycleCoordinatorFactory,
         subscription,
         subscriptionConfig,
+        configurationReadService = configurationReadService,
+        configKey = P2P_LINK_MANAGER_CONFIG,
         emptyList(),
         emptyList(),
     )
