@@ -113,7 +113,7 @@ dependencies {
     integrationTestRuntimeOnly project(":components:crypto:crypto-client-impl")
     integrationTestRuntimeOnly project(":components:membership:membership-group-read-impl")
     integrationTestRuntimeOnly project(":components:membership:membership-persistence-client-impl")
-    integrationTestRuntimeOnly project(':libs:slf4jv1')
+    integrationTestRuntimeOnly project(':testing:slf4jv1')
 
     testRuntimeOnly "com.lmax:disruptor:$disruptorVersion"
     testRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"

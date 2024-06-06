@@ -79,7 +79,7 @@ dependencies {
     dbIntegrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     dbIntegrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     dbIntegrationTestRuntimeOnly libs.postgresql.jdbc
-    dbIntegrationTestRuntimeOnly project(':libs:slf4jv1')
+    dbIntegrationTestRuntimeOnly project(':testing:slf4jv1')
 }
 
 def testingBundle = tasks.register('testingBundle', Bundle) {

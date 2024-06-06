@@ -74,7 +74,7 @@ dependencies {
     integrationTestRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
         exclude group: 'org.osgi'
     }
-    integrationTestRuntimeOnly project(':libs:slf4jv1')
+    integrationTestRuntimeOnly project(':testing:slf4jv1')
 }
 
 def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {

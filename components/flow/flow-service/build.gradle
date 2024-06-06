@@ -94,7 +94,7 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:state-manager:state-manager-db-impl')
     integrationTestRuntimeOnly project(':components:membership:membership-group-read-impl')
     integrationTestRuntimeOnly project(':components:virtual-node:cpk-read-service-impl')
-    integrationTestRuntimeOnly project(':libs:slf4jv1')
+    integrationTestRuntimeOnly project(':testing:slf4jv1')
 
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
 }
