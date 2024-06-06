@@ -14,7 +14,7 @@ plugins {
 description 'SLF4J V1 package exports'
 
 dependencies {
-    api testing.slf4j.api
+    api libs.slf4j.api
 }
 
 tasks.named('jar', Jar) {
