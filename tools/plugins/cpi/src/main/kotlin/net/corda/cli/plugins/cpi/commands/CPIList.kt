@@ -26,6 +26,7 @@ class CPIList : RestCommand(), Runnable {
     }
 
     override fun run() {
+        super.run()
         val restClient = CordaRestClient.createHttpClient(
             baseUrl = URI.create(targetUrl),
             username = username,

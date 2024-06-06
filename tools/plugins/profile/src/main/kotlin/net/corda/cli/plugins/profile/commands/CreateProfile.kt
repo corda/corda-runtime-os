@@ -26,7 +26,11 @@ class CreateProfile : Runnable {
     @Option(names = ["-n", "--name"], description = ["Profile name"], required = true)
     lateinit var profileName: String
 
-    @Option(names = ["-p", "--property"], description = ["Profile property (key=value)"], required = true)
+    @Option(
+        names = ["-p", "--property"],
+        description = ["Profile property (key=value). Valid keys are: ${ProfileKey.CONST_KEYS_WITH_DESCRIPTIONS}"],
+        required = true
+    )
     lateinit var properties: Array<String>
 
     private val secretEncryptionUtil = SecretEncryptionUtil()
@@ -49,7 +53,7 @@ class CreateProfile : Runnable {
         properties.forEach { property ->
             val (key, value) = property.split("=")
             if (!ProfileKey.isValidKey(key)) {
-                val error = "Invalid key '$key'. Allowed keys are:\n ${ProfileKey.getKeysWithDescriptions()}"
+                val error = "Invalid key '$key'. Allowed keys are:\n ${ProfileKey.CONST_KEYS_WITH_DESCRIPTIONS}"
                 sysErr.error(error)
                 throw IllegalArgumentException(error)
             }

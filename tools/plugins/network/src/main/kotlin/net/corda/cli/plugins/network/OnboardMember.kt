@@ -179,6 +179,7 @@ class OnboardMember : Runnable, BaseOnboard() {
     }
 
     override fun run() {
+        super.run()
         verifyAndPrintError {
             println("Onboarding member '$name'.")
 

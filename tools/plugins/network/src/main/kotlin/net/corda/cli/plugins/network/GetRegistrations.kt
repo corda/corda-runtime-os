@@ -82,6 +82,7 @@ class GetRegistrations(private val output: Output = ConsoleOutput()) :
     }
 
     override fun run() {
+        super.run()
         verifyAndPrintError {
             printJsonOutput(getRegistrations(), output)
         }

@@ -25,7 +25,10 @@ class UpdateProfile : Runnable {
     @Option(names = ["-n", "--name"], description = ["Profile name"], required = true)
     lateinit var profileName: String
 
-    @Option(names = ["-p", "--property"], description = ["Profile property (key=value)"])
+    @Option(
+        names = ["-p", "--property"],
+        description = ["Profile property (key=value). Valid keys are: ${ProfileKey.CONST_KEYS_WITH_DESCRIPTIONS}"],
+    )
     var properties: Array<String> = emptyArray()
 
     private val secretEncryptionUtil = SecretEncryptionUtil()
@@ -34,7 +37,7 @@ class UpdateProfile : Runnable {
     private fun processProperty(profile: MutableMap<String, String>, property: String) {
         val (key, value) = property.split("=")
         if (!ProfileKey.isValidKey(key)) {
-            val error = "Invalid key '$key'. Allowed keys are:\n ${ProfileKey.getKeysWithDescriptions()}"
+            val error = "Invalid key '$key'. Allowed keys are:\n ${ProfileKey.CONST_KEYS_WITH_DESCRIPTIONS}"
             sysErr.error(error)
             throw IllegalArgumentException(error)
         }

@@ -21,6 +21,7 @@ const val VNODE_CREATOR_ROLE = "VNodeCreatorRole"
 class VNodeCreatorSubcommand : RestCommand(), Callable<Int> {
 
     override fun call(): Int {
+        super.call()
         return checkOrCreateRole(VNODE_CREATOR_ROLE, vNodeCreator)
     }
 }

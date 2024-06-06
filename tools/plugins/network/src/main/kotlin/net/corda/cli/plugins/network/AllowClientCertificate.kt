@@ -38,6 +38,7 @@ class AllowClientCertificate : Runnable, RestCommand() {
     var subjects: Collection<MemberX500Name> = emptyList()
 
     override fun run() {
+        super.run()
         verifyAndPrintError {
             allowAndListCertificates()
         }

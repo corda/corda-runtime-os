@@ -131,6 +131,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
     }
 
     override fun run() {
+        super.run()
         verifyAndPrintError {
             println("Onboarding MGM '$name'.")
 
