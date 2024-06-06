@@ -3,7 +3,6 @@ package net.corda.lifecycle.domino.logic.util
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
-import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -43,6 +42,7 @@ import org.slf4j.LoggerFactory
  * they are all up).
  * @param managedChildren the children that the class will start, when it is started.
  */
+@Suppress("LongParameterList")
 abstract class SubscriptionDominoTileBase(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val subscriptionGenerator: () -> SubscriptionBase,

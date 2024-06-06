@@ -8,6 +8,7 @@ import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 
+@Suppress("LongParameterList")
 class RPCSubscriptionDominoTile<REQUEST, RESPONSE>(
     coordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionGenerator: () -> RPCSubscription<REQUEST, RESPONSE>,

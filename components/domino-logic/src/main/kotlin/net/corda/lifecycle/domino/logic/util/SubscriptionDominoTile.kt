@@ -7,6 +7,7 @@ import net.corda.lifecycle.domino.logic.NamedLifecycle
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 
+@Suppress("LongParameterList")
 class SubscriptionDominoTile<K, V>(
     coordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionGenerator: () -> Subscription<K, V>,
