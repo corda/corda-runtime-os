@@ -5,7 +5,7 @@ import net.corda.blobinspector.amqp.DynamicDescriptorRegistry
 import net.corda.blobinspector.amqp.Envelope
 import net.corda.blobinspector.kryo.KryoSerializationFormatDecoder
 import net.corda.blobinspector.metadata.MetadataSerializationFormatDecoder
-import org.xerial.snappy.SnappyFramedInputStream
+import org.iq80.snappy.SnappyFramedInputStream
 import java.io.InputStream
 import java.util.zip.DeflaterInputStream
 

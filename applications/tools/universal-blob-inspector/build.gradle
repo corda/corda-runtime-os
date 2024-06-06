@@ -12,7 +12,7 @@ dependencies {
     implementation "org.apache.qpid:proton-j:$protonjVersion"
 
     // Snappy (de)compression
-    implementation libs.snappy.java
+    implementation "org.iq80.snappy:snappy:$snappyVersion"
 
     // Command line parsing
     implementation "info.picocli:picocli:$picocliVersion"
