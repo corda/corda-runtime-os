@@ -102,8 +102,9 @@ private def addSystemPackagesExtra(
                     mainAttributes.getValue(EXPORT_PACKAGE)?.with { exportPackage ->
                         aQute.bnd.header.OSGiHeader.parseHeader(exportPackage).each { exportEntry ->
 
+                            // Remove the character tilde from the `slf4j` key
                             def key = exportEntry.key
-                            if (exportEntry.key.endsWith("~")) {
+                            if (key.contains("slf4j") && key.endsWith("~")) {
                                 key = exportEntry.key.substring(0, exportEntry.key.length() - 1)
                             }
                             final def export = key + ";" + exportEntry.value.toString()
