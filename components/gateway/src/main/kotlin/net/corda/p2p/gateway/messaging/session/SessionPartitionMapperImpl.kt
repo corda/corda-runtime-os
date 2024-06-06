@@ -16,7 +16,6 @@ import net.corda.utilities.VisibleForTesting
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 
 class SessionPartitionMapperImpl(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
@@ -47,7 +46,6 @@ class SessionPartitionMapperImpl(
         sessionPartitionSubscription,
         subscriptionConfig,
         configurationReadService,
-        P2P_GATEWAY_CONFIG,
         emptySet(),
         emptySet()
     )

@@ -48,7 +48,6 @@ abstract class SubscriptionDominoTileBase(
     private val subscriptionGenerator: () -> SubscriptionBase,
     private val subscriptionConfig: SubscriptionConfig,
     private val configurationReadService: ConfigurationReadService,
-    private val configKey: String,
     final override val dependentChildren: Collection<LifecycleCoordinatorName>,
     final override val managedChildren: Collection<NamedLifecycle>
 ): DominoTile() {

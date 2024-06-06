@@ -30,7 +30,6 @@ import java.security.cert.PKIXRevocationChecker
 import java.security.cert.X509CertSelector
 import java.util.concurrent.CompletableFuture
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.schema.configuration.ConfigKeys.P2P_LINK_MANAGER_CONFIG
 
 @Suppress("LongParameterList")
 class RevocationChecker(
@@ -153,7 +152,6 @@ class RevocationChecker(
         subscription,
         subscriptionConfig,
         configurationReadService,
-        P2P_LINK_MANAGER_CONFIG,
         emptySet(),
         emptySet()
     )

@@ -13,9 +13,8 @@ class StateAndEventSubscriptionDominoTile<K, S, E>(
     subscriptionGenerator: () -> StateAndEventSubscription<K, S, E>,
     subscriptionConfig: SubscriptionConfig,
     configurationReadService: ConfigurationReadService,
-    configKey: String,
     dependentChildren: Collection<LifecycleCoordinatorName>,
     managedChildren: Collection<NamedLifecycle>
 ): SubscriptionDominoTileBase(
-    coordinatorFactory, subscriptionGenerator, subscriptionConfig, configurationReadService, configKey, dependentChildren, managedChildren
+    coordinatorFactory, subscriptionGenerator, subscriptionConfig, configurationReadService, dependentChildren, managedChildren
 )

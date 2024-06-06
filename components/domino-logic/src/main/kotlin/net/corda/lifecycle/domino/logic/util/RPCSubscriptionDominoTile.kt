@@ -14,7 +14,6 @@ class RPCSubscriptionDominoTile<REQUEST, RESPONSE>(
     subscriptionGenerator: () -> RPCSubscription<REQUEST, RESPONSE>,
     rpcConfig: RPCConfig<REQUEST, RESPONSE>,
     configurationReadService: ConfigurationReadService,
-    configKey: String,
     dependentChildren: Collection<LifecycleCoordinatorName>,
     managedChildren: Collection<NamedLifecycle>
 ) : SubscriptionDominoTileBase(
@@ -22,7 +21,6 @@ class RPCSubscriptionDominoTile<REQUEST, RESPONSE>(
     subscriptionGenerator,
     SubscriptionConfig(rpcConfig.groupName, rpcConfig.clientName),
     configurationReadService,
-    configKey,
     dependentChildren,
     managedChildren
 )

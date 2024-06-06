@@ -12,7 +12,6 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.common.CommonComponents
 import net.corda.schema.Schemas
-import net.corda.schema.configuration.ConfigKeys.P2P_LINK_MANAGER_CONFIG
 import net.corda.utilities.time.Clock
 
 @Suppress("LongParameterList")
@@ -50,7 +49,6 @@ internal class InboundLinkManager(
         inboundMessageSubscription,
         subscriptionConfig,
         configurationReadService,
-        P2P_LINK_MANAGER_CONFIG,
         dependentChildren = listOf(
             LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
             LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),

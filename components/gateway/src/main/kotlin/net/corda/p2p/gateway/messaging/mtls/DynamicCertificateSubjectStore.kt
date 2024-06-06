@@ -13,7 +13,6 @@ import net.corda.schema.Schemas
 import net.corda.v5.base.types.MemberX500Name
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 
 internal class DynamicCertificateSubjectStore(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
@@ -39,7 +38,6 @@ internal class DynamicCertificateSubjectStore(
         subscription,
         subscriptionConfig,
         configurationReadService,
-        P2P_GATEWAY_CONFIG,
         emptyList(),
         emptyList(),
     )

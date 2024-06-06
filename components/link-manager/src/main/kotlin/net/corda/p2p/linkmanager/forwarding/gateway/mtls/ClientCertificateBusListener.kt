@@ -11,7 +11,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.P2P.GATEWAY_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS
-import net.corda.schema.configuration.ConfigKeys.P2P_LINK_MANAGER_CONFIG
 
 @Suppress("LongParameterList")
 internal class ClientCertificateBusListener<T : Any> private constructor(
@@ -53,7 +52,6 @@ internal class ClientCertificateBusListener<T : Any> private constructor(
                 managedChildren = emptyList(),
                 dependentChildren = emptyList(),
                 configurationReadService = configurationReadService,
-                configKey = P2P_LINK_MANAGER_CONFIG,
                 subscriptionGenerator = {
                     subscriptionFactory.createDurableSubscription(
                         subscriptionConfig = subscriptionConfig,

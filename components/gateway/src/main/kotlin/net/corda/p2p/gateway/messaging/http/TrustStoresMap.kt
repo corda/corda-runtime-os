@@ -20,7 +20,6 @@ import java.security.cert.CertificateFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.schema.configuration.ConfigKeys.P2P_LINK_MANAGER_CONFIG
 
 internal class TrustStoresMap(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
@@ -53,7 +52,6 @@ internal class TrustStoresMap(
         subscription,
         subscriptionConfig,
         configurationReadService,
-        P2P_LINK_MANAGER_CONFIG,
         emptyList(),
         emptyList()
     )

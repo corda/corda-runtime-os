@@ -13,9 +13,8 @@ class SubscriptionDominoTile<K, V>(
     subscriptionGenerator: () -> Subscription<K, V>,
     subscriptionConfig: SubscriptionConfig,
     configurationReadService: ConfigurationReadService,
-    configKey: String,
     dependentChildren: Collection<LifecycleCoordinatorName>,
     managedChildren: Collection<NamedLifecycle>
 ) : SubscriptionDominoTileBase(
-    coordinatorFactory, subscriptionGenerator, subscriptionConfig, configurationReadService, configKey, dependentChildren, managedChildren
+    coordinatorFactory, subscriptionGenerator, subscriptionConfig, configurationReadService, dependentChildren, managedChildren
 )

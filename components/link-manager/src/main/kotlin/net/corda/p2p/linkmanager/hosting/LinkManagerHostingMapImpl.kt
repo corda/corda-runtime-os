@@ -24,7 +24,6 @@ import java.nio.ByteBuffer
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.schema.configuration.ConfigKeys.P2P_LINK_MANAGER_CONFIG
 
 internal class LinkManagerHostingMapImpl(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
@@ -61,7 +60,6 @@ internal class LinkManagerHostingMapImpl(
         subscription,
         subscriptionConfig,
         configurationReadService = configurationReadService,
-        configKey = P2P_LINK_MANAGER_CONFIG,
         emptyList(),
         emptyList(),
     )

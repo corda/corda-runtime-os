@@ -41,7 +41,6 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
-import net.corda.schema.configuration.ConfigKeys.P2P_LINK_MANAGER_CONFIG
 
 /**
  * This is an implementation of an [PubSubProcessor] used to consume messages from a P2P message subscription. The received
@@ -84,7 +83,6 @@ internal class OutboundMessageHandler(
         outboundSubscription,
         subscriptionConfig,
         configurationReaderService,
-        P2P_LINK_MANAGER_CONFIG,
         setOf(connectionManager.dominoTile.coordinatorName, gatewayConfigReader.dominoTile.coordinatorName),
         setOf(connectionManager.dominoTile.toNamedLifecycle(), gatewayConfigReader.dominoTile.toNamedLifecycle())
     )
