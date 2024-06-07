@@ -558,6 +558,45 @@ class StateAndEventSubscriptionImplTest {
         verify(producer, never()).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, never()).commitTransaction()
         verify(chunkSerializerService, never()).getChunkKeysToClear(any(), anyOrNull(), anyOrNull())
+    }
+
+    @Test
+    fun `repartition during batch processing results in a reset of the event offset position`() {
+        val (builder, _, stateAndEventConsumer) = setupMocks(0)
+        val records = mutableListOf<CordaConsumerRecord<String, String>>()
+        records.add(CordaConsumerRecord(TOPIC, 1, 1, "key1", "value1", 1))
+
+        var callCount = 0
+        doAnswer {
+            when (callCount++) {
+                0 ->
+                    records
+                else ->
+                    mutableListOf()
+            }
+        }.whenever(stateAndEventConsumer).pollEvents()
+        doThrow(StateAndEventConsumer.RebalanceInProgressException("test"))
+            .whenever(stateAndEventConsumer).resetPollInterval()
+
+        val subscription = StateAndEventSubscriptionImpl<Any, Any, Any>(
+            config,
+            builder,
+            mock(),
+            cordaAvroSerializer,
+            lifecycleCoordinatorFactory,
+            chunkSerializerService
+        )
+
+        subscription.start()
+
+        /**
+         * wait for a second poll to be called before we complete
+         * as we need to be sure the first poll has completed processing
+         * before we go to the asserts
+         */
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning && callCount <= 1 }
+        subscription.close()
+
         verify(stateAndEventConsumer, times(1)).resetEventOffsetPosition()
     }
 }
