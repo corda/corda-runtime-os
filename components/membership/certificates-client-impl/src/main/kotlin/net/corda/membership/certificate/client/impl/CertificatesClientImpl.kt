@@ -178,7 +178,7 @@ class CertificatesClientImpl @Activate constructor(
             ).getOrThrow()?.response.also {
                 logger.info(
                     "End send request for certificate chain $payload at ${Instant.now()}. " +
-                            "Duration: ${Instant.now().toEpochMilli() - startTime.toEpochMilli()} ms"
+                        "Duration: ${Instant.now().toEpochMilli() - startTime.toEpochMilli()} ms"
                 )
             } as? R
         }
