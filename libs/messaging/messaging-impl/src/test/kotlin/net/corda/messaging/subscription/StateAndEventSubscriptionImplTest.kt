@@ -528,7 +528,7 @@ class StateAndEventSubscriptionImplTest {
                 else ->
                     mutableListOf()
             }
-        }.whenever(eventConsumer).poll(any())
+        }.whenever(stateAndEventConsumer).pollEvents()
         doThrow(StateAndEventConsumer.RebalanceInProgressException("test"))
             .whenever(stateAndEventConsumer).resetPollInterval()
 
