@@ -43,6 +43,8 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
+import java.time.Instant
 
 @Suppress("LongParameterList")
 @Component(service = [CertificatesClient::class])
@@ -74,6 +76,7 @@ class CertificatesClientImpl @Activate constructor(
         const val GROUP_NAME = "membership.db.certificates.client.group"
         const val CLIENT_NAME = "membership.db.certificates.client"
         const val PUBLISHER_NAME = "membership.certificates.publisher"
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private var sender: RPCSender<CertificateRpcRequest, CertificateRpcResponse>? = null
@@ -164,13 +167,20 @@ class CertificatesClientImpl @Activate constructor(
                 virtualNodeInfoReadService.getByHoldingIdentityShortHash(it)?.holdingIdentity
                     ?: throw ResourceNotFoundException("holdingIdentityId", it.value)
             }
+            val startTime = Instant.now()
+            logger.info("Send request for certificate chain $payload at $startTime")
             currentSender.sendRequest(
                 CertificateRpcRequest(
                     usage,
                     holdingIdentityId?.value,
                     payload,
                 )
-            ).getOrThrow()?.response as? R
+            ).also {
+                logger.info(
+                    "End send request for certificate chain $payload at ${Instant.now()}. " +
+                        "Duration: ${Instant.now().toEpochMilli() - startTime.toEpochMilli()} ms"
+                )
+            }.getOrThrow()?.response as? R
         }
     }
 
