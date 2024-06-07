@@ -1,5 +1,7 @@
 package net.corda.lifecycle.domino.logic.util
 
+import net.corda.configuration.read.ConfigurationHandler
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -84,6 +86,25 @@ class SubscriptionDominoTileBaseTest {
     }
 
     @Test
+    fun `subscription tile registers for config updates when started`() {
+        val configReadService = mock<ConfigurationReadService>()
+        val subscriptionTile = SubscriptionDominoTile(
+            coordinatorFactory,
+            { subscription },
+            subscriptionConfig,
+            emptySet(),
+            emptySet(),
+            configurationReadService = configReadService
+        )
+
+        var argumentCaptor = argumentCaptor<ConfigurationHandler>()
+        subscriptionTile.start()
+        verify(configReadService).registerForUpdates(argumentCaptor.capture())
+        argumentCaptor.lastValue.onNewConfiguration(emptySet(), emptyMap())
+        verify(coordinator).postEvent(ConfigPublished)
+    }
+
+    @Test
     fun `subscription tile stops all managed children when stopped`() {
         val subscriptionTile = SubscriptionDominoTile(
             coordinatorFactory,
@@ -100,7 +121,7 @@ class SubscriptionDominoTileBaseTest {
     }
 
     @Test
-    fun `subscription tile waits for dependent children before starting the subscription`() {
+    fun `subscription tile waits for dependent children and config before starting the subscription`() {
         val subscriptionTile = SubscriptionDominoTile(
             coordinatorFactory,
             { subscription },
@@ -124,7 +145,32 @@ class SubscriptionDominoTileBaseTest {
     }
 
     @Test
-    fun `if there are no dependent children, subscription is started immediately`() {
+    fun `subscription tile waits for config and then dependent children before starting the subscription`() {
+        val subscriptionTile = SubscriptionDominoTile(
+            coordinatorFactory,
+            { subscription },
+            subscriptionConfig,
+            children.map { it.coordinatorName },
+            children.map { it.toNamedLifecycle() }
+        )
+
+        subscriptionTile.start()
+        verify(subscription, never()).start()
+
+        handler.lastValue.processEvent(ConfigPublished, coordinator)
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenOneRegistration, LifecycleStatus.UP), coordinator)
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenTwoRegistration, LifecycleStatus.UP), coordinator)
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenThreeRegistration, LifecycleStatus.UP), coordinator)
+        verify(subscription, times(1)).start()
+        assertThat(subscriptionTile.isRunning).isFalse
+
+        handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.UP), coordinator)
+        assertThat(subscriptionTile.isRunning).isTrue
+    }
+
+
+    @Test
+    fun `if there are no dependent children, subscription is started once config is published`() {
         val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, { subscription }, subscriptionConfig, emptySet(), emptySet())
 
         subscriptionTile.start()
@@ -213,13 +259,15 @@ class SubscriptionDominoTileBaseTest {
         }
     }
 
+    @Suppress("LongParameterList")
     class SubscriptionDominoTile<K, V>(
         coordinatorFactory: LifecycleCoordinatorFactory,
         subscription: () -> Subscription<K, V>,
         subscriptionConfig: SubscriptionConfig,
         dependentChildren: Collection<LifecycleCoordinatorName>,
-        managedChildren: Collection<NamedLifecycle>
+        managedChildren: Collection<NamedLifecycle>,
+        configurationReadService: ConfigurationReadService = mock(),
     ): SubscriptionDominoTileBase(
-        coordinatorFactory, subscription, subscriptionConfig, mock(), dependentChildren, managedChildren
+        coordinatorFactory, subscription, subscriptionConfig, configurationReadService, dependentChildren, managedChildren
     )
 }
