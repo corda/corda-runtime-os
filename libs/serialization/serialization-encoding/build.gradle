@@ -33,6 +33,7 @@ Bundle-Name: Corda serialization encoding library
 Bundle-SymbolicName: \${project.group}.serialization.encoding
 Import-Package:\
     !org.apache.hadoop.io.compress,\
+    !org.apache.hadoop.conf,\
     sun.misc;resolution:=optional,\
     *
 -includeresource: @snappy-${snappyVersion}.jar
