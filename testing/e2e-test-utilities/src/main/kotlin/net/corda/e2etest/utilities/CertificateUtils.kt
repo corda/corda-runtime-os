@@ -31,14 +31,14 @@ fun ClusterInfo.generateCsr(
         interval(1.seconds)
         if (restApiVersion == RestApiVersion.C5_0) {
             command {
-                post(
+                initialClient.post(
                     "/api/${RestApiVersion.C5_0.versionPath}/certificates/$tenantId/$keyId",
                     ObjectMapper().writeValueAsString(payload)
                 )
             }
         } else {
             command {
-                post(
+                vNodeCreatorClient.post(
                     "/api/${restApiVersion.versionPath}/certificate/$tenantId/$keyId",
                     ObjectMapper().writeValueAsString(payload)
                 )
