@@ -48,7 +48,7 @@ class ProfilePluginTest {
     fun `test create profile`() {
         val createProfile = CreateProfile()
         createProfile.profileName = "test-profile"
-        createProfile.properties = arrayOf("rest_endpoint=http://localhost:1234", "rest_username=testuser", "rest_password=testpassword")
+        createProfile.properties = setOf("rest_endpoint=http://localhost:1234", "rest_username=testuser", "rest_password=testpassword")
 
         createProfile.run()
 
@@ -76,7 +76,7 @@ class ProfilePluginTest {
 
         val createProfile = CreateProfile()
         createProfile.profileName = "test-profile"
-        createProfile.properties = arrayOf(
+        createProfile.properties = setOf(
             "rest_endpoint=http://localhost:5678",
             "rest_username=newuser",
             "rest_password=newpassword",
@@ -98,7 +98,7 @@ class ProfilePluginTest {
     fun `test create profile with invalid key`() {
         val createProfile = CreateProfile()
         createProfile.profileName = "test-profile"
-        createProfile.properties = arrayOf("rest_endpoint=http://localhost:1234", "invalid_key=value")
+        createProfile.properties = setOf("rest_endpoint=http://localhost:1234", "invalid_key=value")
 
         val exception = assertThrows(IllegalArgumentException::class.java) {
             createProfile.run()
@@ -128,7 +128,7 @@ class ProfilePluginTest {
 
         val updateProfile = UpdateProfile()
         updateProfile.profileName = "test-profile"
-        updateProfile.properties = arrayOf(
+        updateProfile.properties = setOf(
             "rest_username=updateduser",
             "rest_password=updatedpassword",
         )

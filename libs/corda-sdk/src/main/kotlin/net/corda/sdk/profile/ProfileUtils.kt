@@ -8,6 +8,7 @@ import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import net.corda.libs.configuration.secret.SecretEncryptionUtil
 import java.io.File
 import java.io.IOException
+import java.util.UUID
 
 data class CliProfile(val properties: Map<String, String>)
 
@@ -80,6 +81,28 @@ object ProfileUtils {
         val profiles = loadProfiles()
         val profile = profiles[profileName]
         return requireNotNull(profile) { "Profile with name $profileName does not exist." }
+    }
+
+    fun createPropertiesMapFromCliArguments(properties: Set<String>): Map<String, String> {
+        val secretEncryptionUtil = SecretEncryptionUtil()
+        val salt = UUID.randomUUID().toString()
+        val profileProperties = mutableMapOf<String, String>()
+
+        properties.forEach { property ->
+            val (key, value) = property.split("=")
+            if (!ProfileKey.isValidKey(key)) {
+                throw IllegalArgumentException("Invalid key '$key'. Allowed keys are:\n ${ProfileKey.CONST_KEYS_WITH_DESCRIPTIONS}")
+            }
+            if (key.lowercase().contains("password")) {
+                val encryptedPassword = secretEncryptionUtil.encrypt(value, salt, salt)
+                profileProperties[key] = encryptedPassword
+                profileProperties["${key}_salt"] = salt
+            } else {
+                profileProperties[key] = value
+            }
+        }
+
+        return profileProperties
     }
 
     fun getPasswordProperty(profile: CliProfile, propertyName: String): String {
