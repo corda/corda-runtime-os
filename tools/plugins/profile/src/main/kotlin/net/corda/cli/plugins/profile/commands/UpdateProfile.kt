@@ -17,7 +17,6 @@ class UpdateProfile : Runnable {
 
     private companion object {
         val sysOut: Logger = LoggerFactory.getLogger("SystemOut")
-        val sysErr: Logger = LoggerFactory.getLogger("SystemErr")
     }
 
     @Option(names = ["-n", "--name"], description = ["Profile name"], required = true)
@@ -27,7 +26,7 @@ class UpdateProfile : Runnable {
         names = ["-p", "--property"],
         description = ["Profile property (key=value). Valid keys are: ${ProfileKey.CONST_KEYS_WITH_DESCRIPTIONS}"],
     )
-    var properties: Array<String> = emptyArray()
+    var properties: Set<String> = emptySet()
 
     override fun run() {
         val profiles = ProfileUtils.loadProfiles().toMutableMap()

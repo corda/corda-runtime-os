@@ -8,7 +8,7 @@ import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import net.corda.libs.configuration.secret.SecretEncryptionUtil
 import java.io.File
 import java.io.IOException
-import java.util.*
+import java.util.UUID
 
 data class CliProfile(val properties: Map<String, String>)
 
@@ -83,7 +83,7 @@ object ProfileUtils {
         return requireNotNull(profile) { "Profile with name $profileName does not exist." }
     }
 
-    fun createPropertiesMapFromCliArguments(properties: Array<String>): MutableMap<String, String> {
+    fun createPropertiesMapFromCliArguments(properties: Set<String>): Map<String, String> {
         val secretEncryptionUtil = SecretEncryptionUtil()
         val salt = UUID.randomUUID().toString()
         val profileProperties = mutableMapOf<String, String>()

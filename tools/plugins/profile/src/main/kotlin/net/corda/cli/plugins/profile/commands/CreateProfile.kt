@@ -29,7 +29,7 @@ class CreateProfile : Runnable {
         description = ["Profile property (key=value). Valid keys are: ${ProfileKey.CONST_KEYS_WITH_DESCRIPTIONS}"],
         required = true
     )
-    lateinit var properties: Array<String>
+    lateinit var properties: Set<String>
 
     override fun run() {
         logger.debug("Creating profile: $profileName")
