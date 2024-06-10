@@ -2,7 +2,7 @@
 kotlinVersion = "1.8.21"
 
 apacheCommonsCodecVersion="1.17.0"
-apacheCommonsCompressVersion = "1.26.1"
+apacheCommonsCompressVersion = "1.26.2"
 bouncycastleVersion = "1.78.1"
 braveVersion = "6.0.3"
 caffeineVersion = "3.1.8"
@@ -16,7 +16,7 @@ jcipAnnotationsVersion = "1.0_2"
 jettyVersion = "9.4.54.v20240208"
 micrometerVersion = "1.12.4"
 nimbusVersion = "11.12"
-kafkaClientVersion = "3.6.1_1"
+kafkaClientVersion = "3.7.0_1"
 kubernetesClientVersion = "6.13.0"
 log4jVersion = "2.23.0"
 # If upgrading liquibase to 4.28, enable `LiquibaseSchemaMigratorImplTest.when updateDb create DB schema`
