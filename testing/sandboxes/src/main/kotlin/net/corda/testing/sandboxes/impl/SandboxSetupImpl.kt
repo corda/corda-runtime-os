@@ -192,7 +192,7 @@ class SandboxSetupImpl @Activate constructor(
         }
         val serviceDescription = serviceType.name + (filter?.let { f -> ", filter=$f" } ?: "")
         // List bundles available to give more information why the service cannot be found
-        val bundlesAsString = bundleContext.bundles.names.joinToString(separator = "\n", prefix = "\t")
+        val bundlesAsString = bundleContext.bundles.names.joinToString(separator = "\n\t", prefix = "\t")
         ("Service $serviceDescription did not arrive in $timeout ms. " +
                 "The following bundles were available at that time:\n$bundlesAsString").let {
             logger.error(it)
