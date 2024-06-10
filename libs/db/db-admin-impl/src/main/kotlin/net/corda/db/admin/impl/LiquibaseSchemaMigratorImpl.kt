@@ -3,6 +3,7 @@ package net.corda.db.admin.impl
 import liquibase.Contexts
 import liquibase.LabelExpression
 import liquibase.Liquibase
+import liquibase.Scope
 import liquibase.command.core.StatusCommandStep
 import liquibase.database.Database
 import liquibase.database.DatabaseFactory
@@ -97,7 +98,10 @@ class LiquibaseSchemaMigratorImpl(
                 database
             )
 
-            lb.databaseChangeLog.validate(database, Contexts(), LabelExpression())
+            val scopeObjects = mapOf(Scope.Attr.classLoader.name to lb::class.java.classLoader)
+            Scope.child(scopeObjects) {
+                lb.databaseChangeLog.validate(database, Contexts(), LabelExpression())
+            }
 
             return StatusCommandStep().listUnrunChangeSets(Contexts(), LabelExpression(),
                 lb.databaseChangeLog, database).map { it.filePath }
