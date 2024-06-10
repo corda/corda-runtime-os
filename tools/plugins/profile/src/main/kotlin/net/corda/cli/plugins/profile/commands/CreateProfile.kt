@@ -1,6 +1,5 @@
 package net.corda.cli.plugins.profile.commands
 
-import net.corda.libs.configuration.secret.SecretEncryptionUtil
 import net.corda.sdk.profile.CliProfile
 import net.corda.sdk.profile.ProfileKey
 import net.corda.sdk.profile.ProfileUtils
@@ -8,7 +7,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import picocli.CommandLine.Option
-import java.util.UUID
 
 @CommandLine.Command(
     name = "create",
@@ -31,10 +29,7 @@ class CreateProfile : Runnable {
         description = ["Profile property (key=value). Valid keys are: ${ProfileKey.CONST_KEYS_WITH_DESCRIPTIONS}"],
         required = true
     )
-    lateinit var properties: Array<String>
-
-    private val secretEncryptionUtil = SecretEncryptionUtil()
-    private val salt = UUID.randomUUID().toString()
+    lateinit var properties: Set<String>
 
     override fun run() {
         logger.debug("Creating profile: $profileName")
@@ -49,23 +44,7 @@ class CreateProfile : Runnable {
             }
         }
 
-        val profileProperties = mutableMapOf<String, String>()
-        properties.forEach { property ->
-            val (key, value) = property.split("=")
-            if (!ProfileKey.isValidKey(key)) {
-                val error = "Invalid key '$key'. Allowed keys are:\n ${ProfileKey.CONST_KEYS_WITH_DESCRIPTIONS}"
-                sysErr.error(error)
-                throw IllegalArgumentException(error)
-            }
-            if (key.lowercase().contains("password")) {
-                val encryptedPassword = secretEncryptionUtil.encrypt(value, salt, salt)
-                profileProperties[key] = encryptedPassword
-                profileProperties["${key}_salt"] = salt
-            } else {
-                profileProperties[key] = value
-            }
-        }
-
+        val profileProperties = ProfileUtils.createPropertiesMapFromCliArguments(properties)
         profiles[profileName] = CliProfile(profileProperties)
 
         ProfileUtils.saveProfiles(profiles)
