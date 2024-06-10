@@ -167,7 +167,7 @@ tasks.register('applyWorkaroundForSerializer') {
 tasks.register('applyWorkarounds') {
     dependsOn 'applyWorkaroundForCertificateApi'
     dependsOn 'applyWorkaroundForStringResponseType'
-    dependsOn 'applyWorkaroundForSerializer'
+//    dependsOn 'applyWorkaroundForSerializer'
 }
 
 tasks.named('compileKotlin') {
