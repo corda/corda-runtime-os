@@ -9,6 +9,7 @@ import net.corda.rbac.schema.RbacKeys.FLOW_STATE_REGEX
 import net.corda.rbac.schema.RbacKeys.HSM_CATEGORY_REGEX
 import net.corda.rbac.schema.RbacKeys.KEY_ID_REGEX
 import net.corda.rbac.schema.RbacKeys.KEY_SCHEME_REGEX
+import net.corda.rbac.schema.RbacKeys.OPTIONAL_QUERY_PARAMETER
 import net.corda.rbac.schema.RbacKeys.TENANT_ID_REGEX
 import net.corda.rbac.schema.RbacKeys.UUID_REGEX
 import net.corda.rbac.schema.RbacKeys.VNODE_SHORT_HASH_REGEX
@@ -114,7 +115,7 @@ object Permissions {
         "Generate key pair" to
             "POST:/api/$VERSION_PATH_REGEX/key/" +
             "$TENANT_ID_REGEX/alias/$ALIAS_REGEX/category/$HSM_CATEGORY_REGEX/scheme/$KEY_SCHEME_REGEX",
-        "Get keys" to "GET:/api/$VERSION_PATH_REGEX/key/$TENANT_ID_REGEX((\\?)(.*?))?",
+        "Get keys" to "GET:/api/$VERSION_PATH_REGEX/key/$TENANT_ID_REGEX$OPTIONAL_QUERY_PARAMETER",
         "Get key schemes" to "GET:/api/$VERSION_PATH_REGEX/key/$TENANT_ID_REGEX/schemes/$HSM_CATEGORY_REGEX",
         "Get key in PEM format" to "GET:/api/$VERSION_PATH_REGEX/key/$TENANT_ID_REGEX/$KEY_ID_REGEX",
 
