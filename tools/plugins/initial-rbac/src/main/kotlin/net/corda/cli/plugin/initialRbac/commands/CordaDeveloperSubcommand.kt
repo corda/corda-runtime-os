@@ -21,6 +21,7 @@ const val CORDA_DEV_ROLE = "CordaDeveloperRole"
 class CordaDeveloperSubcommand : RestCommand(), Callable<Int> {
 
     override fun call(): Int {
+        super.call()
         return checkOrCreateRole(CORDA_DEV_ROLE, cordaDeveloper)
     }
 }

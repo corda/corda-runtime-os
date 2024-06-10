@@ -18,6 +18,7 @@ dependencies {
     implementation libs.jackson.dataformat.yaml
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:corda-sdk')
+    implementation project(':libs:permissions:permission-password')
 
     testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
     testImplementation project(":testing:test-utilities")

@@ -14,13 +14,20 @@ const val VNODE_CREATOR_ROLE = "VNodeCreatorRole"
         """Creates a role ('$VNODE_CREATOR_ROLE') which will permit: 
         - CPI upload
         - vNode creation
-        - vNode update"""
+        - vNode update
+        - vNode CPI upgrade
+        - BYODB SQL
+        - Uploading certificates
+        - Member registration
+        - Generate key pair
+        - Check flow status"""
     ],
     mixinStandardHelpOptions = true
 )
 class VNodeCreatorSubcommand : RestCommand(), Callable<Int> {
 
     override fun call(): Int {
+        super.call()
         return checkOrCreateRole(VNODE_CREATOR_ROLE, vNodeCreator)
     }
 }

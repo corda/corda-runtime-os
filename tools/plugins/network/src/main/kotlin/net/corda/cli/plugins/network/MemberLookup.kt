@@ -125,6 +125,7 @@ class MemberLookup(private val output: Output = ConsoleOutput()) : RestCommand()
     }
 
     override fun run() {
+        super.run()
         verifyAndPrintError {
             printJsonOutput(performMembersLookup(), output)
         }

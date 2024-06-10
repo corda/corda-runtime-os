@@ -5,33 +5,35 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import net.corda.libs.configuration.secret.SecretEncryptionUtil
 import java.io.File
 import java.io.IOException
 
 data class CliProfile(val properties: Map<String, String>)
 
-enum class ProfileKey(val description: String) {
-    REST_USERNAME("Username for REST API"),
-    REST_PASSWORD("Password for REST API"),
-    REST_ENDPOINT("Endpoint for the REST API"),
-    JDBC_USERNAME("Username for JDBC connection"),
-    JDBC_PASSWORD("Password for JDBC connection"),
-    DATABASE_URL("URL for the database");
+enum class ProfileKey {
+    REST_USERNAME,
+    REST_PASSWORD,
+    REST_ENDPOINT,
+    JDBC_USERNAME,
+    JDBC_PASSWORD,
+    DATABASE_URL;
 
     companion object {
-        private val validKeys: List<String> by lazy { values().map { it.name.lowercase() } }
-        private val cachedDescriptions: String by lazy {
-            values().joinToString("\n") { key ->
-                "${key.name.lowercase()}: ${key.description},"
-            }
-        }
+        // names/descriptions must be compile-time const to be usable in PicoCLI annotations.
+        const val CONST_KEYS_WITH_DESCRIPTIONS: String = """
+            rest_username: Username for REST API,
+            rest_password: Password for REST API,
+            rest_endpoint: Endpoint for the REST API,
+            jdbc_username: Username for JDBC connection,
+            jdbc_password: Password for JDBC connection,
+            database_url: URL for the database,
+        """
+
+        private val validKeys: Set<String> by lazy { values().map { it.name.lowercase() }.toSet() }
 
         fun isValidKey(key: String): Boolean {
             return validKeys.contains(key.lowercase())
-        }
-
-        fun getKeysWithDescriptions(): String {
-            return cachedDescriptions
         }
     }
 }
@@ -72,5 +74,32 @@ object ProfileUtils {
         } catch (e: IOException) {
             throw IOException("Failed to save profiles to file", e)
         }
+    }
+
+    fun getProfile(profileName: String): CliProfile {
+        val profiles = loadProfiles()
+        val profile = profiles[profileName]
+        return requireNotNull(profile) { "Profile with name $profileName does not exist." }
+    }
+
+    fun getPasswordProperty(profile: CliProfile, propertyName: String): String {
+        val encryptedPassword = requireNotNull(profile.properties[propertyName]) {
+            "Property with name $propertyName does not exist."
+        }
+        val salt = requireNotNull(profile.properties["${propertyName}_salt"]) {
+            "Salt for property $propertyName does not exist."
+        }
+
+        val secretEncryptionUtil = SecretEncryptionUtil()
+        return secretEncryptionUtil.decrypt(encryptedPassword, salt, salt)
+    }
+
+    fun getDbConnectionDetails(profile: CliProfile): Triple<String?, String?, String?> {
+        val jdbcUrl = profile.properties[ProfileKey.DATABASE_URL.name.lowercase()]
+        val user = profile.properties[ProfileKey.JDBC_USERNAME.name.lowercase()]
+        val password = profile.properties[ProfileKey.JDBC_PASSWORD.name.lowercase()]?.let {
+            getPasswordProperty(profile, ProfileKey.JDBC_PASSWORD.name.lowercase())
+        }
+        return Triple(jdbcUrl, user, password)
     }
 }

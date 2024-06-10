@@ -65,6 +65,7 @@ class GroupParametersLookup(private val output: Output = ConsoleOutput()) : Rest
     }
 
     override fun run() {
+        super.run()
         verifyAndPrintError {
             printJsonOutput(performGroupParametersLookup(), output)
         }

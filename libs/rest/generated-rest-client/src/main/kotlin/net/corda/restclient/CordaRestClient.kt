@@ -1,5 +1,6 @@
 package net.corda.restclient
 
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.restclient.generated.apis.CPIApi
 import net.corda.restclient.generated.apis.CertificateApi
 import net.corda.restclient.generated.apis.ConfigurationApi
@@ -55,7 +56,7 @@ class CordaRestClient(
 ) {
 
     companion object {
-        private const val API_VERSION = "/api/v5_3"
+        private val API_VERSION = "/api/${RestApiVersion.C5_3.versionPath}"
 
         /**
          * Create an instance of CordaRestClient with the given baseUrl, username and password.
