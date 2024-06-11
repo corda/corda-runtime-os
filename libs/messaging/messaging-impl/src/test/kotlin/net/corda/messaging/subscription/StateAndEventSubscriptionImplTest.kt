@@ -513,6 +513,7 @@ class StateAndEventSubscriptionImplTest {
         verify(chunkSerializerService, times(1)).getChunkKeysToClear(any(), anyOrNull(), anyOrNull())
     }
 
+    @Suppress("MaxLineLength")
     @Test
     fun `repartition during batch processing stops the batch, does not resume consumers or publish outputs and resets event offset position`() {
         val (builder, producer, stateAndEventConsumer) = setupMocks(0)
