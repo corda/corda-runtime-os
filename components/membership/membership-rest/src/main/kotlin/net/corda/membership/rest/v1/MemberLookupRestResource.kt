@@ -53,7 +53,7 @@ interface MemberLookupRestResource : RestResource {
         minVersion = RestApiVersion.C5_1
     )
     @Suppress("LongParameterList")
-    fun lookupV51(
+    fun lookup(
         @RestPathParameter(
             description = "Holding identity ID of the requesting member. The result only contains" +
                 " members that are visible to this member"
