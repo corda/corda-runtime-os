@@ -1,6 +1,7 @@
 package net.corda.sdk.bootstrap.dbconfig
 
 import liquibase.Liquibase
+import liquibase.changelog.DatabaseChangeLog
 import liquibase.command.CommandArgumentDefinition
 import liquibase.command.CommandScope
 import liquibase.database.Database
@@ -31,7 +32,9 @@ class DbSchemaGeneratorTest {
         const val CUSTOM_PATH = "path"
     }
 
-    private val mockLiquibase: Liquibase = mock()
+    private val mockLiquibase: Liquibase = mock {
+        on { databaseChangeLog } doReturn DatabaseChangeLog()
+    }
     private val mockWriter: FileWriter = mock()
     private val mockWriterFactory = mock<(String) -> FileWriter>().apply {
         whenever(invoke(any())).thenReturn(mockWriter)

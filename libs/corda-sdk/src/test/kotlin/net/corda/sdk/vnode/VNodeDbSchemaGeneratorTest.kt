@@ -1,6 +1,7 @@
 package net.corda.sdk.vnode
 
 import liquibase.Liquibase
+import liquibase.changelog.DatabaseChangeLog
 import liquibase.command.CommandArgumentDefinition
 import liquibase.command.CommandScope
 import liquibase.database.Database
@@ -19,11 +20,13 @@ import org.mockito.kotlin.whenever
 import java.io.FileWriter
 import java.sql.Connection
 
-class VNodeDbSchemaGenetarorTest {
+class VNodeDbSchemaGeneratorTest {
 
     private val mockFileWriter = mock<FileWriter>()
 
-    private val mockLiquibase: Liquibase = mock()
+    private val mockLiquibase: Liquibase = mock {
+        on { databaseChangeLog } doReturn DatabaseChangeLog()
+    }
     private val mockLiquibaseFactory = mock<(String, Database) -> Liquibase>().apply {
         whenever(invoke(any(), any())).thenReturn(mockLiquibase)
     }
