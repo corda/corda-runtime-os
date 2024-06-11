@@ -47,7 +47,12 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     internal val vNodeCreatorClient: HttpsClient by lazy {
         lock.withLock {
             val vNodeCreatorRole = checkVNodeCreatorRoleExists()
-            if (vNodeCreatorRole != null && checkVNodeCreatorUserDoesNotExist()) {
+            if (
+                REST_API_VERSION_PATH != "v5_1" &&
+                REST_API_VERSION_PATH != "v5_2" &&
+                vNodeCreatorRole != null &&
+                checkVNodeCreatorUserDoesNotExist()
+            ) {
                 logger.info(
                     "Creating user '$vNodeCreatorName' with role '${vNodeCreatorRole["roleName"].textValue()}'"
                 )
