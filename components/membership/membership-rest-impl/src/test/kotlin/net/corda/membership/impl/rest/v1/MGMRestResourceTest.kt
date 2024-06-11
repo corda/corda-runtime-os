@@ -52,7 +52,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -119,8 +118,6 @@ class MGMRestResourceTest {
     private val initialTime = Instant.parse("2007-12-03T00:00:00.00Z")
     private val manualDeclinationReason = REASON
     private val suspensionActivationParameters = SuspensionActivationParameters(subject, 1, REASON)
-    private val deprecatedSuspensionActivationParameters =
-        SuspensionActivationParameters(subject, 1, REASON)
     private val deserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
@@ -1323,19 +1320,6 @@ class MGMRestResourceTest {
         }
 
         @Test
-        fun `deprecated suspendMember delegates correctly to mgm resource client`() {
-            @Suppress("deprecation")
-            mgmRestResource.suspendMember(HOLDING_IDENTITY_ID, deprecatedSuspensionActivationParameters)
-
-            verify(mgmResourceClient).suspendMember(
-                (ShortHash.of(HOLDING_IDENTITY_ID)),
-                MemberX500Name.parse(subject),
-                SERIAL,
-                REASON
-            )
-        }
-
-        @Test
         fun `suspendMember throws resource not found for invalid member`() {
             whenever(
                 mgmResourceClient.suspendMember(
@@ -1466,14 +1450,6 @@ class MGMRestResourceTest {
                 mgmRestResource.suspendMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject))
             }
         }
-
-        @Test
-        fun `deprecatedSuspendMember does not throw when serial number is null`() {
-            assertDoesNotThrow {
-                @Suppress("DEPRECATION")
-                mgmRestResource.deprecatedSuspendMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject))
-            }
-        }
     }
 
     @Nested
@@ -1487,19 +1463,6 @@ class MGMRestResourceTest {
         @Test
         fun `activateMember delegates correctly to mgm resource client`() {
             mgmRestResource.activateMember(HOLDING_IDENTITY_ID, suspensionActivationParameters)
-
-            verify(mgmResourceClient).activateMember(
-                (ShortHash.of(HOLDING_IDENTITY_ID)),
-                MemberX500Name.parse(subject),
-                SERIAL,
-                REASON
-            )
-        }
-
-        @Test
-        fun `deprecated activateMember delegates correctly to mgm resource client`() {
-            @Suppress("deprecation")
-            mgmRestResource.activateMember(HOLDING_IDENTITY_ID, deprecatedSuspensionActivationParameters)
 
             verify(mgmResourceClient).activateMember(
                 (ShortHash.of(HOLDING_IDENTITY_ID)),
@@ -1638,14 +1601,6 @@ class MGMRestResourceTest {
         fun `activateMember throws BadRequestException when serial number is null`() {
             assertThrows<BadRequestException> {
                 mgmRestResource.activateMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject))
-            }
-        }
-
-        @Test
-        fun `deprecatedActivateMember does not throw when serial number is null`() {
-            assertDoesNotThrow {
-                @Suppress("DEPRECATION")
-                mgmRestResource.deprecatedActivateMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject))
             }
         }
     }
