@@ -1,7 +1,6 @@
 package net.corda.sdk.vnode
 
 import liquibase.Liquibase
-import liquibase.changelog.DatabaseChangeLog
 import liquibase.command.CommandArgumentDefinition
 import liquibase.command.CommandScope
 import liquibase.database.Database
