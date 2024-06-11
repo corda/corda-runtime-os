@@ -126,14 +126,6 @@ class UserEndpointImpl @Activate constructor(
         return ResponseEntity.created(createUserResult.convertToEndpointType())
     }
 
-    @Deprecated("Deprecated in favour of `getUserPath()`")
-    override fun getUserQuery(loginName: String): ResponseEntity<UserResponseType> {
-        "Deprecated, please use next version where loginName is passed as a path parameter.".let { msg ->
-            logger.warn(msg)
-            return ResponseEntity.okButDeprecated(doGetUser(loginName), msg)
-        }
-    }
-
     override fun getUserPath(loginName: String): UserResponseType {
         return doGetUser(loginName)
     }
