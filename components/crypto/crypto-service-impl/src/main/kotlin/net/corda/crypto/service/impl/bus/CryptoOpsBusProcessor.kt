@@ -54,12 +54,12 @@ class CryptoOpsBusProcessor(
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
 
-        private fun avroShortHashesToDto(shortHashes: ShortHashes): List<ShortHash> =
+        internal fun avroShortHashesToDto(shortHashes: ShortHashes): List<ShortHash> =
             shortHashes.hashes.map {
                 ShortHash.of(it)
             }
 
-        private fun avroSecureHashesToDto(secureHashes: SecureHashes): List<SecureHash> =
+        internal fun avroSecureHashesToDto(secureHashes: SecureHashes): List<SecureHash> =
             secureHashes.hashes.map {
                 SecureHashImpl(it.algorithm, it.bytes.array())
             }

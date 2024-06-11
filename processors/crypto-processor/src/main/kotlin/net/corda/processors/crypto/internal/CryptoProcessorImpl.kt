@@ -99,6 +99,8 @@ import java.security.PrivateKey
 import java.security.Provider
 import java.security.PublicKey
 import java.util.concurrent.TimeUnit
+import net.corda.crypto.core.ApiNames.LOOKUP_PATH
+import net.corda.crypto.service.impl.rpc.ReconcilerCryptoOpsProcessor
 
 // An OSGi component, with no unit tests; instead, tested by using OGGi and mocked out databases in
 // integration tests (CryptoProcessorTests), as well as in various kinds of end to end and other full
@@ -412,6 +414,7 @@ class CryptoProcessorImpl @Activate constructor(
         }
         createSessionEncryptionSubscription(coordinator, retryingConfig)
         createSessionDecryptionSubscription(coordinator, retryingConfig)
+        createReconcilerSubscription(coordinator, retryingConfig)
     }
 
     private fun createRekeySubscription(
@@ -523,6 +526,21 @@ class CryptoProcessorImpl @Activate constructor(
             subscriptionFactory.createHttpRPCSubscription(
                 rpcConfig = SyncRPCConfig(subscriptionName, ENCRYPT_PATH),
                 processor = SessionEncryptionProcessor(cryptoService, retryingConfig),
+            ).also {
+                it.start()
+            }
+        }
+    }
+
+    private fun createReconcilerSubscription(
+        coordinator: LifecycleCoordinator,
+        retryingConfig: RetryingConfig
+    ) {
+        val subscriptionName = "crypto.reconciler.ops"
+        coordinator.createManagedResource(subscriptionName) {
+            subscriptionFactory.createHttpRPCSubscription(
+                rpcConfig = SyncRPCConfig(subscriptionName, LOOKUP_PATH),
+                processor = ReconcilerCryptoOpsProcessor(cryptoService, retryingConfig),
             ).also {
                 it.start()
             }

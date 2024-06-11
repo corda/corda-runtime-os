@@ -8,7 +8,7 @@ import net.corda.configuration.write.publish.ConfigPublishService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.ReconcilerCryptoOpsClient
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
@@ -71,7 +71,7 @@ class Reconcilers(
     hostedIdentityReaderService: LocallyHostedIdentitiesService,
     hostedIdentityWriterService: LocallyHostedIdentitiesWriter,
     certificatesClient: DbCertificateClient,
-    cryptoOpsClient: CryptoOpsClient,
+    reconcilierCryptoOpsClient: ReconcilerCryptoOpsClient,
     keyEncodingService: KeyEncodingService,
 ) {
     private val cpiReconciler = CpiReconciler(
@@ -136,7 +136,7 @@ class Reconcilers(
         hostedIdentityReaderService,
         hostedIdentityWriterService,
         certificatesClient,
-        cryptoOpsClient,
+        reconcilierCryptoOpsClient,
         keyEncodingService,
         virtualNodeInfoReadService,
         jpaEntitiesRegistry,

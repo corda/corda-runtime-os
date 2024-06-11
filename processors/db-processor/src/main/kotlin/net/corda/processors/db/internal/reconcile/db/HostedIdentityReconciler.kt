@@ -2,7 +2,6 @@ package net.corda.processors.db.internal.reconcile.db
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
-import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoTenants.P2P
@@ -36,7 +35,7 @@ import org.slf4j.LoggerFactory
 import java.util.stream.Stream
 import javax.persistence.EntityManager
 import net.corda.cache.caffeine.CacheFactoryImpl
-import net.corda.crypto.flow.CryptoFlowOpsTransformer
+import net.corda.crypto.client.ReconcilerCryptoOpsClient
 import net.corda.db.schema.CordaDb
 import net.corda.membership.certificates.datamodel.Certificate
 import net.corda.orm.JpaEntitiesRegistry
@@ -49,7 +48,7 @@ class HostedIdentityReconciler(
     private val reconcilerReader: ReconcilerReader<String, HostedIdentityEntry>,
     private val reconcilerWriter: ReconcilerWriter<String, HostedIdentityEntry>,
     private val dbClient: DbCertificateClient,
-    private val cryptoOpsClient: CryptoOpsClient,
+    private val reconcilerCryptoOpsClient: ReconcilerCryptoOpsClient,
     private val keyEncodingService: KeyEncodingService,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
@@ -230,7 +229,7 @@ class HostedIdentityReconciler(
         return if (cachedCertificate != null) {
             cachedCertificate
         } else {
-            val certificate = cryptoOpsClient.lookupKeysByIds(tenantId, listOf(sessionKeyId)).firstOrNull()?.toPem()
+            val certificate = reconcilerCryptoOpsClient.lookupKeysByIds(tenantId, listOf(sessionKeyId)).firstOrNull()?.toPem()
                 ?: throw CertificatesResourceNotFoundException("Can not find session key for $tenantId")
             cachedCertificates.put(CertificateKey(tenantId, sessionKeyId), certificate)
             certificate
