@@ -17,7 +17,6 @@ import liquibase.command.core.helpers.DbUrlConnectionArgumentsCommandStep
 import liquibase.command.core.helpers.ShowSummaryArgument
 import liquibase.io.WriterOutputStream
 import net.corda.db.admin.LiquibaseSchemaUpdater
-import org.apache.commons.io.FilenameUtils
 import java.io.Writer
 
 class LiquibaseSchemaUpdaterImpl(
