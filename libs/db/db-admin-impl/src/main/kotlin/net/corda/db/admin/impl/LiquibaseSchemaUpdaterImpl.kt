@@ -7,6 +7,7 @@ import liquibase.Liquibase
 import liquibase.Scope
 import liquibase.UpdateSummaryEnum
 import liquibase.UpdateSummaryOutputEnum
+import liquibase.changelog.DatabaseChangeLog
 import liquibase.command.CommandScope
 import liquibase.command.core.TagCommandStep
 import liquibase.command.core.UpdateCommandStep
@@ -32,10 +33,10 @@ class LiquibaseSchemaUpdaterImpl(
     ) {
         val scopeObjects = mapOf(
             Scope.Attr.resourceAccessor.name to lb.resourceAccessor,
-            Scope.Attr.classLoader.name to lb.databaseChangeLog::class.java.classLoader
+            Scope.Attr.classLoader.name to DatabaseChangeLog::class.java.classLoader
         )
         Scope.child(scopeObjects) {
-            val classLoaderScopeObjects = mapOf(Scope.Attr.classLoader.name to lb::class.java.classLoader)
+            val classLoaderScopeObjects = mapOf(Scope.Attr.classLoader.name to Liquibase::class.java.classLoader)
             if (sql != null) {
                 commandScopeFactory(UpdateSqlCommandStep.COMMAND_NAME).configure(lb, tag).also {
                     it.setOutput(

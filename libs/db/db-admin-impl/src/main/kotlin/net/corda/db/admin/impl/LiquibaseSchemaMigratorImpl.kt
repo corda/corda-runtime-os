@@ -98,7 +98,7 @@ class LiquibaseSchemaMigratorImpl(
                 database
             )
 
-            val scopeObjects = mapOf(Scope.Attr.classLoader.name to lb::class.java.classLoader)
+            val scopeObjects = mapOf(Scope.Attr.classLoader.name to Liquibase::class.java.classLoader)
             Scope.child(scopeObjects) {
                 lb.databaseChangeLog.validate(database, Contexts(), LabelExpression())
             }

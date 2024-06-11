@@ -24,9 +24,7 @@ class VNodeDbSchemaGeneratorTest {
 
     private val mockFileWriter = mock<FileWriter>()
 
-    private val mockLiquibase: Liquibase = mock {
-        on { databaseChangeLog } doReturn DatabaseChangeLog()
-    }
+    private val mockLiquibase: Liquibase = mock()
     private val mockLiquibaseFactory = mock<(String, Database) -> Liquibase>().apply {
         whenever(invoke(any(), any())).thenReturn(mockLiquibase)
     }
