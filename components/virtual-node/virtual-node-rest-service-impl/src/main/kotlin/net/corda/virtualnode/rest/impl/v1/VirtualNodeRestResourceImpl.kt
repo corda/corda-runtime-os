@@ -256,17 +256,6 @@ internal class VirtualNodeRestResourceImpl(
         return messageConverter.convert(virtualNode)
     }
 
-    @Deprecated("Deprecated in favour of upgradeVirtualNode")
-    override fun upgradeVirtualNodeDeprecated(
-        virtualNodeShortId: String,
-        targetCpiFileChecksum: String
-    ): ResponseEntity<AsyncResponse> {
-        "Deprecated, please use next version where forceUpgrade is passed as a query parameter.".let { msg ->
-            logger.warn(msg)
-            return ResponseEntity.acceptedButDeprecated(doUpgradeVirtualNode(virtualNodeShortId, targetCpiFileChecksum, false), msg)
-        }
-    }
-
     override fun upgradeVirtualNode(
         virtualNodeShortId: String,
         targetCpiFileChecksum: String,
