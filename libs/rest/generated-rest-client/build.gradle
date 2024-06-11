@@ -154,20 +154,9 @@ tasks.register('applyWorkaroundForStringResponseType') {
     }
 }
 
-tasks.register('applyWorkaroundForSerializer') {
-    dependsOn 'openApiGenerate'
-    doLast {
-        def targetLine = '.findAndRegisterModules()'
-        def replacementLine = '.findAndRegisterModules().registerModule(com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())'
-        def fileName = "${project.buildDir}/generated/src/main/kotlin/net/corda/restclient/generated/infrastructure/Serializer.kt"
-        file(fileName).text = file(fileName).text.replace(targetLine, replacementLine)
-    }
-}
-
 tasks.register('applyWorkarounds') {
     dependsOn 'applyWorkaroundForCertificateApi'
     dependsOn 'applyWorkaroundForStringResponseType'
-//    dependsOn 'applyWorkaroundForSerializer'
 }
 
 tasks.named('compileKotlin') {
