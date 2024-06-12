@@ -8,8 +8,11 @@ import net.corda.test.util.eventually
 import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.text.SimpleDateFormat
 import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Semaphore
 import java.util.concurrent.locks.ReentrantLock
@@ -27,9 +30,15 @@ fun ClusterInfo.conditionallyUploadCordaPackage(
     cpiUpload(cpbResourceName, groupPolicy, cpiName)
 }
 
+object ClusterUtilsLogger {
+    val logger: Logger = LoggerFactory.getLogger(ClusterUtilsLogger::class.java)
+}
+
 val signingCertLock = ReentrantLock()
 fun ClusterInfo.conditionallyUploadCpiSigningCertificate() = cluster {
     signingCertLock.withLock {
+        val startTime = Instant.now()
+        ClusterUtilsLogger.logger.info("ClusterUtils: Beginning check for hasCertificateChain")
         val hasCertificateChain = assertWithRetryIgnoringExceptions {
             timeout(60.seconds)
             interval(1.seconds)
@@ -41,7 +50,12 @@ fun ClusterInfo.conditionallyUploadCpiSigningCertificate() = cluster {
         }.let {
             it.code != ResponseCode.RESOURCE_NOT_FOUND.statusCode
         }
+
+        ClusterUtilsLogger.logger.info("ClusterUtils: Retrieved certificate chain result of $hasCertificateChain " +
+                "after ${Duration.between(startTime, Instant.now())}")
+
         if (!hasCertificateChain) {
+            ClusterUtilsLogger.logger.info("ClusterUtils: Uploading certificate chain")
             assertWithRetryIgnoringExceptions {
                 // Certificate upload can be slow in the combined worker, especially after it has just started up.
                 timeout(60.seconds)

@@ -2,6 +2,8 @@ package net.corda.e2etest.utilities
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.fail
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
 
@@ -14,6 +16,10 @@ class AssertWithRetryArgs {
     var condition: ((SimpleResponse) -> Boolean) = { it.code in 200..299 }
     var immediateFailCondition: ((SimpleResponse) -> Boolean) = { false }
     var failMessage: String = ""
+}
+
+object AssertWithRetryLogger {
+    val logger: Logger = LoggerFactory.getLogger(AssertWithRetryLogger::class.java)
 }
 
 /** The [assertWithRetry] builder class that helps implement the "DSL" */
@@ -142,8 +148,12 @@ fun assertWithRetryIgnoringExceptions(initialize: AssertWithRetryBuilder.() -> U
                 result = try {
                     args.command()
                 } catch (exception: Exception) {
+                    AssertWithRetryLogger.logger
+                        .info("CORE-20665: Caught exception during attempt $retry: $exception")
                     exception
                 }
+
+                AssertWithRetryLogger.logger.info("CORE-20665: Attempt $retry: $result")
 
                 if (retry == 0 && result is SimpleResponse) {
                     println(result.url)
@@ -152,6 +162,9 @@ fun assertWithRetryIgnoringExceptions(initialize: AssertWithRetryBuilder.() -> U
 
                 retry++
                 timeTried = Duration.between(startTime, Instant.now())
+
+                AssertWithRetryLogger.logger.info("CORE-20665: Time elapsed so far: $timeTried")
+
                 addAttempt(Attempt(retry, timeTried,
                         if (result is Exception) result.stackTraceToString() else result.toString()))
 
@@ -173,11 +186,14 @@ fun assertWithRetryIgnoringExceptions(initialize: AssertWithRetryBuilder.() -> U
                                     "failed with status code = ${result.code} and body =\n${result.body}"
                         )
                         .isTrue
-
+                    AssertWithRetryLogger.logger.info("CORE-20665: Retried $retry times and failed with $result")
                     result
                 }
 
-                else -> fail("${args.failMessage} Retried $retry times and failed with $result")
+                else -> {
+                    AssertWithRetryLogger.logger.info("CORE-20665: Retried $retry times and failed with $result")
+                    fail("${args.failMessage} Retried $retry times and failed with $result")
+                }
             }
         }
     }
