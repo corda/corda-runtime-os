@@ -540,7 +540,7 @@ class CryptoProcessorImpl @Activate constructor(
         coordinator.createManagedResource(subscriptionName) {
             subscriptionFactory.createHttpRPCSubscription(
                 rpcConfig = SyncRPCConfig(subscriptionName, LOOKUP_PATH),
-                processor = ReconcilerCryptoOpsProcessor(cryptoService, retryingConfig),
+                processor = ReconcilerCryptoOpsProcessor(cryptoService, retryingConfig, keyEncodingService),
             ).also {
                 it.start()
             }

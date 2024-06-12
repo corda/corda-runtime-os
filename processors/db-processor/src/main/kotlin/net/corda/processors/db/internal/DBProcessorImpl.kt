@@ -13,7 +13,6 @@ import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.cpk.read.CpkReadService
 import net.corda.cpk.write.CpkWriteService
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.ReconcilerCryptoOpsClient
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
@@ -209,6 +208,7 @@ class DBProcessorImpl @Activate constructor(
         ::membershipPersistenceClient,
         ::locallyHostedIdentitiesService,
         ::locallyHostedIdentitiesWriter,
+        ::reconcilierCryptoOpsClient
     )
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<DBProcessorImpl>(dependentComponents, ::eventHandler)
 

@@ -1,7 +1,6 @@
 package net.corda.crypto.client.impl
 
 import java.net.URI
-import net.corda.crypto.client.ReconcilerCryptoOpsClient
 import net.corda.crypto.core.ApiNames.LOOKUP_PATH
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.ShortHash
@@ -9,8 +8,8 @@ import net.corda.data.crypto.ShortHashes
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.encryption.response.EncryptionOpsError
-import net.corda.data.crypto.wire.ops.encryption.response.EncryptionOpsResponse
-import net.corda.data.crypto.wire.ops.reconciliation.LookUpKeyById
+import net.corda.data.crypto.wire.ops.reconciliation.request.LookUpKeyById
+import net.corda.data.crypto.wire.ops.reconciliation.response.LookupKeyByIdResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.messaging.api.publisher.HttpRpcClient
@@ -23,11 +22,11 @@ class ReconcilerCryptoImpl(
     private val sender: HttpRpcClient,
     platformInfoProvider: PlatformInfoProvider,
     messagingConfig: SmartConfig,
-): ReconcilerCryptoOpsClient {
+) {
 
-    override fun lookupKeysByIds(tenantId: String, keyIds: List<ShortHash>): List<CryptoSigningKey> {
+    fun lookupKeysByIds(tenantId: String, keyIds: List<ShortHash>): List<CryptoSigningKey> {
         val request = LookUpKeyById(ShortHashes(keyIds.map { it.toString() }), tenantId)
-        val response = sender.send<EncryptionOpsResponse>(
+        val response = sender.send<LookupKeyByIdResponse>(
             getRequestUrl(LOOKUP_PATH),
             request,
         )?.response ?: throw CordaRuntimeException(
