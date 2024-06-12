@@ -175,12 +175,12 @@ class CertificatesClientImpl @Activate constructor(
                     holdingIdentityId?.value,
                     payload,
                 )
-            ).getOrThrow()?.response.also {
+            ).getOrThrow().also {
                 logger.info(
                     "End send request for certificate chain $payload at ${Instant.now()}. " +
                         "Duration: ${Instant.now().toEpochMilli() - startTime.toEpochMilli()} ms"
                 )
-            } as? R
+            }.response as? R
         }
     }
 

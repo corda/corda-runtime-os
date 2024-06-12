@@ -214,12 +214,15 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     }
 
     override fun sendRequest(req: REQUEST): CompletableFuture<RESPONSE> {
+        log.info("Sending request to topic ${config.topic}")
+
         val future = CompletableFuture<RESPONSE>()
         val correlationId = UUID.randomUUID().toString()
 
         // Partitions are manually assigned to the response consumer so, unless something went really wrong with
         // Kafka, this should never be true.
         if (responsePartition == null) {
+            log.info("No partitions assigned for topic ${responseTopic}, can not proceed")
             future.completeExceptionally(CordaRPCAPISenderException(noPartitionsErrorMsg))
             log.warn(noPartitionsErrorMsg)
         } else {
@@ -229,7 +232,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                 val message = "Serializing request $req resulted in an exception. " +
                         "Verify that the fields of the request are populated correctly."
                 future.completeExceptionally(CordaRPCAPISenderException(message, ex))
-                log.error(message, ex)
+                log.info(message, ex)
 
                 return future
             }
@@ -250,7 +253,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                 producer?.sendRecords(listOf(record))
             } catch (ex: Exception) {
                 future.completeExceptionally(CordaRPCAPISenderException("Failed to publish", ex))
-                log.warn("Failed to publish. Exception: ${ex.message}", ex)
+                log.info("Failed to publish. Exception: ${ex.message}", ex)
             }
         }
 
