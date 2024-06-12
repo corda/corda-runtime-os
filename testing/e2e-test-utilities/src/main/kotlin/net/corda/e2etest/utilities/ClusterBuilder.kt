@@ -45,7 +45,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     }
 
     private fun checkIfNotPreviousVersion(): Boolean {
-        return REST_API_VERSION_PATH != "v5_1" && REST_API_VERSION_PATH != "v5_2"
+        return REST_API_VERSION_PATH != RestApiVersion.C5_1.versionPath && REST_API_VERSION_PATH != RestApiVersion.C5_2.versionPath
     }
 
     internal val vNodeCreatorClient: HttpsClient by lazy {
