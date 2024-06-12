@@ -28,10 +28,6 @@ sourceSets {
 
 dependencies {
 
-    constraints {
-        implementation(libs.slf4j.api)
-    }
-    
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
@@ -58,6 +54,7 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
+    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":libs:utilities")
@@ -116,6 +113,7 @@ dependencies {
     integrationTestRuntimeOnly project(":components:crypto:crypto-client-impl")
     integrationTestRuntimeOnly project(":components:membership:membership-group-read-impl")
     integrationTestRuntimeOnly project(":components:membership:membership-persistence-client-impl")
+    integrationTestRuntimeOnly project(':testing:slf4jv1')
 
     testRuntimeOnly "com.lmax:disruptor:$disruptorVersion"
     testRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"

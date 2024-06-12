@@ -26,6 +26,7 @@ dependencies {
 
     testImplementation libs.bundles.test
     testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
+    testRuntimeOnly libs.log4j.slf4j
 }
 
 test {

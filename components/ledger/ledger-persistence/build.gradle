@@ -105,6 +105,7 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:membership:membership-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+    integrationTestRuntimeOnly project(':testing:slf4jv1')
 
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"

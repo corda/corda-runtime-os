@@ -88,4 +88,5 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:messaging:kafka-message-bus-impl')
     integrationTestRuntimeOnly 'org.osgi:osgi.core'
     integrationTestRuntimeOnly libs.swagger.ui
+    integrationTestRuntimeOnly project(':testing:slf4jv1')
 }

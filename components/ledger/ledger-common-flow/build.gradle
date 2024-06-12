@@ -54,6 +54,7 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
     integrationTestRuntimeOnly project(':libs:state-manager:state-manager-db-impl')
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    integrationTestRuntimeOnly project(':testing:slf4jv1')
 
     cpis project(path: ':testing:ledger:ledger-common-empty-app', configuration: 'cordaCPB')
 }
