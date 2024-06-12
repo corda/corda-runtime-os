@@ -106,7 +106,7 @@ import net.corda.crypto.service.impl.rpc.ReconcilerCryptoOpsProcessor
 // integration tests (CryptoProcessorTests), as well as in various kinds of end to end and other full
 // system tests.
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [CryptoProcessor::class])
 class CryptoProcessorImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)

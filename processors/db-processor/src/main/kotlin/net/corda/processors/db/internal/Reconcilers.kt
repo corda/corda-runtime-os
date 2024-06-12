@@ -13,7 +13,6 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.membership.certificate.client.DbCertificateClient
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
@@ -70,7 +69,6 @@ class Reconcilers(
     memberInfoFactory: MemberInfoFactory,
     hostedIdentityReaderService: LocallyHostedIdentitiesService,
     hostedIdentityWriterService: LocallyHostedIdentitiesWriter,
-    certificatesClient: DbCertificateClient,
     reconcilierCryptoOpsClient: ReconcilerCryptoOpsClient,
     keyEncodingService: KeyEncodingService,
 ) {
@@ -135,7 +133,6 @@ class Reconcilers(
         reconcilerFactory,
         hostedIdentityReaderService,
         hostedIdentityWriterService,
-        certificatesClient,
         reconcilierCryptoOpsClient,
         keyEncodingService,
         virtualNodeInfoReadService,

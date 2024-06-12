@@ -6,7 +6,6 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoTenants.P2P
 import net.corda.crypto.core.ShortHash
-import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
@@ -14,7 +13,6 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
-import net.corda.membership.certificate.client.DbCertificateClient
 import net.corda.membership.certificates.toPemCertificateChain
 import net.corda.membership.datamodel.HostedIdentityEntity
 import net.corda.membership.datamodel.HostedIdentitySessionKeyInfoEntity
@@ -38,6 +36,7 @@ import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.crypto.client.ReconcilerCryptoOpsClient
 import net.corda.db.schema.CordaDb
 import net.corda.membership.certificates.datamodel.Certificate
+import net.corda.membership.certificates.datamodel.ClusterCertificate
 import net.corda.orm.JpaEntitiesRegistry
 
 @Suppress("LongParameterList")
@@ -47,7 +46,6 @@ class HostedIdentityReconciler(
     private val reconcilerFactory: ReconcilerFactory,
     private val reconcilerReader: ReconcilerReader<String, HostedIdentityEntry>,
     private val reconcilerWriter: ReconcilerWriter<String, HostedIdentityEntry>,
-    private val dbClient: DbCertificateClient,
     private val reconcilerCryptoOpsClient: ReconcilerCryptoOpsClient,
     private val keyEncodingService: KeyEncodingService,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
@@ -73,13 +71,13 @@ class HostedIdentityReconciler(
         Stream.of(ClusterReconciliationContext(dbConnectionManager))
     }
 
-    private data class CertificateKey(
+    private data class KeyLookup(
         val tenantId: String,
         val sessionKeyId: ShortHash,
     )
 
-    private val cachedCertificates: Cache<CertificateKey, String> = CacheFactoryImpl().build(
-        "P2P-inbound-sessions-cache",
+    private val cachedKeys: Cache<KeyLookup, String> = CacheFactoryImpl().build(
+        "Hosted-Identity-Reconciler-Cached-Keys",
         Caffeine.newBuilder().maximumSize(CACHE_SIZE)
     )
 
@@ -156,9 +154,7 @@ class HostedIdentityReconciler(
             true -> P2P to null
             false -> holdingIdentityShortHash to holdingId
         }
-        val tlsCertificates = getCertificates(
-            tlsCertificateHoldingId, CertificateUsage.P2P_TLS, tlsCertificateChainAlias
-        )
+        val tlsCertificates = getCertificates(tlsCertificateHoldingId, tlsCertificateChainAlias, em)
         return HostedIdentityEntry.newBuilder()
             .setHoldingIdentity(getHoldingIdentity(holdingId).toAvro())
             .setTlsCertificates(tlsCertificates)
@@ -192,7 +188,8 @@ class HostedIdentityReconciler(
 
         val vnodeEntityManager = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingId)?.let {
             VirtualNodeReconciliationContext(dbConnectionManager, entitiesSet, it)
-        }?.getOrCreateEntityManager() ?: throw CertificatesResourceNotFoundException("Virtual Node with '$holdingIdentityShortHash' not found.")
+        }?.getOrCreateEntityManager() ?:
+        throw CertificatesResourceNotFoundException("Virtual Node with '$holdingIdentityShortHash' not found.")
 
         val sessionCertificate = sessionCertificateAlias?.let { alias ->
             vnodeEntityManager.find(Certificate::class.java, alias)?.rawCertificate?.toPemCertificateChain()
@@ -211,28 +208,34 @@ class HostedIdentityReconciler(
 
     private fun getCertificates(
         certificateHoldingId: ShortHash?,
-        usage: CertificateUsage,
         certificateChainAlias: String,
+        clusterLevelEntityManager: EntityManager
     ): List<String> {
-        val certificateChain = dbClient.retrieveCertificates(
-            certificateHoldingId, usage, certificateChainAlias
-        )
-        return certificateChain?.toPemCertificateChain()
-            ?: throw CertificatesResourceNotFoundException("Certificate with '$certificateChainAlias' not found.")
+        val (entityManager, type) = if (certificateHoldingId != null) {
+            val entityManager = virtualNodeInfoReadService.getByHoldingIdentityShortHash(certificateHoldingId)?.let {
+                VirtualNodeReconciliationContext(dbConnectionManager, entitiesSet, it)
+            }?.getOrCreateEntityManager()
+                ?: throw CertificatesResourceNotFoundException("Virtual Node with '$certificateHoldingId' not found.")
+            entityManager to Certificate::class.java
+        } else {
+            clusterLevelEntityManager to ClusterCertificate::class.java
+        }
+        return entityManager.find(type, certificateChainAlias)?.rawCertificate?.toPemCertificateChain()
+                ?: throw CertificatesResourceNotFoundException("Certificate with '$certificateChainAlias' not found.")
     }
 
     private fun getSessionKey(
         tenantId: String,
         sessionKeyId: ShortHash,
     ): String {
-        val cachedCertificate = cachedCertificates.getIfPresent(CertificateKey(tenantId, sessionKeyId))
+        val cachedCertificate = cachedKeys.getIfPresent(KeyLookup(tenantId, sessionKeyId))
         return if (cachedCertificate != null) {
             cachedCertificate
         } else {
-            val certificate = reconcilerCryptoOpsClient.lookupKeysByIds(tenantId, listOf(sessionKeyId)).firstOrNull()?.toPem()
+            val key = reconcilerCryptoOpsClient.lookupKeysByIds(tenantId, listOf(sessionKeyId)).firstOrNull()?.toPem()
                 ?: throw CertificatesResourceNotFoundException("Can not find session key for $tenantId")
-            cachedCertificates.put(CertificateKey(tenantId, sessionKeyId), certificate)
-            certificate
+            cachedKeys.put(KeyLookup(tenantId, sessionKeyId), key)
+            key
         }
     }
 

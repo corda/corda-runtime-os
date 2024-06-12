@@ -23,7 +23,7 @@ class ReconcilerCryptoImpl(
     platformInfoProvider: PlatformInfoProvider,
     messagingConfig: SmartConfig,
 ) {
-
+    @Suppress("ThrowsCount")
     fun lookupKeysByIds(tenantId: String, keyIds: List<ShortHash>): List<CryptoSigningKey> {
         val request = LookUpKeyById(ShortHashes(keyIds.map { it.toString() }), tenantId)
         val response = sender.send<LookupKeyByIdResponse>(
