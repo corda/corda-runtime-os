@@ -49,7 +49,8 @@ class TestKnownIssues {
     }
 
     /**
-     * See comment for workaround details
+     * Test that `String` type responses are not being deserialized.
+     * See the workaround details
      * https://r3-cev.atlassian.net/browse/ES-2378?focusedCommentId=306841
      */
     @Test
@@ -107,7 +108,8 @@ class TestKnownIssues {
     }
 
     /**
-     * See comment for workaround details
+     * Test that `String` type responses are not being deserialized.
+     * See the workaround details
      * https://r3-cev.atlassian.net/browse/ES-2378?focusedCommentId=306841
      */
     @Test
@@ -141,7 +143,8 @@ class TestKnownIssues {
     }
 
     /**
-     * See comment for workaround details
+     * Test that `String` type responses are not being deserialized.
+     * See the workaround details
      * https://r3-cev.atlassian.net/browse/ES-2378?focusedCommentId=306841
      */
     @Test
@@ -170,7 +173,8 @@ class TestKnownIssues {
     }
 
     /**
-     * See comment for workaround details
+     * Test that `String` type responses are not being deserialized.
+     * See the workaround details
      * https://r3-cev.atlassian.net/browse/ES-2378?focusedCommentId=306841
      */
     @Test
@@ -202,7 +206,8 @@ class TestKnownIssues {
     }
 
     /**
-     * See comment for workaround details
+     * Test that `String` type responses are not being deserialized.
+     * See the workaround details
      * https://r3-cev.atlassian.net/browse/ES-2378?focusedCommentId=306841
      */
     @Test
@@ -222,9 +227,10 @@ class TestKnownIssues {
     }
 
     /**
-     * The generated client can't deserialize the Instant type natively
-     * The suggested fix is to add the dependency on libs.jackson.datatype.jsr310
-     * After adding the dependency this now works locally, but still fails on Jenkins
+     * Test that the dependency on `libs.jackson.datatype.jsr310` is consumed correctly
+     * by the generated client and propagated to the using code, including Corda CLI,
+     * enabling the correct deserialization of the `Instant` type.
+     * See details: https://r3-cev.atlassian.net/browse/ES-2396
     */
     @Test
     fun testGetRole() {
