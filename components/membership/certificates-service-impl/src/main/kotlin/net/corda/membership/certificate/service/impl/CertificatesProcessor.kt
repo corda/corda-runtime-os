@@ -11,15 +11,21 @@ import net.corda.data.certificates.rpc.response.CertificateRpcResponse
 import net.corda.data.certificates.rpc.response.ListCertificateAliasRpcResponse
 import net.corda.membership.certificate.client.DbCertificateClient
 import net.corda.messaging.api.processor.RPCResponderProcessor
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 
 internal class CertificatesProcessor(
     private val client: DbCertificateClient,
-) :
-    RPCResponderProcessor<CertificateRpcRequest, CertificateRpcResponse> {
+) : RPCResponderProcessor<CertificateRpcRequest, CertificateRpcResponse> {
+
+    companion object {
+        val logger: Logger = LoggerFactory.getLogger(CertificatesProcessor::class.java)
+    }
 
     override fun onNext(request: CertificateRpcRequest, respFuture: CompletableFuture<CertificateRpcResponse>) {
         try {
+            logger.info("CertificatesProcessor received request: $request")
             val holdingIdentity = if (request.holdingIdentity == null) {
                 null
             } else {
@@ -36,6 +42,7 @@ internal class CertificatesProcessor(
                     CertificateImportedRpcResponse()
                 }
                 is RetrieveCertificateRpcRequest -> {
+                    logger.info("Request type is RetrieveCertificateRpcRequest")
                     val certificates = client.retrieveCertificates(
                         holdingIdentity,
                         request.usage,
@@ -54,8 +61,10 @@ internal class CertificatesProcessor(
                     throw CertificatesServiceException("Unknown request: $request")
                 }
             }
+            logger.info("Completing CertificateRpcResponse future with payload: $payload")
             respFuture.complete(CertificateRpcResponse(payload))
         } catch (e: Throwable) {
+            logger.info("Completing CertificateRpcResponse future exceptionally with exception: $e")
             respFuture.completeExceptionally(e)
         }
     }

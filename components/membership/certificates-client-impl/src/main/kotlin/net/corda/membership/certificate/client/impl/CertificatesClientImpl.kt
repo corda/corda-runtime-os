@@ -168,7 +168,7 @@ class CertificatesClientImpl @Activate constructor(
                     ?: throw ResourceNotFoundException("holdingIdentityId", it.value)
             }
             val startTime = Instant.now()
-            logger.info("Send request for certificate chain $payload at $startTime")
+            logger.info("Certificate client send request for certificate chain $payload at $startTime")
             currentSender.sendRequest(
                 CertificateRpcRequest(
                     usage,

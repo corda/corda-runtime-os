@@ -5,6 +5,7 @@ import net.corda.data.certificates.CertificateUsage
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.certificate.client.DbCertificateClient
+import net.corda.membership.certificate.service.impl.DbClientImpl.CertificateProcessor.Companion.logger
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
 import net.corda.membership.certificates.datamodel.Certificate
 import net.corda.membership.certificates.datamodel.CertificateEntity
@@ -12,6 +13,7 @@ import net.corda.membership.certificates.datamodel.ClusterCertificate
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.slf4j.LoggerFactory
 import javax.persistence.EntityManagerFactory
 
 internal class DbClientImpl(
@@ -23,6 +25,10 @@ internal class DbClientImpl(
         usage: CertificateUsage,
         private val factory: EntityManagerFactory,
     ) {
+        companion object {
+            val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        }
+
         private val usageName = usage.publicName
 
         abstract val entityClass: Class<E>
@@ -134,6 +140,7 @@ internal class DbClientImpl(
         usage: CertificateUsage,
         alias: String
     ): String? {
+        logger.info("DBClient is Retrieving certificate with alias $alias")
         return useCertificateProcessor(holdingIdentityId, usage) { processor ->
             processor.readCertificates(alias)
         }
