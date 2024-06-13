@@ -2,10 +2,10 @@
 
 combinedWorkerPipeline(
     agentOs : 'linux',
-    testGradleTarget: 'pluginSmoketest',
-    captureThreadDumps: false,
-    buildName: 'Combined Worker CLI Plugins Smoke Tests',
-    gradlePerformanceTuning: '--max-workers=4 --parallel -Dscan.tag.combined-worker --build-cache -Si',
     buildCron: 'H 00 * * *',
+    buildName: 'Combined Worker CLI Plugins Smoke Tests',
+    captureThreadDumps: false,
     dropPostgresDB: true,
+    gradlePerformanceTuning: '--max-workers=4 --parallel -Dscan.tag.combined-worker --build-cache -Si',
+    testGradleTarget: 'pluginSmoketest',
 )
