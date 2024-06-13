@@ -71,7 +71,6 @@ dependencies {
     implementation project(':libs:membership:certificates-common')
     implementation project(':libs:membership:membership-common')
     implementation project(':libs:rest:json-serialization')
-    implementation project(':libs:rest:rest-client')
     implementation project(':libs:rest:generated-rest-client')
     implementation project(':libs:virtual-node:cpi-upload-endpoints')
     implementation project(':libs:virtual-node:virtual-node-endpoints')
