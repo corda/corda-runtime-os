@@ -1,6 +1,8 @@
 package net.corda.gradle.plugin
 
+import kotlinx.coroutines.delay
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
+import net.corda.restclient.CordaRestClient
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.BuildTask
 import org.gradle.testkit.runner.GradleRunner
@@ -9,12 +11,11 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
+import java.time.Duration
+import java.time.Instant
 
 // https://docs.gradle.org/current/userguide/test_kit.html
 abstract class EndToEndTestBase {
-    // TODO based on integrationTest/kotlin/net/corda/gradle/plugin/FunctionalBaseTest.kt
-    //  for now contains only necessary methods and properties
-
     @field:TempDir
     lateinit var projectDir: File
     protected lateinit var buildFile: File
@@ -23,6 +24,21 @@ abstract class EndToEndTestBase {
     private val targetUrl = DEFAULT_CLUSTER.rest.uri
     private val user = DEFAULT_CLUSTER.rest.user
     private val password = DEFAULT_CLUSTER.rest.password
+
+    protected val restClient = CordaRestClient.createHttpClient(targetUrl, user, password)
+
+    protected suspend fun waitUntilRestApiIsAvailable() {
+        val start = Instant.now()
+        while (Duration.between(start, Instant.now()) < Duration.ofMinutes(2)) {
+            try {
+                restClient.helloRestClient.getHelloGetprotocolversion()
+                break
+            }
+            catch (_: Exception) {
+                delay(10 * 1000)
+            }
+        }
+    }
 
     @BeforeEach
     fun setup() {
