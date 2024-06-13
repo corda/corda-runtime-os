@@ -44,10 +44,14 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         return getRbacUser(vNodeCreatorName).body.contains("User '$vNodeCreatorName' not found")
     }
 
+    private fun checkIfNotPreviousVersion(): Boolean {
+        return REST_API_VERSION_PATH != RestApiVersion.C5_1.versionPath && REST_API_VERSION_PATH != RestApiVersion.C5_2.versionPath
+    }
+
     internal val vNodeCreatorClient: HttpsClient by lazy {
         lock.withLock {
             val vNodeCreatorRole = checkVNodeCreatorRoleExists()
-            if (vNodeCreatorRole != null && checkVNodeCreatorUserDoesNotExist()) {
+            if (checkIfNotPreviousVersion() && vNodeCreatorRole != null && checkVNodeCreatorUserDoesNotExist()) {
                 logger.info(
                     "Creating user '$vNodeCreatorName' with role '${vNodeCreatorRole["roleName"].textValue()}'"
                 )
