@@ -5,9 +5,9 @@ import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
 import net.corda.libs.configuration.exception.WrongConfigVersionException
 import net.corda.rest.ResponseCode
 import net.corda.restclient.CordaRestClient
-import net.corda.restclient.dto.UpdateConfigParametersObjectNode
 import net.corda.restclient.generated.infrastructure.ClientError
 import net.corda.restclient.generated.infrastructure.Success
+import net.corda.restclient.generated.models.UpdateConfigParameters
 import net.corda.schema.configuration.ConfigKeys.RootConfigKey
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
 import kotlin.time.Duration
@@ -40,7 +40,7 @@ class ClusterConfig(val restClient: CordaRestClient) {
      * @return a UpdateConfigResponse if successful, or an exception
      */
     fun updateConfig(
-        updateConfig: UpdateConfigParametersObjectNode,
+        updateConfig: UpdateConfigParameters,
         wait: Duration = 10.seconds
     ): UpdateConfigResponse {
         return executeWithRetry(
@@ -54,10 +54,10 @@ class ClusterConfig(val restClient: CordaRestClient) {
                 val localVarError = response as ClientError<*>
                 if (response.statusCode == ResponseCode.CONFLICT.statusCode) {
                     throw WrongConfigVersionException(
-                        "Mismatch between config version: ${localVarError.message} and the supplied: $updateConfig"
+                        "Mismatch between config version: ${localVarError.message} ${localVarError.body} and the supplied: $updateConfig"
                     )
                 } else {
-                    throw ConfigException("Error when updating config: ${localVarError.message}")
+                    throw ConfigException("Error when updating config: ${localVarError.message} ${localVarError.body}")
                 }
             }
         }
