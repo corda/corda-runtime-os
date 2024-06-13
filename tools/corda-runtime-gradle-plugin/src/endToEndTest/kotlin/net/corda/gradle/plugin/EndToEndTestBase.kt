@@ -2,7 +2,10 @@ package net.corda.gradle.plugin
 
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import org.gradle.testkit.runner.BuildResult
+import org.gradle.testkit.runner.BuildTask
 import org.gradle.testkit.runner.GradleRunner
+import org.gradle.testkit.runner.TaskOutcome
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
@@ -98,13 +101,16 @@ abstract class EndToEndTestBase {
         buildFile.writeText(newContent)
     }
 
-    fun executeWithRunner(vararg args: String): BuildResult {
-        return GradleRunner
+    fun executeWithRunner(vararg args: String, forwardOutput: Boolean = true): BuildResult {
+        val gradleRunnerBuilder = GradleRunner
             .create()
             .withPluginClasspath()
             .withProjectDir(projectDir)
             .withArguments(*args)
-            .build()
+        if (forwardOutput) {
+            gradleRunnerBuilder.forwardOutput()
+        }
+        return gradleRunnerBuilder.build()
     }
 
     fun executeAndFailWithRunner(vararg args: String): BuildResult {
@@ -114,5 +120,9 @@ abstract class EndToEndTestBase {
             .withProjectDir(projectDir)
             .withArguments(*args)
             .buildAndFail()
+    }
+
+    fun BuildTask.assertTaskSucceeded() {
+        assertTrue(outcome == TaskOutcome.SUCCESS, "The task '$path' is expected to be successful")
     }
 }
