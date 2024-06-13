@@ -1,0 +1,4 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Wed Jun 12 16:52:23 BST 2024
+javalin-osgi-6.1.7-SNAPSHOT.pom>=
+javalin-osgi-6.1.7-SNAPSHOT.jar>=
