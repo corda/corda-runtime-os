@@ -1,0 +1,148 @@
+@Library('corda-shared-build-pipeline-steps@asubbotin/ES-2345/corda-runtime-gradle-plugin-test-pipeline') _
+
+@Field
+Map defaults = [
+        dailyBuildCron: '''\
+            TZ=Europe/London
+            H 04 * * 1-5
+    '''.stripIndent(),
+        eksCredentials: 'kubernetes-eks-e2e-01-credentials',
+        gradleTestTargetsToExecute: [
+                'help', // dummy tasks while testing to be overridden by implementing project
+                'tasks'
+        ],
+//        slackChannel              : '#corda-corda5-build-notifications',
+]
+
+def call(Map config) {
+    config = (config == null) ? defaults : defaults + config
+
+    BuildEnvironment buildEnvironment = BuildEnvironment.AMD64_LINUX_JAVA17
+    KubernetesCluster kubernetesCluster = KubernetesCluster.JenkinsAgents
+    String defaultContainerValue = 'build'
+    int cpus = 3
+
+    pipeline {
+        agent {
+            kubernetes {
+                cloud "${kubernetesCluster.cloudName}"
+                yaml kubernetesDockerBuildAgentYaml(defaultContainerValue, buildEnvironment, cpus)
+                yamlMergeStrategy merge() // important to keep tolerations from the inherited template
+                inheritFrom "k8s-${buildEnvironment.buildOperatingSystem.toString().toLowerCase()}-${buildEnvironment.buildArchitecture.toString().toLowerCase()}"
+                showRawYaml false
+                defaultContainer defaultContainerValue
+            }
+        }
+
+        triggers {
+            cron(isReleaseBranch() ? config.dailyBuildCron : '')
+        }
+
+        environment {
+            ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
+            CORDA_ARTIFACTORY_APIKEY = "${env.ARTIFACTORY_CREDENTIALS_PSW}"
+            CORDA_ARTIFACTORY_PASSWORD = "${env.ARTIFACTORY_CREDENTIALS_PSW}"
+            CORDA_ARTIFACTORY_USERNAME = "${env.ARTIFACTORY_CREDENTIALS_USR}"
+            GRADLE_USER_HOME = '/host_tmp/gradle'
+            KUBECONFIG = credentials("${config.eksCredentials}")
+            TEST_DIR = 'tests'
+            CORDA_CLI_INSTALL_LOCATION='corda'
+            CSDE_REPO_BRANCH="${params.CSDE_REPO_BRANCH}"
+            CSDE_REPO_REF="${params.CSDE_REPO_REF}"
+        }
+
+        options {
+            timestamps()
+        }
+
+        stages {
+//            stage('Prep') {
+//                steps {
+//                    script {
+//                        dirsToDelete = ['corda-runtime-os', 'corda-cli-plugin-host', 'tests']
+//                        operations = dirsToDelete.collect { folderDeleteOperation(folderPath: "${env.WORKSPACE}/${it}") }
+//                        operations += fileCopyOperation(excludes: '.git/,tests/',
+//                                flattenFiles: false,
+//                                includes: '**/*',
+//                                targetLocation: "${env.TEST_DIR}")
+//                        fileOperations(operations)
+//                    }
+//                }
+//            }
+            stage('Test') {
+                steps {
+                    sh 'docker ps'
+                    def testTasksToRun = params?.TEST_TASKS?.split(',') ?: config.gradleTestTargetsToExecute
+                    testTasksToRun.each { gradleTask ->
+                        gradlew(gradleTask, '-PisCombinedWorker=false', params.GRADLE_TEST_ADDITIONAL_ARGS)
+                    }
+                    dir("${env.TEST_DIR}") {
+                        gradlew('cleanTest test --full-stacktrace --info')
+                    }
+                }
+                post {
+                    always {
+                        junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
+                    }
+                }
+            }
+        }
+
+        post {
+            always {
+                findBuildScans()
+                step([$class: 'ClaimPublisher'])
+            }
+            success {
+                script {
+                    if (config.enableNotifications && pipelineUtils.checkPreviousBuildStatus(Result.FAILURE)) {
+                        sendSlackNotifications(BuildConstants.SLACK_PASS_BUILD_COLOR, "BUILD PASSED", false, "${config.slackChannel}")
+                    }
+                }
+            }
+            unstable {
+                script {
+                    if (config.enableNotifications) {
+                        sendSlackNotifications("warning", "BUILD UNSTABLE - Unstable Builds may be a result of flaky tests please investigate", false, "${config.slackChannel}")
+                    }
+                }
+            }
+            failure {
+                recordIssues(
+                        enabledForFailure: true, aggregatingResults: true,
+                        tools: [kotlin(), java(), detekt(pattern: '**/build/detekt-report.xml')]
+                )
+                script {
+                    if (config.enableNotifications) {
+                        sendSlackNotifications("danger", "BUILD FAILURE", false, "${config.slackChannel}")
+                    }
+                    if ((gitUtils.isReleaseBranch() || gitUtils.isReleaseTag()) && config.enableNotifications) {
+                        sendEmailNotifications("${config.defaltEmailsRecipients.join(',')}")
+                    }
+                }
+                archiveArtifacts artifacts: '**/*.cpb', fingerprint: true, allowEmptyArchive: true
+                archiveArtifacts artifacts: '**/cliBaselineNew*.txt', fingerprint: true, allowEmptyArchive: true
+            }
+            aborted {
+                script {
+                    if (config.enableNotifications) {
+                        sendSlackNotifications(BuildConstants.SLACK_ABORT_BUILD_COLOR, "BUILD ABORTED - Aborted Builds may be a result of a timeout please investigate", true, "${config.slackChannel}")
+                    }
+                }
+            }
+        }
+    }
+}
+
+def isReleaseBranch() {
+    return (env.BRANCH_NAME =~ /^release\/.*$/)
+}
+
+def gradleCmd() {
+    return isUnix() ? './gradlew' : './gradlew.bat'
+}
+
+def gradlew(String... args) {
+    allArgs = args.join(' ')
+    sh "${gradleCmd()} ${allArgs}"
+}
