@@ -3,6 +3,6 @@
 cordaRuntimeGradlePluginTestsPipeline(
 //        dailyBuildCron: 'TZ=Europe/London\nH 04 * * 1-5\n',
 //        eksCredentials: 'kubernetes-eks-e2e-01-credentials',
-//        gradleTestTargetsToExecute: ['help', 'tasks'],
+        gradleTestTargetsToExecute: [':tools:corda-runtime-gradle-plugin:endToEndTest'],
 //        slackChannel: '#corda-corda5-build-notifications',
 )
