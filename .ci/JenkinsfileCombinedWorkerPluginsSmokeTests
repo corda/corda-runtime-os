@@ -1,8 +1,8 @@
-@Library('corda-shared-build-pipeline-steps@5.3') _
+@Library('corda-shared-build-pipeline-steps@asubbotin/ES-2345/corda-runtime-gradle-plugin-test-pipeline') _
 
 combinedWorkerPipeline(
     agentOs : 'linux',
-    testGradleTarget: 'pluginSmokeTest',
+    testGradleTarget: 'pluginSmoketest',
     captureThreadDumps: false,
     buildName: 'Combined Worker CLI Plugins Smoke Tests',
     gradlePerformanceTuning: '--max-workers=4 --parallel -Dscan.tag.combined-worker --build-cache -Si',
