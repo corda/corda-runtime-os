@@ -3,6 +3,7 @@ package net.corda.e2etest.utilities.config
 import com.fasterxml.jackson.databind.JsonNode
 import kong.unirest.UnirestException
 import net.corda.e2etest.utilities.ClusterInfo
+import net.corda.e2etest.utilities.ClusterReadinessChecker
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.assertWithRetryIgnoringExceptions
 import net.corda.e2etest.utilities.cluster
@@ -151,8 +152,8 @@ fun ClusterInfo.waitForConfigurationChange(
             }
         }
 
-        // check cluster is ready. No need to aggresively poll too much as its expected the cluster to be down for a number of seconds
-        assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(1000))
+        // check cluster is ready. No need to aggressively poll too much as its expected the cluster to be down for a number of seconds
+        ClusterReadinessChecker().assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(1000))
 
         // Wait for the service to become available again and have the expected configuration value
         assertWithRetryIgnoringExceptions {
