@@ -11,6 +11,7 @@ import org.gradle.testkit.runner.TaskOutcome
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.io.TempDir
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.time.Duration
 import java.time.Instant
@@ -19,13 +20,16 @@ import java.util.concurrent.TimeUnit
 // https://docs.gradle.org/current/userguide/test_kit.html
 abstract class EndToEndTestBase {
     companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
         private val targetUrl = DEFAULT_CLUSTER.rest.uri
         private val user = DEFAULT_CLUSTER.rest.user
         private val password = DEFAULT_CLUSTER.rest.password
 
         protected val restClient = CordaRestClient.createHttpClient(targetUrl, user, password)
         private val composeFile = File(this::class.java.getResource("/config/combined-worker-compose.yml")!!.toURI())
-        private const val TEST_ENV_CORDA_RUNTIME_VERSION = "5.3.0.0-HC01"
+        private const val CORDA_IMAGE_TAG_STABLE = "5.3.0.0-HC01"
+        private val testEnvCordaImageTag = System.getenv("CORDA_IMAGE_TAG") ?: CORDA_IMAGE_TAG_STABLE
 
         @JvmStatic
         protected suspend fun waitUntilRestApiIsAvailable() {
@@ -41,44 +45,40 @@ abstract class EndToEndTestBase {
             }
         }
 
-        @JvmStatic
-        fun startCompose(wait: Boolean = true) {
-            val cordaProcessBuilder = ProcessBuilder(
+        private fun runComposeCommand(vararg args: String): Process {
+            val composeCommandBase = listOf(
                 "docker",
                 "compose",
                 "-f",
                 composeFile.absolutePath,
                 "-p",
-                "corda-cluster",
-                "up",
-                "--pull",
-                "missing",
-                "--quiet-pull",
-                "--detach"
+                "corda-cluster"
             )
-            cordaProcessBuilder.environment()["CORDA_RUNTIME_VERSION"] = TEST_ENV_CORDA_RUNTIME_VERSION
+            val cmd = composeCommandBase + args.toList()
+            val cordaProcessBuilder = ProcessBuilder(cmd)
+            cordaProcessBuilder.environment()["CORDA_RUNTIME_VERSION"] = testEnvCordaImageTag
             cordaProcessBuilder.redirectErrorStream(true)
-            val cordaProcess = cordaProcessBuilder.start()
-            cordaProcess.inputStream.transferTo(System.out)
-            cordaProcess.waitFor(10, TimeUnit.SECONDS)
-            if (cordaProcess.exitValue() != 0) throw IllegalStateException("Failed to start Corda cluster using docker compose")
+            return cordaProcessBuilder.start().also {
+                it.inputStream.transferTo(System.out)
+            }
+        }
+
+        @JvmStatic
+        fun startCompose(wait: Boolean = true) {
+            val cordaProcess = runComposeCommand("up", "--pull", "missing", "--quiet-pull", "--detach")
+
+            val hasExited = cordaProcess.waitFor(10, TimeUnit.SECONDS)
+            if (cordaProcess.exitValue() != 0 || !hasExited) throw IllegalStateException("Failed to start Corda cluster using docker compose")
+
             if (wait) runBlocking { waitUntilRestApiIsAvailable() }
+
+            logger.info("Corda cluster is running with images:")
+            runComposeCommand("images")
         }
 
         @JvmStatic
         fun stopCompose() {
-            val cordaProcessBuilder = ProcessBuilder(
-                "docker",
-                "compose",
-                "-f",
-                composeFile.absolutePath,
-                "-p",
-                "corda-cluster",
-                "down",
-            )
-            cordaProcessBuilder.redirectErrorStream(true)
-            val cordaStopProcess = cordaProcessBuilder.start()
-            cordaStopProcess.inputStream.transferTo(System.out)
+            val cordaStopProcess = runComposeCommand("down")
             cordaStopProcess.waitFor(30, TimeUnit.SECONDS)
         }
     }
