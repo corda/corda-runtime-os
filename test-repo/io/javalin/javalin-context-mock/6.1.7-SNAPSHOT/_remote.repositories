@@ -1,0 +1,5 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Fri Jun 14 16:24:23 BST 2024
+javalin-context-mock-6.1.7-SNAPSHOT.pom>=
+javalin-context-mock-6.1.7-SNAPSHOT-sources.jar>=
+javalin-context-mock-6.1.7-SNAPSHOT.jar>=
