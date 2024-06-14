@@ -20,29 +20,30 @@ import java.util.concurrent.TimeUnit
 // https://docs.gradle.org/current/userguide/test_kit.html
 abstract class EndToEndTestBase {
     companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-
         private val targetUrl = DEFAULT_CLUSTER.rest.uri
         private val user = DEFAULT_CLUSTER.rest.user
         private val password = DEFAULT_CLUSTER.rest.password
 
-        protected val restClient = CordaRestClient.createHttpClient(targetUrl, user, password)
+        protected val restClient = CordaRestClient.createHttpClient(targetUrl, user, password, insecure = true)
         private val composeFile = File(this::class.java.getResource("/config/combined-worker-compose.yml")!!.toURI())
         private const val CORDA_IMAGE_TAG_STABLE = "5.3.0.0-HC01"
         private val testEnvCordaImageTag = System.getenv("CORDA_IMAGE_TAG") ?: CORDA_IMAGE_TAG_STABLE
 
         @JvmStatic
-        protected suspend fun waitUntilRestApiIsAvailable() {
+        protected suspend fun waitUntilRestApiIsAvailable(throwError: Boolean = true) {
             val start = Instant.now()
+            var error: Exception? = null
             while (Duration.between(start, Instant.now()) < Duration.ofMinutes(2)) {
                 try {
                     restClient.helloRestClient.getHelloGetprotocolversion()
-                    break
+                    return
                 }
-                catch (_: Exception) {
+                catch (e: Exception) {
+                    error = e
                     delay(10 * 1000)
                 }
             }
+            if (throwError && error != null) throw error
         }
 
         private fun runComposeCommand(vararg args: String): Process {
@@ -58,9 +59,10 @@ abstract class EndToEndTestBase {
             val cordaProcessBuilder = ProcessBuilder(cmd)
             cordaProcessBuilder.environment()["CORDA_RUNTIME_VERSION"] = testEnvCordaImageTag
             cordaProcessBuilder.redirectErrorStream(true)
-            return cordaProcessBuilder.start().also {
-                it.inputStream.transferTo(System.out)
-            }
+            val process = cordaProcessBuilder.start()
+            process.inputStream.transferTo(System.out)
+
+            return process
         }
 
         @JvmStatic
@@ -72,8 +74,7 @@ abstract class EndToEndTestBase {
 
             if (wait) runBlocking { waitUntilRestApiIsAvailable() }
 
-            logger.info("Corda cluster is running with images:")
-            runComposeCommand("images")
+            runComposeCommand("images").waitFor(10, TimeUnit.SECONDS)
         }
 
         @JvmStatic
