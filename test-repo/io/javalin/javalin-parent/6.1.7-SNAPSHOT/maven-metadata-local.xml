@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata modelVersion="1.1.0">
+  <groupId>io.javalin</groupId>
+  <artifactId>javalin-parent</artifactId>
+  <versioning>
+    <lastUpdated>20240614152124</lastUpdated>
+    <snapshot>
+      <localCopy>true</localCopy>
+    </snapshot>
+    <snapshotVersions>
+      <snapshotVersion>
+        <extension>pom</extension>
+        <value>6.1.7-SNAPSHOT</value>
+        <updated>20240614152124</updated>
+      </snapshotVersion>
+    </snapshotVersions>
+  </versioning>
+  <version>6.1.7-SNAPSHOT</version>
+</metadata>
