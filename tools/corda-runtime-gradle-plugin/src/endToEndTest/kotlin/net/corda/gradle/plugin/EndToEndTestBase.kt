@@ -1,6 +1,7 @@
 package net.corda.gradle.plugin
 
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.restclient.CordaRestClient
 import org.gradle.testkit.runner.BuildResult
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.io.TempDir
 import java.io.File
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.TimeUnit
 
 // https://docs.gradle.org/current/userguide/test_kit.html
 abstract class EndToEndTestBase {
@@ -22,6 +24,8 @@ abstract class EndToEndTestBase {
         private val password = DEFAULT_CLUSTER.rest.password
 
         protected val restClient = CordaRestClient.createHttpClient(targetUrl, user, password)
+        private val composeFile = File(this::class.java.getResource("/config/combined-worker-compose.yml")!!.toURI())
+        private const val TEST_ENV_CORDA_RUNTIME_VERSION = "5.3.0.0-HC01"
 
         @JvmStatic
         protected suspend fun waitUntilRestApiIsAvailable() {
@@ -35,6 +39,47 @@ abstract class EndToEndTestBase {
                     delay(10 * 1000)
                 }
             }
+        }
+
+        @JvmStatic
+        fun startCompose(wait: Boolean = true) {
+            val cordaProcessBuilder = ProcessBuilder(
+                "docker",
+                "compose",
+                "-f",
+                composeFile.absolutePath,
+                "-p",
+                "corda-cluster",
+                "up",
+                "--pull",
+                "missing",
+                "--quiet-pull",
+                "--detach"
+            )
+            cordaProcessBuilder.environment()["CORDA_RUNTIME_VERSION"] = TEST_ENV_CORDA_RUNTIME_VERSION
+            cordaProcessBuilder.redirectErrorStream(true)
+            val cordaProcess = cordaProcessBuilder.start()
+            cordaProcess.inputStream.transferTo(System.out)
+            cordaProcess.waitFor(10, TimeUnit.SECONDS)
+            if (cordaProcess.exitValue() != 0) throw IllegalStateException("Failed to start Corda cluster using docker compose")
+            if (wait) runBlocking { waitUntilRestApiIsAvailable() }
+        }
+
+        @JvmStatic
+        fun stopCompose() {
+            val cordaProcessBuilder = ProcessBuilder(
+                "docker",
+                "compose",
+                "-f",
+                composeFile.absolutePath,
+                "-p",
+                "corda-cluster",
+                "down",
+            )
+            cordaProcessBuilder.redirectErrorStream(true)
+            val cordaStopProcess = cordaProcessBuilder.start()
+            cordaStopProcess.inputStream.transferTo(System.out)
+            cordaStopProcess.waitFor(30, TimeUnit.SECONDS)
         }
     }
 
