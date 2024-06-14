@@ -17,6 +17,8 @@ class CordaLifeCycleTasksTest : EndToEndTestBase() {
         runBlocking {
             GlobalScope.launch {
                 executeWithRunner(START_CORDA_TASK_NAME, forwardOutput = true)
+                // TODO: do not clog console with output?
+                // TODO: use Writer for output to assess output
             }
             val job = GlobalScope.launch {
                 waitUntilRestApiIsAvailable()

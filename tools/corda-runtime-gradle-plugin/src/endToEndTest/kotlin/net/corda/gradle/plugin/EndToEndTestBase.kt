@@ -120,7 +120,7 @@ abstract class EndToEndTestBase {
         buildFile.writeText(newContent)
     }
 
-    fun executeWithRunner(vararg args: String, forwardOutput: Boolean = true): BuildResult {
+    fun executeWithRunner(vararg args: String, forwardOutput: Boolean = false): BuildResult {
         val gradleRunnerBuilder = GradleRunner
             .create()
             .withPluginClasspath()
