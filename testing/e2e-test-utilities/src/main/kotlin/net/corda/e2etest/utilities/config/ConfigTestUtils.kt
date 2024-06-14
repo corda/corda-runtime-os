@@ -151,6 +151,9 @@ fun ClusterInfo.waitForConfigurationChange(
             }
         }
 
+        // check cluster is ready. No need to aggresively poll too much as its expected the cluster to be down for a number of seconds
+        assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(1000))
+
         // Wait for the service to become available again and have the expected configuration value
         assertWithRetryIgnoringExceptions {
             timeout(timeout)
