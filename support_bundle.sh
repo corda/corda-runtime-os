@@ -65,7 +65,7 @@ for restSvcName in $(kubectl get svc --namespace "$namespace" -l app.kubernetes.
       if curl -sk "https://localhost:9443" --retry 10 --retry-delay 1 --retry-all-errors > /dev/null 2>&1; then
         sections="crypto externalMessaging flow ledger.utxo membership messaging p2p.gateway p2p.linkManager rbac reconciliation rest sandbox secrets security stateManager vnode.datasource"
         for section in $sections; do
-            curl -sk -u "${username}:${password}" "https://localhost:9443/api/v1/config/corda.${section}" -o "${configDir}/corda.${section}.json"
+            curl -sk -u "${username}:${password}" "https://localhost:9443/api/v5_3/config/corda.${section}" -o "${configDir}/corda.${section}.json"
         done
       fi
       disown $pid
