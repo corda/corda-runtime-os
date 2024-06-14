@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>io.javalin</groupId>
+  <artifactId>javalin-parent</artifactId>
+  <versioning>
+    <versions>
+      <version>6.1.7-SNAPSHOT</version>
+    </versions>
+    <lastUpdated>20240614152124</lastUpdated>
+  </versioning>
+</metadata>
