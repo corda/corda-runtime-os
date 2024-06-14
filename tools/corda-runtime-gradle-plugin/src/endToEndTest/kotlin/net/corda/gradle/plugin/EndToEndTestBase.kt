@@ -16,29 +16,32 @@ import java.time.Instant
 
 // https://docs.gradle.org/current/userguide/test_kit.html
 abstract class EndToEndTestBase {
+    companion object {
+        private val targetUrl = DEFAULT_CLUSTER.rest.uri
+        private val user = DEFAULT_CLUSTER.rest.user
+        private val password = DEFAULT_CLUSTER.rest.password
+
+        protected val restClient = CordaRestClient.createHttpClient(targetUrl, user, password)
+
+        @JvmStatic
+        protected suspend fun waitUntilRestApiIsAvailable() {
+            val start = Instant.now()
+            while (Duration.between(start, Instant.now()) < Duration.ofMinutes(2)) {
+                try {
+                    restClient.helloRestClient.getHelloGetprotocolversion()
+                    break
+                }
+                catch (_: Exception) {
+                    delay(10 * 1000)
+                }
+            }
+        }
+    }
+
     @field:TempDir
     lateinit var projectDir: File
     protected lateinit var buildFile: File
     private lateinit var networkPath: String
-
-    private val targetUrl = DEFAULT_CLUSTER.rest.uri
-    private val user = DEFAULT_CLUSTER.rest.user
-    private val password = DEFAULT_CLUSTER.rest.password
-
-    protected val restClient = CordaRestClient.createHttpClient(targetUrl, user, password)
-
-    protected suspend fun waitUntilRestApiIsAvailable() {
-        val start = Instant.now()
-        while (Duration.between(start, Instant.now()) < Duration.ofMinutes(2)) {
-            try {
-                restClient.helloRestClient.getHelloGetprotocolversion()
-                break
-            }
-            catch (_: Exception) {
-                delay(10 * 1000)
-            }
-        }
-    }
 
     @BeforeEach
     fun setup() {
