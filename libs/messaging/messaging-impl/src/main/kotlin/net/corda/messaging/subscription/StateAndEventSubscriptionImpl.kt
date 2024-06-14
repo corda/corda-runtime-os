@@ -243,6 +243,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         } catch (ex: StateAndEventConsumer.RebalanceInProgressException) {
             log.warn ("Abandoning processing of events(keys: ${events.joinToString { it.key.toString() }}, " +
                     "size: ${events.size}) due to rebalance", ex)
+            stateAndEventConsumer.resetEventOffsetPosition()
             return true
         }
 
