@@ -13,13 +13,14 @@ import brave.http.HttpRequestMatchers.pathStartsWith
 import brave.http.HttpRequestParser
 import brave.http.HttpRuleSampler
 import brave.http.HttpTracing
+import brave.jakarta.servlet.TracingFilter
 import brave.propagation.B3Propagation
 import brave.propagation.ThreadLocalCurrentTraceContext
 import brave.sampler.RateLimitingSampler
 import brave.sampler.Sampler
 import brave.sampler.SamplerFunction
-import brave.servlet.TracingFilter
-import io.javalin.core.JavalinConfig
+import io.javalin.config.JavalinConfig
+import jakarta.servlet.DispatcherType
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.tracing.BatchPublishTracing
@@ -40,7 +41,6 @@ import java.util.Stack
 import java.util.concurrent.ExecutorService
 import java.util.logging.Level
 import java.util.logging.Logger
-import javax.servlet.DispatcherType
 
 internal sealed interface SampleRate
 internal object Unlimited : SampleRate
@@ -267,7 +267,7 @@ internal class BraveTracingService(
     }
 
     override fun configureJavalin(config: Any) {
-        (config as JavalinConfig).configureServletContextHandler { sch ->
+        (config as JavalinConfig).jetty.modifyServletContextHandler() { sch ->
             sch.addFilter(
                 FilterHolder(TracingFilter.create(httpTracing)),
                 "/*",

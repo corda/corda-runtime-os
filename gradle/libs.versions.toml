@@ -14,7 +14,8 @@ javalinVersion = "6.1.7-SNAPSHOT"
 jcipAnnotationsVersion = "1.0_2"
 # This version of Jetty must be the same major version as used by Javalin, please see above.
 # Once Javalin version is upgraded to the latest, this override may be removed.
-jettyVersion = "9.4.55.v20240627"
+jettyVersion = "11.0.16"
+jettyWebsocketServerVersion = "9.4.51.v20230217"
 micrometerVersion = "1.12.4"
 nimbusVersion = "11.13"
 kafkaClientVersion = "3.7.0_1"
@@ -66,7 +67,7 @@ assertj-core = { group = "org.assertj", name = "assertj-core", version.ref = "as
 bouncycastle-pkix = { group = "org.bouncycastle", name = "bcpkix-jdk18on", version.ref = "bouncycastleVersion" }
 bouncycastle-prov = { group = "org.bouncycastle", name = "bcprov-jdk18on", version.ref = "bouncycastleVersion" }
 brave-context-slf4j = { group = "io.zipkin.brave", name = "brave-context-slf4j", version.ref = "braveVersion" }
-brave-instrumentation-servlet = { group = "io.zipkin.brave", name = "brave-instrumentation-servlet", version.ref = "braveVersion" }
+brave-instrumentation-servlet = { group = "io.zipkin.brave", name = "brave-instrumentation-servlet-jakarta", version.ref = "braveVersion" }
 caffeine = { group = "com.github.ben-manes.caffeine", name = "caffeine", version.ref = "caffeineVersion" }
 commonsio = { group = "commons-io", name = "commons-io", version.ref = "commonsioVersion" }
 guava = { group = "com.google.guava", name = "guava", version.ref = "guavaVersion" }
@@ -83,7 +84,7 @@ jetty-server = { group = "org.eclipse.jetty", name = "jetty-server" }
 jetty-xml = { group = "org.eclipse.jetty", name = "jetty-xml", version.ref = "jettyVersion" }
 jetty-websocket-servlet = { group = "org.eclipse.jetty.websocket", name = "websocket-servlet", version.ref = "jettyVersion" }
 jetty-websocket-server = { group = "org.eclipse.jetty.websocket", name = "websocket-server", version.ref = "jettyVersion" }
-jetty-websocket-client = { group = "org.eclipse.jetty.websocket", name = "websocket-client", version.ref = "jettyVersion" }
+jetty-websocket-client = { group = "org.eclipse.jetty.websocket", name = "websocket-client", version.ref = "jettyWebsocketServerVersion" }
 jetty-http2-server = { group = "org.eclipse.jetty.http2", name = "http2-server", version.ref = "jettyVersion" }
 junit = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junitVersion" }
 junit-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "junitVersion" }

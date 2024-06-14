@@ -5,6 +5,8 @@ import net.corda.rest.ws.DuplexChannel
 import org.eclipse.jetty.websocket.api.CloseStatus
 import org.eclipse.jetty.websocket.api.StatusCode
 import java.lang.Exception
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executors
 import java.util.concurrent.Future
 
 internal class ServerDuplexChannel(
@@ -18,12 +20,14 @@ internal class ServerDuplexChannel(
     private var connectHook: (() -> Unit)? = null
     private var closeHook: ((statusCode: Int, reason: String?) -> Unit)? = null
 
+    private val executorService = Executors.newCachedThreadPool()
+
     override fun send(message: String): Future<Void> {
-        return ctx.send(message)
+        return CompletableFuture.runAsync({ ctx.send(message) }, executorService)
     }
 
     override fun send(message: Any): Future<Void> {
-        return ctx.send(message)
+        return CompletableFuture.runAsync({ ctx.send(message) }, executorService)
     }
 
     override fun close() {
