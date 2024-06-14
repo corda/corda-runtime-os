@@ -197,7 +197,7 @@ fun ClusterInfo.onboardNotaryMember(
             "corda.notary.keys.0.signature.spec" to DEFAULT_SIGNATURE_SPEC
         ) + (getAdditionalContext?.let { it(holdingId) } ?: emptyMap()) + (
                 // Add the optional backchain property if version is >= 5.2
-                if (restApiVersion != RestApiVersion.C5_0 && restApiVersion != RestApiVersion.C5_1 && isBackchainRequired != null)
+                if (restApiVersion != RestApiVersion.C5_1 && isBackchainRequired != null)
                     mapOf("corda.notary.service.backchain.required" to "$isBackchainRequired")
                 else emptyMap()
                 )

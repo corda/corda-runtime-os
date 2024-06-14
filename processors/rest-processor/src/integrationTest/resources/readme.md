@@ -1,6 +1,6 @@
 ## Open API compatibility testing
 
-File [swaggerBaseline-$version.json](./swaggerBaseline-v1.json) represents a snapshot of Open API which REST Worker currently
+File [swaggerBaseline-$version.json](./swaggerBaseline-v5_1.json) represents a snapshot of Open API which REST Worker currently
 provides.
 
 There is also an integration test [OpenApiCompatibilityTest](../kotlin/net/corda/processors/rest/OpenApiCompatibilityTest.kt)

@@ -285,16 +285,8 @@ class MGMRestResourceImpl internal constructor(
         reason: ManualDeclinationReason
     ) = impl.declineRegistrationRequest(holdingIdentityShortHash, requestId, reason)
 
-    @Deprecated("Deprecated in favour of suspendMember")
-    override fun deprecatedSuspendMember(holdingIdentityShortHash: String, suspensionParams: SuspensionActivationParameters) =
-        impl.suspendMember(holdingIdentityShortHash, suspensionParams)
-
     override fun suspendMember(holdingIdentityShortHash: String, suspensionParams: SuspensionActivationParameters) =
         impl.suspendMember(holdingIdentityShortHash, suspensionParams.throwBadRequestIfNoSerialNumber())
-
-    @Deprecated("Deprecated in favour of activateMember")
-    override fun deprecatedActivateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters) =
-        impl.activateMember(holdingIdentityShortHash, activationParams)
 
     override fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters) =
         impl.activateMember(holdingIdentityShortHash, activationParams.throwBadRequestIfNoSerialNumber())

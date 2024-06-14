@@ -3,7 +3,6 @@ package net.corda.e2etest.utilities
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.e2etest.utilities.config.SingleClusterTestConfigManager
 import net.corda.rest.ResponseCode
-import net.corda.rest.annotations.RestApiVersion
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.seconds
 import java.io.File
@@ -29,20 +28,11 @@ fun ClusterInfo.generateCsr(
 
     assertWithRetryIgnoringExceptions {
         interval(1.seconds)
-        if (restApiVersion == RestApiVersion.C5_0) {
-            command {
-                initialClient.post(
-                    "/api/${RestApiVersion.C5_0.versionPath}/certificates/$tenantId/$keyId",
-                    ObjectMapper().writeValueAsString(payload)
-                )
-            }
-        } else {
-            command {
-                vNodeCreatorClient.post(
-                    "/api/${restApiVersion.versionPath}/certificate/$tenantId/$keyId",
-                    ObjectMapper().writeValueAsString(payload)
-                )
-            }
+        command {
+            vNodeCreatorClient.post(
+                "/api/${restApiVersion.versionPath}/certificate/$tenantId/$keyId",
+                ObjectMapper().writeValueAsString(payload)
+            )
         }
         condition { it.code == ResponseCode.OK.statusCode }
     }.body

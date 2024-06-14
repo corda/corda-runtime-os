@@ -1,6 +1,6 @@
 package net.corda.rest.annotations
 
-import net.corda.rest.annotations.RestApiVersion.C5_0 as MIN_SUPPORTED
+import net.corda.rest.annotations.RestApiVersion.C5_1 as MIN_SUPPORTED
 import net.corda.rest.annotations.RestApiVersion.C5_3 as CURRENT
 
 /**

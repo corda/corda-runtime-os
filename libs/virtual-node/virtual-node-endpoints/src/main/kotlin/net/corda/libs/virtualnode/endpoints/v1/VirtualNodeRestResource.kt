@@ -192,25 +192,6 @@ interface VirtualNodeRestResource : RestResource {
     /**
      * Asynchronous endpoint to upgrade a virtual node's CPI.
      */
-    @Deprecated("Deprecated in favour of upgradeVirtualNode")
-    @HttpPUT(
-        path = "{virtualNodeShortId}/cpi/{targetCpiFileChecksum}",
-        title = "Upgrade a virtual node's CPI.",
-        description = "This method upgrades a virtual node's CPI.",
-        responseDescription = "Identifier for the request.",
-        minVersion = RestApiVersion.C5_0,
-        maxVersion = RestApiVersion.C5_0
-    )
-    fun upgradeVirtualNodeDeprecated(
-        @RestPathParameter(description = "Short ID of the virtual node instance to update")
-        virtualNodeShortId: String,
-        @RestPathParameter(description = "The file checksum of the CPI to upgrade to.")
-        targetCpiFileChecksum: String
-    ): ResponseEntity<AsyncResponse>
-
-    /**
-     * Asynchronous endpoint to upgrade a virtual node's CPI.
-     */
     @HttpPUT(
         path = "{virtualNodeShortId}/cpi/{targetCpiFileChecksum}",
         title = "Upgrade a virtual node's CPI.",
