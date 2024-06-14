@@ -1,9 +1,9 @@
 package net.corda.rest.server.impl.internal
 
-import io.javalin.core.util.Util
 import io.javalin.http.Context
 import io.javalin.http.Handler
 import io.javalin.http.InternalServerErrorResponse
+import io.javalin.util.Util
 import net.corda.rest.server.config.RestServerSettingsProvider
 import net.corda.rest.server.impl.apigen.processing.openapi.OpenApiInfoProvider.Companion.jsonPath
 import org.osgi.framework.FrameworkUtil

@@ -1,12 +1,12 @@
 package net.corda.rest.server.impl.context
 
-import io.javalin.core.security.BasicAuthCredentials
-import io.javalin.core.util.Header
+import io.javalin.http.Header
 import io.javalin.http.UploadedFile
-import io.javalin.http.util.ContextUtil
-import io.javalin.plugin.json.JsonMapper
+import io.javalin.json.JsonMapper
+import io.javalin.security.BasicAuthCredentials
 import net.corda.data.rest.PasswordExpiryStatus
 import net.corda.rest.server.impl.security.RestAuthenticationProvider
+import java.util.Base64
 
 /**
  * Abstract HTTP request or WebSocket request
@@ -101,7 +101,7 @@ interface ClientRequestContext {
      * Returns a Boolean which is true if there is an Authorization header with
      * Basic auth credentials. Returns false otherwise.
      */
-    fun basicAuthCredentialsExist(): Boolean = ContextUtil.hasBasicAuthCredentials(header(Header.AUTHORIZATION))
+    fun basicAuthCredentialsExist(): Boolean = hasBasicAuthCredentials(header(Header.AUTHORIZATION))
 
     /**
      * Gets basic-auth credentials from the request, or throws.
@@ -109,5 +109,20 @@ interface ClientRequestContext {
      * Returns a wrapper object [BasicAuthCredentials] which contains the
      * Base64 decoded username and password from the Authorization header.
      */
-    fun basicAuthCredentials(): BasicAuthCredentials = ContextUtil.getBasicAuthCredentials(header(Header.AUTHORIZATION))
-}
+    fun basicAuthCredentials(): BasicAuthCredentials = getBasicAuthCredentials(header(Header.AUTHORIZATION))
+
+    fun hasBasicAuthCredentials(header: String?): Boolean {
+        return header != null && header.startsWith("Basic")
+    }
+
+    fun getBasicAuthCredentials(header: String?): BasicAuthCredentials {
+        if (header == null || !header.startsWith("Basic")) {
+            throw IllegalArgumentException("No Basic Auth credentials")
+        }
+
+        val base64Credentials = header.substring("Basic".length).trim()
+        val credentials = String(Base64.getDecoder().decode(base64Credentials), Charsets.UTF_8)
+        val usernameAndPassword = credentials.split(":", limit = 2)
+
+        return BasicAuthCredentials(usernameAndPassword[0], usernameAndPassword[1])
+    }}
