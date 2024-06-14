@@ -1,10 +1,5 @@
 package net.corda.messaging.subscription
 
-import java.time.Duration
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.CordaTopicPartition
@@ -41,6 +36,11 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Duration
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 class StateAndEventSubscriptionImplTest {
 
@@ -513,8 +513,9 @@ class StateAndEventSubscriptionImplTest {
         verify(chunkSerializerService, times(1)).getChunkKeysToClear(any(), anyOrNull(), anyOrNull())
     }
 
+    @Suppress("MaxLineLength")
     @Test
-    fun `repartition during batch processing stops the batch, does not resume consumers and does not publish outputs`() {
+    fun `repartition during batch processing stops the batch, does not resume consumers or publish outputs and resets event offset position`() {
         val (builder, producer, stateAndEventConsumer) = setupMocks(0)
         val records = mutableListOf<CordaConsumerRecord<String, String>>()
         records.add(CordaConsumerRecord(TOPIC, 1, 1, "key1", "value1", 1))
@@ -528,7 +529,7 @@ class StateAndEventSubscriptionImplTest {
                 else ->
                     mutableListOf()
             }
-        }.whenever(eventConsumer).poll(any())
+        }.whenever(stateAndEventConsumer).pollEvents()
         doThrow(StateAndEventConsumer.RebalanceInProgressException("test"))
             .whenever(stateAndEventConsumer).resetPollInterval()
 
@@ -558,5 +559,6 @@ class StateAndEventSubscriptionImplTest {
         verify(producer, never()).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, never()).commitTransaction()
         verify(chunkSerializerService, never()).getChunkKeysToClear(any(), anyOrNull(), anyOrNull())
+        verify(stateAndEventConsumer, times(1)).resetEventOffsetPosition()
     }
 }
