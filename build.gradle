@@ -155,7 +155,7 @@ allprojects {
         // CORE-8415 - This repo is for testing purpose only and must be removed before the
         // code is merged into master
         maven {
-            url = "${projectDir}/test-repo"
+            url = "file://${rootDir}/test-repo"
         }
 
         // TODO: you really need to use the cache, otherwise no complaining when upstream repos throttle us!
