@@ -14,7 +14,7 @@ fun Context.buildJsonResult(result: Any?, returnType: Class<*>) {
 
             // Add optional headers
             result.headers.forEach {
-                ctx.res.addHeader(it.key, it.value)
+                ctx.res().addHeader(it.key, it.value)
             }
         }
         (result as? String) != null ->

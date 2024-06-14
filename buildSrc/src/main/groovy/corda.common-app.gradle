@@ -211,7 +211,10 @@ class CreateApplicationBundlesFile extends DefaultTask {
     @TaskAction
     void run() {
         applicationBundleFile.getAsFile().get().withWriter { writer ->
+            print("Filipe: ${this.path}")
+
             applicationBundles.forEach { file ->
+                print("Filipe: ${file.name}")
                 if (isJar(file) && isBundle(new JarFile(file))) {
                     writer.writeLine("bundles/${file.name}")
                 }

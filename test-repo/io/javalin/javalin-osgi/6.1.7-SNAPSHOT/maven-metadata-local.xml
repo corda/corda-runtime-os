@@ -3,7 +3,7 @@
   <groupId>io.javalin</groupId>
   <artifactId>javalin-osgi</artifactId>
   <versioning>
-    <lastUpdated>20240612154932</lastUpdated>
+    <lastUpdated>20240614152124</lastUpdated>
     <snapshot>
       <localCopy>true</localCopy>
     </snapshot>
@@ -11,12 +11,12 @@
       <snapshotVersion>
         <extension>pom</extension>
         <value>6.1.7-SNAPSHOT</value>
-        <updated>20240612154932</updated>
+        <updated>20240614152124</updated>
       </snapshotVersion>
       <snapshotVersion>
         <extension>jar</extension>
         <value>6.1.7-SNAPSHOT</value>
-        <updated>20240612154932</updated>
+        <updated>20240614152124</updated>
       </snapshotVersion>
     </snapshotVersions>
   </versioning>

@@ -42,11 +42,8 @@ class JavalinServer(
             Javalin.create { config ->
                 // hardcode to 100Mb for now
                 // TODO CORE-17986: make configurable
-                config.maxRequestSize = maxRequestSize
+                config.http.maxRequestSize = maxRequestSize
 
-                if (log.isDebugEnabled) {
-                    config.enableDevLogging()
-                }
                 configureJavalinForTracing(config)
             }
     }
@@ -87,7 +84,7 @@ class JavalinServer(
             }
         
             server?.exception(NotFoundResponse::class.java) { _, ctx ->
-                log.warn("Received request on non-existing endpoint: ${ctx.req.requestURI}")
+                log.warn("Received request on non-existing endpoint: ${ctx.req().requestURI}")
                 ctx.result("404 Not Found")
                 ctx.status(404)
             }

@@ -1,10 +1,9 @@
 package net.corda.rest.server.impl.context
 
-import io.javalin.core.util.Header
 import io.javalin.http.Context
+import io.javalin.http.Header
 import io.javalin.http.UploadedFile
-import io.javalin.plugin.json.JsonMapper
-import io.javalin.plugin.json.jsonMapper
+import io.javalin.json.JsonMapper
 import net.corda.data.rest.PasswordExpiryStatus
 import net.corda.rest.server.impl.security.RestAuthenticationProvider
 
@@ -14,7 +13,7 @@ import net.corda.rest.server.impl.security.RestAuthenticationProvider
 internal class ClientHttpRequestContext(private val ctx: Context) : ClientRequestContext {
 
     override val method: String
-        get() = ctx.method()
+        get() = ctx.method().name
 
     override fun header(header: String): String? = ctx.header(header)
 
@@ -37,7 +36,7 @@ internal class ClientHttpRequestContext(private val ctx: Context) : ClientReques
         get() = ctx.body()
 
     override val jsonMapper: JsonMapper
-        get() = ctx.jsonMapper()
+        get() = throw UnsupportedOperationException()
 
     override fun <T> bodyAsClass(clazz: Class<T>): T = ctx.bodyAsClass(clazz)
 
@@ -60,12 +59,12 @@ internal class ClientHttpRequestContext(private val ctx: Context) : ClientReques
     }
 
     override fun addPasswordExpiryHeader(expiryStatus: PasswordExpiryStatus) {
-        ctx.res.addHeader(Header.WARNING, "199 - PasswordExpiryStatus is $expiryStatus")
+        ctx.res().addHeader(Header.WARNING, "199 - PasswordExpiryStatus is $expiryStatus")
     }
 
     private fun addHeaderValues(values: Iterable<String>) {
         values.forEach {
-            ctx.res.addHeader(Header.WWW_AUTHENTICATE, it)
+            ctx.res().addHeader(Header.WWW_AUTHENTICATE, it)
         }
     }
 }

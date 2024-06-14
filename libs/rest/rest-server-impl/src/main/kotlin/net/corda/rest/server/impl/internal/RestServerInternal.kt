@@ -1,18 +1,19 @@
 package net.corda.rest.server.impl.internal
 
 import io.javalin.Javalin
-import io.javalin.core.util.Header
 import io.javalin.http.BadRequestResponse
 import io.javalin.http.ContentType
 import io.javalin.http.Context
 import io.javalin.http.HandlerType
+import io.javalin.http.Header
 import io.javalin.http.HttpResponseException
 import io.javalin.http.NotFoundResponse
 import io.javalin.http.staticfiles.Location
 import io.javalin.http.util.JsonEscapeUtil
 import io.javalin.http.util.MultipartUtil
-import io.javalin.http.util.RedirectToLowercasePathPlugin
-import io.javalin.plugin.json.JavalinJackson
+import io.javalin.json.JavalinJackson
+import io.javalin.plugin.bundled.RedirectToLowercasePathPlugin
+import jakarta.servlet.MultipartConfigElement
 import net.corda.rest.authorization.AuthorizationUtils.authorize
 import net.corda.rest.server.config.RestServerSettingsProvider
 import net.corda.rest.server.impl.apigen.processing.RouteInfo
@@ -47,7 +48,6 @@ import org.osgi.framework.wiring.BundleWiring
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
 import java.util.LinkedList
-import javax.servlet.MultipartConfigElement
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown", "LongParameterList")
 internal class RestServerInternal(
@@ -78,10 +78,10 @@ internal class RestServerInternal(
 
     private lateinit var server: Javalin
     private val serverFactory: () -> Javalin = {
-        Javalin.create {
-            it.jsonMapper(JavalinJackson(serverJacksonObjectMapper))
-            it.registerPlugin(RedirectToLowercasePathPlugin())
-            configureJavalinForTracing(it)
+        Javalin.create {config ->
+            config.jsonMapper(JavalinJackson(serverJacksonObjectMapper))
+            config.registerPlugin(RedirectToLowercasePathPlugin())
+            configureJavalinForTracing(config)
 
             val swaggerUiBundle = getSwaggerUiBundle()
             // In an OSGi context, webjars cannot be loaded automatically using `JavalinConfig.enableWebJars`.
@@ -91,16 +91,13 @@ internal class RestServerInternal(
             if (swaggerUiBundle != null) {
                 val swaggerUiClassloader = swaggerUiBundle.adapt(BundleWiring::class.java).classLoader
                 executeWithThreadContextClassLoader(swaggerUiClassloader) {
-                    it.addStaticFiles("/META-INF/resources/", Location.CLASSPATH)
+                    config.staticFiles.add("/META-INF/resources/", Location.CLASSPATH)
                 }
             } else {
-                it.enableWebjars()
+                config.staticFiles.enableWebjars()
             }
 
-            if (log.isDebugEnabled) {
-                it.enableDevLogging()
-            }
-            it.server {
+            config.jetty.modifyServer {
                 configurationsProvider.getSSLKeyStorePath()
                     ?.let { createSecureServer() }
                     ?: INSECURE_SERVER_DEV_MODE_WARNING.let { msg ->
@@ -113,14 +110,18 @@ internal class RestServerInternal(
                         createInsecureServer()
                     }
             }
-            it.defaultContentType = contentTypeApplicationJson
-            it.enableCorsForAllOrigins()
+
+            config.http.defaultContentType = contentTypeApplicationJson
+            config.bundledPlugins.enableCors{ cors ->
+                cors.addRule{ it.anyHost() }
+            }
         }.apply {
             addRoutes()
             addOpenApiRoutes()
             addWsRoutes()
             // In order for multipart content to be stored onto disk, we need to override some properties
             // which are set by default by Javalin such that entire content is read into memory
+            @Suppress("DEPRECATION")
             MultipartUtil.preUploadFunction = { req ->
                 req.setAttribute(
                     "org.eclipse.jetty.multipartConfig",
@@ -137,7 +138,7 @@ internal class RestServerInternal(
 
     private fun addExceptionHandlers(app: Javalin) {
         app.exception(NotFoundResponse::class.java) { e, ctx ->
-            val detailsWithUrl = e.details.plus("url" to ctx.req.requestURL.toString())
+            val detailsWithUrl = e.details.plus("url" to ctx.req().requestURL.toString())
             commonResult(NotFoundResponse(details = detailsWithUrl), ctx)
         }
         app.exception(HttpResponseException::class.java) { e, ctx ->
@@ -146,7 +147,7 @@ internal class RestServerInternal(
     }
 
     private fun commonResult(e: HttpResponseException, ctx: Context) {
-        if (ctx.header(Header.ACCEPT)?.contains(ContentType.JSON) == true || ctx.res.contentType == ContentType.JSON) {
+        if (ctx.header(Header.ACCEPT)?.contains(ContentType.JSON) == true || ctx.res().contentType == ContentType.JSON) {
             ctx.status(e.status).result(
                 """{
                 |    "title": "${e.message?.let { JsonEscapeUtil.escape(it) }}",
@@ -202,7 +203,7 @@ internal class RestServerInternal(
                     // "testEntity/getprotocolversion" and mistakenly finds "before" handler where there should be none.
                     // Javalin provides no way for modifying "before" handler finding logic.
                     if (resourceProvider.httpNoAuthRequiredGetRoutes.none { routeInfo -> routeInfo.fullPath == it.path() } &&
-                        it.method() == "GET"
+                        it.method().name == "GET"
                     ) {
                         val clientHttpRequestContext = ClientHttpRequestContext(it)
                         val authorizingSubject = authenticate(clientHttpRequestContext, restAuthProvider, credentialResolver)
@@ -236,7 +237,7 @@ internal class RestServerInternal(
 
     private fun Javalin.registerHandlerForRoute(routeInfo: RouteInfo, handlerType: HandlerType) {
         try {
-            addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeHttpMethod())
+            addHttpHandler(handlerType, routeInfo.fullPath, routeInfo.invokeHttpMethod())
             log.info("Added \"$handlerType\" handler for \"${routeInfo.fullPath}\".")
         } catch (e: Exception) {
             "Error during adding route. Handler type=$handlerType, Path=\"${routeInfo.fullPath}\"".let {
@@ -252,7 +253,7 @@ internal class RestServerInternal(
                 // For "before" handlers we have a global space of handlers in Javalin regardless of which method was actually
                 // used. In case when two separate handlers created for GET and for DELETE for the same resource, without "if"
                 // condition below both handlers will be used - which will be redundant.
-                if (it.method() == handlerType.name) {
+                if (it.method().name == handlerType.name) {
                     with(configurationsProvider.maxContentLength()) {
                         if (it.contentLength() > this) {
                             throw BadRequestResponse(
