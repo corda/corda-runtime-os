@@ -1,41 +1,49 @@
 package net.corda.gradle.plugin.cordalifecycle
 
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import net.corda.gradle.plugin.EndToEndTestBase
 import org.assertj.core.api.Assertions.catchThrowable
-import org.gradle.testkit.runner.BuildResult
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.io.StringWriter
+import java.util.concurrent.Executors
 
 class CordaLifeCycleTasksTest : EndToEndTestBase() {
+
+    private val executorService =  Executors.newSingleThreadExecutor()
 
     @BeforeEach
     fun verifyRestIsUnavailable() {
         catchThrowable { restClient.helloRestClient.getHelloGetprotocolversion() }
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
+    @AfterEach
+    fun shutdownExecutorService() {
+        executorService.shutdown()
+    }
+
     @Test
     fun startAndStopCorda() {
         appendCordaRuntimeGradlePluginExtension()
+        val startTaskOutput = StringWriter()
 
-        val startTaskWriter = StringWriter() // TODO: do we need this?
+        val startTaskFuture = executorService.submit {
+            val result = executeWithRunner(START_CORDA_TASK_NAME, outputWriter = startTaskOutput)
+            result.task(":$START_CORDA_TASK_NAME")!!.assertTaskSucceeded()
+        }
+        waitUntilRestOrThrow(throwError = false)
 
-        lateinit var stopTaskResult: BuildResult
-        runBlocking {
-            GlobalScope.launch {
-                executeWithRunner(START_CORDA_TASK_NAME, outputWriter = startTaskWriter)
+        try {
+            val result = executeWithRunner(STOP_CORDA_TASK_NAME)
+            result.task(":$STOP_CORDA_TASK_NAME")!!.assertTaskSucceeded()
+            // Start should exit successfully after stop
+            startTaskFuture.get()
+        } catch (e: Exception){
+            // If stop task fails, check the start output first and throw if failed
+            if (startTaskOutput.toString().lowercase().contains("failed")) {
+                startTaskFuture.get()
             }
-            val job = GlobalScope.launch {
-                waitUntilRestApiIsAvailable(throwError = false)
-                stopTaskResult = executeWithRunner(STOP_CORDA_TASK_NAME)
-            }
-            job.join()
-            stopTaskResult.task(":$STOP_CORDA_TASK_NAME")!!.assertTaskSucceeded()
+            throw e
         }
     }
 }

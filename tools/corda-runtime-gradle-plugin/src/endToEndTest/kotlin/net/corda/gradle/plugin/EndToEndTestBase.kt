@@ -1,8 +1,6 @@
 package net.corda.gradle.plugin
 
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.restclient.CordaRestClient
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.BuildTask
@@ -11,9 +9,9 @@ import org.gradle.testkit.runner.TaskOutcome
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.io.TempDir
-import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.Writer
+import java.net.URI
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.TimeUnit
@@ -21,35 +19,35 @@ import java.util.concurrent.TimeUnit
 // https://docs.gradle.org/current/userguide/test_kit.html
 abstract class EndToEndTestBase {
     companion object {
-        private val targetUrl = DEFAULT_CLUSTER.rest.uri
-        private val user = DEFAULT_CLUSTER.rest.user
-        private val password = DEFAULT_CLUSTER.rest.password
+        private val targetUrl = URI("https://localhost:8888")
+        private const val USER = "admin"
+        private const val PASSWORD = "admin"
 
         @JvmStatic
-        protected val restClient = CordaRestClient.createHttpClient(targetUrl, user, password, insecure = true)
+        protected val restClient = CordaRestClient.createHttpClient(targetUrl, USER, PASSWORD, insecure = true)
 
         private val composeFile = File(this::class.java.getResource("/config/combined-worker-compose.yml")!!.toURI())
         private const val CORDA_IMAGE_TAG_STABLE = "5.3.0.0-HC01"
         private val testEnvCordaImageTag = System.getenv("CORDA_IMAGE_TAG") ?: CORDA_IMAGE_TAG_STABLE
 
         @JvmStatic
-        protected suspend fun waitUntilRestApiIsAvailable(timeout: Duration = Duration.ofMinutes(2), throwError: Boolean = true) {
+        protected fun waitUntilRestOrThrow(timeout: Duration = Duration.ofSeconds(120), throwError: Boolean = true) {
             val start = Instant.now()
-            var error: Exception? = null
-            while (Duration.between(start, Instant.now()) < timeout) {
+            while (true) {
                 try {
                     restClient.helloRestClient.getHelloGetprotocolversion()
                     return
-                }
-                catch (e: Exception) {
-                    error = e
-                    delay(10 * 1000)
+                } catch (e: Exception) {
+                    if (Duration.between(start, Instant.now()) > timeout) {
+                        if (!throwError) return
+                        else throw IllegalStateException("Failed to connect to Corda REST API", e)
+                    }
+                    Thread.sleep(10 * 1000)
                 }
             }
-            if (throwError && error != null) throw error
         }
 
-        private fun runComposeCommand(vararg args: String): Process {
+        private fun runComposeProjectCommand(vararg args: String): Process {
             val composeCommandBase = listOf(
                 "docker",
                 "compose",
@@ -70,19 +68,19 @@ abstract class EndToEndTestBase {
 
         @JvmStatic
         fun startCompose(wait: Boolean = true) {
-            val cordaProcess = runComposeCommand("up", "--pull", "missing", "--quiet-pull", "--detach")
+            val cordaProcess = runComposeProjectCommand("up", "--pull", "missing", "--quiet-pull", "--detach")
 
             val hasExited = cordaProcess.waitFor(10, TimeUnit.SECONDS)
             if (cordaProcess.exitValue() != 0 || !hasExited) throw IllegalStateException("Failed to start Corda cluster using docker compose")
 
-            if (wait) runBlocking { waitUntilRestApiIsAvailable() }
+            if (wait) runBlocking { waitUntilRestOrThrow() }
 
-            runComposeCommand("images").waitFor(10, TimeUnit.SECONDS)
+            runComposeProjectCommand("images").waitFor(10, TimeUnit.SECONDS)
         }
 
         @JvmStatic
         fun stopCompose() {
-            val cordaStopProcess = runComposeCommand("down")
+            val cordaStopProcess = runComposeProjectCommand("down")
             cordaStopProcess.waitFor(30, TimeUnit.SECONDS)
         }
     }
@@ -123,8 +121,8 @@ abstract class EndToEndTestBase {
             """
             cordaRuntimeGradlePlugin {
                 cordaClusterURL = "$targetUrl"
-                cordaRestUser = "$user"
-                cordaRestPasswd ="$password"
+                cordaRestUser = "$USER"
+                cordaRestPasswd ="$PASSWORD"
                 notaryVersion = "5.3.0.0-HC01"
                 runtimeVersion = "5.3.0.0-HC01"
                 composeFilePath = "config/combined-worker-compose.yml"
@@ -169,7 +167,7 @@ abstract class EndToEndTestBase {
         buildFile.writeText(newContent)
     }
 
-    fun executeWithRunner(vararg args: String, outputWriter: Writer? = null): BuildResult {
+    fun executeWithRunner(vararg args: String, outputWriter: Writer? = null, forwardOutput: Boolean = false): BuildResult {
         val gradleRunnerBuilder = GradleRunner
             .create()
             .withPluginClasspath()
@@ -180,6 +178,7 @@ abstract class EndToEndTestBase {
                 .forwardStdOutput(outputWriter)
                 .forwardStdError(outputWriter)
         }
+        if (forwardOutput) gradleRunnerBuilder.forwardOutput()
         return gradleRunnerBuilder.build()
     }
 
