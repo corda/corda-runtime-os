@@ -105,5 +105,6 @@ open class UpdateClusterConfig @Inject constructor(objects: ObjectFactory) : Def
             configVersion
         )
         logger.quiet("Updated $configSection processorTimeout to ${pc.cordaProcessorTimeout}")
+        Unirest.shutDown()
     }
 }
