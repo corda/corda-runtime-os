@@ -1,10 +1,10 @@
 package net.corda.rest.server.impl
 
 import com.google.gson.Gson
-import io.javalin.core.util.Header.ACCESS_CONTROL_ALLOW_CREDENTIALS
-import io.javalin.core.util.Header.ACCESS_CONTROL_ALLOW_ORIGIN
-import io.javalin.core.util.Header.CACHE_CONTROL
-import io.javalin.core.util.Header.WWW_AUTHENTICATE
+import io.javalin.http.Header.ACCESS_CONTROL_ALLOW_CREDENTIALS
+import io.javalin.http.Header.ACCESS_CONTROL_ALLOW_ORIGIN
+import io.javalin.http.Header.CACHE_CONTROL
+import io.javalin.http.Header.WWW_AUTHENTICATE
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.server.apigen.test.TestJavaPrimitivesRestResourceImpl
 import net.corda.rest.server.config.models.RestServerSettings
