@@ -27,7 +27,7 @@ internal class ParametersRetrieverContext(private val ctx: ClientRequestContext)
         if (pathParamsMap.size != ctxPathParamMap.size) {
             logger.warn(
                 "Some path parameters keys were dropped. " +
-                        "Original map: $ctxPathParamMap, transformed map: $pathParamsMap"
+                    "Original map: $ctxPathParamMap, transformed map: $pathParamsMap"
             )
         }
         val ctxQueryParamMap = ctx.queryParams
