@@ -22,7 +22,7 @@ class DefaultCredentialResolverTest {
     // https://github.com/mockito/mockito/issues/1943
     private val req: HttpServletRequest = mock()
     private val res: HttpServletResponse = mock()
-    private val ctx: Context = mock() {
+    private val ctx: Context = mock {
         on { req() } doAnswer { req }
         on { res() } doAnswer { res }
     }
