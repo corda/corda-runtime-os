@@ -35,7 +35,7 @@ internal class ParametersRetrieverContext(private val ctx: ClientRequestContext)
         if (queryParamsMap.size != ctxQueryParamMap.size) {
             logger.warn(
                 "Some query parameters keys were dropped. " +
-                        "Original map: $ctxQueryParamMap, transformed map: $queryParamsMap"
+                    "Original map: $ctxQueryParamMap, transformed map: $queryParamsMap"
             )
         }
     }
