@@ -27,8 +27,8 @@ abstract class EndToEndTestBase {
         protected val restClient = CordaRestClient.createHttpClient(targetUrl, USER, PASSWORD, insecure = true)
 
         private val composeFile = File(this::class.java.getResource("/config/combined-worker-compose.yml")!!.toURI())
-        private const val CORDA_IMAGE_TAG_STABLE = "5.3.0.0-HC01"
-        private val testEnvCordaImageTag = System.getenv("CORDA_IMAGE_TAG") ?: CORDA_IMAGE_TAG_STABLE
+        private const val CORDA_RUNTIME_VERSION_STABLE = "5.3.0.0-HC01"
+        private val testEnvCordaImageTag = System.getenv("CORDA_IMAGE_TAG") ?: CORDA_RUNTIME_VERSION_STABLE
 
         @JvmStatic
         protected fun waitUntilRestOrThrow(timeout: Duration = Duration.ofSeconds(120), throwError: Boolean = true) {
@@ -123,8 +123,8 @@ abstract class EndToEndTestBase {
                 cordaClusterURL = "$targetUrl"
                 cordaRestUser = "$USER"
                 cordaRestPasswd ="$PASSWORD"
-                notaryVersion = "5.3.0.0-HC01"
-                runtimeVersion = "5.3.0.0-HC01"
+                notaryVersion = "$testEnvCordaImageTag"
+                runtimeVersion = "$CORDA_RUNTIME_VERSION_STABLE"
                 composeFilePath = "config/combined-worker-compose.yml"
                 networkConfigFile = "$networkPath"
                 r3RootCertFile = "config/r3-ca-key.pem"
