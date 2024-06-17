@@ -76,6 +76,9 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.TypedQuery
+import net.corda.crypto.service.impl.rpc.ReconcilerCryptoOpsProcessor
+import net.corda.data.crypto.wire.ops.reconciliation.request.LookUpKeyById
+import net.corda.data.crypto.wire.ops.reconciliation.response.LookupKeyByIdResponse
 
 class CryptoProcessorImplTest {
 
@@ -147,10 +150,12 @@ class CryptoProcessorImplTest {
             mock<RPCSubscription<DecryptRpcCommand, DecryptionOpsResponse>>().also { subscriptionList.add(it) }
         val hsmRegSubscription =
             mock<RPCSubscription<HSMRegistrationRequest, HSMRegistrationResponse>>().also { subscriptionList.add(it) }
+        val reconcilerCryptoOpsSubscription =
+            mock<RPCSubscription<LookUpKeyById, LookupKeyByIdResponse>>().also { subscriptionList.add(it) }
 
         init {
             // Sanity check all subscriptions are in list
-            assertThat(subscriptionList).hasSize(7)
+            assertThat(subscriptionList).hasSize(8)
         }
 
         /**
@@ -385,6 +390,13 @@ class CryptoProcessorImplTest {
                     any<SessionEncryptionProcessor>()
                 )
             ).thenReturn(mockSubscriptions.encryptionSubscription)
+
+            whenever(
+                it.createHttpRPCSubscription(
+                    any(),
+                    any<ReconcilerCryptoOpsProcessor>()
+                )
+            ).thenReturn(mockSubscriptions.reconcilerCryptoOpsSubscription)
 
             whenever(
                 it.createRPCSubscription(
