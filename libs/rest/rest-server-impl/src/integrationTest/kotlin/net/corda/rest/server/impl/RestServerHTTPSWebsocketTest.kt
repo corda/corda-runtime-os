@@ -8,7 +8,6 @@ import net.corda.rest.test.utils.TestHttpClientUnirestImpl
 import net.corda.rest.test.utils.multipartDir
 import net.corda.utilities.NetworkHostAndPort
 import org.eclipse.jetty.client.HttpClient
-import org.eclipse.jetty.util.ssl.SslContextFactory
 import org.eclipse.jetty.websocket.client.WebSocketClient
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll

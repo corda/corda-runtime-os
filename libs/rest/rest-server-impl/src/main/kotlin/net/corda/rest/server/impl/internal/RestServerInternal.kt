@@ -78,7 +78,7 @@ internal class RestServerInternal(
 
     private lateinit var server: Javalin
     private val serverFactory: () -> Javalin = {
-        Javalin.create {config ->
+        Javalin.create { config ->
             config.jsonMapper(JavalinJackson(serverJacksonObjectMapper))
             config.registerPlugin(RedirectToLowercasePathPlugin())
             configureJavalinForTracing(config)
@@ -112,8 +112,8 @@ internal class RestServerInternal(
             }
 
             config.http.defaultContentType = contentTypeApplicationJson
-            config.bundledPlugins.enableCors{ cors ->
-                cors.addRule{ it.anyHost() }
+            config.bundledPlugins.enableCors { cors ->
+                cors.addRule { it.anyHost() }
             }
         }.apply {
             addRoutes()

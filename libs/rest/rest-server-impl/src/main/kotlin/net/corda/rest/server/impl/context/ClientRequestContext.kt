@@ -125,4 +125,5 @@ interface ClientRequestContext {
         val usernameAndPassword = credentials.split(":", limit = 2)
 
         return BasicAuthCredentials(usernameAndPassword[0], usernameAndPassword[1])
-    }}
+    } 
+}
