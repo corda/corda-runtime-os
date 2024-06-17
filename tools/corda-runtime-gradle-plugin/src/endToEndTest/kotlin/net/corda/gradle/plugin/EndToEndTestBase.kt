@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.io.TempDir
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.io.Writer
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.TimeUnit
@@ -32,10 +33,10 @@ abstract class EndToEndTestBase {
         private val testEnvCordaImageTag = System.getenv("CORDA_IMAGE_TAG") ?: CORDA_IMAGE_TAG_STABLE
 
         @JvmStatic
-        protected suspend fun waitUntilRestApiIsAvailable(throwError: Boolean = true) {
+        protected suspend fun waitUntilRestApiIsAvailable(timeout: Duration = Duration.ofMinutes(2), throwError: Boolean = true) {
             val start = Instant.now()
             var error: Exception? = null
-            while (Duration.between(start, Instant.now()) < Duration.ofMinutes(2)) {
+            while (Duration.between(start, Instant.now()) < timeout) {
                 try {
                     restClient.helloRestClient.getHelloGetprotocolversion()
                     return
@@ -168,14 +169,16 @@ abstract class EndToEndTestBase {
         buildFile.writeText(newContent)
     }
 
-    fun executeWithRunner(vararg args: String, forwardOutput: Boolean = false): BuildResult {
+    fun executeWithRunner(vararg args: String, outputWriter: Writer? = null): BuildResult {
         val gradleRunnerBuilder = GradleRunner
             .create()
             .withPluginClasspath()
             .withProjectDir(projectDir)
             .withArguments(*args)
-        if (forwardOutput) {
-            gradleRunnerBuilder.forwardOutput()
+        if (outputWriter != null) {
+            gradleRunnerBuilder
+                .forwardStdOutput(outputWriter)
+                .forwardStdError(outputWriter)
         }
         return gradleRunnerBuilder.build()
     }

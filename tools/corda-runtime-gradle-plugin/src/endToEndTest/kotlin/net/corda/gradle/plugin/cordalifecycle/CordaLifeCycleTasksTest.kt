@@ -5,14 +5,11 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import net.corda.gradle.plugin.EndToEndTestBase
-import net.corda.gradle.plugin.retry
-import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatCode
-import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.Assertions.catchThrowable
 import org.gradle.testkit.runner.BuildResult
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.io.StringWriter
 
 class CordaLifeCycleTasksTest : EndToEndTestBase() {
 
@@ -25,19 +22,20 @@ class CordaLifeCycleTasksTest : EndToEndTestBase() {
     @Test
     fun startAndStopCorda() {
         appendCordaRuntimeGradlePluginExtension()
-        lateinit var result: BuildResult
+
+        val startTaskWriter = StringWriter() // TODO: do we need this?
+
+        lateinit var stopTaskResult: BuildResult
         runBlocking {
             GlobalScope.launch {
-                executeWithRunner(START_CORDA_TASK_NAME, forwardOutput = true)
-                // TODO: do not clog console with output?
-                // TODO: use Writer for output to assess output
+                executeWithRunner(START_CORDA_TASK_NAME, outputWriter = startTaskWriter)
             }
             val job = GlobalScope.launch {
                 waitUntilRestApiIsAvailable(throwError = false)
-                result = executeWithRunner(STOP_CORDA_TASK_NAME)
+                stopTaskResult = executeWithRunner(STOP_CORDA_TASK_NAME)
             }
             job.join()
-            result.task(":$STOP_CORDA_TASK_NAME")!!.assertTaskSucceeded()
+            stopTaskResult.task(":$STOP_CORDA_TASK_NAME")!!.assertTaskSucceeded()
         }
     }
 }
