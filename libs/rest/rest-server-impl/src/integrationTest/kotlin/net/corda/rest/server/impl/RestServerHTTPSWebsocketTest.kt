@@ -70,7 +70,7 @@ class RestServerHTTPSWebsocketTest : AbstractWebsocketTest() {
         }
     }
 
-    override fun createWsClient() = WebSocketClient(HttpClient(SslContextFactory.Client(true)))
+    override fun createWsClient() = WebSocketClient(HttpClient())
 
     override val wsProtocol = "wss"
 
