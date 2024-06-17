@@ -27,7 +27,7 @@ internal class ParametersRetrieverContext(private val ctx: ClientRequestContext)
         if (pathParamsMap.size != ctxPathParamMap.size) {
             logger.warn(
                 "Some path parameters keys were dropped. " +
-                    "Original map: $ctxPathParamMap, transformed map: $pathParamsMap"
+                        "Original map: $ctxPathParamMap, transformed map: $pathParamsMap"
             )
         }
         val ctxQueryParamMap = ctx.queryParams
@@ -35,7 +35,7 @@ internal class ParametersRetrieverContext(private val ctx: ClientRequestContext)
         if (queryParamsMap.size != ctxQueryParamMap.size) {
             logger.warn(
                 "Some query parameters keys were dropped. " +
-                    "Original map: $ctxQueryParamMap, transformed map: $queryParamsMap"
+                        "Original map: $ctxQueryParamMap, transformed map: $queryParamsMap"
             )
         }
     }
@@ -47,7 +47,8 @@ internal class ParametersRetrieverContext(private val ctx: ClientRequestContext)
     fun formParamMap(): Map<String, List<String>> = ctx.formParamMap()
 
     fun pathParam(key: String): String {
-        return pathParamsMap[key.lowercase()] ?: throw IllegalArgumentException("Path parameter '$key' not found in path '${ctx.matchedPath}'")
+        return pathParamsMap[key.lowercase()]
+            ?: throw IllegalArgumentException("Path parameter '$key' not found in path '${ctx.matchedPath}'")
     }
 
     fun queryParams(key: String): List<String> = queryParamsMap[key.lowercase()] ?: emptyList()
@@ -57,7 +58,15 @@ internal class ParametersRetrieverContext(private val ctx: ClientRequestContext)
 
     fun uploadedFiles(paramName: String): List<HttpFileUpload> {
         val files = ctx.uploadedFiles(paramName)
-        return files.map { file -> HttpFileUpload(file.content(), file.contentType(), file.extension(), file.filename(), file.size()) }
+        return files.map { file ->
+            HttpFileUpload(
+                file.content(),
+                file.contentType(),
+                file.extension(),
+                file.filename(),
+                file.size()
+            )
+        }
     }
 
     fun <T> fromJsonString(json: String, targetClass: Class<T>): T {
