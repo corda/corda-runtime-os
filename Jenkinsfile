@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@5.3') _
+@Library('corda-shared-build-pipeline-steps@asubbotin/ES-2345/corda-runtime-gradle-plugin-test-pipeline') _
 
 cordaPipelineKubernetesAgent(
     dailyBuildCron: 'H H/6 * * *',
