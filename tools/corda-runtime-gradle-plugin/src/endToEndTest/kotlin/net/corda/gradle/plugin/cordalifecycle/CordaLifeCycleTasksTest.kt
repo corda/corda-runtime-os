@@ -5,10 +5,22 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import net.corda.gradle.plugin.EndToEndTestBase
+import net.corda.gradle.plugin.retry
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatCode
+import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.assertj.core.api.Assertions.catchThrowable
 import org.gradle.testkit.runner.BuildResult
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class CordaLifeCycleTasksTest : EndToEndTestBase() {
+
+    @BeforeEach
+    fun verifyRestIsUnavailable() {
+        catchThrowable { restClient.helloRestClient.getHelloGetprotocolversion() }
+    }
+
     @OptIn(DelicateCoroutinesApi::class)
     @Test
     fun startAndStopCorda() {

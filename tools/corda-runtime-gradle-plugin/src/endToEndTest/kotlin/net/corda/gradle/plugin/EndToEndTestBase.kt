@@ -24,7 +24,9 @@ abstract class EndToEndTestBase {
         private val user = DEFAULT_CLUSTER.rest.user
         private val password = DEFAULT_CLUSTER.rest.password
 
+        @JvmStatic
         protected val restClient = CordaRestClient.createHttpClient(targetUrl, user, password, insecure = true)
+
         private val composeFile = File(this::class.java.getResource("/config/combined-worker-compose.yml")!!.toURI())
         private const val CORDA_IMAGE_TAG_STABLE = "5.3.0.0-HC01"
         private val testEnvCordaImageTag = System.getenv("CORDA_IMAGE_TAG") ?: CORDA_IMAGE_TAG_STABLE
