@@ -17,7 +17,6 @@ import org.eclipse.jetty.websocket.api.WebSocketAdapter
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest
 import org.eclipse.jetty.websocket.client.JettyUpgradeListener
 import org.eclipse.jetty.websocket.client.WebSocketClient
-import org.eclipse.jetty.websocket.core.client.UpgradeListener
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.slf4j.Logger
