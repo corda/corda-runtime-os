@@ -1,21 +1,23 @@
 package net.corda.rest.server.impl
 
-import io.javalin.core.util.Header
+import io.javalin.http.Header
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.test.utils.WebRequest
 import net.corda.rest.tools.HttpVerb
 import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
+import org.eclipse.jetty.client.HttpRequest
+import org.eclipse.jetty.client.HttpResponse
+import org.eclipse.jetty.http.HttpField
 import org.eclipse.jetty.io.EofException
 import org.eclipse.jetty.websocket.api.CloseStatus
 import org.eclipse.jetty.websocket.api.Session
 import org.eclipse.jetty.websocket.api.StatusCode
-import org.eclipse.jetty.websocket.api.UpgradeRequest
-import org.eclipse.jetty.websocket.api.UpgradeResponse
+import org.eclipse.jetty.websocket.api.WebSocketAdapter
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest
-import org.eclipse.jetty.websocket.client.NoOpEndpoint
+import org.eclipse.jetty.websocket.client.JettyUpgradeListener
 import org.eclipse.jetty.websocket.client.WebSocketClient
-import org.eclipse.jetty.websocket.client.io.UpgradeListener
+import org.eclipse.jetty.websocket.core.client.UpgradeListener
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.slf4j.Logger
@@ -65,7 +67,7 @@ abstract class AbstractWebsocketTest : RestServerTestBase() {
         val maximumDesiredCount = 100
         val list = mutableListOf<String>()
 
-        val wsHandler = object : NoOpEndpoint() {
+        val wsHandler = object : WebSocketAdapter() {
 
             override fun onWebSocketConnect(session: Session) {
                 log.info("onWebSocketConnect : $session")
@@ -86,14 +88,14 @@ abstract class AbstractWebsocketTest : RestServerTestBase() {
             }
         }
 
-        val upgradeListener = object : UpgradeListener {
-            override fun onHandshakeRequest(request: UpgradeRequest) {
+        val upgradeListener = object : JettyUpgradeListener {
+            override fun onHandshakeRequest(request: HttpRequest) {
                 val headerValue = toBasicAuthValue(userName, password)
                 log.info("Header value: $headerValue")
-                request.setHeader(Header.AUTHORIZATION, headerValue)
+                request.addHeader(HttpField(Header.AUTHORIZATION, headerValue))
             }
 
-            override fun onHandshakeResponse(response: UpgradeResponse) {
+            override fun onHandshakeResponse(request: HttpRequest, response: HttpResponse) {
             }
         }
 
@@ -130,12 +132,12 @@ abstract class AbstractWebsocketTest : RestServerTestBase() {
 
     @Test
     fun `check WebSocket wrong credentials connectivity`() {
-        val upgradeListener = object : UpgradeListener {
-            override fun onHandshakeRequest(request: UpgradeRequest) {
-                request.setHeader(Header.AUTHORIZATION, toBasicAuthValue("alienUser", "wrongPassword"))
+        val upgradeListener = object : JettyUpgradeListener {
+            override fun onHandshakeRequest(request: HttpRequest) {
+                request.addHeader(HttpField(Header.AUTHORIZATION, toBasicAuthValue("alienUser", "wrongPassword")))
             }
 
-            override fun onHandshakeResponse(response: UpgradeResponse) {
+            override fun onHandshakeResponse(request: HttpRequest, response: HttpResponse) {
             }
         }
 
@@ -147,14 +149,14 @@ abstract class AbstractWebsocketTest : RestServerTestBase() {
         performUnauthorizedTest(null)
     }
 
-    private fun performUnauthorizedTest(upgradeListener: UpgradeListener?) {
+    private fun performUnauthorizedTest(upgradeListener: JettyUpgradeListener?) {
         val wsClient = createWsClient()
         wsClient.start()
 
         val latch = CountDownLatch(2)
         var closeStatus: CloseStatus? = null
 
-        val wsHandler = object : NoOpEndpoint() {
+        val wsHandler = object : WebSocketAdapter() {
 
             override fun onWebSocketConnect(session: Session) {
                 log.info("onWebSocketConnect : $session")
