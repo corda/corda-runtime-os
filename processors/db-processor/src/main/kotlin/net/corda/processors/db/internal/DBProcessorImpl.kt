@@ -34,6 +34,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.certificate.service.CertificatesService
 import net.corda.membership.certificates.datamodel.CertificateEntities
 import net.corda.membership.client.MemberResourceClient
 import net.corda.membership.datamodel.MembershipEntities
@@ -103,6 +104,8 @@ class DBProcessorImpl @Activate constructor(
     private val cpiInfoWriteService: CpiInfoWriteService,
     @Reference(service = ReconcilerFactory::class)
     private val reconcilerFactory: ReconcilerFactory,
+    @Reference(service = CertificatesService::class)
+    private val certificatesService: CertificatesService,
     @Reference(service = ConfigPublishService::class)
     private val configPublishService: ConfigPublishService,
     @Reference(service = ConfigReconcilerReader::class)
@@ -190,6 +193,7 @@ class DBProcessorImpl @Activate constructor(
         ::cpkReadService,
         ::cpiInfoReadService,
         ::cpiInfoWriteService,
+        ::certificatesService,
         ::configPublishService,
         ::virtualNodeInfoReadService,
         ::virtualNodeInfoWriteService,
