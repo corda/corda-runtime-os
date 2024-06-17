@@ -228,9 +228,9 @@ class HostedIdentityReconciler(
         tenantId: String,
         sessionKeyId: ShortHash,
     ): String {
-        val cachedCertificate = cachedKeys.getIfPresent(KeyLookup(tenantId, sessionKeyId))
-        return if (cachedCertificate != null) {
-            cachedCertificate
+        val cachedKey = cachedKeys.getIfPresent(KeyLookup(tenantId, sessionKeyId))
+        return if (cachedKey != null) {
+            cachedKey
         } else {
             val key = reconcilerCryptoOpsClient.lookupKeysByIds(tenantId, listOf(sessionKeyId)).firstOrNull()?.toPem()
                 ?: throw CertificatesResourceNotFoundException("Can not find session key for $tenantId")
