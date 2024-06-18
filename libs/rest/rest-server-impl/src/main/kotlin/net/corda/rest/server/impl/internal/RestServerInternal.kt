@@ -6,6 +6,7 @@ import io.javalin.http.ContentType
 import io.javalin.http.Context
 import io.javalin.http.HandlerType
 import io.javalin.http.Header
+import io.javalin.http.Header.ACCESS_CONTROL_ALLOW_ORIGIN
 import io.javalin.http.HttpResponseException
 import io.javalin.http.NotFoundResponse
 import io.javalin.http.staticfiles.Location
@@ -97,6 +98,10 @@ internal class RestServerInternal(
                 config.staticFiles.enableWebjars()
             }
 
+            if (log.isDebugEnabled) {
+                config.bundledPlugins.enableDevLogging()
+            }
+
             config.jetty.modifyServer {
                 configurationsProvider.getSSLKeyStorePath()
                     ?.let { createSecureServer() }
@@ -113,7 +118,10 @@ internal class RestServerInternal(
 
             config.http.defaultContentType = contentTypeApplicationJson
             config.bundledPlugins.enableCors { cors ->
-                cors.addRule { it.anyHost() }
+                cors.addRule {
+                   it.anyHost()
+                   it.exposeHeader(ACCESS_CONTROL_ALLOW_ORIGIN)
+                }
             }
         }.apply {
             addRoutes()
