@@ -98,7 +98,7 @@ internal class RestServerInternal(
                 config.staticFiles.enableWebjars()
             }
 
-            if (log.is DebugEnabled) {
+            if (log.isDebugEnabled) {
                 config.bundledPlugins.enableDevLogging()
             }
 
