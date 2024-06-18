@@ -35,7 +35,7 @@ class DeployCpiHelper {
         certFilePath: String
     ) {
 
-        val response = Unirest.put(cordaClusterURL + "/api/v1/certificates/cluster/code-signer")
+        val response = Unirest.put(cordaClusterURL + "/api/v5_2/certificate/cluster/code-signer")
             .field("alias", certAlias)
             .field("certificate", File(certFilePath))
             .basicAuth(cordaRestUser, cordaRestPassword)
