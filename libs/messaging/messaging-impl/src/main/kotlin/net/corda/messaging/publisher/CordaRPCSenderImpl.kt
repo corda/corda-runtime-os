@@ -216,7 +216,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
 
     override fun sendRequest(req: REQUEST): CompletableFuture<RESPONSE> {
         if (req is CertificateRpcRequest) {
-            log.info("Sending request $req")
+            log.info("Sending CertificateRpcRequest $req")
         }
         val future = CompletableFuture<RESPONSE>()
         val correlationId = UUID.randomUUID().toString()

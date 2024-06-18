@@ -283,7 +283,6 @@ class CertificateRestResourceImpl @Activate constructor(
                 holdingIdentityShortHash,
                 alias,
                 rawCertificates.joinToString(separator = "\n"),
-                logger
             )
         }
     }

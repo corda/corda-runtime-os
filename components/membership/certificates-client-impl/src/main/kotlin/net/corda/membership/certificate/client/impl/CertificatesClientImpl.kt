@@ -105,9 +105,7 @@ class CertificatesClientImpl @Activate constructor(
         holdingIdentityId: ShortHash?,
         alias: String,
         certificates: String,
-        logger: org.slf4j.Logger?,
     ) {
-        logger?.info("Step3: Will send an ImportCertificateRpcRequest with certificates $certificates.")
         send<CertificateImportedRpcResponse>(holdingIdentityId, usage, ImportCertificateRpcRequest(alias, certificates))
     }
 
@@ -174,7 +172,7 @@ class CertificatesClientImpl @Activate constructor(
                     holdingIdentityId?.value,
                     payload,
                 )
-            ).getOrThrow(Duration.ofSeconds(10))?.response as? R
+            ).getOrThrow()?.response as? R
         }
     }
 

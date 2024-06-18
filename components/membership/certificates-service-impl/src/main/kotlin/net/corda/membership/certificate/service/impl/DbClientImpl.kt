@@ -114,9 +114,7 @@ internal class DbClientImpl(
         holdingIdentityId: ShortHash?,
         alias: String,
         certificates: String,
-        logger: org.slf4j.Logger?,
     ) {
-        logger?.info("Will call useCertificateProcessor to saveCertificates")
         useCertificateProcessor(holdingIdentityId, usage) { processor ->
             processor.saveCertificates(alias, certificates)
         }
