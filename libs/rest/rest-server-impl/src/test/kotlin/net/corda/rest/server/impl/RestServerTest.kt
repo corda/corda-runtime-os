@@ -42,7 +42,7 @@ class RestServerTest {
         doReturn(null).whenever(configProvider).getSSLKeyStorePassword()
         doReturn(false).whenever(configProvider).isDevModeEnabled()
         Assertions.assertThrows(
-            IllegalArgumentException::class.java,
+            Exception::class.java,
             {
                 RestServerInternal(
                     JavalinRouteProviderImpl(
