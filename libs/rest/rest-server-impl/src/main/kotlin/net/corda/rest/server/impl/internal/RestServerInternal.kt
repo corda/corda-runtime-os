@@ -98,10 +98,9 @@ internal class RestServerInternal(
                 config.staticFiles.enableWebjars()
             }
 
-            // Add the if statement back before merging the code!!!!!!!!
-          //  if (log.isDebugEnabled) {
+            if (log.is DebugEnabled) {
                 config.bundledPlugins.enableDevLogging()
-           // }
+            }
 
             config.jetty.modifyServer {
                 configurationsProvider.getSSLKeyStorePath()
@@ -125,9 +124,11 @@ internal class RestServerInternal(
 //                }
 //            }
 
-            config.registerPlugin(CorsPlugin { cors ->
-                cors.addRule { it.anyHost() }
-            })
+            config.registerPlugin(
+                CorsPlugin { cors ->
+                    cors.addRule { it.anyHost() }
+                }
+            )
         }.apply {
             addRoutes()
             addOpenApiRoutes()
