@@ -19,15 +19,15 @@ repositories {
 
 
 sourceSets {
-    endToEndTest {
+    cordaRuntimeGradlePluginSmokeTest {
         java {
-            srcDirs += ['src/endToEndTest/java']
+            srcDirs += ['src/cordaRuntimeGradlePluginSmokeTest/java']
         }
         kotlin {
-            srcDirs += ['src/endToEndTest/kotlin']
+            srcDirs += ['src/cordaRuntimeGradlePluginSmokeTest/kotlin']
         }
         resources {
-            srcDirs = ['src/endToEndTest/resources']
+            srcDirs = ['src/cordaRuntimeGradlePluginSmokeTest/resources']
         }
         compileClasspath += main.output + test.output
         runtimeClasspath += main.output + test.output
@@ -37,25 +37,25 @@ sourceSets {
 kotlin {
     target {
         java
-        compilations.endToEndTest {
+        compilations.cordaRuntimeGradlePluginSmokeTest {
             associateWith compilations.main
             associateWith compilations.test
 
             configurations {
-                endToEndTestApi.extendsFrom testApi
-                endToEndTestImplementation.extendsFrom testImplementation
-                endToEndTestRuntimeOnly.extendsFrom testRuntimeOnly
+                cordaRuntimeGradlePluginSmokeTestApi.extendsFrom testApi
+                cordaRuntimeGradlePluginSmokeTestImplementation.extendsFrom testImplementation
+                cordaRuntimeGradlePluginSmokeTestRuntimeOnly.extendsFrom testRuntimeOnly
             }
         }
     }
 }
 
-tasks.register('endToEndTest', Test) {
-    description = "Runs end-to-end tests for Corda Runtime Gradle Plugin."
+tasks.register('cordaRuntimeGradlePluginSmokeTest', Test) {
+    description = "Runs smoke tests for Corda Runtime Gradle Plugin."
     group = "verification"
 
-    testClassesDirs = project.sourceSets["endToEndTest"].output.classesDirs
-    classpath = project.sourceSets["endToEndTest"].runtimeClasspath
+    testClassesDirs = project.sourceSets["cordaRuntimeGradlePluginSmokeTest"].output.classesDirs
+    classpath = project.sourceSets["cordaRuntimeGradlePluginSmokeTest"].runtimeClasspath
 }
 
 dependencies {
@@ -83,8 +83,6 @@ dependencies {
     testImplementation libs.bundles.test
     testImplementation libs.javalin
     testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinCoroutinesVersion"
-
-    endToEndTestImplementation project(':testing:e2e-test-utilities')
 }
 
 integrationTest {

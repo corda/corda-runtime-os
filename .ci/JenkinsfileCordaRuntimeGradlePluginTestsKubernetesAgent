@@ -1,5 +1,5 @@
 @Library('corda-shared-build-pipeline-steps@asubbotin/ES-2345/corda-runtime-gradle-plugin-test-pipeline') _
 
 cordaRuntimeGradlePluginTestsPipeline(
-        gradleTestTargetsToExecute: [':tools:corda-runtime-gradle-plugin:endToEndTest'],
+        gradleTestTargetsToExecute: [':tools:corda-runtime-gradle-plugin:cordaRuntimeGradlePluginSmokeTest'],
 )

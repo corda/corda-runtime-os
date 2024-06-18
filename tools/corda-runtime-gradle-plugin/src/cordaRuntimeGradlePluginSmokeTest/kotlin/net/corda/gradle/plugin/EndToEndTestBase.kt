@@ -101,7 +101,7 @@ abstract class EndToEndTestBase {
 
             """.trimIndent()
         )
-        val sourceConfigFolder = File("src/endToEndTest/resources/")
+        val sourceConfigFolder = File("src/cordaRuntimeGradlePluginSmokeTest/resources/")
         val targetConfigFolder = File("$projectDir/")
         sourceConfigFolder.absoluteFile.copyRecursively(targetConfigFolder)
     }
