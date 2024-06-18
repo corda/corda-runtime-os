@@ -3,6 +3,7 @@ package net.corda.p2p.linkmanager.sessions.events
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.p2p.event.SessionCreated
 import net.corda.data.p2p.event.SessionDeleted
 import net.corda.data.p2p.event.SessionDirection
@@ -37,7 +38,7 @@ internal class StatefulSessionEventProcessor(
     messagingConfiguration: SmartConfig,
     private val stateManager: StateManager,
     private val stateConvertor: StateConvertor,
-
+    configurationReadService: ConfigurationReadService,
     val sessionCache: SessionCache,
     private val sessionManagerImpl: SessionManagerImpl,
 ): LifecycleWithDominoTile {
@@ -152,6 +153,7 @@ internal class StatefulSessionEventProcessor(
         coordinatorFactory,
         sessionPartitionSubscription,
         subscriptionConfig,
+        configurationReadService,
         emptySet(),
         emptySet()
     )

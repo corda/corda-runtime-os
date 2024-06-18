@@ -83,6 +83,7 @@ class TrustStoresPublisherTest {
         subscriptionFactory,
         publisherFactory,
         lifecycleCoordinatorFactory,
+        mock(),
         configuration,
     )
 

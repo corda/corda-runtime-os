@@ -79,6 +79,7 @@ class TlsCertificatesPublisherTest {
     private val publisher = TlsCertificatesPublisher(
         subscriptionFactory,
         publisherFactory,
+        mock(),
         lifecycleCoordinatorFactory,
         configuration,
     )

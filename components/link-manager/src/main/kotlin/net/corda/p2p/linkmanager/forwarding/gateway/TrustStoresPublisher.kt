@@ -24,12 +24,14 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
+import net.corda.configuration.read.ConfigurationReadService
 
 @Suppress("LongParameterList")
 internal class TrustStoresPublisher(
     subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    configurationReadService: ConfigurationReadService,
     messagingConfiguration: SmartConfig,
 ) : LifecycleWithDominoTile {
 
@@ -60,6 +62,7 @@ internal class TrustStoresPublisher(
         lifecycleCoordinatorFactory,
         subscription,
         subscriptionConfig,
+        configurationReadService,
         emptyList(),
         emptyList(),
     )

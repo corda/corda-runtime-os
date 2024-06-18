@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.forwarding.gateway.mtls
 
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.p2p.mtls.gateway.ClientCertificateSubjects
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -23,6 +24,7 @@ internal class ClientCertificateBusListener<T : Any> private constructor(
             lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
             messagingConfiguration: SmartConfig,
             subscriptionFactory: SubscriptionFactory,
+            configurationReadService: ConfigurationReadService,
             topic: String,
             crossinline subjectFactory: (T) -> String,
         ): DominoTile {
@@ -49,6 +51,7 @@ internal class ClientCertificateBusListener<T : Any> private constructor(
                 subscriptionConfig = subscriptionConfig,
                 managedChildren = emptyList(),
                 dependentChildren = emptyList(),
+                configurationReadService = configurationReadService,
                 subscriptionGenerator = {
                     subscriptionFactory.createDurableSubscription(
                         subscriptionConfig = subscriptionConfig,

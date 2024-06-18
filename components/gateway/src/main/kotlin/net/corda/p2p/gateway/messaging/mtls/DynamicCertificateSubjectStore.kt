@@ -12,9 +12,11 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.v5.base.types.MemberX500Name
 import java.util.concurrent.ConcurrentHashMap
+import net.corda.configuration.read.ConfigurationReadService
 
 internal class DynamicCertificateSubjectStore(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    configurationReadService: ConfigurationReadService,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
 ): LifecycleWithDominoTile {
@@ -35,6 +37,7 @@ internal class DynamicCertificateSubjectStore(
         lifecycleCoordinatorFactory,
         subscription,
         subscriptionConfig,
+        configurationReadService,
         emptyList(),
         emptyList(),
     )

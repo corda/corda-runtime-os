@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging.internal
 
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -16,6 +17,7 @@ internal class CommonComponents(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     messagingConfiguration: SmartConfig,
     cryptoOpsClient: CryptoOpsClient,
+    configurationReadService: ConfigurationReadService,
 ) : LifecycleWithDominoTile {
     val features: Features = Features()
 
@@ -23,12 +25,14 @@ internal class CommonComponents(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
         messagingConfiguration,
+        configurationReadService,
         cryptoOpsClient,
     )
     val trustStoresMap = TrustStoresMap(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
-        messagingConfiguration
+        messagingConfiguration,
+        configurationReadService,
     )
     private val children: Collection<DominoTile> =
         listOf(

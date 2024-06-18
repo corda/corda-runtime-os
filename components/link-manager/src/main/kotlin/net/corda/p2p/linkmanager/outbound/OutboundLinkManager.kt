@@ -83,6 +83,7 @@ internal class OutboundLinkManager(
         lifecycleCoordinatorFactory,
         outboundMessageSubscription,
         subscriptionConfig,
+        configurationReaderService,
         dependentChildren = listOf(
             deliveryTracker.dominoTile.coordinatorName,
             commonComponents.dominoTile.coordinatorName,

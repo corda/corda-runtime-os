@@ -29,12 +29,14 @@ import java.security.cert.CertificateFactory
 import java.util.Objects
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import net.corda.configuration.read.ConfigurationReadService
 
 @Suppress("LongParameterList")
 internal class DynamicKeyStore(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
+    configurationReadService: ConfigurationReadService,
     private val cryptoOpsClient: CryptoOpsClient,
     private val certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
     private val keyStoreFactory: (
@@ -100,6 +102,7 @@ internal class DynamicKeyStore(
         lifecycleCoordinatorFactory,
         subscription,
         subscriptionConfig,
+        configurationReadService,
         emptyList(),
         emptyList(),
     )

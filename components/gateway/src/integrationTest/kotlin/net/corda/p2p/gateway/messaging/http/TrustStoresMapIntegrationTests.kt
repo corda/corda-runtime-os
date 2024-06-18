@@ -18,11 +18,14 @@ import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import java.io.StringWriter
+import net.corda.p2p.gateway.messaging.GatewayConfiguration
+import net.corda.p2p.gateway.messaging.GatewayServerConfiguration
 
 internal class TrustStoresMapIntegrationTests : TestBase() {
-    companion object {
-        private const val GROUP_ID = "Group-A"
-        private const val ALICE_NAME = "O=Alice, L=LDN, C=GB"
+    private companion object {
+        const val GROUP_ID = "Group-A"
+        const val ALICE_NAME = "O=Alice, L=LDN, C=GB"
+        const val MAX_REQUEST_SIZE = 50_000_000L
     }
     private val topicService = TopicServiceImpl().also {
         keep(it)
@@ -32,13 +35,15 @@ internal class TrustStoresMapIntegrationTests : TestBase() {
     private val messagingConfig = SmartConfigImpl.empty()
     private val publisherFactory = CordaPublisherFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
     private val expectedCertificatePem = truststoreCertificatePem.replace("\r\n", "\n")
+    private val configPublisher = ConfigPublisher()
 
     @Test
     fun `TrustStoresMap creates correct certificate`() {
         val map = TrustStoresMap(
             lifecycleCoordinatorFactory,
             subscriptionFactory,
-            messagingConfig
+            messagingConfig,
+            configPublisher.readerService
         )
         publisherFactory.createPublisher(PublisherConfig("client.ID", false), messagingConfig).use {
             it.publish(
@@ -53,9 +58,14 @@ internal class TrustStoresMapIntegrationTests : TestBase() {
                 it.join()
             }
         }
+        configPublisher.publishConfig(
+            GatewayConfiguration(
+            listOf(GatewayServerConfiguration("25", 25, "/",)),
+            aliceSslConfig,
+            MAX_REQUEST_SIZE,
+        ),)
 
         map.start()
-
         eventually {
             assertThat(map.isRunning).isTrue
 

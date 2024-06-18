@@ -46,6 +46,7 @@ class Gateway(
         lifecycleCoordinatorFactory,
         messagingConfiguration,
         cryptoOpsClient,
+        configurationReaderService,
     )
     private val inboundMessageHandler = InboundMessageHandler(
         lifecycleCoordinatorFactory,
@@ -70,7 +71,8 @@ class Gateway(
     private val revocationChecker = RevocationChecker(
         subscriptionFactory,
         messagingConfiguration,
-        lifecycleCoordinatorFactory
+        lifecycleCoordinatorFactory,
+        configurationReaderService,
     )
 
     @VisibleForTesting
