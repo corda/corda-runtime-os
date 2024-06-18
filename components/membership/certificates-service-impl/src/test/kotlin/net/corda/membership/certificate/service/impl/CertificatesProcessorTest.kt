@@ -85,8 +85,7 @@ class CertificatesProcessorTest {
                 any(),
                 anyOrNull(),
                 any(),
-                any(),
-                anyOrNull()
+                any()
             )
         ).doThrow(CordaRuntimeException("Ooops"))
         val request = CertificateRpcRequest(
