@@ -6,13 +6,13 @@ import io.javalin.http.ContentType
 import io.javalin.http.Context
 import io.javalin.http.HandlerType
 import io.javalin.http.Header
-import io.javalin.http.Header.ACCESS_CONTROL_ALLOW_ORIGIN
 import io.javalin.http.HttpResponseException
 import io.javalin.http.NotFoundResponse
 import io.javalin.http.staticfiles.Location
 import io.javalin.http.util.JsonEscapeUtil
 import io.javalin.http.util.MultipartUtil
 import io.javalin.json.JavalinJackson
+import io.javalin.plugin.bundled.CorsPlugin
 import io.javalin.plugin.bundled.RedirectToLowercasePathPlugin
 import jakarta.servlet.MultipartConfigElement
 import net.corda.rest.authorization.AuthorizationUtils.authorize
@@ -48,7 +48,7 @@ import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
-import java.util.LinkedList
+import java.util.*
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown", "LongParameterList")
 internal class RestServerInternal(
@@ -98,9 +98,10 @@ internal class RestServerInternal(
                 config.staticFiles.enableWebjars()
             }
 
-            if (log.isDebugEnabled) {
+            // Add the if statement back before merging the code!!!!!!!!
+          //  if (log.isDebugEnabled) {
                 config.bundledPlugins.enableDevLogging()
-            }
+           // }
 
             config.jetty.modifyServer {
                 configurationsProvider.getSSLKeyStorePath()
@@ -117,12 +118,16 @@ internal class RestServerInternal(
             }
 
             config.http.defaultContentType = contentTypeApplicationJson
-            config.bundledPlugins.enableCors { cors ->
-                cors.addRule {
-                   it.anyHost()
-                   it.exposeHeader(ACCESS_CONTROL_ALLOW_ORIGIN)
-                }
-            }
+//            config.bundledPlugins.enableCors { cors ->
+//                cors.addRule { corsConfig ->
+//                    corsConfig.anyHost()
+//                    corsConfig.exposeHeader(ACCESS_CONTROL_ALLOW_ORIGIN)
+//                }
+//            }
+
+            config.registerPlugin(CorsPlugin { cors ->
+                cors.addRule { it.anyHost() }
+            })
         }.apply {
             addRoutes()
             addOpenApiRoutes()
