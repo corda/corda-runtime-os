@@ -19,15 +19,15 @@ repositories {
 
 
 sourceSets {
-    cordaRuntimeGradlePluginSmokeTest {
+    smokeTest {
         java {
-            srcDirs += ['src/cordaRuntimeGradlePluginSmokeTest/java']
+            srcDirs += ['src/smokeTest/java']
         }
         kotlin {
-            srcDirs += ['src/cordaRuntimeGradlePluginSmokeTest/kotlin']
+            srcDirs += ['src/smokeTest/kotlin']
         }
         resources {
-            srcDirs = ['src/cordaRuntimeGradlePluginSmokeTest/resources']
+            srcDirs = ['src/smokeTest/resources']
         }
         compileClasspath += main.output + test.output
         runtimeClasspath += main.output + test.output
@@ -37,14 +37,14 @@ sourceSets {
 kotlin {
     target {
         java
-        compilations.cordaRuntimeGradlePluginSmokeTest {
+        compilations.smokeTest {
             associateWith compilations.main
             associateWith compilations.test
 
             configurations {
-                cordaRuntimeGradlePluginSmokeTestApi.extendsFrom testApi
-                cordaRuntimeGradlePluginSmokeTestImplementation.extendsFrom testImplementation
-                cordaRuntimeGradlePluginSmokeTestRuntimeOnly.extendsFrom testRuntimeOnly
+                smokeTestApi.extendsFrom testApi
+                smokeTestImplementation.extendsFrom testImplementation
+                smokeTestRuntimeOnly.extendsFrom testRuntimeOnly
             }
         }
     }
@@ -54,8 +54,8 @@ tasks.register('cordaRuntimeGradlePluginSmokeTest', Test) {
     description = "Runs smoke tests for Corda Runtime Gradle Plugin."
     group = "verification"
 
-    testClassesDirs = project.sourceSets["cordaRuntimeGradlePluginSmokeTest"].output.classesDirs
-    classpath = project.sourceSets["cordaRuntimeGradlePluginSmokeTest"].runtimeClasspath
+    testClassesDirs = project.sourceSets["smokeTest"].output.classesDirs
+    classpath = project.sourceSets["smokeTest"].runtimeClasspath
 }
 
 dependencies {
