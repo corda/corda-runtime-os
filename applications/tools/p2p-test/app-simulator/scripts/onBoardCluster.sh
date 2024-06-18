@@ -16,7 +16,7 @@ echo '{
 }
 
 config_gateway() {
-   config_version=$(curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v1/config/corda.p2p.gateway/ | jq -r '.version')
+   config_version=$(curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v5_3/config/corda.p2p.gateway/ | jq -r '.version')
    if [[ $MTLS == "Y" ]]; then
      tls_type="MUTUAL"
    else
@@ -24,7 +24,7 @@ config_gateway() {
    fi
    raw_config=$(jq -n --arg tls_type "$tls_type" '.sslConfig.revocationCheck.mode="OFF" | .sslConfig.tlsType=$tls_type')
    body=$(jq -n --arg raw_config "$raw_config" --arg version $config_version '.section="corda.p2p.gateway" | .config=$raw_config |.schemaVersion.major=1 | .schemaVersion.minor=0| .version=$version')
-   curl --fail-with-body -s -S --insecure -u admin:admin -X PUT  -d "$body" https://$1/api/v1/config
+   curl --fail-with-body -s -S --insecure -u admin:admin -X PUT  -d "$body" https://$1/api/v5_3/config
 }
 
 build_cli_tool() {
@@ -47,23 +47,23 @@ build_cpi() {
 }
 
 trust_cpi_keys() {
-   curl --insecure -u admin:admin -X PUT -F alias="gradle-plugin-default-key" -F certificate=@"$SCRIPT_DIR/gradle-plugin-default-key.pem" https://$1/api/v5_1/certificate/cluster/code-signer
+   curl --insecure -u admin:admin -X PUT -F alias="gradle-plugin-default-key" -F certificate=@"$SCRIPT_DIR/gradle-plugin-default-key.pem" https://$1/api/v5_3/certificate/cluster/code-signer
    keytool -exportcert -rfc -alias "signing key 1" -keystore "$WORKING_DIR"/signingkeys.pfx -storepass "keystore password" -file "$WORKING_DIR"/signingkey1.pem
-   curl --insecure -u admin:admin -X PUT -F alias="signingkey1-2022" -F certificate=@"$WORKING_DIR"/signingkey1.pem https://$1/api/v5_1/certificate/cluster/code-signer
+   curl --insecure -u admin:admin -X PUT -F alias="signingkey1-2022" -F certificate=@"$WORKING_DIR"/signingkey1.pem https://$1/api/v5_3/certificate/cluster/code-signer
 }
 
 allow_client_certificate() {
-  curl --fail-with-body --insecure -u admin:admin -X PUT  https://$1/api/v1/mgm/$3/mutual-tls/allowed-client-certificate-subjects/"$2"
+  curl --fail-with-body --insecure -u admin:admin -X PUT  https://$1/api/v5_3/mgm/$3/mutual-tls/allowed-client-certificate-subjects/"$2"
 }
 upload_cpi() {
-   local CPI_ID=$(curl --fail-with-body -s -S --insecure -u admin:admin -F upload=@$2 https://$1/api/v1/cpi/ | jq -M '.["id"]' | tr -d '"')
+   local CPI_ID=$(curl --fail-with-body -s -S --insecure -u admin:admin -F upload=@$2 https://$1/api/v5_3/cpi/ | jq -M '.["id"]' | tr -d '"')
    echo $CPI_ID
 }
 
 wait_for_cpi() {
    n=0
    until [ "$n" -ge 25 ];  do
-     cpi_status=$(curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v1/cpi/status/$2 | jq -r .status)
+     cpi_status=$(curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v5_3/cpi/status/$2 | jq -r .status)
      if [[ "$cpi_status" == "OK" ]]; then
        break
      else
@@ -75,14 +75,14 @@ wait_for_cpi() {
 }
 
 cpi_checksum() {
-   local CPI_CHECKSUM=$(curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v1/cpi/status/$2 | jq -M '.["cpiFileChecksum"]' | tr -d '"')
+   local CPI_CHECKSUM=$(curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v5_3/cpi/status/$2 | jq -M '.["cpiFileChecksum"]' | tr -d '"')
    echo $CPI_CHECKSUM
 }
 
 wait_for_vnode() {
    n=0
    until [ "$n" -ge 25 ];  do
-     cpi_status=$(curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v1/virtualnode/$2 | jq -r '.flowP2pOperationalStatus')
+     cpi_status=$(curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v5_3/virtualnode/$2 | jq -r '.flowP2pOperationalStatus')
      if [[ $cpi_status == 'ACTIVE' ]]; then
        break
      else
@@ -93,37 +93,37 @@ wait_for_vnode() {
    done
 }
 create_vnode() {
-    local HOLDING_ID_SHORT_HASH=$(curl --fail-with-body -s -S --insecure -u admin:admin -d '{ "request": { "cpiFileChecksum": "'$2'", "x500Name": "'$3'"  } }' https://$1/api/v1/virtualnode | jq -M '.requestId' | tr -d '"')
+    local HOLDING_ID_SHORT_HASH=$(curl --fail-with-body -s -S --insecure -u admin:admin -d '{ "request": { "cpiFileChecksum": "'$2'", "x500Name": "'$3'"  } }' https://$1/api/v5_3/virtualnode | jq -M '.requestId' | tr -d '"')
     wait_for_vnode $1 $HOLDING_ID_SHORT_HASH
     echo $HOLDING_ID_SHORT_HASH
 }
 
 assign_hsm_and_generate_session_key_pair() {
-    curl --fail-with-body -s -S --insecure -u admin:admin -X POST https://$1/api/v1/hsm/soft/$2/SESSION_INIT &> /dev/null
-    local MGM_SESSION_KEY_ID=$(curl --fail-with-body -s -S --insecure -u admin:admin -X POST https://$1/api/v5_1/key/$2/alias/$2-session/category/SESSION_INIT/scheme/CORDA.ECDSA.SECP256R1 | jq -M '.["id"]' | tr -d '"')
+    curl --fail-with-body -s -S --insecure -u admin:admin -X POST https://$1/api/v5_3/hsm/soft/$2/SESSION_INIT &> /dev/null
+    local MGM_SESSION_KEY_ID=$(curl --fail-with-body -s -S --insecure -u admin:admin -X POST https://$1/api/v5_3/key/$2/alias/$2-session/category/SESSION_INIT/scheme/CORDA.ECDSA.SECP256R1 | jq -M '.["id"]' | tr -d '"')
     echo $MGM_SESSION_KEY_ID
 }
 
 assign_hsm_and_generate_tls_key_pair() {
-    curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v1/hsm/soft/p2p/TLS &> /dev/null
-    MGM_TLS_KEY_ID=$(curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v5_1/key/p2p/alias/cluster-tls/category/TLS/scheme/CORDA.RSA | jq -M '.["id"]' | tr -d '"')
+    curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v5_3/hsm/soft/p2p/TLS &> /dev/null
+    MGM_TLS_KEY_ID=$(curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v5_3/key/p2p/alias/cluster-tls/category/TLS/scheme/CORDA.RSA | jq -M '.["id"]' | tr -d '"')
     echo $MGM_TLS_KEY_ID
 }
 
 assign_hsm_and_generate_edch_key_pair() {
-    curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v1/hsm/soft/$2/PRE_AUTH &> /dev/null
-    MGM_EDCH_KEY_ID=$(curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v5_1/key/$2/alias/$2-auth/category/PRE_AUTH/scheme/CORDA.ECDSA.SECP256R1 | jq -M '.["id"]' | tr -d '"')
+    curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v5_3/hsm/soft/$2/PRE_AUTH &> /dev/null
+    MGM_EDCH_KEY_ID=$(curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v5_3/key/$2/alias/$2-auth/category/PRE_AUTH/scheme/CORDA.ECDSA.SECP256R1 | jq -M '.["id"]' | tr -d '"')
     echo $MGM_EDCH_KEY_ID
 }
 
 assign_hsm_and_generate_ledger_key_pair() {
-    curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v1/hsm/soft/$2/LEDGER &> /dev/null
-    LEDGER_KEY_ID=$(curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v5_1/key/$2/alias/$2-ledger/category/LEDGER/scheme/CORDA.ECDSA.SECP256R1 | jq -M '.["id"]' | tr -d '"')
+    curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v5_3/hsm/soft/$2/LEDGER &> /dev/null
+    LEDGER_KEY_ID=$(curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v5_3/key/$2/alias/$2-ledger/category/LEDGER/scheme/CORDA.ECDSA.SECP256R1 | jq -M '.["id"]' | tr -d '"')
     echo $LEDGER_KEY_ID
 }
 
 get_csr() {
-    curl --fail-with-body -s -S -k -u admin:admin  -X POST -H "Content-Type: application/json" -d '{"x500Name": "'$2'", "subjectAlternativeNames": [ "'$3'" ]}' "https://$1/api/v5_1/certificate/p2p/$4" > "$WORKING_DIR"/$5.csr
+    curl --fail-with-body -s -S -k -u admin:admin  -X POST -H "Content-Type: application/json" -d '{"x500Name": "'$2'", "subjectAlternativeNames": [ "'$3'" ]}' "https://$1/api/v5_3/certificate/p2p/$4" > "$WORKING_DIR"/$5.csr
 }
 
 sign_certificate() {
@@ -131,7 +131,7 @@ sign_certificate() {
 }
 
 upload_certificate() {
-    curl --fail-with-body -s -S -k -u admin:admin -X PUT  -F certificate=@$2 -F alias=cluster-tls "https://$1/api/v5_1/certificate/cluster/p2p-tls"
+    curl --fail-with-body -s -S -k -u admin:admin -X PUT  -F certificate=@$2 -F alias=cluster-tls "https://$1/api/v5_3/certificate/cluster/p2p-tls"
 }
 
 register_node() {
@@ -177,18 +177,18 @@ register_mgm() {
 wait_for_approve() {
   n=0
   until [ "$n" -ge 25 ];  do
-    registrationStatus=$(curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v1/membership/$2/$3 | jq -r .registrationStatus)
+    registrationStatus=$(curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v5_3/membership/$2/$3 | jq -r .registrationStatus)
     if [[ "$registrationStatus" == "APPROVED" ]]; then
-      curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v1/membership/$2/$3 | jq
+      curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v5_3/membership/$2/$3 | jq
       break
     elif [[ "$registrationStatus" == "DECLINED" ]]; then
-      curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v1/membership/$2/$3 | jq
+      curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v5_3/membership/$2/$3 | jq
       exit -1
     elif [[ "$registrationStatus" == "FAILED" ]]; then
-      curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v1/membership/$2/$3 | jq
+      curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v5_3/membership/$2/$3 | jq
       exit -1
     elif [[ "$registrationStatus" == "INVALID" ]]; then
-      curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v1/membership/$2/$3 | jq
+      curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v5_3/membership/$2/$3 | jq
       exit -1
     else
       echo "Registration status is $registrationStatus, waiting a bit"
@@ -205,7 +205,7 @@ register() {
     echo $COMMAND | jq
 
     # Register
-    registrationId=$(curl --fail-with-body -s -S --insecure -u admin:admin -d " $COMMAND " https://$1/api/v1/membership/$2 | jq -r .registrationId)
+    registrationId=$(curl --fail-with-body -s -S --insecure -u admin:admin -d " $COMMAND " https://$1/api/v5_3/membership/$2 | jq -r .registrationId)
 
     echo "Registration Id $registrationId for $2"
 
@@ -214,11 +214,11 @@ register() {
 }
 
 complete_network_setup() {
-    curl --fail-with-body -s -S -k -u admin:admin -X PUT -d '{"p2pTlsCertificateChainAlias": "cluster-tls", "sessionKeysAndCertificates": [{"sessionKeyId": "'$3'", "preferred": true}]}' "https://$1/api/v1/network/setup/$2"
+    curl --fail-with-body -s -S -k -u admin:admin -X PUT -d '{"p2pTlsCertificateChainAlias": "cluster-tls", "sessionKeysAndCertificates": [{"sessionKeyId": "'$3'", "preferred": true}]}' "https://$1/api/v5_3/network/setup/$2"
 }
 
 extract_group_policy() {
-   curl --fail-with-body -s -S --insecure -u admin:admin -X GET "https://$1/api/v1/mgm/$2/info" > "$WORKING_DIR"/GroupPolicy-out.json
+   curl --fail-with-body -s -S --insecure -u admin:admin -X GET "https://$1/api/v5_3/mgm/$2/info" > "$WORKING_DIR"/GroupPolicy-out.json
 }
 
 on_board_mgm() {

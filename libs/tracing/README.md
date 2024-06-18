@@ -30,7 +30,7 @@ Both headers must be provided otherwise the system will treat the ID as missing 
 ```shell
 TRACE_ID=`openssl rand -hex 16` # 16 bytes, 128 bits
 SPAN_ID=`openssl rand -hex 8`   #  8 bytes,  64 bits
-curl --insecure -u admin:admin --header "X-B3-TraceId: $TRACE_ID" --header "X-B3-SpanId: $SPAN_ID"  https://localhost:8888/api/v1/flow/$HOLDING_ID/r1
+curl --insecure -u admin:admin --header "X-B3-TraceId: $TRACE_ID" --header "X-B3-SpanId: $SPAN_ID"  https://localhost:8888/api/v5_3/flow/$HOLDING_ID/r1
 ```
 
 ## How to use
