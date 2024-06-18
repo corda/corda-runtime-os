@@ -69,7 +69,7 @@ class RestServerHTTPSWebsocketTest : AbstractWebsocketTest() {
         }
     }
 
-    override fun createWsClient() = WebSocketClient(HttpClient())
+    override fun createWsClient() = WebSocketClient(HttpClient().apply { sslContextFactory.setTrustAll(true) })
 
     override val wsProtocol = "wss"
 
