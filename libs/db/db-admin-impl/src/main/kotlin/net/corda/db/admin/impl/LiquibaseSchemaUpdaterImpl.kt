@@ -33,6 +33,7 @@ class LiquibaseSchemaUpdaterImpl(
     ) {
         val scopeObjects = mapOf(
             Scope.Attr.resourceAccessor.name to lb.resourceAccessor,
+            // This is a temporary workaround till OSGi Manifest is fixed in the next LB version
             Scope.Attr.classLoader.name to FilenameUtils::class.java.classLoader
         )
         Scope.child(scopeObjects) {
