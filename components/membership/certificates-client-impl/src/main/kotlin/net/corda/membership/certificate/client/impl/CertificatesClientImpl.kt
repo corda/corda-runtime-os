@@ -43,6 +43,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.time.Duration
 
 @Suppress("LongParameterList")
 @Component(service = [CertificatesClient::class])
@@ -170,7 +171,7 @@ class CertificatesClientImpl @Activate constructor(
                     holdingIdentityId?.value,
                     payload,
                 )
-            ).getOrThrow()?.response as? R
+            ).getOrThrow(Duration.ofSeconds(10))?.response as? R
         }
     }
 
