@@ -17,7 +17,7 @@ import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 // https://docs.gradle.org/current/userguide/test_kit.html
-abstract class EndToEndTestBase {
+abstract class SmokeTestBase {
     companion object {
         private val targetUrl = URI("https://localhost:8888")
         private const val USER = "admin"

@@ -1,6 +1,6 @@
 package net.corda.gradle.plugin.cordalifecycle
 
-import net.corda.gradle.plugin.EndToEndTestBase
+import net.corda.gradle.plugin.SmokeTestBase
 import org.assertj.core.api.Assertions.catchThrowable
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test
 import java.io.StringWriter
 import java.util.concurrent.Executors
 
-class CordaLifeCycleTasksTest : EndToEndTestBase() {
+class CordaLifeCycleTasksTest : SmokeTestBase() {
 
     private val executorService =  Executors.newSingleThreadExecutor()
 
