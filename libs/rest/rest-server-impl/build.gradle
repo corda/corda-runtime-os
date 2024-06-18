@@ -42,6 +42,7 @@ dependencies {
     implementation libs.jackson.datatype.jsr310
 
     testImplementation project(":libs:rest:rest-test-common")
+
     testRuntimeOnly 'org.osgi:osgi.core'
     testRuntimeOnly libs.slf4j.simple
 
