@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.util.Base64
@@ -22,9 +22,10 @@ class DefaultCredentialResolverTest {
     // https://github.com/mockito/mockito/issues/1943
     private val req: HttpServletRequest = mock()
     private val res: HttpServletResponse = mock()
-    private val ctx: Context = mock {
-        on { req() } doAnswer { req }
-        on { res() } doAnswer { res }
+    private val ctx = mock<Context>().apply {
+        whenever(req()).thenReturn(req)
+        whenever(res()).thenReturn(res)
+        whenever(header(any())).thenCallRealMethod()
     }
     private val context = ClientHttpRequestContext(ctx)
     private val resolver = DefaultCredentialResolver()
