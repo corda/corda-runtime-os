@@ -20,7 +20,8 @@ interface DbCertificateClient {
         usage: CertificateUsage,
         holdingIdentityId: ShortHash?,
         alias: String,
-        certificates: String
+        certificates: String,
+        logger: org.slf4j.Logger? = null,
     )
 
     /**

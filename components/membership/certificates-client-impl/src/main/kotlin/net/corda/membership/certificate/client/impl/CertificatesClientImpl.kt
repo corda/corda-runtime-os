@@ -44,6 +44,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.time.Duration
+import java.util.logging.Logger
 
 @Suppress("LongParameterList")
 @Component(service = [CertificatesClient::class])
@@ -104,7 +105,9 @@ class CertificatesClientImpl @Activate constructor(
         holdingIdentityId: ShortHash?,
         alias: String,
         certificates: String,
+        logger: org.slf4j.Logger?,
     ) {
+        logger?.info("Step3: Will send an ImportCertificateRpcRequest with certificates $certificates.")
         send<CertificateImportedRpcResponse>(holdingIdentityId, usage, ImportCertificateRpcRequest(alias, certificates))
     }
 

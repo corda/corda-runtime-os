@@ -194,6 +194,7 @@ class CertificateRestResourceImpl @Activate constructor(
         alias: String,
         certificates: List<HttpFileUpload>,
     ) {
+        logger.info("Step1: Starting importCertificateChain")
         if (alias.isBlank()) {
             throw InvalidInputDataException(
                 details = mapOf("alias" to "Empty alias")
@@ -276,12 +277,13 @@ class CertificateRestResourceImpl @Activate constructor(
         }
 
         tryWithExceptionHandling(logger, "import certificate") {
-            logger.info("Step1: Importing certificate chain for $usageType with alias $alias")
+            logger.info("Step2: Calling certificatesClient.importCertificates")
             certificatesClient.importCertificates(
                 usageType,
                 holdingIdentityShortHash,
                 alias,
                 rawCertificates.joinToString(separator = "\n"),
+                logger
             )
         }
     }

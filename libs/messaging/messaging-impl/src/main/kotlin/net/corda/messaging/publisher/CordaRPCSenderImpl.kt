@@ -3,6 +3,7 @@ package net.corda.messaging.publisher
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.certificates.rpc.request.CertificateRpcRequest
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
@@ -214,6 +215,9 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     }
 
     override fun sendRequest(req: REQUEST): CompletableFuture<RESPONSE> {
+        if (req is CertificateRpcRequest) {
+            log.info("Sending request $req")
+        }
         val future = CompletableFuture<RESPONSE>()
         val correlationId = UUID.randomUUID().toString()
 
