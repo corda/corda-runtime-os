@@ -10,7 +10,6 @@ import net.corda.schema.common.provider.SchemaProvider
 import net.corda.v5.base.versioning.Version
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.InputStream
@@ -18,7 +17,6 @@ import java.io.InputStream
 // Note: these tests use a stub SchemaProvider to cheat the validator into treating the key parameter as a resource to
 // retrieve. In actual use the validator should be provided one of the top level keys from the config schema module
 // instead.
-@Disabled("This test suite must be enabled before merging the changes.")
 class ConfigurationValidatorImplTest {
 
     companion object {
