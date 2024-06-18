@@ -38,11 +38,13 @@ abstract class SmokeTestBase {
                     restClient.helloRestClient.getHelloGetprotocolversion()
                     return
                 } catch (e: Exception) {
-                    if (Duration.between(start, Instant.now()) > timeout) {
-                        if (!throwError) return
-                        else throw IllegalStateException("Failed to connect to Corda REST API", e)
+                    if (Duration.between(start, Instant.now()) < timeout) {
+                        Thread.sleep(10 * 1000)
+                        continue
                     }
-                    Thread.sleep(10 * 1000)
+                    if (throwError) {
+                        throw IllegalStateException("Failed to connect to Corda REST API", e)
+                    } else return
                 }
             }
         }
@@ -71,7 +73,9 @@ abstract class SmokeTestBase {
             val cordaProcess = runComposeProjectCommand("up", "--pull", "missing", "--quiet-pull", "--detach")
 
             val hasExited = cordaProcess.waitFor(10, TimeUnit.SECONDS)
-            if (cordaProcess.exitValue() != 0 || !hasExited) throw IllegalStateException("Failed to start Corda cluster using docker compose")
+            if (cordaProcess.exitValue() != 0 || !hasExited) {
+                throw IllegalStateException("Failed to start Corda cluster using docker compose")
+            }
 
             if (wait) runBlocking { waitUntilRestOrThrow() }
 
