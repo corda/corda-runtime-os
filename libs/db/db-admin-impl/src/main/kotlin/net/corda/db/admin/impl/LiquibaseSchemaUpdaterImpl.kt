@@ -15,9 +15,9 @@ import liquibase.command.core.helpers.ChangeExecListenerCommandStep
 import liquibase.command.core.helpers.DatabaseChangelogCommandStep
 import liquibase.command.core.helpers.DbUrlConnectionArgumentsCommandStep
 import liquibase.command.core.helpers.ShowSummaryArgument
-import liquibase.io.WriterOutputStream
 import net.corda.db.admin.LiquibaseSchemaUpdater
 import org.apache.commons.io.FilenameUtils
+import org.apache.commons.io.output.WriterOutputStream
 import java.io.Writer
 
 class LiquibaseSchemaUpdaterImpl(
@@ -40,10 +40,10 @@ class LiquibaseSchemaUpdaterImpl(
             if (sql != null) {
                 commandScopeFactory(UpdateSqlCommandStep.COMMAND_NAME).configure(lb, tag).also {
                     it.setOutput(
-                        WriterOutputStream(
-                            sql,
-                            GlobalConfiguration.OUTPUT_FILE_ENCODING.currentValue
-                        )
+                        WriterOutputStream.Builder().apply {
+                            setWriter(sql)
+                            setCharset(GlobalConfiguration.OUTPUT_FILE_ENCODING.currentValue)
+                        }.get()
                     )
                     Scope.child(classLoaderScopeObjects) {
                         it.execute()
