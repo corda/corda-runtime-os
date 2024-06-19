@@ -93,6 +93,32 @@ interface UserEndpoint : RestResource {
         loginName: String
     ): UserResponseType
 
+    @HttpDELETE(
+        path = "{loginName}",
+        description = "This method deletes a user based on the specified login name.",
+        responseDescription = """
+            A deleted user with the following attributes:
+            id: Unique server generated identifier for the user
+            version: The version of the user; version 0 is assigned to a newly created user
+            updateTimestamp: The date and time when the user was last updated
+            fullName: The full name for the new user
+            loginName: The login name for the new user
+            enabled: If true, the user account is enabled; false, the account is disabled
+            ssoAuth: If true, the user account is enabled for SSO authentication; 
+                false, the account is enabled for password authentication
+            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;
+                    value of null means that the password does not expire
+            parentGroup: An optional identifier of the user group for the new user to be included;
+                    value of null means that the user will belong to the root group
+            properties: An optional set of key/value properties associated with a user account
+            roleAssociations: A set of roles associated with the user account""",
+        minVersion = RestApiVersion.C5_3
+    )
+    fun deleteUser(
+        @RestPathParameter(description = "The login name of the user to be deleted")
+        loginName: String
+    ): ResponseEntity<UserResponseType>
+
     @HttpPOST(
         path = "/selfpassword",
         description = "This method updates a users own password.",

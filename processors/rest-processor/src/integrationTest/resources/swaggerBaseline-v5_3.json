@@ -3725,6 +3725,41 @@
             "description" : "Forbidden"
           }
         }
+      },
+      "delete" : {
+        "tags" : [ "RBAC User" ],
+        "description" : "This method deletes a user based on the specified login name.",
+        "operationId" : "delete_user__loginname_",
+        "parameters" : [ {
+          "name" : "loginname",
+          "in" : "path",
+          "description" : "The login name of the user to be deleted",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The login name of the user to be deleted",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "\n            A deleted user with the following attributes:\n            id: Unique server generated identifier for the user\n            version: The version of the user; version 0 is assigned to a newly created user\n            updateTimestamp: The date and time when the user was last updated\n            fullName: The full name for the new user\n            loginName: The login name for the new user\n            enabled: If true, the user account is enabled; false, the account is disabled\n            ssoAuth: If true, the user account is enabled for SSO authentication; \n                false, the account is enabled for password authentication\n            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire\n            parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n            properties: An optional set of key/value properties associated with a user account\n            roleAssociations: A set of roles associated with the user account",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
       }
     },
     "/user/{loginname}/permissionsummary" : {
@@ -4875,8 +4910,7 @@
           "json" : {
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "type" : "object"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "timestamp" : {
             "type" : "string",
@@ -5148,38 +5182,32 @@
           "cryptoDdlConnection" : {
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "type" : "object"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "cryptoDmlConnection" : {
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "type" : "object"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "uniquenessDdlConnection" : {
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "type" : "object"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "uniquenessDmlConnection" : {
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "type" : "object"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "vaultDdlConnection" : {
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "type" : "object"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "vaultDmlConnection" : {
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "type" : "object"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "x500Name" : {
             "type" : "string",
@@ -5786,8 +5814,7 @@
           "requestBody" : {
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : false,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "type" : "object"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           }
         },
         "description" : "\n                Information required to start a flow for this holdingId, including:\n                clientRequestId: a client provided flow identifier\n                flowClassName: fully qualified class name of the flow to start\n                requestBody: optional start arguments string passed to the flow; defaults to an empty string\n            "
@@ -5837,8 +5864,7 @@
           "config" : {
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : false,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "type" : "object"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "schemaVersion" : {
             "$ref" : "#/components/schemas/ConfigSchemaVersion"
@@ -5888,38 +5914,32 @@
           "cryptoDdlConnection" : {
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "type" : "object"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "cryptoDmlConnection" : {
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "type" : "object"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "uniquenessDdlConnection" : {
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "type" : "object"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "uniquenessDmlConnection" : {
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "type" : "object"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "vaultDdlConnection" : {
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "type" : "object"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "vaultDmlConnection" : {
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "type" : "object"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           }
         },
         "description" : "Details of the virtual node to be updated"
