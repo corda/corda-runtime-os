@@ -3,7 +3,6 @@ package net.corda.processors.db.internal.reconcile.db
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoTenants.P2P
 import net.corda.crypto.core.ShortHash
 import net.corda.data.crypto.wire.CryptoSigningKey
@@ -33,7 +32,7 @@ import org.slf4j.LoggerFactory
 import java.util.stream.Stream
 import javax.persistence.EntityManager
 import net.corda.cache.caffeine.CacheFactoryImpl
-import net.corda.crypto.client.ReconcilerCryptoOpsClient
+import net.corda.crypto.client.CryptoOpsRPCClient
 import net.corda.db.schema.CordaDb
 import net.corda.membership.certificates.datamodel.Certificate
 import net.corda.membership.certificates.datamodel.ClusterCertificate
@@ -46,7 +45,7 @@ class HostedIdentityReconciler(
     private val reconcilerFactory: ReconcilerFactory,
     private val reconcilerReader: ReconcilerReader<String, HostedIdentityEntry>,
     private val reconcilerWriter: ReconcilerWriter<String, HostedIdentityEntry>,
-    private val reconcilerCryptoOpsClient: ReconcilerCryptoOpsClient,
+    private val cryptoOpsRPCClient: CryptoOpsRPCClient,
     private val keyEncodingService: KeyEncodingService,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
@@ -56,7 +55,6 @@ class HostedIdentityReconciler(
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val dependencies = setOf(
             LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
-            LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
             LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
         )
     }
@@ -232,7 +230,7 @@ class HostedIdentityReconciler(
         return if (cachedKey != null) {
             cachedKey
         } else {
-            val key = reconcilerCryptoOpsClient.lookupKeysByIds(tenantId, listOf(sessionKeyId)).firstOrNull()?.toPem()
+            val key = cryptoOpsRPCClient.lookupKeysByIds(tenantId, listOf(sessionKeyId)).firstOrNull()?.toPem()
                 ?: throw CertificatesResourceNotFoundException("Can not find session key for $tenantId")
             cachedKeys.put(KeyLookup(tenantId, sessionKeyId), key)
             key

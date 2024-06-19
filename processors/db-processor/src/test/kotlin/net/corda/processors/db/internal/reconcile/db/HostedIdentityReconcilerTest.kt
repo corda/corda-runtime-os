@@ -42,7 +42,7 @@ import javax.persistence.criteria.CriteriaQuery
 import javax.persistence.criteria.Path
 import javax.persistence.criteria.Predicate
 import javax.persistence.criteria.Root
-import net.corda.crypto.client.ReconcilerCryptoOpsClient
+import net.corda.crypto.client.CryptoOpsRPCClient
 import org.junit.jupiter.api.Disabled
 
 class HostedIdentityReconcilerTest {
@@ -83,7 +83,7 @@ class HostedIdentityReconcilerTest {
     private val cryptoSigningKey = mock<CryptoSigningKey> {
         on { publicKey } doReturn ByteBuffer.wrap(KNOWN_SESSION_KEY_STRING.toByteArray())
     }
-    private val cryptoOpsClient = mock<ReconcilerCryptoOpsClient> {
+    private val cryptoOpsClient = mock<CryptoOpsRPCClient> {
         on { lookupKeysByIds(any(), any()) } doReturn listOf(cryptoSigningKey)
     }
     private val mockHostedIdentityEntity = mock<HostedIdentityEntity> {

@@ -13,7 +13,7 @@ import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.cpk.read.CpkReadService
 import net.corda.cpk.write.CpkWriteService
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.client.ReconcilerCryptoOpsClient
+import net.corda.crypto.client.CryptoOpsRPCClient
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
@@ -146,8 +146,8 @@ class DBProcessorImpl @Activate constructor(
     private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService,
     @Reference(service = LocallyHostedIdentitiesWriter::class)
     private val locallyHostedIdentitiesWriter: LocallyHostedIdentitiesWriter,
-    @Reference(service = ReconcilerCryptoOpsClient::class)
-    private val reconcilierCryptoOpsClient: ReconcilerCryptoOpsClient,
+    @Reference(service = CryptoOpsRPCClient::class)
+    private val reconcilierCryptoOpsClient: CryptoOpsRPCClient,
     @Reference(service = KeyEncodingService::class)
     private val keyEncodingService: KeyEncodingService,
 ) : DBProcessor {

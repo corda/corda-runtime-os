@@ -4,7 +4,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.lifecycle.Lifecycle
 
-interface ReconcilerCryptoOpsClient: Lifecycle {
+interface CryptoOpsRPCClient: Lifecycle {
     /**
      * Returns keys with key ids in [keyIds] which are owned by tenant of id [tenantId].
      *
