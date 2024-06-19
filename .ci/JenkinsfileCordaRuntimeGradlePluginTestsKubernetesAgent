@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@asubbotin/ES-2345/corda-runtime-gradle-plugin-test-pipeline') _
+@Library('corda-shared-build-pipeline-steps@5.3') _
 
 import com.r3.build.agents.KubernetesAgent
 import com.r3.build.enums.BuildEnvironment
@@ -30,9 +30,6 @@ pipeline {
             cloud k8s.buildCluster.cloudName
             yaml k8s.JSON
             yamlMergeStrategy merge() // important to keep tolerations from the inherited template
-//            idleMinutes 15
-//            podRetention always()
-//            nodeSelector k8s.nodeSelector
             label k8s.jenkinsLabel
             showRawYaml false
             defaultContainer k8s.defaultContainer.name
