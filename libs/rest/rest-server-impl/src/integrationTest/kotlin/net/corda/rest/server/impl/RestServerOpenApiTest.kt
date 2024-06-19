@@ -499,7 +499,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
         val swaggerUIversion = OptionalDependency.SWAGGERUI.version
         val swagger = baseClient.call(GET, WebRequest<Any>("api/${apiVersion.versionPath}/swagger"))
         val swaggerUIBundleJS = baseClient.call(GET, WebRequest<Any>("webjars/swagger-ui/$swaggerUIversion/swagger-ui-bundle.js"))
-        val swaggerUIcss = baseClient.call(GET, WebRequest<Any>("webjars/swagger-ui/$swaggerUIversion/swagger-ui-bundle.js"))
+        val swaggerUIcss = baseClient.call(GET, WebRequest<Any>("webjars/swagger-ui/$swaggerUIversion/swagger-ui.css"))
 
         assertEquals(HttpStatus.SC_OK, swagger.responseStatus)
         assertEquals(HttpStatus.SC_OK, swaggerUIBundleJS.responseStatus)
