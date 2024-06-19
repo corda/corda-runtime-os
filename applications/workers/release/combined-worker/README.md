@@ -136,7 +136,7 @@ Use one of the following run configuratons:
 
 ## Interact with the worker
 
-The worker will expose the HTTP API on port 8888: https://localhost:8888/api/v1/swagger
+The worker will expose the HTTP API on port 8888: https://localhost:8888/api/v5_3/swagger
 The status endpoint is also exposed: http://localhost:7000/status
 
 ## Smoketests

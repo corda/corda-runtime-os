@@ -16,7 +16,7 @@ import kotlin.reflect.jvm.javaMethod
 
 class JavalinRouteProviderImplTest {
     private companion object {
-        val API_VERSIONS = setOf(RestApiVersion.C5_0, RestApiVersion.C5_1)
+        val API_VERSIONS = setOf(RestApiVersion.C5_1, RestApiVersion.C5_2)
     }
 
     @Test

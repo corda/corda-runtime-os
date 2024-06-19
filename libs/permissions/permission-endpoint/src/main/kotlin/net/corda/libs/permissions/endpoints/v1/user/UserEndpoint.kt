@@ -13,7 +13,6 @@ import net.corda.rest.annotations.HttpPUT
 import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.annotations.RestPathParameter
-import net.corda.rest.annotations.RestQueryParameter
 import net.corda.rest.response.ResponseEntity
 
 /**
@@ -66,35 +65,6 @@ interface UserEndpoint : RestResource {
                     value of null means that the password does not expire"""
         )
         createUserType: CreateUserType
-    ): ResponseEntity<UserResponseType>
-
-    /**
-     * Get a user by loginName in the RBAC permission system.
-     */
-    @HttpGET(
-        description = "This method returns a user based on the specified login name.",
-        responseDescription = """
-            A newly created user with the following attributes:
-            id: Unique server generated identifier for the user
-            version: The version of the user; version 0 is assigned to a newly created user
-            updateTimestamp: The date and time when the user was last updated
-            fullName: The full name for the new user
-            loginName: The login name for the new user
-            enabled: If true, the user account is enabled; false, the account is disabled
-            ssoAuth: If true, the user account is enabled for SSO authentication; 
-                false, the account is enabled for password authentication
-            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;
-                    value of null means that the password does not expire
-            parentGroup: An optional identifier of the user group for the new user to be included;
-                    value of null means that the user will belong to the root group
-            properties: An optional set of key/value properties associated with a user account
-            roleAssociations: A set of roles associated with the user account""",
-        maxVersion = RestApiVersion.C5_0
-    )
-    @Deprecated("Deprecated in favour of `getUserPath()`")
-    fun getUserQuery(
-        @RestQueryParameter(description = "The login name of the user to be returned")
-        loginName: String
     ): ResponseEntity<UserResponseType>
 
     @HttpGET(

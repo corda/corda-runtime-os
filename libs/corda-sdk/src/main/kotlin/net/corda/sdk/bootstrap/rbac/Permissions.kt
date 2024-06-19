@@ -61,7 +61,6 @@ object Permissions {
     val userAdmin: Map<String, String> = listOf(
         // User manipulation permissions
         "CreateUsers" to "POST:/api/$VERSION_PATH_REGEX/user",
-        "GetUsersV1" to "GET:/api/v1/user\\?loginName=${RbacKeys.USER_URL_REGEX}",
         "GetUsers" to "GET:/api/$VERSION_PATH_REGEX/user/${RbacKeys.USER_URL_REGEX}",
         "ChangeOtherUserPassword" to "POST:/api/$VERSION_PATH_REGEX/user/otheruserpassword",
         "AddRoleToUser" to "PUT:/api/$VERSION_PATH_REGEX/user/${RbacKeys.USER_URL_REGEX}/role/$UUID_REGEX",

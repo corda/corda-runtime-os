@@ -42,7 +42,7 @@ deploy_sender() {
 echo "Starting Sender in $1 mode"
 
 MGM_HOLDING_ID_SHORT_HASH=$(cat $MGM_HOLDING_ID_FILE)
-GROUP_ID=$(curl --fail-with-body -s -S --insecure -u admin:admin -X GET https://$MGM_RPC/api/v1/members/$MGM_HOLDING_ID_SHORT_HASH | jq '.members[0].memberContext."corda.groupId"' | tr -d '"')
+GROUP_ID=$(curl --fail-with-body -s -S --insecure -u admin:admin -X GET https://$MGM_RPC/api/v5_3/members/$MGM_HOLDING_ID_SHORT_HASH | jq '.members[0].memberContext."corda.groupId"' | tr -d '"')
 
 HELM_A_X500_NAME=$(echo $A_X500_NAME | sed 's/,/\\,/g')
 HELM_B_X500_NAME=$(echo $B_X500_NAME | sed 's/,/\\,/g')

@@ -136,12 +136,11 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         }
     }
 
-    private fun uploadCertificateResource(cmd: String, resourceName: String, alias: String, deprecated: Boolean = false) =
+    private fun uploadCertificateResource(cmd: String, resourceName: String, alias: String) =
         getInputStream(resourceName).uploadCertificateInputStream(
             cmd,
             alias,
             Paths.get(resourceName).fileName.toString(),
-            deprecated
         )
 
 
@@ -150,14 +149,9 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
 
 
     private fun InputStream.uploadCertificateInputStream(
-        cmd: String, alias: String, fileName: String, deprecated: Boolean = false
+        cmd: String, alias: String, fileName: String
     ) = use {
-        val httpsClient = if (deprecated) {
-            initialClient
-        } else {
-            vNodeCreatorClient
-        }
-        httpsClient.putMultiPart(
+        vNodeCreatorClient.putMultiPart(
             cmd,
             mapOf("alias" to alias),
             mapOf("certificate" to HttpsClientFileUpload(it, fileName))
@@ -170,19 +164,9 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
 
     fun importCertificate(resourceName: String, usage: String, alias: String) =
         uploadCertificateResource(
-            "/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/cluster/$usage",
+            "/api/$REST_API_VERSION_PATH/certificate/cluster/$usage",
             resourceName,
             alias,
-        )
-
-    @Suppress("unused")
-    // Used to test RestApiVersion.C5_0 CertificateRestResource from 5.1 cluster, remove after LTS
-    fun deprecatedImportCertificate(resourceName: String, usage: String, alias: String) =
-        uploadCertificateResource(
-            "/api/${RestApiVersion.C5_0.versionPath}/certificates/cluster/$usage",
-            resourceName,
-            alias,
-            true
         )
 
     /**
@@ -199,30 +183,20 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
 
     private fun importClusterCertificate(file: File, usage: String, alias: String) =
         uploadCertificateFile(
-            "/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/cluster/$usage",
+            "/api/$REST_API_VERSION_PATH/certificate/cluster/$usage",
             file,
             alias,
         )
 
     private fun importVnodeCertificate(file: File, usage: String, alias: String, holdingIdentityId: String) =
         uploadCertificateFile(
-            "/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/vnode/$holdingIdentityId/$usage",
+            "/api/$REST_API_VERSION_PATH/certificate/vnode/$holdingIdentityId/$usage",
             file,
             alias
         )
 
     fun getCertificateChain(usage: String, alias: String) =
-        vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/cluster/$usage/$alias")
-
-    /**
-     * Returns the correct path for certificate rest resource based on the rest api version we use.
-     */
-    private fun String.certificatePath(): String =
-        if (this == RestApiVersion.C5_0.versionPath) {
-            "certificates"
-        } else {
-            "certificate"
-        }
+        vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/certificate/cluster/$usage/$alias")
 
     @Suppress("unused")
     /** Assumes the resource *is* a CPB */
@@ -638,26 +612,14 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         vNodeCreatorClient.post("/api/$REST_API_VERSION_PATH/hsm/soft/$holdingIdentityShortHash/$category", body = "")
 
     fun createKey(holdingIdentityShortHash: String, alias: String, category: String, scheme: String) =
-        if (REST_API_VERSION_PATH == RestApiVersion.C5_0.versionPath) {
-            // Used to test RestApiVersion.C5_0 CertificateRestResource, remove after LTS
-            deprecatedCreateKey(holdingIdentityShortHash, alias, category, scheme)
-        } else {
-            vNodeCreatorClient.post(
-                "/api/$REST_API_VERSION_PATH/key/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme",
-                body = ""
-            )
-        }
-
-    // Used to test RestApiVersion.C5_0 KeysRestResource from 5.1 cluster, remove after LTS
-    fun deprecatedCreateKey(holdingIdentityShortHash: String, alias: String, category: String, scheme: String) =
-        initialClient.post(
-            "/api/${RestApiVersion.C5_0.versionPath}/keys/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme",
+        vNodeCreatorClient.post(
+            "/api/$REST_API_VERSION_PATH/key/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme",
             body = ""
         )
 
     @Suppress("unused")
     fun getKey(tenantId: String, keyId: String) =
-        vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.keyPath()}/$tenantId/$keyId")
+        vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/key/$tenantId/$keyId")
 
     fun getKey(
         tenantId: String,
@@ -675,18 +637,8 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         } else {
             queries.joinToString(prefix = "?", separator = "&")
         }
-        return vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.keyPath()}/$tenantId$queryStr")
+        return vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/key/$tenantId$queryStr")
     }
-
-    /**
-     * Returns the correct path for key rest resource based on the rest api version we use.
-     */
-    private fun String.keyPath(): String =
-        if (this == RestApiVersion.C5_0.versionPath) {
-            "keys"
-        } else {
-            "key"
-        }
 
     /** Get status of a flow */
     fun flowStatus(holdingIdentityShortHash: String, clientRequestId: String) =

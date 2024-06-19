@@ -28,8 +28,7 @@ slf4jVersion = "2.0.13"
 snakeyamlVersion = "2.2"
 # Please also update SWAGGERUI.version in net.corda.rest.server.impl.internal.OptionalDependency
 swaggeruiVersion = "5.15.1"
-# Note: We cannot go to the higher versions as they transitively depend on SLF4J 2.X
-swaggerVersion = "2.2.16"
+swaggerVersion = "2.2.22"
 #Snappy used for compression
 snappyJavaVersion="1.1.10.5"
 typeSafeConfigVersion = "1.4.3"

@@ -78,7 +78,7 @@ instructions below are for using curl.
    the CBP file.)
 
 ```shell
-curl --insecure -u admin:admin  -s -F upload=@./test-cordapp-5.0.0.0-SNAPSHOT-package.cpb https://localhost:8888/api/v1/cpi/
+curl --insecure -u admin:admin  -s -F upload=@./test-cordapp-5.0.0.0-SNAPSHOT-package.cpb https://localhost:8888/api/v5_3/cpi/
 
 ```
 
@@ -93,7 +93,7 @@ This should yield a result similar to this:
 2) Get the status of the file upload and the cpi file checksum value
 
 ```shell
-curl --insecure -u admin:admin  https://localhost:8888/api/v1/cpi/status/[ID]
+curl --insecure -u admin:admin  https://localhost:8888/api/v5_3/cpi/status/[ID]
 ```
 
 where ID is the UUID output from step 1
@@ -109,8 +109,8 @@ This should yield are result similar to this
 3) Create a virtual node using the checksum returned from the step above
 
 ```shell
-curl --insecure -u admin:admin -d '{ "cpiFileChecksum": "B669663F74EA", "x500Name": "C=GB, L=London, O=Alice" }' https://localhost:8888/api/v1/virtualnode
-curl --insecure -u admin:admin -d '{ "cpiFileChecksum": "B669663F74EA", "x500Name": "C=GB, L=London, O=Bob" }' https://localhost:8888/api/v1/virtualnode
+curl --insecure -u admin:admin -d '{ "cpiFileChecksum": "B669663F74EA", "x500Name": "C=GB, L=London, O=Alice" }' https://localhost:8888/api/v5_3/virtualnode
+curl --insecure -u admin:admin -d '{ "cpiFileChecksum": "B669663F74EA", "x500Name": "C=GB, L=London, O=Bob" }' https://localhost:8888/api/v5_3/virtualnode
 ```
 
 This should yield a result similar to this for first request:
@@ -136,8 +136,8 @@ This should yield a result similar to this for first request:
 4) Register the members to the network
 
 ```shell
-curl --insecure -u admin:admin -d '{ "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } }' https://localhost:8888/api/v1/membership/3B8DECDDD6E2
-curl --insecure -u admin:admin -d '{ "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } }' https://localhost:8888/api/v1/membership/44D0F817B592
+curl --insecure -u admin:admin -d '{ "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } }' https://localhost:8888/api/v5_3/membership/3B8DECDDD6E2
+curl --insecure -u admin:admin -d '{ "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } }' https://localhost:8888/api/v5_3/membership/44D0F817B592
 ```
 
 ### Calling the flow and testing for a result
@@ -146,7 +146,7 @@ curl --insecure -u admin:admin -d '{ "context": { "corda.key.scheme" : "CORDA.EC
 
 ```shell
 curl --insecure -u admin:admin -X 'POST' \
-  'https://localhost:8888/api/v1/flow/3B8DECDDD6E2' \
+  'https://localhost:8888/api/v5_3/flow/3B8DECDDD6E2' \
   -d '{
     "clientRequestId": "request1",
     "flowClassName": "com.r3.corda.testing.testflows.MessagingFlow",
@@ -159,5 +159,5 @@ The holding ID is taken from the output of the 'create virtual node' step
 2) Check on the progress of the flow:
 
 ```shell
-curl --insecure -u admin:admin https://localhost:8888/api/v1/flow/[HOLDING_ID_HASH]/request1
+curl --insecure -u admin:admin https://localhost:8888/api/v5_3/flow/[HOLDING_ID_HASH]/request1
 ```

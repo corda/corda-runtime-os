@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.e2etest.utilities.types.CertificateAuthority
 import net.corda.e2etest.utilities.types.NetworkOnboardingMetadata
 import net.corda.rest.ResponseCode
-import net.corda.rest.annotations.RestApiVersion
 import net.corda.utilities.minutes
 import net.corda.utilities.seconds
 import java.net.URLEncoder.encode
@@ -360,31 +359,6 @@ fun ClusterInfo.suspendMember(
 
 @Suppress("unused")
 /**
- * Suspend a member identified by [x500Name].
- * Suspension is performed by the MGM identified by [mgmHoldingId].
- *
- * Used to test RestApiVersion.C5_0, this version allows the serial number to be Null.
- */
-fun ClusterInfo.deprecatedSuspendMember(
-    mgmHoldingId: String,
-    x500Name: String,
-    serialNumber: Int? = null,
-) = cluster {
-    assertWithRetry {
-        timeout(15.seconds)
-        interval(1.seconds)
-        command {
-            initialClient.post(
-                "/api/${RestApiVersion.C5_0.versionPath}/mgm/$mgmHoldingId/suspend",
-                "{ \"x500Name\": \"$x500Name\", \"serialNumber\": $serialNumber }"
-            )
-        }
-        condition { it.code == ResponseCode.NO_CONTENT.statusCode || it.code == ResponseCode.CONFLICT.statusCode }
-    }
-}
-
-@Suppress("unused")
-/**
  * Activate a member identified by [x500Name].
  * Activation is performed by the MGM identified by [mgmHoldingId].
  */
@@ -399,31 +373,6 @@ fun ClusterInfo.activateMember(
         command {
             initialClient.post(
                 "/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/activate",
-                "{ \"x500Name\": \"$x500Name\", \"serialNumber\": $serialNumber }"
-            )
-        }
-        condition { it.code == ResponseCode.NO_CONTENT.statusCode || it.code == ResponseCode.CONFLICT.statusCode }
-    }
-}
-
-@Suppress("unused")
-/**
- * Activate a member identified by [x500Name].
- * Activation is performed by the MGM identified by [mgmHoldingId].
- *
- * Used to test RestApiVersion.C5_0, this version allows the serial number to be Null.
- */
-fun ClusterInfo.deprecatedActivateMember(
-    mgmHoldingId: String,
-    x500Name: String,
-    serialNumber: Int? = null,
-) = cluster {
-    assertWithRetry {
-        timeout(15.seconds)
-        interval(1.seconds)
-        command {
-            initialClient.post(
-                "/api/${RestApiVersion.C5_0.versionPath}/mgm/$mgmHoldingId/activate",
                 "{ \"x500Name\": \"$x500Name\", \"serialNumber\": $serialNumber }"
             )
         }
