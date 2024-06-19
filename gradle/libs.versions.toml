@@ -6,7 +6,6 @@ apacheCommonsCompressVersion = "1.26.2"
 bouncycastleVersion = "1.78.1"
 braveVersion = "6.0.3"
 caffeineVersion = "3.1.8"
-# Commons IO is needed in liquibase which causes OSGi enabled liquibase tests to fail unless it is imported
 commonsioVersion = "2.16.1"
 guavaVersion = "33.2.1-jre"
 hikariCpVersion = "5.1.0"
