@@ -1,10 +1,26 @@
 package net.corda.gradle.plugin.queries
 
-import net.corda.gradle.plugin.EndToEndTestBase
+import net.corda.gradle.plugin.SmokeTestBase
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 
-class QueriesSmokeTest : EndToEndTestBase() {
+class QueriesSmokeTest : SmokeTestBase() {
+    companion object {
+        @JvmStatic
+        @BeforeAll
+        fun startCombinedWorker() {
+            startCompose()
+        }
+
+        @JvmStatic
+        @AfterAll
+        fun stopCombinedWorker() {
+            stopCompose()
+        }
+    }
+
     @Test
     fun listVNodesIsSuccessful() {
         appendCordaRuntimeGradlePluginExtension()
