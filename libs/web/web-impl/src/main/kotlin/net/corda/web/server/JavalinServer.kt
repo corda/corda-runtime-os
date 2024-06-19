@@ -44,6 +44,10 @@ class JavalinServer(
                 // TODO CORE-17986: make configurable
                 config.http.maxRequestSize = maxRequestSize
 
+                if (log.isDebugEnabled) {
+                    config.bundledPlugins.enableDevLogging()
+                }
+
                 configureJavalinForTracing(config)
             }
     }
