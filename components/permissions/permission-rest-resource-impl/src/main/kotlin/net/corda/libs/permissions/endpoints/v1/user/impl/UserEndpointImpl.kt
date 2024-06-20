@@ -131,7 +131,7 @@ class UserEndpointImpl @Activate constructor(
     }
 
     override fun deleteUser(loginName: String): ResponseEntity<UserResponseType> {
-        TODO("Not yet implemented")
+        TODO("To be implemented in CORE-20731")
     }
 
     private fun doGetUser(loginName: String): UserResponseType {
