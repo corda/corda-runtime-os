@@ -36,7 +36,7 @@ internal class ClientHttpRequestContext(private val ctx: Context) : ClientReques
         get() = ctx.body()
 
     override val jsonMapper: JsonMapper
-        get() = throw UnsupportedOperationException()
+        get() = ctx.jsonMapper()
 
     override fun <T> bodyAsClass(clazz: Class<T>): T = ctx.bodyAsClass(clazz)
 
