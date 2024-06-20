@@ -47,7 +47,6 @@ class JavalinServer(
                 if (log.isDebugEnabled) {
                     config.bundledPlugins.enableDevLogging()
                 }
-
                 configureJavalinForTracing(config)
             }
     }
