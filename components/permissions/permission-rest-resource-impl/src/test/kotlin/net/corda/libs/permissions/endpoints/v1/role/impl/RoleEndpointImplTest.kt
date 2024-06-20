@@ -88,7 +88,7 @@ internal class RoleEndpointImplTest {
         val responseType = endpoint.getRole("roleId")
 
         assertNotNull(responseType)
-        assertEquals("roleId", responseType.id)
+        assertEquals("roleId25", responseType.id)
         assertEquals(0, responseType.version)
         assertEquals(now, responseType.updateTimestamp)
         assertEquals("roleName", responseType.roleName)
