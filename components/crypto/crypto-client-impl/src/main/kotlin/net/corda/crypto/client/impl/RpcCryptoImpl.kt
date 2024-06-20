@@ -18,7 +18,7 @@ import net.corda.schema.configuration.BootConfig.CRYPTO_WORKER_REST_ENDPOINT
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.exceptions.CryptoException
 
-class ReconcilerCryptoImpl(
+class RpcCryptoImpl(
     private val sender: HttpRpcClient,
     platformInfoProvider: PlatformInfoProvider,
     messagingConfig: SmartConfig,

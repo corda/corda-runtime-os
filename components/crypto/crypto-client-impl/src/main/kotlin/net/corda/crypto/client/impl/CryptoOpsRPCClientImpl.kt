@@ -50,7 +50,7 @@ class CryptoOpsRPCClientImpl @Activate constructor(
         platformInfoProvider: PlatformInfoProvider,
         event: ConfigChangedEvent,
     ) : AbstractImpl {
-        val ops = ReconcilerCryptoImpl(
+        val ops = RpcCryptoImpl(
             publisherFactory.createHttpRpcClient(),
             platformInfoProvider,
             event.config.getConfig(BOOT_CONFIG),
