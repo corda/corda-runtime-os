@@ -69,7 +69,7 @@ class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
         aliceX500,
         bobX500,
         charlieX500,
-        notaryX500
+        notaryX500 /// did something
     )
 
     @BeforeAll
