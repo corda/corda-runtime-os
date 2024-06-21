@@ -130,6 +130,10 @@ class UserEndpointImpl @Activate constructor(
         return doGetUser(loginName)
     }
 
+    override fun deleteUser(loginName: String): ResponseEntity<UserResponseType> {
+        TODO("To be implemented in CORE-20731")
+    }
+
     private fun doGetUser(loginName: String): UserResponseType {
         val principal = getRestThreadLocalContext()
 

@@ -684,9 +684,14 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         )
 
     @Suppress("unused")
-    /** Get an RBAC user for a specific login name */
+    /** Get a RBAC user for a specific login name */
     fun getRbacUser(loginName: String) =
         initialClient.get("/api/$REST_API_VERSION_PATH/user/$loginName")
+
+    @Suppress("unused")
+    /** Delete a RBAC user */
+    fun deleteRbacUser(loginName: String) =
+        initialClient.delete("/api/$REST_API_VERSION_PATH/user/$loginName")
 
     @Suppress("unused")
     /** Assign a specified role to a specified user */
