@@ -75,7 +75,7 @@ internal class ParametersRetrieverContext(private val ctx: ClientRequestContext)
         // In order for the function to be able to return null, the type should be a
         // subclass of Any?.
         // An attempt to return null results in a null exception.
-        if(json == "null") {
+        if (json == "null") {
             return null
         }
         return ctx.jsonMapper.fromJsonString(json, targetClass)
