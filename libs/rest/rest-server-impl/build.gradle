@@ -29,7 +29,6 @@ dependencies {
     implementation project(":libs:rest:rest-server")
     implementation "net.corda:corda-crypto"
     implementation libs.javalin
-
     implementation libs.nimbus.sdk
     implementation libs.jcip.annotations
     implementation libs.swagger.core
