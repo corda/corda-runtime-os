@@ -69,7 +69,15 @@ internal class ParametersRetrieverContext(private val ctx: ClientRequestContext)
         }
     }
 
-    fun <T> fromJsonString(json: String, targetClass: Class<T>): T {
+    fun <T> fromJsonString(json: String, targetClass: Class<T>): T? {
+        // The method fromJsonString does not accept null as a return value
+        // because the type accepted by the method must be a subclass of Any.
+        // In order for the function to be able to return null, the type should be a
+        // subclass of Any?.
+        // An attempt to return null results in a null exception.
+        if(json == "null") {
+            return null
+        }
         return ctx.jsonMapper.fromJsonString(json, targetClass)
     }
 }
