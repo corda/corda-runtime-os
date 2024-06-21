@@ -1,7 +1,5 @@
 package net.corda.lifecycle.impl
 
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ScheduledFuture
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
@@ -18,6 +16,8 @@ import net.corda.lifecycle.registry.LifecycleRegistryException
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ScheduledFuture
 
 /**
  * Perform processing of lifecycle events.
@@ -213,7 +213,7 @@ internal class LifecycleProcessor(
         }
         state.trackedRegistrations.clear()
         state.registrations.forEach {
-            logger.error("$it on ${coordinator.name} not closed.")
+            logger.warn("$it on ${coordinator.name} not closed.")
             it.updateCoordinatorStatus(coordinator, LifecycleStatus.ERROR)
         }
         state.registrations.clear()
