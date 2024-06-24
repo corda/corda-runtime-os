@@ -3,6 +3,7 @@ package net.corda.libs.permissions.storage.writer.impl.user
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
 import net.corda.data.permissions.management.user.ChangeUserPasswordRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
+import net.corda.data.permissions.management.user.DeleteUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.permissions.common.exception.EntityAlreadyExistsException
 import net.corda.libs.permissions.common.exception.EntityAssociationAlreadyExistsException
@@ -51,6 +52,10 @@ internal class UserWriterImplTest {
         loginName = "lankydan"
         enabled = true
         parentGroupId = "parent1"
+    }
+
+    private val deleteUserRequest = DeleteUserRequest().apply {
+        loginName = "lankydan"
     }
 
     private val now = Instant.now()
@@ -149,6 +154,37 @@ internal class UserWriterImplTest {
         assertNotNull(audit)
         assertEquals(RestPermissionOperation.USER_INSERT, audit.changeType)
         assertEquals(requestUserId, audit.actorUser)
+    }
+
+    @Test
+    fun `delete a user successfully removes the user and writes to audit log`(){
+        val capture = argumentCaptor<Any>()
+
+        val typedQueryMock = mock<TypedQuery<User>>()
+        whenever(entityManager.createQuery(any<String>(), eq(User::class.java))).thenReturn(typedQueryMock)
+        whenever(typedQueryMock.setParameter(eq("loginName"), eq(deleteUserRequest.loginName)))
+            .thenReturn(typedQueryMock)
+        whenever(typedQueryMock.resultList).thenReturn(listOf(user))
+
+        userWriter.deleteUser(deleteUserRequest, requestUserId)
+
+        inOrder(entityTransaction, entityManager) {
+            verify(entityTransaction).begin()
+            verify(entityManager, times(1)).remove(capture.capture())
+            verify(entityManager, times(1)).persist(capture.capture())
+            verify(entityTransaction).commit()
+        }
+
+        val deletedUser = capture.firstValue as User
+        assertNotNull(deletedUser)
+        assertEquals("user", deletedUser.fullName)
+        assertEquals("userLogin1", deletedUser.loginName)
+        assertTrue(deletedUser.enabled)
+
+        val audit = capture.secondValue as ChangeAudit
+        assertNotNull(audit)
+        assertEquals(RestPermissionOperation.USER_DELETE, audit.changeType)
+        assertEquals("User '${user.loginName}' deleted by '$requestUserId'.", audit.details)
     }
 
     @Test

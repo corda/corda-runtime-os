@@ -4,6 +4,7 @@ import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
+import net.corda.libs.permissions.manager.request.DeleteUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.libs.permissions.manager.response.RoleAssociationResponseDto
@@ -19,7 +20,7 @@ import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.rest.security.RestAuthContext
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -31,7 +32,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 
 internal class UserEndpointImplTest {
 
@@ -136,8 +137,26 @@ internal class UserEndpointImplTest {
     }
 
     @Test
-    fun `delete a user` () {
+    fun `delete a user successfully` () {
+        val deleteUserDtoCapture = argumentCaptor<DeleteUserRequestDto>()
+        whenever(lifecycleCoordinator.isRunning).thenReturn(true)
+        whenever(permissionService.isRunning).thenReturn(true)
+        whenever(permissionManager.deleteUser(deleteUserDtoCapture.capture())).thenReturn(userResponseDto)
 
+        endpoint.start()
+        val response = endpoint.deleteUser("loginName1")
+        val responseType = response.responseBody
+
+        assertEquals(ResponseCode.OK, response.responseCode)
+        assertNotNull(responseType)
+        assertEquals("uuid", responseType.id)
+        assertEquals(0, responseType.version)
+        assertEquals(now, responseType.updateTimestamp)
+        assertEquals("fullName1", responseType.fullName)
+        assertEquals("loginName1", responseType.loginName)
+        assertEquals(true, responseType.enabled)
+        assertEquals(now, responseType.passwordExpiry)
+        assertEquals(parentGroup, responseType.parentGroup)
     }
 
     @Test
@@ -267,7 +286,7 @@ internal class UserEndpointImplTest {
         whenever(permissionService.isRunning).thenReturn(true)
 
         endpoint.start()
-        Assertions.assertThatThrownBy {
+        assertThatThrownBy {
             endpoint.createUser(createUserType.copy(loginName = "foo/bar"))
         }.isInstanceOf(InvalidInputDataException::class.java)
             .hasMessageContaining("Invalid input data for user creation.")
