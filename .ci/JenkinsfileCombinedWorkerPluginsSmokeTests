@@ -62,12 +62,12 @@ pipeline {
     options {
         buildDiscarder(logRotator(daysToKeepStr: '14', artifactDaysToKeepStr: '14'))
         timestamps()
+        test1212()
     }
 
     stages {
         stage('check out') {
             steps {
-                testing
                 script {
                     gitUtils.checkoutGitRevisionOfTriggeringJob(params.COMMIT_TO_CHECKOUT)
                 }
