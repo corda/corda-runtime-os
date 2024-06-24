@@ -9,8 +9,8 @@ import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.cli.plugins.typeconverter.ShortHashConverter
 import net.corda.cli.plugins.typeconverter.X500NameConverter
 import net.corda.crypto.core.ShortHash
-import net.corda.membership.rest.v1.types.RestGroupParameters
 import net.corda.restclient.CordaRestClient
+import net.corda.restclient.generated.models.RestGroupParameters
 import net.corda.sdk.network.GroupParametersLookup
 import net.corda.v5.base.types.MemberX500Name
 import picocli.CommandLine
