@@ -46,6 +46,12 @@ class PermissionStorageWriterProcessorImpl(
                     permissionStorageReader.reconcilePermissionSummaries()
                     avroUser
                 }
+                is DeleteUserRequest -> {
+                    val avroUser = userWriter.deleteUser(permissionRequest, request.requestUserId)
+                    permissionStorageReader.publishDeletedUser(avroUser.loginName, null)
+                    permissionStorageReader.reconcilePermissionSummaries()
+                    avroUser
+                }
                 is CreateRoleRequest -> {
                     val avroRole = roleWriter.createRole(permissionRequest, request.requestUserId)
                     permissionStorageReader.publishNewRole(avroRole)
@@ -54,12 +60,6 @@ class PermissionStorageWriterProcessorImpl(
                 is ChangeUserPasswordRequest -> {
                     val avroUser = userWriter.changeUserPassword(permissionRequest, request.requestUserId)
                     permissionStorageReader.publishUpdatedUser(avroUser)
-                    permissionStorageReader.reconcilePermissionSummaries()
-                    avroUser
-                }
-                is DeleteUserRequest -> {
-                    val avroUser = userWriter.deleteUser(permissionRequest, request.requestUserId)
-                    permissionStorageReader.publishDeletedUser(avroUser.loginName, null)
                     permissionStorageReader.reconcilePermissionSummaries()
                     avroUser
                 }

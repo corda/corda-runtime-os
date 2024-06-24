@@ -127,10 +127,6 @@ class UserEndpointImpl @Activate constructor(
         return ResponseEntity.created(createUserResult.convertToEndpointType())
     }
 
-    override fun getUserPath(loginName: String): UserResponseType {
-        return doGetUser(loginName)
-    }
-
     override fun deleteUser(loginName: String): ResponseEntity<UserResponseType> {
         val principal = getRestThreadLocalContext()
 
@@ -139,6 +135,10 @@ class UserEndpointImpl @Activate constructor(
         }
 
         return ResponseEntity.deleted(userResponseDto.convertToEndpointType())
+    }
+
+    override fun getUserPath(loginName: String): UserResponseType {
+        return doGetUser(loginName)
     }
 
     private fun doGetUser(loginName: String): UserResponseType {

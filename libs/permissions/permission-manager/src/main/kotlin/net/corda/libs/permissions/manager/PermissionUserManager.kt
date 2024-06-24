@@ -24,6 +24,9 @@ interface PermissionUserManager {
      */
     fun getUser(userRequestDto: GetUserRequestDto): UserResponseDto?
 
+    /**
+     * Delete a user in the RBAC Permission System.
+     */
     fun deleteUser(deleteUserRequestDto: DeleteUserRequestDto): UserResponseDto
 
     /**

@@ -20,6 +20,14 @@ interface UserWriter {
     fun createUser(request: CreateUserRequest, requestUserId: String): AvroUser
 
     /**
+     * Delete a User entity and return its Avro representation.
+     *
+     * @param request DeleteUserRequest containing the information of the User to delete.
+     * @param requestUserId ID of the user who made the request.
+     */
+    fun deleteUser(request: DeleteUserRequest, requestUserId: String): AvroUser
+
+    /**
      * Change the password field of a User entity and return its Avro representation.
      *
      * @param request ChangeUserPasswordRequest containing the information of the password change request.
@@ -27,7 +35,6 @@ interface UserWriter {
      */
     fun changeUserPassword(request: ChangeUserPasswordRequest, requestUserId: String): AvroUser
 
-    fun deleteUser(request: DeleteUserRequest, requestUserId: String): AvroUser
     /**
      * Associate a Role to a User and return its Avro representation.
      *

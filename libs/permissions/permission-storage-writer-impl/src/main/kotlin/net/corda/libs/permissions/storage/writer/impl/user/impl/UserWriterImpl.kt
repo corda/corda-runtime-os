@@ -18,7 +18,7 @@ import net.corda.permissions.model.User
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import net.corda.data.permissions.User as AvroUser
@@ -37,11 +37,24 @@ class UserWriterImpl(
         return entityManagerFactory.transaction { entityManager ->
 
             val validator = EntityValidationUtil(entityManager)
-            validator.validateUserDoesNotAlreadyExist(request.loginName)
+            validator.validateUserDoesNotAlreadyExist(loginName)
             val parentGroup = validator.validateAndGetOptionalParentGroup(request.parentGroupId)
 
             val user = persistNewUser(request, parentGroup, entityManager, requestUserId, loginName)
             user.toAvroUser()
+        }
+    }
+
+    override fun deleteUser(request: DeleteUserRequest, requestUserId: String): AvroUser {
+        val loginName = request.loginName
+        log.debug { "Received request to delete user: $loginName" }
+        return entityManagerFactory.transaction { entityManager ->
+
+            val validator = EntityValidationUtil(entityManager)
+            val user = validator.validateAndGetUniqueUser(loginName)
+
+            val resultUser = removeUser(user, entityManager, requestUserId, loginName)
+            resultUser.toAvroUser()
         }
     }
 
@@ -72,18 +85,6 @@ class UserWriterImpl(
 
             log.info("Successfully changed password for user: ${user.loginName}.")
             user.toAvroUser()
-        }
-    }
-
-    override fun deleteUser(request: DeleteUserRequest, requestUserId: String): AvroUser {
-        log.debug { "Received request to delete new user: ${request.loginName}" }
-        return entityManagerFactory.transaction { entityManager ->
-
-            val validator = EntityValidationUtil(entityManager)
-            val user = validator.validateAndGetUniqueUser(request.loginName)
-
-            val resultUser = removeUser(user, entityManager, requestUserId, request.loginName)
-            resultUser.toAvroUser()
         }
     }
 
