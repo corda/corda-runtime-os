@@ -137,7 +137,7 @@ internal class UserEndpointImplTest {
     }
 
     @Test
-    fun `delete a user successfully` () {
+    fun `delete a user successfully`() {
         val deleteUserDtoCapture = argumentCaptor<DeleteUserRequestDto>()
         whenever(lifecycleCoordinator.isRunning).thenReturn(true)
         whenever(permissionService.isRunning).thenReturn(true)
