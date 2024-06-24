@@ -2,8 +2,8 @@ package net.corda.restclient.generated
 
 import io.javalin.Javalin
 import net.corda.restclient.CordaRestClient
-import net.corda.restclient.dto.GenerateCsrWrapperRequest
 import net.corda.restclient.generated.apis.CertificateApi
+import net.corda.restclient.generated.models.GenerateCsrWrapperRequest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatCode
 import org.junit.jupiter.api.AfterAll

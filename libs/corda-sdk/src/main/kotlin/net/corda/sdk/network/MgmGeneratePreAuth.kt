@@ -1,9 +1,9 @@
 package net.corda.sdk.network
 
 import net.corda.crypto.core.ShortHash
-import net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
-import net.corda.membership.rest.v1.types.response.PreAuthToken
 import net.corda.restclient.CordaRestClient
+import net.corda.restclient.generated.models.PreAuthToken
+import net.corda.restclient.generated.models.PreAuthTokenRequest
 
 class MgmGeneratePreAuth(val restClient: CordaRestClient) {
 

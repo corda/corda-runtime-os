@@ -1,10 +1,10 @@
 package net.corda.sdk.network
 
 import net.corda.crypto.core.ShortHash
-import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
-import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
-import net.corda.membership.rest.v1.types.response.RegistrationRequestProgress
 import net.corda.restclient.CordaRestClient
+import net.corda.restclient.generated.models.HostedIdentitySetupRequest
+import net.corda.restclient.generated.models.MemberRegistrationRequest
+import net.corda.restclient.generated.models.RegistrationRequestProgress
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds

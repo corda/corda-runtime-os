@@ -1,13 +1,13 @@
 package net.corda.sdk.network
 
 import net.corda.crypto.core.ShortHash
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.JsonCreateVirtualNodeRequest
-import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
-import net.corda.rest.asynchronous.v1.AsyncResponse
 import net.corda.restclient.CordaRestClient
+import net.corda.restclient.generated.models.AsyncResponse
+import net.corda.restclient.generated.models.JsonCreateVirtualNodeRequest
+import net.corda.restclient.generated.models.VirtualNodeInfo
+import net.corda.restclient.generated.models.VirtualNodes
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.virtualnode.OperationalStatus
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -38,7 +38,7 @@ class VirtualNode(val restClient: CordaRestClient) {
             operationName = "Wait for Virtual Node $holdingId to be active"
         ) {
             val response = restClient.virtualNodeClient.getVirtualnodeHoldingidentityshorthash(holdingId.value)
-            response.flowP2pOperationalStatus == OperationalStatus.ACTIVE
+            response.flowP2pOperationalStatus == VirtualNodeInfo.FlowP2pOperationalStatus.ACTIVE
         }
     }
 

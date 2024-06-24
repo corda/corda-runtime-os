@@ -23,7 +23,7 @@ openApiGenerate {
     ignoreFileOverride = "${project.projectDir}/.openapi-generator-ignore"
     packageName = 'net.corda.restclient.generated'
     skipValidateSpec = true
-//    importMappings.set([
+    importMappings.set([
 //            'ApprovalRuleInfo'                      : 'net.corda.membership.rest.v1.types.response.ApprovalRuleInfo',
 //            'ApprovalRuleRequestParams'             : 'net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams',
 //            'AsyncOperationStatus'                  : 'net.corda.rest.asynchronous.v1.AsyncOperationStatus',
@@ -57,7 +57,7 @@ openApiGenerate {
 //            'KeyMetaData'                           : 'net.corda.membership.rest.v1.types.response.KeyMetaData',
 //            'KeyPairIdentifier'                     : 'net.corda.membership.rest.v1.types.response.KeyPairIdentifier',
 //            'KeyRotationResponse'                   : 'net.corda.crypto.rest.response.KeyRotationResponse',
-//            'KeyRotationStatusResponse'             : 'net.corda.crypto.rest.response.KeyRotationStatusResponse',
+            'KeyRotationStatusResponse'             : 'net.corda.crypto.rest.response.KeyRotationStatusResponse',
 //            'MemberInfoSubmitted'                   : 'net.corda.membership.rest.v1.types.response.MemberInfoSubmitted',
 //            'MemberRegistrationRequest'             : 'net.corda.membership.rest.v1.types.request.MemberRegistrationRequest',
 //            'PermissionAssociationResponseType'     : 'net.corda.libs.permissions.endpoints.v1.permission.types.PermissionAssociationResponseType',
@@ -86,7 +86,7 @@ openApiGenerate {
 //            'UserResponseType'                      : 'net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType',
 //            'VirtualNodeInfo'                       : 'net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo',
 //            'VirtualNodes'                          : 'net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes'
-//    ])
+    ])
     configOptions.set([
             'serializationLibrary' : 'jackson'
     ])

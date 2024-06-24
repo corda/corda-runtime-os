@@ -1,13 +1,13 @@
 package net.corda.sdk.config
 
-import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
-import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
 import net.corda.libs.configuration.exception.WrongConfigVersionException
 import net.corda.rest.ResponseCode
 import net.corda.restclient.CordaRestClient
 import net.corda.restclient.generated.infrastructure.ClientError
 import net.corda.restclient.generated.infrastructure.Success
+import net.corda.restclient.generated.models.GetConfigResponse
 import net.corda.restclient.generated.models.UpdateConfigParameters
+import net.corda.restclient.generated.models.UpdateConfigResponse
 import net.corda.schema.configuration.ConfigKeys.RootConfigKey
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
 import kotlin.time.Duration
