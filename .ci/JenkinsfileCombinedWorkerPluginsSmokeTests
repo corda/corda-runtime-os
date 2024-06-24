@@ -127,6 +127,7 @@ pipeline {
     }
     post {
         always {
+            step([$class: 'ClaimPublisher'])
             script {      
                     findBuildScans()
                     pipelineUtils.getPodLogs("postgres")
