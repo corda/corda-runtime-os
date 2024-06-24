@@ -62,7 +62,6 @@ pipeline {
     options {
         buildDiscarder(logRotator(daysToKeepStr: '14', artifactDaysToKeepStr: '14'))
         timestamps()
-        test1212()
     }
 
     stages {
@@ -113,6 +112,7 @@ pipeline {
             }
         }
         stage('plugin smoke tests') {
+            testing
                 options {
                     timeout(time: 30, unit: 'MINUTES')
                 }
