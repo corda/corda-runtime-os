@@ -3,7 +3,6 @@ package net.corda.sdk.network
 import net.corda.crypto.core.ShortHash
 import net.corda.data.certificates.CertificateUsage
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
-//import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 import net.corda.restclient.CordaRestClient
 import net.corda.restclient.generated.models.GenerateCsrWrapperRequest
 import net.corda.restclient.generated.models.KeyPairIdentifier
