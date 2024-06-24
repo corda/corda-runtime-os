@@ -3,9 +3,10 @@ package net.corda.sdk.network
 import net.corda.crypto.core.ShortHash
 import net.corda.data.certificates.CertificateUsage
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
-import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
+//import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 import net.corda.restclient.CordaRestClient
 import net.corda.restclient.generated.models.GenerateCsrWrapperRequest
+import net.corda.restclient.generated.models.KeyPairIdentifier
 import net.corda.sdk.network.Keys.Companion.P2P_TLS_CERTIFICATE_ALIAS
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
 import net.corda.v5.base.types.MemberX500Name
