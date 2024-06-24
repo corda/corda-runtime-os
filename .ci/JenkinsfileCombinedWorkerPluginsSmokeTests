@@ -67,6 +67,7 @@ pipeline {
     stages {
         stage('check out') {
             steps {
+                testing
                 script {
                     gitUtils.checkoutGitRevisionOfTriggeringJob(params.COMMIT_TO_CHECKOUT)
                 }
