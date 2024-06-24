@@ -1,5 +1,7 @@
 package net.corda.libs.permissions.endpoints.v1.converter
 
+import net.corda.libs.permissions.endpoints.v1.group.types.CreateGroupType
+import net.corda.libs.permissions.endpoints.v1.group.types.GroupResponseType
 import net.corda.libs.permissions.endpoints.v1.permission.types.BulkCreatePermissionsRequestType
 import net.corda.libs.permissions.endpoints.v1.permission.types.BulkCreatePermissionsResponseType
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
@@ -13,10 +15,12 @@ import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.endpoints.v1.user.types.PermissionSummaryResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.PropertyResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
+import net.corda.libs.permissions.manager.request.CreateGroupRequestDto
 import net.corda.libs.permissions.manager.request.CreatePermissionRequestDto
 import net.corda.libs.permissions.manager.request.CreatePermissionsRequestDto
 import net.corda.libs.permissions.manager.request.CreateRoleRequestDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
+import net.corda.libs.permissions.manager.response.GroupResponseDto
 import net.corda.libs.permissions.manager.response.PermissionAssociationResponseDto
 import net.corda.libs.permissions.manager.response.PermissionResponseDto
 import net.corda.libs.permissions.manager.response.PermissionSummaryResponseDto
@@ -69,6 +73,17 @@ fun CreateRoleType.convertToDto(requestedBy: String): CreateRoleRequestDto {
 }
 
 /**
+ * Convert a CreateGroupType to a CreateGroupRequestDto to be used internally for passing around data.
+ */
+fun CreateGroupType.convertToDto(requestedBy: String): CreateGroupRequestDto {
+    return CreateGroupRequestDto(
+        requestedBy,
+        name,
+        parentGroupId
+    )
+}
+
+/**
  * Convert a UserResponseDto to a v1 UserResponseType to be returned to the HTTP caller.
  */
 fun UserResponseDto.convertToEndpointType(): UserResponseType {
@@ -114,6 +129,18 @@ fun RoleResponseDto.convertToEndpointType(): RoleResponseType {
         roleName,
         groupVisibility,
         permissions.map { it.convertToEndpointType() }
+    )
+}
+
+/**
+ * Convert a GroupResponseDto to a GroupResponseType to be returned to the HTTP caller.
+ */
+fun GroupResponseDto.convertToEndpointType(): GroupResponseType {
+    return GroupResponseType(
+        id,
+        lastUpdatedTimestamp,
+        groupName,
+        parentGroupId
     )
 }
 
