@@ -157,7 +157,7 @@ internal class UserWriterImplTest {
     }
 
     @Test
-    fun `delete a user successfully removes the user and writes to audit log`(){
+    fun `delete a user successfully removes the user and writes to audit log`() {
         val capture = argumentCaptor<Any>()
 
         val typedQueryMock = mock<TypedQuery<User>>()
