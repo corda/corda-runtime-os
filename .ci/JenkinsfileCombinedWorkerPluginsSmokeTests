@@ -112,11 +112,11 @@ pipeline {
             }
         }
         stage('plugin smoke tests') {
-            testing
                 options {
                     timeout(time: 30, unit: 'MINUTES')
                 }
                 steps {
+                    sh 'exit 1'
                    gradlew('pluginSmoketest -PisCombinedWorker=true')
                 }
                 post {
