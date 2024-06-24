@@ -30,6 +30,8 @@ interface PermissionStorageReader : Resource {
      */
     fun publishUpdatedUser(user: AvroUser)
 
+    fun publishDeletedUser(loginName: String, user: AvroUser?)
+
     /**
      * Broadcasts a new role onto the messaging bus.
      *

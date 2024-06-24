@@ -30,9 +30,8 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.lang.IllegalArgumentException
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 
 internal class UserEndpointImplTest {
 
@@ -134,6 +133,11 @@ internal class UserEndpointImplTest {
         assertEquals(true, responseType.enabled)
         assertEquals(now, responseType.passwordExpiry)
         assertEquals(parentGroup, responseType.parentGroup)
+    }
+
+    @Test
+    fun `delete a user` () {
+
     }
 
     @Test

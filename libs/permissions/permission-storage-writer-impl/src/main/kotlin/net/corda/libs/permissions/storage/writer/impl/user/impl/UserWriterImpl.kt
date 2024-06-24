@@ -3,6 +3,7 @@ package net.corda.libs.permissions.storage.writer.impl.user.impl
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
 import net.corda.data.permissions.management.user.ChangeUserPasswordRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
+import net.corda.data.permissions.management.user.DeleteUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.permissions.storage.common.converter.toAvroUser
 import net.corda.libs.permissions.storage.writer.impl.user.UserWriter
@@ -17,7 +18,7 @@ import net.corda.permissions.model.User
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import net.corda.data.permissions.User as AvroUser
@@ -71,6 +72,18 @@ class UserWriterImpl(
 
             log.info("Successfully changed password for user: ${user.loginName}.")
             user.toAvroUser()
+        }
+    }
+
+    override fun deleteUser(request: DeleteUserRequest, requestUserId: String): AvroUser {
+        log.debug { "Received request to delete new user: ${request.loginName}" }
+        return entityManagerFactory.transaction { entityManager ->
+
+            val validator = EntityValidationUtil(entityManager)
+            val user = validator.validateAndGetUniqueUser(request.loginName)
+
+            val resultUser = removeUser(user, entityManager, requestUserId, request.loginName)
+            resultUser.toAvroUser()
         }
     }
 
@@ -136,6 +149,30 @@ class UserWriterImpl(
         entityManager.persist(auditLog)
 
         log.info("Successfully created new user: $loginName.")
+        return user
+    }
+
+    private fun removeUser(
+        user: User,
+        entityManager: EntityManager,
+        requestUserId: String,
+        loginName: String
+    ): User {
+        val updateTimestamp = Instant.now()
+
+        entityManager.remove(user)
+
+        val auditLog = ChangeAudit(
+            id = UUID.randomUUID().toString(),
+            updateTimestamp = updateTimestamp,
+            actorUser = requestUserId,
+            changeType = RestPermissionOperation.USER_DELETE,
+            details = "User '${user.loginName}' deleted by '$requestUserId'."
+        )
+
+        entityManager.persist(auditLog)
+
+        log.info("Successfully deleted user: $loginName.")
         return user
     }
 

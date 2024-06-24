@@ -66,6 +66,11 @@ internal class PermissionManagementCacheImpl(
         return permissions[permissionId]
     }
 
+    override fun deleteUser(loginName: String): User? {
+        validateCacheIsRunning()
+        return users.remove(loginName.lowercase())
+    }
+
     private fun validateCacheIsRunning() {
         if (!isRunning) {
             throw PermissionCacheException("Permission management cache is not running.")
