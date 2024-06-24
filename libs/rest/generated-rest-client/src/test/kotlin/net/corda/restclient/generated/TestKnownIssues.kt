@@ -226,6 +226,7 @@ class TestKnownIssues {
         }
     }
 
+    // TODO with all generated models, Instant type isn't used anymore - do we need to test this?
     /**
      * Test that the dependency on `libs.jackson.datatype.jsr310` is consumed correctly
      * by the generated client and propagated to the using code, including Corda CLI,

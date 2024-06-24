@@ -32,6 +32,7 @@ dependencies {
     implementation libs.kotlin.stdlib
     implementation libs.jackson.dataformat.yaml
     implementation libs.jackson.databind
+    // TODO with all generated models, Instant type isn't used anymore - do we need to have jsr310 dependency?
     implementation libs.jackson.datatype.jsr310
     implementation libs.jackson.module.kotlin
     implementation libs.okHttp
