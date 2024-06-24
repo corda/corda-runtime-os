@@ -1,7 +1,5 @@
 package net.corda.sdk.packaging
 
-// import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
-// import net.corda.libs.cpiupload.endpoints.v1.GetCPIsResponse
 import net.corda.restclient.CordaRestClient
 import net.corda.restclient.generated.models.CpiUploadResponse
 import net.corda.restclient.generated.models.GetCPIsResponse
