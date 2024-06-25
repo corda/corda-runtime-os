@@ -5,9 +5,6 @@ import net.corda.rest.ws.DuplexChannel
 import org.eclipse.jetty.websocket.api.CloseStatus
 import org.eclipse.jetty.websocket.api.StatusCode
 import java.lang.Exception
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Executors
-import java.util.concurrent.Future
 
 internal class ServerDuplexChannel(
     private val ctx: WsConnectContext,
