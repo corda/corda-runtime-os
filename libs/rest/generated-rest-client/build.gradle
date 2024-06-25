@@ -34,6 +34,8 @@ dependencies {
     implementation libs.jackson.databind
     implementation libs.jackson.module.kotlin
     implementation libs.okHttp
+
+    testImplementation libs.javalin
 }
 
 // Pick up the generated code so we can use it in src/main & src/test
