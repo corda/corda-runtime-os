@@ -1,7 +1,6 @@
 package net.corda.rest.ws
 
 import java.lang.Exception
-import java.util.concurrent.Future
 
 /**
  * Channel to facilitate full duplex (i.e. two-way communication) like WebSockets protocol.
