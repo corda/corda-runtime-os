@@ -34,18 +34,6 @@ dependencies {
     implementation libs.jackson.databind
     implementation libs.jackson.module.kotlin
     implementation libs.okHttp
-    implementation project(':components:crypto:crypto-rest')
-    implementation project(':components:flow:flow-rest-resource-service')
-    implementation project(':components:membership:membership-rest')
-    implementation project(':libs:configuration:configuration-endpoints')
-    implementation project(':libs:external-messaging')
-    implementation project(':libs:permissions:permission-endpoint')
-    implementation project(':libs:rest:rest')
-    implementation project(':libs:virtual-node:virtual-node-endpoints')
-    implementation project(':libs:virtual-node:virtual-node-info')
-    implementation "net.corda:corda-avro-schema:$cordaApiVersion"
-
-    testImplementation libs.javalin
 }
 
 // Pick up the generated code so we can use it in src/main & src/test

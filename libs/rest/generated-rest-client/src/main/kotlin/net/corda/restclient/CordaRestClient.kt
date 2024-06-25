@@ -1,6 +1,5 @@
 package net.corda.restclient
 
-import net.corda.rest.annotations.RestApiVersion
 import net.corda.restclient.generated.apis.CPIApi
 import net.corda.restclient.generated.apis.CertificateApi
 import net.corda.restclient.generated.apis.ConfigurationApi
@@ -56,7 +55,7 @@ class CordaRestClient(
 ) {
 
     companion object {
-        private val API_VERSION = "/api/${RestApiVersion.C5_3.versionPath}"
+        private val defaultBasePath = HelloRestApi.defaultBasePath
 
         /**
          * Create an instance of CordaRestClient with the given baseUrl, username and password.
@@ -118,7 +117,7 @@ class CordaRestClient(
             virtualNodeMaintenanceClient: VirtualNodeMaintenanceApi? = null
         ): CordaRestClient {
 
-            val urlWithCordaApiVersion = baseUrl.toString() + API_VERSION
+            val urlWithDefaultBasePath = baseUrl.toString() + defaultBasePath
 
             val builder = ApiClient.apply {
                 this.username = username
@@ -136,27 +135,27 @@ class CordaRestClient(
 
             val client = builder.build()
             return CordaRestClient(
-                baseUrl = urlWithCordaApiVersion,
+                baseUrl = urlWithDefaultBasePath,
                 httpClient = client,
-                certificatesClient = certificatesClient ?: CertificateApi(urlWithCordaApiVersion, client),
-                configurationClient = configurationClient ?: ConfigurationApi(urlWithCordaApiVersion, client),
-                cpiClient = cpiClient ?: CPIApi(urlWithCordaApiVersion, client),
-                flowInfoClient = flowInfoClient ?: FlowInfoApi(urlWithCordaApiVersion, client),
-                flowManagementClient = flowManagementClient ?: FlowManagementApi(urlWithCordaApiVersion, client),
-                helloRestClient = helloRestClient ?: HelloRestApi(urlWithCordaApiVersion, client),
-                hsmClient = hsmClient ?: HSMApi(urlWithCordaApiVersion, client),
-                keyManagementClient = keyManagementClient ?: KeyManagementApi(urlWithCordaApiVersion, client),
-                keyRotationClient = keyRotationClient ?: KeyRotationApi(urlWithCordaApiVersion, client),
-                memberLookupClient = memberLookupClient ?: MemberLookupApi(urlWithCordaApiVersion, client),
-                memberRegistrationClient = memberRegistrationClient ?: MemberRegistrationApi(urlWithCordaApiVersion, client),
-                mgmAdminClient = mgmAdminClient ?: MGMAdminApi(urlWithCordaApiVersion, client),
-                mgmClient = mgmClient ?: MGMApi(urlWithCordaApiVersion, client),
-                networkClient = networkClient ?: NetworkApi(urlWithCordaApiVersion, client),
-                rbacPermissionClient = rbacPermissionClient ?: RBACPermissionApi(urlWithCordaApiVersion, client),
-                rbacRoleClient = rbacRoleClient ?: RBACRoleApi(urlWithCordaApiVersion, client),
-                rbacUserClient = rbacUserClient ?: RBACUserApi(urlWithCordaApiVersion, client),
-                virtualNodeClient = virtualNodeClient ?: VirtualNodeApi(urlWithCordaApiVersion, client),
-                virtualNodeMaintenanceClient = virtualNodeMaintenanceClient ?: VirtualNodeMaintenanceApi(urlWithCordaApiVersion, client)
+                certificatesClient = certificatesClient ?: CertificateApi(urlWithDefaultBasePath, client),
+                configurationClient = configurationClient ?: ConfigurationApi(urlWithDefaultBasePath, client),
+                cpiClient = cpiClient ?: CPIApi(urlWithDefaultBasePath, client),
+                flowInfoClient = flowInfoClient ?: FlowInfoApi(urlWithDefaultBasePath, client),
+                flowManagementClient = flowManagementClient ?: FlowManagementApi(urlWithDefaultBasePath, client),
+                helloRestClient = helloRestClient ?: HelloRestApi(urlWithDefaultBasePath, client),
+                hsmClient = hsmClient ?: HSMApi(urlWithDefaultBasePath, client),
+                keyManagementClient = keyManagementClient ?: KeyManagementApi(urlWithDefaultBasePath, client),
+                keyRotationClient = keyRotationClient ?: KeyRotationApi(urlWithDefaultBasePath, client),
+                memberLookupClient = memberLookupClient ?: MemberLookupApi(urlWithDefaultBasePath, client),
+                memberRegistrationClient = memberRegistrationClient ?: MemberRegistrationApi(urlWithDefaultBasePath, client),
+                mgmAdminClient = mgmAdminClient ?: MGMAdminApi(urlWithDefaultBasePath, client),
+                mgmClient = mgmClient ?: MGMApi(urlWithDefaultBasePath, client),
+                networkClient = networkClient ?: NetworkApi(urlWithDefaultBasePath, client),
+                rbacPermissionClient = rbacPermissionClient ?: RBACPermissionApi(urlWithDefaultBasePath, client),
+                rbacRoleClient = rbacRoleClient ?: RBACRoleApi(urlWithDefaultBasePath, client),
+                rbacUserClient = rbacUserClient ?: RBACUserApi(urlWithDefaultBasePath, client),
+                virtualNodeClient = virtualNodeClient ?: VirtualNodeApi(urlWithDefaultBasePath, client),
+                virtualNodeMaintenanceClient = virtualNodeMaintenanceClient ?: VirtualNodeMaintenanceApi(urlWithDefaultBasePath, client)
             )
         }
 
