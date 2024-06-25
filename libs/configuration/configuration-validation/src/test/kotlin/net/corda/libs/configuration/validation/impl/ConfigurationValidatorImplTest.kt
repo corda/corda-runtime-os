@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.InputStream
-import org.junit.jupiter.api.Disabled
 
 // Note: these tests use a stub SchemaProvider to cheat the validator into treating the key parameter as a resource to
 // retrieve. In actual use the validator should be provided one of the top level keys from the config schema module
