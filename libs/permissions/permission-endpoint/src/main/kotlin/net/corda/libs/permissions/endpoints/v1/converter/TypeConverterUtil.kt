@@ -1,6 +1,8 @@
+@file:Suppress("TooManyFunctions")
 package net.corda.libs.permissions.endpoints.v1.converter
 
 import net.corda.libs.permissions.endpoints.v1.group.types.CreateGroupType
+import net.corda.libs.permissions.endpoints.v1.group.types.GroupContentResponseType
 import net.corda.libs.permissions.endpoints.v1.group.types.GroupResponseType
 import net.corda.libs.permissions.endpoints.v1.permission.types.BulkCreatePermissionsRequestType
 import net.corda.libs.permissions.endpoints.v1.permission.types.BulkCreatePermissionsResponseType
@@ -20,6 +22,7 @@ import net.corda.libs.permissions.manager.request.CreatePermissionRequestDto
 import net.corda.libs.permissions.manager.request.CreatePermissionsRequestDto
 import net.corda.libs.permissions.manager.request.CreateRoleRequestDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
+import net.corda.libs.permissions.manager.response.GroupContentResponseDto
 import net.corda.libs.permissions.manager.response.GroupResponseDto
 import net.corda.libs.permissions.manager.response.PermissionAssociationResponseDto
 import net.corda.libs.permissions.manager.response.PermissionResponseDto
@@ -140,7 +143,25 @@ fun GroupResponseDto.convertToEndpointType(): GroupResponseType {
         id,
         lastUpdatedTimestamp,
         groupName,
-        parentGroupId
+        parentGroupId,
+        properties.map { it.convertToEndpointType() },
+        roleAssociations.map { it.convertToEndpointType() }
+    )
+}
+
+/**
+ * Convert a GroupContentResponseDto to a GroupContentResponseType to be returned to the HTTP caller.
+ */
+fun GroupContentResponseDto.convertToEndpointType(): GroupContentResponseType {
+    return GroupContentResponseType(
+        id,
+        lastUpdatedTimestamp,
+        groupName,
+        parentGroupId,
+        properties.map { it.convertToEndpointType() },
+        roleAssociations.map { it.convertToEndpointType() },
+        users,
+        subgroups
     )
 }
 

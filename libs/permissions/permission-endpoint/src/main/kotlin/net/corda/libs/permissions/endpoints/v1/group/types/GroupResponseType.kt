@@ -1,6 +1,7 @@
 package net.corda.libs.permissions.endpoints.v1.group.types
+import net.corda.libs.permissions.endpoints.v1.role.types.RoleAssociationResponseType
+import net.corda.libs.permissions.endpoints.v1.user.types.PropertyResponseType
 import java.time.Instant
-
 
 /**
  * Response type representing a Group to be returned to the caller.
@@ -24,5 +25,15 @@ data class GroupResponseType(
     /**
      * The group to which the Group belongs.
      */
-    val parentGroupId: String?
+    val parentGroupId: String?,
+
+    /**
+     * Group properties.
+     */
+    val properties: List<PropertyResponseType>,
+
+    /**
+     * The Group's role associations.
+     */
+    val roleAssociations: List<RoleAssociationResponseType>
 )

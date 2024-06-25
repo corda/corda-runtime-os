@@ -75,7 +75,17 @@ fun AvroGroup.convertToResponseDto(): GroupResponseDto {
         id,
         lastChangeDetails.updateTimestamp,
         name,
-        parentGroupId
+        parentGroupId,
+        properties.map {
+            PropertyResponseDto(
+                it.lastChangeDetails.updateTimestamp,
+                it.key,
+                it.value
+            )
+        },
+        roleAssociations.map {
+            RoleAssociationResponseDto(it.roleId, it.changeDetails.updateTimestamp)
+        }
     )
 }
 

@@ -29,7 +29,7 @@ interface GroupEndpoint : RestResource {
     ): ResponseEntity<GroupResponseType>
 
     @HttpPUT
-    fun assignRoleToGroup(
+    fun addRole(
         @RestPathParameter(description = "ID of the group to assign role.")
         groupId: String,
         @ClientRequestBodyParameter(description = "ID of the role to assign.")
@@ -37,7 +37,7 @@ interface GroupEndpoint : RestResource {
     ): ResponseEntity<GroupResponseType>
 
     @HttpDELETE
-    fun unassignRoleFromGroup(
+    fun removeRole(
         @RestPathParameter(description = "ID of the group to unassign role.")
         groupId: String,
         @ClientRequestBodyParameter(description = "ID of the role to unassign.")
