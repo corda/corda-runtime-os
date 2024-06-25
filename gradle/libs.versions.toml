@@ -79,7 +79,7 @@ jackson-dataformat-yaml = { group = "com.fasterxml.jackson.dataformat", name = "
 jackson-module-kotlin = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version.ref = "jacksonVersion" }
 javalin = { group = "io.javalin", name = "javalin-osgi", version.ref = "javalinVersion" }
 jcip-annotations = { group = "org.apache.servicemix.bundles", name = "org.apache.servicemix.bundles.jcip-annotations", version.ref = "jcipAnnotationsVersion" }
-jetty-server = { group = "org.eclipse.jetty", name = "jetty-server" }
+jetty-server = { group = "org.eclipse.jetty", name = "jetty-server", version.ref = "jettyVersion" }
 jetty-xml = { group = "org.eclipse.jetty", name = "jetty-xml", version.ref = "jettyVersion" }
 jetty-websocket-servlet = { group = "org.eclipse.jetty.websocket", name = "websocket-servlet", version.ref = "jettyVersion" }
 jetty-websocket-server = { group = "org.eclipse.jetty.websocket", name = "websocket-server", version.ref = "jettyVersion" }
