@@ -1,6 +1,10 @@
 package net.corda.e2etest.utilities
 
+import kong.unirest.Config
 import kong.unirest.Headers
+import kong.unirest.HttpRequestSummary
+import kong.unirest.HttpResponse
+import kong.unirest.Interceptor
 import kong.unirest.MultipartBody
 import kong.unirest.Unirest
 import kong.unirest.apache.ApacheClient
@@ -10,13 +14,19 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier
 import org.apache.http.conn.ssl.TrustAllStrategy
 import org.apache.http.impl.client.HttpClients
 import org.apache.http.ssl.SSLContexts
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import java.lang.Exception
 import java.net.URI
 import java.net.http.HttpRequest
 import javax.net.ssl.SSLContext
 
 class UnirestHttpsClient(private val endpoint: URI, private val username: String, private val password: String)  :
     HttpsClient {
+
     private companion object {
+        val logger: Logger = LoggerFactory.getLogger(UnirestHttpsClient::class.java)
+
         fun Headers.toInternal(): List<Pair<String, String>> {
             return all().map { it.name to it.value }
         }
@@ -118,7 +128,9 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
 
         Unirest.config()
             .let { config ->
-                config.httpClient(ApacheClient.builder(httpClient).apply(config))
+                val client = ApacheClient.builder(httpClient).apply(config) as ApacheClient
+                config.interceptor(FailureReportingInterceptor(client, logger))
+                config.httpClient(client)
             }
     }
 
@@ -130,5 +142,22 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
     private fun MultipartBody.files(files: Map<String, HttpsClientFileUpload>): MultipartBody {
         files.entries.forEach { (name, file) -> field(name, file.content, file.filename) }
         return this
+    }
+}
+
+private class FailureReportingInterceptor(private val client: ApacheClient, private val logger: Logger) : Interceptor {
+    override fun onFail(e: Exception?, request: HttpRequestSummary?, config: Config?): HttpResponse<*> {
+
+        val connectionManager = client.manager
+        val routesStats = connectionManager.routes.joinToString("\n") {
+            route -> "Route: $route => ${connectionManager.getStats(route)}"
+        }
+
+        logger.error(
+            "Failed to process HTTP request ($request). Total pool stats: ${connectionManager.totalStats}. " +
+                    "Routes stats: $routesStats.", e
+        )
+
+        return super.onFail(e, request, config)
     }
 }
