@@ -1,6 +1,5 @@
 package net.corda.rest.server.impl
 
-import java.nio.file.Files
 import net.corda.rest.server.config.models.RestSSLSettings
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.ssl.impl.SslCertReadServiceImpl
@@ -17,7 +16,7 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.mockito.kotlin.mock
 import org.slf4j.LoggerFactory
-
+import java.nio.file.Files
 
 class RestServerHTTPSWebsocketTest : AbstractWebsocketTest() {
     private companion object {
@@ -74,7 +73,7 @@ class RestServerHTTPSWebsocketTest : AbstractWebsocketTest() {
         }
     }
 
-    override fun createWsClient() : WebSocketClient {
+    override fun createWsClient(): WebSocketClient {
         val clientConnector = ClientConnector().apply {
             sslContextFactory = SslContextFactory.Client(true)
         }

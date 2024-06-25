@@ -4,6 +4,7 @@ import io.javalin.http.Header
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.test.utils.WebRequest
 import net.corda.rest.tools.HttpVerb
+import net.corda.utilities.debug
 import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.eclipse.jetty.client.HttpRequest
@@ -25,7 +26,6 @@ import java.util.*
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
-import net.corda.utilities.debug
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
