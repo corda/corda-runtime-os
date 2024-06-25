@@ -225,26 +225,4 @@ class TestKnownIssues {
             assertThat(response).isEqualTo(greeting)
         }
     }
-
-    // TODO with all generated models, Instant type isn't used anymore - do we need to test this?
-    /**
-     * Test that the dependency on `libs.jackson.datatype.jsr310` is consumed correctly
-     * by the generated client and propagated to the using code, including Corda CLI,
-     * enabling the correct deserialization of the `Instant` type.
-     * See details: https://r3-cev.atlassian.net/browse/ES-2396
-    */
-    @Test
-    fun testGetRole() {
-        val response = """
-            [{"id":"62badb8b-1836-4a89-901a-fd6b65906a67","version":0,"updateTimestamp":"2024-05-17T08:33:07.602Z","roleName":"Default System Admin","groupVisibility":null,"permissions":[{"id":"4b3477d9-b812-4ae5-bcb1-5537c7a373d5","createdTimestamp":"2024-05-17T08:33:07.692Z"}]}]
-        """.trimIndent()
-        app.get("api/v5_3/role") { ctx ->
-            ctx.header("Content-Type", "application/json")
-            ctx.result(response)
-        }
-        val client = CordaRestClient.createHttpClient(baseUrl = localhost)
-        val roles = client.rbacRoleClient.getRole()
-        assertThat(roles).isNotEmpty
-        assertThat(roles.first().updateTimestamp).isNotNull
-    }
 }
