@@ -20,14 +20,12 @@ internal class ServerDuplexChannel(
     private var connectHook: (() -> Unit)? = null
     private var closeHook: ((statusCode: Int, reason: String?) -> Unit)? = null
 
-    private val executorService = Executors.newCachedThreadPool()
-
-    override fun send(message: String): Future<Void> {
-        return CompletableFuture.runAsync({ ctx.send(message) }, executorService)
+    override fun send(message: String) {
+        ctx.send(message)
     }
 
-    override fun send(message: Any): Future<Void> {
-        return CompletableFuture.runAsync({ ctx.send(message) }, executorService)
+    override fun send(message: Any) {
+        ctx.send(message)
     }
 
     override fun close() {
