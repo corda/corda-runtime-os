@@ -44,7 +44,12 @@ class RoleAndPermissionsCreator(val restClient: CordaRestClient) {
             return existingRole
         }
 
-        val createRoleResponse = restClient.rbacRoleClient.postRole(roleToCreate)
+        val createRoleResponse = executeWithRetry(
+            waitDuration = wait,
+            operationName = "Create role '${roleToCreate.roleName}'"
+        ) {
+            restClient.rbacRoleClient.postRole(roleToCreate)
+        }
         executeWithRetry(
             waitDuration = wait,
             operationName = "Wait until role '${createRoleResponse.id}' is created"
