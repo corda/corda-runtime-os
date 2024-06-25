@@ -119,10 +119,11 @@ class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRestResource<TestHea
                 {
                     log.debug { "Sending: $counter" }
                     val future = channel.send("${counter++}")
+                    // Wait until the message is actually sent otherwise the messages might be sent out of order
+                    // and the test will fail.
+                    future.get()
                     if (range != null) {
                         if (counter >= start + range) {
-                            // Wait for sent confirmation then close the channel
-                            future.get()
                             channel.close()
                         }
                     }

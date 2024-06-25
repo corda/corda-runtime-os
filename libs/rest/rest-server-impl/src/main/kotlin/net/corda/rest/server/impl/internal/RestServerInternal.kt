@@ -1,6 +1,7 @@
 package net.corda.rest.server.impl.internal
 
 import io.javalin.Javalin
+import io.javalin.config.JavalinConfig
 import io.javalin.http.BadRequestResponse
 import io.javalin.http.ContentType
 import io.javalin.http.Context
@@ -15,6 +16,8 @@ import io.javalin.json.JavalinJackson
 import io.javalin.plugin.bundled.CorsPlugin
 import io.javalin.plugin.bundled.RedirectToLowercasePathPlugin
 import jakarta.servlet.MultipartConfigElement
+import java.nio.file.Path
+import java.util.LinkedList
 import net.corda.rest.authorization.AuthorizationUtils.authorize
 import net.corda.rest.server.config.RestServerSettingsProvider
 import net.corda.rest.server.impl.apigen.processing.RouteInfo
@@ -36,7 +39,6 @@ import net.corda.utilities.debug
 import net.corda.utilities.trace
 import net.corda.web.server.JavalinStarter
 import org.eclipse.jetty.http2.HTTP2Cipher
-import org.eclipse.jetty.server.HttpConfiguration
 import org.eclipse.jetty.server.HttpConnectionFactory
 import org.eclipse.jetty.server.SecureRequestCustomizer
 import org.eclipse.jetty.server.Server
@@ -47,8 +49,6 @@ import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import org.slf4j.LoggerFactory
-import java.nio.file.Path
-import java.util.LinkedList
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown", "LongParameterList")
 internal class RestServerInternal(
@@ -102,18 +102,16 @@ internal class RestServerInternal(
                 config.bundledPlugins.enableDevLogging()
             }
 
-            config.jetty.modifyServer {
-                configurationsProvider.getSSLKeyStorePath()
-                    ?.let { createSecureServer() }
-                    ?: INSECURE_SERVER_DEV_MODE_WARNING.let { msg ->
-                        if (configurationsProvider.isDevModeEnabled()) {
-                            log.warn(msg)
-                        } else {
-                            log.error(msg)
-                            throw UnsupportedOperationException(msg)
-                        }
-                        createInsecureServer()
-                    }
+            if (configurationsProvider.getSSLKeyStorePath() != null) {
+                createSecureServer(config)
+            } else {
+                if (configurationsProvider.isDevModeEnabled()) {
+                    log.warn(INSECURE_SERVER_DEV_MODE_WARNING)
+                } else {
+                    log.error(INSECURE_SERVER_DEV_MODE_WARNING)
+                    throw UnsupportedOperationException(INSECURE_SERVER_DEV_MODE_WARNING)
+                }
+                createInsecureServer(config)
             }
 
             config.http.defaultContentType = contentTypeApplicationJson
@@ -279,7 +277,8 @@ internal class RestServerInternal(
                         }
                     }
                     val clientHttpRequestContext = ClientHttpRequestContext(it)
-                    val authorizingSubject = authenticate(clientHttpRequestContext, restAuthProvider, credentialResolver)
+                    val authorizingSubject =
+                        authenticate(clientHttpRequestContext, restAuthProvider, credentialResolver)
                     val authorizationProvider = routeInfo.method.instance.authorizationProvider
                     val resourceAccessString = clientHttpRequestContext.getResourceAccessString()
 
@@ -331,80 +330,53 @@ internal class RestServerInternal(
     }
 
     @SuppressWarnings("ComplexMethod")
-    private fun createSecureServer(): Server {
+    private fun createSecureServer(config: JavalinConfig) {
         log.trace { "Create secure (HTTPS) server." }
         require(configurationsProvider.getSSLKeyStorePath() != null) {
             "SSL key store path must be present in order to start a secure server"
         }
         require(configurationsProvider.getSSLKeyStorePassword() != null) { SSL_PASSWORD_MISSING }
 
-        log.trace { "Get SslContextFactory." }
-        val sslContextFactory = SslContextFactory.Server().apply {
-            keyStorePath = configurationsProvider.getSSLKeyStorePath()!!.toAbsolutePath().toString()
-            setKeyStorePassword(configurationsProvider.getSSLKeyStorePassword()!!)
-            cipherComparator = HTTP2Cipher.COMPARATOR
-            provider = "Conscrypt"
-        }
-        log.trace { "Get SslConnectionFactory." }
-        log.trace { "Get HttpConfiguration." }
-        val httpsConfig = HttpConfiguration().apply {
-            sendServerVersion = false
-            secureScheme = "https"
-            securePort = configurationsProvider.getHostAndPort().port
-            addCustomizer(SecureRequestCustomizer())
+        config.jetty.modifyHttpConfiguration { httpConfig ->
+            httpConfig.sendServerVersion = false
+            httpConfig.secureScheme = "https"
+            httpConfig.securePort = configurationsProvider.getHostAndPort().port
+            httpConfig.addCustomizer(SecureRequestCustomizer().apply {
+                isSniHostCheck = false
+            })
         }
 
-        val http11 = HttpConnectionFactory(httpsConfig)
+        config.jetty.addConnector() { server, httpConfig ->
+            log.trace { "Get SslContextFactory." }
+            val sslContextFactory = SslContextFactory.Server().apply {
+                keyStorePath = configurationsProvider.getSSLKeyStorePath()!!.toAbsolutePath().toString()
+                setKeyStorePassword(configurationsProvider.getSSLKeyStorePassword()!!)
+                cipherComparator = HTTP2Cipher.COMPARATOR
+            }
 
-        fun Server.addHttp11SslConnector() {
+
+            val http11 = HttpConnectionFactory(httpConfig)
             val ssl = SslConnectionFactory(sslContextFactory, http11.protocol)
-            addConnector(
-                ServerConnector(this, ssl, http11).apply {
-                    port = configurationsProvider.getHostAndPort().port
-                    host = configurationsProvider.getHostAndPort().host
-                }
-            )
-        }
 
-        try {
-            return Server().apply {
-                /**
-                 * HTTP2 connector currently disabled because:
-                 * - There is no explicit requirement to support HTTP2
-                 * - There are not that many HTTP clients exist in Java that support HTTP2
-                 * - Fallback mechanism to HTTP 1.1 is not working as expected
-                 */
-                // addHttp2SslConnector()
-                // HTTP/1.1 Connector
-                addHttp11SslConnector()
-            }.also { log.trace { "Create secure (HTTPS) server completed." } }
-        } catch (e: Exception) {
-            "Error during Create secure (HTTPS) server".let {
-                log.error("$it: ${e.message}")
-                throw Exception(it, e)
+            ServerConnector(server, ssl, http11).apply {
+                port = configurationsProvider.getHostAndPort().port
+                host = configurationsProvider.getHostAndPort().host
             }
         }
+        log.trace { "Create secure (HTTPS) server completed." }
     }
 
-    private fun createInsecureServer(): Server {
-        try {
-            log.trace { "Create insecure (HTTP) server." }
+    private fun createInsecureServer(config: JavalinConfig) {
+        log.trace { "Create insecure (HTTP) server." }
 
-            return Server().apply {
-                // HTTP/1.1 Connector
-                addConnector(
-                    ServerConnector(this).apply {
-                        port = configurationsProvider.getHostAndPort().port
-                        host = configurationsProvider.getHostAndPort().host
-                    }
-                )
-            }.also { log.trace { "Create insecure (HTTP) server completed." } }
-        } catch (e: Exception) {
-            "Error during Create insecure (HTTP) server".let {
-                log.error("$it: ${e.message}")
-                throw Exception(it, e)
+        config.jetty.addConnector() { server, _ ->
+            ServerConnector(server).apply {
+                port = configurationsProvider.getHostAndPort().port
+                host = configurationsProvider.getHostAndPort().host
             }
         }
+
+        log.trace { "Create insecure (HTTP) server." }
     }
 
     private fun Javalin.addWsRoutes() {
