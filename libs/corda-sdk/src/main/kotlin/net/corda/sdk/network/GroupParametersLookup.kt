@@ -1,8 +1,8 @@
 package net.corda.sdk.network
 
 import net.corda.crypto.core.ShortHash
-import net.corda.membership.rest.v1.types.RestGroupParameters
 import net.corda.restclient.CordaRestClient
+import net.corda.restclient.generated.models.RestGroupParameters
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds

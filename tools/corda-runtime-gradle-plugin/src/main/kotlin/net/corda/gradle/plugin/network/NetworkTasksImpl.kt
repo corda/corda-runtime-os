@@ -4,7 +4,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.gradle.plugin.configuration.ProjectContext
 import net.corda.gradle.plugin.dtos.VNode
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
-import net.corda.membership.rest.v1.types.response.RegistrationRequestProgress
+import net.corda.restclient.generated.models.RegistrationRequestProgress
 import net.corda.sdk.data.RequestId
 import net.corda.sdk.network.RegistrationsLookup
 import net.corda.sdk.network.VirtualNode

@@ -1,8 +1,8 @@
 package net.corda.sdk.packaging
 
-import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
-import net.corda.libs.cpiupload.endpoints.v1.GetCPIsResponse
 import net.corda.restclient.CordaRestClient
+import net.corda.restclient.generated.models.CpiUploadResponse
+import net.corda.restclient.generated.models.GetCPIsResponse
 import net.corda.sdk.data.Checksum
 import net.corda.sdk.data.RequestId
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
@@ -19,7 +19,7 @@ class CpiUploader(val restClient: CordaRestClient) {
      */
     fun uploadCPI(
         cpi: File,
-    ): CpiUploadRestResource.CpiUploadResponse {
+    ): CpiUploadResponse {
         return restClient.cpiClient.postCpi(cpi)
     }
 
@@ -36,7 +36,7 @@ class CpiUploader(val restClient: CordaRestClient) {
         cpiName: String,
         cpiVersion: String,
         wait: Duration = 30.seconds
-    ): CpiUploadRestResource.CpiUploadResponse {
+    ): CpiUploadResponse {
         return if (
             cpiPreviouslyUploaded(
                 cpiName = cpiName,
@@ -99,7 +99,7 @@ class CpiUploader(val restClient: CordaRestClient) {
      */
     fun forceCpiUpload(
         cpiFile: File
-    ): CpiUploadRestResource.CpiUploadResponse {
+    ): CpiUploadResponse {
         return restClient.virtualNodeMaintenanceClient.postMaintenanceVirtualnodeForcecpiupload(cpiFile)
     }
 

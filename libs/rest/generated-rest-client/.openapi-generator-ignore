@@ -29,8 +29,3 @@
 **/gradlew.bat
 **/README.md
 **/settings.gradle
-
-**/FlowResultResponseJson.kt
-**/KeyRotationStatusResponseRotatedKeyStatusInner.kt
-**/net.corda*.kt
-**/StartFlowParametersRequestBody.kt

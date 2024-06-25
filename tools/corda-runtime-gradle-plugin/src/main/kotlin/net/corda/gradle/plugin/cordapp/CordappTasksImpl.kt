@@ -9,8 +9,8 @@ import net.corda.gradle.plugin.dtos.GroupPolicyDTO
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
 import net.corda.gradle.plugin.network.NetworkTasksImpl
 import net.corda.gradle.plugin.network.VNodeHelper
-import net.corda.membership.rest.v1.types.request.HostedIdentitySessionKeyAndCertificate
-import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
+import net.corda.restclient.generated.models.HostedIdentitySessionKeyAndCertificate
+import net.corda.restclient.generated.models.HostedIdentitySetupRequest
 import net.corda.sdk.network.ClientCertificates
 import net.corda.sdk.network.ExportGroupPolicyFromMgm
 import net.corda.sdk.network.Keys.Companion.P2P_TLS_CERTIFICATE_ALIAS

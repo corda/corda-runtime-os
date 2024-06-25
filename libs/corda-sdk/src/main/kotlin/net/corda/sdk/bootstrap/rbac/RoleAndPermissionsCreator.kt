@@ -1,11 +1,10 @@
 package net.corda.sdk.bootstrap.rbac
 
-import net.corda.libs.permissions.endpoints.v1.permission.types.BulkCreatePermissionsRequestType
-import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
-import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
-import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
-import net.corda.libs.permissions.endpoints.v1.role.types.RoleResponseType
 import net.corda.restclient.CordaRestClient
+import net.corda.restclient.generated.models.BulkCreatePermissionsRequestType
+import net.corda.restclient.generated.models.CreatePermissionType
+import net.corda.restclient.generated.models.CreateRoleType
+import net.corda.restclient.generated.models.RoleResponseType
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -60,8 +59,8 @@ class RoleAndPermissionsCreator(val restClient: CordaRestClient) {
         val bulkRequest = BulkCreatePermissionsRequestType(
             permissionsToCreate.map { entry ->
                 CreatePermissionType(
-                    PermissionType.ALLOW,
                     entry.permissionString,
+                    CreatePermissionType.PermissionType.ALLOW,
                     roleToCreate.groupVisibility,
                     entry.vnodeShortHash
                 )

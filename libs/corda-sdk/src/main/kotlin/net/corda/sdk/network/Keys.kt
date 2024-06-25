@@ -2,8 +2,8 @@ package net.corda.sdk.network
 
 import net.corda.crypto.core.CryptoConsts.Categories.KeyCategory
 import net.corda.crypto.core.ShortHash
-import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 import net.corda.restclient.CordaRestClient
+import net.corda.restclient.generated.models.KeyPairIdentifier
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import kotlin.time.Duration

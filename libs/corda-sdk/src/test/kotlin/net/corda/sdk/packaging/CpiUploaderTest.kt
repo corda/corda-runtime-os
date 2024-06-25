@@ -1,10 +1,10 @@
 package net.corda.sdk.packaging
 
-import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
-import net.corda.libs.cpiupload.endpoints.v1.CpiMetadata
-import net.corda.libs.cpiupload.endpoints.v1.GetCPIsResponse
 import net.corda.restclient.CordaRestClient
 import net.corda.restclient.generated.apis.CPIApi
+import net.corda.restclient.generated.models.CpiIdentifier
+import net.corda.restclient.generated.models.CpiMetadata
+import net.corda.restclient.generated.models.GetCPIsResponse
 import net.corda.sdk.data.Checksum
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -29,7 +29,7 @@ class CpiUploaderTest {
                         cpiFileFullChecksum = "",
                         cpks = emptyList(),
                         groupPolicy = "",
-                        timestamp = Instant.now()
+                        timestamp = Instant.now().toString()
                     )
                 )
             )
@@ -71,7 +71,7 @@ class CpiUploaderTest {
                         cpiFileFullChecksum = "",
                         cpks = emptyList(),
                         groupPolicy = "",
-                        timestamp = Instant.now()
+                        timestamp = Instant.now().toString()
                     )
                 )
             )
@@ -99,7 +99,7 @@ class CpiUploaderTest {
                         cpiFileFullChecksum = "",
                         cpks = emptyList(),
                         groupPolicy = "",
-                        timestamp = Instant.now()
+                        timestamp = Instant.now().toString()
                     )
                 )
             )
@@ -126,7 +126,7 @@ class CpiUploaderTest {
                         cpiFileFullChecksum = "",
                         cpks = emptyList(),
                         groupPolicy = "",
-                        timestamp = Instant.now()
+                        timestamp = Instant.now().toString()
                     )
                 )
             )
