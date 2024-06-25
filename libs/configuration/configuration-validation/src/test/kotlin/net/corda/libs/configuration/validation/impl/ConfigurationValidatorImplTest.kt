@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Disabled
 // Note: these tests use a stub SchemaProvider to cheat the validator into treating the key parameter as a resource to
 // retrieve. In actual use the validator should be provided one of the top level keys from the config schema module
 // instead.
-@Disabled("Enable this test before merging the PR!")
 class ConfigurationValidatorImplTest {
 
     companion object {
