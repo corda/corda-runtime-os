@@ -16,8 +16,6 @@ import io.javalin.json.JavalinJackson
 import io.javalin.plugin.bundled.CorsPlugin
 import io.javalin.plugin.bundled.RedirectToLowercasePathPlugin
 import jakarta.servlet.MultipartConfigElement
-import java.nio.file.Path
-import java.util.LinkedList
 import net.corda.rest.authorization.AuthorizationUtils.authorize
 import net.corda.rest.server.config.RestServerSettingsProvider
 import net.corda.rest.server.impl.apigen.processing.RouteInfo
@@ -49,6 +47,8 @@ import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import org.slf4j.LoggerFactory
+import java.nio.file.Path
+import java.util.LinkedList
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown", "LongParameterList")
 internal class RestServerInternal(
@@ -341,19 +341,20 @@ internal class RestServerInternal(
             httpConfig.sendServerVersion = false
             httpConfig.secureScheme = "https"
             httpConfig.securePort = configurationsProvider.getHostAndPort().port
-            httpConfig.addCustomizer(SecureRequestCustomizer().apply {
-                isSniHostCheck = false
-            })
+            httpConfig.addCustomizer(
+                SecureRequestCustomizer().apply {
+                    isSniHostCheck = false
+                }
+            )
         }
 
-        config.jetty.addConnector() { server, httpConfig ->
+        config.jetty.addConnector { server, httpConfig ->
             log.trace { "Get SslContextFactory." }
             val sslContextFactory = SslContextFactory.Server().apply {
                 keyStorePath = configurationsProvider.getSSLKeyStorePath()!!.toAbsolutePath().toString()
                 setKeyStorePassword(configurationsProvider.getSSLKeyStorePassword()!!)
                 cipherComparator = HTTP2Cipher.COMPARATOR
             }
-
 
             val http11 = HttpConnectionFactory(httpConfig)
             val ssl = SslConnectionFactory(sslContextFactory, http11.protocol)
@@ -369,7 +370,7 @@ internal class RestServerInternal(
     private fun createInsecureServer(config: JavalinConfig) {
         log.trace { "Create insecure (HTTP) server." }
 
-        config.jetty.addConnector() { server, _ ->
+        config.jetty.addConnector { server, _ ->
             ServerConnector(server).apply {
                 port = configurationsProvider.getHostAndPort().port
                 host = configurationsProvider.getHostAndPort().host
