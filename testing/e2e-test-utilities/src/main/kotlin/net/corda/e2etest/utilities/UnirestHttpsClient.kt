@@ -150,14 +150,16 @@ private class FailureReportingInterceptor(private val client: ApacheClient, priv
     override fun onFail(e: Exception?, request: HttpRequestSummary?, config: Config?): HttpResponse<*> {
 
         val connectionManager = client.manager
-        val routesStats = connectionManager.routes.joinToString("\n") {
-            route -> "Route: $route => ${connectionManager.getStats(route)}"
+        val statsString = if (connectionManager == null) {
+            "Connection manager is null."
+        } else {
+            val routesStats = connectionManager.routes.joinToString("\n") { route ->
+                "Route: $route => ${connectionManager.getStats(route)}"
+            }
+            "Total pool stats: ${connectionManager.totalStats}. Routes stats: $routesStats."
         }
 
-        logger.error(
-            "Failed to process HTTP request ($request). Total pool stats: ${connectionManager.totalStats}. " +
-                    "Routes stats: $routesStats.", e
-        )
+        logger.error("Failed to process HTTP request ($request). $statsString", e)
 
         return super.onFail(e, request, config)
     }
