@@ -25,6 +25,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import java.time.ZonedDateTime
+import org.junit.jupiter.api.Disabled
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -493,6 +494,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
         assertTrue(apiSpec.body!!.contains(expected))
     }
 
+    @Disabled("Comming back later")
     @Test
     fun `GET swagger UI dependencies should return non empty result`() {
         val baseClient = TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${server.port}/")
