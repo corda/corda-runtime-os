@@ -21,7 +21,7 @@ import java.net.URI
 import java.net.http.HttpRequest
 import javax.net.ssl.SSLContext
 
-class UnirestHttpsClient(private val endpoint: URI, private val username: String, private val password: String)  :
+class UnirestHttpsClient(private val endpoint: URI, private val username: String, private val password: String) :
     HttpsClient {
 
     private companion object {
@@ -30,10 +30,35 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
         fun Headers.toInternal(): List<Pair<String, String>> {
             return all().map { it.name to it.value }
         }
-    }
 
-    init {
-        addSslParams()
+        init {
+            addSslParams()
+        }
+
+        private fun addSslParams() {
+            val sslContext: SSLContext = SSLContexts.custom()
+                .loadTrustMaterial(TrustAllStrategy())
+                .build()
+
+            val requestConfig = RequestConfig.custom()
+                .setConnectionRequestTimeout(60_000)
+                .setConnectTimeout(60_000)
+                .setSocketTimeout(60_000)
+                .build()
+
+            val httpClient = HttpClients.custom()
+                .setSSLContext(sslContext)
+                .setSSLHostnameVerifier(NoopHostnameVerifier())
+                .setDefaultRequestConfig(requestConfig)
+                .setMaxConnTotal(1)
+                .build()
+
+            Unirest.config().let { config ->
+                val client = ApacheClient.builder(httpClient).apply(config) as ApacheClient
+                config.interceptor(FailureReportingInterceptor(client, logger))
+                config.httpClient(client)
+            }
+        }
     }
 
     override fun postMultiPart(cmd: String, fields: Map<String, String>, files: Map<String, HttpsClientFileUpload>): SimpleResponse {
@@ -107,32 +132,6 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
 
         val response = Unirest.delete(url).basicAuth(username, password).asString()
         return SimpleResponse(response.status, response.body, url, response.headers.toInternal())
-    }
-
-    private fun addSslParams() {
-        val sslContext: SSLContext = SSLContexts.custom()
-            .loadTrustMaterial(TrustAllStrategy())
-            .build()
-
-        val requestConfig = RequestConfig.custom()
-            .setConnectionRequestTimeout(60_000)
-            .setConnectTimeout(60_000)
-            .setSocketTimeout(60_000)
-            .build()
-
-        val httpClient = HttpClients.custom()
-            .setSSLContext(sslContext)
-            .setSSLHostnameVerifier(NoopHostnameVerifier())
-            .setDefaultRequestConfig(requestConfig)
-            .setMaxConnTotal(1)
-            .build()
-
-        Unirest.config()
-            .let { config ->
-                val client = ApacheClient.builder(httpClient).apply(config) as ApacheClient
-                config.interceptor(FailureReportingInterceptor(client, logger))
-                config.httpClient(client)
-            }
     }
 
     private fun MultipartBody.fields(fields: Map<String, String>): MultipartBody {
