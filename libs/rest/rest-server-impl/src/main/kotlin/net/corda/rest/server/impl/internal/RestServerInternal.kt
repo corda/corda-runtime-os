@@ -23,7 +23,6 @@ import net.corda.rest.server.impl.apigen.processing.RouteProvider
 import net.corda.rest.server.impl.apigen.processing.openapi.OpenApiInfoProvider
 import net.corda.rest.server.impl.context.ClientHttpRequestContext
 import net.corda.rest.server.impl.context.ContextUtils.authenticate
-import net.corda.rest.server.impl.context.ContextUtils.contentTypeApplicationJson
 import net.corda.rest.server.impl.context.ContextUtils.invokeHttpMethod
 import net.corda.rest.server.impl.context.ContextUtils.userNotAuthorized
 import net.corda.rest.server.impl.security.RestAuthenticationProvider
@@ -39,7 +38,6 @@ import net.corda.web.server.JavalinStarter
 import org.eclipse.jetty.http2.HTTP2Cipher
 import org.eclipse.jetty.server.HttpConnectionFactory
 import org.eclipse.jetty.server.SecureRequestCustomizer
-import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.ServerConnector
 import org.eclipse.jetty.server.SslConnectionFactory
 import org.eclipse.jetty.util.ssl.SslContextFactory
@@ -114,7 +112,7 @@ internal class RestServerInternal(
                 createInsecureServer(config)
             }
 
-            config.http.defaultContentType = contentTypeApplicationJson
+           config.http.defaultContentType = ContentType.APPLICATION_JSON.name
 //            config.bundledPlugins.enableCors { cors ->
 //                cors.addRule { corsConfig ->
 //                    corsConfig.anyHost()
@@ -297,7 +295,7 @@ internal class RestServerInternal(
             openApiInfoProviders.forEach { openApiInfoProvider ->
                 get(
                     openApiInfoProvider.pathForOpenApiJson
-                ) { ctx -> ctx.result(openApiInfoProvider.openApiString).contentType(contentTypeApplicationJson) }
+                ) { ctx -> ctx.result(openApiInfoProvider.openApiString).contentType(ContentType.APPLICATION_JSON.name) }
                 get(openApiInfoProvider.pathForOpenApiUI, openApiInfoProvider.swaggerUIRenderer)
             }
             log.trace { "Add OpenApi route completed." }
