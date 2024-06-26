@@ -9,6 +9,7 @@ import net.corda.libs.permissions.endpoints.v1.group.types.GroupContentResponseT
 import net.corda.libs.permissions.endpoints.v1.group.types.GroupResponseType
 import net.corda.libs.permissions.manager.request.AddRoleToGroupRequestDto
 import net.corda.libs.permissions.manager.request.ChangeGroupParentIdDto
+import net.corda.libs.permissions.manager.request.DeleteGroupRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromGroupRequestDto
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.permissions.management.PermissionManagementService
@@ -93,7 +94,13 @@ class GroupEndpointImpl @Activate constructor(
     }
 
     override fun deleteGroup(groupId: String): ResponseEntity<GroupResponseType> {
-        throw NotImplementedError("Not implemented yet")
+        val principal = getRestThreadLocalContext()
+
+        val groupResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            deleteGroup(DeleteGroupRequestDto(principal, groupId))
+        }
+
+        return ResponseEntity.deleted(groupResponseDto.convertToEndpointType())
     }
 
     private fun getRestThreadLocalContext(): String {

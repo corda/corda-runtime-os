@@ -3,11 +3,10 @@ package net.corda.libs.permissions.manager
 import net.corda.libs.permissions.manager.request.AddRoleToGroupRequestDto
 import net.corda.libs.permissions.manager.request.ChangeGroupParentIdDto
 import net.corda.libs.permissions.manager.request.CreateGroupRequestDto
-import net.corda.libs.permissions.manager.request.CreateUserRequestDto
+import net.corda.libs.permissions.manager.request.DeleteGroupRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromGroupRequestDto
 import net.corda.libs.permissions.manager.response.GroupContentResponseDto
 import net.corda.libs.permissions.manager.response.GroupResponseDto
-import net.corda.libs.permissions.manager.response.UserResponseDto
 
 /**
  * The [PermissionGroupManager] provides functionality for managing groups within the permission system.
@@ -37,4 +36,9 @@ interface PermissionGroupManager {
      * Get a group in the RBAC Permission System identified by `GroupId`.
      */
     fun getGroupContent(groupId: String): GroupContentResponseDto?
+
+    /**
+     * Delete a group in the RBAC Permission System identified by `GroupId`.
+     */
+    fun deleteGroup(deleteGroupRequestDto: DeleteGroupRequestDto): GroupResponseDto
 }
