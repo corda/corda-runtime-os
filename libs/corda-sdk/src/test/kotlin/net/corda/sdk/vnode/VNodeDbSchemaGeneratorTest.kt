@@ -19,7 +19,7 @@ import org.mockito.kotlin.whenever
 import java.io.FileWriter
 import java.sql.Connection
 
-class VNodeDbSchemaGenetarorTest {
+class VNodeDbSchemaGeneratorTest {
 
     private val mockFileWriter = mock<FileWriter>()
 

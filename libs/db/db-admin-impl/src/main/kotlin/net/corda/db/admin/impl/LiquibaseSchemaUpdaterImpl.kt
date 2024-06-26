@@ -15,8 +15,9 @@ import liquibase.command.core.helpers.ChangeExecListenerCommandStep
 import liquibase.command.core.helpers.DatabaseChangelogCommandStep
 import liquibase.command.core.helpers.DbUrlConnectionArgumentsCommandStep
 import liquibase.command.core.helpers.ShowSummaryArgument
-import liquibase.io.WriterOutputStream
 import net.corda.db.admin.LiquibaseSchemaUpdater
+import org.apache.commons.io.FilenameUtils
+import org.apache.commons.io.output.WriterOutputStream
 import java.io.Writer
 
 class LiquibaseSchemaUpdaterImpl(
@@ -31,22 +32,29 @@ class LiquibaseSchemaUpdaterImpl(
         tag: String?
     ) {
         val scopeObjects = mapOf(
-            Scope.Attr.resourceAccessor.name to lb.resourceAccessor
+            Scope.Attr.resourceAccessor.name to lb.resourceAccessor,
+            // This is a temporary workaround till OSGi Manifest is fixed in the next LB version
+            Scope.Attr.classLoader.name to FilenameUtils::class.java.classLoader
         )
         Scope.child(scopeObjects) {
+            val classLoaderScopeObjects = mapOf(Scope.Attr.classLoader.name to Liquibase::class.java.classLoader)
             if (sql != null) {
                 commandScopeFactory(UpdateSqlCommandStep.COMMAND_NAME).configure(lb, tag).also {
                     it.setOutput(
-                        WriterOutputStream(
-                            sql,
-                            GlobalConfiguration.OUTPUT_FILE_ENCODING.currentValue
-                        )
+                        WriterOutputStream.Builder().apply {
+                            setWriter(sql)
+                            setCharset(GlobalConfiguration.OUTPUT_FILE_ENCODING.currentValue)
+                        }.get()
                     )
-                    it.execute()
+                    Scope.child(classLoaderScopeObjects) {
+                        it.execute()
+                    }
                 }
             } else {
                 commandScopeFactory(UpdateCommandStep.COMMAND_NAME).configure(lb, tag).also {
-                    it.execute()
+                    Scope.child(classLoaderScopeObjects) {
+                        it.execute()
+                    }
                 }
             }
         }

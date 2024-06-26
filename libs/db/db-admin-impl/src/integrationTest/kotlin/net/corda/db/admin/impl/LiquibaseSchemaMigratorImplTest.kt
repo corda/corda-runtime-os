@@ -6,8 +6,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.api.condition.DisabledOnOs
-import org.junit.jupiter.api.condition.OS
 import java.io.StringWriter
 
 class LiquibaseSchemaMigratorImplTest {
@@ -39,8 +37,6 @@ class LiquibaseSchemaMigratorImplTest {
         }
     }
 
-    //Disabled due to bug in liquibase. Should be re-enabled after upgrading to 4.28
-    @DisabledOnOs(OS.WINDOWS)
     @Test
     fun `when updateDb create DB schema`() {
         val lbm = LiquibaseSchemaMigratorImpl()
@@ -69,8 +65,6 @@ class LiquibaseSchemaMigratorImplTest {
         assertThat(tables).doesNotContain("postgres_table")
     }
 
-    //Disabled due to bug in liquibase. Should be re-enabled after upgrading to 4.28
-    @DisabledOnOs(OS.WINDOWS)
     @Test
     fun `when createUpdateSql generate DB schema`() {
         val lbm = LiquibaseSchemaMigratorImpl()
