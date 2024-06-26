@@ -112,7 +112,7 @@ internal class RestServerInternal(
                 createInsecureServer(config)
             }
 
-           config.http.defaultContentType = ContentType.APPLICATION_JSON.name
+            config.http.defaultContentType = ContentType.APPLICATION_JSON.name
 //            config.bundledPlugins.enableCors { cors ->
 //                cors.addRule { corsConfig ->
 //                    corsConfig.anyHost()
