@@ -13,6 +13,7 @@ import org.apache.http.client.config.RequestConfig
 import org.apache.http.conn.ssl.NoopHostnameVerifier
 import org.apache.http.conn.ssl.TrustAllStrategy
 import org.apache.http.impl.client.HttpClients
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager
 import org.apache.http.ssl.SSLContexts
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -148,7 +149,15 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
 private class FailureReportingInterceptor(private val client: ApacheClient, private val logger: Logger) : Interceptor {
     override fun onFail(e: Exception?, request: HttpRequestSummary?, config: Config?): HttpResponse<*> {
 
-        val connectionManager = client.manager
+        val clientFromConfig: ApacheClient? = config?.client as? ApacheClient
+        if (client === clientFromConfig) {
+            logger.info("Client is the same")
+        } else {
+            logger.info("Clients are different: $client vs. $clientFromConfig")
+        }
+
+        @Suppress("deprecation")
+        val connectionManager = client.manager ?: client.client.connectionManager as? PoolingHttpClientConnectionManager
         val statsString = if (connectionManager == null) {
             "Connection manager is null."
         } else {
@@ -158,7 +167,7 @@ private class FailureReportingInterceptor(private val client: ApacheClient, priv
             "Total pool stats: ${connectionManager.totalStats}. Routes stats: $routesStats."
         }
 
-        logger.error("Failed to process HTTP request ($request). $statsString", e)
+        logger.error("Failed to process HTTP request (${request?.asString()}). $statsString", e)
 
         return super.onFail(e, request, config)
     }
