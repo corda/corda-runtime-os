@@ -193,7 +193,7 @@ class CordaKafkaConsumerImplTest {
         cordaKafkaConsumer = createConsumer(consumer)
 
         doThrow(CommitFailedException()).whenever(consumer).commitSync()
-        assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
+        assertThatExceptionOfType(CordaMessageAPIIntermittentException::class.java).isThrownBy {
             cordaKafkaConsumer.syncCommitOffsets()
         }
         verify(consumer, times(1)).commitSync()
@@ -211,13 +211,13 @@ class CordaKafkaConsumerImplTest {
     }
 
     @Test
-    fun testCommitOffsetsFatal() {
+    fun testCommitOffsetsThrowIntermittent() {
         consumer = mock()
         cordaKafkaConsumer = createConsumer(consumer)
 
         val consumerRecord = CordaConsumerRecord(eventTopic, 1, 5L, "", "value", 0)
         doThrow(CommitFailedException()).whenever(consumer).commitSync(anyMap())
-        assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
+        assertThatExceptionOfType(CordaMessageAPIIntermittentException::class.java).isThrownBy {
             cordaKafkaConsumer.syncCommitOffsets(consumerRecord, "meta data")
         }
         verify(consumer, times(1)).commitSync(anyMap())
