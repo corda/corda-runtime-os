@@ -43,6 +43,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.time.Duration
 
 @Suppress("LongParameterList")
 @Component(service = [CertificatesClient::class])
@@ -74,6 +75,7 @@ class CertificatesClientImpl @Activate constructor(
         const val GROUP_NAME = "membership.db.certificates.client.group"
         const val CLIENT_NAME = "membership.db.certificates.client"
         const val PUBLISHER_NAME = "membership.certificates.publisher"
+        const val TIMEOUT_MS = 5000L
     }
 
     private var sender: RPCSender<CertificateRpcRequest, CertificateRpcResponse>? = null
@@ -112,7 +114,12 @@ class CertificatesClientImpl @Activate constructor(
     }
 
     override fun retrieveCertificates(holdingIdentityId: ShortHash?, usage: CertificateUsage, alias: String): String? {
-        return send<CertificateRetrievalRpcResponse>(holdingIdentityId, usage, RetrieveCertificateRpcRequest(alias))?.certificates
+        return send<CertificateRetrievalRpcResponse>(
+            holdingIdentityId,
+            usage,
+            RetrieveCertificateRpcRequest(alias),
+            Duration.ofMillis(TIMEOUT_MS),
+        )?.certificates
     }
 
     override fun setupLocallyHostedIdentity(
@@ -155,6 +162,7 @@ class CertificatesClientImpl @Activate constructor(
         holdingIdentityId: ShortHash?,
         usage: CertificateUsage,
         payload: Any,
+        timeout: Duration? = null,
     ): R? {
         val currentSender = sender
         return if (currentSender == null) {
@@ -170,7 +178,7 @@ class CertificatesClientImpl @Activate constructor(
                     holdingIdentityId?.value,
                     payload,
                 )
-            ).getOrThrow()?.response as? R
+            ).getOrThrow(timeout)?.response as? R
         }
     }
 

@@ -353,7 +353,7 @@ class CertificateRestResourceImpl @Activate constructor(
                 usageType,
                 alias
             )
-        } ?: throw ResourceNotFoundException(alias, "alias")
+        } ?: throw ResourceNotFoundException("alias", alias)
     }
 
     override val targetInterface = CertificateRestResource::class.java
