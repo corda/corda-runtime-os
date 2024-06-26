@@ -21,7 +21,6 @@ import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import java.time.ZonedDateTime
@@ -493,27 +492,24 @@ class RestServerOpenApiTest : RestServerTestBase() {
         }
     }
 
-    @Disabled("Will come back later")
     @Test
     fun `GET swagger UI should return html with reference to swagger json`() {
         val apiSpec = client.call(GET, WebRequest<Any>("swagger"))
         assertEquals(HttpStatus.SC_OK, apiSpec.responseStatus)
-        assertEquals("text/html", apiSpec.headers["Content-Type"])
+        assertEquals("text/html;charset=utf-8", apiSpec.headers["Content-Type"])
         val expected = """url: "/${context.basePath}/${apiVersion.versionPath}/swagger.json""""
         assertTrue(apiSpec.body!!.contains(expected))
     }
 
-    @Disabled("Will come back later")
     @Test
     fun `GET swagger UI with trailing slash in path should return html with reference to swagger json without trailing slash`() {
         val apiSpec = client.call(GET, WebRequest<Any>("swagger/"))
         assertEquals(HttpStatus.SC_OK, apiSpec.responseStatus)
-        assertEquals("text/html", apiSpec.headers["Content-Type"])
+        assertEquals("text/html;charset=utf-8", apiSpec.headers["Content-Type"])
         val expected = """url: "/${context.basePath}/${apiVersion.versionPath}/swagger.json""""
         assertTrue(apiSpec.body!!.contains(expected))
     }
 
-    @Disabled("Will come back later")
     @Test
     fun `GET swagger UI dependencies should return non empty result`() {
         val baseClient = TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${server.port}/")

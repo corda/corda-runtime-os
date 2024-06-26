@@ -37,8 +37,6 @@ internal object ContextUtils {
 
     private val log = LoggerFactory.getLogger(ContextUtils::class.java)
 
-    const val contentTypeApplicationJson = "application/json"
-
     private const val CORDA_X500_NAME = "O=HTTP REST Server, L=New York, C=US"
 
     private fun <T> withMDC(user: String, method: String, path: String, block: () -> T): T {
