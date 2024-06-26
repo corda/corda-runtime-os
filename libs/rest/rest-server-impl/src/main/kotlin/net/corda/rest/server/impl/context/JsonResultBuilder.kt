@@ -19,7 +19,7 @@ fun Context.buildJsonResult(result: Any?, returnType: Class<*>) {
             }
         }
         (result as? String) != null ->
-            ctx.contentType(ContentType.APPLICATION_JSON.name).result(result).status(ResponseCode.OK.statusCode)
+            ctx.contentType(ContentType.APPLICATION_JSON.mimeType).result(result).status(ResponseCode.OK.statusCode)
         result != null -> {
             // If the return type does not specify a response code (is not a HttpResponse) we default the status to 200 - OK.
             ctx.json(result).status(ResponseCode.OK.statusCode)
