@@ -112,7 +112,7 @@ internal class RestServerInternal(
                 createInsecureServer(config)
             }
 
-            config.http.defaultContentType = ContentType.APPLICATION_JSON.name
+            config.http.defaultContentType = ContentType.APPLICATION_JSON.mimeType
 //            config.bundledPlugins.enableCors { cors ->
 //                cors.addRule { corsConfig ->
 //                    corsConfig.anyHost()
@@ -295,7 +295,7 @@ internal class RestServerInternal(
             openApiInfoProviders.forEach { openApiInfoProvider ->
                 get(
                     openApiInfoProvider.pathForOpenApiJson
-                ) { ctx -> ctx.result(openApiInfoProvider.openApiString).contentType(ContentType.APPLICATION_JSON.name) }
+                ) { ctx -> ctx.result(openApiInfoProvider.openApiString).contentType(ContentType.APPLICATION_JSON.mimeType) }
                 get(openApiInfoProvider.pathForOpenApiUI, openApiInfoProvider.swaggerUIRenderer)
             }
             log.trace { "Add OpenApi route completed." }
