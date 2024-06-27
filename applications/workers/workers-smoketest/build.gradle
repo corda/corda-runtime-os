@@ -83,7 +83,6 @@ dependencies {
     smokeTestImplementation libs.bundles.test
     smokeTestRuntimeOnly libs.bundles.test.runtime
     smokeTestRuntimeOnly libs.log4j.slf4j
-    smokeTestRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.8.2'
 }
 
 def smokeTestResources = tasks.named('processSmokeTestResources', ProcessResources) {
