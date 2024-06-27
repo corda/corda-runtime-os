@@ -65,7 +65,7 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
         )
     }
 
-    private fun HttpRequest<*>.addOriginHeader() = header("Origin", "localhost")
+    private fun HttpRequest<*>.addOriginHeader() = header("Origin", "http://localhost")
 
     override fun <T> call(verb: HttpVerb, webRequest: WebRequest<T>, userName: String, password: String): WebResponse<String> {
         return doCall(verb, webRequest) {

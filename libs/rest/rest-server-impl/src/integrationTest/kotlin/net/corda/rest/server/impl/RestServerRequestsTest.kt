@@ -1,6 +1,8 @@
 package net.corda.rest.server.impl
 
 import com.google.gson.Gson
+import io.javalin.http.Header.ACCESS_CONTROL_ALLOW_CREDENTIALS
+import io.javalin.http.Header.ACCESS_CONTROL_ALLOW_ORIGIN
 import io.javalin.http.Header.CACHE_CONTROL
 import io.javalin.http.Header.WWW_AUTHENTICATE
 import net.corda.rest.server.apigen.test.TestJavaPrimitivesRestResourceImpl
@@ -104,10 +106,9 @@ class RestServerRequestsTest : RestServerTestBase() {
             password
         )
 
-        // Filipe: This test needs to be reviewed. The headers are not being set.
         assertEquals(HttpStatus.SC_OK, getPathResponse.responseStatus)
-//        assertEquals("localhost", getPathResponse.headers[ACCESS_CONTROL_ALLOW_ORIGIN])
-//        assertEquals("true", getPathResponse.headers[ACCESS_CONTROL_ALLOW_CREDENTIALS])
+        assertEquals("http://localhost", getPathResponse.headers[ACCESS_CONTROL_ALLOW_ORIGIN])
+        assertEquals("true", getPathResponse.headers[ACCESS_CONTROL_ALLOW_CREDENTIALS])
         assertEquals("no-cache", getPathResponse.headers[CACHE_CONTROL])
     }
 

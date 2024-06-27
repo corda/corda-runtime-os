@@ -113,18 +113,12 @@ internal class RestServerInternal(
             }
 
             config.http.defaultContentType = ContentType.APPLICATION_JSON.mimeType
-//            config.bundledPlugins.enableCors { cors ->
-//                cors.addRule { corsConfig ->
-//                    corsConfig.anyHost()
-//                    corsConfig.exposeHeader(ACCESS_CONTROL_ALLOW_ORIGIN)
-//                }
-//            }
-
-            config.registerPlugin(
-                CorsPlugin { cors ->
-                    cors.addRule { it.anyHost() }
+            config.bundledPlugins.enableCors { cors ->
+                cors.addRule { rule ->
+                    rule.reflectClientOrigin = true
+                    rule.allowCredentials = true
                 }
-            )
+            }
         }.apply {
             addRoutes()
             addOpenApiRoutes()
