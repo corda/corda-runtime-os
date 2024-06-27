@@ -1,13 +1,13 @@
 package net.corda.cli.plugins.network
 
-import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.network.utils.HoldingIdentityUtils
 import net.corda.cli.plugins.network.utils.inferCpiName
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
-import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.membership.lib.MemberInfoExtension
-import net.corda.membership.rest.v1.MGMRestResource
-import net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
+import net.corda.restclient.CordaRestClient
+import net.corda.restclient.generated.models.PreAuthTokenRequest
+import net.corda.sdk.network.MgmGeneratePreAuth
+import net.corda.sdk.packaging.CpiUploader
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test
 import picocli.CommandLine
 import java.io.File
 import java.util.UUID
+import kotlin.time.Duration.Companion.seconds
 
 class OnboardMemberTest {
     companion object {
@@ -27,13 +28,19 @@ class OnboardMemberTest {
         private val password = "--password=${DEFAULT_CLUSTER.rest.password}"
         private const val INSECURE = "--insecure=true"
 
-        private val mgmName = MemberX500Name.parse("O=MGM-${UUID.randomUUID()}, L=London, C=GB").toString()
+        private val mgmName = MemberX500Name.parse("O=MGM-${UUID.randomUUID()}, L=London, C=GB")
         private fun memberName() = MemberX500Name.parse("O=Member-${UUID.randomUUID()}, L=London, C=GB")
 
         private lateinit var outputStub: OutputStub
         private lateinit var command: OnboardMgm
         private lateinit var cpbLocation: String
         private lateinit var defaulGroupPolicyLocation: String
+        private val restClient = CordaRestClient.createHttpClient(
+            baseUrl = DEFAULT_CLUSTER.rest.uri,
+            username = user,
+            password = password,
+            insecure = true,
+        )
 
         @BeforeAll
         @JvmStatic
@@ -44,7 +51,7 @@ class OnboardMemberTest {
             defaulGroupPolicyLocation = "${System.getProperty("user.home")}/.corda/gp/groupPolicy.json"
 
             CommandLine(command).execute(
-                mgmName,
+                mgmName.toString(),
                 targetUrl,
                 user,
                 password,
@@ -83,7 +90,7 @@ class OnboardMemberTest {
         )
 
         outputStub.lookup(member)
-        assertThat(outputStub.getAllPartyNames().contains(member.toString())).isTrue
+        assertThat(outputStub.getAllPartyNames().contains(member)).isTrue
     }
 
     @Test
@@ -111,7 +118,7 @@ class OnboardMemberTest {
         )
 
         outputStub.lookup(member)
-        assertThat(outputStub.getAllPartyNames().contains(member.toString())).isTrue
+        assertThat(outputStub.getAllPartyNames().contains(member)).isTrue
     }
 
     @Test
@@ -157,7 +164,7 @@ class OnboardMemberTest {
         )
 
         outputStub.lookup(member)
-        assertThat(outputStub.getAllPartyNames().contains(member.toString())).isTrue
+        assertThat(outputStub.getAllPartyNames().contains(member)).isTrue
     }
 
     @Test
@@ -177,7 +184,7 @@ class OnboardMemberTest {
         )
 
         outputStub.lookup(member)
-        assertThat(outputStub.getAllPartyNames().contains(member.toString())).isTrue
+        assertThat(outputStub.getAllPartyNames().contains(member)).isTrue
     }
 
     @Test
@@ -205,10 +212,8 @@ class OnboardMemberTest {
 
     private fun OnboardMgm.getExistingCpiHash(): String {
         val cpiName = inferCpiName(File(cpbLocation), File(defaulGroupPolicyLocation))
-        return createRestClient(CpiUploadRestResource::class).use { client ->
-            val response = client.start().proxy.getAllCpis()
-            response.cpis.first { it.id.cpiName == cpiName }.cpiFileChecksum
-        }
+        val cpisFromCluster = CpiUploader(restClient).getAllCpis(wait = waitDurationSeconds.seconds).cpis
+        return cpisFromCluster.first { it.id.cpiName == cpiName }.cpiFileChecksum
     }
 
     private fun OnboardMgm.createPreAuthToken(member: String): String {
@@ -217,12 +222,10 @@ class OnboardMemberTest {
             mgmName,
             null,
         )
-        return createRestClient(MGMRestResource::class).use { client ->
-            client.start().proxy.generatePreAuthToken(
-                holdingIdentity,
-                PreAuthTokenRequest(member),
-            ).id
-        }
+        return MgmGeneratePreAuth(restClient).generatePreAuthToken(
+            holdingIdentityShortHash = holdingIdentity,
+            request = PreAuthTokenRequest(member),
+        ).id
     }
 
     private fun OutputStub.lookup(memberName: MemberX500Name) {

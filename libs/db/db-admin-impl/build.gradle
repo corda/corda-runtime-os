@@ -11,18 +11,15 @@ dependencies {
     compileOnly "org.osgi:osgi.annotation"
     implementation "org.slf4j:slf4j-api"
     compileOnly "org.osgi:org.osgi.service.component.annotations"
+    // Commons IO is needed in liquibase which causes OSGi enabled liquibase tests to fail unless it is imported
+    implementation libs.commonsio
 
-    implementation "org.liquibase:liquibase-core:$liquibaseVersion"
-    constraints {
-        implementation(libs.snakeyaml) {
-            because "required until liquibase-core updates it's internal version of snakeYaml, currently using 1.33 which has CVE-2022-1471"
-        }
-    }
+    implementation libs.liquibase
 
     api project(":libs:db:db-admin")
 
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
-    runtimeOnly "org.liquibase:liquibase-core:$liquibaseVersion"
+    runtimeOnly libs.liquibase
     // NOTE: this is needed by Liquibase but for some reason not picked up automatically.
     runtimeOnly "commons-beanutils:commons-beanutils:$beanutilsVersion"
 

@@ -65,7 +65,13 @@ class LinkManagerWorker @Activate constructor(
         )
         Health.configure(webServer, lifecycleRegistry)
 
-        configureTracing("P2P Link Manager Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
+        logger.info("Trace tags captured from the CLI: ${params.defaultParams.extraTraceTags}")
+        configureTracing(
+            "P2P Link Manager Worker",
+            params.defaultParams.zipkinTraceUrl,
+            params.defaultParams.traceSamplesPerSecond,
+            params.defaultParams.extraTraceTags
+        )
 
         val config = WorkerHelpers.getBootstrapConfig(
             secretsServiceFactoryResolver,

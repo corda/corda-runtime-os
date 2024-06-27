@@ -10,7 +10,7 @@ import net.corda.messaging.emulation.topic.service.TopicService
 import org.osgi.service.component.annotations.Component
 
 @Component(service = [TopicService::class])
-class TopicServiceImpl(
+internal class TopicServiceImpl(
     private val config: InMemoryConfiguration = InMemoryConfiguration(),
     private val topics: Topics = Topics(config)
 ) : TopicService {

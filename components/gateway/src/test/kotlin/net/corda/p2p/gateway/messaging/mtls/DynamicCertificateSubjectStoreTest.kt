@@ -93,8 +93,8 @@ class DynamicCertificateSubjectStoreTest {
                 TOPIC,
                 KEY_1,
                 ClientCertificateSubjects(
-                    "C=GB,  O=Alice, L=London"
-                )
+                    "C=GB,  O=Alice, L=London",
+                ),
             ),
             null,
             emptyMap(),
@@ -110,8 +110,8 @@ class DynamicCertificateSubjectStoreTest {
                 TOPIC,
                 KEY_1,
                 ClientCertificateSubjects(
-                    SUBJECT_1
-                )
+                    SUBJECT_1,
+                ),
             ),
             null,
             emptyMap(),
@@ -123,7 +123,7 @@ class DynamicCertificateSubjectStoreTest {
                 null,
             ),
             ClientCertificateSubjects(
-                "C=GB,  O=Alice, L=London"
+                "C=GB,  O=Alice, L=London",
             ),
             emptyMap(),
         )

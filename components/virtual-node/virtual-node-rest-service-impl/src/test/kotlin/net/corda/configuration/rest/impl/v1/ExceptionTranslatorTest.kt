@@ -31,7 +31,9 @@ class ExceptionTranslatorTest {
         val httpApiException = ExceptionTranslator.translate(exception)
 
         assertEquals(BadRequestException::class.java, httpApiException::class.java)
-        assertEquals("test", httpApiException.message)
+        assertEquals(BadRequestException::class.java.simpleName, httpApiException.message)
+        assertEquals(IllegalArgumentException::class.java.name, httpApiException.exceptionDetails!!.cause)
+        assertEquals("test", httpApiException.exceptionDetails!!.reason)
     }
 
     @Test
@@ -41,7 +43,9 @@ class ExceptionTranslatorTest {
         val httpApiException = ExceptionTranslator.translate(exception)
 
         assertEquals(BadRequestException::class.java, httpApiException::class.java)
-        assertEquals("test", httpApiException.message)
+        assertEquals(BadRequestException::class.java.simpleName, httpApiException.message)
+        assertEquals(CpiNotFoundException::class.java.name, httpApiException.exceptionDetails!!.cause)
+        assertEquals("test", httpApiException.exceptionDetails!!.reason)
     }
 
     @Test
@@ -51,7 +55,9 @@ class ExceptionTranslatorTest {
         val httpApiException = ExceptionTranslator.translate(exception)
 
         assertEquals(ResourceAlreadyExistsException::class.java, httpApiException::class.java)
-        assertEquals("test", httpApiException.message)
+        assertEquals(VirtualNodeAlreadyExistsException::class.java.simpleName, httpApiException.message)
+        assertEquals(VirtualNodeAlreadyExistsException::class.java.name, httpApiException.exceptionDetails!!.cause)
+        assertEquals("test", httpApiException.exceptionDetails!!.reason)
     }
 
     @Test
@@ -61,6 +67,8 @@ class ExceptionTranslatorTest {
         val httpApiException = ExceptionTranslator.translate(exception)
 
         assertEquals(InternalServerException::class.java, httpApiException::class.java)
-        assertEquals("test", httpApiException.message)
+        assertEquals("Internal server error.", httpApiException.message)
+        assertEquals(Exception::class.java.name, httpApiException.exceptionDetails!!.cause)
+        assertEquals("test", httpApiException.exceptionDetails!!.reason)
     }
 }

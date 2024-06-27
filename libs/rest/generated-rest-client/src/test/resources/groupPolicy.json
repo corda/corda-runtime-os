@@ -1,0 +1,33 @@
+{
+  "fileFormatVersion" : 1,
+  "groupId" : "af04c544-09b4-4f40-a59f-01241fe50e74",
+  "registrationProtocol" : "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
+  "synchronisationProtocol" : "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
+  "protocolParameters" : {
+    "sessionKeyPolicy" : "Distinct"
+  },
+  "p2pParameters" : {
+    "tlsTrustRoots" : [ "-----BEGIN CERTIFICATE-----\nMIIENTCCAp2gAwIBAgIBAjANBgkqhkiG9w0BAQsFADBNMQswCQYDVQQGEwJVSzEP\nMA0GA1UEAwwGcjMuY29tMS0wKwYDVQQLDCQ2ZTBhNDM3OS00Yjk3LTQ1MTAtODNk\nZi05Y2RlODg4YWIxZWIwHhcNMjQwNTAxMTQ1OTQwWhcNMjQwNTMxMTQ1OTQwWjBN\nMQswCQYDVQQGEwJVSzEPMA0GA1UEAwwGcjMuY29tMS0wKwYDVQQLDCQ2ZTBhNDM3\nOS00Yjk3LTQ1MTAtODNkZi05Y2RlODg4YWIxZWIwggGiMA0GCSqGSIb3DQEBAQUA\nA4IBjwAwggGKAoIBgQDe/vg+OQnjHGkGEt0QZFxPMgJDTCctCTeFiSZP01CtJ5q9\n1EMKSwevdX1p9NNBzYdWF2cKHKpCJJLhqIInSvCp1mgWYvjr4mny98P8HDXCeAHg\nDD9q1KKmHcUJdK0E73pkLOtUb7g/6IKw2b19EfIWjVF6IGNxHt/PI8g5LUPBNvxx\nSlAORoyac6D0MxemCFR90j5UneV8dICpllcicCoJ67sfx50+Hd39wnv9F6SpHFjy\noixCL6JckaCi78/1Z4+LxPpTu1CAJjlmGCbAVsO9Uz7F6WOOtgjUn6s+pIAciexK\ndM1XnbIySRAdLEKbcbQoth8CHadFuV1P49VOuSoR1Z8+geFjYqD69a93Dxyert6/\nnE2V3BdnSGo0IbsIHz1yleZzA8ISrwZ+UGJ9DlgY8T/tmk9/A8uNRSvBFjxEwjCH\nJs7rRAQNsWUiS9Po2UqolcTl0cY98Ai2TLtX47Eu6QE7zmF5kcJK5iJXLONiYU+t\nB4L31WE3nU1W1Zyg3tECAwEAAaMgMB4wDwYDVR0TAQH/BAUwAwEB/zALBgNVHQ8E\nBAMCAa4wDQYJKoZIhvcNAQELBQADggGBABqjzbEFGmThoNx0XSd+rrQpzsj5I6aD\n7/i16IPx0ZgUPI23TAzIpoEFCgr5JebEWSgeVD8Paj+B2zMU4NQpmCz9wfJR1QGT\nKLh3dKos0zuTMNsJICBjXy9UFI+GMrkiMvMPUe7UvuhrOvK7VWzfNntCcQhkaiX4\n9HkuEbaXlMjokXIL4DyGy9DLxb2n6OrbeSx8PH/ENVMRMwlCtKIwdgM7+AjxDUgb\nerEiKVdxNEXcmp+J6Iv4enm0cuMda04yDfoR41us+Bc1EEH/X+6Zk13iWmm+xtDr\nVv7zRc3rBPsKVnj+p3zjpruD6ejW4h3i/nlz7sXcpTumHQjgeTHLKy8TvjH7zat9\nxSm5QK/Mcznth+eZ/lHbh1uBdo1bYKn+854X4ltEbS3SgsHkCb/RFdL1ol37N9Uf\niFWZUty0SzcUwU486kfYUotfZPlTodr8LFQZzSHYh8vuS7p/c8Z4nCZPeXAy2aME\nEoCdfVvaqIUTPnIxBEsb6g5tJ4AHFNzllA==\n-----END CERTIFICATE-----\n" ],
+    "sessionPki" : "NoPKI",
+    "tlsPki" : "Standard",
+    "tlsVersion" : "1.3",
+    "protocolMode" : "Authenticated_Encryption",
+    "tlsType" : "OneWay"
+  },
+  "mgmInfo" : {
+    "corda.cpi.name" : "MGM-a68d6761-f4ba-4612-bf07-21c340e515e1",
+    "corda.cpi.signer.summary.hash" : "SHA-256:CBB2719A48006321C6676E3715D0EFE49E902E8867DA2C917000724EB4850D21",
+    "corda.cpi.version" : "1.0",
+    "corda.ecdh.key" : "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAESmskOemywcdHpJqoETuqAvp0VQA6\nYiqpTUyxO8JQcNv7nkKWfCvqO8uyout5u1xomrC8QGPoEIfAHMQAzub1zA==\n-----END PUBLIC KEY-----\n",
+    "corda.endpoints.0.connectionURL" : "https://localhost:8080",
+    "corda.endpoints.0.protocolVersion" : "1",
+    "corda.groupId" : "af04c544-09b4-4f40-a59f-01241fe50e74",
+    "corda.name" : "O=MGM-50a8bbc0-6f47-493e-9cc8-ed1971858f5e, L=London, C=GB",
+    "corda.session.keys.0.hash" : "SHA-256:CB77F162D07286BC411BAEEF6C0C1D85A78BB47751AFC4A142F0E4B45CB10FE4",
+    "corda.session.keys.0.pem" : "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE2ht+VtGqfeyg06fFyowaD9c6XZZM\n1W/K+pecjo3goARqNlPYI626nyOBRh/QFeVhzLeKBe4WbEkHljdWLUSJ7w==\n-----END PUBLIC KEY-----\n",
+    "corda.softwareVersion" : "5.3.0.0-beta-1714402943997",
+    "corda.platformVersion" : "50300",
+    "corda.serial" : "1"
+  },
+  "cipherSuite" : { }
+}

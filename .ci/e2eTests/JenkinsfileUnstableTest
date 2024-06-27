@@ -1,9 +1,9 @@
-@Library('corda-shared-build-pipeline-steps@5.2') _
+@Library('corda-shared-build-pipeline-steps@5.3') _
 
 endToEndPipeline(
     assembleAndCompile: true,
     multiCluster: true,
-    gradleTestTargetsToExecute: ['smokeTest', 'e2eTest'],
+    gradleTestTargetsToExecute: ['smokeTest'],
     usePackagedCordaHelmChart: false,
     gradleAdditionalArgs : '-PrunUnstableTests -Dscan.tag.UnstableTests',
     javaVersion: '17'

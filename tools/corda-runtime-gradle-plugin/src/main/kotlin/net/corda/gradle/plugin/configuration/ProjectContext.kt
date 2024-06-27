@@ -1,7 +1,10 @@
 package net.corda.gradle.plugin.configuration
 
+import net.corda.gradle.plugin.cordalifecycle.EnvironmentSetupHelper
+import net.corda.restclient.CordaRestClient
 import org.gradle.api.Project
 import org.gradle.api.logging.Logger
+import java.net.URI
 
 /**
  * Class which holds all the context properties for the gradle build. This is split between:
@@ -20,8 +23,8 @@ class ProjectContext(val project: Project, pluginConfig: PluginConfiguration) {
     val composeFilePath: String = pluginConfig.composeFilePath.get()
     val composeNetworkName: String = pluginConfig.composeNetworkName.get()
     val notaryVersion: String = pluginConfig.notaryVersion.get()
+    val runtimeVersion: String = pluginConfig.runtimeVersion.get()
     val cordaBinDir: String = pluginConfig.cordaBinDir.get()
-    val cordaCliBinDir: String = pluginConfig.cordaCliBinDir.get()
     val artifactoryUsername: String = pluginConfig.artifactoryUsername.get()
     val artifactoryPassword: String = pluginConfig.artifactoryPassword.get()
     val notaryCpiName: String = pluginConfig.notaryCpiName.get()
@@ -30,27 +33,31 @@ class ProjectContext(val project: Project, pluginConfig: PluginConfiguration) {
     val vnodeRegistrationTimeout: Long = pluginConfig.vnodeRegistrationTimeout.get().toLong()
     val cordaProcessorTimeout: Long = pluginConfig.cordaProcessorTimeout.get().toLong()
     val workflowsModuleName: String = pluginConfig.workflowsModuleName.get()
+    val notaryModuleName: String = pluginConfig.notaryModuleName.get()
     val networkConfigFile: String = pluginConfig.networkConfigFile.get()
     val r3RootCertFile: String = "${project.rootDir}/${pluginConfig.r3RootCertFile.get()}"
 
     // Set Non user configurable context properties
     val javaBinDir: String = "${System.getProperty("java.home")}/bin"
     val cordaPidCache: String = "${project.rootDir}/$workspaceDir/CordaPIDCache.dat"
-    val jdbcDir: String = "$cordaBinDir/jdbcDrivers"
     val notaryServiceDir: String = "$cordaBinDir/notaryServer"
     val workflowBuildDir: String = "${project.rootDir}/${workflowsModuleName}/build"
 
     val cordaClusterHost: String = cordaClusterURL.split("://").last().split(":").first()
     val cordaClusterPort: Int = cordaClusterURL.split("://").last().split(":").last().toInt()
 
-    val notaryCpbFilePath: String = "$notaryServiceDir/notary-plugin-non-validating-server-$notaryVersion-package.cpb"
+    val nonValidatingNotaryCpbFilePath: String = "$notaryServiceDir/notary-plugin-non-validating-server-$notaryVersion-package.cpb"
+    val contractVerifyingNotaryCpbFilePath: String = "${project.rootDir}/${notaryModuleName}/build/libs/" +
+            "${notaryModuleName}-${project.version}-package.cpb"
     val notaryCpiFilePath: String = "$workflowBuildDir/$notaryCpiName-${project.version}.cpi"
     val corDappCpbFilePath: String = "$workflowBuildDir/libs/${workflowsModuleName}-${project.version}-package.cpb"
     val corDappCpiFilePath: String = "$workflowBuildDir/$corDappCpiName-${project.version}.cpi"
-    val corDappCpiUploadStatusFilePath: String = "$workspaceDir/corDappCpiUploadStatus.json"
-    val notaryCpiUploadStatusFilePath: String = "$workspaceDir/notaryCpiUploadStatus.json"
+    val corDappCpiChecksumFilePath: String = "$workspaceDir/corDappCpiChecksum.json"
+    val notaryCpiChecksumFilePath: String = "$workspaceDir/notaryCpiChecksum.json"
+    val mgmCorDappCpiChecksumFilePath: String = "$workspaceDir/mgmCorDappCpiChecksum.json"
 
     val networkConfig: NetworkConfig = NetworkConfig("${project.rootDir}/${networkConfigFile}")
+    val isNotaryNonValidating: Boolean = EnvironmentSetupHelper().isNotaryNonValidating(networkConfig)
     val groupPolicyFilePath: String = "${project.rootDir}/$workspaceDir/GroupPolicy.json"
     val gradleDefaultCertAlias: String = "gradle-plugin-default-key"
     val gradleDefaultCertFilePath: String = "${project.rootDir}/config/gradle-plugin-default-key.pem"
@@ -59,6 +66,11 @@ class ProjectContext(val project: Project, pluginConfig: PluginConfiguration) {
     val keystoreFilePath: String = "${project.rootDir}/$workspaceDir/signingkeys.pfx"
     val keystoreCertFilePath: String = "${project.rootDir}/$workspaceDir/signingkey1.pem"
     val r3RootCertKeyAlias: String = "digicert-ca"
+    val mgmCpiName: String? = networkConfig.getMgmNode()?.cpi
+    val mgmCorDappCpiFilePath: String = "$workspaceDir/$corDappCpiName.cpi"
+    val certificateAuthorityFilePath: String = "$workspaceDir/ca"
 
+    val restClient: CordaRestClient = CordaRestClient.createHttpClient(URI.create(cordaClusterURL), cordaRestUser, cordaRestPassword, true)
     val logger: Logger = project.logger
+
 }

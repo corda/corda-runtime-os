@@ -6,12 +6,13 @@ import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.JsonCreateVirtualNodeRequest
 import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceAlreadyExistsException
 import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.json.serialization.JsonObjectAsString
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.OperationalStatus
@@ -272,16 +273,16 @@ class VirtualNodeValidationServiceImplTest {
         cryptoDmlConnection: String? = "cddl",
         uniquenessDdlConnection: String? = "uddl",
         uniquenessDmlConnection: String? = "udml"
-    ): CreateVirtualNodeRequest {
-        return CreateVirtualNodeRequest(
+    ): JsonCreateVirtualNodeRequest {
+        return JsonCreateVirtualNodeRequest(
             x500Name,
             cpiShortFileChecksum,
-            vaultDdlConnection,
-            vaultDmlConnection,
-            cryptoDdlConnection,
-            cryptoDmlConnection,
-            uniquenessDdlConnection,
-            uniquenessDmlConnection,
+            vaultDdlConnection?.let { JsonObjectAsString(it) },
+            vaultDmlConnection?.let { JsonObjectAsString(it) },
+            cryptoDdlConnection?.let { JsonObjectAsString(it) },
+            cryptoDmlConnection?.let { JsonObjectAsString(it) },
+            uniquenessDdlConnection?.let { JsonObjectAsString(it) },
+            uniquenessDmlConnection?.let { JsonObjectAsString(it) },
         )
     }
 }

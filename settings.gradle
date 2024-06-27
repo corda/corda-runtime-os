@@ -75,6 +75,7 @@ include 'applications:tools:metrics-webserver'
 include 'applications:tools:p2p-test:app-simulator'
 include 'applications:tools:p2p-test:fake-ca'
 include 'applications:tools:p2p-test:dump-topic'
+include 'applications:tools:universal-blob-inspector'
 include 'applications:workers:release:combined-worker'
 include 'applications:workers:release:crypto-worker'
 include 'applications:workers:release:db-worker'
@@ -232,6 +233,7 @@ include 'libs:configuration:configuration-merger'
 include 'libs:configuration:configuration-osgi-test'
 include 'libs:configuration:configuration-schema:p2p'
 include 'libs:configuration:configuration-validation'
+include 'libs:corda-sdk'
 include 'libs:crypto:cipher-suite'
 include 'libs:crypto:cipher-suite-impl'
 include 'libs:crypto:crypto-config-impl'
@@ -257,6 +259,7 @@ include 'libs:flows:flow-api'
 include 'libs:flows:session-manager'
 include 'libs:flows:session-manager-impl'
 include 'libs:flows:flow-utils'
+include 'libs:rest:generated-rest-client'
 include 'libs:rest:rest'
 include 'libs:rest:rest-security-read'
 include 'libs:rest:rest-tools'
@@ -266,7 +269,6 @@ include 'libs:rest:rest-server-impl'
 include 'libs:rest:ssl-cert-read'
 include 'libs:rest:ssl-cert-read-impl'
 include 'libs:rest:rest-common'
-include 'libs:rest:rest-client'
 include 'libs:rest:rest-test-common'
 include 'libs:rest:rbac-security-manager'
 include 'libs:kotlin-heap-fix'
@@ -316,6 +318,7 @@ include 'libs:permissions:permission-storage-writer'
 include 'libs:permissions:permission-storage-writer-impl'
 include 'libs:platform-info'
 include 'libs:p2p-crypto'
+include 'libs:p2p-messaging'
 include 'libs:packaging:packaging'
 include 'libs:packaging:packaging-core'
 include 'libs:packaging:packaging:test:contract-cpk'
@@ -467,6 +470,7 @@ include 'testing:sandboxes:test-api'
 include 'testing:sandbox-stresstests'
 include 'testing:sandboxes-testkit'
 include 'testing:security-manager-utilities'
+include 'testing:slf4jv1'
 include 'testing:test-serialization'
 include 'testing:test-state-manager'
 include 'testing:test-utilities'
@@ -476,17 +480,21 @@ include 'testing:cpi-info-read-service-fake'
 include 'testing:virtual-node-info-read-service-fake'
 include 'testing:group-policy-test-common'
 include 'tools:corda-runtime-gradle-plugin'
+include 'tools:corda-cli'
+include 'tools:corda-cli:app'
 include 'tools:plugins:plugins-rest'
 include 'tools:plugins:db-config'
 include 'tools:plugins:initial-config'
 include 'tools:plugins:initial-rbac'
 include 'tools:plugins:network'
 include 'tools:plugins:package'
+include 'tools:plugins:profile'
 include 'tools:plugins:preinstall'
 include 'tools:plugins:secret-config'
 include 'tools:plugins:topic-config'
-include 'tools:plugins:upgrade'
 include 'tools:plugins:virtual-node'
+include 'tools:plugins:cpi'
+include 'tools:plugins:common-utils'
 
 // The following logic dictates if we use the composite build gradle functionality,
 // If this evaluates to true local source code will be used in place of binary dependencies.
@@ -511,15 +519,6 @@ if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
             substitute module('net.corda:corda-membership') using project(':membership')
             substitute module('net.corda:corda-serialization') using project(':serialization')
             substitute module('net.corda:corda-notary-plugin') using project(':ledger:notary-plugin')
-        }
-    }
-}
-if (compositeBuild.toBoolean() && file(cordaCliHostLocation).exists()) {
-    includeBuild(cordaCliHostLocation) {
-        dependencySubstitution {
-            substitute module("net.corda.cli.host:corda-cli") using project(":app")
-            substitute module("net.corda.cli.host:api") using project(":api")
-            substitute module("net.corda.cli.host:plugins") using project(":plugins")
         }
     }
 }
@@ -555,3 +554,4 @@ gradleEnterprise {
         }
     }
 }
+

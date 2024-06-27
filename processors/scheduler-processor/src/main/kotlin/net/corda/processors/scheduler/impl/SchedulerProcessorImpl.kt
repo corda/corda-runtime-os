@@ -55,6 +55,7 @@ class SchedulerProcessorImpl @Activate constructor(
         private const val LEDGER_REPAIR_SCHEDULE_PERIOD_SYSTEM_PROPERTY =  "net.corda.ledger.utxo.repair.schedulePeriod"
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private val defaultLedgerRepairSchedulePeriod = Duration.of(10, ChronoUnit.MINUTES).toSeconds()
+        private const val SEVEN_DAYS_IN_SECONDS = 604800L
     }
 
     private val dependentComponents = DependentComponents.of(
@@ -82,6 +83,10 @@ class SchedulerProcessorImpl @Activate constructor(
         Schedule(
             ScheduledTask.SCHEDULE_TASK_NAME_FLOW_STATUS_CLEANUP,
             60, ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_STATUS_PROCESSOR
+        ),
+        Schedule(
+            ScheduledTask.SCHEDULED_TASK_NAME_STALE_P2P_SESSION_CLEANUP,
+            SEVEN_DAYS_IN_SECONDS, ScheduledTask.SCHEDULED_TASK_TOPIC_STALE_P2P_SESSION_PROCESSOR
         ),
         // TODO CORE-16331 Add configuration with a default of 10 minutes under the ledger.repair configuration section
         Schedule(

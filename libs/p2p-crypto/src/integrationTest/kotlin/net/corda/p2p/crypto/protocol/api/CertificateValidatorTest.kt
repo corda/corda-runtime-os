@@ -24,10 +24,9 @@ class CertificateValidatorTest {
         ByteArrayInputStream(Certificates.aliceKeyStorePem.readBytes()),
     ).publicKey
     private val wrongPublicKey = certificateFactory.generateCertificate(
-        ByteArrayInputStream(Certificates.bobKeyStorePem.readBytes()),
+        ByteArrayInputStream(Certificates.ecTrustStorePem.readBytes()),
     ).publicKey
     private val trustStore = listOf(Certificates.truststoreCertificatePem.readText())
-    private val trustStoreWithRevocation = listOf(Certificates.truststoreCertificatePem.readText())
     private val wrongTrustStore = listOf(Certificates.c4TruststoreCertificatePem.readText())
     private val revokedResponse = RevocationCheckResponse(Revoked("The certificate was revoked.", 0))
 
@@ -63,7 +62,7 @@ class CertificateValidatorTest {
 
     @Test
     fun `if public key does not match validation fails`() {
-        val validator = CertificateValidator(RevocationCheckMode.HARD_FAIL, trustStoreWithRevocation, { RevocationCheckResponse(Active()) })
+        val validator = CertificateValidator(RevocationCheckMode.HARD_FAIL, trustStore, { RevocationCheckResponse(Active()) })
         assertThrows<InvalidPeerCertificate> { validator.validate(listOf(aliceCert), aliceX500Name, wrongPublicKey) }
     }
 }

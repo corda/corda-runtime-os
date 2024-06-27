@@ -50,6 +50,7 @@ dependencies {
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly libs.postgresql.jdbc
     integrationTestRuntimeOnly libs.slf4j.simple
+    integrationTestRuntimeOnly project(':testing:slf4jv1')
 
     testImplementation project(":libs:crypto:crypto-impl")
     testImplementation project(":libs:membership:membership-impl")

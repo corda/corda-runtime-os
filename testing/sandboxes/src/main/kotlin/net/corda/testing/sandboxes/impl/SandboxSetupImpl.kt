@@ -191,7 +191,17 @@ class SandboxSetupImpl @Activate constructor(
             remainingMillis -= waitMillis
         }
         val serviceDescription = serviceType.name + (filter?.let { f -> ", filter=$f" } ?: "")
-        throw TimeoutException("Service $serviceDescription did not arrive in $timeout milliseconds")
+        // List bundles available to give more information why the service cannot be found
+        val bundlesAsString = bundleContext.bundles.names.joinToString(separator = "\n\t", prefix = "\t")
+        ("Service $serviceDescription did not arrive in $timeout ms. " +
+                "The following bundles were available at that time:\n$bundlesAsString").let {
+            logger.error(it)
+            throw TimeoutException(it)
+        }
+    }
+
+    private val Array<Bundle>.names: Set<String> get() {
+        return mapTo(LinkedHashSet()) { "${it.symbolicName}:${it.version}" }
     }
 
     override fun withCleanup(closeable: AutoCloseable) {

@@ -39,7 +39,9 @@ open class VNodeSetupTask @Inject constructor(objects: ObjectFactory) : DefaultT
     @TaskAction
     fun deployCPIs() {
         val pc = ProjectContext(project, pluginConfig.get())
-        NetworkTasksImpl(pc).createVNodes()
-        NetworkTasksImpl(pc).registerVNodes()
+        pc.logger.quiet("Creating virtual nodes...")
+        val nodes = pc.networkConfig.getVNodesWhoAreNotMgm()
+        NetworkTasksImpl(pc).createVNodes(requiredNodes = nodes)
+        NetworkTasksImpl(pc).registerVNodes(requiredNodes = nodes)
     }
 }

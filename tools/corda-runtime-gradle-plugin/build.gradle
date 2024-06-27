@@ -3,6 +3,7 @@ plugins {
     id 'corda.javadoc-generation'
     id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'org.jetbrains.kotlin.jvm'
+    id 'corda.common-library'
 }
 
 ext {
@@ -18,9 +19,68 @@ repositories {
     mavenCentral()
 }
 
+
+sourceSets {
+    smokeTest {
+        java {
+            srcDirs += ['src/smokeTest/java']
+        }
+        kotlin {
+            srcDirs += ['src/smokeTest/kotlin']
+        }
+        resources {
+            srcDirs = ['src/smokeTest/resources']
+        }
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+
+kotlin {
+    target {
+        java
+        compilations.smokeTest {
+            associateWith compilations.main
+            associateWith compilations.test
+
+            configurations {
+                smokeTestApi.extendsFrom testApi
+                smokeTestImplementation.extendsFrom testImplementation
+                smokeTestRuntimeOnly.extendsFrom testRuntimeOnly
+            }
+        }
+    }
+}
+
+tasks.register('cordaRuntimeGradlePluginSmokeTest', Test) {
+    description = "Runs smoke tests for Corda Runtime Gradle Plugin."
+    group = "verification"
+
+    testClassesDirs = project.sourceSets["smokeTest"].output.classesDirs
+    classpath = project.sourceSets["smokeTest"].runtimeClasspath
+}
+
 dependencies {
+    implementation libs.jackson.module.kotlin
+    implementation libs.jackson.datatype.jsr310
     implementation libs.unirest.java
     implementation libs.unirest.objectmapper.jackson
+    implementation project(':components:membership:membership-rest')
+    implementation project(':libs:crypto:certificate-generation')
+    implementation project(':libs:configuration:configuration-endpoints')
+    implementation project(':libs:corda-sdk')
+    implementation project(':libs:external-messaging')
+    implementation project(':libs:membership:certificates-common')
+    implementation project(':libs:membership:membership-common')
+    implementation project(':libs:rest:json-serialization')
+    implementation project(':libs:rest:generated-rest-client')
+    implementation project(':libs:virtual-node:cpi-upload-endpoints')
+    implementation project(':libs:virtual-node:virtual-node-endpoints')
+    implementation project(':libs:virtual-node:virtual-node-endpoints-maintenance')
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-config-schema'
+
     testImplementation libs.bundles.test
     testImplementation libs.javalin
     testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinCoroutinesVersion"

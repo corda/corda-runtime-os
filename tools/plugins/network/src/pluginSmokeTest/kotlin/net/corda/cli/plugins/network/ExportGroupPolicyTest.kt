@@ -2,6 +2,7 @@ package net.corda.cli.plugins.network
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.cli.plugins.network.utils.HoldingIdentityUtils
+import net.corda.crypto.core.ShortHash
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
@@ -21,18 +22,18 @@ class ExportGroupPolicyTest {
         private val password = "--password=${DEFAULT_CLUSTER.rest.password}"
         private const val INSECURE = "--insecure=true"
 
-        private val mgmName = MemberX500Name.parse("O=MGM-${UUID.randomUUID()}, L=London, C=GB").toString()
+        private val mgmName = MemberX500Name.parse("O=MGM-${UUID.randomUUID()}, L=London, C=GB")
         private val groupPolicyFile = File(
             File(File(File(System.getProperty("user.home")), ".corda"), "gp"),
             "groupPolicy.json",
         )
-        private lateinit var holdingIdentity: String
+        private lateinit var holdingIdentity: ShortHash
 
         @BeforeAll
         @JvmStatic
         fun setup() {
             CommandLine(OnboardMgm()).execute(
-                mgmName,
+                mgmName.toString(),
                 targetUrl,
                 user,
                 password,
@@ -53,6 +54,7 @@ class ExportGroupPolicyTest {
 
     @Test
     fun `exporting group policy correctly saves file to default location`() {
+        groupPolicyFile.delete()
         CommandLine(ExportGroupPolicy()).execute(
             "-h=$holdingIdentity",
             targetUrl,
@@ -68,6 +70,12 @@ class ExportGroupPolicyTest {
     @Test
     fun `exporting group policy correctly saves file to provided location`() {
         val groupPolicyLocation = "${System.getProperty("user.home")}/.corda/gp/test.json"
+        val groupPolicyFile = File(
+                File(File(File(System.getProperty("user.home")), ".corda"), "gp"),
+        "test.json",
+        )
+        groupPolicyFile.delete()
+
         CommandLine(ExportGroupPolicy()).execute(
             "-h=$holdingIdentity",
             "--save=$groupPolicyLocation",
@@ -75,11 +83,6 @@ class ExportGroupPolicyTest {
             user,
             password,
             INSECURE,
-        )
-
-        val groupPolicyFile = File(
-            File(File(File(System.getProperty("user.home")), ".corda"), "gp"),
-            "test.json",
         )
         assertThat(groupPolicyFile.exists()).isTrue
         assertThat(ObjectMapper().readTree(groupPolicyFile.inputStream()).get("groupId")).isNotNull

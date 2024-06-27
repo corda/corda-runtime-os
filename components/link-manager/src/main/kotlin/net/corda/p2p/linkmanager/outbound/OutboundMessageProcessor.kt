@@ -2,7 +2,6 @@ package net.corda.p2p.linkmanager.outbound
 
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.AuthenticatedMessageAndKey
-import net.corda.data.p2p.SessionPartitions
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.InboundUnauthenticatedMessage
@@ -26,7 +25,6 @@ import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.common.MessageConverter
 import net.corda.p2p.linkmanager.grouppolicy.networkType
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
-import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
 import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.p2p.linkmanager.membership.lookup
 import net.corda.p2p.linkmanager.metrics.recordInboundMessagesMetric
@@ -39,10 +37,10 @@ import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.utilities.trace
 import net.corda.virtualnode.toCorda
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import net.corda.metrics.CordaMetrics
 import net.corda.p2p.linkmanager.TraceableItem
 import net.corda.p2p.linkmanager.metrics.recordOutboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
@@ -56,7 +54,6 @@ internal class OutboundMessageProcessor(
     private val linkManagerHostingMap: LinkManagerHostingMap,
     private val groupPolicyProvider: GroupPolicyProvider,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    private val inboundAssignmentListener: InboundAssignmentListener,
     private val messagesPendingSession: PendingSessionMessageQueues,
     private val clock: Clock,
     private val messageConverter: MessageConverter,
@@ -76,27 +73,12 @@ internal class OutboundMessageProcessor(
         private const val MAX_RETRY_DELAY = 2000L
         fun recordsForNewSessions(
             state: SessionManager.SessionState.NewSessionsNeeded,
-            inboundAssignmentListener: InboundAssignmentListener,
-            logger: Logger
         ): List<Record<String, *>> {
-            val partitions = inboundAssignmentListener.getCurrentlyAssignedPartitions()
-            return if (partitions.isEmpty()) {
-                val sessionIds = state.messages.map { it.first }
-                logger.warn(
-                    "No partitions from topic ${Schemas.P2P.LINK_IN_TOPIC} are currently assigned to the inbound message processor." +
-                        " Sessions: $sessionIds will not be initiated."
-                )
-                emptyList()
-            } else {
-                state.messages.forEach {
-                    recordOutboundSessionMessagesMetric(state.sessionCounterparties.ourId)
-                }
-                state.messages.flatMap {
-                    listOf(
-                        Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), it.second),
-                        Record(Schemas.P2P.SESSION_OUT_PARTITIONS, it.first, SessionPartitions(partitions.toList()))
-                    )
-                }
+            state.messages.forEach {
+                recordOutboundSessionMessagesMetric(state.sessionCounterparties.ourId)
+            }
+            return state.messages.map {
+                Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), it.second)
             }
         }
     }
@@ -139,7 +121,7 @@ internal class OutboundMessageProcessor(
         } + processAuthenticatedMessages(authenticatedMessages)
 
         for (result in results) {
-            result.originalRecord?.let { originalRecord ->
+            result.source?.let { originalRecord ->
                 traceEventProcessing(originalRecord, tracingEventName) { result.item }
             }
         }
@@ -317,14 +299,14 @@ internal class OutboundMessageProcessor(
         }
         val messagesWithSession = validatedMessages.mapNotNull { (message, result) ->
             if (result is ValidateAuthenticatedMessageResult.SessionNeeded) {
-                TraceableItem(result, message.originalRecord)
+                TraceableItem(result, message.source)
             } else {
                 null
             }
         }
         val messageWithNoSession = validatedMessages.mapNotNull { (message, result) ->
             if (result is ValidateAuthenticatedMessageResult.NoSessionNeeded) {
-                TraceableItem(result.records, message.originalRecord)
+                TraceableItem(result.records, message.source)
             } else {
                 null
             }
@@ -440,7 +422,7 @@ internal class OutboundMessageProcessor(
                         "No existing session with ${message.item.messageWithKey.message.header.destination}. Initiating a new one.."
                     }
                     if (!isReplay) messagesPendingSession.queueMessage(message.item.messageWithKey, state.sessionCounterparties)
-                    TraceableItem(recordsForNewSessions(state) + message.item.markerRecords, message.originalRecord)
+                    TraceableItem(recordsForNewSessions(state) + message.item.markerRecords, message.source)
                 }
                 is SessionManager.SessionState.SessionEstablished -> {
                     logger.trace {
@@ -449,7 +431,7 @@ internal class OutboundMessageProcessor(
                     }
                     TraceableItem(
                         recordsForSessionEstablished(state, message.item.messageWithKey) + message.item.markerRecords,
-                        message.originalRecord
+                        message.source
                     )
                 }
                 is SessionManager.SessionState.SessionAlreadyPending -> {
@@ -458,10 +440,11 @@ internal class OutboundMessageProcessor(
                             "session is established."
                     }
                     if (!isReplay) messagesPendingSession.queueMessage(message.item.messageWithKey, state.sessionCounterparties)
-                    TraceableItem(message.item.markerRecords, message.originalRecord)
+                    TraceableItem(message.item.markerRecords, message.source)
                 }
                 is SessionManager.SessionState.CannotEstablishSession -> {
-                    TraceableItem(message.item.markerRecords, message.originalRecord)
+                    CordaMetrics.Metric.SessionFailedCount.builder().build().increment()
+                    TraceableItem(message.item.markerRecords, message.source)
                 }
             }
         }
@@ -495,10 +478,6 @@ internal class OutboundMessageProcessor(
     private fun recordForTTLExpiredMarker(messageId: String): Record<String, AppMessageMarker> {
         val marker = AppMessageMarker(TtlExpiredMarker(Component.LINK_MANAGER), clock.instant().toEpochMilli())
         return Record(Schemas.P2P.P2P_OUT_MARKERS, messageId, marker)
-    }
-
-    private fun recordsForNewSessions(state: SessionManager.SessionState.NewSessionsNeeded): List<Record<String, *>> {
-        return recordsForNewSessions(state, inboundAssignmentListener, logger)
     }
 
     private fun recordForLMDiscardedMarker(message: AuthenticatedMessageAndKey,

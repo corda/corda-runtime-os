@@ -4,7 +4,14 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.LinkInMessage
+import net.corda.data.p2p.LinkOutHeader
+import net.corda.data.p2p.LinkOutMessage
+import net.corda.data.p2p.NetworkType
+import net.corda.data.p2p.app.InboundUnauthenticatedMessage
+import net.corda.data.p2p.app.InboundUnauthenticatedMessageHeader
+import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.data.p2p.gateway.GatewayMessage
+import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -12,20 +19,13 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.EventLogProcessor
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.data.p2p.LinkOutHeader
-import net.corda.data.p2p.LinkOutMessage
-import net.corda.data.p2p.NetworkType
-import net.corda.data.p2p.app.InboundUnauthenticatedMessage
-import net.corda.data.p2p.app.InboundUnauthenticatedMessageHeader
-import net.corda.data.p2p.crypto.AuthenticatedDataMessage
-import net.corda.data.p2p.gateway.GatewayResponse
-import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.DynamicKeyStore
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
@@ -89,7 +89,7 @@ class OutboundMessageHandlerTest {
                 any(),
                 any<EventLogProcessor<String, LinkOutMessage>>(),
                 any(),
-                anyOrNull()
+                anyOrNull(),
             )
         } doReturn subscription
     }
@@ -170,7 +170,7 @@ class OutboundMessageHandlerTest {
         SmartConfigImpl.empty(),
         avroSchemaRegistry,
         commonComponents,
-        ) { mockTimeFacilitiesProvider.mockScheduledExecutor }
+    ) { mockTimeFacilitiesProvider.mockScheduledExecutor }
 
     @AfterEach
     fun cleanUp() {
@@ -287,7 +287,7 @@ class OutboundMessageHandlerTest {
                     null,
                     truststore,
                     null,
-                )
+                ),
             )
     }
 
@@ -336,10 +336,9 @@ class OutboundMessageHandlerTest {
                     null,
                     truststore,
                     keyStore,
-                )
+                ),
             )
     }
-
 
     @Test
     fun `onNext will do nothing for mutual TLS if the source key store can not be found`() {
@@ -410,7 +409,7 @@ class OutboundMessageHandlerTest {
                     X500Name("O=PartyB, L=London, C=GB"),
                     truststore,
                     null,
-                )
+                ),
             )
     }
 
@@ -672,7 +671,7 @@ class OutboundMessageHandlerTest {
         val published = argumentCaptor<List<Record<Any, Any>>>()
         whenever(
             p2pInPublisher.constructed().first()
-                .publish(published.capture())
+                .publish(published.capture()),
         ).doReturn(mock())
         val client = mock<HttpClient> {
             on { write(any()) } doAnswer {
@@ -690,12 +689,12 @@ class OutboundMessageHandlerTest {
                 ByteBuffer.wrap(content),
                 GatewayResponse::class.java,
                 null,
-            )
+            ),
         ).doReturn(
             GatewayResponse(
                 "",
                 replyPayload,
-            )
+            ),
         )
         whenever(features.enableP2PGatewayToLinkManagerOverHttp).doReturn(true)
 
@@ -742,12 +741,12 @@ class OutboundMessageHandlerTest {
                 ByteBuffer.wrap(content),
                 GatewayResponse::class.java,
                 null,
-            )
+            ),
         ).doReturn(
             GatewayResponse(
                 "",
                 replyPayload,
-            )
+            ),
         )
         whenever(features.enableP2PGatewayToLinkManagerOverHttp).doReturn(false)
 
@@ -790,12 +789,12 @@ class OutboundMessageHandlerTest {
                 ByteBuffer.wrap(content),
                 GatewayResponse::class.java,
                 null,
-            )
+            ),
         ).doReturn(
             GatewayResponse(
                 "",
                 null,
-            )
+            ),
         )
 
         val msgPayload = InboundUnauthenticatedMessage.newBuilder().apply {

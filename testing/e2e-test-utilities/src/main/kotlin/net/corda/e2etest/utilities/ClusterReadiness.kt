@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
+import net.corda.utilities.withMDC
 import org.assertj.core.api.SoftAssertions
 import org.slf4j.LoggerFactory
 import java.io.IOException
@@ -58,7 +59,9 @@ class ClusterReadinessChecker : ClusterReadiness {
                 .filter { !it.value.isNullOrBlank() }
                 .map { workerUrl ->
                     async {
-                        block(timeOut, sleepDuration, workerUrl, softly)
+                        withMDC(mapOf("name" to workerUrl.key)) {
+                            block(timeOut, sleepDuration, workerUrl, softly)
+                        }
                     }
                 }.awaitAll()
 
@@ -128,6 +131,7 @@ class ClusterReadinessChecker : ClusterReadiness {
                 val response = function()
                 val statusCode = response.statusCode()
                 if (statusCode in 200..299) {
+                    logger.info("Response code success: $statusCode")
                     return true
                 } else {
                     logger.info("Call to: $url returned status $statusCode.")
@@ -173,6 +177,8 @@ class ClusterReadinessChecker : ClusterReadiness {
         val request = HttpRequest.newBuilder()
             .uri(URI.create(url))
             .build()
-        return client.send(request, HttpResponse.BodyHandlers.ofString())
+        return client.send(request, HttpResponse.BodyHandlers.ofString()).also {
+            logger.info("Returning status ${it.statusCode()} $name on $url.")
+        }
     }
 }

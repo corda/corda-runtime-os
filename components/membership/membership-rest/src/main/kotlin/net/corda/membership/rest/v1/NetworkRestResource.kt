@@ -12,7 +12,7 @@ import net.corda.rest.annotations.RestPathParameter
  * you to set up a holding identity on the network and configure properties required for P2P messaging.
  */
 @HttpRestResource(
-    name = "Network API",
+    name = "Network",
     description = "The Network API consists of endpoints which manage the setup of holding identities in P2P networks.",
     path = "network"
 )

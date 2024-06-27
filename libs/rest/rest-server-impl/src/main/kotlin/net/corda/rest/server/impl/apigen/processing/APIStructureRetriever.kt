@@ -26,6 +26,7 @@ import net.corda.rest.tools.annotations.extensions.path
 import net.corda.rest.tools.annotations.extensions.title
 import net.corda.rest.tools.annotations.validation.RestInterfaceValidator
 import net.corda.rest.tools.isStaticallyExposedGet
+import net.corda.rest.tools.methodDescription
 import net.corda.rest.tools.responseDescription
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -157,7 +158,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
                 Endpoint(
                     EndpointMethod.GET,
                     annotation.title(method),
-                    annotation.description,
+                    method.methodDescription,
                     annotation.path(method),
                     method.retrieveParameters(),
                     ResponseBody(

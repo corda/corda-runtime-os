@@ -15,7 +15,7 @@ import net.corda.rest.test.TestHealthCheckAPIImpl
 import kotlin.reflect.jvm.javaMethod
 
 internal fun getHealthCheckApiTestResource(): Resource {
-    val apiVersions = setOf(RestApiVersion.C5_0, RestApiVersion.C5_1)
+    val apiVersions = setOf(RestApiVersion.C5_1, RestApiVersion.C5_2)
 
     val endpointVoid = Endpoint(
         method = EndpointMethod.GET,

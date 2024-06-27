@@ -23,17 +23,18 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.VersionedMessageBuilder.retrieveRegistrationStatusMessage
 import net.corda.membership.lib.approval.RegistrationRule
 import net.corda.membership.lib.approval.RegistrationRulesEngine
+import net.corda.membership.lib.createMembershipAuthenticatedMessageRecord
 import net.corda.membership.lib.deserializeContext
+import net.corda.membership.lib.getTtlMinutes
 import net.corda.membership.lib.registration.DECLINED_REASON_FOR_USER_INTERNAL_ERROR
 import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.toMap
-import net.corda.membership.p2p.helpers.P2pRecordsFactory
-import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.messaging.P2pRecordsFactory
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.UPDATE_TO_PENDING_AUTO_APPROVAL
 import net.corda.utilities.time.Clock
@@ -52,9 +53,9 @@ internal class ProcessMemberVerificationResponseHandler(
     private val membershipConfig: SmartConfig,
     private val membershipQueryClient: MembershipQueryClient,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
-        cordaAvroSerializationFactory,
+    private val membershipP2PRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
         clock,
+        cordaAvroSerializationFactory,
     ),
 ) : RegistrationHandler<ProcessMemberVerificationResponse> {
     private companion object {
@@ -128,7 +129,7 @@ internal class ProcessMemberVerificationResponseHandler(
                 null
             )
             val persistStatusMessage = if (statusUpdateMessage != null) {
-                p2pRecordsFactory.createAuthenticatedMessageRecord(
+                membershipP2PRecordsFactory.createMembershipAuthenticatedMessageRecord(
                     source = mgm,
                     destination = member,
                     content = statusUpdateMessage,

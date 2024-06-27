@@ -14,6 +14,7 @@ import net.corda.crypto.component.test.utils.act
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.component.test.utils.reportDownComponents
 import net.corda.crypto.component.test.utils.signData
+import net.corda.crypto.core.ClusterCryptoDb
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
@@ -21,7 +22,6 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_AFTER_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
-import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
@@ -53,6 +53,7 @@ import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.test.util.eventually
+import net.corda.utilities.toByteArray
 import net.corda.v5.base.util.EncodingUtils.toHex
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
@@ -111,7 +112,7 @@ class CryptoOpsClientComponentTests {
             exceptionFactories.keys.map { Class.forName(it) }
 
         val schemeMetadata = CipherSchemeMetadataImpl()
-        val knownTenantId = toHex(UUID.randomUUID().toString().toByteArray().sha256Bytes()).take(12)
+        val knownTenantId = toHex(UUID.randomUUID().toByteArray().sha256Bytes()).take(12)
         val knownAlias = UUID.randomUUID().toString()
         val knownOperationContext = mapOf(
             UUID.randomUUID().toString() to UUID.randomUUID().toString()
@@ -409,7 +410,7 @@ class CryptoOpsClientComponentTests {
         setupCompletedResponse {
             CryptoSigningKeys(emptyList())
         }
-        val id = publicKeyIdFromBytes(UUID.randomUUID().toString().toByteArray())
+        val id = publicKeyIdFromBytes(UUID.randomUUID().toByteArray())
         val result = sender.act {
             component.lookupKeysByIds(knownTenantId, listOf(ShortHash.of(id)))
         }
@@ -734,7 +735,7 @@ class CryptoOpsClientComponentTests {
         assertEquals(masterKeyAlias, command.masterKeyAlias)
         assertTrue(command.failIfExists)
         assertOperationContext(command.context)
-        assertRequestContext(result, CryptoTenants.CRYPTO)
+        assertRequestContext(result, ClusterCryptoDb.SCHEMA_NAME)
     }
 
     @Test
@@ -747,7 +748,7 @@ class CryptoOpsClientComponentTests {
         val publicKey = ByteBuffer.wrap(
             schemeMetadata.encodeAsByteArray(keyPair.public)
         )
-        val data = ByteBuffer.wrap(UUID.randomUUID().toString().toByteArray())
+        val data = ByteBuffer.wrap(UUID.randomUUID().toByteArray())
         val signature = signData(schemeMetadata, SignatureSpecs.ECDSA_SHA256, keyPair, data.array())
         val spec = CryptoSignatureSpec(
             "NONEwithECDSA",
@@ -787,7 +788,7 @@ class CryptoOpsClientComponentTests {
                 knownTenantId,
                 keyPair.public,
                 DigestAlgorithmName("--NONSENSE--"),
-                UUID.randomUUID().toString().toByteArray()
+                UUID.randomUUID().toByteArray()
             )
         }
     }
@@ -799,7 +800,7 @@ class CryptoOpsClientComponentTests {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
-        val data = UUID.randomUUID().toString().toByteArray()
+        val data = UUID.randomUUID().toByteArray()
         val signature = signData(schemeMetadata, SignatureSpecs.ECDSA_SHA256, keyPair, data)
         setupCompletedResponse {
             CryptoSignatureWithKey(
@@ -831,7 +832,7 @@ class CryptoOpsClientComponentTests {
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
-        val data = UUID.randomUUID().toString().toByteArray()
+        val data = UUID.randomUUID().toByteArray()
         val signature = signData(schemeMetadata, SignatureSpecs.ECDSA_SHA256, keyPair, data)
         val spec = CustomSignatureSpec(
             signatureName = "NONEwithECDSA",
@@ -869,7 +870,7 @@ class CryptoOpsClientComponentTests {
         }
         val keyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         val otherKeyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
-        val secret = UUID.randomUUID().toString().toByteArray()
+        val secret = UUID.randomUUID().toByteArray()
         setupCompletedResponse {
             CryptoDerivedSharedSecret(ByteBuffer.wrap(secret))
         }

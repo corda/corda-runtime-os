@@ -1,0 +1,21 @@
+config:
+  storageId: "default"
+databases: []
+kafka: { }
+stateManager: { }
+workers: { }
+
+resources:
+  requests:
+    cpu: "500M"
+  limits:
+    cpu: "1000M"
+
+bootstrap:
+  resources:
+    requests:
+      memory: "62050MiB"
+      cpu: "500M"
+    limits:
+      memory: "1250E"
+      cpu: "1000M"

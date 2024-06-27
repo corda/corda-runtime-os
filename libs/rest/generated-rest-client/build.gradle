@@ -1,0 +1,116 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.common-publishing'
+    alias libs.plugins.openapi.generator
+}
+
+ext {
+    cordaEnableFormatting = false
+    releasable = false
+}
+
+def generatedRestClientDir = layout.buildDirectory.dir('generated')
+
+openApiGenerate {
+    generatorName = 'kotlin'
+    library = 'jvm-okhttp4'
+    inputSpec = "${project.rootDir}/processors/rest-processor/src/integrationTest/resources/swaggerBaseline-v5_3.json"
+    outputDir = generatedRestClientDir.get().getAsFile().getAbsolutePath()
+    generateApiDocumentation = false
+    generateModelDocumentation = false
+    generateApiTests = false
+    generateModelTests = false
+    ignoreFileOverride = "${project.projectDir}/.openapi-generator-ignore"
+    packageName = 'net.corda.restclient.generated'
+    skipValidateSpec = true
+    configOptions.set([
+            'serializationLibrary' : 'jackson'
+    ])
+}
+
+dependencies {
+    implementation libs.kotlin.stdlib
+    implementation libs.jackson.dataformat.yaml
+    implementation libs.jackson.databind
+    implementation libs.jackson.module.kotlin
+    implementation libs.okHttp
+
+    testImplementation libs.javalin
+}
+
+// Pick up the generated code so we can use it in src/main & src/test
+sourceSets {
+    main {
+        java {
+            srcDirs generatedRestClientDir
+        }
+    }
+}
+
+tasks.register('applyWorkaroundForCertificateApi') {
+    dependsOn 'openApiGenerate'
+    doLast {
+        def targetLine = '"certificate" to PartConfig\\(body = certificate,'
+        def replacementLine = '"certificate" to PartConfig(body = certificate?.first(),'
+        def fileName = "${project.buildDir}/generated/src/main/kotlin/net/corda/restclient/generated/apis/CertificateApi.kt"
+        file(fileName).text = file(fileName).text.replaceAll(targetLine, replacementLine)
+    }
+}
+
+tasks.register('applyWorkaroundForStringResponseType') {
+    dependsOn 'openApiGenerate'
+
+    def targetLine = 'Serializer.jacksonObjectMapper.readValue\\(bodyContent, object: TypeReference<T>\\(\\) \\{}\\)'
+    // Whitespace is important
+    def replacementLine = '''// do not attempt to deserialize String return type
+                if (T::class.java == String::class.java) bodyContent as? T
+                else Serializer.jacksonObjectMapper.readValue(bodyContent, object: TypeReference<T>() {})'''
+
+    def fileName = "${project.buildDir}/generated/src/main/kotlin/net/corda/restclient/generated/infrastructure/ApiClient.kt"
+
+    inputs.file(fileName)
+    outputs.file(fileName)
+    outputs.upToDateWhen { file(fileName).text.contains(replacementLine) }
+
+    doLast {
+        file(fileName).text = file(fileName).text
+                .replaceAll(targetLine, replacementLine)
+    }
+}
+
+tasks.register('applyWorkarounds') {
+    dependsOn 'applyWorkaroundForCertificateApi'
+    dependsOn 'applyWorkaroundForStringResponseType'
+}
+
+tasks.named('compileKotlin') {
+    dependsOn 'applyWorkarounds'
+}
+
+tasks.named('sourcesJar') {
+    dependsOn 'applyWorkarounds'
+    // Ensure generated code is added to jar
+    inputs.files(generatedRestClientDir)
+    mustRunAfter 'compileJava'
+    mustRunAfter 'compileTestJava'
+    mustRunAfter 'compileIntegrationTestJava'
+}
+
+tasks.named('kotlinSourcesJar') {
+    dependsOn 'applyWorkarounds'
+    dependsOn 'compileJava'
+}
+
+tasks.named('detekt') {
+    dependsOn 'applyWorkarounds'
+}
+
+tasks.named('jacocoTestReport') {
+    dependsOn 'compileIntegrationTestJava'
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    compilerOptions {
+        allWarningsAsErrors = false
+    }
+}

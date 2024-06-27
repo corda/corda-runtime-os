@@ -58,7 +58,6 @@ dependencies {
     implementation 'org.slf4j:slf4j-api'
     implementation "org.hibernate:hibernate-core:$hibernateVersion"
 
-    testImplementation project(':libs:ledger:ledger-utxo-data')
     testImplementation project(':testing:db-testkit')
     testImplementation project(':testing:persistence-testkit')
 
@@ -106,6 +105,7 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:membership:membership-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+    integrationTestRuntimeOnly project(':testing:slf4jv1')
 
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"

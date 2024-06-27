@@ -3,26 +3,24 @@
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.crypto.test.certificates.generation.toPem
+import net.corda.e2etest.utilities.types.CertificateAuthority
 import net.corda.e2etest.utilities.types.NetworkOnboardingMetadata
 import net.corda.rest.ResponseCode
 import net.corda.utilities.minutes
 import net.corda.utilities.seconds
-import java.io.File
 import java.net.URLEncoder.encode
 import java.nio.charset.Charset.defaultCharset
-import java.time.Duration
-import net.corda.rest.annotations.RestApiVersion
 import java.nio.charset.StandardCharsets
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
+import java.time.Duration
 
 /**
  * Calls the necessary endpoints to create a vnode, and onboard the MGM to that vnode.
  */
 fun ClusterInfo.onboardMgm(
     mgmName: String = "O=Mgm, L=London, C=GB, OU=$testRunUniqueId",
-    groupPolicyConfig: GroupPolicyConfig = GroupPolicyConfig()
+    groupPolicyConfig: GroupPolicyConfig = GroupPolicyConfig(),
 ): NetworkOnboardingMetadata {
     val mgmCpiName = "mgm.cpi"
     conditionallyUploadCpiSigningCertificate()
@@ -33,17 +31,19 @@ fun ClusterInfo.onboardMgm(
     val sessionKeyId = createKeyFor(
         mgmHoldingId, "$mgmHoldingId$CAT_SESSION_INIT", CAT_SESSION_INIT, DEFAULT_KEY_SCHEME
     )
-    var mgmSessionCert: String? = null
-    val mgmSessionCertAlias = "$CERT_ALIAS_SESSION-$mgmHoldingId"
-    if (groupPolicyConfig.sessionPkiMode == "Standard") {
-        val mgmSessionCsr = generateCsr(mgmName, sessionKeyId, mgmHoldingId)
-        mgmSessionCert = getCa().generateCert(mgmSessionCsr)
-        val mgmSessionCertFile = File.createTempFile("${this.hashCode()}$CAT_SESSION_INIT", ".pem").also {
-            it.deleteOnExit()
-            it.writeBytes(mgmSessionCert.toByteArray())
+    val mgmSessionCertAliases = if (groupPolicyConfig.sessionPkiMode == "Standard") {
+        groupPolicyConfig.cas.map {
+            it.importSessionCertificate(
+                this,
+                mgmName,
+                sessionKeyId,
+                mgmHoldingId,
+            )
         }
-        importCertificate(mgmSessionCertFile, CERT_USAGE_SESSION, mgmSessionCertAlias, mgmHoldingId)
+    } else {
+        emptyList()
     }
+
 
     addSoftHsmFor(mgmHoldingId, CAT_PRE_AUTH)
     val ecdhKeyId = createKeyFor(
@@ -51,28 +51,17 @@ fun ClusterInfo.onboardMgm(
     )
 
     val registrationContext = createMgmRegistrationContext(
-        getCa().caCertificate.toPem(),
+        groupPolicyConfig.cas,
         sessionKeyId,
         ecdhKeyId,
-        groupPolicyConfig
+        groupPolicyConfig,
     )
 
-    whenNoKeyExists(TENANT_P2P, alias = "$TENANT_P2P$CAT_TLS", category = CAT_TLS) {
-        disableCertificateRevocationChecks()
-        val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS, DEFAULT_KEY_SCHEME)
-        val mgmTlsCsr = generateCsr(mgmName, tlsKeyId)
-        val mgmTlsCert = File.createTempFile("${this.hashCode()}$CAT_TLS", ".pem").also {
-            it.deleteOnExit()
-            it.writeBytes(getCa().generateCert(mgmTlsCsr).toByteArray())
-        }
-        importCertificate(mgmTlsCert, CERT_USAGE_P2P, CERT_ALIAS_P2P)
-    }
+    val tlsCertificateAlias = groupPolicyConfig.cas.map {
+        it.importTlsCertificateIfNotExists(this)
+    }.first()
     val registrationId = register(mgmHoldingId, registrationContext, waitForApproval = true)
-    if (mgmSessionCert != null) {
-        configureNetworkParticipant(mgmHoldingId, sessionKeyId, mgmSessionCertAlias)
-    } else {
-        configureNetworkParticipant(mgmHoldingId, sessionKeyId)
-    }
+    configureNetworkParticipant(mgmHoldingId, sessionKeyId, mgmSessionCertAliases.firstOrNull(), tlsCertificateAlias)
 
     return NetworkOnboardingMetadata(mgmHoldingId, mgmName, registrationId, registrationContext, this)
 }
@@ -86,7 +75,7 @@ fun ClusterInfo.exportGroupPolicy(
     assertWithRetryIgnoringExceptions {
         interval(2.seconds)
         timeout(30.seconds)
-        command { get("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/info") }
+        command { initialClient.get("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/info") }
         condition { it.code == ResponseCode.OK.statusCode }
     }.body
 }
@@ -126,7 +115,7 @@ private fun ClusterInfo.createApprovalRuleCommon(
 
     assertWithRetry {
         interval(1.seconds)
-        command { post(urlFn(), ObjectMapper().writeValueAsString(payload)) }
+        command { initialClient.post(urlFn(), ObjectMapper().writeValueAsString(payload)) }
         condition { it.code == ResponseCode.OK.statusCode }
     }.toJson()["ruleId"].textValue()
 }
@@ -157,7 +146,7 @@ private fun ClusterInfo.delete(
 ) = cluster {
     assertWithRetry {
         interval(1.seconds)
-        command { delete(urlFn()) }
+        command { initialClient.delete(urlFn()) }
         condition { it.code == ResponseCode.NO_CONTENT.statusCode }
     }
 }
@@ -182,7 +171,7 @@ fun ClusterInfo.createPreAuthToken(
     assertWithRetryIgnoringExceptions {
         interval(1.seconds)
         command {
-            post(
+            initialClient.post(
                 "/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/preauthtoken",
                 ObjectMapper().writeValueAsString(payload)
             )
@@ -204,7 +193,7 @@ fun ClusterInfo.revokePreAuthToken(
         assertWithRetry {
             interval(1.seconds)
             command {
-                put(
+                initialClient.put(
                 "/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/preauthtoken/revoke/$tokenId",
                 "{\"remarks\": \"$remark\"}"
                 )
@@ -233,7 +222,7 @@ fun ClusterInfo.getPreAuthTokens(
     val query = queries.joinToString(prefix = "?", separator = "&")
     assertWithRetryIgnoringExceptions {
         interval(1.seconds)
-        command { get("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/preauthtoken$query") }
+        command { initialClient.get("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/preauthtoken$query") }
         condition { it.code == ResponseCode.OK.statusCode }
     }.toJson()
 }
@@ -255,7 +244,7 @@ fun ClusterInfo.waitForPendingRegistrationReviews(
         assertWithRetryIgnoringExceptions {
             timeout(2.minutes)
             interval(3.seconds)
-            command { get("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/registrations$query") }
+            command { initialClient.get("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/registrations$query") }
             condition {
                 val json = it.toJson().firstOrNull()
                 it.code == ResponseCode.OK.statusCode
@@ -277,7 +266,7 @@ fun ClusterInfo.approveRegistration(
     cluster {
         assertWithRetry {
             interval(1.seconds)
-            command { post("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/approve/$registrationId", "") }
+            command { initialClient.post("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/approve/$registrationId", "") }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
         }
     }
@@ -294,7 +283,7 @@ fun ClusterInfo.declineRegistration(
     cluster {
         assertWithRetry {
             interval(1.seconds)
-            command { post(
+            command { initialClient.post(
                 "/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/decline/$registrationId",
                 "{\"reason\": \"Declined by automated test with runId $testRunUniqueId.\"}")
             }
@@ -311,14 +300,15 @@ data class GroupPolicyConfig(
     val p2pMode: String = "Authenticated_Encryption",
     val sessionPolicy: String = "Distinct",
     val tlsPkiMode: String = "Standard",
-    val tlsVersion: String = "1.3"
+    val tlsVersion: String = "1.3",
+    val cas: Collection<CertificateAuthority> = listOf(CertificateAuthority.default),
 )
 
 /**
  * Create a default registration context for registering the MGM
  */
 private fun ClusterInfo.createMgmRegistrationContext(
-    caTrustRoot: String,
+    cas: Collection<CertificateAuthority>,
     sessionKeyId: String,
     ecdhKeyId: String,
     groupPolicyConfig: GroupPolicyConfig
@@ -337,9 +327,12 @@ private fun ClusterInfo.createMgmRegistrationContext(
     "corda.group.tls.version" to groupPolicyConfig.tlsVersion,
     "corda.endpoints.0.connectionURL" to p2p.uri.toString(),
     "corda.endpoints.0.protocolVersion" to p2p.protocol,
-    "corda.group.trustroot.tls.0" to caTrustRoot,
-    "corda.group.trustroot.session.0" to caTrustRoot,
-)
+) + cas.flatMapIndexed { index, ca ->
+    listOf(
+        "corda.group.trustroot.tls.$index" to ca.caCertificatePem,
+        "corda.group.trustroot.session.$index" to ca.caCertificatePem,
+    )
+}
 
 @Suppress("unused")
 /**
@@ -355,33 +348,8 @@ fun ClusterInfo.suspendMember(
         timeout(15.seconds)
         interval(1.seconds)
         command {
-            post(
+            initialClient.post(
                 "/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/suspend",
-                "{ \"x500Name\": \"$x500Name\", \"serialNumber\": $serialNumber }"
-            )
-        }
-        condition { it.code == ResponseCode.NO_CONTENT.statusCode || it.code == ResponseCode.CONFLICT.statusCode }
-    }
-}
-
-@Suppress("unused")
-/**
- * Suspend a member identified by [x500Name].
- * Suspension is performed by the MGM identified by [mgmHoldingId].
- *
- * Used to test RestApiVersion.C5_0, this version allows the serial number to be Null.
- */
-fun ClusterInfo.deprecatedSuspendMember(
-    mgmHoldingId: String,
-    x500Name: String,
-    serialNumber: Int? = null,
-) = cluster {
-    assertWithRetry {
-        timeout(15.seconds)
-        interval(1.seconds)
-        command {
-            post(
-                "/api/${RestApiVersion.C5_0.versionPath}/mgm/$mgmHoldingId/suspend",
                 "{ \"x500Name\": \"$x500Name\", \"serialNumber\": $serialNumber }"
             )
         }
@@ -403,33 +371,8 @@ fun ClusterInfo.activateMember(
         timeout(15.seconds)
         interval(1.seconds)
         command {
-            post(
+            initialClient.post(
                 "/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/activate",
-                "{ \"x500Name\": \"$x500Name\", \"serialNumber\": $serialNumber }"
-            )
-        }
-        condition { it.code == ResponseCode.NO_CONTENT.statusCode || it.code == ResponseCode.CONFLICT.statusCode }
-    }
-}
-
-@Suppress("unused")
-/**
- * Activate a member identified by [x500Name].
- * Activation is performed by the MGM identified by [mgmHoldingId].
- *
- * Used to test RestApiVersion.C5_0, this version allows the serial number to be Null.
- */
-fun ClusterInfo.deprecatedActivateMember(
-    mgmHoldingId: String,
-    x500Name: String,
-    serialNumber: Int? = null,
-) = cluster {
-    assertWithRetry {
-        timeout(15.seconds)
-        interval(1.seconds)
-        command {
-            post(
-                "/api/${RestApiVersion.C5_0.versionPath}/mgm/$mgmHoldingId/activate",
                 "{ \"x500Name\": \"$x500Name\", \"serialNumber\": $serialNumber }"
             )
         }
@@ -452,7 +395,7 @@ fun ClusterInfo.updateGroupParameters(
         timeout(15.seconds)
         interval(1.seconds)
         command {
-            post(
+            initialClient.post(
                 "/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/group-parameters",
                 ObjectMapper().writeValueAsString(payload)
             )
@@ -475,7 +418,7 @@ fun ClusterInfo.allowClientCertificates(certificatePem: String, mgmHoldingId: St
             timeout(15.seconds)
             interval(1.seconds)
             command {
-                put(endpoint,"")
+                initialClient.put(endpoint,"")
             }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
         }

@@ -1,7 +1,8 @@
 package net.corda.libs.virtualnode.endpoints.v1
 
 import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
-import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.CreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequestType.JsonCreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity
 import net.corda.libs.virtualnode.endpoints.v1.types.UpdateVirtualNodeDbRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
@@ -21,7 +22,7 @@ import net.corda.rest.response.ResponseEntity
 
 /** Rest operations for virtual node management. */
 @HttpRestResource(
-    name = "Virtual Node API",
+    name = "Virtual Node",
     description = "The Virtual Nodes API consists of a number of endpoints to manage virtual nodes.",
     path = "virtualnode"
 )
@@ -32,14 +33,32 @@ interface VirtualNodeRestResource : RestResource {
      *
      * @throws `HttpApiException` If the request returns an exceptional response.
      */
+    @Deprecated("Deprecated in favour of `createVirtualNode()`")
     @HttpPOST(
         title = "Create virtual node",
         description = "This method creates a new virtual node.",
-        responseDescription = "The details of the created virtual node."
+        responseDescription = "The details of the created virtual node.",
+        maxVersion = RestApiVersion.C5_2
+    )
+    fun createVirtualNodeDeprecated(
+        @ClientRequestBodyParameter(description = "Details of the virtual node to be created")
+        request: CreateVirtualNodeRequest
+    ): ResponseEntity<AsyncResponse>
+
+    /**
+     * Requests the creation of a virtual node.
+     *
+     * @throws `HttpApiException` If the request returns an exceptional response.
+     */
+    @HttpPOST(
+        title = "Create virtual node",
+        description = "This method creates a new virtual node.",
+        responseDescription = "The details of the created virtual node.",
+        minVersion = RestApiVersion.C5_3
     )
     fun createVirtualNode(
         @ClientRequestBodyParameter(description = "Details of the virtual node to be created")
-        request: CreateVirtualNodeRequest
+        request: JsonCreateVirtualNodeRequest
     ): ResponseEntity<AsyncResponse>
 
     /**
@@ -169,25 +188,6 @@ interface VirtualNodeRestResource : RestResource {
         @RestPathParameter(description = "The file checksum of the CPI to be upgraded to")
         newCpiChecksum: String
     ): String
-
-    /**
-     * Asynchronous endpoint to upgrade a virtual node's CPI.
-     */
-    @Deprecated("Deprecated in favour of upgradeVirtualNode")
-    @HttpPUT(
-        path = "{virtualNodeShortId}/cpi/{targetCpiFileChecksum}",
-        title = "Upgrade a virtual node's CPI.",
-        description = "This method upgrades a virtual node's CPI.",
-        responseDescription = "Identifier for the request.",
-        minVersion = RestApiVersion.C5_0,
-        maxVersion = RestApiVersion.C5_0
-    )
-    fun upgradeVirtualNodeDeprecated(
-        @RestPathParameter(description = "Short ID of the virtual node instance to update")
-        virtualNodeShortId: String,
-        @RestPathParameter(description = "The file checksum of the CPI to upgrade to.")
-        targetCpiFileChecksum: String
-    ): ResponseEntity<AsyncResponse>
 
     /**
      * Asynchronous endpoint to upgrade a virtual node's CPI.

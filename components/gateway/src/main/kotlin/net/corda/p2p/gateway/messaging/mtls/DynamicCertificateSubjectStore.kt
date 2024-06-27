@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging.mtls
 
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.p2p.mtls.gateway.ClientCertificateSubjects
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -12,14 +13,13 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.v5.base.types.MemberX500Name
 import java.util.concurrent.ConcurrentHashMap
-import net.corda.configuration.read.ConfigurationReadService
 
 internal class DynamicCertificateSubjectStore(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     configurationReadService: ConfigurationReadService,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
-): LifecycleWithDominoTile {
+) : LifecycleWithDominoTile {
     private companion object {
         const val CONSUMER_GROUP_ID = "gateway_certificates_allowed_client_subjects_reader"
     }
@@ -30,7 +30,7 @@ internal class DynamicCertificateSubjectStore(
         subscriptionFactory.createCompactedSubscription(
             subscriptionConfig,
             Processor(),
-            messagingConfiguration
+            messagingConfiguration,
         )
     }
     override val dominoTile = SubscriptionDominoTile(
@@ -70,7 +70,7 @@ internal class DynamicCertificateSubjectStore(
         override fun onNext(
             newRecord: Record<String, ClientCertificateSubjects>,
             oldValue: ClientCertificateSubjects?,
-            currentData: Map<String, ClientCertificateSubjects>
+            currentData: Map<String, ClientCertificateSubjects>,
         ) {
             val newCertificateSubject = newRecord.value?.subject
             val oldCertificateSubjects = oldValue?.subject

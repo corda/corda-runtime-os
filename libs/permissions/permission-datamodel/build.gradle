@@ -34,6 +34,7 @@ dependencies {
     integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly libs.postgresql.jdbc
+    integrationTestRuntimeOnly project(':testing:slf4jv1')
 
     integrationTestRuntimeOnly("org.hibernate:hibernate-core:$hibernateVersion")
     integrationTestImplementation("org.hibernate:hibernate-osgi:$hibernateVersion") {

@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.utxo.impl
 
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.orm.DatabaseTypeProvider
 import net.corda.orm.DatabaseTypeProvider.Companion.POSTGRES_TYPE_FILTER
 import net.corda.utilities.debug
@@ -39,15 +40,16 @@ class PostgresUtxoQueryProvider @Activate constructor(
             """
             .trimIndent()
 
-    override val persistFilteredTransaction: String
-        get() = """
-            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered, repair_attempt_count)
-                VALUES (:id, :privacySalt, :accountId, :createdAt, '$VERIFIED', :updatedAt, :metadataHash, TRUE, 0)
+    override val persistFilteredTransaction: (batchSize: Int) -> String
+        get() = { batchSize ->
+            """
+            INSERT INTO utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered, repair_attempt_count)
+            VALUES ${List(batchSize) { "(?, ?, ?, ?, '$VERIFIED', ?, ?, TRUE, 0)" }.joinToString(",")}
             ON CONFLICT(id) DO
             UPDATE SET is_filtered = TRUE
             WHERE utxo_transaction.status in ('$UNVERIFIED', '$DRAFT') AND utxo_transaction.is_filtered = FALSE
-            """
-            .trimIndent()
+            """.trimIndent()
+        }
 
     override val persistTransactionMetadata: String
         get() = """
@@ -79,9 +81,9 @@ class PostgresUtxoQueryProvider @Activate constructor(
             """
             INSERT INTO utxo_visible_transaction_output(
                 transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
-                token_symbol, token_tag, token_owner_hash, token_amount, created, consumed, custom_representation
+                token_symbol, token_tag, token_owner_hash, token_amount, token_priority, created, consumed, custom_representation
             )
-            VALUES ${List(batchSize) { "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CAST(? as JSONB))"}.joinToString(",")}
+            VALUES ${List(batchSize) { "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CAST(? as JSONB))"}.joinToString(",")}
             ON CONFLICT DO NOTHING
             """.trimIndent()
         }
@@ -89,8 +91,8 @@ class PostgresUtxoQueryProvider @Activate constructor(
     override val persistTransactionSignatures: (batchSize: Int) -> String
         get() = { batchSize ->
             """
-            INSERT INTO utxo_transaction_signature(transaction_id, signature_idx, signature, pub_key_hash, created)
-            VALUES ${List(batchSize) { "(?, ?, ?, ?, ?)" }.joinToString(",")}
+            INSERT INTO utxo_transaction_signature(transaction_id, pub_key_hash, signature, created)
+            VALUES ${List(batchSize) { "(?, ?, ?, ?)" }.joinToString(",")}
             ON CONFLICT DO NOTHING
             """.trimIndent()
         }
@@ -119,6 +121,17 @@ class PostgresUtxoQueryProvider @Activate constructor(
             INSERT INTO utxo_transaction_merkle_proof_leaves(merkle_proof_id, leaf_index)
             VALUES ${List(batchSize) { "(?, ?)" }.joinToString(",")}
             ON CONFLICT DO NOTHING
+            """.trimIndent()
+        }
+
+    override val stateRefsExist: (batchSize: Int) -> String
+        get() = { batchSize ->
+            """
+            SELECT transaction_id, leaf_idx
+            FROM utxo_transaction_component
+            WHERE (transaction_id, group_idx, leaf_idx) in (VALUES
+                ${List(batchSize) { "(?, ${UtxoComponentGroup.OUTPUTS.ordinal}, ?)" }.joinToString(",")}
+            )
             """.trimIndent()
         }
 }

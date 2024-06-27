@@ -23,6 +23,7 @@ dependencies {
     implementation project(':libs:layered-property-map')
     implementation project(':libs:membership:membership-common')
     implementation project(':libs:messaging:messaging')
+    implementation project(':libs:p2p-messaging')
     implementation project(':libs:utilities')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':components:crypto:crypto-client')

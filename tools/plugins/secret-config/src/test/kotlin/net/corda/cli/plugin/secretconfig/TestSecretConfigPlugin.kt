@@ -14,7 +14,7 @@ class TestSecretConfigPlugin {
     @Test
     fun `create CORDA type secret Config`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = SecretConfigPlugin.PluginEntryPoint()
+        val app = SecretConfigPlugin()
 
         val outText = SystemLambda.tapSystemOutNormalized {
             CommandLine(
@@ -23,13 +23,14 @@ class TestSecretConfigPlugin {
         }
 
         println(outText)
-        assertThat(outText.startsWith("{\"configSecret\":{\"encryptedSecret\")"))
+        assertThat(outText.startsWith("{\"configSecret\":{\"encryptedSecret\"")).isTrue()
+
     }
 
     @Test
     fun `create VAULT type secret Config`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = SecretConfigPlugin.PluginEntryPoint()
+        val app = SecretConfigPlugin()
 
         val outText = SystemLambda.tapSystemOutNormalized {
             CommandLine(
@@ -38,13 +39,14 @@ class TestSecretConfigPlugin {
         }
 
         println(outText)
-        assertThat(outText.startsWith("{\"configSecret\":{\"vaultKey\":\"passwordKey\",\"vaultPath\":\"myPath\"}}"))
+        val resultMatch = """(?s)\{"configSecret":\{"vaultKey":".*","vaultPath":"myPath"}}.*""".toRegex()
+        assertThat(resultMatch.matches(outText)).isTrue()
     }
 
     @Test
     fun testDecryption() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = SecretConfigPlugin.PluginEntryPoint()
+        val app = SecretConfigPlugin()
 
         val outText = SystemLambda.tapSystemOutNormalized {
             CommandLine(
@@ -68,7 +70,7 @@ class TestSecretConfigPlugin {
     fun testBadCommandline(caseName: String, args: Array<String>, expectedError: String) {
         args.hashCode()
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
-        val app = SecretConfigPlugin.PluginEntryPoint()
+        val app = SecretConfigPlugin()
 
         val outText = SystemLambda.tapSystemErrNormalized {
             CommandLine(
@@ -113,7 +115,7 @@ class TestSecretConfigPlugin {
                 ), Arguments.of(
                     "vaultPath missing create, VAULT type",
                     arrayOf("value", "-t", "VAULT", "create"),
-                    "'vaultPath' must be set for VAULT type secrets"
+                    "'vault-path' must be set for VAULT type secrets"
                 ), Arguments.of(
                     "command missing, VAULT type",
                     arrayOf("value", "-t", "VAULT", "-v", "vaultPath"),
