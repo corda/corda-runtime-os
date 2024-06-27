@@ -13,7 +13,6 @@ import io.javalin.http.staticfiles.Location
 import io.javalin.http.util.JsonEscapeUtil
 import io.javalin.http.util.MultipartUtil
 import io.javalin.json.JavalinJackson
-import io.javalin.plugin.bundled.CorsPlugin
 import io.javalin.plugin.bundled.RedirectToLowercasePathPlugin
 import jakarta.servlet.MultipartConfigElement
 import net.corda.rest.authorization.AuthorizationUtils.authorize
