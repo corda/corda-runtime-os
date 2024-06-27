@@ -53,10 +53,8 @@ abstract class AbstractWebsocketTest : RestServerTestBase() {
         val getPathResponse = client.call(HttpVerb.GET, WebRequest<Any>("health/sanity"), userName, password)
         assertEquals(HttpStatus.SC_OK, getPathResponse.responseStatus)
 
-        // Coming back to this later on. Even after setting the CORS configuration the header is still
-        // not being populated for some reason. Reference: https://javalin.io/plugins/cors
-        //  assertEquals("localhost", getPathResponse.headers[Header.ACCESS_CONTROL_ALLOW_ORIGIN])
-        // assertEquals("true", getPathResponse.headers[Header.ACCESS_CONTROL_ALLOW_CREDENTIALS])
+        assertEquals("http://localhost", getPathResponse.headers[Header.ACCESS_CONTROL_ALLOW_ORIGIN])
+        assertEquals("true", getPathResponse.headers[Header.ACCESS_CONTROL_ALLOW_CREDENTIALS])
         assertEquals("no-cache", getPathResponse.headers[Header.CACHE_CONTROL])
     }
 
