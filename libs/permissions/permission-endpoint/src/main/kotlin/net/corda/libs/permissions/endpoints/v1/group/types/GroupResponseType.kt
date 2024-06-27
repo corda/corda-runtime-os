@@ -1,4 +1,5 @@
 package net.corda.libs.permissions.endpoints.v1.group.types
+
 import net.corda.libs.permissions.endpoints.v1.role.types.RoleAssociationResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.PropertyResponseType
 import java.time.Instant
