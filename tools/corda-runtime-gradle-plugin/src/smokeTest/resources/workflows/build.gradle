@@ -1,0 +1,20 @@
+plugins {
+    id 'net.corda.plugins.cordapp-cpb2' version '7.0.4'
+    id 'net.corda.plugins.cordapp-cpk2' version '7.0.4'
+}
+
+dependencies {
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+}
+
+cordapp {
+    targetPlatformVersion = platformVersion.toInteger()
+    minimumPlatformVersion = platformVersion.toInteger()
+
+    workflow {
+        name workflowsModule
+        versionId 1
+        licence cordappLicense
+        vendor cordappVendorName
+    }
+}

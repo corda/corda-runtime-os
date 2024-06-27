@@ -101,8 +101,9 @@ abstract class SmokeTestBase {
             """
             plugins {
                 id 'net.corda.gradle.plugin'
+                id 'net.corda.cordapp.cordapp-configuration' version '5.3.0.14-beta+'
             }
-
+            
             """.trimIndent()
         )
         val sourceConfigFolder = File("src/smokeTest/resources/")
@@ -127,21 +128,38 @@ abstract class SmokeTestBase {
                 cordaClusterURL = "$targetUrl"
                 cordaRestUser = "$USER"
                 cordaRestPasswd ="$PASSWORD"
-                notaryVersion = "$testEnvCordaImageTag"
+//                notaryVersion = "$testEnvCordaImageTag"
+                notaryVersion = "5.3.0.0-beta-1719487566884"
                 runtimeVersion = "$CORDA_RUNTIME_VERSION_STABLE"
                 composeFilePath = "config/combined-worker-compose.yml"
                 networkConfigFile = "$networkPath"
                 r3RootCertFile = "config/r3-ca-key.pem"
                 corDappCpiName = "MyCorDapp"
                 notaryCpiName = "NotaryServer"
-                workflowsModuleName = "workflowsModule"
+                workflowsModuleName = "workflows"
                 cordaRuntimePluginWorkspaceDir = "workspace"
                 cordaProcessorTimeout = "-1"
                 vnodeRegistrationTimeout = "30000"
             }
-            repositories {
-                mavenCentral()
-                mavenLocal()
+            
+            allprojects {
+                version '1.0-SNAPSHOT'
+                
+                repositories {
+                    mavenCentral()
+                    mavenLocal()
+                    
+                    maven {
+                        url = "https://software.r3.com/artifactory/corda-os-maven"
+                        authentication {
+                            basic(BasicAuthentication)
+                        }
+                        credentials {
+                            username = findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                            password = findProperty('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+                        }
+                    }
+                }
             }
             """.trimIndent()
         )

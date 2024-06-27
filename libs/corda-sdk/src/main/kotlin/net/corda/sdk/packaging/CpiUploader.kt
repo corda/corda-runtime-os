@@ -44,10 +44,12 @@ class CpiUploader(val restClient: CordaRestClient) {
                 wait = wait
             )
         ) {
+            println("Force CPI upload")
             forceCpiUpload(
                 cpiFile = cpi
             )
         } else {
+            println("Normal CPI upload")
             uploadCPI(
                 cpi = cpi,
             )

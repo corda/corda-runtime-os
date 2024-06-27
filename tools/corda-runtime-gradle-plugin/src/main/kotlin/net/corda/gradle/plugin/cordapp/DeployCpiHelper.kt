@@ -32,6 +32,7 @@ class DeployCpiHelper {
         cpiChecksumFilePath: String,
         cpiUploadTimeout: Long
     ): Checksum {
+        println("Uploading CPI: '$cpiName'...")
         val cpiUploader = CpiUploader(restClient)
         val cpiFile = File(cpiFilePath)
         val requestId =
@@ -50,6 +51,9 @@ class DeployCpiHelper {
             uploadRequestId = RequestId(requestId),
             wait = cpiUploadTimeout.toDuration(DurationUnit.MILLISECONDS)
         )
+        println("CPI checksum: ${cpiChecksum.value}")
+        println("CPI checksum file exists: ${File(cpiChecksumFilePath).exists()}")
+        println("Current working directory: ${File(".").absolutePath}")
         writeChecksumToFile(checksum = cpiChecksum, cpiChecksumFilePath = cpiChecksumFilePath)
         return cpiChecksum
     }

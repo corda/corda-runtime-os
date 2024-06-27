@@ -1,1 +1,37 @@
 // This is a test resource file, copied over to a temp gradle project by the tests
+
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+        mavenLocal()
+        maven {
+//            url = "$artifactoryContextUrl/corda-os-maven"
+            // TODO: propagate properties from runtime-os project
+            url = "https://software.r3.com/artifactory/corda-os-maven"
+            authentication {
+                basic(BasicAuthentication)
+            }
+            credentials {
+                username = settings.ext.find('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                password = settings.ext.find('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+            }
+        }
+    }
+
+}
+plugins {
+//    id 'net.corda.plugins.cordapp-cpk2' version cordaGradlePluginsVersion
+//    id 'net.corda.plugins.cordapp-cpb2' version cordaGradlePluginsVersion
+//    id 'net.corda.cordapp.cordapp-configuration' version cordaApiVersion
+
+//    id 'net.corda.plugins.cordapp-cpb2' version '7.0.4'
+//    id 'net.corda.plugins.cordapp-cpk2' version '7.0.4'
+//    id 'net.corda.cordapp.cordapp-configuration' version '5.3.0.14-beta+'
+//        id 'org.jetbrains.kotlin.jvm' version '1.8.21'
+//        id 'org.jetbrains.kotlin.plugin.jpa' version '1.8.21'
+//        id 'org.jetbrains.kotlin.plugin.allopen' version '1.8.21'
+//        id 'net.corda.gradle.plugin' version cordaRuntimeVersion
+}
+
+include ':workflows'
