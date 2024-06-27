@@ -51,7 +51,6 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
                 .setSSLContext(sslContext)
                 .setSSLHostnameVerifier(NoopHostnameVerifier())
                 .setDefaultRequestConfig(requestConfig)
-                .setMaxConnTotal(1)
                 .build()
 
             Unirest.config().let { config ->
