@@ -4,8 +4,8 @@ import net.corda.cli.plugins.network.utils.HoldingIdentityUtils
 import net.corda.cli.plugins.network.utils.inferCpiName
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.membership.lib.MemberInfoExtension
-import net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
 import net.corda.restclient.CordaRestClient
+import net.corda.restclient.generated.models.PreAuthTokenRequest
 import net.corda.sdk.network.MgmGeneratePreAuth
 import net.corda.sdk.packaging.CpiUploader
 import net.corda.v5.base.types.MemberX500Name

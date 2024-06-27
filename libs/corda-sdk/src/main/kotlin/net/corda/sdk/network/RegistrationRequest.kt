@@ -1,8 +1,8 @@
 package net.corda.sdk.network
 
 import net.corda.membership.lib.MemberInfoExtension
-import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
-import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
+import net.corda.restclient.generated.models.KeyPairIdentifier
+import net.corda.restclient.generated.models.MemberRegistrationRequest
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 
 class RegistrationRequest {

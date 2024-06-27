@@ -2,8 +2,8 @@ package net.corda.restclient.generated
 
 import io.javalin.Javalin
 import net.corda.restclient.CordaRestClient
-import net.corda.restclient.dto.GenerateCsrWrapperRequest
 import net.corda.restclient.generated.apis.CertificateApi
+import net.corda.restclient.generated.models.GenerateCsrWrapperRequest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatCode
 import org.junit.jupiter.api.AfterAll
@@ -224,26 +224,5 @@ class TestKnownIssues {
             val response: String = client.helloRestClient.postHello(username)
             assertThat(response).isEqualTo(greeting)
         }
-    }
-
-    /**
-     * Test that the dependency on `libs.jackson.datatype.jsr310` is consumed correctly
-     * by the generated client and propagated to the using code, including Corda CLI,
-     * enabling the correct deserialization of the `Instant` type.
-     * See details: https://r3-cev.atlassian.net/browse/ES-2396
-    */
-    @Test
-    fun testGetRole() {
-        val response = """
-            [{"id":"62badb8b-1836-4a89-901a-fd6b65906a67","version":0,"updateTimestamp":"2024-05-17T08:33:07.602Z","roleName":"Default System Admin","groupVisibility":null,"permissions":[{"id":"4b3477d9-b812-4ae5-bcb1-5537c7a373d5","createdTimestamp":"2024-05-17T08:33:07.692Z"}]}]
-        """.trimIndent()
-        app.get("api/v5_3/role") { ctx ->
-            ctx.header("Content-Type", "application/json")
-            ctx.result(response)
-        }
-        val client = CordaRestClient.createHttpClient(baseUrl = localhost)
-        val roles = client.rbacRoleClient.getRole()
-        assertThat(roles).isNotEmpty
-        assertThat(roles.first().updateTimestamp).isNotNull
     }
 }

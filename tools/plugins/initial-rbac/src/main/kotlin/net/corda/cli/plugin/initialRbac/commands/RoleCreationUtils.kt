@@ -1,8 +1,8 @@
 package net.corda.cli.plugin.initialRbac.commands
 
 import net.corda.cli.plugins.common.RestCommand
-import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.restclient.CordaRestClient
+import net.corda.restclient.generated.models.CreateRoleType
 import net.corda.sdk.bootstrap.rbac.PermissionTemplate
 import net.corda.sdk.bootstrap.rbac.RoleAndPermissionsCreator
 import org.slf4j.Logger

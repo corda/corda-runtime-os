@@ -10,8 +10,8 @@ import net.corda.cli.plugins.typeconverter.RequestIdConverter
 import net.corda.cli.plugins.typeconverter.ShortHashConverter
 import net.corda.cli.plugins.typeconverter.X500NameConverter
 import net.corda.crypto.core.ShortHash
-import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.restclient.CordaRestClient
+import net.corda.restclient.generated.models.RestRegistrationRequestStatus
 import net.corda.sdk.data.RequestId
 import net.corda.sdk.network.RegistrationsLookup
 import net.corda.v5.base.types.MemberX500Name

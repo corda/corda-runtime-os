@@ -21,7 +21,3 @@ The `applyWorkarounds` task should have taken care of this, but may have become 
 The CertificateApi has a known limitation where we are unable to send a list of files.  
 The spec allows for a list of files to be sent, and you can achieve this via Swagger and cURL, but the generated client does not support this.  
 The workaround is to send the files one at a time. If you provide a list of files, only the first file will be sent.
-
-## DTO
-
-There are a small number of data classes which don't already exist in the codebase, but are listed in the spec. We will need to maintain those.
