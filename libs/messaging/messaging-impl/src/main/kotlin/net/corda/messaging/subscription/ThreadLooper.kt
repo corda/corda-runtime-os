@@ -214,7 +214,9 @@ class ThreadLooper(
         try {
             loopFunction()
             _isRunning = false
-            lifecycleCoordinator.close()
+            if (lifecycleCoordinator.status != LifecycleStatus.ERROR) {
+                lifecycleCoordinator.close()
+            }
         } catch (t: Throwable) {
             val msg = "runConsumeLoop Throwable caught, subscription in an unrecoverable bad state"
             log.error(msg, t)
