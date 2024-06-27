@@ -152,7 +152,7 @@ class PermissionStorageWriterProcessorImplTest {
             respFuture = future
         )
 
-        verify(permissionStorageReader, times(1)).publishDeletedUser(avroUser.loginName, null)
+        verify(permissionStorageReader, times(1)).publishDeletedUser(avroUser.loginName)
 
         val response = future.getOrThrow().response
         assertTrue(response is AvroUser)
