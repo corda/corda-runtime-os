@@ -9,7 +9,6 @@ import kong.unirest.MultipartBody
 import kong.unirest.Unirest
 import kong.unirest.apache.ApacheClient
 import net.corda.tracing.addTraceContextToHttpRequest
-import org.apache.http.client.config.RequestConfig
 import org.apache.http.conn.ssl.NoopHostnameVerifier
 import org.apache.http.conn.ssl.TrustAllStrategy
 import org.apache.http.impl.client.HttpClients
@@ -17,7 +16,7 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager
 import org.apache.http.ssl.SSLContexts
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.lang.Exception
+import java.lang.reflect.Field
 import java.net.URI
 import java.net.http.HttpRequest
 import javax.net.ssl.SSLContext
@@ -41,24 +40,20 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
                 .loadTrustMaterial(TrustAllStrategy())
                 .build()
 
-            val requestConfig = RequestConfig.custom()
-                .setConnectionRequestTimeout(60_000)
-                .setConnectTimeout(60_000)
-                .setSocketTimeout(60_000)
-                .build()
-
             val httpClient = HttpClients.custom()
                 .setSSLContext(sslContext)
                 .setSSLHostnameVerifier(NoopHostnameVerifier())
-                .setDefaultRequestConfig(requestConfig)
-                .setMaxConnPerRoute(1)
-                .setMaxConnTotal(1)
+                .setMaxConnPerRoute(5)
+                .setMaxConnTotal(20)
                 .build()
 
             Unirest.config().let { config ->
-                val client = ApacheClient.builder(httpClient).apply(config) as ApacheClient
-                config.interceptor(FailureReportingInterceptor(client, logger))
-                config.httpClient(client)
+                config.interceptor(FailureReportingInterceptor(logger))
+                config.connectTimeout(60_000)
+                config.socketTimeout(60_000) // This parameter also controls `connectionRequestTimeout`.
+                    // I.e. duration of time to retrieve an available connection from the pool of connection
+                    // maintained by ApacheClient.
+                config.httpClient(ApacheClient.builder(httpClient).apply(config) as ApacheClient)
             }
         }
     }
@@ -147,29 +142,39 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
     }
 }
 
-private class FailureReportingInterceptor(private val client: ApacheClient, private val logger: Logger) : Interceptor {
+private class FailureReportingInterceptor(private val logger: Logger) : Interceptor {
     override fun onFail(e: Exception?, request: HttpRequestSummary?, config: Config?): HttpResponse<*> {
 
         val clientFromConfig: ApacheClient? = config?.client as? ApacheClient
-        if (client === clientFromConfig) {
-            logger.info("Client is the same")
-        } else {
-            logger.info("Clients are different: $client vs. $clientFromConfig")
-        }
 
-        @Suppress("deprecation")
-        val connectionManager = client.manager ?: client.client.connectionManager as? PoolingHttpClientConnectionManager
+        val connectionManager = clientFromConfig?.poolingConnectionManager
         val statsString = if (connectionManager == null) {
-            "Connection manager is null."
+            "Connection manager is null"
         } else {
             val routesStats = connectionManager.routes.joinToString("\n") { route ->
                 "Route: $route => ${connectionManager.getStats(route)}"
             }
-            "Total pool stats: ${connectionManager.totalStats}. Routes stats: $routesStats."
+            "Total pool stats: ${connectionManager.totalStats}. Routes stats: $routesStats"
         }
 
-        logger.error("Failed to process HTTP request (${request?.asString()}). $statsString", e)
+        val configStr = config?.let {
+            "connectionTimeout=${it.connectionTimeout}, socketTimeout=${it.socketTimeout}"
+        } ?: ""
+
+        logger.error("Failed to process HTTP request (${request?.asString()}). $statsString. $configStr.", e)
 
         return super.onFail(e, request, config)
     }
+
+    private val ApacheClient.poolingConnectionManager: PoolingHttpClientConnectionManager?
+        get() {
+            if (manager != null) {
+                return manager
+            }
+
+            // Try obtaining from the private field
+            val maybeField: Result<Field> = runCatching { client.javaClass.getDeclaredField("connManager") }
+            return maybeField.getOrNull()?.also { it.isAccessible = true }
+                ?.get(client) as? PoolingHttpClientConnectionManager
+        }
 }
