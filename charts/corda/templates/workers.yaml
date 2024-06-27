@@ -1,7 +1,9 @@
 {{- include "corda.worker" ( list $ .Values.workers.crypto "crypto"
   ( dict "additionalWorkerArgs" ( list "--hsm-id=SOFT" ) )
 ) }}
-{{- include "corda.worker" ( list $ .Values.workers.db "db" ) }}
+{{- include "corda.worker" ( list $ .Values.workers.db "db"
+    ( dict "servicesAccessed" ( list "crypto" ) )
+) }}
 {{- include "corda.worker" ( list $ .Values.workers.flow "flow"
   ( dict "servicesAccessed" ( list "crypto" "verification" "uniqueness" "persistence" "tokenSelection" ) )
 ) }}
