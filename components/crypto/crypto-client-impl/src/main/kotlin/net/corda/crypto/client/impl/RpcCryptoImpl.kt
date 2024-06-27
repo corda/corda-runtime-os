@@ -8,8 +8,8 @@ import net.corda.data.crypto.ShortHashes
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.encryption.response.EncryptionOpsError
-import net.corda.data.crypto.wire.ops.reconciliation.request.LookUpKeyById
-import net.corda.data.crypto.wire.ops.reconciliation.response.LookupKeyByIdResponse
+import net.corda.data.crypto.wire.ops.sync.request.LookUpKeyById
+import net.corda.data.crypto.wire.ops.sync.response.LookupKeyByIdResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.messaging.api.publisher.HttpRpcClient

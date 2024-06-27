@@ -100,7 +100,7 @@ import java.security.Provider
 import java.security.PublicKey
 import java.util.concurrent.TimeUnit
 import net.corda.crypto.core.ApiNames.LOOKUP_PATH
-import net.corda.crypto.service.impl.rpc.ReconcilerCryptoOpsProcessor
+import net.corda.crypto.service.impl.rpc.CryptoOpsRPCProcessor
 
 // An OSGi component, with no unit tests; instead, tested by using OGGi and mocked out databases in
 // integration tests (CryptoProcessorTests), as well as in various kinds of end to end and other full
@@ -540,7 +540,7 @@ class CryptoProcessorImpl @Activate constructor(
         coordinator.createManagedResource(subscriptionName) {
             subscriptionFactory.createHttpRPCSubscription(
                 rpcConfig = SyncRPCConfig(subscriptionName, LOOKUP_PATH),
-                processor = ReconcilerCryptoOpsProcessor(cryptoService, retryingConfig, keyEncodingService),
+                processor = CryptoOpsRPCProcessor(cryptoService, retryingConfig, keyEncodingService),
             ).also {
                 it.start()
             }

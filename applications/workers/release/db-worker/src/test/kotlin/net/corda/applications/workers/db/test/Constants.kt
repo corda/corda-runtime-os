@@ -30,3 +30,5 @@ internal const val TEMP_DIR = "dir.tmp"
 
 internal const val DEFAULT_TOPIC_PREFIX = ""
 internal const val CUSTOM_CONFIG_PATH = "custom"
+internal const val DEFAULT_SERVICE_WORKER = "a"
+internal const val DEFAULT_SERVICE_VALUE = "b"

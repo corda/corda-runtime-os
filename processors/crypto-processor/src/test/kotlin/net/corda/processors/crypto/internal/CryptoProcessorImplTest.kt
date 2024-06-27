@@ -76,9 +76,9 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.TypedQuery
-import net.corda.crypto.service.impl.rpc.ReconcilerCryptoOpsProcessor
-import net.corda.data.crypto.wire.ops.reconciliation.request.LookUpKeyById
-import net.corda.data.crypto.wire.ops.reconciliation.response.LookupKeyByIdResponse
+import net.corda.crypto.service.impl.rpc.CryptoOpsRPCProcessor
+import net.corda.data.crypto.wire.ops.sync.request.LookUpKeyById
+import net.corda.data.crypto.wire.ops.sync.response.LookupKeyByIdResponse
 
 class CryptoProcessorImplTest {
 
@@ -394,7 +394,7 @@ class CryptoProcessorImplTest {
             whenever(
                 it.createHttpRPCSubscription(
                     any(),
-                    any<ReconcilerCryptoOpsProcessor>()
+                    any<CryptoOpsRPCProcessor>()
                 )
             ).thenReturn(mockSubscriptions.reconcilerCryptoOpsSubscription)
 

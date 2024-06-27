@@ -40,7 +40,7 @@ import java.io.InputStream
  */
 class ConfigTests {
 
-    val defaultArgs = listOf("-spassphrase=password", "-ssalt=salt")
+    val defaultArgs = listOf("-spassphrase=password", "-ssalt=salt", "--serviceEndpoint=$DEFAULT_SERVICE_WORKER=$DEFAULT_SERVICE_VALUE")
     val applicationBanner = ApplicationBanner(DummyStartupBanner(), mock<CordaAddonResolver> {
         on { findAll() } doReturn emptyList()})
 
@@ -81,7 +81,8 @@ class ConfigTests {
             WORKSPACE_DIR,
             TEMP_DIR,
             "$BOOT_KAFKA_COMMON.$MSG_KEY_ONE",
-            "$BOOT_DB.$DB_KEY_ONE"
+            "$BOOT_DB.$DB_KEY_ONE",
+            "worker.$DEFAULT_SERVICE_WORKER"
         )
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
@@ -120,7 +121,8 @@ class ConfigTests {
             TOPIC_PREFIX,
             BOOT_MAX_ALLOWED_MSG_SIZE,
             WORKSPACE_DIR,
-            TEMP_DIR
+            TEMP_DIR,
+            "worker.$DEFAULT_SERVICE_WORKER"
         )
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)
@@ -149,7 +151,8 @@ class ConfigTests {
             TOPIC_PREFIX,
             BOOT_MAX_ALLOWED_MSG_SIZE,
             WORKSPACE_DIR,
-            TEMP_DIR
+            TEMP_DIR,
+            "worker.$DEFAULT_SERVICE_WORKER"
         )
         val actualKeys = config.entrySet().map { entry -> entry.key }.toSet()
         assertEquals(expectedKeys, actualKeys)

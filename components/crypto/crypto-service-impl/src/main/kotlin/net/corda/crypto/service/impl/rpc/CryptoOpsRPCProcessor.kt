@@ -10,14 +10,14 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.crypto.SecureHashes
 import net.corda.data.crypto.ShortHashes
 import net.corda.data.crypto.wire.CryptoSigningKeys
-import net.corda.data.crypto.wire.ops.reconciliation.request.LookUpKeyById
-import net.corda.data.crypto.wire.ops.reconciliation.response.LookupKeyByIdError
-import net.corda.data.crypto.wire.ops.reconciliation.response.LookupKeyByIdResponse
+import net.corda.data.crypto.wire.ops.sync.request.LookUpKeyById
+import net.corda.data.crypto.wire.ops.sync.response.LookupKeyByIdError
+import net.corda.data.crypto.wire.ops.sync.response.LookupKeyByIdResponse
 import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 
-class ReconcilerCryptoOpsProcessor(
+class CryptoOpsRPCProcessor(
     private val cryptoService: CryptoService,
     config: RetryingConfig,
     private val keyEncodingService: KeyEncodingService,
