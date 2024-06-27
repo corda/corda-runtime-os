@@ -73,8 +73,8 @@ class PermissionStorageReaderImpl(
         publisher.publish(listOf(Record(REST_PERM_USER_TOPIC, key = user.loginName, value = user))).single().getOrThrow()
     }
 
-    override fun publishDeletedUser(loginName: String, user: AvroUser?) {
-        publisher.publish(listOf(Record(REST_PERM_USER_TOPIC, key = loginName, value = user))).single().getOrThrow()
+    override fun publishDeletedUser(loginName: String) {
+        publisher.publish(listOf(Record(REST_PERM_USER_TOPIC, key = loginName, value = null))).single().getOrThrow()
     }
 
     override fun publishUpdatedRole(role: AvroRole) {

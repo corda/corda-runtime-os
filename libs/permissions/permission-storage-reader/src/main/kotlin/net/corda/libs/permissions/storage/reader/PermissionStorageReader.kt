@@ -34,9 +34,8 @@ interface PermissionStorageReader : Resource {
      * Broadcasts the deleted user onto the messaging bus.
      *
      * @param loginName The login name of the user to be deleted.
-     * @param user The user to be published.
      */
-    fun publishDeletedUser(loginName: String, user: AvroUser?)
+    fun publishDeletedUser(loginName: String)
 
     /**
      * Broadcasts a new role onto the messaging bus.

@@ -48,7 +48,7 @@ class PermissionStorageWriterProcessorImpl(
                 }
                 is DeleteUserRequest -> {
                     val avroUser = userWriter.deleteUser(permissionRequest, request.requestUserId)
-                    permissionStorageReader.publishDeletedUser(avroUser.loginName, null)
+                    permissionStorageReader.publishDeletedUser(avroUser.loginName)
                     permissionStorageReader.reconcilePermissionSummaries()
                     avroUser
                 }
