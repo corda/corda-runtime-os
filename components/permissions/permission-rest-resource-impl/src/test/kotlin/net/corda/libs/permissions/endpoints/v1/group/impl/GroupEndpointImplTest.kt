@@ -2,9 +2,14 @@ package net.corda.libs.permissions.endpoints.v1.group.impl
 
 import net.corda.libs.permissions.endpoints.v1.group.types.CreateGroupType
 import net.corda.libs.permissions.manager.PermissionManager
+import net.corda.libs.permissions.manager.request.AddRoleToGroupRequestDto
+import net.corda.libs.permissions.manager.request.CreateGroupRequestDto
+import net.corda.libs.permissions.manager.request.DeleteGroupRequestDto
+import net.corda.libs.permissions.manager.request.RemoveRoleFromGroupRequestDto
 import net.corda.libs.permissions.manager.response.GroupContentResponseDto
 import net.corda.libs.permissions.manager.response.GroupResponseDto
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.permissions.management.PermissionManagementService
 import net.corda.rest.ResponseCode
 import net.corda.rest.security.CURRENT_REST_CONTEXT
@@ -56,17 +61,12 @@ internal class GroupEndpointImplTest {
         whenever(it.localWorkerPlatformVersion).thenReturn(1)
     }
 
-    private val endpoint = GroupEndpointImpl(permissionService, platformInfoProvider)
+    private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
+
+    private val endpoint = GroupEndpointImpl(lifecycleCoordinatorFactory, permissionService, platformInfoProvider)
 
     @BeforeEach
     fun beforeEach() {
-        whenever(permissionManager.createGroup(any())).thenReturn(groupResponseDto)
-        whenever(permissionManager.changeParentGroup(any())).thenReturn(groupResponseDto)
-        whenever(permissionManager.addRoleToGroup(any())).thenReturn(groupResponseDto)
-        whenever(permissionManager.removeRoleFromGroup(any())).thenReturn(groupResponseDto)
-        whenever(permissionManager.deleteGroup(any())).thenReturn(groupResponseDto)
-        whenever(permissionManager.getGroupContent(any())).thenReturn(groupContentResponseDto)
-
         val authContext = mock<RestAuthContext>().apply {
             whenever(principal).thenReturn("aRestUser")
         }
@@ -74,7 +74,10 @@ internal class GroupEndpointImplTest {
     }
 
     @Test
-    fun `createGroup calls PermissionGroupManager with correct parameters`() {
+    fun `create a group successfully`() {
+        val createGroupDtoCapture = argumentCaptor<CreateGroupRequestDto>()
+        whenever(permissionManager.createGroup(createGroupDtoCapture.capture())).thenReturn(groupResponseDto)
+
         val response = endpoint.createGroup(createGroupType)
         val responseType = response.responseBody
 
@@ -84,10 +87,16 @@ internal class GroupEndpointImplTest {
         assertEquals(now, responseType.updateTimestamp)
         assertEquals("groupName1", responseType.name)
         assertEquals(parentGroup, responseType.parentGroupId)
+
+        val capturedDto = createGroupDtoCapture.firstValue
+        assertEquals("groupName1", capturedDto.groupName)
+        assertEquals(parentGroup, capturedDto.parentGroupId)
     }
 
     @Test
     fun `get a group successfully`() {
+        whenever(permissionManager.getGroupContent(any())).thenReturn(groupContentResponseDto)
+
         val groupId = "uuid"
         val responseType = endpoint.getGroupContent(groupId)
 
@@ -100,6 +109,9 @@ internal class GroupEndpointImplTest {
 
     @Test
     fun `add role to group`() {
+        val addRoleDtoCapture = argumentCaptor<AddRoleToGroupRequestDto>()
+        whenever(permissionManager.addRoleToGroup(addRoleDtoCapture.capture())).thenReturn(groupResponseDto)
+
         val groupId = "uuid"
         val roleId = "roleId1"
         val response = endpoint.addRole(groupId, roleId)
@@ -111,10 +123,17 @@ internal class GroupEndpointImplTest {
         assertEquals(now, responseType.updateTimestamp)
         assertEquals("groupName1", responseType.name)
         assertEquals(parentGroup, responseType.parentGroupId)
+
+        val capturedDto = addRoleDtoCapture.firstValue
+        assertEquals(groupId, capturedDto.groupId)
+        assertEquals(roleId, capturedDto.roleId)
     }
 
     @Test
     fun `remove role from group`() {
+        val removeRoleDtoCapture = argumentCaptor<RemoveRoleFromGroupRequestDto>()
+        whenever(permissionManager.removeRoleFromGroup(removeRoleDtoCapture.capture())).thenReturn(groupResponseDto)
+
         val groupId = "uuid"
         val roleId = "roleId1"
         val response = endpoint.removeRole(groupId, roleId)
@@ -126,10 +145,17 @@ internal class GroupEndpointImplTest {
         assertEquals(now, responseType.updateTimestamp)
         assertEquals("groupName1", responseType.name)
         assertEquals(parentGroup, responseType.parentGroupId)
+
+        val capturedDto = removeRoleDtoCapture.firstValue
+        assertEquals(groupId, capturedDto.groupId)
+        assertEquals(roleId, capturedDto.roleId)
     }
 
     @Test
     fun `delete a group`() {
+        val deleteGroupDtoCapture = argumentCaptor<DeleteGroupRequestDto>()
+        whenever(permissionManager.deleteGroup(deleteGroupDtoCapture.capture())).thenReturn(groupResponseDto)
+
         val groupId = "uuid"
         val response = endpoint.deleteGroup(groupId)
         val responseType = response.responseBody
@@ -140,5 +166,8 @@ internal class GroupEndpointImplTest {
         assertEquals(now, responseType.updateTimestamp)
         assertEquals("groupName1", responseType.name)
         assertEquals(parentGroup, responseType.parentGroupId)
+
+        val capturedDto = deleteGroupDtoCapture.firstValue
+        assertEquals(groupId, capturedDto.groupId)
     }
 }

@@ -1,5 +1,6 @@
 package net.corda.libs.permissions.endpoints.v1.group.impl
 
+import net.corda.libs.permissions.endpoints.common.PermissionEndpointEventHandler
 import net.corda.libs.permissions.endpoints.common.withPermissionManager
 import net.corda.libs.permissions.endpoints.v1.converter.convertToDto
 import net.corda.libs.permissions.endpoints.v1.converter.convertToEndpointType
@@ -7,11 +8,15 @@ import net.corda.libs.permissions.endpoints.v1.group.GroupEndpoint
 import net.corda.libs.permissions.endpoints.v1.group.types.CreateGroupType
 import net.corda.libs.permissions.endpoints.v1.group.types.GroupContentResponseType
 import net.corda.libs.permissions.endpoints.v1.group.types.GroupResponseType
+import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.permissions.manager.request.AddRoleToGroupRequestDto
 import net.corda.libs.permissions.manager.request.ChangeGroupParentIdDto
 import net.corda.libs.permissions.manager.request.DeleteGroupRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromGroupRequestDto
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.createCoordinator
 import net.corda.permissions.management.PermissionManagementService
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.ExceptionDetails
@@ -26,19 +31,25 @@ import org.slf4j.LoggerFactory
 
 @Component(service = [PluggableRestResource::class])
 class GroupEndpointImpl @Activate constructor(
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = PermissionManagementService::class)
     private val permissionManagementService: PermissionManagementService,
     @Reference(service = PlatformInfoProvider::class)
     private val platformInfoProvider: PlatformInfoProvider
-) : GroupEndpoint {
+) : GroupEndpoint, PluggableRestResource<UserEndpoint>, Lifecycle {
 
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-
-        private const val INVALID_ARGUMENT_MESSAGE = "Invalid argument in request."
     }
 
+    override val targetInterface: Class<UserEndpoint> = UserEndpoint::class.java
+
     override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
+
+    private val coordinator = coordinatorFactory.createCoordinator<UserEndpoint>(
+        PermissionEndpointEventHandler("UserEndpoint")
+    )
 
     override fun createGroup(createGroupType: CreateGroupType): ResponseEntity<GroupResponseType> {
         val principal = getRestThreadLocalContext()
@@ -106,5 +117,16 @@ class GroupEndpointImpl @Activate constructor(
     private fun getRestThreadLocalContext(): String {
         val restContext = CURRENT_REST_CONTEXT.get()
         return restContext.principal
+    }
+
+    override val isRunning: Boolean
+        get() = coordinator.isRunning
+
+    override fun start() {
+        coordinator.start()
+    }
+
+    override fun stop() {
+        coordinator.stop()
     }
 }
