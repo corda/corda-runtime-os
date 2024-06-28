@@ -67,7 +67,12 @@ class VirtualNodeInfoProcessor(private val onStatusUpCallback: () -> Unit, priva
         log.trace { "Virtual Node Info Processor received snapshot" }
 
         try {
-            virtualNodeInfoMap.putAll(currentData.mapKeys { VirtualNodeInfoMap.Key(it.key, it.key.toCorda().shortHash) })
+            virtualNodeInfoMap.putAll(
+                currentData.mapKeys {
+                    log.info("Virtual Node Info Processor received update for Holding Identity ${it.key.toCorda().shortHash}.")
+                    VirtualNodeInfoMap.Key(it.key, it.key.toCorda().shortHash)
+                }
+            )
         } catch (exception: IllegalArgumentException) {
             // We only expect this code path if someone has posted to Kafka,
             // a VirtualNodeInfo with a different HoldingIdentity to the key.
@@ -97,6 +102,7 @@ class VirtualNodeInfoProcessor(private val onStatusUpCallback: () -> Unit, priva
         val key = VirtualNodeInfoMap.Key(newRecord.key, newRecord.key.toCorda().shortHash)
         if (newRecord.value != null) {
             try {
+                log.info("Virtual Node Info Processor received update for Holding Identity ${key.holdingIdentity}.")
                 virtualNodeInfoMap.put(key, newRecord.value!!)
             } catch (exception: IllegalArgumentException) {
                 // We only expect this code path if someone has posted to Kafka,
