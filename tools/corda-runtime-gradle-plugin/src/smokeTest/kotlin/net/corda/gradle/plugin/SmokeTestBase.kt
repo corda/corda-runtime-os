@@ -101,7 +101,6 @@ abstract class SmokeTestBase {
             """
             plugins {
                 id 'net.corda.gradle.plugin'
-                id 'net.corda.cordapp.cordapp-configuration' version '5.3.0.14-beta+'
             }
             
             """.trimIndent()
@@ -128,8 +127,10 @@ abstract class SmokeTestBase {
                 cordaClusterURL = "$targetUrl"
                 cordaRestUser = "$USER"
                 cordaRestPasswd ="$PASSWORD"
-//                notaryVersion = "$testEnvCordaImageTag"
-                notaryVersion = "5.3.0.0-beta-1719487566884"
+//                notaryVersion = "5.3.0.0-beta-1718321168247" // OLDER VERSION
+                notaryVersion = "$testEnvCordaImageTag"
+//                notaryVersion = "5.3.0.0-HC01"
+//                notaryVersion = "5.3.0.0-beta-1719487566884"
                 runtimeVersion = "$CORDA_RUNTIME_VERSION_STABLE"
                 composeFilePath = "config/combined-worker-compose.yml"
                 networkConfigFile = "$networkPath"
