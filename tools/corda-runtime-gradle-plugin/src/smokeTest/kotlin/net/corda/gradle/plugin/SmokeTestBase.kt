@@ -60,6 +60,7 @@ abstract class SmokeTestBase {
             )
             val cmd = composeCommandBase + args.toList()
             val cordaProcessBuilder = ProcessBuilder(cmd)
+            // Get preTest image tag from the pipeline, or fallback to stable version
             cordaProcessBuilder.environment()["CORDA_RUNTIME_VERSION"] = testEnvCordaImageTag
             cordaProcessBuilder.redirectErrorStream(true)
             val process = cordaProcessBuilder.start()
@@ -127,14 +128,11 @@ abstract class SmokeTestBase {
                 cordaClusterURL = "$targetUrl"
                 cordaRestUser = "$USER"
                 cordaRestPasswd ="$PASSWORD"
-//                notaryVersion = "5.3.0.0-beta-1718321168247" // OLDER VERSION
-                notaryVersion = "$testEnvCordaImageTag"
-//                notaryVersion = "5.3.0.0-HC01"
-//                notaryVersion = "5.3.0.0-beta-1719487566884"
+                notaryVersion = "$CORDA_RUNTIME_VERSION_STABLE"
                 runtimeVersion = "$CORDA_RUNTIME_VERSION_STABLE"
                 composeFilePath = "config/combined-worker-compose.yml"
                 networkConfigFile = "$networkPath"
-                r3RootCertFile = "config/r3-ca-key.pem"
+                r3RootCertFile = "config/Digicert-ca-key.pem"
                 corDappCpiName = "MyCorDapp"
                 notaryCpiName = "NotaryServer"
                 workflowsModuleName = "workflows"
