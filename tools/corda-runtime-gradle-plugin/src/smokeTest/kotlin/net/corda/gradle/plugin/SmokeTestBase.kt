@@ -109,6 +109,7 @@ abstract class SmokeTestBase {
         buildFile.writeText(newContent)
     }
 
+    @Suppress("SpreadOperator") // TODO remove this suppression
     fun executeWithRunner(vararg args: String, outputWriter: Writer? = null, forwardOutput: Boolean = false): BuildResult {
         val argsWithProperties = args.toList() + GradleProperties().toKeyValues()
         val gradleRunnerBuilder = GradleRunner

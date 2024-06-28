@@ -10,7 +10,7 @@ data class GradleProperties(
 
     val platformVersion: String = "999",
     val workflowsModule: String = "workflows",
-    // TODO: add other properties to have configurable plugin build.gradle
+    // TODO add other properties to have configurable plugin build.gradle
 ) {
     companion object {
         private fun getSystemPropertyOrThrow(name: String): String {
