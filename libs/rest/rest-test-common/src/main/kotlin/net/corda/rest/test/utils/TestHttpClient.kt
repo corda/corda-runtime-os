@@ -87,7 +87,7 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
         }.addOriginHeader()
 
         request.encodeAuth()
-
+        request.responseEncoding("utf-8")
         request = if (isMultipartFormRequest(webRequest)) {
             buildMultipartFormRequest(webRequest, request)
         } else {
