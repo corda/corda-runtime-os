@@ -18,8 +18,8 @@ import net.corda.rest.response.ResponseEntity
 @HttpRestResource(
     name = "RBAC Group",
     description = "The RBAC Group API consists of a number of endpoints enabling group management in the RBAC " +
-            "(role-based access control) permission system. You can get details of specified groups, create new groups, " +
-            "assign roles to groups and remove roles from groups.",
+        "(role-based access control) permission system. You can get details of specified groups, create new groups, " +
+        "assign roles to groups and remove roles from groups.",
     path = "group",
     minVersion = RestApiVersion.C5_3
 )
