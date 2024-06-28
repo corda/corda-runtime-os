@@ -52,8 +52,8 @@ internal class GroupEndpointImplTest {
         parentGroup,
         emptyList(),
         emptyList(),
-        emptyList(),
-        emptyList()
+        emptySet(),
+        emptySet()
     )
 
     private val permissionManager = mock<PermissionManager>()

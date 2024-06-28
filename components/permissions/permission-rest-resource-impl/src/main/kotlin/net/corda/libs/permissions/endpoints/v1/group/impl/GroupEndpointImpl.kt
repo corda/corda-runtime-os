@@ -8,7 +8,6 @@ import net.corda.libs.permissions.endpoints.v1.group.GroupEndpoint
 import net.corda.libs.permissions.endpoints.v1.group.types.CreateGroupType
 import net.corda.libs.permissions.endpoints.v1.group.types.GroupContentResponseType
 import net.corda.libs.permissions.endpoints.v1.group.types.GroupResponseType
-import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.permissions.manager.request.AddRoleToGroupRequestDto
 import net.corda.libs.permissions.manager.request.ChangeGroupParentIdDto
 import net.corda.libs.permissions.manager.request.DeleteGroupRequestDto
@@ -37,18 +36,18 @@ class GroupEndpointImpl @Activate constructor(
     private val permissionManagementService: PermissionManagementService,
     @Reference(service = PlatformInfoProvider::class)
     private val platformInfoProvider: PlatformInfoProvider
-) : GroupEndpoint, PluggableRestResource<UserEndpoint>, Lifecycle {
+) : GroupEndpoint, PluggableRestResource<GroupEndpoint>, Lifecycle {
 
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override val targetInterface: Class<UserEndpoint> = UserEndpoint::class.java
+    override val targetInterface: Class<GroupEndpoint> = GroupEndpoint::class.java
 
     override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
-    private val coordinator = coordinatorFactory.createCoordinator<UserEndpoint>(
-        PermissionEndpointEventHandler("UserEndpoint")
+    private val coordinator = coordinatorFactory.createCoordinator<GroupEndpoint>(
+        PermissionEndpointEventHandler("GroupEndpoint")
     )
 
     override fun createGroup(createGroupType: CreateGroupType): ResponseEntity<GroupResponseType> {

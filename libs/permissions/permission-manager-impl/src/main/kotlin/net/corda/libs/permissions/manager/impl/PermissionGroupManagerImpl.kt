@@ -102,8 +102,12 @@ class PermissionGroupManagerImpl(
             "Permission management cache is null."
         }
         val cachedGroup: Group = permissionManagementCache.getGroup(groupId) ?: return null
-        val subgroups = permissionManagementCache.groups.values.filter { it.parentGroupId == groupId }.map { it.id }
-        val userIds = permissionManagementCache.users.values.filter { it.parentGroupId == groupId }.map { it.id }
+        val subgroups = permissionManagementCache.groups.values
+            .filter { it.parentGroupId == groupId }
+            .map { it.id }.toSet()
+        val userIds = permissionManagementCache.users.values
+            .filter { it.parentGroupId == groupId }
+            .map { it.id }.toSet()
 
         return GroupContentResponseDto(
             cachedGroup.id,

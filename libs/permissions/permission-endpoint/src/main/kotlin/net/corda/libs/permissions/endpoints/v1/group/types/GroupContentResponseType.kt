@@ -41,10 +41,10 @@ data class GroupContentResponseType(
     /**
      * List of user IDs in the group.
      */
-    val users: List<String>,
+    val users: Set<String>,
 
     /**
      * List of subgroups associated with the group.
      */
-    val subgroups: List<String>
+    val subgroups: Set<String>
 )

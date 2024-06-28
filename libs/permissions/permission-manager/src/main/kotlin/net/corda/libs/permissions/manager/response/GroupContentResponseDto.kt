@@ -12,6 +12,6 @@ data class GroupContentResponseDto(
     val parentGroupId: String,
     val properties: List<PropertyResponseDto>,
     val roleAssociations: List<RoleAssociationResponseDto>,
-    val users: List<String>,
-    val subgroups: List<String>
+    val users: Set<String>,
+    val subgroups: Set<String>
 )

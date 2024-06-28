@@ -54,6 +54,9 @@
     "name" : "Network",
     "description" : "The Network API consists of endpoints which manage the setup of holding identities in P2P networks."
   }, {
+    "name" : "RBAC Group",
+    "description" : "The RBAC Group API consists of a number of endpoints enabling group management in the RBAC (role-based access control) permission system. You can get details of specified groups, create new groups, assign roles to groups and remove roles from groups."
+  }, {
     "name" : "RBAC Permission",
     "description" : "The RBAC Permission API consists of a number of endpoints enabling permissions management in the RBAC (role-based access control) permission system. You can get details of specified permissions and create new permissions."
   }, {
@@ -1006,6 +1009,286 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/StartableFlowsResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/group" : {
+      "post" : {
+        "tags" : [ "RBAC Group" ],
+        "description" : "This method creates a new group.",
+        "operationId" : "post_group",
+        "parameters" : [ ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateGroupType"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "\n            A newly created group with the following attributes:\n            id: Unique server generated identifier for the group\n            version: The version of the group; version 0 is assigned to a newly created group\n            updateTimestamp: The date and time when the group was last updated\n            name: The name of the group\n            parentGroupId: The ID of the parent group\n            properties: An optional set of key/value properties associated with a group\n            roleAssociations: A set of roles associated with the group",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GroupResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/group/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "RBAC Group" ],
+        "description" : "Returns the version of the endpoint",
+        "operationId" : "get_group_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "An integer value specifying the version of the endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/group/{groupid}" : {
+      "get" : {
+        "tags" : [ "RBAC Group" ],
+        "description" : "This method retrieves the content of a specified group.",
+        "operationId" : "get_group__groupid_",
+        "parameters" : [ {
+          "name" : "groupid",
+          "in" : "path",
+          "description" : "ID of the group to get content.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "ID of the group to get content.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "\n            The content of the specified group with the following attributes:\n            id: Unique server generated identifier for the group\n            version: The version of the group; version 0 is assigned to a newly created group\n            updateTimestamp: The date and time when the group was last updated\n            name: The name of the group\n            parentGroupId: The ID of the parent group\n            properties: An optional set of key/value properties associated with a group\n            roleAssociations: A set of roles associated with the group",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GroupContentResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "RBAC Group" ],
+        "description" : "This method deletes a specified group.",
+        "operationId" : "delete_group__groupid_",
+        "parameters" : [ {
+          "name" : "groupid",
+          "in" : "path",
+          "description" : "ID of the group to delete.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "ID of the group to delete.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "\n            The deleted group with the following attributes:\n            id: Unique server generated identifier for the group\n            version: The version of the group; version 0 is assigned to a newly created group\n            updateTimestamp: The date and time when the group was last updated\n            name: The name of the group\n            parentGroupId: The ID of the parent group\n            properties: An optional set of key/value properties associated with a group\n            roleAssociations: A set of roles associated with the group",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GroupResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/group/{groupid}/parent/changeparentid/{newparentgroupid}" : {
+      "put" : {
+        "tags" : [ "RBAC Group" ],
+        "description" : "This method changes the parent group of a specified group.",
+        "operationId" : "put_group__groupid__parent_changeparentid__newparentgroupid_",
+        "parameters" : [ {
+          "name" : "groupid",
+          "in" : "path",
+          "description" : "ID of the group to change parent.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "ID of the group to change parent.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "newparentgroupid",
+          "in" : "path",
+          "description" : "New parent group ID.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "New parent group ID.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "\n            The group with the updated parent group with the following attributes:\n            id: Unique server generated identifier for the group\n            version: The version of the group; version 0 is assigned to a newly created group\n            updateTimestamp: The date and time when the group was last updated\n            name: The name of the group\n            parentGroupId: The ID of the parent group\n            properties: An optional set of key/value properties associated with a group\n            roleAssociations: A set of roles associated with the group",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GroupResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/group/{groupid}/role/{roleid}" : {
+      "put" : {
+        "tags" : [ "RBAC Group" ],
+        "description" : "This method assigns a role to a specified group.",
+        "operationId" : "put_group__groupid__role__roleid_",
+        "parameters" : [ {
+          "name" : "groupid",
+          "in" : "path",
+          "description" : "ID of the group to assign role.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "ID of the group to assign role.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "roleid",
+          "in" : "path",
+          "description" : "ID of the role to assign.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "ID of the role to assign.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "\n            The group with the newly assigned role with the following attributes:\n            id: Unique server generated identifier for the group\n            version: The version of the group; version 0 is assigned to a newly created group\n            updateTimestamp: The date and time when the group was last updated\n            name: The name of the group\n            parentGroupId: The ID of the parent group\n            properties: An optional set of key/value properties associated with a group\n            roleAssociations: A set of roles associated with the group",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GroupResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "RBAC Group" ],
+        "description" : "This method removes a role from a specified group.",
+        "operationId" : "delete_group__groupid__role__roleid_",
+        "parameters" : [ {
+          "name" : "groupid",
+          "in" : "path",
+          "description" : "ID of the group to unassign role.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "ID of the group to unassign role.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "roleid",
+          "in" : "path",
+          "description" : "ID of the role to unassign.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "ID of the role to unassign.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "\n            The group with the removed role with the following attributes:\n            id: Unique server generated identifier for the group\n            version: The version of the group; version 0 is assigned to a newly created group\n            updateTimestamp: The date and time when the group was last updated\n            name: The name of the group\n            parentGroupId: The ID of the parent group\n            properties: An optional set of key/value properties associated with a group\n            roleAssociations: A set of roles associated with the group",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GroupResponseType"
                 }
               }
             }
@@ -4535,6 +4818,7 @@
             "example" : "string"
           },
           "status" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "IN_PROGRESS",
             "enum" : [ "ACCEPTED", "IN_PROGRESS", "SUCCEEDED", "FAILED", "ABORTED" ]
@@ -4602,6 +4886,7 @@
       },
       "ChangeOtherUserPasswordWrapperRequest" : {
         "required" : [ "password", "username" ],
+        "type" : "object",
         "properties" : {
           "password" : {
             "type" : "string",
@@ -4799,6 +5084,23 @@
           }
         }
       },
+      "CreateGroupType" : {
+        "required" : [ "name" ],
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "parentGroupId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          }
+        },
+        "description" : "Details of the group to be created."
+      },
       "CreatePermissionType" : {
         "required" : [ "permissionString", "permissionType" ],
         "type" : "object",
@@ -4814,6 +5116,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -4908,6 +5211,7 @@
             "example" : "string"
           },
           "json" : {
+            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
@@ -4992,6 +5296,7 @@
       },
       "GenerateCsrWrapperRequest" : {
         "required" : [ "x500Name" ],
+        "type" : "object",
         "properties" : {
           "contextMap" : {
             "type" : "object",
@@ -5057,6 +5362,116 @@
             "type" : "string",
             "nullable" : false,
             "example" : "string"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        }
+      },
+      "GroupContentResponseType" : {
+        "required" : [ "id", "name", "parentGroupId", "properties", "roleAssociations", "subgroups", "updateTimestamp", "users" ],
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "name" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "parentGroupId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "properties" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/PropertyResponseType"
+            }
+          },
+          "roleAssociations" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/RoleAssociationResponseType"
+            }
+          },
+          "subgroups" : {
+            "uniqueItems" : true,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "type" : "string",
+              "example" : "string"
+            }
+          },
+          "updateTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T10:15:30Z"
+          },
+          "users" : {
+            "uniqueItems" : true,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "type" : "string",
+              "example" : "string"
+            }
+          }
+        }
+      },
+      "GroupResponseType" : {
+        "required" : [ "id", "name", "properties", "roleAssociations", "updateTimestamp", "version" ],
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "name" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "parentGroupId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "properties" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/PropertyResponseType"
+            }
+          },
+          "roleAssociations" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "$ref" : "#/components/schemas/RoleAssociationResponseType"
+            }
+          },
+          "updateTimestamp" : {
+            "type" : "string",
+            "format" : "datetime",
+            "nullable" : false,
+            "example" : "2022-06-24T10:15:30Z"
           },
           "version" : {
             "type" : "integer",
@@ -5180,31 +5595,37 @@
             "example" : "string"
           },
           "cryptoDdlConnection" : {
+            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "cryptoDmlConnection" : {
+            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "uniquenessDdlConnection" : {
+            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "uniquenessDmlConnection" : {
+            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "vaultDdlConnection" : {
+            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "vaultDmlConnection" : {
+            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
@@ -5396,6 +5817,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -5439,6 +5861,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -5475,6 +5898,7 @@
             "example" : "string"
           },
           "status" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "REVOKED",
             "enum" : [ "AVAILABLE", "REVOKED", "CONSUMED", "AUTO_INVALIDATED" ]
@@ -5643,6 +6067,7 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "registrationStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "SENT_TO_MGM",
             "enum" : [ "NEW", "SENT_TO_MGM", "RECEIVED_BY_MGM", "STARTED_PROCESSING_BY_MGM", "PENDING_MEMBER_VERIFICATION", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "INVALID", "FAILED", "APPROVED" ]
@@ -5757,6 +6182,7 @@
             "example" : "string"
           },
           "inactiveResponseType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "IGNORE",
             "enum" : [ "ERROR", "IGNORE" ]
@@ -5812,6 +6238,7 @@
             "example" : "string"
           },
           "requestBody" : {
+            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : false,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
@@ -5862,6 +6289,7 @@
         "type" : "object",
         "properties" : {
           "config" : {
+            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : false,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
@@ -5912,31 +6340,37 @@
         "type" : "object",
         "properties" : {
           "cryptoDdlConnection" : {
+            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "cryptoDmlConnection" : {
+            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "uniquenessDdlConnection" : {
+            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "uniquenessDmlConnection" : {
+            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "vaultDdlConnection" : {
+            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "vaultDmlConnection" : {
+            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
@@ -6065,16 +6499,19 @@
             "$ref" : "#/components/schemas/RouteConfiguration"
           },
           "flowOperationalStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowP2pOperationalStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowStartOperationalStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
@@ -6103,6 +6540,7 @@
             "example" : "string"
           },
           "vaultDbOperationalStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
