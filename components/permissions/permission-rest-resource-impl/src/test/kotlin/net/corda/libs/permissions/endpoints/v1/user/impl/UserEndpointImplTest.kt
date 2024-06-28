@@ -15,6 +15,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.permissions.management.PermissionManagementService
 import net.corda.rest.ResponseCode
+import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceNotFoundException
@@ -157,6 +158,17 @@ internal class UserEndpointImplTest {
         assertEquals(true, responseType.enabled)
         assertEquals(now, responseType.passwordExpiry)
         assertEquals(parentGroup, responseType.parentGroup)
+    }
+
+    @Test
+    fun `delete self user throws with bad request exception`() {
+        whenever(lifecycleCoordinator.isRunning).thenReturn(true)
+        whenever(permissionService.isRunning).thenReturn(true)
+
+        val e = assertThrows<BadRequestException> {
+            endpoint.deleteUser("aRestUser")
+        }
+        assertEquals("User cannot delete self", e.message)
     }
 
     @Test

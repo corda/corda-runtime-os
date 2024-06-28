@@ -130,6 +130,10 @@ class UserEndpointImpl @Activate constructor(
     override fun deleteUser(loginName: String): ResponseEntity<UserResponseType> {
         val principal = getRestThreadLocalContext()
 
+        if (principal.equals(loginName, ignoreCase = true)) {
+            throw BadRequestException("User cannot delete self")
+        }
+
         val userResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {
             deleteUser(DeleteUserRequestDto(principal, loginName.lowercase()))
         }
