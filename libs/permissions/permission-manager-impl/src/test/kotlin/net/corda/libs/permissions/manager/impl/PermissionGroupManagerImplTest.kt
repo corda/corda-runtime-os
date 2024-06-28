@@ -31,7 +31,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Duration
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicReference
 
