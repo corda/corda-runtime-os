@@ -74,7 +74,7 @@ abstract class SmokeTestBase {
                     mavenLocal()
                     
                     maven {
-                        url = "https://software.r3.com/artifactory/corda-os-maven"
+                        url = "${'$'}artifactoryContextUrl/corda-os-maven"
                         authentication {
                             basic(BasicAuthentication)
                         }
@@ -110,11 +110,12 @@ abstract class SmokeTestBase {
     }
 
     fun executeWithRunner(vararg args: String, outputWriter: Writer? = null, forwardOutput: Boolean = false): BuildResult {
+        val argsWithProperties = args.toList() + GradleProperties().toKeyValues()
         val gradleRunnerBuilder = GradleRunner
             .create()
             .withPluginClasspath()
             .withProjectDir(projectDir)
-            .withArguments(*args)
+            .withArguments(*argsWithProperties.toTypedArray())
         if (outputWriter != null) {
             gradleRunnerBuilder
                 .forwardStdOutput(outputWriter)

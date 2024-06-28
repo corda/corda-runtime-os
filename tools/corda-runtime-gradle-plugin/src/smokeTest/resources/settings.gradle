@@ -3,9 +3,7 @@ pluginManagement {
     repositories {
         mavenCentral()
         maven {
-//            url = "$artifactoryContextUrl/corda-os-maven"
-            // TODO: propagate properties from runtime-os project
-            url = "https://software.r3.com/artifactory/corda-os-maven"
+            url = "$artifactoryContextUrl/corda-os-maven"
             authentication {
                 basic(BasicAuthentication)
             }
