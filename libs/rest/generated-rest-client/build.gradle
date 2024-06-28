@@ -78,9 +78,28 @@ tasks.register('applyWorkaroundForStringResponseType') {
     }
 }
 
+tasks.register('applyWorkaroundForClientErrorMessage') {
+    dependsOn 'openApiGenerate'
+
+    def targetLineRegex = 'open class ClientException.+ RuntimeException.+ \\{'
+    // Whitespace is important
+    def replacementText = """\
+    open class ClientException(message: kotlin.String? = null, val statusCode: Int = -1, val response: Response? = null) : RuntimeException(
+        "\\\$message \\\${(response as? ClientError<*>)?.body?.toString().orEmpty()}"
+    ) {""".stripIndent()
+
+    def fileName = "${project.buildDir}/generated/src/main/kotlin/net/corda/restclient/generated/infrastructure/Errors.kt"
+
+    doLast {
+        file(fileName).text = file(fileName).text
+                .replaceAll(targetLineRegex, replacementText)
+    }
+}
+
 tasks.register('applyWorkarounds') {
     dependsOn 'applyWorkaroundForCertificateApi'
     dependsOn 'applyWorkaroundForStringResponseType'
+    dependsOn 'applyWorkaroundForClientErrorMessage'
 }
 
 tasks.named('compileKotlin') {
