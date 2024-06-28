@@ -10,6 +10,7 @@ import net.corda.data.permissions.management.permission.CreatePermissionRequest
 import net.corda.data.permissions.management.role.CreateRoleRequest
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
+import net.corda.data.permissions.management.user.DeleteUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.writer.impl.permission.PermissionWriter
@@ -41,6 +42,10 @@ class PermissionStorageWriterProcessorImplTest {
         loginName = "lankydan"
         enabled = true
     }
+
+    private val deleteUserRequest = DeleteUserRequest().apply {
+        loginName = "lankydan"
+    }
     private val createRoleRequest = CreateRoleRequest("role1", null)
 
     private val createPermissionRequest = CreatePermissionRequest(
@@ -52,6 +57,7 @@ class PermissionStorageWriterProcessorImplTest {
     private val creatorUserId = "creatorUserId"
     private val avroUser = AvroUser().apply {
         enabled = true
+        loginName = "lankydan"
     }
     private val avroRole = AvroRole()
 
@@ -131,6 +137,29 @@ class PermissionStorageWriterProcessorImplTest {
         val exception = result.response as ExceptionEnvelope
         assertEquals(IllegalArgumentException::class.java.name, exception.errorType)
         assertEquals("Entity manager error.", exception.errorMessage)
+    }
+
+    @Test
+    fun `receiving DeleteUserRequest calls userWriter to delete user and publishes null user and completes future`() {
+        whenever(userWriter.deleteUser(deleteUserRequest, creatorUserId)).thenReturn(avroUser)
+
+        val future = CompletableFuture<PermissionManagementResponse>()
+        processor.onNext(
+            request = PermissionManagementRequest().apply {
+                request = deleteUserRequest
+                requestUserId = creatorUserId
+            },
+            respFuture = future
+        )
+
+        verify(permissionStorageReader, times(1)).publishDeletedUser(avroUser.loginName)
+
+        val response = future.getOrThrow().response
+        assertTrue(response is AvroUser)
+        (response as? AvroUser)?.let { user ->
+            assertEquals(avroUser, user)
+            assertEquals(user.loginName, deleteUserRequest.loginName)
+        }
     }
 
     @Test
