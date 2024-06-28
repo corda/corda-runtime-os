@@ -6,6 +6,7 @@ import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
 import net.corda.data.permissions.management.user.ChangeUserPasswordRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
+import net.corda.data.permissions.management.user.DeleteUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
@@ -15,6 +16,7 @@ import net.corda.libs.permissions.manager.impl.converter.convertToResponseDto
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.ChangeUserPasswordDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
+import net.corda.libs.permissions.manager.request.DeleteUserRequestDto
 import net.corda.libs.permissions.manager.request.GetPermissionSummaryRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
@@ -76,6 +78,22 @@ class PermissionUserManagerImpl(
         }
         val cachedUser: User = permissionManagementCache.getUser(userRequestDto.loginName) ?: return null
         return cachedUser.convertToResponseDto()
+    }
+
+    override fun deleteUser(deleteUserRequestDto: DeleteUserRequestDto): UserResponseDto {
+        val result = sendPermissionWriteRequest<User>(
+            rpcSender,
+            writerTimeout,
+            PermissionManagementRequest(
+                deleteUserRequestDto.requestedBy,
+                null,
+                DeleteUserRequest(
+                    deleteUserRequestDto.loginName
+                )
+            )
+        )
+
+        return result.convertToResponseDto()
     }
 
     override fun changeUserPasswordSelf(changeUserPasswordDto: ChangeUserPasswordDto): UserResponseDto =

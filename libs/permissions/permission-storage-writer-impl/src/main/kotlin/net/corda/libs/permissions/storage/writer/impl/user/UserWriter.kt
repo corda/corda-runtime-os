@@ -3,6 +3,7 @@ package net.corda.libs.permissions.storage.writer.impl.user
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
 import net.corda.data.permissions.management.user.ChangeUserPasswordRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
+import net.corda.data.permissions.management.user.DeleteUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.data.permissions.User as AvroUser
 
@@ -17,6 +18,14 @@ interface UserWriter {
      * @param requestUserId ID of the user who made the request.
      */
     fun createUser(request: CreateUserRequest, requestUserId: String): AvroUser
+
+    /**
+     * Delete a User entity and return its Avro representation.
+     *
+     * @param request DeleteUserRequest containing the information of the User to delete.
+     * @param requestUserId ID of the user who made the request.
+     */
+    fun deleteUser(request: DeleteUserRequest, requestUserId: String): AvroUser
 
     /**
      * Change the password field of a User entity and return its Avro representation.
