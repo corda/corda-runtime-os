@@ -1,5 +1,7 @@
 package net.corda.gradle.plugin.cordalifecycle
 
+import net.corda.gradle.plugin.CombinedWorkerHelper.restClient
+import net.corda.gradle.plugin.CombinedWorkerHelper.waitUntilRestOrThrow
 import net.corda.gradle.plugin.SmokeTestBase
 import org.assertj.core.api.Assertions.catchThrowable
 import org.junit.jupiter.api.AfterEach

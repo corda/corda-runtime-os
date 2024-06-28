@@ -1,5 +1,7 @@
 package net.corda.gradle.plugin.queries
 
+import net.corda.gradle.plugin.CombinedWorkerHelper.startCompose
+import net.corda.gradle.plugin.CombinedWorkerHelper.stopCompose
 import net.corda.gradle.plugin.SmokeTestBase
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
