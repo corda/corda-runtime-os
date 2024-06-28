@@ -74,6 +74,7 @@ fun AvroGroup.convertToResponseDto(): GroupResponseDto {
     return GroupResponseDto(
         id,
         lastChangeDetails.updateTimestamp,
+        version,
         name,
         parentGroupId,
         properties.map {

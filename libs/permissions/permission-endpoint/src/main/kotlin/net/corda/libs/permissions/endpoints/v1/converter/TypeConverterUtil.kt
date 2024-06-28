@@ -143,6 +143,7 @@ fun GroupResponseDto.convertToEndpointType(): GroupResponseType {
     return GroupResponseType(
         id,
         lastUpdatedTimestamp,
+        version,
         groupName,
         parentGroupId,
         properties.map { it.convertToEndpointType() },

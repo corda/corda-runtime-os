@@ -19,12 +19,17 @@ data class GroupResponseType(
     val updateTimestamp: Instant,
 
     /**
+     * Version of the Group.
+     */
+    val version: Int,
+
+    /**
      * Human-readable name of a group.
      */
     val name: String,
 
     /**
-     * The group to which the Group belongs.
+     * The ID of the parent group.
      */
     val parentGroupId: String?,
 

@@ -38,6 +38,7 @@ internal class GroupEndpointImplTest {
     private val groupResponseDto = GroupResponseDto(
         "uuid",
         now,
+        0,
         "groupName1",
         parentGroup,
         emptyList(),
