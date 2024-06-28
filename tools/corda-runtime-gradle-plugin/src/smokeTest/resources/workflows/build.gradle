@@ -1,6 +1,5 @@
 plugins {
     id 'net.corda.plugins.cordapp-cpb2' version '7.0.4'
-    id 'net.corda.plugins.cordapp-cpk2' version '7.0.4'
 }
 
 dependencies {
@@ -14,7 +13,7 @@ cordapp {
     workflow {
         name workflowsModule
         versionId 1
-        licence cordappLicense
-        vendor cordappVendorName
+        licence "Test License"
+        vendor "Test vendor"
     }
 }
