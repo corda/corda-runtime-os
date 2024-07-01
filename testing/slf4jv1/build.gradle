@@ -13,9 +13,9 @@ plugins {
 
 description 'SLF4J V1 package exports'
 
-//dependencies {
-//    api libs.slf4j.api
-//}
+dependencies {
+    api libs.slf4j.api
+}
 
 tasks.named('jar', Jar) {
     archiveBaseName = 'corda-slf4jv1'
@@ -24,20 +24,20 @@ tasks.named('jar', Jar) {
         bundleVersion = parseMavenString(antlrVersion).OSGiVersion
     }
 
-//    bundle {
-//        bnd """\
-//Bundle-Name: SLF4JV1
-//Bundle-SymbolicName: \${project.group}.slf4jv1
-//Bundle-Version: \\${task.bundleVersion}
-//Export-Package: \\
-//     org.slf4j.event;uses:="org.slf4j,org.slf4j.helpers";version=2.0.13,\\
-//     org.slf4j.event;version=1.7.36,\\
-//     org.slf4j.helpers;uses:="org.slf4j,org.slf4j.event,org.slf4j.spi";version=2.0.13,\\
-//     org.slf4j.helpers;version=1.7.36,\\
-//     org.slf4j.spi;uses:="org.slf4j,org.slf4j.event,org.slf4j.helpers";version=2.0.13,\\
-//     org.slf4j.spi;version=1.7.36,\\
-//     org.slf4j;uses:="org.slf4j.event,org.slf4j.helpers,org.slf4j.spi";version=2.0.13,\\
-//     org.slf4j;version=1.7.36
-//"""
-//    }
+    bundle {
+        bnd """\
+Bundle-Name: SLF4JV1
+Bundle-SymbolicName: \${project.group}.slf4jv1
+Bundle-Version: \\${task.bundleVersion}
+Export-Package: \\
+     org.slf4j.event;uses:="org.slf4j,org.slf4j.helpers";version=2.0.13,\\
+     org.slf4j.event;version=1.7.36,\\
+     org.slf4j.helpers;uses:="org.slf4j,org.slf4j.event,org.slf4j.spi";version=2.0.13,\\
+     org.slf4j.helpers;version=1.7.36,\\
+     org.slf4j.spi;uses:="org.slf4j,org.slf4j.event,org.slf4j.helpers";version=2.0.13,\\
+     org.slf4j.spi;version=1.7.36,\\
+     org.slf4j;uses:="org.slf4j.event,org.slf4j.helpers,org.slf4j.spi";version=2.0.13,\\
+     org.slf4j;version=1.7.36
+"""
+    }
 }
