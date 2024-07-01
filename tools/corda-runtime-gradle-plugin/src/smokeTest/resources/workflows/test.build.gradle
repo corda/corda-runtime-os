@@ -1,3 +1,4 @@
+// To be renamed to build.gradle after copied to the temp project
 plugins {
     id 'net.corda.plugins.cordapp-cpb2' version "$cordaGradlePluginsVersion"
 }

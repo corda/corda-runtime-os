@@ -1,5 +1,6 @@
 package net.corda.gradle.plugin
 
+import org.assertj.core.api.Assertions.assertThat
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.BuildTask
 import org.gradle.testkit.runner.GradleRunner
@@ -34,6 +35,10 @@ abstract class SmokeTestBase {
         val sourceConfigFolder = File("src/smokeTest/resources/")
         val targetConfigFolder = File("$projectDir/")
         sourceConfigFolder.absoluteFile.copyRecursively(targetConfigFolder)
+
+        val workflowsBuildFileDst = targetConfigFolder.resolve("workflows/build.gradle")
+        targetConfigFolder.resolve("workflows/test.build.gradle").renameTo(workflowsBuildFileDst)
+        assertThat(workflowsBuildFileDst.exists()).isTrue()
     }
 
     fun appendCordaRuntimeGradlePluginExtension(
