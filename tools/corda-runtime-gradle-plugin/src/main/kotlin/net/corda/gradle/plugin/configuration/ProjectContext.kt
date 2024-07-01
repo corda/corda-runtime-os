@@ -73,9 +73,4 @@ class ProjectContext(val project: Project, pluginConfig: PluginConfiguration) {
     val restClient: CordaRestClient = CordaRestClient.createHttpClient(URI.create(cordaClusterURL), cordaRestUser, cordaRestPassword, true)
     val logger: Logger = project.logger
 
-    init {
-        println("!!!!!!!!!!!!")
-        println("artifactoryUsername: $artifactoryUsername")
-    }
-
 }
