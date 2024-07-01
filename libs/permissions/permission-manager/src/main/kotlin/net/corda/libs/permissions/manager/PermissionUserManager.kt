@@ -3,6 +3,7 @@ package net.corda.libs.permissions.manager
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.ChangeUserPasswordDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
+import net.corda.libs.permissions.manager.request.DeleteUserRequestDto
 import net.corda.libs.permissions.manager.request.GetPermissionSummaryRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
@@ -22,6 +23,11 @@ interface PermissionUserManager {
      * Get a user in the RBAC Permission System identified by `LoginName`.
      */
     fun getUser(userRequestDto: GetUserRequestDto): UserResponseDto?
+
+    /**
+     * Delete a user in the RBAC Permission System.
+     */
+    fun deleteUser(deleteUserRequestDto: DeleteUserRequestDto): UserResponseDto
 
     /**
      * Change a user's own password.

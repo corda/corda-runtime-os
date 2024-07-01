@@ -14,6 +14,7 @@ import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.ChangeUserPasswordDto
+import net.corda.libs.permissions.manager.request.DeleteUserRequestDto
 import net.corda.libs.permissions.manager.request.GetPermissionSummaryRequestDto
 import net.corda.libs.permissions.manager.request.GetRoleRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
@@ -126,12 +127,22 @@ class UserEndpointImpl @Activate constructor(
         return ResponseEntity.created(createUserResult.convertToEndpointType())
     }
 
-    override fun getUserPath(loginName: String): UserResponseType {
-        return doGetUser(loginName)
+    override fun deleteUser(loginName: String): ResponseEntity<UserResponseType> {
+        val principal = getRestThreadLocalContext()
+
+        if (principal.equals(loginName, ignoreCase = true)) {
+            throw BadRequestException("User cannot delete self")
+        }
+
+        val userResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            deleteUser(DeleteUserRequestDto(principal, loginName.lowercase()))
+        }
+
+        return ResponseEntity.deleted(userResponseDto.convertToEndpointType())
     }
 
-    override fun deleteUser(loginName: String): ResponseEntity<UserResponseType> {
-        TODO("To be implemented in CORE-20731")
+    override fun getUserPath(loginName: String): UserResponseType {
+        return doGetUser(loginName)
     }
 
     private fun doGetUser(loginName: String): UserResponseType {

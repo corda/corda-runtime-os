@@ -9,6 +9,7 @@ import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
+import net.corda.data.permissions.management.user.DeleteUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
@@ -17,6 +18,7 @@ import net.corda.libs.permissions.manager.exception.UnexpectedPermissionResponse
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.ChangeUserPasswordDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
+import net.corda.libs.permissions.manager.request.DeleteUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.libs.permissions.validation.cache.PermissionValidationCache
@@ -77,6 +79,7 @@ class PermissionUserManagerImplTest {
         parentGroup = parentGroup
     )
 
+    private val deleteUserRequestDto = DeleteUserRequestDto(requestedBy = requestUserName, loginName = "loginname123")
     private val userCreationTime = Instant.now()
     private val getUserRequestDto = GetUserRequestDto(requestedBy = requestUserName, loginName = "loginname123")
     private val changeUserPasswordDto = ChangeUserPasswordDto("requestedBy", "loginname123", "mypassword")
@@ -211,6 +214,36 @@ class PermissionUserManagerImplTest {
         whenever(rpcSender.sendRequest(requestCaptor.capture())).thenReturn(future)
 
         assertThrows(UnexpectedPermissionResponseException::class.java) { manager.createUser(createUserRequestDto) }
+    }
+
+    @Test
+    fun `delete a user sends rpc request and converts result`() {
+        val future = mock<CompletableFuture<PermissionManagementResponse>>()
+        whenever(future.getOrThrow(defaultTimeout)).thenReturn(permissionManagementResponse)
+
+        val requestCaptor = argumentCaptor<PermissionManagementRequest>()
+        whenever(rpcSender.sendRequest(requestCaptor.capture())).thenReturn(future)
+
+        val result = manager.deleteUser(deleteUserRequestDto)
+
+        val capturedPermissionManagementRequest = requestCaptor.firstValue
+        assertEquals(requestUserName, capturedPermissionManagementRequest.requestUserId)
+        assertEquals(null, capturedPermissionManagementRequest.virtualNodeId)
+
+        val capturedCreateUserRequest = capturedPermissionManagementRequest.request as DeleteUserRequest
+        assertEquals(deleteUserRequestDto.loginName, capturedCreateUserRequest.loginName)
+
+        assertEquals(fullName, result.fullName)
+        assertEquals(avroUser.enabled, result.enabled)
+        assertEquals(avroUser.lastChangeDetails.updateTimestamp, result.lastUpdatedTimestamp)
+        assertEquals(false, result.ssoAuth)
+        assertEquals(avroUser.parentGroupId, result.parentGroup)
+        assertEquals(1, result.properties.size)
+
+        val property = result.properties.first()
+        assertEquals(userProperty.lastChangeDetails.updateTimestamp, property.lastChangedTimestamp)
+        assertEquals(userProperty.key, property.key)
+        assertEquals(userProperty.value, property.value)
     }
 
     @Test
