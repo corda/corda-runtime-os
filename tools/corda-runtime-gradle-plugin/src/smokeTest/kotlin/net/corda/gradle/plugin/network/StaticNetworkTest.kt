@@ -4,6 +4,7 @@ import net.corda.gradle.plugin.CombinedWorkerHelper.restClient
 import net.corda.gradle.plugin.CombinedWorkerHelper.startCompose
 import net.corda.gradle.plugin.CombinedWorkerHelper.stopCompose
 import net.corda.gradle.plugin.SmokeTestBase
+import net.corda.gradle.plugin.queries.LIST_CPIS_TASK_NAME
 import net.corda.gradle.plugin.queries.LIST_VNODES_TASK_NAME
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -46,6 +47,19 @@ class StaticNetworkTest : SmokeTestBase() {
         }
         assertThat(registeredVNodes.keys).containsExactlyInAnyOrderElementsOf(expectedCommonNames)
 
+        // List CPIs and verify output
+        val expectedCpiNames = listOf("MyCorDapp", "NotaryServer")
+        val listCpisResult = executeWithRunner(
+            LIST_CPIS_TASK_NAME,
+            "--info",
+            "--stacktrace",
+            forwardOutput = true,
+            isStaticNetwork = true
+        )
+        val actualCpiNames = listCpisResult.output.lines().filter { it.contains("1.0-SNAPSHOT") }.map { it.split(" ").first() }
+        assertThat(actualCpiNames).hasSize(2)
+        assertThat(actualCpiNames).containsExactlyInAnyOrderElementsOf(expectedCpiNames)
+
         // List VNodes and verify output
         val listVNodesResult = executeWithRunner(
             LIST_VNODES_TASK_NAME,
@@ -62,7 +76,6 @@ class StaticNetworkTest : SmokeTestBase() {
         }
         assertThat(vNodes).hasSameSizeAs(expectedCommonNames)
 
-        val expectedCpiNames = listOf("MyCorDapp", "NotaryServer")
         assertThat(vNodes.map { it.first }.toSet()).containsExactlyInAnyOrderElementsOf(expectedCpiNames)
         assertThat(vNodes.map { it.second }).containsExactlyInAnyOrderElementsOf(registeredVNodes.values)
         assertThat(vNodes.map { it.third }).containsExactlyInAnyOrderElementsOf(expectedCommonNames)
