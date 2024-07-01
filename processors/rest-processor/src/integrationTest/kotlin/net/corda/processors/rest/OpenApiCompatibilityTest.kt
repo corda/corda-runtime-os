@@ -7,6 +7,7 @@ import net.corda.flow.rest.v1.FlowClassRestResource
 import net.corda.flow.rest.v1.FlowRestResource
 import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
+import net.corda.libs.permissions.endpoints.v1.group.GroupEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
@@ -61,6 +62,7 @@ class OpenApiCompatibilityTest {
             MGMRestResource::class.java, // MGM
             MGMAdminRestResource::class.java, // MGM
             NetworkRestResource::class.java, // MGM
+            GroupEndpoint::class.java, // REST
             PermissionEndpoint::class.java, // REST
             RoleEndpoint::class.java, // REST
             UserEndpoint::class.java, // REST
