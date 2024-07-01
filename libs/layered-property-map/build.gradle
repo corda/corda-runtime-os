@@ -26,4 +26,5 @@ dependencies {
     testImplementation project(":testing:test-utilities")
 
     integrationTestImplementation project(":libs:layered-property-map:layered-property-map-test-converter")
+    integrationTestRuntimeOnly project(':testing:slf4jv1')
 }

@@ -71,9 +71,8 @@ def bundlesSet = files(sourceSets.integrationTest.runtimeClasspath.filter {
 }, configurations.archives.artifacts.files)
 
 def resolve = tasks.register('resolve', Resolve) {
-    println("slf4j2Dependency: ${slf4j2Dependency.name}-${slf4j2Dependency.version}")
-    println("bundleSet:")
-    bundlesSet.forEach { println("    " + it.absolutePath) }
+    // println("bundleSet:")
+    // bundlesSet.forEach { println("    " + it.absolutePath) }
 
     dependsOn jar, testingBundle
     bundles = bundlesSet
