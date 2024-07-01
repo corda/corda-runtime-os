@@ -3,7 +3,7 @@
   <groupId>io.javalin</groupId>
   <artifactId>javalin-context-mock</artifactId>
   <versioning>
-    <lastUpdated>20240614152124</lastUpdated>
+    <lastUpdated>20240701100822</lastUpdated>
     <snapshot>
       <localCopy>true</localCopy>
     </snapshot>
@@ -11,18 +11,18 @@
       <snapshotVersion>
         <extension>pom</extension>
         <value>6.1.7-SNAPSHOT</value>
-        <updated>20240614152124</updated>
+        <updated>20240701100822</updated>
       </snapshotVersion>
       <snapshotVersion>
         <extension>jar</extension>
         <value>6.1.7-SNAPSHOT</value>
-        <updated>20240614152124</updated>
+        <updated>20240701100822</updated>
       </snapshotVersion>
       <snapshotVersion>
         <classifier>sources</classifier>
         <extension>jar</extension>
         <value>6.1.7-SNAPSHOT</value>
-        <updated>20240614152124</updated>
+        <updated>20240701100822</updated>
       </snapshotVersion>
     </snapshotVersions>
   </versioning>
