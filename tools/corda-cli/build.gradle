@@ -57,6 +57,11 @@ tasks.register("cliInstallArchive", Zip) {
     destinationDirectory = file("$buildDir/zip")
 }
 
+tasks.register("cleanDir", Delete) {
+    description 'Removes any previously generated scripts'
+    delete 'build/cli'
+}
+
 tasks.register("cliS3Download", Copy) {
     dependsOn cleanDir
     description 'Copy corda-cli install scripts to a location in build dir and update to use correct version'
