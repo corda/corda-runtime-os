@@ -3,16 +3,16 @@
   <groupId>io.javalin</groupId>
   <artifactId>javalin-parent</artifactId>
   <versioning>
-    <lastUpdated>20240612153116</lastUpdated>
+    <lastUpdated>20240701100248</lastUpdated>
     <snapshot>
-      <timestamp>20240612.153116</timestamp>
-      <buildNumber>12</buildNumber>
+      <timestamp>20240701.100248</timestamp>
+      <buildNumber>14</buildNumber>
     </snapshot>
     <snapshotVersions>
       <snapshotVersion>
         <extension>pom</extension>
-        <value>6.1.7-20240612.153116-12</value>
-        <updated>20240612153116</updated>
+        <value>6.1.7-20240701.100248-14</value>
+        <updated>20240701100248</updated>
       </snapshotVersion>
     </snapshotVersions>
   </versioning>

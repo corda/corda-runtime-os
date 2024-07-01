@@ -3,7 +3,7 @@
   <groupId>io.javalin</groupId>
   <artifactId>javalin-utils</artifactId>
   <versioning>
-    <lastUpdated>20240614152124</lastUpdated>
+    <lastUpdated>20240701100822</lastUpdated>
     <snapshot>
       <localCopy>true</localCopy>
     </snapshot>
@@ -11,7 +11,7 @@
       <snapshotVersion>
         <extension>pom</extension>
         <value>6.1.7-SNAPSHOT</value>
-        <updated>20240614152124</updated>
+        <updated>20240701100822</updated>
       </snapshotVersion>
     </snapshotVersions>
   </versioning>
