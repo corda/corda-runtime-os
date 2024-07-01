@@ -41,4 +41,11 @@ class CordappTasksTest : FunctionalBaseTest() {
         val result = executeAndFailWithRunner(BUILD_CPIS_TASK_NAME)
         assertTrue(result.output.contains("Task with path ':workflowsModule:build' not found"))
     }
+
+    @Test
+    fun shouldFailDeployMgmIfStaticNetwork() {
+        appendCordaRuntimeGradlePluginExtension(isStaticNetwork = true)
+        val result = executeAndFailWithRunner(DEPLOY_MGMS_TASK_NAME)
+        assertTrue(result.output.contains("An MGM must be included in the network definition"))
+    }
 }
