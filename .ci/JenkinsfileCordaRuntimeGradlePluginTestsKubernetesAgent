@@ -71,15 +71,27 @@ pipeline {
                 sh 'docker login corda-os-docker.software.r3.com -u "${CORDA_ARTIFACTORY_USERNAME}" -p "${CORDA_ARTIFACTORY_PASSWORD}"'
             }
         }
+        stage('BUild') {
+            steps {
+                script {
+                    gradlew(
+                        ':tools:corda-runtime-gradle-plugin:compileAll',
+                        ':tools:corda-runtime-gradle-plugin:assemble',
+                        ':tools:corda-runtime-gradle-plugin:smokeTestClasses',
+                        '--parallel',
+                        config.gradleTestPerformanceTuning
+                    )
+                }
+            }
+        }
         stage('Test') {
             environment {
                 CORDA_IMAGE_TAG = "${params.CORDA_IMAGE_TAG}"
             }
             steps {
                 script {
-                    gradlew('compileAll assemble detekt', '--parallel', config.gradleTestPerformanceTuning)
                     gradlew(
-                        config.gradleTestTarget,
+                        ':tools:corda-runtime-gradle-plugin:cordaRuntimeGradlePluginSmokeTest',
                         config.gradleTestPerformanceTuning,
                         config.gradleTestAdditionalArgs,
                     )
