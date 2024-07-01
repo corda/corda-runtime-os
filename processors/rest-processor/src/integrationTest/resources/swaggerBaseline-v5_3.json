@@ -1126,7 +1126,7 @@
       },
       "delete" : {
         "tags" : [ "RBAC Group" ],
-        "description" : "This method deletes a specified group.",
+        "description" : "This method deletes a specified group. The group can only be deleted if it is empty, i.e. having no sub-groups or users inside it.",
         "operationId" : "delete_group__groupid_",
         "parameters" : [ {
           "name" : "groupid",
