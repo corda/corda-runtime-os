@@ -123,7 +123,7 @@ interface GroupEndpoint : RestResource {
 
     @HttpDELETE(
         path = "{groupId}",
-        description = "This method deletes a specified group.",
+        description = "This method deletes a specified group. The group can only be deleted if it is empty, i.e. having no sub-groups or users inside it.",
         responseDescription = """
             The deleted group with the following attributes:
             id: Unique server generated identifier for the group
