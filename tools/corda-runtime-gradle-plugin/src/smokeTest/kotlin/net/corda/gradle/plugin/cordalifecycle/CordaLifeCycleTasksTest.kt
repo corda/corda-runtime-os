@@ -26,7 +26,6 @@ class CordaLifeCycleTasksTest : SmokeTestBase() {
 
     @Test
     fun startAndStopCorda() {
-        appendCordaRuntimeGradlePluginExtension()
         val startTaskOutput = StringWriter()
 
         val startTaskFuture = executorService.submit {

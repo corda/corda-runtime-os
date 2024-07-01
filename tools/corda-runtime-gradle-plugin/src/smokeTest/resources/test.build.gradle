@@ -1,0 +1,44 @@
+// To be renamed to build.gradle after copied to the temp project
+plugins {
+    id 'net.corda.gradle.plugin'
+}
+
+cordaRuntimeGradlePlugin {
+    cordaClusterURL = findProperty('cordaClusterURL')
+    cordaRestUser = findProperty('cordaRestUser')
+    cordaRestPasswd =findProperty('cordaRestPasswd')
+    notaryVersion = findProperty('notaryVersion')
+    runtimeVersion = findProperty('runtimeVersion')
+    networkConfigFile = findProperty('networkConfigFile')
+    workflowsModuleName = findProperty('workflowsModuleName')
+    composeFilePath = "config/combined-worker-compose.yml"
+    r3RootCertFile = "config/Digicert-ca-key.pem"
+    corDappCpiName = "MyCorDapp"
+    notaryCpiName = "NotaryServer"
+    cordaRuntimePluginWorkspaceDir = "workspace"
+    cordaProcessorTimeout = "-1"
+    vnodeRegistrationTimeout = "30000"
+
+    artifactoryUsername = findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+    artifactoryPassword = findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+}
+
+allprojects {
+    version '1.0-SNAPSHOT'
+
+    repositories {
+        mavenCentral()
+        mavenLocal()
+
+        maven {
+            url = "$artifactoryContextUrl/corda-os-maven"
+            authentication {
+                basic(BasicAuthentication)
+            }
+            credentials {
+                username = findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                password = findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+            }
+        }
+    }
+}

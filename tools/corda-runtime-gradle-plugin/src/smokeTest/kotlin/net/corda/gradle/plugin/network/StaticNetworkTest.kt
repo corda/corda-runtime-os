@@ -25,8 +25,7 @@ class StaticNetworkTest : SmokeTestBase() {
 
     @Test
     fun vNodesSetupSucceeds() {
-        appendCordaRuntimeGradlePluginExtension(appendArtifactoryCredentials = true)
-        val result = executeWithRunner(VNODE_SETUP_TASK_NAME, "--info", forwardOutput = true)
+        val result = executeWithRunner(VNODE_SETUP_TASK_NAME, "--info", "--stacktrace", forwardOutput = true, isStaticNetwork = true)
 
         val vNodeRegisteredMessage = Regex("VNode .+ with shortHash [A-F0-9]+ registered.")
         assertThat(result.output).containsPattern(vNodeRegisteredMessage.pattern)

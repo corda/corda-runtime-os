@@ -10,7 +10,14 @@ data class GradleProperties(
 
     val platformVersion: String = "999",
     val workflowsModule: String = "workflows",
-    // TODO add other properties to have configurable plugin build.gradle
+
+    val cordaClusterURL: String = "$targetUrl",
+    val cordaRestUser: String = USER,
+    val cordaRestPasswd: String = PASSWORD,
+    val notaryVersion: String = CORDA_RUNTIME_VERSION_STABLE,
+    val runtimeVersion: String = CORDA_RUNTIME_VERSION_STABLE, // Applies only to start/stop tasks tests
+    val composeFilePath: String = "config/combined-worker-compose.yml",
+    val networkConfigFile: String,
 ) {
     companion object {
         private fun getSystemPropertyOrThrow(name: String): String {
@@ -19,7 +26,7 @@ data class GradleProperties(
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun toKeyValues(): List<String> {
+    fun toGradleCmdArgs(): List<String> {
         return this::class.declaredMemberProperties.map {
             val prop = it as KProperty1<GradleProperties, String>
             "-P${prop.name}=${prop.get(this)}"

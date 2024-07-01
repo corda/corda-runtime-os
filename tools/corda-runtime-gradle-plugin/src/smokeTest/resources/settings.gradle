@@ -3,10 +3,6 @@ pluginManagement {
     repositories {
         mavenCentral()
         maven {
-            // TODO: Snyk treats it a gradle config to analyse - and there's no artifactoryContextUrl defined
-            //  because of this command:
-            //  snyk-linux test --configuration-matching='^runtimeClasspath$' --file=tools/corda-runtime-gradle-plugin/src/smokeTest/resources/workflows/build.gradle --policy-path=.snyk --severity-threshold=high
-            //  So that's because of workflows/build.gradle file
             url = "$artifactoryContextUrl/corda-os-maven"
             authentication {
                 basic(BasicAuthentication)
