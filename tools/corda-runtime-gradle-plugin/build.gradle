@@ -58,9 +58,16 @@ tasks.register('cordaRuntimeGradlePluginSmokeTest', Test) {
     classpath = project.sourceSets["smokeTest"].runtimeClasspath
 
     // Pass variables to the gradle project under test
-    systemProperty('artifactoryContextUrl', findProperty('artifactoryContextUrl'))
-    systemProperty('cordaApiVersion', findProperty('cordaApiVersion'))
-    systemProperty('cordaGradlePluginsVersion', findProperty('cordaGradlePluginsVersion'))
+    [
+        'artifactoryContextUrl',
+        'cordaApiVersion',
+        'cordaGradlePluginsVersion',
+    ].forEach {
+        systemProperty(it, findProperty(it))
+    }
+//    systemProperty('artifactoryContextUrl', findProperty('artifactoryContextUrl'))
+//    systemProperty('cordaApiVersion', findProperty('cordaApiVersion'))
+//    systemProperty('cordaGradlePluginsVersion', findProperty('cordaGradlePluginsVersion'))
 }
 
 dependencies {
