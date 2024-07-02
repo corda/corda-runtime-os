@@ -12,6 +12,7 @@ val targetUrl = URI("https://localhost:8888")
 const val USER = "admin"
 const val PASSWORD = "admin"
 const val CORDA_RUNTIME_VERSION_STABLE = "5.3.0.0-HC01"
+// Get preTest image tag from the pipeline, or fallback to stable version
 val testEnvCordaImageTag = System.getenv("CORDA_IMAGE_TAG") ?: CORDA_RUNTIME_VERSION_STABLE
 
 
@@ -48,7 +49,6 @@ object CombinedWorkerHelper {
         )
         val cmd = composeCommandBase + args.toList()
         val cordaProcessBuilder = ProcessBuilder(cmd)
-        // Get preTest image tag from the pipeline, or fallback to stable version
         cordaProcessBuilder.environment()["CORDA_RUNTIME_VERSION"] = testEnvCordaImageTag
         cordaProcessBuilder.redirectErrorStream(true)
         val process = cordaProcessBuilder.start()

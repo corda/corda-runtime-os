@@ -60,7 +60,7 @@ abstract class SmokeTestBase {
         )
     }
 
-    @Suppress("SpreadOperator") // TODO remove this suppression
+    @Suppress("SpreadOperator")
     private fun internalExecuteWithGradle(
         vararg args: String,
         outputWriter: Writer? = null,

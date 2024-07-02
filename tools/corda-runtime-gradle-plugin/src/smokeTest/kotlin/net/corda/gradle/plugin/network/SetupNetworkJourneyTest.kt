@@ -14,7 +14,8 @@ import org.junit.jupiter.api.Test
 
 class SetupNetworkJourneyTest : SmokeTestBase() {
     private val vNodeRegisteredMessage = Regex("VNode .+ with shortHash [A-F0-9]+ registered.")
-    private val expectedCpiNames = listOf("MyCorDapp", "NotaryServer")
+    private val staticCpiNames = listOf("MyCorDapp", "NotaryServer")
+    private val dynamicCpiNames = staticCpiNames + "MGM"
 
     @BeforeEach
     fun startCombinedWorker() {
@@ -40,11 +41,11 @@ class SetupNetworkJourneyTest : SmokeTestBase() {
         val registeredVNodes = verifyRegisteredVNodesInOutput(vNodeSetupResult.output, expectedCommonNames)
 
         // List CPIs and verify output
-        val actualCpis = runListCPIsTaskAndVerifyOutput(expectedCpiNames)
+        val actualCpis = runListCPIsTaskAndVerifyOutput(staticCpiNames)
         val myCorDappCpiChecksum = actualCpis["MyCorDapp"]!!
 
         // List VNodes and verify output
-        runListVNodesTaskAndVerifyOutput(expectedCpiNames, expectedCommonNames, registeredVNodes.values.toList())
+        runListVNodesTaskAndVerifyOutput(staticCpiNames, expectedCommonNames, registeredVNodes.values.toList())
 
         // Verify startable flows
         val myCorDappFlows = restClient.flowInfoClient.getFlowclassHoldingidentityshorthash(registeredVNodes["Alice"]!!)
@@ -52,7 +53,7 @@ class SetupNetworkJourneyTest : SmokeTestBase() {
 
         verifyNotaryCpks()
 
-        verifyRedeployNetwork(true, myCorDappCpiChecksum)
+        verifyRedeployNetwork(staticCpiNames, isStaticNetwork = true, myCorDappCpiChecksum)
     }
 
     @Test
@@ -70,11 +71,11 @@ class SetupNetworkJourneyTest : SmokeTestBase() {
         val registeredVNodes = verifyRegisteredVNodesInOutput(vNodeSetupResult.output, expectedCommonNames)
 
         // List CPIs and verify output
-        val actualCpis = runListCPIsTaskAndVerifyOutput(expectedCpiNames)
+        val actualCpis = runListCPIsTaskAndVerifyOutput(dynamicCpiNames)
         val myCorDappCpiChecksum = actualCpis["MyCorDapp"]!!
 
         // List VNodes and verify output
-        runListVNodesTaskAndVerifyOutput(expectedCpiNames, expectedCommonNames, registeredVNodes.values.toList())
+        runListVNodesTaskAndVerifyOutput(dynamicCpiNames, expectedCommonNames, registeredVNodes.values.toList())
 
         // Verify startable flows
         val myCorDappFlows = restClient.flowInfoClient.getFlowclassHoldingidentityshorthash(registeredVNodes["Alice"]!!)
@@ -109,10 +110,10 @@ class SetupNetworkJourneyTest : SmokeTestBase() {
         assertThat(notaryMemberInfo).containsEntry("corda.notary.service.backchain.required", "false")
         assertThat(notaryMemberInfo).containsEntry("corda.notary.service.flow.protocol.name", "com.r3.corda.notary.plugin.nonvalidating")
 
-        verifyRedeployNetwork(false, myCorDappCpiChecksum)
+        verifyRedeployNetwork(dynamicCpiNames, isStaticNetwork = false, myCorDappCpiChecksum)
     }
 
-    private fun verifyRedeployNetwork(isStaticNetwork: Boolean, previousMyCorDappCpiChecksum: String) {
+    private fun verifyRedeployNetwork(expectedCpiNames: List<String>, isStaticNetwork: Boolean, previousMyCorDappCpiChecksum: String) {
         val reDeployNetworkResult = executeWithRunner(
             VNODE_SETUP_TASK_NAME,
             "--info", "--stacktrace",
