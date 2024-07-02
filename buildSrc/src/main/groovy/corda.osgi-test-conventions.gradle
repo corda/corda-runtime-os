@@ -71,6 +71,9 @@ def bundlesSet = files(sourceSets.integrationTest.runtimeClasspath.filter {
 }, configurations.archives.artifacts.files)
 
 def resolve = tasks.register('resolve', Resolve) {
+    // println("bundleSet:")
+    // bundlesSet.forEach { println("    " + it.absolutePath) }
+
     dependsOn jar, testingBundle
     bundles = bundlesSet
     bndrun = file('test.bndrun')
