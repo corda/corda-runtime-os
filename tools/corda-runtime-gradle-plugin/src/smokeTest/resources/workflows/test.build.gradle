@@ -1,0 +1,20 @@
+// To be renamed to build.gradle after copied to the temp project
+plugins {
+    id 'net.corda.plugins.cordapp-cpb2' version "$cordaGradlePluginsVersion"
+}
+
+dependencies {
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+}
+
+cordapp {
+    targetPlatformVersion = platformVersion.toInteger()
+    minimumPlatformVersion = platformVersion.toInteger()
+
+    workflow {
+        name workflowsModule
+        versionId 1
+        licence "Test License"
+        vendor "Test vendor"
+    }
+}

@@ -58,6 +58,13 @@ tasks.register('cordaRuntimeGradlePluginSmokeTest', Test) {
 
     testClassesDirs = project.sourceSets["smokeTest"].output.classesDirs
     classpath = project.sourceSets["smokeTest"].runtimeClasspath
+
+    // Propagate properties to the test
+    [
+        'artifactoryContextUrl',
+        'cordaApiVersion',
+        'cordaGradlePluginsVersion',
+    ].forEach { systemProperty(it, findProperty(it)) }
 }
 
 dependencies {
