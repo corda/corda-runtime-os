@@ -4,6 +4,11 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.permissions.Permission
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
+import net.corda.data.permissions.management.group.AddRoleToGroupRequest
+import net.corda.data.permissions.management.group.ChangeGroupParentIdRequest
+import net.corda.data.permissions.management.group.CreateGroupRequest
+import net.corda.data.permissions.management.group.DeleteGroupRequest
+import net.corda.data.permissions.management.group.RemoveRoleFromGroupRequest
 import net.corda.data.permissions.management.permission.BulkCreatePermissionsRequest
 import net.corda.data.permissions.management.permission.BulkCreatePermissionsResponse
 import net.corda.data.permissions.management.permission.CreatePermissionRequest
@@ -17,6 +22,7 @@ import net.corda.data.permissions.management.user.DeleteUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.writer.PermissionStorageWriterProcessor
+import net.corda.libs.permissions.storage.writer.impl.group.GroupWriter
 import net.corda.libs.permissions.storage.writer.impl.permission.PermissionWriter
 import net.corda.libs.permissions.storage.writer.impl.role.RoleWriter
 import net.corda.libs.permissions.storage.writer.impl.user.UserWriter
@@ -28,6 +34,7 @@ class PermissionStorageWriterProcessorImpl(
     private val permissionStorageReaderSupplier: Supplier<PermissionStorageReader?>,
     private val userWriter: UserWriter,
     private val roleWriter: RoleWriter,
+    private val groupWriter: GroupWriter,
     private val permissionWriter: PermissionWriter
 ) : PermissionStorageWriterProcessor {
 
@@ -125,6 +132,34 @@ class PermissionStorageWriterProcessorImpl(
                     permissionStorageReader.publishUpdatedRole(avroRole)
                     permissionStorageReader.reconcilePermissionSummaries()
                     avroRole
+                }
+                is CreateGroupRequest -> {
+                    val avroGroup = groupWriter.createGroup(permissionRequest, request.requestUserId)
+                    permissionStorageReader.publishNewGroup(avroGroup)
+                    avroGroup
+                }
+                is ChangeGroupParentIdRequest -> {
+                    val avroGroup = groupWriter.changeParentGroup(permissionRequest, request.requestUserId)
+                    permissionStorageReader.publishUpdatedGroup(avroGroup)
+                    permissionStorageReader.reconcilePermissionSummaries()
+                    avroGroup
+                }
+                is AddRoleToGroupRequest -> {
+                    val avroGroup = groupWriter.addRoleToGroup(permissionRequest, request.requestUserId)
+                    permissionStorageReader.publishUpdatedGroup(avroGroup)
+                    permissionStorageReader.reconcilePermissionSummaries()
+                    avroGroup
+                }
+                is RemoveRoleFromGroupRequest -> {
+                    val avroGroup = groupWriter.removeRoleFromGroup(permissionRequest, request.requestUserId)
+                    permissionStorageReader.publishUpdatedGroup(avroGroup)
+                    permissionStorageReader.reconcilePermissionSummaries()
+                    avroGroup
+                }
+                is DeleteGroupRequest -> {
+                    val avroGroup = groupWriter.deleteGroup(permissionRequest, request.requestUserId)
+                    permissionStorageReader.publishDeletedGroup(avroGroup.id)
+                    avroGroup
                 }
                 else -> throw IllegalArgumentException("Received invalid permission request type: $permissionRequest")
             }

@@ -23,4 +23,5 @@ enum class RestPermissionOperation {
     ADD_PROPERTY_TO_GROUP,
     DELETE_PERMISSION_FROM_ROLE,
     DELETE_ROLE_FROM_USER,
+    DELETE_ROLE_FROM_GROUP,
 }
