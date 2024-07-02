@@ -16,6 +16,7 @@ import net.corda.data.p2p.markers.LinkManagerDiscardedMarker
 import net.corda.data.p2p.markers.LinkManagerProcessedMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.data.p2p.markers.TtlExpiredMarker
+import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.messaging.api.records.EventLogRecord
@@ -42,12 +43,15 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 
 class OutboundMessageProcessorTest {
     private val myIdentity = createTestHoldingIdentity("CN=PartyA, O=Corp, L=LDN, C=GB", "Group")
@@ -81,6 +85,8 @@ class OutboundMessageProcessorTest {
         on { validateInbound(any(), any()) } doReturn Either.Left(Unit)
         on { validateOutbound(any(), any()) } doReturn Either.Left(Unit)
     }
+    private val publisher = mock<PublisherWithDominoLogic>()
+    private val scheduledExecutorService = mock<ScheduledExecutorService>()
 
     private val processor = OutboundMessageProcessor(
         sessionManager,
@@ -90,7 +96,9 @@ class OutboundMessageProcessorTest {
         messagesPendingSession,
         mockTimeFacilitiesProvider.clock,
         messageConverter,
-        networkMessagingValidator
+        publisher,
+        scheduledExecutorService,
+        networkMessagingValidator,
     )
 
     private fun setupSessionManager(response: SessionManager.SessionState) {
@@ -597,6 +605,8 @@ class OutboundMessageProcessorTest {
             messagesPendingSession,
             mockTimeFacilitiesProvider.clock,
             messageConverter,
+            publisher,
+            scheduledExecutorService,
             networkMessagingValidator,
         )
 
@@ -641,6 +651,8 @@ class OutboundMessageProcessorTest {
             messagesPendingSession,
             mockTimeFacilitiesProvider.clock,
             messageConverter,
+            publisher,
+            scheduledExecutorService,
             networkMessagingValidator,
         )
 
@@ -769,6 +781,41 @@ class OutboundMessageProcessorTest {
         )
 
         assertThat(records).isEmpty()
+    }
+
+    @Test
+    fun `dropped outbound unauthenticated messages are scheduled to be republished`() {
+        whenever(
+            networkMessagingValidator.validateOutbound(any(), any())
+        ).doReturn(Either.Right("foo-bar"))
+        val payload = "test"
+        val unauthenticatedMsg = OutboundUnauthenticatedMessage(
+            OutboundUnauthenticatedMessageHeader(
+                remoteIdentity.toAvro(),
+                localIdentity.toAvro(),
+                "subsystem",
+                "messageId",
+            ),
+            ByteBuffer.wrap(payload.toByteArray()),
+        )
+        val appMessage = AppMessage(unauthenticatedMsg)
+
+        processor.onNext(
+            listOf(
+                EventLogRecord(
+                    Schemas.P2P.P2P_OUT_TOPIC,
+                    "key",
+                    appMessage,
+                    1,
+                    0
+                )
+            )
+        )
+
+        val publishCaptor = argumentCaptor<Runnable>()
+        verify(scheduledExecutorService).schedule(publishCaptor.capture(), eq(500L), eq(TimeUnit.MILLISECONDS))
+        publishCaptor.firstValue.run()
+        verify(publisher).publish(listOf(Record(Schemas.P2P.P2P_OUT_TOPIC, "key", appMessage)))
     }
 
     @Test

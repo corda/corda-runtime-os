@@ -55,6 +55,7 @@ class ClientCertificateBusListenerTest {
             lifecycleCoordinatorFactory,
             messagingConfiguration,
             subscriptionFactory,
+            mock(),
             "topic",
             Value::subject
         )

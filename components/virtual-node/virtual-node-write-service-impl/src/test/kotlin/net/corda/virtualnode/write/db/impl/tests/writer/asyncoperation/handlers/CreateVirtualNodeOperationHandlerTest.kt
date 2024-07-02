@@ -12,7 +12,6 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Prot
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.PROTOCOL_PARAMETERS
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.records.Record
-import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.write.db.impl.tests.ALICE_HOLDING_ID1
 import net.corda.virtualnode.write.db.impl.tests.CPI_CHECKSUM1
 import net.corda.virtualnode.write.db.impl.tests.CPI_IDENTIFIER1
@@ -79,7 +78,6 @@ class CreateVirtualNodeOperationHandlerTest {
         createVirtualNodeService = createVirtualNodeService,
         virtualNodeDbFactory = virtualNodeDbFactory,
         recordFactory = recordFactory,
-        policyParser = groupPolicyParser,
         externalMessagingRouteConfigGenerator = externalMessagingRouteConfigGenerator,
         logger = mock(),
         entityManagerFactory = mock<EntityManagerFactory>().apply {
@@ -170,7 +168,7 @@ class CreateVirtualNodeOperationHandlerTest {
     }
 
     @Test
-    fun `Handler publishes virtual info only when mgm info missing`() {
+    fun `Handler publishes virtual info`() {
         val request = getValidRequest()
         val virtualNodeInfoRecord = Record("vnode", "", "")
         val dbConnections = mock<VirtualNodeDbConnections>()
@@ -194,38 +192,6 @@ class CreateVirtualNodeOperationHandlerTest {
         target.handle(timestamp, requestId, request)
 
         verify(createVirtualNodeService).publishRecords(listOf(virtualNodeInfoRecord))
-    }
-
-    @Test
-    fun `Handler publishes virtual node and mgm info when mgm info found`() {
-        val request = getValidRequest()
-        val virtualNodeInfoRecord = Record("vnode", "", "")
-        val mgmInfo = mock<MemberInfo>()
-        val mgmInfoRecord = Record("mgm", "", "")
-        val dbConnections = mock<VirtualNodeDbConnections>()
-
-        whenever(createVirtualNodeService.persistHoldingIdAndVirtualNode(any(), any(), any(), any(), any())).thenReturn(
-            dbConnections
-        )
-        whenever(
-            recordFactory.createVirtualNodeInfoRecord(
-                ALICE_HOLDING_ID1,
-                CPI_IDENTIFIER1,
-                dbConnections,
-                externalMessagingRouteConfig
-            )
-        ).thenReturn(
-            virtualNodeInfoRecord
-        )
-
-        whenever(groupPolicyParser.getMgmInfo(ALICE_HOLDING_ID1, GROUP_POLICY1)).thenReturn(mgmInfo)
-        whenever(recordFactory.createMgmInfoRecord(ALICE_HOLDING_ID1, mgmInfo)).thenReturn(
-            mgmInfoRecord
-        )
-
-        target.handle(timestamp, requestId, request)
-
-        verify(createVirtualNodeService).publishRecords(listOf(mgmInfoRecord, virtualNodeInfoRecord))
     }
 
     @Test

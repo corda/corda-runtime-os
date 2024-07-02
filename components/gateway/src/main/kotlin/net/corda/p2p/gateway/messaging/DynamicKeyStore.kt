@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging
 
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.delegated.signing.Alias
 import net.corda.crypto.delegated.signing.CertificateChain
@@ -35,6 +36,7 @@ internal class DynamicKeyStore(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
+    configurationReadService: ConfigurationReadService,
     private val cryptoOpsClient: CryptoOpsClient,
     private val certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
     private val keyStoreFactory: (
@@ -102,6 +104,7 @@ internal class DynamicKeyStore(
         lifecycleCoordinatorFactory,
         subscription,
         subscriptionConfig,
+        configurationReadService,
         emptyList(),
         emptyList(),
     )

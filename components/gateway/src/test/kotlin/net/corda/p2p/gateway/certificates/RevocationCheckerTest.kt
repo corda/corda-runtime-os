@@ -36,7 +36,7 @@ class RevocationCheckerTest {
         (context.arguments()[1] as () -> RPCSubscription<RevocationCheckRequest, RevocationCheckResponse>)()
     }
     init {
-        RevocationChecker(subscriptionFactory, mock(), mock())
+        RevocationChecker(subscriptionFactory, mock(), mock(), mock())
     }
 
     @AfterEach

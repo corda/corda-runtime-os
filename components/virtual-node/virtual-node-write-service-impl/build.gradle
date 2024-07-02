@@ -14,7 +14,6 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    implementation project(":libs:membership:membership-common")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:utilities")
     implementation project(":libs:virtual-node:cpi-datamodel")
@@ -22,7 +21,6 @@ dependencies {
     implementation project(':components:db:db-connection-manager')
     implementation project(':components:db:db-connection-manager-impl')
     implementation project(':components:virtual-node:virtual-node-write-service')
-    implementation project(':components:membership:membership-group-read')
     implementation project(':components:membership:membership-client')
     implementation project(':components:membership:membership-persistence-client')
     implementation project(':libs:configuration:configuration-core')

@@ -65,6 +65,7 @@ internal class StaleSessionProcessor(
         lifecycleCoordinatorFactory,
         subscription,
         subscriptionConfig,
+        commonComponents.configurationReaderService,
         setOf(stateManager.name),
         emptySet(),
     )

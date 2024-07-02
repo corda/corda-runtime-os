@@ -85,6 +85,7 @@ class DynamicKeyStoreTest {
         lifecycleCoordinatorFactory,
         subscriptionFactoryForKeystore,
         nodeConfiguration,
+        mock(),
         cryptoOpsClient,
         certificateFactory,
     ) { signer, certificatesStore ->

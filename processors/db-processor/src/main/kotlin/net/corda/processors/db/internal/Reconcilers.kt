@@ -7,13 +7,18 @@ import net.corda.configuration.read.reconcile.ConfigReconcilerReader
 import net.corda.configuration.write.publish.ConfigPublishService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.cpiinfo.write.CpiInfoWriteService
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.membership.certificate.client.DbCertificateClient
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesWriter
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -22,6 +27,7 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.processors.db.internal.reconcile.db.ConfigReconciler
 import net.corda.processors.db.internal.reconcile.db.CpiReconciler
 import net.corda.processors.db.internal.reconcile.db.GroupParametersReconciler
+import net.corda.processors.db.internal.reconcile.db.HostedIdentityReconciler
 import net.corda.processors.db.internal.reconcile.db.MemberInfoReconciler
 import net.corda.processors.db.internal.reconcile.db.MgmAllowedCertificateSubjectsReconciler
 import net.corda.processors.db.internal.reconcile.db.VirtualNodeReconciler
@@ -30,6 +36,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CONFIG_INTERVAL_MS
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CPI_INFO_INTERVAL_MS
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_GROUP_PARAMS_INTERVAL_MS
+import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_HOSTED_IDENTITY_INTERVAL_MS
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_MEMBER_INFO_INTERVAL_MS
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_MTLS_MGM_ALLOWED_LIST_INTERVAL_MS
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_VNODE_INFO_INTERVAL_MS
@@ -61,6 +68,11 @@ class Reconcilers(
     publisherFactory: PublisherFactory,
     configurationReadService: ConfigurationReadService,
     memberInfoFactory: MemberInfoFactory,
+    hostedIdentityReaderService: LocallyHostedIdentitiesService,
+    hostedIdentityWriterService: LocallyHostedIdentitiesWriter,
+    certificatesClient: DbCertificateClient,
+    cryptoOpsClient: CryptoOpsClient,
+    keyEncodingService: KeyEncodingService,
 ) {
     private val cpiReconciler = CpiReconciler(
         coordinatorFactory,
@@ -117,6 +129,18 @@ class Reconcilers(
         memberInfoFactory,
     )
 
+    private val hostedIdentityReconciler = HostedIdentityReconciler(
+        coordinatorFactory,
+        dbConnectionManager,
+        reconcilerFactory,
+        hostedIdentityReaderService,
+        hostedIdentityWriterService,
+        certificatesClient,
+        cryptoOpsClient,
+        keyEncodingService,
+        virtualNodeInfoReadService,
+    )
+
     fun stop() {
         cpiReconciler.stop()
         vnodeReconciler.stop()
@@ -124,6 +148,7 @@ class Reconcilers(
         groupParametersReconciler.stop()
         mgmAllowedCertificateSubjectsReconciler.stop()
         memberInfoReconciler.stop()
+        hostedIdentityReconciler.stop()
     }
 
     /**
@@ -147,6 +172,7 @@ class Reconcilers(
             mgmAllowedCertificateSubjectsReconciler::updateInterval,
         )
         smartConfig.updateIntervalWhenKeyIs(RECONCILIATION_MEMBER_INFO_INTERVAL_MS, memberInfoReconciler::updateInterval)
+        smartConfig.updateIntervalWhenKeyIs(RECONCILIATION_HOSTED_IDENTITY_INTERVAL_MS, hostedIdentityReconciler::updateInterval)
     }
 
     /** Convenience function to correctly set the interval when the key actually exists in the config */

@@ -49,6 +49,7 @@ internal class StatefulDeliveryTracker(
         coordinatorFactory = commonComponents.lifecycleCoordinatorFactory,
         subscriptionGenerator = p2pOutSubscription,
         subscriptionConfig = subscriptionConfig,
+        configurationReadService = commonComponents.configurationReaderService,
         dependentChildren = listOf(
             partitionsStates.dominoTile.coordinatorName,
             config.dominoTile.coordinatorName,

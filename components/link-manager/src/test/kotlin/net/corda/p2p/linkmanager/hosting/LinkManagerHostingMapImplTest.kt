@@ -87,7 +87,8 @@ class LinkManagerHostingMapImplTest {
             "pem",
             listOf("certificate")
         ),
-        emptyList()
+        emptyList(),
+        1
     )
     private val publicKeyReader = mockConstruction(PublicKeyReader::class.java) { mock, _ ->
         whenever(mock.loadPublicKey("pem")).thenReturn(publicKeyOne)
@@ -104,7 +105,8 @@ class LinkManagerHostingMapImplTest {
     private val testObject = LinkManagerHostingMapImpl(
         lifecycleCoordinatorFactory,
         subscriptionFactory,
-        configuration
+        configuration,
+        mock()
     )
 
     @AfterEach
@@ -260,7 +262,8 @@ class LinkManagerHostingMapImplTest {
                             "pem3",
                             listOf("certificate3")
                         ),
-                    )
+                    ),
+                    1
                 )
             )
         )

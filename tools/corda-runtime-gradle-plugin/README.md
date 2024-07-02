@@ -7,8 +7,8 @@ Add the following extension properties
 
 ```groovy
     cordaRuntimeGradlePlugin {
-        runtimeVersion = "5.2.0.0"
-        notaryVersion = "5.2.0.0"
+        runtimeVersion = "5.2.1.0"
+        notaryVersion = "5.2.1.0"
         notaryCpiName = "NotaryServer"
         corDappCpiName = "MyCorDapp"
         cpiUploadTimeout = "30000"

@@ -49,6 +49,7 @@ import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
@@ -288,6 +289,7 @@ class MemberSynchronisationServiceImplTest {
         on { createAsyncCommands() } doReturn persistGroupParametersRecords
     }
     private val persistenceClient = mock<MembershipPersistenceClient> {
+        on { persistMemberInfo(any(), any()) } doReturn mock()
         on { persistGroupParameters(any(), any()) } doReturn persistGroupParametersOperation
     }
     private val groupParameters = mock<SignedGroupParameters>()
@@ -362,14 +364,17 @@ class MemberSynchronisationServiceImplTest {
     }
 
     @Test
-    fun `member list is successfully published on receiving membership package from MGM`() {
+    fun `member list is successfully published and persisted on receiving membership package from MGM`() {
         postConfigChangedEvent()
         synchronisationService.start()
 
         val producedRecords = synchronisationService.processMembershipUpdates(updates)
-
+        val memberInfosToPersist = argumentCaptor<Collection<SelfSignedMemberInfo>>()
+        verify(persistenceClient)
+            .persistMemberInfo(eq(member), memberInfosToPersist.capture())
         assertSoftly {
             assertThat(producedRecords).hasSize(2)
+            assertThat(memberInfosToPersist.firstValue).containsOnly(participant)
 
             val publishedPersistentMemberInfo = producedRecords.first()
             it.assertThat(publishedPersistentMemberInfo.topic).isEqualTo(MEMBER_LIST_TOPIC)
@@ -446,6 +451,19 @@ class MemberSynchronisationServiceImplTest {
         val records = synchronisationService.processMembershipUpdates(updates)
 
         assertThat(records).isEmpty()
+    }
+
+    @Test
+    fun `failed member list persistence will ask for sync again`() {
+        val operation = mock<MembershipPersistenceOperation<Unit>> {
+            on { execute() } doReturn MembershipPersistenceResult.Failure("error")
+        }
+        whenever(persistenceClient.persistMemberInfo(any(), any())).thenReturn(operation)
+        postConfigChangedEvent()
+        synchronisationService.start()
+
+        val records = synchronisationService.processMembershipUpdates(updates)
+        assertThat(records).containsExactly(synchronisationRequest)
     }
 
     @Test

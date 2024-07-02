@@ -44,7 +44,7 @@ class DynamicCertificateSubjectStoreTest {
         (context.arguments()[1] as (() -> CompactedSubscription<String, ClientCertificateSubjects>)).invoke()
     }
     private val dynamicCertificateSubjectStore =
-        DynamicCertificateSubjectStore(lifecycleCoordinatorFactory, subscriptionFactory, nodeConfiguration)
+        DynamicCertificateSubjectStore(lifecycleCoordinatorFactory, mock(), subscriptionFactory, nodeConfiguration)
 
     @AfterEach
     fun cleanUp() {

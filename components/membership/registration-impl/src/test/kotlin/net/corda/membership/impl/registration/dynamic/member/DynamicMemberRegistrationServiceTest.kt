@@ -6,6 +6,7 @@ import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.client.CryptoOpsClient
@@ -22,12 +23,14 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -78,6 +81,9 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.ecdhKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SelfSignedMemberInfo
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
@@ -89,6 +95,7 @@ import net.corda.membership.locally.hosted.identities.IdentityInfo
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.InvalidMembershipRegistrationException
@@ -280,6 +287,7 @@ class DynamicMemberRegistrationServiceTest {
         LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
         LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
         LifecycleCoordinatorName.forComponent<LocallyHostedIdentitiesService>(),
+        LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
     )
 
     private var coordinatorIsRunning = false
@@ -323,9 +331,7 @@ class DynamicMemberRegistrationServiceTest {
             unauthenticatedRegistrationRequestSerializer
         )
     }
-    private val groupReader: MembershipGroupReader = mock {
-        on { lookup() } doReturn listOf(mgmInfo)
-    }
+    private val groupReader: MembershipGroupReader = mock()
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {
         on { getGroupReader(any()) } doReturn groupReader
     }
@@ -337,6 +343,7 @@ class DynamicMemberRegistrationServiceTest {
     private val persistenceOperation = mock<MembershipPersistenceOperation<Unit>> {
         on { createAsyncCommands() } doReturn listOf(command)
     }
+    private val signedMgmInfo = mock<SelfSignedMemberInfo>()
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on {
             persistRegistrationRequest(
@@ -344,6 +351,12 @@ class DynamicMemberRegistrationServiceTest {
                 any(),
             )
         } doReturn persistenceOperation
+        on {
+            persistMemberInfo(
+                member,
+                listOf(signedMgmInfo),
+            )
+        } doReturn mock()
     }
     private val membershipSchemaValidator: MembershipSchemaValidator = mock()
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
@@ -377,6 +390,21 @@ class DynamicMemberRegistrationServiceTest {
             mock, _ ->
         whenever(mock.verify(context)).doReturn(RegistrationContextCustomFieldsVerifier.Result.Success)
     }
+    private val persistentMgmInfo = mock<PersistentMemberInfo>()
+    private val groupPolicy = ""
+    private val cpiMetadata = mock<CpiMetadata> {
+        on { groupPolicy } doReturn groupPolicy
+    }
+    private val cpiInfoReadService = mock<CpiInfoReadService> {
+        on { get(virtualNodeInfo.cpiIdentifier) } doReturn cpiMetadata
+    }
+    private val policyParser = mock<GroupPolicyParser> {
+        on { getMgmInfo(member, groupPolicy) } doReturn mgmInfo
+    }
+    private val memberInfoFactory = mock<MemberInfoFactory> {
+        on { createMgmOrStaticPersistentMemberInfo(any(), any(), any(), any()) } doReturn persistentMgmInfo
+        on { createMgmSelfSignedMemberInfo(persistentMgmInfo) } doReturn signedMgmInfo
+    }
     private val registrationService = DynamicMemberRegistrationService(
         publisherFactory,
         configurationReadService,
@@ -391,7 +419,10 @@ class DynamicMemberRegistrationServiceTest {
         ephemeralKeyPairEncryptor,
         virtualNodeInfoReadService,
         locallyHostedIdentitiesService,
-        configurationGetService
+        configurationGetService,
+        cpiInfoReadService,
+        policyParser,
+        memberInfoFactory,
     )
 
     private val context = mapOf(
@@ -504,7 +535,7 @@ class DynamicMemberRegistrationServiceTest {
             SoftAssertions.assertSoftly {
                 it.assertThat(publishedMessageList)
                     .contains(command)
-                    .hasSize(2)
+                    .hasSize(3)
                 val publishedMessage = publishedMessageList.first()
                 it.assertThat(publishedMessage.topic).isEqualTo(Schemas.P2P.P2P_OUT_TOPIC)
                 it.assertThat(publishedMessage.key).isEqualTo(memberId.value)
@@ -1124,11 +1155,7 @@ class DynamicMemberRegistrationServiceTest {
 
         @Test
         fun `registration fails when MGM info cannot be found`() {
-            // return non-MGM info on lookup
-            val memberInfo = mock<MemberInfo> {
-                on { mgmProvidedContext } doReturn mock()
-            }
-            whenever(groupReader.lookup()).doReturn(listOf(memberInfo))
+            whenever(policyParser.getMgmInfo(member, groupPolicy)).thenReturn(null)
 
             postConfigChangedEvent()
             registrationService.start()
@@ -1136,7 +1163,27 @@ class DynamicMemberRegistrationServiceTest {
             val exception = assertThrows<NotReadyMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, context)
             }
-            assertThat(exception).hasMessageContaining("MGM information")
+            assertThat(exception).hasMessageContaining("No MGM information found")
+        }
+
+        @Test
+        fun `registration fails when MGM info persistence fails`() {
+            val errorMsg = "DB operation failed"
+            val operation = mock<MembershipPersistenceOperation<Unit>> {
+                on { execute() } doReturn MembershipPersistenceResult.Failure(errorMsg)
+            }
+            whenever(membershipPersistenceClient.persistMemberInfo(member, listOf(signedMgmInfo))).thenReturn(
+                operation
+            )
+
+            postConfigChangedEvent()
+            registrationService.start()
+
+            val exception = assertThrows<NotReadyMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, context)
+            }
+            assertThat(exception).hasMessageContaining("Persisting of MGM information failed.")
+                .hasMessageContaining(errorMsg)
         }
 
         @Test
@@ -1363,7 +1410,7 @@ class DynamicMemberRegistrationServiceTest {
                 on { isMgm } doReturn true
                 on { platformVersion } doReturn 50000
             }
-            whenever(groupReader.lookup()).doReturn(listOf(mgmInfo))
+            whenever(policyParser.getMgmInfo(member, groupPolicy)).thenReturn(mgmInfo)
 
             postConfigChangedEvent()
             registrationService.start()
@@ -1383,7 +1430,7 @@ class DynamicMemberRegistrationServiceTest {
                 on { isMgm } doReturn true
                 on { platformVersion } doReturn 50000
             }
-            whenever(groupReader.lookup()).doReturn(listOf(mgmInfo))
+            whenever(policyParser.getMgmInfo(member, groupPolicy)).thenReturn(mgmInfo)
 
             val previous = mock<MemberContext> {
                 on { entries } doReturn previousRegistrationContext.entries
@@ -1414,7 +1461,7 @@ class DynamicMemberRegistrationServiceTest {
                 on { isMgm } doReturn true
                 on { platformVersion } doReturn 50000
             }
-            whenever(groupReader.lookup()).doReturn(listOf(mgmInfo))
+            whenever(policyParser.getMgmInfo(member, groupPolicy)).thenReturn(mgmInfo)
 
             val previous = mock<MemberContext> {
                 on { entries } doReturn previousRegistrationContext.entries

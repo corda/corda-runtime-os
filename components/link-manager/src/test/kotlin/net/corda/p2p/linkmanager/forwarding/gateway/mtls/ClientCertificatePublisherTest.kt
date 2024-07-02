@@ -26,6 +26,7 @@ class ClientCertificatePublisherTest {
         lifecycleCoordinatorFactory,
         messagingConfiguration,
         mock(),
+        mock()
     )
 
     @Test

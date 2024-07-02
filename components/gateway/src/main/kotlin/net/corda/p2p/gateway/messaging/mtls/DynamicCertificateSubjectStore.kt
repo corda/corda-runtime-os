@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging.mtls
 
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.p2p.mtls.gateway.ClientCertificateSubjects
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -15,6 +16,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 internal class DynamicCertificateSubjectStore(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    configurationReadService: ConfigurationReadService,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
 ) : LifecycleWithDominoTile {
@@ -35,6 +37,7 @@ internal class DynamicCertificateSubjectStore(
         lifecycleCoordinatorFactory,
         subscription,
         subscriptionConfig,
+        configurationReadService,
         emptyList(),
         emptyList(),
     )

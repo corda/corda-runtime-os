@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager.sessions
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
@@ -20,6 +21,7 @@ internal class SessionManagerCommonComponents(
     cryptoOpsClient: CryptoOpsClient,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     commonComponents: CommonComponents,
+    configurationReadService: ConfigurationReadService,
 ) : LifecycleWithDominoTile {
     internal val sessionEventPublisher = StatefulSessionEventPublisher(commonComponents)
 
@@ -36,6 +38,7 @@ internal class SessionManagerCommonComponents(
 
     internal val sessionEventListener = StatefulSessionEventProcessor(
         commonComponents,
+        configurationReadService,
         sessionCache,
         sessionMessageHelper,
     )

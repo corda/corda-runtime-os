@@ -84,6 +84,7 @@ internal class InboundMessageHandler(
 
     private val dynamicCertificateSubjectStore = DynamicCertificateSubjectStore(
         lifecycleCoordinatorFactory,
+        configurationReaderService,
         subscriptionFactory,
         messagingConfiguration,
     )

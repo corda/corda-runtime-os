@@ -128,7 +128,8 @@ pipeline {
     }
     post {
         always {
-            script {      
+            step([$class: 'ClaimPublisher'])
+            script {
                     findBuildScans()
                     pipelineUtils.getPodLogs("postgres")
                     pipelineUtils.dropPostgresDB(postgresCredentialsId, env.CORDA_DEV_CLUSTER_DB_NAME)

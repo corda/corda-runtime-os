@@ -5,6 +5,7 @@ import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.client.CryptoOpsClient
@@ -22,6 +23,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedData
 import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
@@ -32,6 +34,7 @@ import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
 import net.corda.data.p2p.app.OutboundUnauthenticatedMessageHeader
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -72,9 +75,11 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_SIGNA
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.TLS_CERTIFICATE_SUBJECT
 import net.corda.membership.lib.MemberInfoExtension.Companion.ecdhKey
+import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
-import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
@@ -107,6 +112,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.versioning.Version
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -119,7 +125,7 @@ import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.util.UUID
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [MemberRegistrationService::class])
 class DynamicMemberRegistrationService @Activate constructor(
     @Reference(service = PublisherFactory::class)
@@ -150,6 +156,12 @@ class DynamicMemberRegistrationService @Activate constructor(
     private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService,
     @Reference(service = ConfigurationGetService::class)
     private val configurationGetService: ConfigurationGetService,
+    @Reference(service = CpiInfoReadService::class)
+    private val cpiInfoReadService: CpiInfoReadService,
+    @Reference(service = GroupPolicyParser::class)
+    private val policyParser: GroupPolicyParser,
+    @Reference(service = MemberInfoFactory::class)
+    private val memberInfoFactory: MemberInfoFactory,
 ) : MemberRegistrationService {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -295,12 +307,15 @@ class DynamicMemberRegistrationService @Activate constructor(
             }
             return try {
                 val memberId = member.shortHash
+                val cpi = virtualNodeInfoReadService.get(member)?.cpiIdentifier
+                    ?: throw CordaRuntimeException("Could not find virtual node info for member ${member.shortHash}")
                 val roles = MemberRole.extractRolesFromContext(context)
                 val notaryKeys = generateNotaryKeys(context, memberId.value)
                 logger.debug("Member roles: {}, notary keys: {}", roles, notaryKeys)
                 val groupReader = membershipGroupReaderProvider.getGroupReader(member)
                 val previousInfo = groupReader.lookup(member.x500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED)
                 val platformTransformedMemberContext = buildMemberContext(
+                    cpi,
                     context,
                     registrationId,
                     member,
@@ -330,9 +345,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     }.toWire()
                 )
 
-                // The group reader might not know about the MGM yet.
-                val mgm = groupReader.lookup().firstOrNull { it.isMgm }
-                    ?: throw NotReadyMembershipRegistrationException("Failed to look up MGM information.")
+                val mgm = parseMgmMemberInfo(member, cpi)
 
                 val serialInfo = context[SERIAL]?.toLong()
                     ?: previousInfo?.serial
@@ -385,6 +398,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     memberId.value
                 )
 
+                val mgmRecord = persistMgmMemberInfo(member, mgm)
                 // This call will update the serial information only, if the request got persisted before,
                 // in this scenario all the existing data in the persistence will remain the same, except the serial.
                 // If the request wasn't persisted before successfully, we will persist the whole here.
@@ -400,8 +414,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                         serial = serialInfo,
                     )
                 ).createAsyncCommands()
-
-                listOf(record) + commands
+                listOf(record) + commands + mgmRecord
             } catch (e: InvalidMembershipRegistrationException) {
                 registrationLogger.warn("Registration failed.", e)
                 throw e
@@ -436,6 +449,7 @@ class DynamicMemberRegistrationService @Activate constructor(
         }.toSortedMap().toWire()
 
         private fun buildMemberContext(
+            cpi: CpiIdentifier,
             context: Map<String, String>,
             registrationId: UUID,
             member: HoldingIdentity,
@@ -443,8 +457,6 @@ class DynamicMemberRegistrationService @Activate constructor(
             notaryKeys: List<KeyDetails>,
             previousRegistrationContext: Map<String, String>?,
         ): Map<String, String> {
-            val cpi = virtualNodeInfoReadService.get(member)?.cpiIdentifier
-                ?: throw CordaRuntimeException("Could not find virtual node info for member ${member.shortHash}")
             val filteredContext = context.filterNot {
                 it.key.startsWith(LEDGER_KEYS) ||
                     it.key.startsWith(SESSION_KEYS) ||
@@ -734,6 +746,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
                 LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
                 LifecycleCoordinatorName.forComponent<LocallyHostedIdentitiesService>(),
+                LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
             )
         )
     }
@@ -811,5 +824,45 @@ class DynamicMemberRegistrationService @Activate constructor(
                 CryptoSignatureSpec(signatureSpec, null, null),
             )
         }
+    }
+
+    private fun parseMgmMemberInfo(member: HoldingIdentity, cpi: CpiIdentifier): MemberInfo {
+        val groupPolicy = cpiInfoReadService.get(cpi)?.groupPolicy
+            ?: throw CordaRuntimeException("Could not find group policy for member ${member.shortHash}")
+        return policyParser.getMgmInfo(member, groupPolicy)
+            ?: throw CordaRuntimeException(
+                "No MGM information found in group policy for " +
+                    "member ${member.shortHash}. MGM member info not published."
+            )
+    }
+
+    private fun persistMgmMemberInfo(
+        viewOwner: HoldingIdentity,
+        mgmInfo: MemberInfo,
+    ): List<Record<String, PersistentMemberInfo>> {
+        val mgmHoldingIdentity = HoldingIdentity(mgmInfo.name, mgmInfo.groupId)
+        val persistentMgmInfo = memberInfoFactory.createMgmOrStaticPersistentMemberInfo(
+            viewOwner.toAvro(),
+            mgmInfo,
+            CryptoSignatureWithKey(
+                ByteBuffer.wrap(byteArrayOf()),
+                ByteBuffer.wrap(byteArrayOf())
+            ),
+            CryptoSignatureSpec("", null, null),
+        )
+        val mgmInfoPersistenceResult = membershipPersistenceClient.persistMemberInfo(
+            viewOwner,
+            listOf(memberInfoFactory.createMgmSelfSignedMemberInfo(persistentMgmInfo)),
+        ).execute()
+        if (mgmInfoPersistenceResult is MembershipPersistenceResult.Failure) {
+            throw CordaRuntimeException("Persisting of MGM information failed. ${mgmInfoPersistenceResult.errorMsg}")
+        }
+        return listOf(
+            Record(
+                Schemas.Membership.MEMBER_LIST_TOPIC,
+                "${viewOwner.shortHash}-${mgmHoldingIdentity.shortHash}",
+                persistentMgmInfo,
+            )
+        )
     }
 }

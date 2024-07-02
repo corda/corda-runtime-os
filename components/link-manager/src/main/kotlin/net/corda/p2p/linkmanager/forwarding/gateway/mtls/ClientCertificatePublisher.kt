@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.forwarding.gateway.mtls
 
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.p2p.mtls.MemberAllowedCertificateSubject
 import net.corda.data.p2p.mtls.MgmAllowedCertificateSubject
 import net.corda.libs.configuration.SmartConfig
@@ -21,6 +22,7 @@ internal class ClientCertificatePublisher(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     messagingConfiguration: SmartConfig,
     groupPolicyProvider: GroupPolicyProvider,
+    configurationReadService: ConfigurationReadService,
 ) : LifecycleWithDominoTile {
     private companion object {
         const val PUBLISHER_NAME = "linkmanager_mtls_client_certificate_publisher"
@@ -41,6 +43,7 @@ internal class ClientCertificatePublisher(
         lifecycleCoordinatorFactory,
         messagingConfiguration,
         subscriptionFactory,
+        configurationReadService,
         P2P_MTLS_MEMBER_CLIENT_CERTIFICATE_SUBJECT_TOPIC,
         MemberAllowedCertificateSubject::getSubject,
     )
@@ -49,6 +52,7 @@ internal class ClientCertificatePublisher(
         lifecycleCoordinatorFactory,
         messagingConfiguration,
         subscriptionFactory,
+        configurationReadService,
         P2P_MGM_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS,
         MgmAllowedCertificateSubject::getSubject,
     )

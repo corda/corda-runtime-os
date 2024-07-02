@@ -82,6 +82,7 @@ internal class OutboundMessageHandler(
         lifecycleCoordinatorFactory,
         outboundSubscription,
         subscriptionConfig,
+        configurationReaderService,
         setOf(connectionManager.dominoTile.coordinatorName, gatewayConfigReader.dominoTile.coordinatorName),
         setOf(connectionManager.dominoTile.toNamedLifecycle(), gatewayConfigReader.dominoTile.toNamedLifecycle()),
     )

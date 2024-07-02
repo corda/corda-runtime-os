@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.certificates
 
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.utils.AllowAllRevocationChecker
 import net.corda.crypto.utils.convertToKeyStore
 import net.corda.data.p2p.gateway.certificates.Active
@@ -30,10 +31,12 @@ import java.security.cert.PKIXRevocationChecker
 import java.security.cert.X509CertSelector
 import java.util.concurrent.CompletableFuture
 
+@Suppress("LongParameterList")
 class RevocationChecker(
     subscriptionFactory: SubscriptionFactory,
     messagingConfig: SmartConfig,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    configurationReadService: ConfigurationReadService,
     certificateFactory: CertificateFactory = CertificateFactory.getInstance(certificateFactoryType),
     certPathValidator: CertPathValidator = CertPathValidator.getInstance(certificateAlgorithm),
 ) : LifecycleWithDominoTile {
@@ -152,6 +155,7 @@ class RevocationChecker(
         lifecycleCoordinatorFactory,
         subscription,
         subscriptionConfig,
+        configurationReadService,
         emptySet(),
         emptySet(),
     )

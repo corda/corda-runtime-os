@@ -8,7 +8,6 @@ import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
-import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
@@ -28,7 +27,6 @@ internal class CreateVirtualNodeOperationHandler(
     private val createVirtualNodeService: CreateVirtualNodeService,
     private val virtualNodeDbFactory: VirtualNodeDbFactory,
     private val recordFactory: RecordFactory,
-    private val policyParser: GroupPolicyParser,
     private val externalMessagingRouteConfigGenerator: ExternalMessagingRouteConfigGenerator,
     private val logger: Logger,
     entityManagerFactory: EntityManagerFactory,
@@ -127,30 +125,17 @@ internal class CreateVirtualNodeOperationHandler(
                 )
             }
 
-            val mgmInfo = if (!GroupPolicyParser.isStaticNetwork(cpiMetadata.groupPolicy!!)) {
-                policyParser.getMgmInfo(holdingId, cpiMetadata.groupPolicy!!)
-            } else {
-                null
-            }
-
-            val records = if (mgmInfo == null) {
-                logger.info(".No MGM information found in group policy. MGM member info not published.")
-                mutableListOf()
-            } else {
-                mutableListOf(recordFactory.createMgmInfoRecord(holdingId, mgmInfo))
-            }
-
-            records.add(
-                recordFactory.createVirtualNodeInfoRecord(
-                    holdingId,
-                    cpiMetadata.cpiId,
-                    vNodeConnections,
-                    externalMessagingRouteConfig
+            execLog.measureExecTime("publish virtual node info") {
+                createVirtualNodeService.publishRecords(
+                    listOf(
+                        recordFactory.createVirtualNodeInfoRecord(
+                            holdingId,
+                            cpiMetadata.cpiId,
+                            vNodeConnections,
+                            externalMessagingRouteConfig
+                        )
+                    )
                 )
-            )
-
-            execLog.measureExecTime("publish virtual node and MGM info") {
-                createVirtualNodeService.publishRecords(records)
             }
         } catch (e: Exception) {
             recordErrorStatus(requestId, e.message ?: "Unexpected error", VirtualNodeOperationType.CREATE)

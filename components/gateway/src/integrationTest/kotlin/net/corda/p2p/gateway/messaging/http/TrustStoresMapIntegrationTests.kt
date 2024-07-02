@@ -7,6 +7,8 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.EmulatorFactory
 import net.corda.p2p.gateway.TestBase
+import net.corda.p2p.gateway.messaging.GatewayConfiguration
+import net.corda.p2p.gateway.messaging.GatewayServerConfiguration
 import net.corda.schema.Schemas
 import net.corda.test.util.eventually
 import net.corda.v5.base.types.MemberX500Name
@@ -17,9 +19,10 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import java.io.StringWriter
 
 internal class TrustStoresMapIntegrationTests : TestBase() {
-    companion object {
-        private const val GROUP_ID = "Group-A"
-        private const val ALICE_NAME = "O=Alice, L=LDN, C=GB"
+    private companion object {
+        const val GROUP_ID = "Group-A"
+        const val ALICE_NAME = "O=Alice, L=LDN, C=GB"
+        const val MAX_REQUEST_SIZE = 50_000_000L
     }
     private val emulator = EmulatorFactory.create(lifecycleCoordinatorFactory).also {
         keep(it)
@@ -28,6 +31,7 @@ internal class TrustStoresMapIntegrationTests : TestBase() {
     private val messagingConfig = SmartConfigImpl.empty()
     private val publisherFactory = emulator.publisherFactory
     private val expectedCertificatePem = truststoreCertificatePem.replace("\r\n", "\n")
+    private val configPublisher = ConfigPublisher()
 
     @Test
     fun `TrustStoresMap creates correct certificate`() {
@@ -35,6 +39,7 @@ internal class TrustStoresMapIntegrationTests : TestBase() {
             lifecycleCoordinatorFactory,
             subscriptionFactory,
             messagingConfig,
+            configPublisher.readerService
         )
         publisherFactory.createPublisher(PublisherConfig("client.ID", false), messagingConfig).use {
             it.publish(
@@ -49,9 +54,15 @@ internal class TrustStoresMapIntegrationTests : TestBase() {
                 it.join()
             }
         }
+        configPublisher.publishConfig(
+            GatewayConfiguration(
+                listOf(GatewayServerConfiguration("25", 25, "/",)),
+                aliceSslConfig,
+                MAX_REQUEST_SIZE,
+            ),
+        )
 
         map.start()
-
         eventually {
             assertThat(map.isRunning).isTrue
 

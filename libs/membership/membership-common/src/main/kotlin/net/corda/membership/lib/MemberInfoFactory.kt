@@ -91,6 +91,13 @@ interface MemberInfoFactory {
         memberSignatureSpec: CryptoSignatureSpec,
     ): PersistentMemberInfo
 
+    /**
+     * Should be only used when creating MGM member info to persist.
+     */
+    fun createMgmSelfSignedMemberInfo(
+        memberInfo: PersistentMemberInfo,
+    ): SelfSignedMemberInfo
+
     fun createSelfSignedMemberInfo(
         memberContext: ByteArray,
         mgmContext: ByteArray,
