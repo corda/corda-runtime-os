@@ -197,9 +197,6 @@ class OnboardMember : Runnable, BaseOnboard() {
 
             setupNetwork()
 
-            println("Provided registration context: ")
-            println(memberRegistrationRequest)
-
             register(waitForFinalStatus)
 
             if (waitForFinalStatus) {

@@ -131,6 +131,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             uniquenessDmlConnection = null,
         )
         val longerWait = getLongerWait()
+        println("Creating Virtual Node: ${request.x500Name}")
         val shortHashId = VirtualNode(restClient).createAndWaitForActive(request, longerWait)
         println("Holding identity short hash of '$name' is: '$shortHashId'")
         shortHashId
@@ -179,6 +180,8 @@ abstract class BaseOnboard : Runnable, RestCommand() {
 
         if (hasKeys) return
 
+        println("Creating TLS key.")
+
         val tlsKeyId = keys.generateTlsKey()
 
         val clientCertificates = ClientCertificates(restClient)
@@ -216,9 +219,14 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     }
 
     protected fun register(waitForFinalStatus: Boolean = true) {
+        // Invoke to instantiate lazy fields so that print line happens after the setup
+        val registrationPayload = memberRegistrationRequest
+        val shortHashHoldingId = holdingId
+        println("Registering Virtual Node into the network.")
+
         val response = RegistrationRequester(restClient).requestRegistration(
-            memberRegistrationRequest = memberRegistrationRequest,
-            holdingId = holdingId
+            memberRegistrationRequest = registrationPayload,
+            holdingId = shortHashHoldingId
         )
         val registrationId = RequestId(response.registrationId)
         val submissionStatus = response.registrationStatus
@@ -271,6 +279,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                 config = newConfig,
                 schemaVersion = ConfigSchemaVersion(major = currentConfig.schemaVersion.major, minor = currentConfig.schemaVersion.minor),
             )
+            println("Configuring Corda.")
             clusterConfig.updateConfig(updateConfig = payload, wait = waitDurationSeconds.seconds)
         }
     }
@@ -305,6 +314,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     }
 
     protected fun uploadSigningCertificates() {
+        println("Uploading code-signer certificates.")
         val keyStore = KeyStore.getInstance(
             keyStoreFile,
             SIGNING_KEY_STORE_PASSWORD.toCharArray(),
