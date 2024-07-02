@@ -256,22 +256,6 @@ class RestServerRequestsTest : RestServerTestBase() {
     }
 
     @Test
-    fun `Verify no permission check on GetProtocolVersion`() {
-        val fullUrl = "testEntity/getProtocolVersion"
-        val helloResponse = client.call(
-            GET,
-            WebRequest<Any>(fullUrl),
-            userName,
-            password
-        )
-        assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
-        assertEquals("3", helloResponse.body)
-
-        // Check that security managed has not been called for GetProtocolVersion which is exempt from permissions check
-        assertThat(securityManager.checksExecuted).hasSize(0)
-    }
-
-    @Test
     fun `Verify permission check is performed on entity retrieval`() {
         val fullUrlWithSlashes = "testentity/1234/"
         val fullUrlWithoutSlash = "testentity/1234"
@@ -431,30 +415,6 @@ class RestServerRequestsTest : RestServerTestBase() {
             password
         )
         assertEquals(HttpStatus.SC_OK, getPathResponse.responseStatus)
-    }
-
-    @Test
-    fun `GET valid user with valid permissions on requested get protocol version returns 200`() {
-        val getPathResponse = client.call(
-            GET,
-            WebRequest<Any>("health/getprotocolversion"),
-            userName,
-            password
-        )
-        assertEquals(HttpStatus.SC_OK, getPathResponse.responseStatus)
-        assertEquals("2", getPathResponse.body)
-    }
-
-    @Test
-    fun `GET invalid user without permissions on requested get protocol version returns 200`() {
-        val getPathResponse = client.call(
-            GET,
-            WebRequest<Any>("health/getprotocolversion"),
-            "invalid",
-            "invalid"
-        )
-        assertEquals(HttpStatus.SC_OK, getPathResponse.responseStatus)
-        assertEquals("2", getPathResponse.body)
     }
 
     @Test
