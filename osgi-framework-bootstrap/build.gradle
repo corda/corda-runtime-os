@@ -15,7 +15,7 @@ configurations {
 }
 
 dependencies {
-    compileOnly 'org.osgi:osgi.core'
+    implementation 'org.osgi:osgi.core'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':osgi-framework-api')
     implementation 'org.slf4j:slf4j-api'
