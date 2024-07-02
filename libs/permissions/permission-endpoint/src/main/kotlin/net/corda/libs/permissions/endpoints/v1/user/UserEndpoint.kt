@@ -15,7 +15,6 @@ import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.response.ResponseEntity
-import kotlin.reflect.jvm.internal.impl.metadata.ProtoBuf.Property
 
 /**
  * User endpoint exposes HTTP endpoints for management of Users in the RBAC permission system.
@@ -265,7 +264,6 @@ interface UserEndpoint : RestResource {
         loginName: String
     ): UserPermissionSummaryResponseType
 
-
     /**
      * Add properties to a user
      */
@@ -280,7 +278,7 @@ interface UserEndpoint : RestResource {
             fullName: The full name for the new user
             loginName: The login name for the new user
             enabled: If true, the user account is enabled; false, the account is disabled
-            ssoAuth: If true, the user account is enabled for SSO authentication; 
+            ssoAuth: If true, the user account is enabled for SSO authentication;
                 false, the account is enabled for password authentication
             passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;
                     value of null means that the password does not expire
@@ -288,7 +286,7 @@ interface UserEndpoint : RestResource {
                     value of null means that the user will belong to the root group
             properties: An optional set of key/value properties associated with a user account
             roleAssociations: A set of roles associated with the user account
-            
+
         """
     )
     fun addProperty(
@@ -300,7 +298,6 @@ interface UserEndpoint : RestResource {
             name = "property"
         )property: Map<String, String>
     ): ResponseEntity<UserResponseType>
-
 
     /**
      * Removes properties from a user
@@ -316,7 +313,7 @@ interface UserEndpoint : RestResource {
             fullName: The full name for the new user
             loginName: The login name for the new user
             enabled: If true, the user account is enabled; false, the account is disabled
-            ssoAuth: If true, the user account is enabled for SSO authentication; 
+            ssoAuth: If true, the user account is enabled for SSO authentication;
                 false, the account is enabled for password authentication
             passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;
                     value of null means that the password does not expire
@@ -324,7 +321,7 @@ interface UserEndpoint : RestResource {
                     value of null means that the user will belong to the root group
             properties: An optional set of key/value properties associated with a user account
             roleAssociations: A set of roles associated with the user account
-            
+
         """
     )
     fun removeProperty(
@@ -333,7 +330,6 @@ interface UserEndpoint : RestResource {
         @RestPathParameter(description = "The property to remove from the user")
         propertyKey: String
     ): ResponseEntity<UserResponseType>
-
 
     /**
      * Lists properties of a user
@@ -346,14 +342,13 @@ interface UserEndpoint : RestResource {
             key: The name of the property.
             lastChangedTimestamp: The time at which the property was last changed.
             value: The value for the property.
-            
+
         """
     )
     fun getUserProperties(
         @RestPathParameter(description = "The login name of the user")
         loginName: String,
     ): ResponseEntity<PropertyResponseType>
-
 
     /**
      * Gets all users for propertyKey = value
@@ -369,7 +364,7 @@ interface UserEndpoint : RestResource {
             fullName: The full name for the new user
             loginName: The login name for the new user
             enabled: If true, the user account is enabled; false, the account is disabled
-            ssoAuth: If true, the user account is enabled for SSO authentication; 
+            ssoAuth: If true, the user account is enabled for SSO authentication;
                 false, the account is enabled for password authentication
             passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;
                     value of null means that the password does not expire
@@ -377,19 +372,19 @@ interface UserEndpoint : RestResource {
                     value of null means that the user will belong to the root group
             properties: An optional set of key/value properties associated with a user account
             roleAssociations: A set of roles associated with the user account
-            
+
         """
     )
     fun getUsersByPropertyKey(
         @ClientRequestBodyParameter(
-        description = "Property key to look for.",
-        required = true,
-        name = "propertyKey"
-    ) propertyKey: String,
+            description = "Property key to look for.",
+            required = true,
+            name = "propertyKey"
+        ) propertyKey: String,
         @ClientRequestBodyParameter(
-        description = "Property value to match on.",
-        required = true,
-        name = "propertyValue"
-    ) propertyValue: String
+            description = "Property value to match on.",
+            required = true,
+            name = "propertyValue"
+        ) propertyValue: String
     ): ResponseEntity<UserResponseType>
 }

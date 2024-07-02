@@ -46,6 +46,7 @@ import kotlin.reflect.full.memberFunctions
 /**
  * A REST resource endpoint for User operations.
  */
+@Suppress("TooManyFunctions")
 @Component(service = [PluggableRestResource::class])
 class UserEndpointImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -249,7 +250,6 @@ class UserEndpointImpl @Activate constructor(
     override fun getUsersByPropertyKey(propertyKey: String, propertyValue: String): ResponseEntity<UserResponseType> {
         TODO("CORE-20757")
     }
-
     private fun getRestThreadLocalContext(): String {
         val restContext = CURRENT_REST_CONTEXT.get()
         return restContext.principal
