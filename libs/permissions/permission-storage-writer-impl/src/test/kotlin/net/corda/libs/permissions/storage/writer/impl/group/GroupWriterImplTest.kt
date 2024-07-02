@@ -10,6 +10,7 @@ import net.corda.permissions.model.RestPermissionOperation
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.*
@@ -25,18 +26,21 @@ class GroupWriterImplTest {
         on { createEntityManager() }.thenReturn(entityManager)
     }
     private val groupWriter = GroupWriterImpl(entityManagerFactory)
+    private val entityTransaction = mock<EntityTransaction>()
 
     private val requestUserId = "requestUserId"
+
+    @BeforeEach
+    fun setup() {
+        whenever(entityManager.transaction).thenReturn(entityTransaction)
+    }
 
 
     @Test
     fun `create a group with no parent specified successfully persists the group`() {
         val createGroupRequest = CreateGroupRequest().apply {
-            groupName = "group1"
+            groupName = "groupName"
         }
-        val entityTransaction = mock<EntityTransaction>()
-        whenever(entityManager.transaction).thenReturn(entityTransaction)
-
         groupWriter.createGroup(createGroupRequest, requestUserId)
 
         val groupCaptor = argumentCaptor<Group>()
@@ -51,7 +55,7 @@ class GroupWriterImplTest {
 
         val persistedGroup = groupCaptor.firstValue
         assertNotNull(persistedGroup)
-        assertEquals("group1", persistedGroup.name)
+        assertEquals("groupName", persistedGroup.name)
         assertNull(persistedGroup.parentGroup)
 
         val audit = auditCaptor.firstValue
@@ -63,14 +67,12 @@ class GroupWriterImplTest {
     @Test
     fun `create a group with a parent group specified persists a new group to the database`() {
         val createGroupRequest = CreateGroupRequest().apply {
-            groupName = "group1"
-            parentGroupId = "parent1"
+            groupName = "groupId"
+            parentGroupId = "parentId"
         }
-        val parentGroup = Group("parent1", Instant.now(), "parentGroup", null)
-        val entityTransaction = mock<EntityTransaction>()
+        val parentGroup = Group("parentId", Instant.now(), "parentGroupName", null)
 
-        whenever(entityManager.transaction).thenReturn(entityTransaction)
-        whenever(entityManager.find(Group::class.java, "parent1")).thenReturn(parentGroup)
+        whenever(entityManager.find(Group::class.java, "parentId")).thenReturn(parentGroup)
 
         groupWriter.createGroup(createGroupRequest, requestUserId)
 
@@ -86,7 +88,7 @@ class GroupWriterImplTest {
 
         val persistedGroup = groupCaptor.firstValue
         assertNotNull(persistedGroup)
-        assertEquals("group1", persistedGroup.name)
+        assertEquals("groupId", persistedGroup.name)
         assertEquals(parentGroup, persistedGroup.parentGroup)
 
         val audit = auditCaptor.firstValue
@@ -102,8 +104,6 @@ class GroupWriterImplTest {
             newParentGroupId = "parentId"
         }
 
-        val entityTransaction = mock<EntityTransaction>()
-        whenever(entityManager.transaction).thenReturn(entityTransaction)
         whenever(entityManager.find(Group::class.java, "groupId")).thenReturn(null)
 
         val e = assertThrows<EntityNotFoundException> {
@@ -122,8 +122,6 @@ class GroupWriterImplTest {
         val requestUserId = "requestUserId"
         val group = Group("groupId", Instant.now(), "groupName", null)
 
-        val entityTransaction = mock<EntityTransaction>()
-        whenever(entityManager.transaction).thenReturn(entityTransaction)
         whenever(entityManager.find(Group::class.java, "groupId")).thenReturn(group)
         whenever(entityManager.find(Group::class.java, "parentId")).thenReturn(null)
 
@@ -140,9 +138,7 @@ class GroupWriterImplTest {
         }
         val group = Group("groupId", Instant.now(), "groupName", null)
         val parentGroup = Group("parentId", Instant.now(), "parentGroupName", null)
-        val entityTransaction = mock<EntityTransaction>()
 
-        whenever(entityManager.transaction).thenReturn(entityTransaction)
         whenever(entityManager.find(Group::class.java, "groupId")).thenReturn(group)
         whenever(entityManager.find(Group::class.java, "parentId")).thenReturn(parentGroup)
 
