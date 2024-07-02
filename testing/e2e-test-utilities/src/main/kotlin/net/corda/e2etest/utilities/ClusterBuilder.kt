@@ -11,6 +11,8 @@ import java.io.FileNotFoundException
 import java.io.InputStream
 import java.nio.file.Paths
 import java.time.Instant
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 /**
  *  All functions return a [SimpleResponse] if not explicitly declared.
@@ -18,29 +20,88 @@ import java.time.Instant
  *  The caller needs to marshall the response body to json, and then query
  *  the json for the expected results.
  */
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LargeClass")
 class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String) {
 
     internal companion object {
         init {
-            configureTracing("E2eClusterTracing", null, null)
+            configureTracing("E2eClusterTracing", null, null, emptyMap())
         }
+        private const val vNodeCreatorName = "vnodecreatoruser"
+        private val lock = ReentrantLock()
     }
 
     private val logger = LoggerFactory.getLogger("ClusterBuilder - ${clusterInfo.id}")
 
-    private val client: HttpsClient =
+    val initialClient: HttpsClient =
         UnirestHttpsClient(clusterInfo.rest.uri, clusterInfo.rest.user, clusterInfo.rest.password)
+
+    private fun checkVNodeCreatorRoleExists(): JsonNode? {
+        return getRbacRoles().body.toJson().firstOrNull { it["roleName"].toString().contains("VNodeCreatorRole") }
+    }
+
+    private fun checkVNodeCreatorUserDoesNotExist(): Boolean {
+        return getRbacUser(vNodeCreatorName).body.contains("User '$vNodeCreatorName' not found")
+    }
+
+    private fun checkIfNotPreviousVersion(): Boolean {
+        return REST_API_VERSION_PATH != RestApiVersion.C5_1.versionPath && REST_API_VERSION_PATH != RestApiVersion.C5_2.versionPath
+    }
+
+    internal val vNodeCreatorClient: HttpsClient by lazy {
+        lock.withLock {
+            val vNodeCreatorRole = checkVNodeCreatorRoleExists()
+            if (checkIfNotPreviousVersion() && vNodeCreatorRole != null && checkVNodeCreatorUserDoesNotExist()) {
+                logger.info(
+                    "Creating user '$vNodeCreatorName' with role '${vNodeCreatorRole["roleName"].textValue()}'"
+                )
+                assertWithRetry {
+                    command {
+                        createRbacUser(
+                            true,
+                            vNodeCreatorName,
+                            vNodeCreatorName,
+                            vNodeCreatorName,
+                            null,
+                            null
+                        )
+                    }
+                    condition { it.code == 201 }
+                }
+
+                assertWithRetry {
+                    command {
+                        assignRoleToUser(vNodeCreatorName, vNodeCreatorRole["id"].textValue())
+                    }
+                    condition { it.code == 200 || it.code == 409 }
+                }
+
+                assertWithRetry {
+                    command {
+                     getRbacUser(vNodeCreatorName)
+                    }
+                    condition {
+                        it.body.toJson()["roleAssociations"].first()["roleId"].textValue().equals(vNodeCreatorRole["id"].textValue())
+                    }
+                }
+
+
+                UnirestHttpsClient(clusterInfo.rest.uri, vNodeCreatorName, vNodeCreatorName)
+            } else {
+                initialClient
+            }
+        }
+    }
 
     private data class VNodeCreateBody(
         val cpiFileChecksum: String,
         val x500Name: String,
-        val cryptoDdlConnection: String?,
-        val cryptoDmlConnection: String?,
-        val uniquenessDdlConnection: String?,
-        val uniquenessDmlConnection: String?,
-        val vaultDdlConnection: String?,
-        val vaultDmlConnection: String?
+        val cryptoDdlConnection: JsonNode?,
+        val cryptoDmlConnection: JsonNode?,
+        val uniquenessDdlConnection: JsonNode?,
+        val uniquenessDmlConnection: JsonNode?,
+        val vaultDdlConnection: JsonNode?,
+        val vaultDmlConnection: JsonNode?
     )
 
     private data class VNodeChangeConnectionStringsBody(
@@ -52,15 +113,6 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         val vaultDmlConnection: JsonNode?
     )
 
-    data class ExternalDBConnectionParams(
-        val cryptoDdlConnection: String? = null,
-        val cryptoDmlConnection: String? = null,
-        val uniquenessDdlConnection: String? = null,
-        val uniquenessDmlConnection: String? = null,
-        val vaultDdlConnection: String? = null,
-        val vaultDmlConnection: String? = null
-    )
-
     data class JsonExternalDBConnectionParams(
         val cryptoDdlConnection: JsonNode? = null,
         val cryptoDmlConnection: JsonNode? = null,
@@ -70,32 +122,28 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         val vaultDmlConnection: JsonNode? = null
     )
 
-
-    /** POST, but most useful for running flows */
-    fun post(cmd: String, body: String) = client.post(cmd, body)
-
-    fun put(cmd: String, body: String) = client.put(cmd, body)
-
-    fun get(cmd: String) = client.get(cmd)
-
-    fun delete(cmd: String) = client.delete(cmd)
-
+    @Suppress("LongParameterList")
     private fun uploadCpiResource(
         cmd: String,
         cpbResourceName: String?,
         groupPolicy: String,
         cpiName: String,
-        cpiVersion: String
+        cpiVersion: String,
+        forceUpload: Boolean = false
     ): SimpleResponse {
         return CpiLoader.get(cpbResourceName, groupPolicy, cpiName, cpiVersion).use {
-            client.postMultiPart(cmd, emptyMap(), mapOf("upload" to HttpsClientFileUpload(it, cpiName)))
+            if (forceUpload) {
+                initialClient.postMultiPart(cmd, emptyMap(), mapOf("upload" to HttpsClientFileUpload(it, cpiName)))
+            } else {
+                vNodeCreatorClient.postMultiPart(cmd, emptyMap(), mapOf("upload" to HttpsClientFileUpload(it, cpiName)))
+            }
         }
     }
 
     private fun uploadUnmodifiedResource(cmd: String, resourceName: String): SimpleResponse {
         val fileName = Paths.get(resourceName).fileName.toString()
         return CpiLoader.getRawResource(resourceName).use {
-            client.postMultiPart(cmd, emptyMap(), mapOf("upload" to HttpsClientFileUpload(it, fileName)))
+            vNodeCreatorClient.postMultiPart(cmd, emptyMap(), mapOf("upload" to HttpsClientFileUpload(it, fileName)))
         }
     }
 
@@ -103,7 +151,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         getInputStream(resourceName).uploadCertificateInputStream(
             cmd,
             alias,
-            Paths.get(resourceName).fileName.toString()
+            Paths.get(resourceName).fileName.toString(),
         )
 
 
@@ -114,7 +162,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     private fun InputStream.uploadCertificateInputStream(
         cmd: String, alias: String, fileName: String
     ) = use {
-        client.putMultiPart(
+        vNodeCreatorClient.putMultiPart(
             cmd,
             mapOf("alias" to alias),
             mapOf("certificate" to HttpsClientFileUpload(it, fileName))
@@ -127,18 +175,9 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
 
     fun importCertificate(resourceName: String, usage: String, alias: String) =
         uploadCertificateResource(
-            "/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/cluster/$usage",
+            "/api/$REST_API_VERSION_PATH/certificate/cluster/$usage",
             resourceName,
             alias,
-        )
-
-    @Suppress("unused")
-    // Used to test RestApiVersion.C5_0 CertificateRestResource from 5.1 cluster, remove after LTS
-    fun deprecatedImportCertificate(resourceName: String, usage: String, alias: String) =
-        uploadCertificateResource(
-            "/api/${RestApiVersion.C5_0.versionPath}/certificates/cluster/$usage",
-            resourceName,
-            alias
         )
 
     /**
@@ -155,30 +194,20 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
 
     private fun importClusterCertificate(file: File, usage: String, alias: String) =
         uploadCertificateFile(
-            "/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/cluster/$usage",
+            "/api/$REST_API_VERSION_PATH/certificate/cluster/$usage",
             file,
             alias,
         )
 
     private fun importVnodeCertificate(file: File, usage: String, alias: String, holdingIdentityId: String) =
         uploadCertificateFile(
-            "/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/vnode/$holdingIdentityId/$usage",
+            "/api/$REST_API_VERSION_PATH/certificate/vnode/$holdingIdentityId/$usage",
             file,
             alias
         )
 
     fun getCertificateChain(usage: String, alias: String) =
-        client.get("/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/cluster/$usage/$alias")
-
-    /**
-     * Returns the correct path for certificate rest resource based on the rest api version we use.
-     */
-    private fun String.certificatePath(): String =
-        if (this == RestApiVersion.C5_0.versionPath) {
-            "certificates"
-        } else {
-            "certificate"
-        }
+        vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/certificate/cluster/$usage/$alias")
 
     @Suppress("unused")
     /** Assumes the resource *is* a CPB */
@@ -216,11 +245,11 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         groupPolicy: String,
         cpiName: String,
         cpiVersion: String = "1.0.0.0-SNAPSHOT"
-    ) = uploadCpiResource("/api/$REST_API_VERSION_PATH/cpi/", cpbResourceName, groupPolicy, cpiName, cpiVersion)
+    ) = uploadCpiResource("/api/$REST_API_VERSION_PATH/cpi/", cpbResourceName, groupPolicy, cpiName, cpiVersion, false)
 
     @Suppress("unused")
     fun updateVirtualNodeState(holdingIdHash: String, newState: String) =
-        put("/api/$REST_API_VERSION_PATH/virtualnode/$holdingIdHash/state/$newState", "")
+        vNodeCreatorClient.put("/api/$REST_API_VERSION_PATH/virtualnode/$holdingIdHash/state/$newState", "")
 
     @Suppress("unused")
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
@@ -236,30 +265,31 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
             cpbResourceName,
             getDefaultStaticNetworkGroupPolicy(groupId, staticMemberNames),
             cpiName,
-            cpiVersion
+            cpiVersion,
+            true
         )
 
     @Suppress("unused")
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
     fun syncVirtualNode(virtualNodeShortId: String) =
-        post("/api/$REST_API_VERSION_PATH/maintenance/virtualnode/$virtualNodeShortId/vault-schema/force-resync", "")
+        initialClient.post("/api/$REST_API_VERSION_PATH/maintenance/virtualnode/$virtualNodeShortId/vault-schema/force-resync", "")
 
     /** Return the status for the given request id */
-    fun cpiStatus(id: String) = client.get("/api/$REST_API_VERSION_PATH/cpi/status/$id")
+    fun cpiStatus(id: String) = vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/cpi/status/$id")
 
     /** List all CPIs in the system */
-    fun cpiList() = client.get("/api/$REST_API_VERSION_PATH/cpi")
+    fun cpiList() = vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/cpi")
 
     @Suppress("LongParameterList")
     private fun vNodeBody(
         cpiHash: String,
         x500Name: String,
-        cryptoDdlConnection: String?,
-        cryptoDmlConnection: String?,
-        uniquenessDdlConnection: String?,
-        uniquenessDmlConnection: String?,
-        vaultDdlConnection: String?,
-        vaultDmlConnection: String?
+        cryptoDdlConnection: JsonNode?,
+        cryptoDmlConnection: JsonNode?,
+        uniquenessDdlConnection: JsonNode?,
+        uniquenessDmlConnection: JsonNode?,
+        vaultDdlConnection: JsonNode?,
+        vaultDmlConnection: JsonNode?
     ): String {
         val body = VNodeCreateBody(
             cpiHash,
@@ -306,20 +336,24 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     private fun registerNotaryBody(
         notaryServiceName: String,
         customMetadata: Map<String, String>,
-        isBackchainRequiredNotary: Boolean = true,
+        isBackchainRequiredNotary: Boolean? = null,
         notaryPlugin: String = "nonvalidating"
     ): String {
-        val context = (mapOf(
+
+        val context = mutableMapOf(
             "corda.key.scheme" to "CORDA.ECDSA.SECP256R1",
             "corda.roles.0" to "notary",
             "corda.notary.service.name" to notaryServiceName,
             "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.$notaryPlugin",
-            "corda.notary.service.flow.protocol.version.0" to "1",
-            "corda.notary.service.backchain.required" to "$isBackchainRequiredNotary"
-        ) + customMetadata)
-            .map { "\"${it.key}\" : \"${it.value}\"" }
-            .joinToString()
-        return """{ "context": { $context } }""".trimMargin()
+            "corda.notary.service.flow.protocol.version.0" to "1"
+        )
+        if (isBackchainRequiredNotary != null) {
+            context["corda.notary.service.backchain.required"] = "$isBackchainRequiredNotary"
+        }
+
+        val fullContext = (context + customMetadata).map { "\"${it.key}\" : \"${it.value}\"" }.joinToString()
+
+        return """{ "context": { $fullContext } }""".trimMargin()
     }
 
     private fun createRbacRoleBody(roleName: String, groupVisibility: String?): String {
@@ -352,14 +386,14 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
 
     @Suppress("unused")
     fun changeUserPasswordSelf(password: String) =
-        post(
+        initialClient.post(
             "/api/$REST_API_VERSION_PATH/user/selfpassword",
             """{"password": "$password"}"""
         )
 
     @Suppress("unused")
     fun changeUserPasswordOther(username: String, password: String) =
-        post(
+        initialClient.post(
             "/api/$REST_API_VERSION_PATH/user/otheruserpassword",
             """{"username": "$username", "password": "$password"}"""
         )
@@ -405,31 +439,96 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     @Suppress("unused")
     /** Get schema SQL to create crypto DB */
     fun getCryptoSchemaSql() =
-        get("/api/$REST_API_VERSION_PATH/virtualnode/create/db/crypto")
+        vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/virtualnode/create/db/crypto")
 
     @Suppress("unused")
     /** Get schema SQL to create uniqueness DB */
     fun getUniquenessSchemaSql() =
-        get("/api/$REST_API_VERSION_PATH/virtualnode/create/db/uniqueness")
+        vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/virtualnode/create/db/uniqueness")
 
     @Suppress("unused")
     /** Get schema SQL to create vault and CPI DB */
     fun getVaultSchemaSql(cpiChecksum: String) =
-        get("/api/$REST_API_VERSION_PATH/virtualnode/create/db/vault/$cpiChecksum")
+        vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/virtualnode/create/db/vault/$cpiChecksum")
 
     @Suppress("unused")
     /** Get schema SQL to update vault and CPI DB */
     fun getUpdateSchemaSql(virtualNodeShortHash: String, newCpiChecksum: String) =
-        get("/api/$REST_API_VERSION_PATH/virtualnode/$virtualNodeShortHash/db/vault/$newCpiChecksum")
+        vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/virtualnode/$virtualNodeShortHash/db/vault/$newCpiChecksum")
+
+    private data class DeprecatedVNodeCreateBody(
+        val cpiFileChecksum: String,
+        val x500Name: String,
+        val cryptoDdlConnection: String?,
+        val cryptoDmlConnection: String?,
+        val uniquenessDdlConnection: String?,
+        val uniquenessDmlConnection: String?,
+        val vaultDdlConnection: String?,
+        val vaultDmlConnection: String?
+    )
+
+    @Suppress("LongParameterList")
+    private fun deprecatedVNodeBody(
+        cpiHash: String,
+        x500Name: String,
+        cryptoDdlConnection: String?,
+        cryptoDmlConnection: String?,
+        uniquenessDdlConnection: String?,
+        uniquenessDmlConnection: String?,
+        vaultDdlConnection: String?,
+        vaultDmlConnection: String?
+    ): String {
+        val body = DeprecatedVNodeCreateBody(
+            cpiHash,
+            x500Name,
+            cryptoDdlConnection,
+            cryptoDmlConnection,
+            uniquenessDdlConnection,
+            uniquenessDmlConnection,
+            vaultDdlConnection,
+            vaultDmlConnection
+        )
+        return jacksonObjectMapper().writeValueAsString(body)
+    }
+
+    data class ExternalDBConnectionParams(
+        val cryptoDdlConnection: String? = null,
+        val cryptoDmlConnection: String? = null,
+        val uniquenessDdlConnection: String? = null,
+        val uniquenessDmlConnection: String? = null,
+        val vaultDdlConnection: String? = null,
+        val vaultDmlConnection: String? = null
+    )
+
+    /** Creates a virtual node with the deprecated method */
+    @Suppress("LongParameterList", "unused")
+    fun deprecatedVNodeCreate(
+        cpiHash: String,
+        x500Name: String,
+        externalDBConnectionParams: ExternalDBConnectionParams? = null
+    ) =
+        initialClient.post(
+            "/api/${RestApiVersion.C5_2.versionPath}/virtualnode",
+            deprecatedVNodeBody(
+                cpiHash,
+                x500Name,
+                externalDBConnectionParams?.cryptoDdlConnection,
+                externalDBConnectionParams?.cryptoDmlConnection,
+                externalDBConnectionParams?.uniquenessDdlConnection,
+                externalDBConnectionParams?.uniquenessDmlConnection,
+                externalDBConnectionParams?.vaultDdlConnection,
+                externalDBConnectionParams?.vaultDmlConnection
+            )
+        )
 
     /** Create a virtual node */
     @Suppress("LongParameterList")
     fun vNodeCreate(
         cpiHash: String,
         x500Name: String,
-        externalDBConnectionParams: ExternalDBConnectionParams? = null
+        externalDBConnectionParams: JsonExternalDBConnectionParams? = null
     ) =
-        post(
+        vNodeCreatorClient.post(
             "/api/$REST_API_VERSION_PATH/virtualnode",
             vNodeBody(
                 cpiHash,
@@ -448,7 +547,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         holdingIdShortHash: String,
         externalDBConnectionParams: JsonExternalDBConnectionParams? = null
     ) =
-        put(
+        vNodeCreatorClient.put(
             "/api/$REST_API_VERSION_PATH/virtualnode/$holdingIdShortHash/db",
             vNodeChangeConnectionStringsBody(
                 externalDBConnectionParams?.cryptoDdlConnection,
@@ -464,20 +563,20 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     @Suppress("unused")
     /** Trigger upgrade of a virtual node's CPI to the given  */
     fun vNodeUpgrade(virtualNodeShortHash: String, targetCpiFileChecksum: String) =
-        put("/api/$REST_API_VERSION_PATH/virtualnode/$virtualNodeShortHash/cpi/$targetCpiFileChecksum", "")
+        vNodeCreatorClient.put("/api/$REST_API_VERSION_PATH/virtualnode/$virtualNodeShortHash/cpi/$targetCpiFileChecksum", "")
 
     @Suppress("unused")
     fun getVNodeOperationStatus(requestId: String) =
-        get("/api/$REST_API_VERSION_PATH/virtualnode/status/$requestId")
+        vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/virtualnode/status/$requestId")
 
     /** List all virtual nodes */
-    fun vNodeList() = client.get("/api/$REST_API_VERSION_PATH/virtualnode")
+    fun vNodeList() = vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/virtualnode")
 
-    /** List all virtual nodes */
+    /** Gets virtual node info for a specified holding ID */
     fun getVNode(holdingIdentityShortHash: String) =
-        client.get("/api/$REST_API_VERSION_PATH/virtualnode/$holdingIdentityShortHash")
+        vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/virtualnode/$holdingIdentityShortHash")
 
-    fun getVNodeStatus(requestId: String) = client.get("/api/$REST_API_VERSION_PATH/virtualnode/status/$requestId")
+    fun getVNodeStatus(requestId: String) = vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/virtualnode/status/$requestId")
 
     /**
      * Register a member to the network.
@@ -494,7 +593,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         holdingIdShortHash: String,
         notaryServiceName: String? = null,
         customMetadata: Map<String, String> = emptyMap(),
-        isBackchainRequiredNotary: Boolean = true,
+        isBackchainRequiredNotary: Boolean? = null,
         notaryPlugin: String = "nonvalidating"
     ) = register(
         holdingIdShortHash,
@@ -509,40 +608,29 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     )
 
     fun register(holdingIdShortHash: String, registrationContext: String) =
-        post(
+        vNodeCreatorClient.post(
             "/api/$REST_API_VERSION_PATH/membership/$holdingIdShortHash",
             registrationContext
         )
 
     fun getRegistrationStatus(holdingIdShortHash: String) =
-        get("/api/$REST_API_VERSION_PATH/membership/$holdingIdShortHash")
+        initialClient.get("/api/$REST_API_VERSION_PATH/membership/$holdingIdShortHash")
 
     fun getRegistrationStatus(holdingIdShortHash: String, registrationId: String) =
-        get("/api/$REST_API_VERSION_PATH/membership/$holdingIdShortHash/$registrationId")
+        vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/membership/$holdingIdShortHash/$registrationId")
 
     fun addSoftHsmToVNode(holdingIdentityShortHash: String, category: String) =
-        post("/api/$REST_API_VERSION_PATH/hsm/soft/$holdingIdentityShortHash/$category", body = "")
+        vNodeCreatorClient.post("/api/$REST_API_VERSION_PATH/hsm/soft/$holdingIdentityShortHash/$category", body = "")
 
     fun createKey(holdingIdentityShortHash: String, alias: String, category: String, scheme: String) =
-        if (REST_API_VERSION_PATH == RestApiVersion.C5_0.versionPath) {
-            // Used to test RestApiVersion.C5_0 CertificateRestResource, remove after LTS
-            deprecatedCreateKey(holdingIdentityShortHash, alias, category, scheme)
-        } else {
-            post(
-                "/api/$REST_API_VERSION_PATH/key/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme",
-                body = ""
-            )
-        }
-
-    // Used to test RestApiVersion.C5_0 KeysRestResource from 5.1 cluster, remove after LTS
-    fun deprecatedCreateKey(holdingIdentityShortHash: String, alias: String, category: String, scheme: String) =
-        post(
-            "/api/${RestApiVersion.C5_0.versionPath}/keys/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme",
+        vNodeCreatorClient.post(
+            "/api/$REST_API_VERSION_PATH/key/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme",
             body = ""
         )
 
+    @Suppress("unused")
     fun getKey(tenantId: String, keyId: String) =
-        get("/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.keyPath()}/$tenantId/$keyId")
+        vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/key/$tenantId/$keyId")
 
     fun getKey(
         tenantId: String,
@@ -560,46 +648,36 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         } else {
             queries.joinToString(prefix = "?", separator = "&")
         }
-        return get("/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.keyPath()}/$tenantId$queryStr")
+        return vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/key/$tenantId$queryStr")
     }
-
-    /**
-     * Returns the correct path for key rest resource based on the rest api version we use.
-     */
-    private fun String.keyPath(): String =
-        if (this == RestApiVersion.C5_0.versionPath) {
-            "keys"
-        } else {
-            "key"
-        }
 
     /** Get status of a flow */
     fun flowStatus(holdingIdentityShortHash: String, clientRequestId: String) =
-        get("/api/$REST_API_VERSION_PATH/flow/$holdingIdentityShortHash/$clientRequestId")
+        initialClient.get("/api/$REST_API_VERSION_PATH/flow/$holdingIdentityShortHash/$clientRequestId")
 
     /** Get status of multiple flows */
     fun multipleFlowStatus(holdingIdentityShortHash: String, status: String? = null) =
-        get("/api/$REST_API_VERSION_PATH/flow/$holdingIdentityShortHash/?status=$status")
+        initialClient.get("/api/$REST_API_VERSION_PATH/flow/$holdingIdentityShortHash/?status=$status")
 
     /** Get result of a flow execution */
     fun flowResult(holdingIdentityShortHash: String, clientRequestId: String) =
-        get("/api/$REST_API_VERSION_PATH/flow/$holdingIdentityShortHash/$clientRequestId/result")
+        initialClient.get("/api/$REST_API_VERSION_PATH/flow/$holdingIdentityShortHash/$clientRequestId/result")
 
     /** Get status of multiple flows */
     fun runnableFlowClasses(holdingIdentityShortHash: String) =
-        get("/api/$REST_API_VERSION_PATH/flowclass/$holdingIdentityShortHash")
+        initialClient.get("/api/$REST_API_VERSION_PATH/flowclass/$holdingIdentityShortHash")
 
     @Suppress("unused")
     /** Create a new RBAC role */
     fun createRbacRole(roleName: String, groupVisibility: String? = null) =
-        post("/api/$REST_API_VERSION_PATH/role", createRbacRoleBody(roleName, groupVisibility))
+        initialClient.post("/api/$REST_API_VERSION_PATH/role", createRbacRoleBody(roleName, groupVisibility))
 
     /** Get all RBAC roles */
-    fun getRbacRoles() = get("/api/$REST_API_VERSION_PATH/role")
+    fun getRbacRoles() = initialClient.get("/api/$REST_API_VERSION_PATH/role")
 
     @Suppress("unused")
     /** Get a role for a specified ID */
-    fun getRole(roleId: String) = get("/api/$REST_API_VERSION_PATH/role/$roleId")
+    fun getRole(roleId: String) = initialClient.get("/api/$REST_API_VERSION_PATH/role/$roleId")
 
     /** Create new RBAC user */
     @Suppress("LongParameterList", "unused")
@@ -611,30 +689,35 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         parentGroup: String? = null,
         passwordExpiry: Instant? = null
     ) =
-        post(
+        initialClient.post(
             "/api/$REST_API_VERSION_PATH/user",
             createRbacUserBody(enabled, fullName, password, loginName, parentGroup, passwordExpiry)
         )
 
     @Suppress("unused")
-    /** Get an RBAC user for a specific login name */
+    /** Get a RBAC user for a specific login name */
     fun getRbacUser(loginName: String) =
-        get("/api/$REST_API_VERSION_PATH/user/$loginName")
+        initialClient.get("/api/$REST_API_VERSION_PATH/user/$loginName")
+
+    @Suppress("unused")
+    /** Delete a RBAC user */
+    fun deleteRbacUser(loginName: String) =
+        initialClient.delete("/api/$REST_API_VERSION_PATH/user/$loginName")
 
     @Suppress("unused")
     /** Assign a specified role to a specified user */
     fun assignRoleToUser(loginName: String, roleId: String) =
-        put("/api/$REST_API_VERSION_PATH/user/$loginName/role/$roleId", "")
+        initialClient.put("/api/$REST_API_VERSION_PATH/user/$loginName/role/$roleId", "")
 
     @Suppress("unused")
     /** Remove the specified role from a specified user */
     fun removeRoleFromUser(loginName: String, roleId: String) =
-        delete("/api/$REST_API_VERSION_PATH/user/$loginName/role/$roleId")
+        initialClient.delete("/api/$REST_API_VERSION_PATH/user/$loginName/role/$roleId")
 
     @Suppress("unused")
     /** Get a summary of the user's permissions */
     fun getPermissionSummary(loginName: String) =
-        get("/api/$REST_API_VERSION_PATH/user/$loginName/permissionsummary")
+        initialClient.get("/api/$REST_API_VERSION_PATH/user/$loginName/permissionsummary")
 
     @Suppress("unused")
     /** Create a new permission */
@@ -644,7 +727,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         groupVisibility: String? = null,
         virtualNode: String? = null
     ) =
-        post(
+        initialClient.post(
             "/api/$REST_API_VERSION_PATH/permission",
             createPermissionBody(permissionString, permissionType, groupVisibility, virtualNode)
         )
@@ -655,7 +738,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         permissionsToCreate: Set<Pair<String, String>>,
         roleIds: Set<String>
     ) =
-        post("/api/$REST_API_VERSION_PATH/permission/bulk", createBulkPermissionsBody(permissionsToCreate, roleIds))
+        initialClient.post("/api/$REST_API_VERSION_PATH/permission/bulk", createBulkPermissionsBody(permissionsToCreate, roleIds))
 
     @Suppress("unused")
     /** Get the permissions which satisfy the query */
@@ -668,23 +751,23 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
             permissionStringPrefix?.let { add("permissionstringprefix=$it") }
         }
         val queryStr = queries.joinToString(prefix = "?", separator = "&")
-        return get("/api/$REST_API_VERSION_PATH/permission$queryStr")
+        return initialClient.get("/api/$REST_API_VERSION_PATH/permission$queryStr")
     }
 
     @Suppress("unused")
     /** Get the permission associated with a specific ID */
     fun getPermissionById(permissionId: String) =
-        get("/api/$REST_API_VERSION_PATH/permission/$permissionId")
+        initialClient.get("/api/$REST_API_VERSION_PATH/permission/$permissionId")
 
     @Suppress("unused")
     /** Add the specified permission to the specified role */
     fun assignPermissionToRole(roleId: String, permissionId: String) =
-        put("/api/$REST_API_VERSION_PATH/role/$roleId/permission/$permissionId", "")
+        initialClient.put("/api/$REST_API_VERSION_PATH/role/$roleId/permission/$permissionId", "")
 
     @Suppress("unused")
     /** Remove the specified permission from the specified role */
     fun removePermissionFromRole(roleId: String, permissionId: String) =
-        delete("/api/$REST_API_VERSION_PATH/role/$roleId/permission/$permissionId")
+        initialClient.delete("/api/$REST_API_VERSION_PATH/role/$roleId/permission/$permissionId")
 
     /** Start a flow */
     fun flowStart(
@@ -700,7 +783,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
                 "Sending flowStart, vNode: '$holdingIdentityShortHash', " +
                         "clientRequestId: '$clientRequestId', traceId: '$traceIdString'"
             )
-            post(
+            initialClient.post(
                 "/api/$REST_API_VERSION_PATH/flow/$holdingIdentityShortHash",
                 flowStartBody(clientRequestId, flowClassName, requestData)
             )
@@ -713,7 +796,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         """.trimMargin()
 
     /** Get cluster configuration for the specified section */
-    fun getConfig(section: String) = get("/api/$REST_API_VERSION_PATH/config/$section")
+    fun getConfig(section: String) = initialClient.get("/api/$REST_API_VERSION_PATH/config/$section")
 
     /** Update the cluster configuration for the specified section and versions with unescaped Json */
     fun putConfig(
@@ -735,13 +818,14 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
             }
         """.trimIndent()
 
-        return put("/api/$REST_API_VERSION_PATH/config", payload)
+        return initialClient.put("/api/$REST_API_VERSION_PATH/config", payload)
     }
 
     fun configureNetworkParticipant(
         holdingIdentityShortHash: String,
         sessionKeyId: String,
-        sessionCertAlias: String? = null
+        sessionCertAlias: String?,
+        tlsCertAlias: String,
     ): SimpleResponse {
         val sessionKeysSection = if (sessionCertAlias == null) {
             """
@@ -762,24 +846,24 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         val body =
             """
                 {
-                    "p2pTlsCertificateChainAlias": "$CERT_ALIAS_P2P",
+                    "p2pTlsCertificateChainAlias": "$tlsCertAlias",
                     "useClusterLevelTlsCertificateAndKey": true,
                     $sessionKeysSection
                 }
             """.trimIndent()
-        return put(
+        return vNodeCreatorClient.put(
             "/api/$REST_API_VERSION_PATH/network/setup/$holdingIdentityShortHash",
             body = body
         )
     }
 
     fun doRotateCryptoWrappingKeys(tenantId: String) =
-        post("/api/$REST_API_VERSION_PATH/wrappingkey/rotation/${tenantId}", "")
+        initialClient.post("/api/$REST_API_VERSION_PATH/wrappingkey/rotation/${tenantId}", "")
 
     fun getCryptoWrappingKeysRotationStatus(tenantId: String) =
-        get("/api/$REST_API_VERSION_PATH/wrappingkey/rotation/${tenantId}")
+        initialClient.get("/api/$REST_API_VERSION_PATH/wrappingkey/rotation/${tenantId}")
 
-    fun getWrappingKeysProtocolVersion() = get("/api/$REST_API_VERSION_PATH/wrappingkey/getprotocolversion")
+    fun getWrappingKeysProtocolVersion() = initialClient.get("/api/$REST_API_VERSION_PATH/wrappingkey/getprotocolversion")
 
 }
 

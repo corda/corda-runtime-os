@@ -24,7 +24,13 @@ import org.slf4j.LoggerFactory
 import java.time.Duration
 
 /**
- * Handles incoming requests, typically from the flow worker, and sends responses.
+ * Handles incoming `LedgerPersistenceRequest`, typically from the flow worker, and sends responses.
+ * Handling persistence requests involves user-supplied code from CPKs for:
+ *   - custom Vault state queries
+ *   - serialization using types from sandboxes
+ *   - making JSON values for state
+ *   - token creation
+ * Therefore, we need to set up sandboxes for user-supplied code.
  */
 @Suppress("LongParameterList")
 class LedgerPersistenceRequestProcessor(

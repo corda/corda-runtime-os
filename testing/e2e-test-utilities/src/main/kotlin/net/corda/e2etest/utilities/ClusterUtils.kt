@@ -8,6 +8,7 @@ import net.corda.test.util.eventually
 import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
+import java.text.SimpleDateFormat
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Semaphore
@@ -30,6 +31,7 @@ val signingCertLock = ReentrantLock()
 fun ClusterInfo.conditionallyUploadCpiSigningCertificate() = cluster {
     signingCertLock.withLock {
         val hasCertificateChain = assertWithRetryIgnoringExceptions {
+            timeout(60.seconds)
             interval(1.seconds)
             command { getCertificateChain(CODE_SIGNER_CERT_USAGE, CODE_SIGNER_CERT_ALIAS) }
             condition {
@@ -42,7 +44,7 @@ fun ClusterInfo.conditionallyUploadCpiSigningCertificate() = cluster {
         if (!hasCertificateChain) {
             assertWithRetryIgnoringExceptions {
                 // Certificate upload can be slow in the combined worker, especially after it has just started up.
-                timeout(30.seconds)
+                timeout(60.seconds)
                 interval(2.seconds)
                 command { importCertificate(CODE_SIGNER_CERT, CODE_SIGNER_CERT_USAGE, CODE_SIGNER_CERT_ALIAS) }
                 condition { it.code == ResponseCode.NO_CONTENT.statusCode }
@@ -237,12 +239,13 @@ fun ClusterInfo.whenNoKeyExists(
 /**
  * This method triggers rotation of keys for master and managed crypto wrapping keys.
  * It takes 2 input parameters, the tenantId (in string type) and the status code (Int type)
- *   @param tenantId The tenantId whose wrapping keys will be rotated, or value 'master' for master wrapping key
- *          rotation, or one of the values 'p2p', 'rest', 'crypto' for corresponding cluster-level tenant rotation.
+ *  @param tenantId The tenantId whose wrapping keys will be rotated. The tenantId can either be
+ *          a holding identity ID, the value 'master' for master wrapping key or the value 'p2p' for corresponding
+ *          cluster-level services.
  *   @param expectedHttpStatusCode Status code that should be displayed when the API is hit,
  *   helps to validate both positive or negative scenarios.
  */
-fun ClusterInfo.rotateCryptoUnmanagedWrappingKeys(
+fun ClusterInfo.rotateCryptoWrappingKeys(
     tenantId: String,
     expectedHttpStatusCode: Int
 ) = cluster {
@@ -255,9 +258,9 @@ fun ClusterInfo.rotateCryptoUnmanagedWrappingKeys(
 /**
  * This method fetch the status of keys for master and managed crypto wrapping key rotation.
  * It takes 2 input parameters, the tenantId (in String type) and the status code (in Int type)
- *  @param tenantId The tenantId of which the status of the last key rotation will be shown. TenantId can either be
- *         a holding identity ID, the value 'master' for master wrapping key or one of the values 'p2p', 'rest',
- *         'crypto' for corresponding cluster-level services.
+ *  @param tenantId The tenantId of which the status of the last key rotation will be shown. The tenantId can either be
+ *         a holding identity ID, the value 'master' for master wrapping key or the value 'p2p' for corresponding
+ *         cluster-level services.
  *  @param expectedHttpStatusCode Status code that should be displayed when the API is hit,
  *      helps to validate both positive or negative scenarios.
  */
@@ -281,6 +284,19 @@ fun ClusterInfo.getProtocolVersionForKeyRotation(
         condition { it.code == ResponseCode.OK.statusCode }
     }
 }
+
+/**
+ * This method fetches the local time of the corda cluster
+ */
+fun ClusterInfo.getTime(
+) = SimpleDateFormat("EEE,dd MMM yyyy HH:mm:ss zzz") // RFC 822
+    .parse(cluster {
+        assertWithRetry {
+            command { initialClient.get("/api/$REST_API_VERSION_PATH/hello/getprotocolversion") }
+            condition { it.code == ResponseCode.OK.statusCode }
+        }
+    }.headers.single { it.first == "Date" }.second
+).toInstant()
 
 private fun <T> Semaphore.runWith(block: () -> T): T {
     this.acquire()

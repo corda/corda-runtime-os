@@ -1,93 +1,117 @@
 package net.corda.gradle.plugin.network
 
+import net.corda.crypto.core.ShortHash
 import net.corda.gradle.plugin.configuration.ProjectContext
 import net.corda.gradle.plugin.dtos.VNode
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
-import net.corda.gradle.plugin.getExistingNodes
-import net.corda.gradle.plugin.retry
-import net.corda.gradle.plugin.rpcWait
-import java.time.Duration
+import net.corda.restclient.generated.models.RegistrationRequestProgress
+import net.corda.sdk.data.RequestId
+import net.corda.sdk.network.RegistrationsLookup
+import net.corda.sdk.network.VirtualNode
+import net.corda.v5.base.types.MemberX500Name
+import java.net.URI
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 class NetworkTasksImpl(var pc: ProjectContext) {
 
     /**
      * Creates vnodes specified in the config if they don't already exist.
+     * @param [requiredNodes] Represents the list of VNodes as specified in the network Config json file (static-network-config.json)
      */
-    fun createVNodes() {
-
-        // Represents the list of VNodes as specified in the network Config json file (static-network-config.json)
-        val requiredNodes: List<VNode> = pc.networkConfig.vNodes
-
-        val existingVNodes = getExistingNodes(pc)
+    fun createVNodes(
+        requiredNodes: List<VNode>
+    ) {
+        val existingNodes = VirtualNode(pc.restClient).getAllVirtualNodes().virtualNodes
 
         // Check if each required vnode already exist, if not create it.
         val nodesToCreate = requiredNodes.filter { vn ->
-            !existingVNodes.any { en ->
-                en.holdingIdentity?.x500Name.equals(vn.x500Name) &&
-                        en.cpiIdentifier?.cpiName.equals(vn.cpi)
+            !existingNodes.any { en ->
+                en.holdingIdentity.x500Name == vn.x500Name && en.cpiIdentifier.cpiName == vn.cpi
             }
         }
-        nodesToCreate.forEach {
-            val cpiUploadFilePath = if (it.serviceX500Name == null) pc.corDappCpiUploadStatusFilePath else pc.notaryCpiUploadStatusFilePath
 
-            VNodeHelper().createVNode(
-                pc.cordaClusterURL,
-                pc.cordaRestUser,
-                pc.cordaRestPassword,
-                it,
-                cpiUploadFilePath
-            )
-            // Check if the virtual node has been created.
-            retry(timeout = Duration.ofMillis(30000)) {
-                getExistingNodes(pc).singleOrNull { knownVNode ->
-                    knownVNode.holdingIdentity?.x500Name.equals(it.x500Name)
-                } ?: throw CordaRuntimeGradlePluginException("Failed to create VNode: ${it.x500Name}")
+        nodesToCreate.forEach {
+            val cpiUploadFilePath = if (it == pc.networkConfig.getMgmNode()) {
+                pc.mgmCorDappCpiChecksumFilePath
+            } else if (it.serviceX500Name == null) {
+                pc.corDappCpiChecksumFilePath
+            } else {
+                pc.notaryCpiChecksumFilePath
             }
+            VNodeHelper().createVNode(
+                restClient = pc.restClient,
+                vNode = it,
+                cpiUploadStatusFilePath = cpiUploadFilePath
+            )
+        }
+
+        nodesToCreate.forEach {
+            // Check if the virtual node has been created.
+            VirtualNode(pc.restClient).waitForX500NameToAppearInListOfAllVirtualNodes(
+                x500Name = MemberX500Name.parse(it.x500Name!!),
+                wait = 30.seconds
+            )
+            pc.logger.quiet("Virtual node for ${it.x500Name} is ready to be registered.")
         }
     }
 
     /**
      * Checks if the required virtual nodes have been registered and if not registers them.
+     * @param [requiredNodes] Represents the list of VNodes as specified in the network Config json file (static-network-config.json)
      */
-    fun registerVNodes() {
-        // Represents the list of VNodes as specified in the network Config json file (static-network-config.json)
-        val requiredNodes: List<VNode> = pc.networkConfig.vNodes
-
-        // There appears to be a delay between the successful post /virtualnodes synchronous call and the
-        // vnodes being returned in the GET /virtualnodes call. Putting a thread wait here as a quick fix
-        // as this will move to async mechanism post beta2. see CORE-12153
-        rpcWait(3000)
-
-        val existingNodes = getExistingNodes(pc)
+    fun registerVNodes(requiredNodes: List<VNode>) {
+        val existingNodes = VirtualNode(pc.restClient).getAllVirtualNodes().virtualNodes
         val helper = VNodeHelper()
+        val listOfDetails: MutableList<Triple<MemberX500Name, ShortHash, RegistrationRequestProgress>> = mutableListOf()
 
         requiredNodes.forEach { vn ->
             val match = helper.findMatchingVNodeFromList(existingNodes, vn)
 
             val shortHash = try {
-                match.holdingIdentity!!.shortHash!!
+                ShortHash.parse(match.holdingIdentity.shortHash)
             } catch (e: Exception) {
                 throw CordaRuntimeGradlePluginException("Cannot read ShortHash for virtual node '${vn.x500Name}'")
             }
 
-            if (!helper.checkVNodeIsRegistered(
-                    pc.cordaClusterURL,
-                    pc.cordaRestUser,
-                    pc.cordaRestPassword,
-                    shortHash
+            if (!RegistrationsLookup(pc.restClient).isVnodeRegistrationApproved(
+                    holdingIdentityShortHash = shortHash
                 )
             ) {
-                pc.logger.quiet("Registering vNode: ${vn.x500Name} with shortHash: $shortHash")
-                helper.registerVNode(
-                    pc.cordaClusterURL,
-                    pc.cordaRestUser,
-                    pc.cordaRestPassword,
-                    vn,
-                    shortHash,
-                    pc.vnodeRegistrationTimeout
+                val regRequest = helper.getRegistrationRequest(
+                    restClient = pc.restClient,
+                    vNode = vn,
+                    holdingId = shortHash,
+                    clusterURI = URI.create(pc.cordaClusterURL),
+                    isDynamicNetwork = pc.networkConfig.mgmNodeIsPresentInNetworkDefinition,
+                    certificateAuthorityFilePath = pc.certificateAuthorityFilePath
                 )
-                pc.logger.quiet("VNode ${vn.x500Name} with shortHash $shortHash registered.")
+                val registration = helper.registerVNode(
+                    restClient = pc.restClient,
+                    registrationRequest = regRequest,
+                    shortHash = shortHash
+                )
+                val detail = Triple(MemberX500Name.parse(vn.x500Name!!), shortHash, registration)
+                listOfDetails.add(detail)
+                pc.logger.quiet(
+                    "Registering vNode: ${vn.x500Name} with shortHash: $shortHash. Registration request id: ${registration.registrationId}"
+                )
             }
+        }
+
+        listOfDetails.forEach { vn ->
+            val x500Name = vn.first
+            val shortHash = vn.second
+            val registrationId = vn.third.registrationId
+
+            // Wait until the VNode is registered
+            // The timeout is controlled by setting the vnodeRegistrationTimeout property
+            RegistrationsLookup(pc.restClient).waitForRegistrationApproval(
+                registrationId = RequestId(registrationId),
+                holdingId = shortHash,
+                wait = pc.vnodeRegistrationTimeout.milliseconds
+            )
+            pc.logger.quiet("VNode $x500Name with shortHash $shortHash registered.")
         }
     }
 }

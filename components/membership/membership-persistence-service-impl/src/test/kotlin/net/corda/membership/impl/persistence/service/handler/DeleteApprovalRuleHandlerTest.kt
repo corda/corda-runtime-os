@@ -8,7 +8,7 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.ApprovalRulesEntity
 import net.corda.membership.datamodel.ApprovalRulesEntityPrimaryKey
-import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.exceptions.NotFoundEntityPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.virtualnode.VirtualNodeInfo
@@ -133,6 +133,6 @@ class DeleteApprovalRuleHandlerTest {
     fun `invoke throws exception if rule does not exist`() {
         whenever(entityManager.find(eq(ApprovalRulesEntity::class.java), any())) doReturn null
 
-        assertThrows<MembershipPersistenceException> { handler.invoke(context, request) }
+        assertThrows<NotFoundEntityPersistenceException> { handler.invoke(context, request) }
     }
 }

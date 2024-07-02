@@ -1,7 +1,9 @@
 package net.corda.membership.persistence.client
 
 import net.corda.data.membership.db.response.query.ErrorKind
+import net.corda.membership.lib.exceptions.ConflictPersistenceException
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
+import net.corda.membership.lib.exceptions.NotFoundEntityPersistenceException
 
 sealed class MembershipPersistenceResult<T> {
     companion object {
@@ -36,11 +38,14 @@ sealed class MembershipPersistenceResult<T> {
     /**
      * Return the value or throw an exception if the persistence failed.
      */
+    @Suppress("ThrowsCount")
     fun getOrThrow(): T {
         return when (this) {
             is Success -> this.payload
             is Failure -> when (this.kind) {
                 ErrorKind.INVALID_ENTITY_UPDATE -> throw InvalidEntityUpdateException(this.errorMsg)
+                ErrorKind.NOT_FOUND -> throw NotFoundEntityPersistenceException(this.errorMsg)
+                ErrorKind.CONFLICT -> throw ConflictPersistenceException(this.errorMsg)
                 ErrorKind.GENERAL -> throw PersistenceRequestException(this)
             }
         }

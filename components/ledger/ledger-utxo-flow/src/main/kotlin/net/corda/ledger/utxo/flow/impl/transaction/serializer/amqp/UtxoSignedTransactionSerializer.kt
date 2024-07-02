@@ -64,7 +64,7 @@ class UtxoSignedTransactionSerializer @Activate constructor(
                     notarySignatureVerificationService,
                     utxoLedgerTransactionFactory,
                     proxy.wireTransaction,
-                    proxy.signatures
+                    proxy.signatures.toSet()
                 )
             else ->
                 throw CordaRuntimeException("Unable to create UtxoSignedTransaction with Version='${proxy.version}'")

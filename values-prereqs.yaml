@@ -1,10 +1,10 @@
-# Override file suitable for local deployment of the Corda Helm chart against version 0.2.0 of the corda-dev-prereqs Helm chart.
+# Override file suitable for local deployment of the Corda Helm chart against version 0.3.0 of the corda-dev-prereqs Helm chart.
 #
 # Create local docker images:
 #   ./gradlew publishOSGiImage --parallel
 #
 # Deploy corda-dev-prereqs Helm Chart:
-#   helm -n corda install prereqs  oci://registry-1.docker.io/corda/corda-dev-prereqs --version 0.2.0 --timeout 10m --wait
+#   helm -n corda install prereqs  oci://registry-1.docker.io/corda/corda-dev-prereqs --version 0.3.0 --timeout 10m --wait
 #
 # Deploy corda Helm Chart:
 #   helm dependency build charts/corda && helm -n corda upgrade --install corda charts/corda --values debug.yaml --values values-prereqs.yaml --wait
@@ -17,7 +17,7 @@
 imagePullPolicy: "IfNotPresent"
 image:
   registry: "corda-os-docker-dev.software.r3.com"
-  tag: "latest-local-5.2.1"
+  tag: "latest-local-5.3.0"
 
 logging:
   format: "text"

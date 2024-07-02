@@ -37,7 +37,6 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-merger')
     implementation project(':libs:lifecycle:lifecycle')
-    implementation project(':libs:messaging:messaging')
 
     runtimeOnly project(':components:configuration:configuration-read-service-impl')
     runtimeOnly project(':components:configuration:configuration-rest-resource-service-impl')
@@ -89,4 +88,5 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:messaging:kafka-message-bus-impl')
     integrationTestRuntimeOnly 'org.osgi:osgi.core'
     integrationTestRuntimeOnly libs.swagger.ui
+    integrationTestRuntimeOnly project(':testing:slf4jv1')
 }

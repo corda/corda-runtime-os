@@ -162,9 +162,9 @@ internal class VirtualNodeWriterFactory(
                 createVirtualNodeService,
                 virtualNodeDbFactory,
                 recordFactory,
-                publisher,
                 externalMessagingRouteConfigGenerator,
-                LoggerFactory.getLogger(CreateVirtualNodeOperationHandler::class.java)
+                LoggerFactory.getLogger(CreateVirtualNodeOperationHandler::class.java),
+                dbConnectionManager.getClusterEntityManagerFactory(),
             ),
 
             VirtualNodeDbConnectionUpdateRequest::class.java to UpdateVirtualNodeDbOperationHandler(
@@ -172,7 +172,6 @@ internal class VirtualNodeWriterFactory(
                 updateVirtualNodeService,
                 virtualNodeDbFactory,
                 recordFactory,
-                publisher,
                 LoggerFactory.getLogger(UpdateVirtualNodeDbOperationHandler::class.java)
             )
         )

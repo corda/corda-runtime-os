@@ -13,6 +13,10 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.SessionEncryptionOpsClient
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.fullIdHash
+import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
+import net.corda.crypto.test.certificates.generation.PrivateKeyWithCertificateChain
+import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
+import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.p2p.HostedIdentityEntry
@@ -30,23 +34,20 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_ENABLED_KEY
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.INBOUND_SESSIONS_CACHE_SIZE
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_PERIOD_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.OUTBOUND_SESSIONS_CACHE_SIZE
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_ALGORITHM_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REVOCATION_CHECK_KEY
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_FOR_MEMBER_KEY
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_FOR_MGM_KEY
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_KEY
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_REFRESH_THRESHOLD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.api.StateOperationGroup
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -62,16 +63,14 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messagebus.db.configuration.DbBusConfigMergerImpl
+import net.corda.messagebus.kafka.serialization.CordaAvroSerializationFactoryImpl
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
-import net.corda.messaging.emulation.publisher.factory.CordaPublisherFactory
-import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
-import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
-import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
+import net.corda.messaging.emulation.EmulatorFactory
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.messaging.RevocationConfig
@@ -126,6 +125,7 @@ import java.security.Key
 import java.security.KeyFactory
 import java.security.KeyPairGenerator
 import java.security.KeyStore
+import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Security
 import java.security.Signature
@@ -134,6 +134,7 @@ import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -160,6 +161,20 @@ class P2PLayerEndToEndTest {
 
         private fun readKeyStore(resource: URL): ByteArray {
             return resource.readBytes()
+        }
+        private fun URL.toPrivateKeyAndCertificateChain() : PrivateKeyWithCertificateChain {
+            val keyStore = KeyStore.getInstance("JKS").also { keyStore ->
+                this.openStream().use {
+                    keyStore.load(it, "password".toCharArray())
+                }
+            }
+            val alias = keyStore.aliases().toList().first()
+            val certificateChain = keyStore.getCertificateChain(alias).toList()
+            val privateKey = keyStore.getKey(alias, "password".toCharArray()) as PrivateKey
+            return PrivateKeyWithCertificateChain(
+                privateKey = privateKey,
+                certificates = certificateChain,
+            )
         }
     }
 
@@ -217,6 +232,63 @@ class P2PLayerEndToEndTest {
                 hostAApplicationReader.close()
                 hostBApplicationReaderWriter.close()
                 hostAMarkerReader.close()
+            }
+        }
+    }
+
+    @Test
+    @Timeout(60)
+    fun `two hosts can exchange data messages over p2p using RSA keys with revocable certificate`() {
+        val numberOfMessages = 10
+        CertificateAuthorityFactory.createRevocableAuthority(
+            RSA_TEMPLATE.toFactoryDefinitions(),
+        ).use { ca ->
+            val aliceCertificates = ca.generateKeyAndCertificates("www.alice.net")
+            val chipCertificate = ca.generateKeyAndCertificates("chip.net")
+            val aliceId = Identity("O=Alice, L=London, C=GB", GROUP_ID, aliceCertificates)
+            val chipId = Identity("O=Chip, L=London, C=GB", GROUP_ID, chipCertificate)
+            val truststoreCertificatePem = ca.caCertificate.toPem()
+            Host(
+                listOf(aliceId),
+                "www.alice.net",
+                truststoreCertificatePem,
+                bootstrapConfig,
+                true,
+                RSA_TEMPLATE,
+            ).use { hostA ->
+                Host(
+                    listOf(chipId),
+                    "chip.net",
+                    truststoreCertificatePem,
+                    bootstrapConfig,
+                    true,
+                    RSA_TEMPLATE,
+                ).use { hostB ->
+                    hostA.startWith(hostB)
+                    hostB.startWith(hostA)
+
+                    val hostAReceivedMessages = ConcurrentHashMap.newKeySet<String>()
+                    val hostAApplicationReader = hostA.listenForReceivedMessages(hostAReceivedMessages)
+                    val hostBApplicationReaderWriter = hostB.addReadWriter()
+                    val hostAMarkers = CopyOnWriteArrayList<Record<String, AppMessageMarker>>()
+                    val hostAMarkerReader = hostA.listenForMarkers(hostAMarkers)
+                    hostA.sendMessages(numberOfMessages, aliceId, chipId)
+
+                    eventually(20.seconds) {
+                        val messagesWithProcessedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerProcessedMarker }
+                            .map { it.key }.toSet()
+                        val messagesWithReceivedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerReceivedMarker }
+                            .map { it.key }.toSet()
+
+                        assertThat(messagesWithProcessedMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
+                        assertThat(messagesWithReceivedMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
+                        assertThat(hostAReceivedMessages).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { "pong ($it)" })
+                    }
+
+                    hostAApplicationReader.close()
+                    hostBApplicationReaderWriter.close()
+                    hostAMarkerReader.close()
+                }
             }
         }
     }
@@ -413,8 +485,17 @@ class P2PLayerEndToEndTest {
     private data class Identity(
         val x500Name: String,
         val groupId: String,
-        val keyStoreURL: URL,
+        val privateKeyWithCertificateChain: PrivateKeyWithCertificateChain,
     ) {
+        constructor(
+            x500Name: String,
+            groupId: String,
+            keyStoreURL: URL,
+        ) : this(
+            x500Name,
+            groupId,
+            keyStoreURL.toPrivateKeyAndCertificateChain()
+        )
         val name: MemberX500Name
             get() = MemberX500Name.parse(x500Name)
         val id: HoldingIdentity
@@ -424,7 +505,7 @@ class P2PLayerEndToEndTest {
     private class IdentityLocalInfo(
         val identity: Identity,
         keyTemplate: KeySchemeTemplate,
-        trustStoreURL: URL,
+        trustStorePem: String,
     ) {
         val keyPair by lazy {
             KeyPairGenerator.getInstance(keyTemplate.algorithmName, BouncyCastleProvider())
@@ -434,27 +515,12 @@ class P2PLayerEndToEndTest {
                     }
                 }.genKeyPair()
         }
-        val tlsKeyStore by lazy {
-            KeyStore.getInstance("JKS").also { keyStore ->
-                identity.keyStoreURL.openStream().use {
-                    keyStore.load(it, "password".toCharArray())
-                }
-            }
-        }
         val tlsCertificatesPem by lazy {
-            tlsKeyStore.aliases()
-                .toList()
-                .first()
-                .let { alias ->
-                    val certificateChain = tlsKeyStore.getCertificateChain(alias)
-                    certificateChain.map { certificate ->
-                        StringWriter().use { str ->
-                            JcaPEMWriter(str).use { writer ->
-                                writer.writeObject(certificate)
-                            }
-                            str.toString()
-                        }
-                    }
+            identity
+                .privateKeyWithCertificateChain
+                .certificates
+                .map {
+                    it.toPem()
                 }
         }
         val groupPolicy by lazy {
@@ -463,7 +529,7 @@ class P2PLayerEndToEndTest {
                 on { sessionTrustRoots } doReturn null
                 on { protocolMode } doReturn GroupPolicyConstants.PolicyValues.P2PParameters.ProtocolMode.AUTH_ENCRYPT
                 on { tlsPki } doReturn GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode.STANDARD
-                on { tlsTrustRoots } doReturn listOf(String(readKeyStore(trustStoreURL)))
+                on { tlsTrustRoots } doReturn listOf(trustStorePem)
             }
 
             mock<GroupPolicy> {
@@ -493,11 +559,26 @@ class P2PLayerEndToEndTest {
     private class Host(
         ourIdentities: List<Identity>,
         p2pAddress: String,
-        trustStoreURL: URL,
+        trustStorePem: String,
         private val bootstrapConfig: SmartConfig,
         checkRevocation: Boolean,
         keyTemplate: KeySchemeTemplate,
     ) : AutoCloseable {
+        constructor(
+            ourIdentities: List<Identity>,
+            p2pAddress: String,
+            trustStoreURL: URL,
+            bootstrapConfig: SmartConfig,
+            checkRevocation: Boolean,
+            keyTemplate: KeySchemeTemplate,
+        ): this(
+            ourIdentities,
+            p2pAddress,
+            String(readKeyStore(trustStoreURL)),
+            bootstrapConfig,
+            checkRevocation,
+            keyTemplate,
+        )
         private val p2pPort by lazy {
             ServerSocket(0).use {
                 it.localPort
@@ -512,29 +593,30 @@ class P2PLayerEndToEndTest {
             revocationCheck = RevocationConfig(if (checkRevocation) RevocationConfigMode.HARD_FAIL else RevocationConfigMode.OFF),
             tlsType = TlsType.ONE_WAY,
         )
-        private val localInfos = ourIdentities.map { IdentityLocalInfo(it, keyTemplate, trustStoreURL) }
-        private val topicService = TopicServiceImpl()
+        private val localInfos = ourIdentities.map { IdentityLocalInfo(it, keyTemplate, trustStorePem) }
         private val lifecycleCoordinatorFactory =
             LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
-        private val subscriptionFactory = InMemSubscriptionFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
-        private val publisherFactory = CordaPublisherFactory(topicService, RPCTopicServiceImpl(), lifecycleCoordinatorFactory)
+        private val emulator = EmulatorFactory.create(lifecycleCoordinatorFactory)
         private val configMerger = ConfigMergerImpl(DbBusConfigMergerImpl())
         private val avroSchemaRegistry = AvroSchemaRegistryImpl()
+        private val cordaAvroSerializationFactory = CordaAvroSerializationFactoryImpl(avroSchemaRegistry)
         private val configReadService = ConfigurationReadServiceImpl(
-            lifecycleCoordinatorFactory, subscriptionFactory, configMerger, avroSchemaRegistry, publisherFactory)
-        private val configPublisher = publisherFactory.createPublisher(PublisherConfig("config-writer", false), bootstrapConfig)
+            lifecycleCoordinatorFactory,
+            emulator.subscriptionFactory,
+            configMerger,
+            avroSchemaRegistry,
+            emulator.publisherFactory
+        )
+        private val configPublisher =
+            emulator.publisherFactory.createPublisher(PublisherConfig("config-writer", false), bootstrapConfig)
         private val gatewayConfig = createGatewayConfig(p2pPort, p2pAddress, sslConfig)
         private val linkManagerConfig by lazy {
             ConfigFactory.empty()
                 .withValue(MAX_MESSAGE_SIZE_KEY, ConfigValueFactory.fromAnyRef(1000000))
+                .withValue(INBOUND_SESSIONS_CACHE_SIZE, ConfigValueFactory.fromAnyRef(100))
+                .withValue(OUTBOUND_SESSIONS_CACHE_SIZE, ConfigValueFactory.fromAnyRef(100))
                 .withValue(MAX_REPLAYING_MESSAGES_PER_PEER, ConfigValueFactory.fromAnyRef(100))
-                .withValue(HEARTBEAT_ENABLED_KEY, ConfigValueFactory.fromAnyRef(true))
-                .withValue(HEARTBEAT_MESSAGE_PERIOD_KEY, ConfigValueFactory.fromAnyRef(Duration.ofSeconds(2)))
                 .withValue(SESSION_TIMEOUT_KEY, ConfigValueFactory.fromAnyRef(Duration.ofSeconds(10)))
-                .withValue(SESSIONS_PER_PEER_KEY, ConfigValueFactory.fromAnyRef(null))
-                .withValue(SESSIONS_PER_PEER_FOR_MEMBER_KEY, ConfigValueFactory.fromAnyRef(2))
-                .withValue(SESSIONS_PER_PEER_FOR_MGM_KEY, ConfigValueFactory.fromAnyRef(1))
-                .withValue(SESSION_REFRESH_THRESHOLD_KEY, ConfigValueFactory.fromAnyRef(432000))
                 .withValue(
                     REPLAY_ALGORITHM_KEY,
                     ConfigFactory.empty().withValue(
@@ -602,10 +684,8 @@ class P2PLayerEndToEndTest {
                 val signatureSpec: SignatureSpec = it.getArgument(2)
                 val data: ByteArray = it.getArgument(3)
                 val privateKeys = if(tenantId == TLS_KEY_TENANT_ID) {
-                    localInfos.asSequence().flatMap { info ->
-                        info.tlsKeyStore.aliases().toList().map { alias ->
-                            info.tlsKeyStore.getKey(alias, "password".toCharArray())
-                        }
+                    localInfos.asSequence().map { info ->
+                        info.identity.privateKeyWithCertificateChain.privateKey
                     }
                 } else {
                     localInfos.asSequence().map { info ->
@@ -740,6 +820,30 @@ class P2PLayerEndToEndTest {
                 }
                 emptySet()
             }
+
+            on { createOperationGroup() } doReturn object : StateOperationGroup {
+                val creates = ConcurrentLinkedDeque<State>()
+                val updates = ConcurrentLinkedDeque<State>()
+                override fun create(states: Collection<State>): StateOperationGroup {
+                    creates.addAll(states)
+                    return this
+                }
+
+                override fun update(states: Collection<State>): StateOperationGroup {
+                    updates.addAll(states)
+                    return this
+                }
+
+                override fun delete(states: Collection<State>): StateOperationGroup {
+                    return this
+                }
+
+                override fun execute(): Map<String, State?> {
+                    return this@mockLifeCycle.mock.create(creates).associateWith { null } +
+                        this@mockLifeCycle.mock.update(updates)
+                }
+
+            }
         }
         private val sessionEncryptionOpsClient = mockLifeCycle<SessionEncryptionOpsClient>() {
             on { encryptSessionData(any(), anyOrNull()) } doAnswer {
@@ -769,10 +873,11 @@ class P2PLayerEndToEndTest {
 
         private val linkManager =
             LinkManager(
-                subscriptionFactory,
-                publisherFactory,
+                emulator.subscriptionFactory,
+                emulator.publisherFactory,
                 lifecycleCoordinatorFactory,
                 configReadService,
+                cordaAvroSerializationFactory,
                 bootstrapConfig,
                 groupPolicyProvider,
                 mock(),
@@ -800,8 +905,8 @@ class P2PLayerEndToEndTest {
         private val gateway =
             Gateway(
                 configReadService,
-                subscriptionFactory,
-                publisherFactory,
+                emulator.subscriptionFactory,
+                emulator.publisherFactory,
                 lifecycleCoordinatorFactory,
                 cryptoOpsClient,
                 AvroSchemaRegistryImpl(),
@@ -839,7 +944,8 @@ class P2PLayerEndToEndTest {
                 otherHostMembersByKey[keyHash] = memberInfo
             }
 
-            val publisherForHost = publisherFactory.createPublisher(PublisherConfig("test-runner-publisher", false), bootstrapConfig)
+            val publisherForHost =
+                emulator.publisherFactory.createPublisher(PublisherConfig("test-runner-publisher", false), bootstrapConfig)
 
             val hostingMapRecords = localInfos.map { info ->
                 Record(
@@ -886,11 +992,11 @@ class P2PLayerEndToEndTest {
         override fun close() {
             linkManager.close()
             gateway.close()
-            topicService.close()
+            emulator.close()
         }
 
         fun addReadWriter(): Subscription<String, AppMessage> {
-            return subscriptionFactory.createDurableSubscription(
+            return emulator.subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig("app-layer", P2P_IN_TOPIC), ResponderProcessor(),
                 bootstrapConfig,
                 null
@@ -900,7 +1006,7 @@ class P2PLayerEndToEndTest {
         fun listenForReceivedMessages(
             receivedMessages: MutableCollection<String>
         ): Subscription<String, AppMessage> {
-            return subscriptionFactory.createDurableSubscription(
+            return emulator.subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig("app-layer", P2P_IN_TOPIC), InitiatorProcessor(receivedMessages),
                 bootstrapConfig,
                 null
@@ -908,7 +1014,7 @@ class P2PLayerEndToEndTest {
         }
 
         fun listenForMarkers(markers: MutableCollection<Record<String, AppMessageMarker>>): Subscription<String, AppMessageMarker> {
-            return subscriptionFactory.createDurableSubscription(
+            return emulator.subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig("app-layer", P2P_OUT_MARKERS), MarkerStorageProcessor(markers),
                 bootstrapConfig,
                 null
@@ -916,7 +1022,8 @@ class P2PLayerEndToEndTest {
         }
 
         fun sendMessages(messagesToSend: Int, ourIdentity: Identity, peer: Identity, ttl: Instant? = null) {
-            val hostAApplicationWriter = publisherFactory.createPublisher(PublisherConfig("app-layer", false), bootstrapConfig)
+            val hostAApplicationWriter = emulator.publisherFactory
+                .createPublisher(PublisherConfig("app-layer", false), bootstrapConfig)
             val initialMessages = (1..messagesToSend).map { index ->
                 val incrementalId = index.toString()
                 val messageHeader = AuthenticatedMessageHeader(

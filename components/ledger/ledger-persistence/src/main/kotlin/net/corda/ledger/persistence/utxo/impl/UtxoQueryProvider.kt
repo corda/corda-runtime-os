@@ -31,9 +31,18 @@ interface UtxoQueryProvider {
     val findTransactionSignatures: String
 
     /**
-     * @property findTransactionStatus SQL text for [UtxoRepositoryImpl.findTransactionStatus].
+     * @property findSignedTransactionStatus SQL text for [UtxoRepositoryImpl.findSignedTransactionStatus].
+     *
+     * VERIFIED, UNVERIFIED, DRAFT and INVALID are all returned where `is_filtered` = false.
+     *
+     * Where `is_filtered` = true, the following rules apply:
+     *
+     * - VERIFIED can exist with is_filtered = true when there is only a filtered transaction => not returned.
+     * - UNVERIFIED can exist with is_filtered = true when there is an unverified signed and filtered transaction => returned.
+     * - DRAFT cannot exist with is_filtered = true => doesn't exist.
+     * - INVALID filtered transaction => doesn't exist.
      */
-    val findTransactionStatus: String
+    val findSignedTransactionStatus: String
 
     /**
      * @property markTransactionVisibleStatesConsumed SQL text for
@@ -52,6 +61,11 @@ interface UtxoQueryProvider {
     val resolveStateRefs: String
 
     /**
+     * @property stateRefsExist SQL text for [UtxoRepositoryImpl.stateRefsExist].
+     */
+    val stateRefsExist: (batchSize: Int) -> String
+
+    /**
      * @property persistTransaction SQL text for [UtxoRepositoryImpl.persistTransaction].
      */
     val persistTransaction: String
@@ -64,7 +78,7 @@ interface UtxoQueryProvider {
     /**
      * @property persistFilteredTransaction SQL text for [UtxoRepositoryImpl.persistFilteredTransaction].
      */
-    val persistFilteredTransaction: String
+    val persistFilteredTransaction: (batchSize: Int) -> String
 
     /**
      * @property persistTransactionMetadata SQL text for [UtxoRepositoryImpl.persistTransactionMetadata].
@@ -113,9 +127,18 @@ interface UtxoQueryProvider {
     val persistSignedGroupParameters: String
 
     /**
-     * @property findTransactionIdsAndStatuses SQL text for [UtxoRepositoryImpl.findTransactionIdsAndStatuses].
+     * @property findSignedTransactionIdsAndStatuses SQL text for [UtxoRepositoryImpl.findSignedTransactionIdsAndStatuses].
+     *
+     * VERIFIED, UNVERIFIED, DRAFT and INVALID are all returned where `is_filtered` = false.
+     *
+     * Where `is_filtered` = true, the following rules apply:
+     *
+     * - VERIFIED can exist with is_filtered = true when there is only a filtered transaction => not returned.
+     * - UNVERIFIED can exist with is_filtered = true when there is an unverified signed and filtered transaction => returned.
+     * - DRAFT cannot exist with is_filtered = true => doesn't exist.
+     * - INVALID filtered transaction => doesn't exist.
      */
-    val findTransactionIdsAndStatuses: String
+    val findSignedTransactionIdsAndStatuses: String
 
     /**
      * @property findMerkleProofs SQL text for [UtxoRepositoryImpl.findMerkleProofs].

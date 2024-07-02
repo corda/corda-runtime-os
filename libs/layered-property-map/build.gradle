@@ -19,10 +19,12 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-serialization"
     implementation project(':libs:crypto:cipher-suite')
+    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
 
     testImplementation "net.corda:corda-crypto"
     testImplementation project(':libs:crypto:crypto-core')
     testImplementation project(":testing:test-utilities")
 
     integrationTestImplementation project(":libs:layered-property-map:layered-property-map-test-converter")
+    integrationTestRuntimeOnly project(':testing:slf4jv1')
 }

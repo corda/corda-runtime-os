@@ -1,63 +1,63 @@
 [versions]
 kotlinVersion = "1.8.21"
 
-apacheCommonsCodecVersion="1.16.1"
-apacheCommonsCompressVersion = "1.26.1"
+apacheCommonsCodecVersion="1.17.0"
+apacheCommonsCompressVersion = "1.26.2"
 bouncycastleVersion = "1.78.1"
-braveVersion = "6.0.1"
+braveVersion = "6.0.3"
 caffeineVersion = "3.1.8"
-guavaVersion = "33.0.0-jre"
+commonsioVersion = "2.16.1"
+guavaVersion = "33.2.1-jre"
 hikariCpVersion = "5.1.0"
-jacksonVersion = "2.16.1"
+jacksonVersion = "2.17.1"
 javalinVersion = "4.6.8"
 jcipAnnotationsVersion = "1.0_2"
 # This version of Jetty must be the same major version as used by Javalin, please see above.
 # Once Javalin version is upgraded to the latest, this override may be removed.
 jettyVersion = "9.4.54.v20240208"
-micrometerVersion = "1.12.3"
-nimbusVersion = "11.9.1"
-kafkaClientVersion = "3.6.1_1"
-kubernetesClientVersion = "6.10.0"
-log4jVersion = "2.22.1"
+micrometerVersion = "1.12.4"
+nimbusVersion = "11.13"
+kafkaClientVersion = "3.7.0_1"
+kubernetesClientVersion = "6.13.0"
+log4jVersion = "2.23.1"
+# If upgrading liquibase to 4.28, enable `LiquibaseSchemaMigratorImplTest.when updateDb create DB schema`
+# and `LiquibaseSchemaMigratorImplTest.when createUpdateSql generate DB schema` on Windows
+liquibaseVersion = "4.28.0"
 mssqlDriverVersion = "11.2.3.jre17"
-postgresDriverVersion = "42.7.2"
-# SLF4J cannot be ugraded to 2.x due to CorDapps requiring the 1.7 <= x < 2.0
-slf4jVersion = { strictly = "1.7.36" }
-# The CLI plugins use SLF4J version 2 because PF4j requires it
-# Since slf4jVersion is "strictly" enforced from `corda-api`, in order to override version we need to specify
-# version strictly here as well
-slf4jV2Version = { strictly = "2.0.6" }
+postgresDriverVersion = "42.7.3"
+slf4jVersion = "2.0.13"
 snakeyamlVersion = "2.2"
 # Please also update SWAGGERUI.version in net.corda.rest.server.impl.internal.OptionalDependency
-swaggeruiVersion = "5.10.3"
-# Note: We cannot go to the higher versions as they transitively depend on SLF4J 2.X
-swaggerVersion = "2.2.16"
+swaggeruiVersion = "5.15.1"
+swaggerVersion = "2.2.22"
 #Snappy used for compression
 snappyJavaVersion="1.1.10.5"
 typeSafeConfigVersion = "1.4.3"
 okHttpVersion = { strictly = "4.9.2" }
 okioVersion = { strictly = "3.4.0" }
-pf4jVersion = "3.10.0"
 unirestVersion = "3.14.5"
 zipkinCoreVersion = "2.27.1"
-zipkinReporterVersion = "3.3.0"
-nettyVersion = "4.1.108.Final"
+zipkinReporterVersion = "3.4.0"
+nettyVersion = "4.1.109.Final"
 
 # Testing
-assertjVersion = "3.25.3"
-junitVersion = "5.10.2"
-mockitoVersion = "5.10.0"
-mockitoKotlinVersion = "5.2.1"
+assertjVersion = "3.26.0"
+junitVersion = "5.10.3"
+junitPlatformVersion = "1.10.2"
+mockitoVersion = "5.12.0"
+mockitoKotlinVersion = "5.3.1"
 
 # Plugins
-gradleDataVersion = "1.12.1"
+gradleDataVersion = "2.0.1"
 gradleEnterpriseVersion = "3.16.1"
-detektVersion = "1.23.5"
+detektVersion = "1.23.6"
 dependencyCheckVersion = "0.51.0"
 snykVersion = "0.5.1"
 cyclonedxVersion = "1.8.2"
 dokkaVersion = "1.9.10"
 testLoggerVersion = "4.0.0"
+sonarVersion = "5.0.0.4638"
+openApiGeneratorVersion = "7.6.0"
 
 [libraries]
 apache-commons-codec = { group = "commons-codec", name = "commons-codec", version.ref = "apacheCommonsCodecVersion" }
@@ -68,6 +68,7 @@ bouncycastle-prov = { group = "org.bouncycastle", name = "bcprov-jdk18on", versi
 brave-context-slf4j = { group = "io.zipkin.brave", name = "brave-context-slf4j", version.ref = "braveVersion" }
 brave-instrumentation-servlet = { group = "io.zipkin.brave", name = "brave-instrumentation-servlet", version.ref = "braveVersion" }
 caffeine = { group = "com.github.ben-manes.caffeine", name = "caffeine", version.ref = "caffeineVersion" }
+commonsio = { group = "commons-io", name = "commons-io", version.ref = "commonsioVersion" }
 guava = { group = "com.google.guava", name = "guava", version.ref = "guavaVersion" }
 hikaricp = { group = "com.zaxxer", name = "HikariCP", version.ref = "hikariCpVersion" }
 jackson-annotations = { group = "com.fasterxml.jackson.core", name = "jackson-annotations", version.ref = "jacksonVersion" }
@@ -88,7 +89,7 @@ junit = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "ju
 junit-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "junitVersion" }
 junit-params = { group = "org.junit.jupiter", name = "junit-jupiter-params", version.ref = "junitVersion" }
 junit-engine = { group = "org.junit.jupiter", name = "junit-jupiter-engine", version.ref = "junitVersion" }
-junit-platform = { group = "org.junit.platform", name = "junit-platform-launcher" }
+junit-platform = { group = "org.junit.platform", name = "junit-platform-launcher", version.ref = "junitPlatformVersion" }
 kafka-client = { group = "org.apache.servicemix.bundles", name = "org.apache.servicemix.bundles.kafka-clients", version.ref = "kafkaClientVersion" }
 kotlin-stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version.ref = "kotlinVersion" }
 kotlin-stdlib-common = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib-common", version.ref = "kotlinVersion" }
@@ -100,20 +101,17 @@ kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.re
 kubernetes-client = { group = "io.fabric8", name = "kubernetes-client", version.ref = "kubernetesClientVersion" }
 log4j-core = { group = "org.apache.logging.log4j", name = "log4j-core", version.ref = "log4jVersion" }
 log4j-layout-json = { group = "org.apache.logging.log4j", name = "log4j-layout-template-json", version.ref = "log4jVersion" }
-log4j-slf4j = { group = "org.apache.logging.log4j", name = "log4j-slf4j-impl", version.ref = "log4jVersion" }
-log4j-slf4j2 = { group = "org.apache.logging.log4j", name = "log4j-slf4j2-impl", version.ref = "log4jVersion" }
+log4j-slf4j = { group = "org.apache.logging.log4j", name = "log4j-slf4j2-impl", version.ref = "log4jVersion" }
 micrometer-core = { group = "io.micrometer", name = "micrometer-core", version.ref = "micrometerVersion" }
 micrometer-registry-prometheus = { group = "io.micrometer", name = "micrometer-registry-prometheus", version.ref = "micrometerVersion" }
 mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockitoVersion" }
 mockito-kotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version.ref = "mockitoKotlinVersion" }
 mssql-jdbc = { group = "com.microsoft.sqlserver", name = "mssql-jdbc", version.ref = "mssqlDriverVersion" }
 nimbus-sdk = { group = "com.nimbusds", name = "oauth2-oidc-sdk", version.ref = "nimbusVersion" }
-pf4j = { group = "org.pf4j", name = "pf4j", version.ref = "pf4jVersion" }
 postgresql-jdbc = { group = "org.postgresql", name = "postgresql", version.ref = "postgresDriverVersion" }
 slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4jVersion" }
 slf4j-jul = { group = "org.slf4j", name = "jul-to-slf4j", version.ref = "slf4jVersion" }
 slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4jVersion" }
-slf4j-v2-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4jV2Version" }
 snakeyaml = { group = "org.yaml", name = "snakeyaml", version.ref = "snakeyamlVersion" }
 typesafe-config = { group = "com.typesafe", name = "config", version.ref = "typeSafeConfigVersion" }
 unirest-java = { group = "com.konghq", name = "unirest-java", version.ref = "unirestVersion"}
@@ -129,6 +127,7 @@ zipkin-reporter-brave = { group = "io.zipkin.reporter2", name = "zipkin-reporter
 netty = { group = "io.netty", name = "netty-codec-http", version.ref = "nettyVersion" }
 
 gradle-enterprise = { group = "com.gradle", name = "gradle-enterprise-gradle-plugin", version.ref = "gradleEnterpriseVersion" }
+liquibase = { group = "org.liquibase", name = "liquibase-core", version.ref = "liquibaseVersion"}
 
 [bundles]
 bouncycastle = ["bouncycastle-prov", "bouncycastle-pkix"]
@@ -148,3 +147,5 @@ snyk = { id = "io.snyk.gradle.plugin.snykplugin", version.ref = "snykVersion" }
 cyclonedx-bom = { id = "org.cyclonedx.bom", version.ref = "cyclonedxVersion" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokkaVersion" }
 test-logger = { id = "com.adarshr.test-logger", version.ref = "testLoggerVersion" }
+sonar = { id = "org.sonarqube", version.ref = "sonarVersion" }
+openapi-generator = { id = "org.openapi.generator", version.ref = "openApiGeneratorVersion" }

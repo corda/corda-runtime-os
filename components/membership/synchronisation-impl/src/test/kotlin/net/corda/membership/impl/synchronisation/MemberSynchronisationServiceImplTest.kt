@@ -44,8 +44,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.SignedGroupParameters
+import net.corda.membership.lib.getMembershipRecordKey
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
-import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
@@ -56,6 +56,8 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.messaging.P2pRecordsFactory
+import net.corda.p2p.messaging.Subsystem
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MembershipConfig
@@ -218,12 +220,14 @@ class MemberSynchronisationServiceImplTest {
     }
     private val synchronisationRequest = mock<Record<String, AppMessage>>()
     private val synchRequest = argumentCaptor<MembershipSyncRequest>()
-    private val p2pRecordsFactory = mock<P2pRecordsFactory> {
+    private val membershipP2PRecordsFactory = mock<P2pRecordsFactory> {
         on {
             createAuthenticatedMessageRecord(
                 eq(member.toAvro()),
-                eq(HoldingIdentity(participantName, GROUP_NAME).toAvro()),
+                eq(participantId),
                 synchRequest.capture(),
+                eq(Subsystem.MEMBERSHIP),
+                eq(getMembershipRecordKey(member.toAvro(), participantId)),
                 isNull(),
                 any(),
                 eq(MembershipStatusFilter.ACTIVE),
@@ -300,7 +304,7 @@ class MemberSynchronisationServiceImplTest {
             groupReaderProvider,
             verifier,
             locallyHostedMembersReader,
-            p2pRecordsFactory,
+            membershipP2PRecordsFactory,
             merkleTreeGenerator,
             clock,
             persistenceClient,

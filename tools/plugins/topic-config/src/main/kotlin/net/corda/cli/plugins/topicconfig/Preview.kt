@@ -13,6 +13,6 @@ class Preview : Runnable {
     var create: Create? = null
 
     override fun run() {
-        create!!.mapper.writeValue(FileWriter(FileDescriptor.out), create!!.getTopicConfigsForPreview())
+        create!!.topicConfigCreator.mapper.writeValue(FileWriter(FileDescriptor.out), create!!.getTopicConfigsForPreview())
     }
 }

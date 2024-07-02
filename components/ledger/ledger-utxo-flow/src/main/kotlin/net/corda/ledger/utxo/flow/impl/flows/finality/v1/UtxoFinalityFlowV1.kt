@@ -13,6 +13,7 @@ import net.corda.ledger.utxo.flow.impl.notary.PluggableNotaryDetails
 import net.corda.ledger.utxo.flow.impl.notary.PluggableNotaryService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionWithDependencies
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -85,26 +86,36 @@ class UtxoFinalityFlowV1(
         val transferAdditionalSignatures = sessions.size > 1
 
         addTransactionIdToFlowContext(flowEngine, transactionId)
-        log.trace("Starting finality flow for transaction: {}", transactionId)
+        log.trace { "Starting finality flow for transaction: $transactionId" }
         verifyExistingSignatures(initialTransaction)
         verifyTransaction(initialTransaction)
 
         // Initial verifications passed, the transaction can be saved in the database.
         persistUnverifiedTransaction()
 
-        sendTransactionAndDependenciesToCounterparties(transferAdditionalSignatures)
-        val (transaction, signaturesReceivedFromSessions, startingIndex, signatures) = receiveSignaturesAndAddToTransaction()
+        // Fetch the notary info and the transaction dependencies as filtered transactions
+        val notaryInfo = getNotaryInfo()
+        val filteredTransactionsAndSignatures = findFilteredTransactionsAndSignatures(notaryInfo)
+
+        // Send the filtered dependencies to counterparties
+        sendTransactionAndDependenciesToCounterparties(
+            filteredTransactionsAndSignatures,
+            notaryInfo,
+            transferAdditionalSignatures
+        )
+
+        val (transaction, signaturesReceivedFromSessions, newSignatures) = receiveSignaturesAndAddToTransaction()
         verifyAllReceivedSignatures(transaction, signaturesReceivedFromSessions)
-        persistCounterpartySignatures(transaction.id, startingIndex, signatures)
+        persistCounterpartySignatures(transaction.id, newSignatures)
 
         if (transferAdditionalSignatures) {
             sendUnseenSignaturesToCounterparties(transaction, signaturesReceivedFromSessions)
         }
 
-        val (notarizedTransaction, notarySignatures) = notarize(transaction)
+        val (notarizedTransaction, notarySignatures) = notarize(transaction, filteredTransactionsAndSignatures)
         persistNotarizedTransaction(notarizedTransaction)
         sendNotarySignaturesToCounterparties(notarySignatures)
-        log.trace("Finalisation of transaction {} has been finished.", transactionId)
+        log.trace { "Finalisation of transaction $transactionId has been finished." }
         return notarizedTransaction
     }
 
@@ -118,13 +129,11 @@ class UtxoFinalityFlowV1(
     // to counterparties. filteredTransactionsAndSignatures will be null if the backchain is required since
     // we don't need to send dependency payload to check.
     @Suspendable
-    private fun sendTransactionAndDependenciesToCounterparties(transferAdditionalSignatures: Boolean) {
-        val notaryInfo = requireNotNull(notaryLookup.lookup(initialTransaction.notaryName)) {
-            "Notary ${initialTransaction.notaryName} does not exist in the network"
-        }
-
-        val filteredTransactionsAndSignatures = createFilteredTransactionsAndSignatures(notaryInfo)
-
+    private fun sendTransactionAndDependenciesToCounterparties(
+        filteredTransactionsAndSignatures: List<UtxoFilteredTransactionAndSignatures>?,
+        notaryInfo: NotaryInfo,
+        transferAdditionalSignatures: Boolean
+    ) {
         flowMessaging.sendAll(
             FinalityPayload(initialTransaction, transferAdditionalSignatures, filteredTransactionsAndSignatures),
             sessions.toSet()
@@ -144,12 +153,17 @@ class UtxoFinalityFlowV1(
     }
 
     @Suspendable
-    private fun createFilteredTransactionsAndSignatures(notaryInfo: NotaryInfo): List<UtxoFilteredTransactionAndSignatures>? {
+    private fun findFilteredTransactionsAndSignatures(notaryInfo: NotaryInfo): List<UtxoFilteredTransactionAndSignatures>? {
         return if (!notaryInfo.isBackchainRequired) {
             utxoLedgerService.findFilteredTransactionsAndSignatures(initialTransaction).values.toList()
         } else {
             null
         }
+    }
+
+    @Suspendable
+    private fun getNotaryInfo(): NotaryInfo = requireNotNull(notaryLookup.lookup(initialTransaction.notaryName)) {
+        "Notary ${initialTransaction.notaryName} does not exist in the network"
     }
 
     @Suppress("MaxLineLength")
@@ -194,13 +208,10 @@ class UtxoFinalityFlowV1(
             session to signatures
         }.toMap()
 
-        val initialSignaturesSize = initialTransaction.signatures.size
-
         return TransactionAndReceivedSignatures(
             transaction,
             signaturesReceivedFromSessions,
-            initialSignaturesSize,
-            transaction.signatures.drop(initialSignaturesSize)
+            newSignatures = transaction.signatures.toSet() - initialTransaction.signatures.toSet()
         )
     }
 
@@ -233,12 +244,8 @@ class UtxoFinalityFlowV1(
     }
 
     @Suspendable
-    private fun persistCounterpartySignatures(
-        id: SecureHash,
-        startingIndex: Int,
-        signatures: List<DigitalSignatureAndMetadata>
-    ) {
-        persistenceService.persistTransactionSignatures(id, startingIndex, signatures)
+    private fun persistCounterpartySignatures(id: SecureHash, newSignatures: Set<DigitalSignatureAndMetadata>) {
+        persistenceService.persistTransactionSignatures(id, newSignatures)
         log.debug { "Recorded transaction with all parties' signatures $transactionId" }
     }
 
@@ -261,19 +268,25 @@ class UtxoFinalityFlowV1(
     @Suppress("ThrowsCount")
     @Suspendable
     private fun notarize(
-        transaction: UtxoSignedTransactionInternal
+        transaction: UtxoSignedTransactionInternal,
+        filteredTransactionsAndSignatures: List<UtxoFilteredTransactionAndSignatures>?
     ): Pair<UtxoSignedTransactionInternal, List<DigitalSignatureAndMetadata>> {
         val notary = transaction.notaryName
 
         val notarize = @Suspendable { attemptNumber: Int ->
-            val notarizationFlow = pluggableNotaryService.create(transaction, pluggableNotaryDetails, NotarizationType.WRITE)
-            // `log.trace {}` and `log.debug {}` are not used in this method due to a Quasar issue.
-            if (log.isTraceEnabled) {
-                log.trace(
-                    "Notarizing transaction $transactionId using pluggable notary client flow of " +
-                        "${notarizationFlow::class.java.name} with notary $notary. Attempt number $attemptNumber"
-                )
+            val notarizationFlow = pluggableNotaryService.create(
+                filteredTransactionsAndSignatures?.let {
+                    UtxoSignedTransactionWithDependencies(transaction, it)
+                } ?: transaction,
+                pluggableNotaryDetails,
+                NotarizationType.WRITE
+            )
+
+            log.trace {
+                "Notarizing transaction $transactionId using pluggable notary client flow of " +
+                    "${notarizationFlow::class.java.name} with notary $notary. Attempt number $attemptNumber"
             }
+
             flowEngine.subFlow(notarizationFlow)
         }
 
@@ -313,11 +326,9 @@ class UtxoFinalityFlowV1(
             }
         }
 
-        if (log.isTraceEnabled) {
-            log.trace(
-                "Received ${notarySignatures.size} signature(s) from notary $notary after requesting notarization of transaction " +
-                    transactionId
-            )
+        log.trace {
+            "Received ${notarySignatures.size} signature(s) from notary $notary after requesting notarization of transaction " +
+                transactionId
         }
 
         if (notarySignatures.isEmpty()) {
@@ -351,10 +362,8 @@ class UtxoFinalityFlowV1(
             }
         }
 
-        if (log.isDebugEnabled) {
-            log.debug(
-                "Successfully notarized transaction $transactionId using notary $notary and received ${notarySignatures.size} signature(s)"
-            )
+        log.debug {
+            "Successfully notarized transaction $transactionId using notary $notary and received ${notarySignatures.size} signature(s)"
         }
 
         return notarizedTransaction to notarySignatures
@@ -375,7 +384,6 @@ class UtxoFinalityFlowV1(
     private data class TransactionAndReceivedSignatures(
         val transaction: UtxoSignedTransactionInternal,
         val sessionsToSignatures: Map<FlowSession, List<DigitalSignatureAndMetadata>>,
-        val indexOfNewSignatures: Int,
-        val orderedNewSignatures: List<DigitalSignatureAndMetadata>
+        val newSignatures: Set<DigitalSignatureAndMetadata>
     )
 }

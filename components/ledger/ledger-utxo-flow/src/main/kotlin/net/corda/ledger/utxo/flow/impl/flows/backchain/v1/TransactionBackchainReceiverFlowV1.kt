@@ -202,7 +202,7 @@ class TransactionBackchainReceiverFlowV1(
         var transactionsToCheck = transactionsToRetrieve.toMutableList()
 
         while (transactionsToCheck.isNotEmpty()) {
-            val transactionsFromDb = utxoLedgerPersistenceService.findTransactionIdsAndStatuses(transactionsToCheck)
+            val transactionsFromDb = utxoLedgerPersistenceService.findSignedTransactionIdsAndStatuses(transactionsToCheck)
 
             // Check if we have any invalid transactions. If yes, we can't continue the back-chain resolution.
             val invalidTransactions = transactionsFromDb.filterValues { it == INVALID }.keys

@@ -1,0 +1,34 @@
+plugins {
+    id 'java'
+    id 'distribution'
+    id 'org.jetbrains.kotlin.jvm'
+    id 'corda.common-publishing'
+}
+
+ext {
+    releasable = false
+}
+
+ext.cordaEnableFormatting = true
+
+group 'net.corda.cli.deployment'
+
+dependencies {
+    implementation libs.jackson.module.kotlin
+    implementation libs.jackson.dataformat.yaml
+    implementation project(":libs:configuration:configuration-core")
+    implementation project(':libs:corda-sdk')
+    implementation project(':libs:permissions:permission-password')
+
+    testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
+    testImplementation project(":testing:test-utilities")
+    testImplementation project(":testing:packaging-test-utilities")
+
+    testImplementation libs.bundles.test
+    testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
+    testRuntimeOnly libs.log4j.slf4j
+}
+
+test {
+    useJUnitPlatform()
+}

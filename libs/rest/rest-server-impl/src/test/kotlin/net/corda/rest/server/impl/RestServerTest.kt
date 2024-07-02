@@ -55,7 +55,7 @@ class RestServerTest {
                         OpenApiInfoProvider(
                             APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure,
                             configProvider,
-                            RestApiVersion.C5_0
+                            RestApiVersion.C5_1
                         )
                     ),
                     multiPartDir,
@@ -88,7 +88,7 @@ class RestServerTest {
                         OpenApiInfoProvider(
                             APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure,
                             configProvider,
-                            RestApiVersion.C5_0
+                            RestApiVersion.C5_1
                         )
                     ),
                     multiPartDir,
@@ -112,7 +112,7 @@ class RestServerTest {
         val resources = APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure
         val endpointsCount =
             resources.sumOf { resource -> resource.endpoints.filterNot { it.method == EndpointMethod.WS }.count() }
-        val openApiJson = OpenApiInfoProvider(resources, configProvider, RestApiVersion.C5_0).openApiString
+        val openApiJson = OpenApiInfoProvider(resources, configProvider, RestApiVersion.C5_1).openApiString
         val openApi = Json.mapper().readValue(openApiJson, OpenAPI::class.java)
         val totalPathsCount = openApi.paths.count { it.value.get != null } + openApi.paths.count { it.value.post != null }
 
@@ -141,7 +141,7 @@ class RestServerTest {
                     OpenApiInfoProvider(
                         APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure,
                         configProvider,
-                        RestApiVersion.C5_0
+                        RestApiVersion.C5_1
                     )
                 ),
                 multiPartDir,

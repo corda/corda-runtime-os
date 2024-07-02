@@ -5,6 +5,7 @@ import io.javalin.core.util.Header
 import io.javalin.http.UploadedFile
 import io.javalin.http.util.ContextUtil
 import io.javalin.plugin.json.JsonMapper
+import net.corda.data.rest.PasswordExpiryStatus
 import net.corda.rest.server.impl.security.RestAuthenticationProvider
 
 /**
@@ -82,10 +83,15 @@ interface ClientRequestContext {
      */
     fun addWwwAuthenticateHeaders(restAuthProvider: RestAuthenticationProvider) {}
 
+    /**
+     * Add warning header value to the response to warn the user that their password will expire soon.
+     */
+    fun addPasswordExpiryHeader(expiryStatus: PasswordExpiryStatus) {}
+
     fun getResourceAccessString(): String {
         // Examples of strings will look like:
-        // GET:/api/v1/permission/getpermission?id=c048679a-9654-4359-befc-9d2d22695a43
-        // POST:/api/v1/user/createuser
+        // GET:/api/v5_3/permission/getpermission?id=c048679a-9654-4359-befc-9d2d22695a43
+        // POST:/api/v5_3/user/createuser
         return method + METHOD_SEPARATOR + path.trimEnd('/') + if (!queryString.isNullOrBlank()) "?$queryString" else ""
     }
 

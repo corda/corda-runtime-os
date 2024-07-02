@@ -29,9 +29,9 @@ class RouteInfoTest {
                 parameterizedTypes = emptyList()
             ),
             title = "Sanity",
-            apiVersions = setOf(RestApiVersion.C5_0)
+            apiVersions = setOf(RestApiVersion.C5_1)
         )
-        val route = RouteInfo("sanity", "", RestApiVersion.C5_0, endpoint)
+        val route = RouteInfo("sanity", "", RestApiVersion.C5_1, endpoint)
         assertEquals("Sane", route.invokeDelegatedMethod())
     }
 
@@ -50,11 +50,11 @@ class RouteInfoTest {
                 parameterizedTypes = emptyList()
             ),
             title = "Hello",
-            apiVersions = setOf(RestApiVersion.C5_0)
+            apiVersions = setOf(RestApiVersion.C5_1)
         )
         val param1 = "name"
         val param2 = 1
-        val route = RouteInfo("", "", RestApiVersion.C5_0, endpoint)
+        val route = RouteInfo("", "", RestApiVersion.C5_1, endpoint)
         assertEquals("Hello 1 : name", route.invokeDelegatedMethod(param1, param2))
     }
 
@@ -73,10 +73,10 @@ class RouteInfoTest {
                 parameterizedTypes = emptyList()
             ),
             title = "Sanity",
-            apiVersions = setOf(RestApiVersion.C5_0)
+            apiVersions = setOf(RestApiVersion.C5_1)
         )
         val params = listOf("1", "2", "3")
-        val route = RouteInfo("", "", RestApiVersion.C5_0, endpoint)
+        val route = RouteInfo("", "", RestApiVersion.C5_1, endpoint)
         assertEquals(listOf(2.0, 3.0, 4.0), route.invokeDelegatedMethod(params))
     }
 }

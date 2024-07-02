@@ -7,6 +7,7 @@ Add the following extension properties
 
 ```groovy
     cordaRuntimeGradlePlugin {
+        runtimeVersion = "5.2.1.0"
         notaryVersion = "5.2.1.0"
         notaryCpiName = "NotaryServer"
         corDappCpiName = "MyCorDapp"
@@ -17,7 +18,7 @@ Add the following extension properties
         cordaClusterURL = "https://localhost:8888"
         cordaRestUser = "admin"
         cordaRestPasswd ="admin"
-        composeFilePath = "config/combined-worker-compose.yml"
+        composeFilePath = "config/combined-worker-compose.yaml"
         networkConfigFile = "config/static-network-config.json"
         r3RootCertFile = "config/r3-ca-key.pem"
         skipTestsDuringBuildCpis = "false"
@@ -34,10 +35,15 @@ In order to use the vNodesSetup functionality, you will have to provide the foll
    a. For Kafka-enabled combined worker
 
 ```yaml
-version: '2'
+version: '2.1'
 services:
   postgresql:
     image: postgres:14.10
+    healthcheck:
+       test: pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
+       interval: 10s
+       timeout: 5s
+       retries: 10
     restart: unless-stopped
     tty: true
     environment:
@@ -49,6 +55,11 @@ services:
 
   kafka:
     image: confluentinc/cp-kafka:7.6.0
+    healthcheck:
+       test: kafka-topics --bootstrap-server kafka:29092 --list
+       interval: 30s
+       timeout: 10s
+       retries: 3
     ports:
       - 9092:9092
     environment:
@@ -68,16 +79,11 @@ services:
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
 
   kafka-create-topics:
-    image: openjdk:17-jdk
+    image: corda-os-docker.software.r3.com/corda-os-plugins:${CORDA_RUNTIME_VERSION}
     depends_on:
-      - kafka
-    volumes:
-      - ${CORDA_CLI:-~/.corda/cli}:/opt/corda-cli
-    working_dir: /opt/corda-cli
+       kafka:
+          condition: service_healthy
     command: [
-      "java",
-      "-jar",
-      "corda-cli.jar",
       "topic",
       "-b=kafka:29092",
       "create",
@@ -85,11 +91,14 @@ services:
     ]
 
   corda:
-    image: corda-os-docker.software.r3.com/corda-os-combined-worker-kafka:5.2.1.0
+    image: corda-os-docker.software.r3.com/corda-os-combined-worker-kafka:${CORDA_RUNTIME_VERSION}
     depends_on:
-      - postgresql
-      - kafka
-      - kafka-create-topics
+       postgresql:
+          condition: service_healthy
+       kafka:
+          condition: service_healthy
+       kafka-create-topics:
+          condition: service_completed_successfully
     environment:
       JAVA_TOOL_OPTIONS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
     command: [
@@ -111,17 +120,20 @@ services:
 NOTE: The above docker compose yaml file:
  - Uses the Kafka-enabled Combined Worker image
  - Properties `bus.busType=KAFKA` and `bootstrap.servers=kafka:29092` are used to configure the Combined Worker to use Kafka
- - Runs Kafka in KRaft mode 
- - To ensure that the Combined Worker starts correctly, corda cli needs to be used to create necessary topics. Corda cli version should be aligned with the Combined Worker version
-
+ - Runs Kafka in KRaft mode
 
    b. For Database-only combined worker
 
 ```yaml
-version: '2'
+version: '2.1'
 services:
   postgresql:
     image: postgres:14.10
+    healthcheck:
+       test: pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
+       interval: 10s
+       timeout: 5s
+       retries: 10
     restart: unless-stopped
     tty: true
     environment:
@@ -132,9 +144,10 @@ services:
       - 5432:5432
 
   corda:
-    image: corda-os-docker.software.r3.com/corda-os-combined-worker:5.2.1.0
+    image: corda-os-docker.software.r3.com/corda-os-combined-worker:${CORDA_RUNTIME_VERSION}
     depends_on:
-      - postgresql
+       postgresql:
+          condition: service_healthy
     environment:
       JAVA_TOOL_OPTIONS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
     command: [

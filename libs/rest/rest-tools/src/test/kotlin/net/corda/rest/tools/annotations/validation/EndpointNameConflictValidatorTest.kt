@@ -20,11 +20,11 @@ class EndpointNameConflictValidatorTest {
     fun `validate withEndpointNameConflictOnSamePathDifferentVersions errorListIsEmpty`() {
         @HttpRestResource
         abstract class TestInterface : RestResource {
-            @HttpGET("/test", minVersion = RestApiVersion.C5_0, maxVersion = RestApiVersion.C5_0)
+            @HttpGET("/test", minVersion = RestApiVersion.C5_1, maxVersion = RestApiVersion.C5_1)
             @Suppress("unused")
             abstract fun test()
 
-            @HttpGET("/test", minVersion = RestApiVersion.C5_1, maxVersion = RestApiVersion.C5_2)
+            @HttpGET("/test", minVersion = RestApiVersion.C5_2, maxVersion = RestApiVersion.C5_3)
             @Suppress("unused")
             abstract fun test2()
         }
@@ -57,11 +57,11 @@ class EndpointNameConflictValidatorTest {
     fun `validate withEndpointNameConflictOnSamePathOverlappingVersions errorListContainsError`() {
         @HttpRestResource
         abstract class TestInterface : RestResource {
-            @HttpGET("/test", minVersion = RestApiVersion.C5_0, maxVersion = RestApiVersion.C5_1)
+            @HttpGET("/test", minVersion = RestApiVersion.C5_1, maxVersion = RestApiVersion.C5_2)
             @Suppress("unused")
             abstract fun test()
 
-            @HttpGET("/test", minVersion = RestApiVersion.C5_1, maxVersion = RestApiVersion.C5_2)
+            @HttpGET("/test", minVersion = RestApiVersion.C5_2, maxVersion = RestApiVersion.C5_3)
             @Suppress("unused")
             abstract fun test2()
         }
@@ -76,15 +76,15 @@ class EndpointNameConflictValidatorTest {
     fun `validate withEndpointNameConflictOnSamePathMultipleConflicts errorListContainsErrors`() {
         @HttpRestResource
         abstract class TestInterface : RestResource {
-            @HttpGET("/test", minVersion = RestApiVersion.C5_0, maxVersion = RestApiVersion.C5_0)
+            @HttpGET("/test", minVersion = RestApiVersion.C5_1, maxVersion = RestApiVersion.C5_1)
             @Suppress("unused")
             abstract fun test()
 
-            @HttpGET("/test", minVersion = RestApiVersion.C5_2, maxVersion = RestApiVersion.C5_2)
+            @HttpGET("/test", minVersion = RestApiVersion.C5_3, maxVersion = RestApiVersion.C5_3)
             @Suppress("unused")
             abstract fun test2()
 
-            @HttpGET("/test", minVersion = RestApiVersion.C5_0, maxVersion = RestApiVersion.C5_2)
+            @HttpGET("/test", minVersion = RestApiVersion.C5_1, maxVersion = RestApiVersion.C5_3)
             @Suppress("unused")
             abstract fun test3()
         }
@@ -102,11 +102,11 @@ class EndpointNameConflictValidatorTest {
     fun `validate withEndpointNameConflictOnSamePathContainedVersions errorListContainsError`() {
         @HttpRestResource
         abstract class TestInterface : RestResource {
-            @HttpGET("/test", minVersion = RestApiVersion.C5_0, maxVersion = RestApiVersion.C5_2)
+            @HttpGET("/test", minVersion = RestApiVersion.C5_1, maxVersion = RestApiVersion.C5_3)
             @Suppress("unused")
             abstract fun test()
 
-            @HttpGET("/test", minVersion = RestApiVersion.C5_1, maxVersion = RestApiVersion.C5_1)
+            @HttpGET("/test", minVersion = RestApiVersion.C5_2, maxVersion = RestApiVersion.C5_2)
             @Suppress("unused")
             abstract fun test2()
         }

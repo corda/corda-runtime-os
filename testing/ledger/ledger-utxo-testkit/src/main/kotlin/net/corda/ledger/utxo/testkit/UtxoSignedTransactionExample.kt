@@ -63,6 +63,6 @@ fun getUtxoSignedTransactionExample(
         notarySignatureVerificationService,
         utxoLedgerTransactionFactory,
         wireTransaction,
-        listOf(getSignatureWithMetadataExample())
+        setOf(getSignatureWithMetadataExample())
     )
 }

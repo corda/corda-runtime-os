@@ -75,7 +75,7 @@ class DynamicKeyStoreTest {
     }
     private val id = HoldingIdentity(
         "name",
-        "group"
+        "group",
     )
 
     private var keyStoreCreationSigner: DelegatedSigner? = null
@@ -87,7 +87,7 @@ class DynamicKeyStoreTest {
         nodeConfiguration,
         mock(),
         cryptoOpsClient,
-        certificateFactory
+        certificateFactory,
     ) { signer, certificatesStore ->
         keyStoreCreationSigner = signer
         keyStoreCreationCertificatesStore = certificatesStore
@@ -140,8 +140,8 @@ class DynamicKeyStoreTest {
         fun `onSnapshot save the correct data`() {
             processorForKeystore.firstValue.onSnapshot(
                 mapOf(
-                    "one" to GatewayTlsCertificates("id", id, certificates.keys.toList())
-                )
+                    "one" to GatewayTlsCertificates("id", id, certificates.keys.toList()),
+                ),
             )
 
             assertThat(dynamicKeyStore.aliasToCertificates["one"]).containsAll(certificates.values)
@@ -151,8 +151,8 @@ class DynamicKeyStoreTest {
         fun `onNext remove data with null value`() {
             processorForKeystore.firstValue.onSnapshot(
                 mapOf(
-                    "one" to GatewayTlsCertificates("id", id, certificates.keys.toList())
-                )
+                    "one" to GatewayTlsCertificates("id", id, certificates.keys.toList()),
+                ),
             )
 
             processorForKeystore.firstValue.onNext(
@@ -162,7 +162,7 @@ class DynamicKeyStoreTest {
                     null,
                 ),
                 null,
-                emptyMap()
+                emptyMap(),
             )
 
             assertThat(dynamicKeyStore.aliasToCertificates["one"]).isNull()
@@ -177,7 +177,7 @@ class DynamicKeyStoreTest {
                     GatewayTlsCertificates("id", id, certificates.keys.toList()),
                 ),
                 null,
-                emptyMap()
+                emptyMap(),
             )
 
             assertThat(dynamicKeyStore.aliasToCertificates["one"]).containsAll(certificates.values)
@@ -219,14 +219,14 @@ class DynamicKeyStoreTest {
                         "one" to GatewayTlsCertificates(
                             tenantIdOne,
                             id,
-                            listOf("1")
+                            listOf("1"),
                         ),
                         "three" to GatewayTlsCertificates(
                             tenantIdOne,
                             id,
-                            listOf("3")
+                            listOf("3"),
                         ),
-                    )
+                    ),
                 )
             }
         }
@@ -268,7 +268,7 @@ class DynamicKeyStoreTest {
                     null,
                 ),
                 null,
-                emptyMap()
+                emptyMap(),
             )
 
             assertThrows<InvalidKeyException> {
@@ -289,11 +289,11 @@ class DynamicKeyStoreTest {
                     GatewayTlsCertificates(
                         tenantIdTwo,
                         id,
-                        listOf("2")
+                        listOf("2"),
                     ),
                 ),
                 null,
-                emptyMap()
+                emptyMap(),
             )
 
             assertDoesNotThrow {
@@ -336,10 +336,9 @@ class DynamicKeyStoreTest {
                     GatewayTlsCertificates("id", id, certificates.keys.toList()),
                 ),
                 null,
-                emptyMap()
+                emptyMap(),
             )
         }
-
 
         @Test
         fun `getClientKeyStore returns null if certificates are unknown`() {
@@ -347,9 +346,9 @@ class DynamicKeyStoreTest {
                 dynamicKeyStore.getClientKeyStore(
                     HoldingIdentity(
                         "another-name",
-                        "group"
-                    )
-                )
+                        "group",
+                    ),
+                ),
             ).isNull()
         }
 
@@ -358,14 +357,14 @@ class DynamicKeyStoreTest {
             assertThat(
                 dynamicKeyStore.getClientKeyStore(
                     id,
-                )?.keyStore
+                )?.keyStore,
             ).isSameAs(keyStoreWithPassword)
         }
 
         @Test
         fun `getClientKeyStore uses the correct aliasToCertificates`() {
             dynamicKeyStore.getClientKeyStore(
-                id
+                id,
             )?.keyStore
 
             assertThat(keyStoreCreationCertificatesStore?.aliasToCertificates)
@@ -379,14 +378,14 @@ class DynamicKeyStoreTest {
         @Test
         fun `getClientKeyStore throw exception when wrong public key is used`() {
             dynamicKeyStore.getClientKeyStore(
-                id
+                id,
             )?.keyStore
 
             assertThrows<InvalidKeyException> {
                 keyStoreCreationSigner?.sign(
                     mock(),
                     mock(),
-                    "hello".toByteArray()
+                    "hello".toByteArray(),
                 )
             }
         }
@@ -405,11 +404,11 @@ class DynamicKeyStoreTest {
                     spec,
                     data,
                     emptyMap(),
-                )
+                ),
             ).doReturn(signatureWithKey)
 
             dynamicKeyStore.getClientKeyStore(
-                id
+                id,
             )?.keyStore
 
             assertThat(
@@ -417,7 +416,7 @@ class DynamicKeyStoreTest {
                     publicKey,
                     spec,
                     data,
-                )
+                ),
             ).isEqualTo(returnedData)
         }
 
@@ -430,13 +429,13 @@ class DynamicKeyStoreTest {
                     null,
                 ),
                 GatewayTlsCertificates("id", id, certificates.keys.toList()),
-                emptyMap()
+                emptyMap(),
             )
 
             assertThat(
                 dynamicKeyStore.getClientKeyStore(
                     id,
-                )
+                ),
             ).isNull()
         }
 
@@ -447,14 +446,15 @@ class DynamicKeyStoreTest {
             val certificateThree = mock<Certificate>()
             val id = "id"
             val store = dynamicKeyStore.ClientKeyStore(
-                listOf(certificateOne, certificateTwo, certificateThree), id
+                listOf(certificateOne, certificateTwo, certificateThree),
+                id,
             )
 
             assertThat(store.hashCode()).isEqualTo(
                 Objects.hash(
                     listOf(certificateOne, certificateTwo, certificateThree),
                     id,
-                )
+                ),
             )
         }
 
@@ -465,10 +465,12 @@ class DynamicKeyStoreTest {
             val certificateThree = mock<Certificate>()
             val id = "id"
             val storeOne = dynamicKeyStore.ClientKeyStore(
-                listOf(certificateOne, certificateThree), id
+                listOf(certificateOne, certificateThree),
+                id,
             )
             val storeTwo = dynamicKeyStore.ClientKeyStore(
-                listOf(certificateOne, certificateTwo), id
+                listOf(certificateOne, certificateTwo),
+                id,
             )
 
             assertThat(storeOne).isNotEqualTo(storeTwo)
@@ -480,10 +482,12 @@ class DynamicKeyStoreTest {
             val certificateTwo = mock<Certificate>()
             val certificateThree = mock<Certificate>()
             val storeOne = dynamicKeyStore.ClientKeyStore(
-                listOf(certificateOne, certificateTwo, certificateThree), "id1"
+                listOf(certificateOne, certificateTwo, certificateThree),
+                "id1",
             )
             val storeTwo = dynamicKeyStore.ClientKeyStore(
-                listOf(certificateOne, certificateTwo, certificateThree), "id2"
+                listOf(certificateOne, certificateTwo, certificateThree),
+                "id2",
             )
 
             assertThat(storeOne).isNotEqualTo(storeTwo)
@@ -495,10 +499,12 @@ class DynamicKeyStoreTest {
             val certificateTwo = mock<Certificate>()
             val certificateThree = mock<Certificate>()
             val storeOne = dynamicKeyStore.ClientKeyStore(
-                listOf(certificateOne, certificateTwo, certificateThree), "id"
+                listOf(certificateOne, certificateTwo, certificateThree),
+                "id",
             )
             val storeTwo = dynamicKeyStore.ClientKeyStore(
-                listOf(certificateOne, certificateTwo, certificateThree), "id"
+                listOf(certificateOne, certificateTwo, certificateThree),
+                "id",
             )
 
             assertThat(storeOne).isEqualTo(storeTwo)

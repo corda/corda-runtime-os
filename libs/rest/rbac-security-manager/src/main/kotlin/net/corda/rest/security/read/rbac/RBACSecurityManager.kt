@@ -1,5 +1,6 @@
 package net.corda.rest.security.read.rbac
 
+import net.corda.data.rest.PasswordExpiryStatus
 import net.corda.libs.permission.PermissionValidator
 import net.corda.libs.permissions.manager.BasicAuthenticationService
 import net.corda.rest.authorization.AuthorizingSubject
@@ -17,15 +18,16 @@ class RBACSecurityManager(
     override val id = AuthServiceId(RBACSecurityManager::class.java.name)
 
     override fun authenticate(principal: String, password: Password): AuthorizingSubject {
-        if (!basicAuthenticationService.authenticateUser(principal.lowercase(), password.value)) {
+        val authenticationState = basicAuthenticationService.authenticateUser(principal.lowercase(), password.value)
+        if (!authenticationState.authenticationSuccess) {
             throw FailedLoginException("User not authenticated.")
         }
 
-        return buildSubject(principal)
+        return buildSubject(principal, authenticationState.expiryStatus)
     }
 
-    override fun buildSubject(principal: String): AuthorizingSubject {
-        return RBACAuthorizingSubject(permissionValidatorSupplier, principal)
+    override fun buildSubject(principal: String, expiryStatus: PasswordExpiryStatus): AuthorizingSubject {
+        return RBACAuthorizingSubject(permissionValidatorSupplier, principal, expiryStatus)
     }
 
     private var running = false

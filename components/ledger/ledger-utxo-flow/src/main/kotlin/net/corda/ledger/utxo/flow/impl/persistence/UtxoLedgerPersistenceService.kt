@@ -57,7 +57,7 @@ interface UtxoLedgerPersistenceService {
      * @return A list of the transaction IDs found and their statuses.
      */
     @Suspendable
-    fun findTransactionIdsAndStatuses(ids: Collection<SecureHash>): Map<SecureHash, TransactionStatus>
+    fun findSignedTransactionIdsAndStatuses(ids: Collection<SecureHash>): Map<SecureHash, TransactionStatus>
 
     /**
      * Find a verified [UtxoSignedLedgerTransaction] in the persistence context given it's [id]. This involves resolving its input and
@@ -143,19 +143,32 @@ interface UtxoLedgerPersistenceService {
     ): TransactionExistenceStatus
 
     @Suspendable
-    fun persistTransactionSignatures(id: SecureHash, startingIndex: Int, signatures: List<DigitalSignatureAndMetadata>)
+    fun persistTransactionSignatures(id: SecureHash, signatures: Set<DigitalSignatureAndMetadata>)
 
     /**
      * Persists a list of filtered transactions and their signatures represented as [UtxoFilteredTransactionAndSignatures]
      * objects.
      *
+     * The [inputStateRefs] and [referenceStateRefs] are passed into this method to optimise the persistence of the input
+     * [filteredTransactionsAndSignatures]. [inputStateRefs] represents the inputs of a transaction and [referenceStateRefs] represents the
+     * references of the same transaction, where [filteredTransactionsAndSignatures] contains the actual state content for those states. The
+     * optimisation allows us to skip persisting reference states and the filtered transactions that originally created them if they are
+     * already stored in the vault. Any filtered transactions that created states contained in [inputStateRefs] must always be persisted and
+     * cannot be optimised further.
+     *
      * @param filteredTransactionsAndSignatures A list containing the filtered transactions and signatures to persist.
+     * @param inputStateRefs A list of input [StateRef]s from a transaction where the states themselves are provided as outputs in
+     * [filteredTransactionsAndSignatures].
+     * @param referenceStateRefs A list of [StateRef]s from a transaction where the states themselves are provided as outputs in
+     * [filteredTransactionsAndSignatures].
      *
      * @throws CordaPersistenceException if an error happens during persist operation.
      */
     @Suspendable
     fun persistFilteredTransactionsAndSignatures(
-        filteredTransactionsAndSignatures: List<UtxoFilteredTransactionAndSignatures>
+        filteredTransactionsAndSignatures: List<UtxoFilteredTransactionAndSignatures>,
+        inputStateRefs: List<StateRef>,
+        referenceStateRefs: List<StateRef>
     )
 
     @Suspendable

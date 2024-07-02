@@ -8,6 +8,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.config.impl.CryptoHSMConfig
 import net.corda.crypto.config.impl.HSM
+import net.corda.crypto.core.KeyRotationMetadataValues
 import net.corda.crypto.core.KeyRotationStatus
 import net.corda.crypto.core.MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER
 import net.corda.crypto.rest.KeyRotationRestResource
@@ -99,7 +100,12 @@ class KeyRotationRestResourceTest {
                     "random",
                     "random".toByteArray(),
                     0,
-                    Metadata(mapOf("status" to "In Progress"))
+                    Metadata(
+                        mapOf(
+                            KeyRotationMetadataValues.STATUS to "In Progress",
+                            KeyRotationMetadataValues.DEFAULT_MASTER_KEY_ALIAS to MASTER_WRAPPING_KEY_ROTATION_IDENTIFIER
+                        )
+                    )
                 )
             )
         }

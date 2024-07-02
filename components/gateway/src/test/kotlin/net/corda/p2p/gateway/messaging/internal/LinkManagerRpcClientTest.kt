@@ -19,7 +19,7 @@ import org.mockito.kotlin.whenever
 import java.net.URI
 
 class LinkManagerRpcClientTest {
-    private val mockClient = mock< HttpRpcClient>()
+    private val mockClient = mock<HttpRpcClient>()
     private val publisherFactory = mock<PublisherFactory> {
         on { createHttpRpcClient() } doReturn mockClient
     }
@@ -43,7 +43,7 @@ class LinkManagerRpcClientTest {
                 uri.capture(),
                 any(),
                 eq(LinkManagerResponse::class.java),
-            )
+            ),
         ).doReturn(null)
 
         client.send(mock())
@@ -60,7 +60,7 @@ class LinkManagerRpcClientTest {
                 any(),
                 sent.capture(),
                 eq(LinkManagerResponse::class.java),
-            )
+            ),
         ).doReturn(null)
         val message = LinkInMessage()
 
@@ -78,7 +78,7 @@ class LinkManagerRpcClientTest {
                 any(),
                 any(),
                 eq(LinkManagerResponse::class.java),
-            )
+            ),
         ).doReturn(message)
 
         assertThat(client.send(mock())).isSameAs(message)

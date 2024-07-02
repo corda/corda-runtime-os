@@ -14,6 +14,7 @@ import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.ChangeUserPasswordDto
+import net.corda.libs.permissions.manager.request.DeleteUserRequestDto
 import net.corda.libs.permissions.manager.request.GetPermissionSummaryRequestDto
 import net.corda.libs.permissions.manager.request.GetRoleRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
@@ -28,6 +29,7 @@ import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.authorization.AuthorizationProvider
 import net.corda.rest.authorization.AuthorizingSubject
 import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.response.ResponseEntity
@@ -81,6 +83,8 @@ class UserEndpointImpl @Activate constructor(
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
+        private const val INVALID_ARGUMENT_MESSAGE = "Invalid argument in request."
+
         @Suppress("ThrowsCount")
         private fun PermissionManager.checkProtectedRole(loginName: String, roleId: String, principal: String) {
             val role = getRole(GetRoleRequestDto(principal, roleId))
@@ -114,18 +118,27 @@ class UserEndpointImpl @Activate constructor(
                 createUser(createUserType.convertToDto(principal))
             }
         } catch (e: IllegalArgumentException) {
-            throw InvalidInputDataException(e.message ?: "Invalid argument in request.")
+            throw InvalidInputDataException(
+                title = e::class.java.simpleName,
+                exceptionDetails = ExceptionDetails(e::class.java.name, e.message ?: INVALID_ARGUMENT_MESSAGE)
+            )
         }
 
         return ResponseEntity.created(createUserResult.convertToEndpointType())
     }
 
-    @Deprecated("Deprecated in favour of `getUserPath()`")
-    override fun getUserQuery(loginName: String): ResponseEntity<UserResponseType> {
-        "Deprecated, please use next version where loginName is passed as a path parameter.".let { msg ->
-            logger.warn(msg)
-            return ResponseEntity.okButDeprecated(doGetUser(loginName), msg)
+    override fun deleteUser(loginName: String): ResponseEntity<UserResponseType> {
+        val principal = getRestThreadLocalContext()
+
+        if (principal.equals(loginName, ignoreCase = true)) {
+            throw BadRequestException("User cannot delete self")
         }
+
+        val userResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            deleteUser(DeleteUserRequestDto(principal, loginName.lowercase()))
+        }
+
+        return ResponseEntity.deleted(userResponseDto.convertToEndpointType())
     }
 
     override fun getUserPath(loginName: String): UserResponseType {
@@ -149,9 +162,15 @@ class UserEndpointImpl @Activate constructor(
             try {
                 changeUserPasswordSelf(ChangeUserPasswordDto(principal, principal.lowercase(), password))
             } catch (e: NoSuchElementException) {
-                throw ResourceNotFoundException(e.message ?: "No resource found for this request.")
+                throw ResourceNotFoundException(
+                    e::class.java.simpleName,
+                    ExceptionDetails(e::class.java.name, e.message ?: "No resource found for this request.")
+                )
             } catch (e: IllegalArgumentException) {
-                throw InvalidInputDataException(e.message ?: "Invalid argument in request.")
+                throw InvalidInputDataException(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(e::class.java.name, e.message ?: INVALID_ARGUMENT_MESSAGE)
+                )
             }
         }
 
@@ -165,9 +184,15 @@ class UserEndpointImpl @Activate constructor(
             try {
                 changeUserPasswordOther(ChangeUserPasswordDto(principal, username.lowercase(), password))
             } catch (e: NoSuchElementException) {
-                throw ResourceNotFoundException(e.message ?: "No resource found for this request.")
+                throw ResourceNotFoundException(
+                    e::class.java.simpleName,
+                    ExceptionDetails(e::class.java.name, e.message ?: "No resource found for this request.")
+                )
             } catch (e: IllegalArgumentException) {
-                throw InvalidInputDataException(e.message ?: "Invalid argument in request.")
+                throw InvalidInputDataException(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(e::class.java.name, e.message ?: INVALID_ARGUMENT_MESSAGE)
+                )
             }
         }
 

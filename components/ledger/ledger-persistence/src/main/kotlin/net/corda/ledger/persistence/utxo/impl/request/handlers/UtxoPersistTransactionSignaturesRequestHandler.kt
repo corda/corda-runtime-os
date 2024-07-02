@@ -20,7 +20,6 @@ class UtxoPersistTransactionSignaturesRequestHandler(
         persistenceService.persistTransactionSignatures(
             persistTransactionSignatures.id,
             persistTransactionSignatures.signatures.map { it.array() },
-            persistTransactionSignatures.startingIndex
         )
 
         return listOf(

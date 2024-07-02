@@ -39,6 +39,7 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.utilities.toByteArray
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
@@ -367,7 +368,7 @@ class CryptoFlowOpsProcessorTests {
      @Test
      fun `Should process sign command`() {
          val publicKey = mockPublicKey()
-         val data = UUID.randomUUID().toString().toByteArray()
+         val data = UUID.randomUUID().toByteArray()
 
          doFlowOperations<SignFlowCommand, CryptoSignatureWithKey, DigitalSignatureWithKey>(
              listOf(publicKey), listOf { transformer, flowExternalEventContext ->

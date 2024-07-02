@@ -19,10 +19,13 @@ dependencies {
     implementation project(":components:crypto:crypto-client")
     implementation project(":components:crypto:crypto-component-core-impl")
     implementation project(":libs:crypto:crypto-core")
+    implementation project(':libs:utilities')
 
     testImplementation project(":components:crypto:crypto-component-test-utils")
     testImplementation project(":libs:crypto:cipher-suite-impl")
+    testImplementation project(':libs:lifecycle:lifecycle-test-impl')
     testImplementation project(":testing:test-utilities")
+
 
     testRuntimeOnly libs.slf4j.simple
 }

@@ -51,7 +51,7 @@ class UtxoSignedTransactionKryoSerializer @Activate constructor(
             notarySignatureVerificationService,
             utxoLedgerTransactionFactory,
             wireTransaction,
-            signatures
+            signatures.toSet()
         )
     }
 }

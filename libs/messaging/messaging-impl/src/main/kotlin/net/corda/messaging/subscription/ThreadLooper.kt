@@ -41,6 +41,7 @@ class ThreadLooper(
             block = block,
         )
     },
+    private val callUntilStopped: Boolean = false,
 ) : LifecycleStatusUpdater {
     @Volatile
     private var _isRunning = true
@@ -101,9 +102,14 @@ class ThreadLooper(
 
                 _loopStopped = false
                 lifecycleCoordinator.start()
+                val pollLoopType: () -> Unit = if (callUntilStopped) {
+                    ::runContinuousPollLoop
+                } else {
+                    ::runConsumeLoop
+                }
                 thread = threadFactory(
                     "$threadNamePrefix ${config.group}-${config.topic}",
-                    ::runConsumeLoop,
+                    pollLoopType,
                 )
             }
         }
@@ -166,6 +172,41 @@ class ThreadLooper(
         }
     }
 
+    /**
+     * Background: This variant was added after the initial development of the thread looper. The other implementation
+     * puts a dependency on the consuming code to manage the call while running loop + set the lifecycle states for the
+     * looper.
+     *
+     * The continuously running poll loop will keep calling the loop function until the looper is marked as stopped
+     * The Looper will mark itself as up if it can complete the first poll successfully.
+     */
+    private fun runContinuousPollLoop() {
+        try {
+            var isFirstPoll = true
+            while (_isRunning) {
+                loopFunction()
+
+                // If the thread looper was marked as error externally
+                // polling should stop.
+                if (lifecycleCoordinator.status == LifecycleStatus.ERROR) {
+                    _isRunning = false
+                    break
+                }
+
+                if (isFirstPoll) {
+                    lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+                    isFirstPoll = false
+                }
+            }
+            lifecycleCoordinator.close()
+        } catch (t: Throwable) {
+            _isRunning = false
+            val msg = "runConsumeLoop Throwable caught, subscription in an unrecoverable bad state"
+            log.error(msg, t)
+            lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, msg)
+        }
+    }
+
     private fun runConsumeLoop() {
         // As the thread entry point, ensure nothing leaks to the uncaught exception handler. This just means we at least
         // channel uncaught Throwables through the correct logger. The subscription would still be in a bad state caused
@@ -173,7 +214,9 @@ class ThreadLooper(
         try {
             loopFunction()
             _isRunning = false
-            lifecycleCoordinator.close()
+            if (lifecycleCoordinator.status != LifecycleStatus.ERROR) {
+                lifecycleCoordinator.close()
+            }
         } catch (t: Throwable) {
             val msg = "runConsumeLoop Throwable caught, subscription in an unrecoverable bad state"
             log.error(msg, t)

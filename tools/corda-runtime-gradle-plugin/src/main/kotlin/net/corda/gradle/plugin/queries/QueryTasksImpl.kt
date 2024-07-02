@@ -1,31 +1,19 @@
 package net.corda.gradle.plugin.queries
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.ObjectMapper
-import kong.unirest.HttpResponse
-import kong.unirest.JsonNode
-import kong.unirest.Unirest
 import net.corda.gradle.plugin.configuration.ProjectContext
-import net.corda.gradle.plugin.dtos.CpiMetadataDTO
-import net.corda.gradle.plugin.dtos.GetCPIsResponseDTO
-import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
-import net.corda.gradle.plugin.getExistingNodes
-import java.net.HttpURLConnection
+import net.corda.sdk.network.VirtualNode
+import net.corda.sdk.packaging.CpiUploader
 
 /**
  * Provides the functionality to query the corda cluster used in the corda-runtime-plugin-queries group of tasks
  */
 class QueryTasksImpl(val pc: ProjectContext) {
 
-    init {
-        Unirest.config().verifySsl(false)
-    }
-
     /**
      * Lists out the vnodes to the console
      */
     fun listVNodes() {
-        val vNodes= getExistingNodes(pc)
+        val existingNodes = VirtualNode(pc.restClient).getAllVirtualNodes().virtualNodes
         val cpiNamePadding = 40
         val shortHashPadding = 30
         val x500NamePadding = 60
@@ -33,10 +21,10 @@ class QueryTasksImpl(val pc: ProjectContext) {
         val shortHashTitle = "Holding identity short hash".padEnd(shortHashPadding)
         val x500NameTitle = "X500 Name".padEnd(x500NamePadding)
         pc.logger.quiet(cpiNameTitle + shortHashTitle + x500NameTitle)
-        vNodes.forEach {
-            val cpiName = it.cpiIdentifier?.cpiName?.padEnd(cpiNamePadding)
-            val shortHash = it.holdingIdentity?.shortHash?.padEnd(shortHashPadding)
-            val x500Name = it.holdingIdentity?.x500Name?.padEnd(x500NamePadding)
+        existingNodes.forEach {
+            val cpiName = it.cpiIdentifier.cpiName.padEnd(cpiNamePadding)
+            val shortHash = it.holdingIdentity.shortHash.padEnd(shortHashPadding)
+            val x500Name = it.holdingIdentity.x500Name.padEnd(x500NamePadding)
             pc.logger.quiet(cpiName + shortHash + x500Name)
         }
     }
@@ -45,7 +33,7 @@ class QueryTasksImpl(val pc: ProjectContext) {
      * Lists out the uploaded Cpis to the console
      */
     fun listCPIs() {
-        val cpis = getUploadedCpis(pc)
+        val existingCPIs = CpiUploader(pc.restClient).getAllCpis().cpis
         val cpiNamePadding = 40
         val cpiVersionPadding = 20
         val cpiChecksumPadding = 16
@@ -53,31 +41,11 @@ class QueryTasksImpl(val pc: ProjectContext) {
         val cpiVersionTitle = "CpiVersion".padEnd(cpiVersionPadding)
         val cpiChecksumTitle = "CpiFileCheckSum".padEnd(cpiChecksumPadding)
         pc.logger.quiet(cpiNameTitle + cpiVersionTitle + cpiChecksumTitle)
-        cpis.forEach {
-            val cpiName = it.id?.cpiName?.padEnd(cpiNamePadding)
-            val cpiVersion = it.id?.cpiVersion?.padEnd(cpiVersionPadding)
-            val cpiChecksum = it.cpiFileChecksum?.padEnd(cpiChecksumPadding)
+        existingCPIs.forEach {
+            val cpiName = it.id.cpiName.padEnd(cpiNamePadding)
+            val cpiVersion = it.id.cpiVersion.padEnd(cpiVersionPadding)
+            val cpiChecksum = it.cpiFileChecksum.padEnd(cpiChecksumPadding)
             pc.logger.quiet(cpiName + cpiVersion + cpiChecksum)
-        }
-    }
-
-    private fun getUploadedCpis(pc: ProjectContext): List<CpiMetadataDTO> {
-        Unirest.config().verifySsl(false)
-        val mapper = ObjectMapper()
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-
-        val response: HttpResponse<JsonNode> = Unirest.get(pc.cordaClusterURL + "/api/v1/cpi")
-            .basicAuth(pc.cordaRestUser, pc.cordaRestPassword)
-            .asJson()
-
-        if (response.status != HttpURLConnection.HTTP_OK) {
-            throw CordaRuntimeGradlePluginException("Failed to get Existing CPIs, response status: " + response.status)
-        }
-
-        return try {
-            mapper.readValue(response.body.toString(), GetCPIsResponseDTO::class.java).cpis!!
-        } catch (e: Exception) {
-            throw CordaRuntimeGradlePluginException("Failed to get Existing CPIs with exception: ${e.message}", e)
         }
     }
 }
