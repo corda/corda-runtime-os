@@ -63,9 +63,16 @@ Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons
     }
 }
 
+def slf4j2Dependency = libs.slf4j.api.get()
+
+def bundlesSet = files(sourceSets.integrationTest.runtimeClasspath.filter {
+    // Filter out SLF4J bundle as it will be conflicting with special bundle we provide for OSGi testing purposes: slf4jv1
+    !(it.path.contains("${slf4j2Dependency.name}-${slf4j2Dependency.version}"))
+}, configurations.archives.artifacts.files)
+
 def resolve = tasks.register('resolve', Resolve) {
     dependsOn jar, testingBundle
-    bundles = files(sourceSets.integrationTest.runtimeClasspath, configurations.archives.artifacts.files)
+    bundles = bundlesSet
     bndrun = file('test.bndrun')
     outputBndrun = layout.buildDirectory.file('resolved-test.bndrun')
     doFirst {
@@ -81,7 +88,7 @@ def testOSGi = tasks.register('testOSGi', TestOSGi) {
         languageVersion = of(17)
     }
     resultsDirectory = file("$testResultsDir/integrationTest")
-    bundles = files(sourceSets.integrationTest.runtimeClasspath, configurations.archives.artifacts.files)
+    bundles = bundlesSet
     bndrun = resolve.flatMap { it.outputBndrun }
 
     // These properties are for Quasar's framework extension, should it be present.

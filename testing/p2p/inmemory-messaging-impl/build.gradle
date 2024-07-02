@@ -25,4 +25,5 @@ dependencies {
 
     integrationTestApi project(":testing:test-utilities")
     testImplementation project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly project(':testing:slf4jv1')
 }

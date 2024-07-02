@@ -21,7 +21,7 @@ tasks.named('jar', Jar) {
     archiveBaseName = 'corda-slf4jv1'
 
     ext {
-        bundleVersion = parseMavenString(antlrVersion).OSGiVersion
+        bundleVersion = parseMavenString(libs.slf4j.api.get().version).OSGiVersion
     }
 
     bundle {
