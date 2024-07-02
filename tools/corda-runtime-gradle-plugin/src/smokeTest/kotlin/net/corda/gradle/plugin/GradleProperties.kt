@@ -15,7 +15,7 @@ data class GradleProperties(
     val cordaRestUser: String = USER,
     val cordaRestPasswd: String = PASSWORD,
     val notaryVersion: String = CORDA_RUNTIME_VERSION_STABLE,
-    val runtimeVersion: String = CORDA_RUNTIME_VERSION_STABLE, // Applies only to start/stop tasks tests
+    val runtimeVersion: String = testEnvCordaImageTag, // Start/stop tasks should use preTest images
     val composeFilePath: String = "config/combined-worker-compose.yml",
     val networkConfigFile: String,
 ) {
