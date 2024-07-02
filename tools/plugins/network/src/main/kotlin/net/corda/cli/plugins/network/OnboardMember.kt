@@ -88,7 +88,10 @@ class OnboardMember : Runnable, BaseOnboard() {
         if (cpbFile?.canRead() != true) {
             throw OnboardException("Please set either CPB file or CPI hash")
         } else {
-            uploadCpb(cpbFile!!)
+            val checksumValue = uploadCpb(cpbFile!!)
+            // Suspected flakiness between getting checksum and creating member vnode - https://r3-cev.atlassian.net/browse/CORE-20760
+            Thread.sleep(1000)
+            checksumValue
         }
     }
 

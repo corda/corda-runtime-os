@@ -130,8 +130,6 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             uniquenessDdlConnection = null,
             uniquenessDmlConnection = null,
         )
-        // Suspected flakiness here - https://r3-cev.atlassian.net/browse/CORE-20760
-        Thread.sleep(3000)
         val longerWait = getLongerWait()
         println("Creating Virtual Node: ${request.x500Name}")
         val shortHashId = VirtualNode(restClient).createAndWaitForActive(request, longerWait)
