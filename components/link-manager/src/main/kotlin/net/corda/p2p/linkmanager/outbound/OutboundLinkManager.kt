@@ -85,23 +85,6 @@ internal class OutboundLinkManager(
         )
     }
 
-    private val subscriptionTile = SubscriptionDominoTile(
-        lifecycleCoordinatorFactory,
-        outboundMessageSubscription,
-        subscriptionConfig,
-        configurationReaderService,
-        dependentChildren = listOf(
-            deliveryTracker.dominoTile.coordinatorName,
-            commonComponents.dominoTile.coordinatorName,
-            sessionComponents.dominoTile.coordinatorName,
-            publisher.dominoTile.coordinatorName,
-        ),
-        managedChildren = setOf(
-            deliveryTracker.dominoTile.toNamedLifecycle(),
-            publisher.dominoTile.toNamedLifecycle(),
-        )
-    )
-
     override val dominoTile = if (features.enableP2PStatefulDeliveryTracker) {
         val statefulDeliveryTracker = StatefulDeliveryTracker(
             commonComponents = commonComponents,
@@ -123,6 +106,22 @@ internal class OutboundLinkManager(
             ),
         )
     } else {
+        val subscriptionTile = SubscriptionDominoTile(
+            lifecycleCoordinatorFactory,
+            outboundMessageSubscription,
+            subscriptionConfig,
+            configurationReaderService,
+            dependentChildren = listOf(
+                deliveryTracker.dominoTile.coordinatorName,
+                commonComponents.dominoTile.coordinatorName,
+                sessionComponents.dominoTile.coordinatorName,
+                publisher.dominoTile.coordinatorName,
+            ),
+            managedChildren = setOf(
+                deliveryTracker.dominoTile.toNamedLifecycle(),
+                publisher.dominoTile.toNamedLifecycle(),
+            )
+        )
         ComplexDominoTile(
             this.javaClass.simpleName,
             lifecycleCoordinatorFactory,
