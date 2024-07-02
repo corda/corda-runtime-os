@@ -19,7 +19,7 @@ dependencies {
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation libs.jackson.module.kotlin
-    implementation 'org.slf4j:slf4j-api'
+    implementation libs.slf4j.api
     implementation libs.jackson.datatype.jsr310
 
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"

@@ -22,5 +22,5 @@ dependencies {
     cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     cordaProvided 'org.osgi:osgi.core'
     cordaProvided 'net.corda:corda-application'
-    cordaProvided 'org.slf4j:slf4j-api'
+    cordaProvided libs.slf4j.api
 }
