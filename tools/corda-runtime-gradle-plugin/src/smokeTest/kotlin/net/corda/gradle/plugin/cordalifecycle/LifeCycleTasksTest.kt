@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test
 import java.io.StringWriter
 import java.util.concurrent.Executors
 
-class CordaLifeCycleTasksTest : SmokeTestBase() {
+class LifeCycleTasksTest : SmokeTestBase() {
 
     private val executorService =  Executors.newSingleThreadExecutor()
 
@@ -25,7 +25,7 @@ class CordaLifeCycleTasksTest : SmokeTestBase() {
     }
 
     @Test
-    fun startAndStopCorda() {
+    fun startCordaWaitForReadinessThenStopCorda() {
         val startTaskOutput = StringWriter()
 
         val startTaskFuture = executorService.submit {

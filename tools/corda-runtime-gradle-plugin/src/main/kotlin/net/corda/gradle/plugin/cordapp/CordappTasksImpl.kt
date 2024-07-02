@@ -86,6 +86,7 @@ class CordappTasksImpl(var pc: ProjectContext) {
         val keystoreFile = File(pc.keystoreFilePath)
         if (!keystoreFile.exists()) {
             pc.logger.quiet("Creating a keystore and signing certificate.")
+            keystoreFile.parentFile.mkdirs()
             KeyStoreHelper().generateKeyStore(
                 keyStoreFile = keystoreFile,
                 alias = pc.keystoreAlias,
