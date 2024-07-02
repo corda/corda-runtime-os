@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test
 
 class SetupNetworkJourneyTest : SmokeTestBase() {
     private val vNodeRegisteredMessage = Regex("VNode .+ with shortHash [A-F0-9]+ registered.")
+    private val expectedCpiNames = listOf("MyCorDapp", "NotaryServer")
 
     @BeforeEach
     fun startCombinedWorker() {
@@ -26,20 +27,19 @@ class SetupNetworkJourneyTest : SmokeTestBase() {
     }
 
     @Test
-    fun setupStaticNetworkVerifyVNodesAndCPIs() {
-        // Create a static network
+    fun setupStaticNetworkVerifyVNodesAndCPIsThenRedeploy() {
         val vNodeSetupResult = executeWithRunner(
             VNODE_SETUP_TASK_NAME,
             "--info", "--stacktrace",
             forwardOutput = true,
             isStaticNetwork = true
         )
+        vNodeSetupResult.task(":$VNODE_SETUP_TASK_NAME")!!.assertTaskSucceeded()
 
         val expectedCommonNames = listOf("Alice", "Bob", "Charlie", "Dave", "NotaryRep1")
         val registeredVNodes = verifyRegisteredVNodesInOutput(vNodeSetupResult.output, expectedCommonNames)
 
         // List CPIs and verify output
-        val expectedCpiNames = listOf("MyCorDapp", "NotaryServer")
         val actualCpis = runListCPIsTaskAndVerifyOutput(expectedCpiNames)
         val myCorDappCpiChecksum = actualCpis["MyCorDapp"]!!
 
@@ -52,25 +52,11 @@ class SetupNetworkJourneyTest : SmokeTestBase() {
 
         verifyNotaryCpks()
 
-        // Re-deploy network and check that the CPI checksum is different
-        val reDeployNetworkResult = executeWithRunner(
-            VNODE_SETUP_TASK_NAME,
-            "--info", "--stacktrace",
-            forwardOutput = true,
-            isStaticNetwork = true
-        )
-        // VNodes registration is skipped
-        assertThat(reDeployNetworkResult.output).doesNotContainPattern(vNodeRegisteredMessage.pattern)
-
-        val actualCpisAfterReDeploy = runListCPIsTaskAndVerifyOutput(expectedCpiNames)
-
-        // Verify that the CorDapp has been re-deployed
-        val newMyCorDappChecksum = actualCpisAfterReDeploy["MyCorDapp"]!!
-        assertThat(newMyCorDappChecksum).isNotEqualTo(myCorDappCpiChecksum)
+        verifyRedeployNetwork(true, myCorDappCpiChecksum)
     }
 
     @Test
-    fun setupDynamicNetworkVerifyVNodesAndCPIs() {
+    fun setupDynamicNetworkVerifyVNodesAndCPIsThenRedeploy() {
         // Create a static network
         val vNodeSetupResult = executeWithRunner(
             VNODE_SETUP_TASK_NAME,
@@ -78,12 +64,12 @@ class SetupNetworkJourneyTest : SmokeTestBase() {
             forwardOutput = true,
             isStaticNetwork = false
         )
+        vNodeSetupResult.task(":$VNODE_SETUP_TASK_NAME")!!.assertTaskSucceeded()
 
         val expectedCommonNames = listOf("Alice", "Bob", "Charlie", "Dave", "NotaryRep1", "MGM")
         val registeredVNodes = verifyRegisteredVNodesInOutput(vNodeSetupResult.output, expectedCommonNames)
 
         // List CPIs and verify output
-        val expectedCpiNames = listOf("MyCorDapp", "NotaryServer", "MGM")
         val actualCpis = runListCPIsTaskAndVerifyOutput(expectedCpiNames)
         val myCorDappCpiChecksum = actualCpis["MyCorDapp"]!!
 
@@ -123,12 +109,15 @@ class SetupNetworkJourneyTest : SmokeTestBase() {
         assertThat(notaryMemberInfo).containsEntry("corda.notary.service.backchain.required", "false")
         assertThat(notaryMemberInfo).containsEntry("corda.notary.service.flow.protocol.name", "com.r3.corda.notary.plugin.nonvalidating")
 
-        // Re-deploy network and check that the CPI checksum is different
+        verifyRedeployNetwork(false, myCorDappCpiChecksum)
+    }
+
+    private fun verifyRedeployNetwork(isStaticNetwork: Boolean, previousMyCorDappCpiChecksum: String) {
         val reDeployNetworkResult = executeWithRunner(
             VNODE_SETUP_TASK_NAME,
             "--info", "--stacktrace",
             forwardOutput = true,
-            isStaticNetwork = false
+            isStaticNetwork = isStaticNetwork
         )
         // VNodes registration is skipped
         assertThat(reDeployNetworkResult.output).doesNotContainPattern(vNodeRegisteredMessage.pattern)
@@ -137,7 +126,7 @@ class SetupNetworkJourneyTest : SmokeTestBase() {
 
         // Verify that the CorDapp has been re-deployed
         val newMyCorDappChecksum = actualCpisAfterReDeploy["MyCorDapp"]!!
-        assertThat(newMyCorDappChecksum).isNotEqualTo(myCorDappCpiChecksum)
+        assertThat(newMyCorDappChecksum).isNotEqualTo(previousMyCorDappCpiChecksum)
     }
 
     private fun verifyRegisteredVNodesInOutput(output: String, expectedCommonNames: List<String>): Map<String, String> {
