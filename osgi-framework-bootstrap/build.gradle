@@ -15,7 +15,7 @@ configurations {
 }
 
 dependencies {
-    implementation 'org.osgi:osgi.core'
+    compileOnly 'org.osgi:osgi.core'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':osgi-framework-api')
     implementation 'org.slf4j:slf4j-api'
@@ -29,6 +29,7 @@ dependencies {
     runtimeOnly libs.jackson.databind
     runtimeOnly libs.jackson.annotations
 
+    testImplementation 'org.osgi:osgi.core'
     testImplementation libs.mockito.core
     testImplementation "org.apache.sling:org.apache.sling.testing.osgi-mock.junit5:$slingVersion"
     testImplementation libs.junit.api
