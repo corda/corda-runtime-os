@@ -1,3 +1,5 @@
+import static aQute.bnd.version.MavenVersion.parseMavenString
+
 // This re-exports the SLF4J V1 API packages including org.slf4j.event and org.slf4j.spi which micrometer and kafka
 // client depends on.
 // This is only used in testOSGi gradle tasks. The real system exports SLF4J from the system bundle.
@@ -18,11 +20,15 @@ dependencies {
 tasks.named('jar', Jar) {
     archiveBaseName = 'corda-slf4jv1'
 
+    ext {
+        bundleVersion = parseMavenString(libs.slf4j.api.get().version).OSGiVersion
+    }
+
     bundle {
         bnd """\
 Bundle-Name: SLF4JV1
 Bundle-SymbolicName: \${project.group}.slf4jv1
-Bundle-Version: \\${cordaProductVersion}
+Bundle-Version: \\${task.bundleVersion}
 Export-Package: \\
      org.slf4j.event;uses:="org.slf4j,org.slf4j.helpers";version=2.0.13,\\
      org.slf4j.event;version=1.7.36,\\
