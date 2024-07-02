@@ -53,8 +53,8 @@ dependencies {
     testRuntimeOnly "org.ow2.asm:asm:$asmVersion"
 
     integrationTestImplementation project(':libs:kotlin-reflection:kotlin-reflection-test-example')
-    integrationTestImplementation 'org.slf4j:slf4j-api'
     integrationTestImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
+    integrationTestImplementation project(':testing:slf4jv1')
     integrationTestImplementation libs.junit
     integrationTestRuntimeOnly libs.junit.engine
     integrationTestRuntimeOnly libs.junit.platform
