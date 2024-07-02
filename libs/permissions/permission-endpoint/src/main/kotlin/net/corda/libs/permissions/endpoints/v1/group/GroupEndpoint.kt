@@ -105,7 +105,8 @@ interface GroupEndpoint : RestResource {
 
     @HttpGET(
         path = "{groupId}",
-        description = "This method retrieves the content of a specified group.",
+        description = "This method retrieves the content of a specified group, " +
+                "including users and groups with this group as parent.",
         responseDescription = """
             The content of the specified group with the following attributes:
             id: Unique server generated identifier for the group
@@ -114,7 +115,10 @@ interface GroupEndpoint : RestResource {
             name: The name of the group
             parentGroupId: The ID of the parent group
             properties: An optional set of key/value properties associated with a group
-            roleAssociations: A set of roles associated with the group"""
+            roleAssociations: A set of roles associated with the group
+            users: A set of users which have this group as their parent group
+            subgroups: A set of groups which have this group as their parent group
+            """
     )
     fun getGroupContent(
         @RestPathParameter(description = "ID of the group to get content.")

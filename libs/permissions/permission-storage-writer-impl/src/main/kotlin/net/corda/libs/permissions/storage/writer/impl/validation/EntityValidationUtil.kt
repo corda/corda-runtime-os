@@ -82,6 +82,34 @@ class EntityValidationUtil(private val entityManager: EntityManager) {
         }
     }
 
+    fun validateGroupIsEmpty(group: Group) {
+        val groupId = group.id
+
+        val subgroupsQuery = """
+            SELECT count(1) FROM ${Group::class.java.simpleName} 
+            WHERE ${Group::parentGroup.name}.${Group::id.name} = :groupId
+        """.trimIndent()
+
+        val numSubgroups = entityManager.createQuery(subgroupsQuery, Long::class.java)
+            .setParameter("groupId", groupId)
+            .singleResult
+
+        val usersQuery = """
+            SELECT count(1) FROM ${User::class.java.simpleName} 
+            WHERE ${User::parentGroup.name}.${Group::id.name} = :groupId
+        """.trimIndent()
+
+        val numUsers = entityManager.createQuery(usersQuery, Long::class.java)
+            .setParameter("groupId", groupId)
+            .singleResult
+
+        if (numSubgroups + numUsers > 0) {
+            throw IllegalStateException("Group '$groupId' is not empty. " +
+                    "$numSubgroups subgroups and $numUsers users are associated with it.")
+        }
+    }
+
+
     fun validateRoleNotAlreadyAssignedToUser(user: User, roleId: String) {
         if (user.roleUserAssociations.any { it.role.id == roleId }) {
             throw EntityAssociationAlreadyExistsException("Role '$roleId' is already associated with User '${user.loginName}'.")

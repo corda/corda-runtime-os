@@ -43,7 +43,29 @@ class GroupWriterImpl(
         request: ChangeGroupParentIdRequest,
         requestUserId: String
     ): AvroGroup {
-        TODO("Not yet implemented")
+        log.debug { "Received request to change parent group of Group ${request.groupId} to ${request.newParentGroupId}" }
+        return entityManagerFactory.transaction { entityManager ->
+
+            val validator = EntityValidationUtil(entityManager)
+            val group = validator.validateAndGetUniqueGroup(request.groupId)
+            val newParentGroup = validator.validateAndGetUniqueGroup(request.newParentGroupId)
+
+            group.parentGroup = newParentGroup
+
+            val updateTimestamp = Instant.now()
+            val changeAudit = ChangeAudit(
+                id = UUID.randomUUID().toString(),
+                updateTimestamp = updateTimestamp,
+                actorUser = requestUserId,
+                changeType = RestPermissionOperation.GROUP_UPDATE,
+                details = "Parent group of Group '${group.id}' changed to '${newParentGroup.id}' by '$requestUserId'."
+            )
+
+            entityManager.merge(group)
+            entityManager.persist(changeAudit)
+
+            group.toAvroGroup()
+        }
     }
 
     override fun addRoleToGroup(
@@ -82,12 +104,12 @@ class GroupWriterImpl(
     }
 
     override fun deleteGroup(request: DeleteGroupRequest, requestUserId: String): AvroGroup {
-        val groupId = request.groupId
-        log.debug { "Received request to delete group: $groupId" }
+        log.debug { "Received request to delete group: ${request.groupId}" }
         return entityManagerFactory.transaction { entityManager ->
 
             val validator = EntityValidationUtil(entityManager)
-            val group = validator.validateAndGetUniqueGroup(groupId)
+            val group = validator.validateAndGetUniqueGroup(request.groupId)
+            validator.validateGroupIsEmpty(group)
 
             val resultGroup = removeGroup(entityManager, requestUserId, group)
 

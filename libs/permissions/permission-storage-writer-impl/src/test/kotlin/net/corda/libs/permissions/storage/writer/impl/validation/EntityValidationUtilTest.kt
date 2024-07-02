@@ -7,9 +7,11 @@ import net.corda.libs.permissions.common.exception.EntityNotFoundException
 import net.corda.permissions.model.Group
 import net.corda.permissions.model.Permission
 import net.corda.permissions.model.Role
+import net.corda.permissions.model.RoleGroupAssociation
 import net.corda.permissions.model.RolePermissionAssociation
 import net.corda.permissions.model.RoleUserAssociation
 import net.corda.permissions.model.User
+import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -129,6 +131,27 @@ class EntityValidationUtilTest {
     }
 
     @Test
+    fun `validateAndGetUniqueGroup returns group when it exists`() {
+        val groupId = "group1"
+        val group = mock<Group>()
+        whenever(entityManager.find(Group::class.java, groupId)).thenReturn(group)
+
+        val result = validator.validateAndGetUniqueGroup(groupId)
+
+        assertEquals(group, result)
+    }
+
+    @Test
+    fun `validateAndGetUniqueGroup throws exception when group does not exist`() {
+        val groupId = "group1"
+        whenever(entityManager.find(Group::class.java, groupId)).thenReturn(null)
+
+        assertThrows<EntityNotFoundException>("Group '$groupId' not found.") {
+            validator.validateAndGetUniqueGroup(groupId)
+        }
+    }
+
+    @Test
     fun validateAndGetOptionalParentGroupReturnsNullWhenNoGroup() {
         assertNull(validator.validateAndGetOptionalParentGroup(null))
     }
@@ -149,6 +172,95 @@ class EntityValidationUtilTest {
 
         val result = validator.validateAndGetOptionalParentGroup("g1")
         assertEquals(group, result)
+    }
+
+    @Test
+    fun `validateRoleNotAlreadyAssignedToGroup does not throw exception when role is not assigned to group`() {
+        val group = mock<Group> {
+            on { roleGroupAssociations }.thenReturn(mutableSetOf())
+        }
+        val roleId = "role1"
+
+        assertDoesNotThrow {
+            validator.validateRoleNotAlreadyAssignedToGroup(group, roleId)
+        }
+    }
+
+    @Test
+    fun `validateRoleNotAlreadyAssignedToGroup throws exception when role is already assigned to group`() {
+        val roleId = "role1"
+        val role = mock<Role> {
+            on { id }.thenReturn(roleId)
+        }
+        val group = mock<Group> {
+            on { id }.thenReturn("group1")
+            on { roleGroupAssociations }.thenReturn(mutableSetOf(RoleGroupAssociation("id", role, this.mock, Instant.now())))
+        }
+
+        assertThrows<EntityAssociationAlreadyExistsException>("Role '$roleId' is already associated with Group '${group.id}'.") {
+            validator.validateRoleNotAlreadyAssignedToGroup(group, roleId)
+        }
+    }
+
+    @Test
+    fun `validateAndGetRoleAssociatedWithGroup returns association when role is associated with group`() {
+        val roleId = "role1"
+        val role = mock<Role> {
+            on { id }.thenReturn(roleId)
+        }
+        val group = mock<Group> {
+            on { id }.thenReturn("group1")
+            on { roleGroupAssociations }.thenReturn(mutableSetOf(RoleGroupAssociation("id", role, this.mock, Instant.now())))
+        }
+
+        val result = validator.validateAndGetRoleAssociatedWithGroup(group, roleId)
+
+        assertEquals(roleId, result.role.id)
+    }
+
+    @Test
+    fun `validateAndGetRoleAssociatedWithGroup throws exception when role is not associated with group`() {
+        val group = mock<Group> {
+            on { id }.thenReturn("group1")
+            on { roleGroupAssociations }.thenReturn(mutableSetOf())
+        }
+        val roleId = "role1"
+
+        assertThrows<EntityAssociationDoesNotExistException>("Role '$roleId' is not associated with Group '${group.id}'.") {
+            validator.validateAndGetRoleAssociatedWithGroup(group, roleId)
+        }
+    }
+
+    @Test
+    fun `validateGroupIsEmpty does not throw exception when group is empty`() {
+        val groupId = "group1"
+        val group = mock<Group> {
+            on { id }.thenReturn(groupId)
+        }
+        val query = mock<TypedQuery<Long>>()
+        whenever(entityManager.createQuery(any(), eq(Long::class.java))).thenReturn(query)
+        whenever(query.setParameter("groupId", groupId)).thenReturn(query)
+        whenever(query.singleResult).thenReturn(0L)
+
+        assertDoesNotThrow {
+            validator.validateGroupIsEmpty(group)
+        }
+    }
+
+    @Test
+    fun `validateGroupIsEmpty throws exception when group is not empty`() {
+        val groupId = "group1"
+        val group = mock<Group> {
+            on { id }.thenReturn(groupId)
+        }
+        val query = mock<TypedQuery<Long>>()
+        whenever(entityManager.createQuery(any(), eq(Long::class.java))).thenReturn(query)
+        whenever(query.setParameter("groupId", groupId)).thenReturn(query)
+        whenever(query.singleResult).thenReturn(1L)
+
+        assertThrows<IllegalStateException>("Group '$groupId' is not empty. 1 subgroups and 1 users are associated with it.") {
+            validator.validateGroupIsEmpty(group)
+        }
     }
 
     @Test

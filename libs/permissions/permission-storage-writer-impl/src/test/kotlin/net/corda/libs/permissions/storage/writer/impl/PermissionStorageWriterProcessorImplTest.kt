@@ -13,6 +13,7 @@ import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.DeleteUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
+import net.corda.libs.permissions.storage.writer.impl.group.GroupWriter
 import net.corda.libs.permissions.storage.writer.impl.permission.PermissionWriter
 import net.corda.libs.permissions.storage.writer.impl.role.RoleWriter
 import net.corda.libs.permissions.storage.writer.impl.user.UserWriter
@@ -65,11 +66,12 @@ class PermissionStorageWriterProcessorImplTest {
 
     private val userWriter = mock<UserWriter>()
     private val roleWriter = mock<RoleWriter>()
+    private val groupWriter = mock<GroupWriter>()
     private val permissionWriter = mock<PermissionWriter>()
     private val permissionStorageReader = mock<PermissionStorageReader>()
 
     private val processor =
-        PermissionStorageWriterProcessorImpl({ permissionStorageReader }, userWriter, roleWriter, permissionWriter)
+        PermissionStorageWriterProcessorImpl({ permissionStorageReader }, userWriter, roleWriter, groupWriter, permissionWriter)
 
     @Test
     fun `receiving invalid request completes exceptionally`() {
