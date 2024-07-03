@@ -39,6 +39,7 @@ internal open class DefaultMethodInvoker(private val invocationMethod: Invocatio
         }
 
         val method = invocationMethod.method
+
         @Suppress("SpreadOperator")
         val invoked = when (args.size) {
             0 -> method.invoke(instance)

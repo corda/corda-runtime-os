@@ -340,7 +340,10 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
         ).also { log.trace { """"Method "$name" to WS endpoint completed.""" } }
     }
 
-    private fun Method.getInvocationMethod(clazz: Class<out RestResource>? = null, transform: ((Any?) -> ResponseEntity<Any?>)? = null): InvocationMethod {
+    private fun Method.getInvocationMethod(
+        clazz: Class<out RestResource>? = null,
+        transform: ((Any?) -> ResponseEntity<Any?>)? = null
+    ): InvocationMethod {
         try {
             log.debug { "Get invocation method for \"${this.name}\"." }
             return InvocationMethod(
