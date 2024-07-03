@@ -338,7 +338,7 @@ interface UserEndpoint : RestResource {
      * Lists properties of a user
      */
     @HttpGET(
-        path = "{loginName}/properties",
+        path = "{loginName}/property",
         description = "This method lists the properties of a user.",
         responseDescription = """
             List of properties, each in the following format:
@@ -358,7 +358,7 @@ interface UserEndpoint : RestResource {
      * Gets all users for propertyKey = value
      */
     @HttpGET(
-        path = "{propertyKey}/{propertyValue}",
+        path = "findByProperty/{propertyKey}/{propertyValue}",
         description = "This method gets all the users that have a specific value given a propertyKey.",
         responseDescription = """
             List of users, each with the following attributes:
