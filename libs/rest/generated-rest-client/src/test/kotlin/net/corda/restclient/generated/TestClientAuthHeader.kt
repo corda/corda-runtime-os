@@ -7,6 +7,7 @@ import net.corda.restclient.generated.infrastructure.ApiClient
 import org.assertj.core.api.AssertionsForClassTypes.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.net.URI
 
@@ -41,23 +42,37 @@ class TestClientAuthHeader {
         return this.mgmClient.getMgmHoldingidentityshorthashInfo("1234")
     }
 
+    @BeforeEach
+    fun resetStaticCredentialsIfNotNull() {
+        ApiClient.username?.let { ApiClient.username = null }
+        ApiClient.password?.let { ApiClient.password = null }
+    }
+
     @Test
     fun defaultCredentialsAreCorrect() {
         val defaultClient = CordaRestClient.createHttpClient(localhost)
         assertThat(defaultClient.echoCredentials()).isEqualTo("admin:admin")
+
+        assertThat(ApiClient.username).isNull()
+        assertThat(ApiClient.password).isNull()
     }
 
     @Test
     fun staticCredentialsAreIgnored() {
         val defaultClient = CordaRestClient.createHttpClient(localhost, "foo", "bar")
         assertThat(defaultClient.echoCredentials()).isEqualTo("foo:bar")
+
+        assertThat(ApiClient.username).isNull()
+        assertThat(ApiClient.password).isNull()
+
         ApiClient.apply {
             username = "foo-static"
             password = "bar-static"
         }
-        assertThat(defaultClient.echoCredentials()).isNotEqualTo("foo-static:bar-static")
-        assertThat(defaultClient.echoCredentials()).isNotEmpty()
         assertThat(defaultClient.echoCredentials()).isEqualTo("foo:bar")
+
+        assertThat(ApiClient.username).isEqualTo("foo-static")
+        assertThat(ApiClient.password).isEqualTo("bar-static")
     }
 
     @Test
@@ -68,10 +83,14 @@ class TestClientAuthHeader {
             username = "user-static"
             password = "password-static"
         }
-        assertThat(client1.echoCredentials()).isNotEqualTo("user-static:password-static")
         assertThat(client1.echoCredentials()).isEqualTo("user-one:password-one")
+        assertThat(client2.echoCredentials()).isEqualTo("user-two:password-two")
 
-        assertThat(client2.echoCredentials()).isNotEqualTo("user-static:password-static")
+        resetStaticCredentialsIfNotNull()
+
+        assertThat(client1.echoCredentials()).isEqualTo("user-one:password-one")
         assertThat(client2.echoCredentials()).isEqualTo("user-two:password-two")
     }
+
+    // TODO: check that default static cred fields are null and not overwritten by the client
 }
