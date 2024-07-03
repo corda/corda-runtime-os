@@ -131,7 +131,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             uniquenessDmlConnection = null,
         )
         val longerWait = getLongerWait()
-        println("Creating Virtual Node: ${request.x500Name}")
+        println("Creating Virtual Node.")
         val shortHashId = VirtualNode(restClient).createAndWaitForActive(request, longerWait)
         println("Holding identity short hash of '$name' is: '$shortHashId'")
         shortHashId
