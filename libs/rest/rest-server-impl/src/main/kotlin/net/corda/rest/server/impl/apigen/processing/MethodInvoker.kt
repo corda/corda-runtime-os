@@ -10,7 +10,6 @@ import net.corda.rest.server.impl.apigen.processing.streams.DurableReturnResult
 import net.corda.rest.server.impl.apigen.processing.streams.FiniteDurableReturnResult
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
-import java.lang.IllegalArgumentException
 import java.util.function.Supplier
 import javax.security.auth.login.FailedLoginException
 
@@ -41,10 +40,15 @@ internal open class DefaultMethodInvoker(private val invocationMethod: Invocatio
 
         val method = invocationMethod.method
         @Suppress("SpreadOperator")
-        return when (args.size) {
+        val invoked = when (args.size) {
             0 -> method.invoke(instance)
             else -> method.invoke(instance, *args)
         }.also { log.trace { "Invoke method \"${invocationMethod.method.name}\" with args size: ${args.size} completed." } }
+        return if (invocationMethod.transform != null) {
+            invocationMethod.transform.invoke(invoked)
+        } else {
+            invoked
+        }
     }
 }
 
