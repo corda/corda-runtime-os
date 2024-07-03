@@ -16,7 +16,7 @@ class LifeCycleTasksTest : SmokeTestBase() {
 
     @BeforeEach
     fun verifyRestIsUnavailable() {
-        catchThrowable { restClient.helloRestClient.getHelloGetprotocolversion() }
+        catchThrowable { restClient.helloRestClient.postHello("Test") }
     }
 
     @AfterEach
