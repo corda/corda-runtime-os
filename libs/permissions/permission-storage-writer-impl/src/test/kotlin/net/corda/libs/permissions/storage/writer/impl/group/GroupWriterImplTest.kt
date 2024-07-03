@@ -23,6 +23,7 @@ import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
+import kotlin.test.assertContains
 
 class GroupWriterImplTest {
 
@@ -256,6 +257,6 @@ class GroupWriterImplTest {
         val audit = auditCaptor.firstValue
         assertNotNull(audit)
         assertEquals(RestPermissionOperation.ADD_ROLE_TO_GROUP, audit.changeType)
-        assertEquals("Role 'roleId' added to Group 'groupId' by '$requestUserId'.", audit.details)
+        assertContains(audit.details, "Role 'roleId' assigned to Group 'groupId' by '$requestUserId'. Created RoleGroupAssociation")
     }
 }
