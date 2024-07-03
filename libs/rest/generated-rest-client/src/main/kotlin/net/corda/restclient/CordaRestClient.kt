@@ -20,7 +20,6 @@ import net.corda.restclient.generated.apis.RBACUserApi
 import net.corda.restclient.generated.apis.VirtualNodeApi
 import net.corda.restclient.generated.apis.VirtualNodeMaintenanceApi
 import net.corda.restclient.generated.infrastructure.ApiClient
-import okhttp3.OkHttpClient
 import java.net.URI
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
@@ -31,8 +30,6 @@ import javax.net.ssl.X509TrustManager
 
 @Suppress("LongParameterList")
 class CordaRestClient(
-    private val baseUrl: String,
-    private val httpClient: OkHttpClient,
     val certificatesClient: CertificateApi,
     val configurationClient: ConfigurationApi,
     val cpiClient: CPIApi,
@@ -135,8 +132,6 @@ class CordaRestClient(
 
             val client = builder.build()
             return CordaRestClient(
-                baseUrl = urlWithDefaultBasePath,
-                httpClient = client,
                 certificatesClient = certificatesClient ?: CertificateApi(urlWithDefaultBasePath, client),
                 configurationClient = configurationClient ?: ConfigurationApi(urlWithDefaultBasePath, client),
                 cpiClient = cpiClient ?: CPIApi(urlWithDefaultBasePath, client),
