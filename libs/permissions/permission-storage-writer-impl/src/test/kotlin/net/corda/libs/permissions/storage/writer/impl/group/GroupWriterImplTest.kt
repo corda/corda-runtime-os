@@ -3,14 +3,19 @@ package net.corda.libs.permissions.storage.writer.impl.group
 import net.corda.data.permissions.management.group.AddRoleToGroupRequest
 import net.corda.data.permissions.management.group.ChangeGroupParentIdRequest
 import net.corda.data.permissions.management.group.CreateGroupRequest
+import net.corda.data.permissions.management.group.DeleteGroupRequest
+import net.corda.data.permissions.management.group.RemoveRoleFromGroupRequest
 import net.corda.libs.permissions.common.exception.EntityAssociationAlreadyExistsException
+import net.corda.libs.permissions.common.exception.EntityAssociationDoesNotExistException
 import net.corda.libs.permissions.common.exception.EntityNotFoundException
+import net.corda.libs.permissions.common.exception.IllegalEntityStateException
 import net.corda.libs.permissions.storage.writer.impl.group.impl.GroupWriterImpl
 import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Group
 import net.corda.permissions.model.RestPermissionOperation
 import net.corda.permissions.model.Role
 import net.corda.permissions.model.RoleGroupAssociation
+import net.corda.permissions.model.User
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -23,6 +28,7 @@ import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
+import javax.persistence.TypedQuery
 import kotlin.test.assertContains
 
 class GroupWriterImplTest {
@@ -258,5 +264,137 @@ class GroupWriterImplTest {
         assertNotNull(audit)
         assertEquals(RestPermissionOperation.ADD_ROLE_TO_GROUP, audit.changeType)
         assertContains(audit.details, "Role 'roleId' assigned to Group 'groupId' by '$requestUserId'. Created RoleGroupAssociation")
+    }
+
+    @Test
+    fun `remove role from group fails when group does not exist`() {
+        val removeRoleFromGroupRequest = RemoveRoleFromGroupRequest().apply {
+            groupId = "groupId"
+            roleId = "roleId"
+        }
+
+        whenever(entityManager.find(Group::class.java, "groupId")).thenReturn(null)
+
+        val e = assertThrows<EntityNotFoundException> {
+            groupWriter.removeRoleFromGroup(removeRoleFromGroupRequest, requestUserId)
+        }
+
+        assertEquals("Group 'groupId' not found.", e.message)
+    }
+
+    @Test
+    fun `remove role from group fails when role is not assigned to group`() {
+        val removeRoleFromGroupRequest = RemoveRoleFromGroupRequest().apply {
+            groupId = "groupId"
+            roleId = "roleId"
+        }
+        val group = Group("groupId", Instant.now(), "groupName", null)
+
+        whenever(entityManager.find(Group::class.java, "groupId")).thenReturn(group)
+
+        val e = assertThrows<EntityAssociationDoesNotExistException> {
+            groupWriter.removeRoleFromGroup(removeRoleFromGroupRequest, requestUserId)
+        }
+
+        assertEquals("Role 'roleId' is not associated with Group 'groupId'.", e.message)
+    }
+
+    @Test
+    fun `remove role from group successfully persists change to group and removes association and writes audit log`() {
+        val removeRoleFromGroupRequest = RemoveRoleFromGroupRequest().apply {
+            groupId = "groupId"
+            roleId = "roleId"
+        }
+        val group = Group("groupId", Instant.now(), "groupName", null)
+        val role = Role("roleId", Instant.now(), "roleName", null)
+        val assoc = RoleGroupAssociation("id", role, group, Instant.now())
+        group.roleGroupAssociations.add(assoc)
+
+        whenever(entityManager.find(Group::class.java, "groupId")).thenReturn(group)
+        whenever(entityManager.find(Role::class.java, "roleId")).thenReturn(role)
+
+        groupWriter.removeRoleFromGroup(removeRoleFromGroupRequest, requestUserId)
+
+        val groupCaptor = argumentCaptor<Group>()
+        val auditCaptor = argumentCaptor<ChangeAudit>()
+
+        inOrder(entityTransaction, entityManager) {
+            verify(entityTransaction).begin()
+            verify(entityManager, times(1)).merge(groupCaptor.capture())
+            verify(entityManager, times(1)).persist(auditCaptor.capture())
+            verify(entityTransaction).commit()
+        }
+
+        val persistedGroup = groupCaptor.firstValue
+        assertNotNull(persistedGroup)
+        assertEquals("groupName", persistedGroup.name)
+        assertTrue(persistedGroup.roleGroupAssociations.none { it.role.id == "roleId" })
+
+        val audit = auditCaptor.firstValue
+        assertNotNull(audit)
+        assertEquals(RestPermissionOperation.DELETE_ROLE_FROM_GROUP, audit.changeType)
+        assertContains(audit.details, "Role 'roleId' unassigned from Group 'groupId' by '$requestUserId'. Removed RoleGroupAssociation")
+    }
+
+    @Test
+    fun `delete a group successfully removes the group and writes audit log`() {
+        val deleteGroupRequest = DeleteGroupRequest().apply {
+            groupId = "groupId"
+        }
+        val group = Group("groupId", Instant.now(), "groupName", null)
+
+        val query = mock<TypedQuery<Long>>()
+        whenever(entityManager.createQuery(any(), eq(Long::class.java))).thenReturn(query)
+        whenever(query.setParameter(any<String>(), any<String>())).thenReturn(query)
+        whenever(query.singleResult).thenReturn(0)
+
+        whenever(entityManager.find(Group::class.java, "groupId")).thenReturn(group)
+
+        groupWriter.deleteGroup(deleteGroupRequest, requestUserId)
+
+        val groupCaptor = argumentCaptor<Group>()
+        val auditCaptor = argumentCaptor<ChangeAudit>()
+
+        inOrder(entityTransaction, entityManager) {
+            verify(entityTransaction).begin()
+            verify(entityManager, times(1)).remove(groupCaptor.capture())
+            verify(entityManager, times(1)).persist(auditCaptor.capture())
+            verify(entityTransaction).commit()
+        }
+
+        val removedGroup = groupCaptor.firstValue
+        assertNotNull(removedGroup)
+        assertEquals("groupName", removedGroup.name)
+
+        val audit = auditCaptor.firstValue
+        assertNotNull(audit)
+        assertEquals(RestPermissionOperation.GROUP_DELETE, audit.changeType)
+        assertEquals("Group '${removedGroup.id}' deleted by '$requestUserId'.", audit.details)
+    }
+
+    @Test
+    fun `delete a non empty group throws an exception`() {
+        val deleteGroupRequest = DeleteGroupRequest().apply {
+            groupId = "groupId"
+        }
+        val group = Group("groupId", Instant.now(), "groupName", null)
+        val user = User("userId", Instant.now(), "userName", "login", true, null, null, null,group)
+        val role = Role("roleId", Instant.now(), "roleName", null)
+        val assoc = RoleGroupAssociation("id", role, group, Instant.now())
+        group.roleGroupAssociations.add(assoc)
+
+        val query = mock<TypedQuery<Long>>()
+        whenever(entityManager.createQuery(any(), eq(Long::class.java))).thenReturn(query)
+        whenever(query.setParameter(any<String>(), any<String>())).thenReturn(query)
+        whenever(query.singleResult).thenReturn(1)
+
+        whenever(entityManager.find(Group::class.java, "groupId")).thenReturn(group)
+        whenever(entityManager.find(User::class.java, "groupId")).thenReturn(user)
+
+        val e = assertThrows<IllegalEntityStateException> {
+            groupWriter.deleteGroup(deleteGroupRequest, requestUserId)
+        }
+
+        assertEquals("Group 'groupId' must be empty. 1 subgroups and 1 users are associated with it.", e.message)
     }
 }

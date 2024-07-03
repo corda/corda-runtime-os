@@ -4,6 +4,7 @@ import net.corda.libs.permissions.common.exception.EntityAlreadyExistsException
 import net.corda.libs.permissions.common.exception.EntityAssociationAlreadyExistsException
 import net.corda.libs.permissions.common.exception.EntityAssociationDoesNotExistException
 import net.corda.libs.permissions.common.exception.EntityNotFoundException
+import net.corda.libs.permissions.common.exception.IllegalEntityStateException
 import net.corda.permissions.model.Group
 import net.corda.permissions.model.Permission
 import net.corda.permissions.model.Role
@@ -258,7 +259,7 @@ class EntityValidationUtilTest {
         whenever(query.setParameter("groupId", groupId)).thenReturn(query)
         whenever(query.singleResult).thenReturn(1L)
 
-        assertThrows<IllegalStateException>("Group '$groupId' is not empty. 1 subgroups and 1 users are associated with it.") {
+        assertThrows<IllegalEntityStateException>("Group '$groupId' is not empty. 1 subgroups and 1 users are associated with it.") {
             validator.validateGroupIsEmpty(group)
         }
     }

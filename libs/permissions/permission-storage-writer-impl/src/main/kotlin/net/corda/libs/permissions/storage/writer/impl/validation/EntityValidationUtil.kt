@@ -4,6 +4,7 @@ import net.corda.libs.permissions.common.exception.EntityAlreadyExistsException
 import net.corda.libs.permissions.common.exception.EntityAssociationAlreadyExistsException
 import net.corda.libs.permissions.common.exception.EntityAssociationDoesNotExistException
 import net.corda.libs.permissions.common.exception.EntityNotFoundException
+import net.corda.libs.permissions.common.exception.IllegalEntityStateException
 import net.corda.permissions.model.Group
 import net.corda.permissions.model.Role
 import net.corda.permissions.model.RoleGroupAssociation
@@ -104,7 +105,7 @@ class EntityValidationUtil(private val entityManager: EntityManager) {
             .singleResult
 
         if (numSubgroups + numUsers > 0) {
-            throw IllegalStateException("Group '$groupId' is not empty. " +
+            throw IllegalEntityStateException("Group '$groupId' must be empty. " +
                     "$numSubgroups subgroups and $numUsers users are associated with it.")
         }
     }
