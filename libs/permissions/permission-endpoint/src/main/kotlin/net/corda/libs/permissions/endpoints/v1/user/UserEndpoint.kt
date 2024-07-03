@@ -297,17 +297,18 @@ interface UserEndpoint : RestResource {
             description = "Property to add.",
             required = true,
             name = "property"
-        )properties: Map<String, String>
+        )
+        properties: Map<String, String>
     ): ResponseEntity<UserResponseType>
 
     /**
-     * Removes properties from a user
+     * Removes property from a user
      */
     @HttpDELETE(
         path = "{loginName}/property/{propertyKey}",
         description = "This method removes a property from a user.",
         responseDescription = """
-            Removed properties from a user with the following attributes:
+            Removed property from a user with the following attributes:
             id: Unique server generated identifier for the user
             version: The version of the user; version 0 is assigned to a newly created user
             updateTimestamp: The date and time when the user was last updated
@@ -380,11 +381,9 @@ interface UserEndpoint : RestResource {
         minVersion = RestApiVersion.C5_3
     )
     fun getUsersByPropertyKey(
-        @RestPathParameter(
-            description = "Property key to look for."
-        ) propertyKey: String,
-        @RestPathParameter(
-            description = "Property value to match on.",
-        ) propertyValue: String
+        @RestPathParameter(description = "Property key to look for.")
+        propertyKey: String,
+        @RestPathParameter(description = "Property value to match on.")
+        propertyValue: String
     ): ResponseEntity<UserResponseType>
 }
