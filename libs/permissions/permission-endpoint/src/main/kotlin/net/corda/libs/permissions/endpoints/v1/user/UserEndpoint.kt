@@ -357,7 +357,7 @@ interface UserEndpoint : RestResource {
      * Gets all users for propertyKey = value
      */
     @HttpGET(
-        path = "property",
+        path = "/{propertyKey}/{propertyValue}",
         description = "This method gets all the users that have a specific value given a propertyKey.",
         responseDescription = """
             List of users, each with the following attributes:
@@ -380,15 +380,11 @@ interface UserEndpoint : RestResource {
         minVersion = RestApiVersion.C5_3
     )
     fun getUsersByPropertyKey(
-        @ClientRequestBodyParameter(
-            description = "Property key to look for.",
-            required = true,
-            name = "propertyKey"
+        @RestPathParameter(
+            description = "Property key to look for."
         ) propertyKey: String,
-        @ClientRequestBodyParameter(
+        @RestPathParameter(
             description = "Property value to match on.",
-            required = true,
-            name = "propertyValue"
         ) propertyValue: String
     ): ResponseEntity<UserResponseType>
 }
