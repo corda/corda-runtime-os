@@ -281,7 +281,7 @@ fun ClusterInfo.getTime(
 ) = SimpleDateFormat("EEE,dd MMM yyyy HH:mm:ss zzz") // RFC 822
     .parse(cluster {
         assertWithRetry {
-            command { initialClient.post("/api/$REST_API_VERSION_PATH/hello/getprotocolversion", "") }
+            command { initialClient.post("/api/$REST_API_VERSION_PATH/hello?addressee=Test", "") }
             condition { it.code == ResponseCode.OK.statusCode }
         }
     }.headers.single { it.first == "Date" }.second
