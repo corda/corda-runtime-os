@@ -286,8 +286,9 @@ interface UserEndpoint : RestResource {
                     value of null means that the user will belong to the root group
             properties: An optional set of key/value properties associated with a user account
             roleAssociations: A set of roles associated with the user account
-
-        """
+            
+        """,
+        minVersion = RestApiVersion.C5_3
     )
     fun addProperty(
         @RestPathParameter(description = "The login name of the user")
@@ -296,7 +297,7 @@ interface UserEndpoint : RestResource {
             description = "Property to add.",
             required = true,
             name = "property"
-        )property: Map<String, String>
+        )properties: Map<String, String>
     ): ResponseEntity<UserResponseType>
 
     /**
@@ -322,7 +323,8 @@ interface UserEndpoint : RestResource {
             properties: An optional set of key/value properties associated with a user account
             roleAssociations: A set of roles associated with the user account
 
-        """
+        """,
+        minVersion = RestApiVersion.C5_3
     )
     fun removeProperty(
         @RestPathParameter(description = "The login name of the user")
@@ -343,7 +345,8 @@ interface UserEndpoint : RestResource {
             lastChangedTimestamp: The time at which the property was last changed.
             value: The value for the property.
 
-        """
+        """,
+        minVersion = RestApiVersion.C5_3
     )
     fun getUserProperties(
         @RestPathParameter(description = "The login name of the user")
@@ -373,7 +376,8 @@ interface UserEndpoint : RestResource {
             properties: An optional set of key/value properties associated with a user account
             roleAssociations: A set of roles associated with the user account
 
-        """
+        """,
+        minVersion = RestApiVersion.C5_3
     )
     fun getUsersByPropertyKey(
         @ClientRequestBodyParameter(

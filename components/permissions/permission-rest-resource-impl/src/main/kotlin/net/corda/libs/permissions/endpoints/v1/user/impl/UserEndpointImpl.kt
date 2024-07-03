@@ -235,7 +235,7 @@ class UserEndpointImpl @Activate constructor(
         )
     }
 
-    override fun addProperty(loginName: String, property: Map<String, String>): ResponseEntity<UserResponseType> {
+    override fun addProperty(loginName: String, properties: Map<String, String>): ResponseEntity<UserResponseType> {
         TODO("CORE-20757")
     }
 
