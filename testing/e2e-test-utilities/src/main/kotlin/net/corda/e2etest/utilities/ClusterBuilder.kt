@@ -863,8 +863,6 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     fun getCryptoWrappingKeysRotationStatus(tenantId: String) =
         initialClient.get("/api/$REST_API_VERSION_PATH/wrappingkey/rotation/${tenantId}")
 
-    fun getWrappingKeysProtocolVersion() = initialClient.get("/api/$REST_API_VERSION_PATH/wrappingkey/getprotocolversion")
-
 }
 
 fun <T> cluster(
