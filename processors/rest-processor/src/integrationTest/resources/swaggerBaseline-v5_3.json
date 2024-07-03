@@ -3416,35 +3416,6 @@
         }
       }
     },
-    "/user/getprotocolversion" : {
-      "get" : {
-        "tags" : [ "RBAC User" ],
-        "description" : "Returns the version of the endpoint",
-        "operationId" : "get_user_getprotocolversion",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "An integer value specifying the version of the endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "integer",
-                  "format" : "int32",
-                  "nullable" : false,
-                  "example" : 0
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
     "/user/otheruserpassword" : {
       "post" : {
         "tags" : [ "RBAC User" ],
@@ -3672,7 +3643,7 @@
             "description" : "Forbidden"
           }
         }
-    },
+      },
       "post" : {
         "tags" : [ "RBAC User" ],
         "description" : "This method adds a property to a user.",
