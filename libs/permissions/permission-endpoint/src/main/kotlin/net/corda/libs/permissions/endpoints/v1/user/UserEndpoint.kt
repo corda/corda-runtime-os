@@ -268,7 +268,7 @@ interface UserEndpoint : RestResource {
      * Add properties to a user
      */
     @HttpPOST(
-        path = "{loginName}/property/",
+        path = "{loginName}/property",
         description = "This method adds a property to a user.",
         responseDescription = """
             Added properties to a user with the following attributes:
