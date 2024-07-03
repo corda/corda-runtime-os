@@ -26,6 +26,7 @@ import net.corda.rest.tools.annotations.extensions.path
 import net.corda.rest.tools.annotations.extensions.title
 import net.corda.rest.tools.annotations.validation.RestInterfaceValidator
 import net.corda.rest.tools.isStaticallyExposedGet
+import net.corda.rest.tools.maxVersion
 import net.corda.rest.tools.methodDescription
 import net.corda.rest.tools.responseDescription
 import net.corda.utilities.debug
@@ -169,7 +170,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
                         method.kotlinFunction?.returnType?.isMarkedNullable ?: false
                     ),
                     method.getInvocationMethod(clazz),
-                    retrieveApiVersionsSet(annotation.minVersion, annotation.maxVersion)
+                    retrieveApiVersionsSet(annotation.minVersion, method.maxVersion)
                 )
             }
         }

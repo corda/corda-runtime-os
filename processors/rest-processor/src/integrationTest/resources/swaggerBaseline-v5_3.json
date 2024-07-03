@@ -224,35 +224,6 @@
         }
       }
     },
-    "/certificate/getprotocolversion" : {
-      "get" : {
-        "tags" : [ "Certificate" ],
-        "description" : "Returns the version of the endpoint",
-        "operationId" : "get_certificate_getprotocolversion",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "An integer value specifying the version of the endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "integer",
-                  "format" : "int32",
-                  "nullable" : false,
-                  "example" : 0
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
     "/certificate/vnode/{holdingidentityid}/{usage}" : {
       "get" : {
         "tags" : [ "Certificate" ],
@@ -535,35 +506,6 @@
         }
       }
     },
-    "/config/getprotocolversion" : {
-      "get" : {
-        "tags" : [ "Configuration" ],
-        "description" : "Returns the version of the endpoint",
-        "operationId" : "get_config_getprotocolversion",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "An integer value specifying the version of the endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "integer",
-                  "format" : "int32",
-                  "nullable" : false,
-                  "example" : 0
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
     "/config/{section}" : {
       "get" : {
         "tags" : [ "Configuration" ],
@@ -671,35 +613,6 @@
         }
       }
     },
-    "/cpi/getprotocolversion" : {
-      "get" : {
-        "tags" : [ "CPI" ],
-        "description" : "Returns the version of the endpoint",
-        "operationId" : "get_cpi_getprotocolversion",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "An integer value specifying the version of the endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "integer",
-                  "format" : "int32",
-                  "nullable" : false,
-                  "example" : 0
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
     "/cpi/status/{id}" : {
       "get" : {
         "tags" : [ "CPI" ],
@@ -724,35 +637,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/CpiUploadStatus"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
-    "/flow/getprotocolversion" : {
-      "get" : {
-        "tags" : [ "Flow Management" ],
-        "description" : "Returns the version of the endpoint",
-        "operationId" : "get_flow_getprotocolversion",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "An integer value specifying the version of the endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "integer",
-                  "format" : "int32",
-                  "nullable" : false,
-                  "example" : 0
                 }
               }
             }
@@ -956,35 +840,6 @@
         }
       }
     },
-    "/flowclass/getprotocolversion" : {
-      "get" : {
-        "tags" : [ "Flow Info" ],
-        "description" : "Returns the version of the endpoint",
-        "operationId" : "get_flowclass_getprotocolversion",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "An integer value specifying the version of the endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "integer",
-                  "format" : "int32",
-                  "nullable" : false,
-                  "example" : 0
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
     "/flowclass/{holdingidentityshorthash}" : {
       "get" : {
         "tags" : [ "Flow Info" ],
@@ -1046,35 +901,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/GroupResponseType"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
-    "/group/getprotocolversion" : {
-      "get" : {
-        "tags" : [ "RBAC Group" ],
-        "description" : "Returns the version of the endpoint",
-        "operationId" : "get_group_getprotocolversion",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "An integer value specifying the version of the endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "integer",
-                  "format" : "int32",
-                  "nullable" : false,
-                  "example" : 0
                 }
               }
             }
@@ -1341,64 +1167,6 @@
         }
       }
     },
-    "/hello/getprotocolversion" : {
-      "get" : {
-        "tags" : [ "Hello Rest" ],
-        "description" : "Returns the version of the endpoint",
-        "operationId" : "get_hello_getprotocolversion",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "An integer value specifying the version of the endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "integer",
-                  "format" : "int32",
-                  "nullable" : false,
-                  "example" : 0
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
-    "/hsm/getprotocolversion" : {
-      "get" : {
-        "tags" : [ "HSM" ],
-        "description" : "Returns the version of the endpoint",
-        "operationId" : "get_hsm_getprotocolversion",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "An integer value specifying the version of the endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "integer",
-                  "format" : "int32",
-                  "nullable" : false,
-                  "example" : 0
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
     "/hsm/soft/{tenantid}/{category}" : {
       "post" : {
         "tags" : [ "HSM" ],
@@ -1482,35 +1250,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/HsmAssociationInfo"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
-    "/key/getprotocolversion" : {
-      "get" : {
-        "tags" : [ "Key Management" ],
-        "description" : "Returns the version of the endpoint",
-        "operationId" : "get_key_getprotocolversion",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "An integer value specifying the version of the endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "integer",
-                  "format" : "int32",
-                  "nullable" : false,
-                  "example" : 0
                 }
               }
             }
@@ -1901,35 +1640,6 @@
         }
       }
     },
-    "/maintenance/virtualnode/getprotocolversion" : {
-      "get" : {
-        "tags" : [ "Virtual Node Maintenance" ],
-        "description" : "Returns the version of the endpoint",
-        "operationId" : "get_maintenance_virtualnode_getprotocolversion",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "An integer value specifying the version of the endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "integer",
-                  "format" : "int32",
-                  "nullable" : false,
-                  "example" : 0
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
     "/maintenance/virtualnode/{virtualnodeshortid}/vault-schema/force-resync" : {
       "post" : {
         "tags" : [ "Virtual Node Maintenance" ],
@@ -1950,35 +1660,6 @@
         "responses" : {
           "200" : {
             "description" : "A list of the shortIDs or the exception encountered"
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
-    "/members/getprotocolversion" : {
-      "get" : {
-        "tags" : [ "Member Lookup" ],
-        "description" : "Returns the version of the endpoint",
-        "operationId" : "get_members_getprotocolversion",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "An integer value specifying the version of the endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "integer",
-                  "format" : "int32",
-                  "nullable" : false,
-                  "example" : 0
-                }
-              }
-            }
           },
           "401" : {
             "description" : "Unauthorized"
@@ -2143,35 +1824,6 @@
         }
       }
     },
-    "/membership/getprotocolversion" : {
-      "get" : {
-        "tags" : [ "Member Registration" ],
-        "description" : "Returns the version of the endpoint",
-        "operationId" : "get_membership_getprotocolversion",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "An integer value specifying the version of the endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "integer",
-                  "format" : "int32",
-                  "nullable" : false,
-                  "example" : 0
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
     "/membership/{holdingidentityshorthash}" : {
       "get" : {
         "tags" : [ "Member Registration" ],
@@ -2295,35 +1947,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/RestRegistrationRequestStatus"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
-    "/mgm/getprotocolversion" : {
-      "get" : {
-        "tags" : [ "MGM" ],
-        "description" : "Returns the version of the endpoint",
-        "operationId" : "get_mgm_getprotocolversion",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "An integer value specifying the version of the endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "integer",
-                  "format" : "int32",
-                  "nullable" : false,
-                  "example" : 0
                 }
               }
             }
@@ -3233,35 +2856,6 @@
         }
       }
     },
-    "/mgmadmin/getprotocolversion" : {
-      "get" : {
-        "tags" : [ "MGM Admin" ],
-        "description" : "Returns the version of the endpoint",
-        "operationId" : "get_mgmadmin_getprotocolversion",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "An integer value specifying the version of the endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "integer",
-                  "format" : "int32",
-                  "nullable" : false,
-                  "example" : 0
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
     "/mgmadmin/{holdingidentityshorthash}/force-decline/{requestid}" : {
       "post" : {
         "tags" : [ "MGM Admin" ],
@@ -3293,35 +2887,6 @@
         "responses" : {
           "200" : {
             "description" : "Success"
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
-    "/network/getprotocolversion" : {
-      "get" : {
-        "tags" : [ "Network" ],
-        "description" : "Returns the version of the endpoint",
-        "operationId" : "get_network_getprotocolversion",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "An integer value specifying the version of the endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "integer",
-                  "format" : "int32",
-                  "nullable" : false,
-                  "example" : 0
-                }
-              }
-            }
           },
           "401" : {
             "description" : "Unauthorized"
@@ -3532,35 +3097,6 @@
         }
       }
     },
-    "/permission/getprotocolversion" : {
-      "get" : {
-        "tags" : [ "RBAC Permission" ],
-        "description" : "Returns the version of the endpoint",
-        "operationId" : "get_permission_getprotocolversion",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "An integer value specifying the version of the endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "integer",
-                  "format" : "int32",
-                  "nullable" : false,
-                  "example" : 0
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
     "/permission/{id}" : {
       "get" : {
         "tags" : [ "RBAC Permission" ],
@@ -3651,35 +3187,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/RoleResponseType"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
-    "/role/getprotocolversion" : {
-      "get" : {
-        "tags" : [ "RBAC Role" ],
-        "description" : "Returns the version of the endpoint",
-        "operationId" : "get_role_getprotocolversion",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "An integer value specifying the version of the endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "integer",
-                  "format" : "int32",
-                  "nullable" : false,
-                  "example" : 0
                 }
               }
             }
@@ -4524,35 +4031,6 @@
         }
       }
     },
-    "/virtualnode/getprotocolversion" : {
-      "get" : {
-        "tags" : [ "Virtual Node" ],
-        "description" : "Returns the version of the endpoint",
-        "operationId" : "get_virtualnode_getprotocolversion",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "An integer value specifying the version of the endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "integer",
-                  "format" : "int32",
-                  "nullable" : false,
-                  "example" : 0
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
     "/virtualnode/status/{requestid}" : {
       "get" : {
         "tags" : [ "Virtual Node" ],
@@ -4832,35 +4310,6 @@
         }
       }
     },
-    "/wrappingkey/getprotocolversion" : {
-      "get" : {
-        "tags" : [ "Key Rotation" ],
-        "description" : "Returns the version of the endpoint",
-        "operationId" : "get_wrappingkey_getprotocolversion",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "An integer value specifying the version of the endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "integer",
-                  "format" : "int32",
-                  "nullable" : false,
-                  "example" : 0
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
     "/wrappingkey/rotation/{tenantid}" : {
       "get" : {
         "tags" : [ "Key Rotation" ],
@@ -5010,7 +4459,6 @@
             "example" : "string"
           },
           "status" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "IN_PROGRESS",
             "enum" : [ "ACCEPTED", "IN_PROGRESS", "SUCCEEDED", "FAILED", "ABORTED" ]
@@ -5078,7 +4526,6 @@
       },
       "ChangeOtherUserPasswordWrapperRequest" : {
         "required" : [ "password", "username" ],
-        "type" : "object",
         "properties" : {
           "password" : {
             "type" : "string",
@@ -5308,7 +4755,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -5403,7 +4849,6 @@
             "example" : "string"
           },
           "json" : {
-            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
@@ -5488,7 +4933,6 @@
       },
       "GenerateCsrWrapperRequest" : {
         "required" : [ "x500Name" ],
-        "type" : "object",
         "properties" : {
           "contextMap" : {
             "type" : "object",
@@ -5787,37 +5231,31 @@
             "example" : "string"
           },
           "cryptoDdlConnection" : {
-            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "cryptoDmlConnection" : {
-            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "uniquenessDdlConnection" : {
-            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "uniquenessDmlConnection" : {
-            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "vaultDdlConnection" : {
-            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "vaultDmlConnection" : {
-            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
@@ -6009,7 +5447,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -6053,7 +5490,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -6090,7 +5526,6 @@
             "example" : "string"
           },
           "status" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "REVOKED",
             "enum" : [ "AVAILABLE", "REVOKED", "CONSUMED", "AUTO_INVALIDATED" ]
@@ -6259,7 +5694,6 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "registrationStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "SENT_TO_MGM",
             "enum" : [ "NEW", "SENT_TO_MGM", "RECEIVED_BY_MGM", "STARTED_PROCESSING_BY_MGM", "PENDING_MEMBER_VERIFICATION", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "INVALID", "FAILED", "APPROVED" ]
@@ -6374,7 +5808,6 @@
             "example" : "string"
           },
           "inactiveResponseType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "IGNORE",
             "enum" : [ "ERROR", "IGNORE" ]
@@ -6430,7 +5863,6 @@
             "example" : "string"
           },
           "requestBody" : {
-            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : false,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
@@ -6481,7 +5913,6 @@
         "type" : "object",
         "properties" : {
           "config" : {
-            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : false,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
@@ -6532,37 +5963,31 @@
         "type" : "object",
         "properties" : {
           "cryptoDdlConnection" : {
-            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "cryptoDmlConnection" : {
-            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "uniquenessDdlConnection" : {
-            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "uniquenessDmlConnection" : {
-            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "vaultDdlConnection" : {
-            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "vaultDmlConnection" : {
-            "type" : "object",
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
             "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
@@ -6691,19 +6116,16 @@
             "$ref" : "#/components/schemas/RouteConfiguration"
           },
           "flowOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowP2pOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowStartOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
@@ -6732,7 +6154,6 @@
             "example" : "string"
           },
           "vaultDbOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
