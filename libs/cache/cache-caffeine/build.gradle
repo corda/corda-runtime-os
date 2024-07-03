@@ -16,7 +16,7 @@ dependencies {
     implementation 'net.corda:corda-base'
     api libs.caffeine
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation 'org.slf4j:slf4j-api'
+    implementation libs.slf4j.api
 
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
 }

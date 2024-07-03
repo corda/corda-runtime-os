@@ -9,7 +9,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation 'org.slf4j:slf4j-api'
+    implementation libs.slf4j.api
 }
 
 processResources {

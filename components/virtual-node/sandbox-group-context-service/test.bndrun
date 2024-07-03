@@ -46,7 +46,7 @@
     bnd.identity;id='net.corda.test-impl-two',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
-    bnd.identity;id='net.corda.slf4jv1',\
+    bnd.identity;id='net.corda.testing.slf4jv1',\
     bnd.identity;id='slf4j.simple'
 
 -runstartlevel: \

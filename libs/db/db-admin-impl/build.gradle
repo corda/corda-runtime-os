@@ -9,7 +9,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
     compileOnly "org.osgi:osgi.annotation"
-    implementation "org.slf4j:slf4j-api"
+    implementation libs.slf4j.api
     compileOnly "org.osgi:org.osgi.service.component.annotations"
     // Commons IO is needed in liquibase which causes OSGi enabled liquibase tests to fail unless it is imported
     implementation libs.commonsio
