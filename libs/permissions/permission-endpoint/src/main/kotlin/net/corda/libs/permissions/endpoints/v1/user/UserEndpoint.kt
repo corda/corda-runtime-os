@@ -358,7 +358,7 @@ interface UserEndpoint : RestResource {
      * Gets all users for propertyKey = value
      */
     @HttpGET(
-        path = "/{propertyKey}/{propertyValue}",
+        path = "{propertyKey}/{propertyValue}",
         description = "This method gets all the users that have a specific value given a propertyKey.",
         responseDescription = """
             List of users, each with the following attributes:
