@@ -4,6 +4,7 @@ import io.javalin.http.Context
 import io.javalin.http.Header
 import io.javalin.http.UploadedFile
 import io.javalin.json.JsonMapper
+import io.javalin.security.BasicAuthCredentials
 import net.corda.data.rest.PasswordExpiryStatus
 import net.corda.rest.server.impl.security.RestAuthenticationProvider
 
@@ -60,6 +61,14 @@ internal class ClientHttpRequestContext(private val ctx: Context) : ClientReques
 
     override fun addPasswordExpiryHeader(expiryStatus: PasswordExpiryStatus) {
         ctx.res().addHeader(Header.WARNING, "199 - PasswordExpiryStatus is $expiryStatus")
+    }
+
+    override fun basicAuthCredentialsExist(): Boolean {
+        return ctx.basicAuthCredentials() != null
+    }
+
+    override fun basicAuthCredentials(): BasicAuthCredentials {
+        return ctx.basicAuthCredentials()!!
     }
 
     private fun addHeaderValues(values: Iterable<String>) {
