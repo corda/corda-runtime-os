@@ -1,5 +1,6 @@
 package net.corda.rest.server.impl.context
 
+import io.javalin.http.Context
 import io.javalin.http.Header
 import io.javalin.http.UploadedFile
 import io.javalin.json.JsonMapper
@@ -101,7 +102,7 @@ interface ClientRequestContext {
      * Returns a Boolean which is true if there is an Authorization header with
      * Basic auth credentials. Returns false otherwise.
      */
-    fun basicAuthCredentialsExist(): Boolean = hasBasicAuthCredentials(header(Header.AUTHORIZATION))
+    fun basicAuthCredentialsExist(): Boolean
 
     /**
      * Gets basic-auth credentials from the request, or throws.
@@ -109,21 +110,5 @@ interface ClientRequestContext {
      * Returns a wrapper object [BasicAuthCredentials] which contains the
      * Base64 decoded username and password from the Authorization header.
      */
-    fun basicAuthCredentials(): BasicAuthCredentials = getBasicAuthCredentials(header(Header.AUTHORIZATION))
-
-    fun hasBasicAuthCredentials(header: String?): Boolean {
-        return header != null && header.startsWith("Basic")
-    }
-
-    fun getBasicAuthCredentials(header: String?): BasicAuthCredentials {
-        if (header == null || !header.startsWith("Basic")) {
-            throw IllegalArgumentException("No Basic Auth credentials")
-        }
-
-        val base64Credentials = header.substring("Basic".length).trim()
-        val credentials = String(Base64.getDecoder().decode(base64Credentials), Charsets.UTF_8)
-        val usernameAndPassword = credentials.split(":", limit = 2)
-
-        return BasicAuthCredentials(usernameAndPassword[0], usernameAndPassword[1])
-    }
+    fun basicAuthCredentials(): BasicAuthCredentials
 }
