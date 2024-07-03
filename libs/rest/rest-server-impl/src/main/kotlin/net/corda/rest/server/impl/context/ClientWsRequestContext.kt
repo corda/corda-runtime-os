@@ -1,6 +1,5 @@
 package net.corda.rest.server.impl.context
 
-import io.javalin.http.Context
 import io.javalin.security.BasicAuthCredentials
 import io.javalin.websocket.WsContext
 import java.lang.UnsupportedOperationException
