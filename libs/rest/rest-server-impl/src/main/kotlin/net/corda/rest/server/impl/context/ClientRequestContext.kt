@@ -1,13 +1,10 @@
 package net.corda.rest.server.impl.context
 
-import io.javalin.http.Context
-import io.javalin.http.Header
 import io.javalin.http.UploadedFile
 import io.javalin.json.JsonMapper
 import io.javalin.security.BasicAuthCredentials
 import net.corda.data.rest.PasswordExpiryStatus
 import net.corda.rest.server.impl.security.RestAuthenticationProvider
-import java.util.Base64
 
 /**
  * Abstract HTTP request or WebSocket request
