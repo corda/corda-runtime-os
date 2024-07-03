@@ -26,7 +26,6 @@ class DefaultCredentialResolverTest {
         whenever(req()).thenReturn(req)
         whenever(res()).thenReturn(res)
         whenever(header(any())).thenCallRealMethod()
-        whenever(basicAuthCredentials()).thenCallRealMethod()
     }
     private val context = ClientHttpRequestContext(ctx)
     private val resolver = DefaultCredentialResolver()

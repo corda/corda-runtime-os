@@ -63,14 +63,6 @@ internal class ClientHttpRequestContext(private val ctx: Context) : ClientReques
         ctx.res().addHeader(Header.WARNING, "199 - PasswordExpiryStatus is $expiryStatus")
     }
 
-    override fun basicAuthCredentialsExist(): Boolean {
-        return ctx.basicAuthCredentials() != null
-    }
-
-    override fun basicAuthCredentials(): BasicAuthCredentials {
-        return ctx.basicAuthCredentials()!!
-    }
-
     private fun addHeaderValues(values: Iterable<String>) {
         values.forEach {
             ctx.res().addHeader(Header.WWW_AUTHENTICATE, it)

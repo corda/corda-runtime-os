@@ -1,6 +1,5 @@
 package net.corda.rest.server.impl.context
 
-import io.javalin.security.BasicAuthCredentials
 import io.javalin.websocket.WsContext
 import java.lang.UnsupportedOperationException
 
@@ -29,14 +28,6 @@ class ClientWsRequestContext(private val ctx: WsContext) : ClientRequestContext 
 
     override fun formParamMap(): Map<String, List<String>> {
         throw UnsupportedOperationException()
-    }
-
-    override fun basicAuthCredentialsExist(): Boolean {
-        TODO("Not supported")
-    }
-
-    override fun basicAuthCredentials(): BasicAuthCredentials {
-        TODO("Not supported")
     }
 
     override val queryString: String?
