@@ -1,10 +1,10 @@
 package net.corda.libs.permissions.storage.reader
 
+import net.corda.lifecycle.Resource
 import net.corda.data.permissions.Group as AvroGroup
 import net.corda.data.permissions.Permission as AvroPermission
 import net.corda.data.permissions.Role as AvroRole
 import net.corda.data.permissions.User as AvroUser
-import net.corda.lifecycle.Resource
 
 /**
  * The [PermissionStorageReader] reads permission data from storage and pushes them into a compacted topic in the message bus.

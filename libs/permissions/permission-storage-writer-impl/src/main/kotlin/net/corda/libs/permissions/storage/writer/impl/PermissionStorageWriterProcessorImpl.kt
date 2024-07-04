@@ -42,7 +42,7 @@ class PermissionStorageWriterProcessorImpl(
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    @Suppress("ComplexMethod")
+    @Suppress("ComplexMethod", "LongMethod")
     override fun onNext(request: PermissionManagementRequest, respFuture: CompletableFuture<PermissionManagementResponse>) {
         try {
             val permissionStorageReader = requireNotNull(permissionStorageReaderSupplier.get())

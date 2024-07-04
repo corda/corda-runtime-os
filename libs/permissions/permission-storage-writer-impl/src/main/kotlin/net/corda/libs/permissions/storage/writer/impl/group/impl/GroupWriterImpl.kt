@@ -1,6 +1,10 @@
 package net.corda.libs.permissions.storage.writer.impl.group.impl
 
-import net.corda.data.permissions.management.group.*
+import net.corda.data.permissions.management.group.AddRoleToGroupRequest
+import net.corda.data.permissions.management.group.ChangeGroupParentIdRequest
+import net.corda.data.permissions.management.group.CreateGroupRequest
+import net.corda.data.permissions.management.group.DeleteGroupRequest
+import net.corda.data.permissions.management.group.RemoveRoleFromGroupRequest
 import net.corda.libs.permissions.storage.common.converter.toAvroGroup
 import net.corda.libs.permissions.storage.writer.impl.group.GroupWriter
 import net.corda.libs.permissions.storage.writer.impl.validation.EntityValidationUtil
