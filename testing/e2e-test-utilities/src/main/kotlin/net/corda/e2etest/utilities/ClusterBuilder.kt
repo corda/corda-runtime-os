@@ -384,6 +384,15 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         return body.joinToString(prefix = "{", postfix = "}")
     }
 
+    private fun createRbacGroupBody(name: String, parentGroupId: String?): String {
+        val body: List<String> = mutableListOf(
+            """"name": "$name""""
+        ).apply {
+            parentGroupId?.let { add(""""parentGroupId": "$it"""") }
+        }
+        return body.joinToString(prefix = "{", postfix = "}")
+    }
+
     @Suppress("unused")
     fun changeUserPasswordSelf(password: String) =
         initialClient.post(
@@ -768,6 +777,48 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     /** Remove the specified permission from the specified role */
     fun removePermissionFromRole(roleId: String, permissionId: String) =
         initialClient.delete("/api/$REST_API_VERSION_PATH/role/$roleId/permission/$permissionId")
+
+    @Suppress("unused")
+    // This method is used to create a new RBAC group
+    fun createRbacGroup(name: String, parentGroupId: String?): SimpleResponse {
+        return initialClient.post("/api/$REST_API_VERSION_PATH/group", createRbacGroupBody(name, parentGroupId))
+    }
+
+    @Suppress("unused")
+    // This method is used to retrieve an existing RBAC group
+    fun getRbacGroup(groupId: String): SimpleResponse {
+        return initialClient.get("/api/$REST_API_VERSION_PATH/group/$groupId")
+    }
+
+    @Suppress("unused")
+    // This method is used to delete an existing RBAC group
+    fun deleteRbacGroup(groupId: String): SimpleResponse {
+        return initialClient.delete("/api/$REST_API_VERSION_PATH/group/$groupId")
+    }
+
+    @Suppress("unused")
+    // This method is used to change the parent group of an existing RBAC group
+    fun changeParentGroup(groupId: String, newParentGroupId: String): SimpleResponse {
+        return initialClient.put("/api/$REST_API_VERSION_PATH/group/$groupId/parent/changeParentId/$newParentGroupId", "")
+    }
+
+    @Suppress("unused")
+    // This method is used to add a role to an existing RBAC group
+    fun addRoleToGroup(groupId: String, roleId: String): SimpleResponse {
+        return initialClient.put("/api/$REST_API_VERSION_PATH/group/$groupId/role/$roleId", "")
+    }
+
+    @Suppress("unused")
+    // This method is used to remove a role from an existing RBAC group
+    fun removeRoleFromGroup(groupId: String, roleId: String): SimpleResponse {
+        return initialClient.delete("/api/$REST_API_VERSION_PATH/group/$groupId/role/$roleId")
+    }
+
+    @Suppress("unused")
+    // This method is used to get the content of an existing RBAC group
+    fun getGroupContent(groupId: String): SimpleResponse {
+        return initialClient.get("/api/$REST_API_VERSION_PATH/group/$groupId")
+    }
 
     /** Start a flow */
     fun flowStart(
