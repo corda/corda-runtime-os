@@ -14,7 +14,7 @@ javalinVersion = "6.1.7-SNAPSHOT"
 jcipAnnotationsVersion = "1.0_2"
 # This version of Jetty must be the same major version as used by Javalin, please see above.
 # Once Javalin version is upgraded to the latest, this override may be removed.
-jettyVersion = "11.0.16"
+jettyVersion = "11.0.21"
 micrometerVersion = "1.12.4"
 nimbusVersion = "11.13"
 kafkaClientVersion = "3.7.0_1"
