@@ -56,11 +56,6 @@ class CordaRestClient(
 
         /**
          * Create an instance of CordaRestClient with the given baseUrl, username and password.
-         * Please note, if you use this multiple times with different credentials, you will be overwriting the previous credentials.
-         * e.g.
-         * val adminClient = createHttpClient(baseUrl, "admin", adminPassword)
-         * val userClient = createHttpClient(baseUrl, "user", userPassword)
-         * The `adminClient` will have the credentials of the `userClient` after the second call.
          *
          * @param baseUrl The base URL of the Corda node.
          * @param username The username to authenticate with.
