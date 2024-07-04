@@ -20,6 +20,7 @@ import net.corda.restclient.generated.apis.RBACUserApi
 import net.corda.restclient.generated.apis.VirtualNodeApi
 import net.corda.restclient.generated.apis.VirtualNodeMaintenanceApi
 import net.corda.restclient.generated.infrastructure.ApiClient
+import okhttp3.OkHttpClient
 import java.net.URI
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
@@ -111,14 +112,17 @@ class CordaRestClient(
 
             val urlWithDefaultBasePath = baseUrl.toString() + defaultBasePath
 
-            val builder = ApiClient.builder
+            val builder = OkHttpClient.Builder()
 
             // Always add the basic auth header with the supplied credentials
             builder.addInterceptor { chain ->
                 val request = chain.request().newBuilder()
                     .header("Authorization", okhttp3.Credentials.basic(username, password))
                     .build()
-                chain.proceed(request)
+                println("!!! Using credentials $username:$password to authenticate with ${request.url}")
+                val response = chain.proceed(request)
+                println("!!! Response code: ${response.code}")
+                response
             }
 
             // Disable SSL verification if insecure is true
