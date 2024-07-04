@@ -79,13 +79,7 @@ object Permissions {
         "CreateRole" to "POST:/api/$VERSION_PATH_REGEX/role",
         "GetRole" to "GET:/api/$VERSION_PATH_REGEX/role/$UUID_REGEX",
         "AddPermissionToRole" to "PUT:/api/$VERSION_PATH_REGEX/role/$UUID_REGEX/permission/$UUID_REGEX",
-        "DeletePermissionFromRole" to "DELETE:/api/$VERSION_PATH_REGEX/role/$UUID_REGEX/permission/$UUID_REGEX",
-
-        // Property manipulation permissions
-        "AddPropertyToUser" to "POST:/api/$VERSION_PATH_REGEX/user/${RbacKeys.USER_URL_REGEX}/property",
-        "DeletePropertyFromUser" to "DELETE:/api/$VERSION_PATH_REGEX/user/${RbacKeys.USER_URL_REGEX}/property/*",
-        "GetUserProperties" to "GET:/api/$VERSION_PATH_REGEX/user/${RbacKeys.USER_URL_REGEX}/property",
-        "GetUsersByProperty" to "GET:/api/$VERSION_PATH_REGEX/user/findByProperty/*/*"
+        "DeletePermissionFromRole" to "DELETE:/api/$VERSION_PATH_REGEX/role/$UUID_REGEX/permission/$UUID_REGEX"
     ).toMap()
 
     val vNodeCreator: Map<String, String> = listOf(
