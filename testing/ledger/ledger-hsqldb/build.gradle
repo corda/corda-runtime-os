@@ -16,7 +16,7 @@ dependencies {
     implementation project(':libs:ledger:ledger-utxo-data')
     implementation project(':libs:utilities')
     implementation project(':testing:db-hsqldb-json')
-    implementation 'org.slf4j:slf4j-api'
+    implementation libs.slf4j.api
     runtimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
 
     testRuntimeOnly libs.slf4j.simple

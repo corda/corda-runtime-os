@@ -1,8 +1,8 @@
 package net.corda.gradle.plugin.cordalifecycle
 
-import kong.unirest.Unirest
 import net.corda.gradle.plugin.configuration.PluginConfiguration
 import net.corda.gradle.plugin.configuration.ProjectContext
+import net.corda.schema.configuration.ConfigKeys.RootConfigKey
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.model.ObjectFactory
@@ -94,18 +94,15 @@ open class UpdateClusterConfig @Inject constructor(objects: ObjectFactory) : Def
             return
         }
         val helper = EnvironmentSetupHelper()
-        Unirest.config().verifySsl(false)
-        val configSection = "corda.messaging"
-        val configVersion = helper.getConfigVersion(pc.cordaClusterURL, pc.cordaRestUser, pc.cordaRestPassword, configSection)
+        val configSection = RootConfigKey.MESSAGING
+        val configVersion = helper.getConfigVersion(pc.restClient, configSection)
         val configBody = """
                 "subscription": {
                     "processorTimeout": ${pc.cordaProcessorTimeout}
                 }
             """.trimIndent()
         helper.sendUpdate(
-            pc.cordaClusterURL,
-            pc.cordaRestUser,
-            pc.cordaRestPassword,
+            pc.restClient,
             configSection,
             configBody,
             configVersion

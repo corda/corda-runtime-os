@@ -27,7 +27,7 @@ tasks.named('jar', Jar) {
     bundle {
         bnd """\
 Bundle-Name: SLF4JV1
-Bundle-SymbolicName: \${project.group}.slf4jv1
+Bundle-SymbolicName: \${project.group}.testing.slf4jv1
 Bundle-Version: \\${task.bundleVersion}
 Export-Package: \\
      org.slf4j.event;uses:="org.slf4j,org.slf4j.helpers";version=2.0.13,\\

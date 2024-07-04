@@ -1,6 +1,7 @@
 package net.corda.libs.permissions.endpoints.v1.user
 
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
+import net.corda.libs.permissions.endpoints.v1.user.types.PropertyResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserPermissionSummaryResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.rest.RestResource
@@ -262,4 +263,127 @@ interface UserEndpoint : RestResource {
         @RestPathParameter(description = "The login name of the user")
         loginName: String
     ): UserPermissionSummaryResponseType
+
+    /**
+     * Add properties to a user
+     */
+    @HttpPOST(
+        path = "{loginName}/property",
+        description = "This method adds a property to a user.",
+        responseDescription = """
+            Added properties to a user with the following attributes:
+            id: Unique server generated identifier for the user
+            version: The version of the user; version 0 is assigned to a newly created user
+            updateTimestamp: The date and time when the user was last updated
+            fullName: The full name for the new user
+            loginName: The login name for the new user
+            enabled: If true, the user account is enabled; false, the account is disabled
+            ssoAuth: If true, the user account is enabled for SSO authentication;
+                false, the account is enabled for password authentication
+            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;
+                    value of null means that the password does not expire
+            parentGroup: An optional identifier of the user group for the new user to be included;
+                    value of null means that the user will belong to the root group
+            properties: An optional set of key/value properties associated with a user account
+            roleAssociations: A set of roles associated with the user account
+            
+        """,
+        minVersion = RestApiVersion.C5_3
+    )
+    fun addProperty(
+        @RestPathParameter(description = "The login name of the user")
+        loginName: String,
+        @ClientRequestBodyParameter(
+            description = "Property to add.",
+            required = true,
+            name = "property"
+        )
+        properties: Map<String, String>
+    ): ResponseEntity<UserResponseType>
+
+    /**
+     * Removes property from a user
+     */
+    @HttpDELETE(
+        path = "{loginName}/property/{propertyKey}",
+        description = "This method removes a property from a user.",
+        responseDescription = """
+            Removed property from a user with the following attributes:
+            id: Unique server generated identifier for the user
+            version: The version of the user; version 0 is assigned to a newly created user
+            updateTimestamp: The date and time when the user was last updated
+            fullName: The full name for the new user
+            loginName: The login name for the new user
+            enabled: If true, the user account is enabled; false, the account is disabled
+            ssoAuth: If true, the user account is enabled for SSO authentication;
+                false, the account is enabled for password authentication
+            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;
+                    value of null means that the password does not expire
+            parentGroup: An optional identifier of the user group for the new user to be included;
+                    value of null means that the user will belong to the root group
+            properties: An optional set of key/value properties associated with a user account
+            roleAssociations: A set of roles associated with the user account
+
+        """,
+        minVersion = RestApiVersion.C5_3
+    )
+    fun removeProperty(
+        @RestPathParameter(description = "The login name of the user")
+        loginName: String,
+        @RestPathParameter(description = "The property to remove from the user")
+        propertyKey: String
+    ): ResponseEntity<UserResponseType>
+
+    /**
+     * Lists properties of a user
+     */
+    @HttpGET(
+        path = "{loginName}/property",
+        description = "This method lists the properties of a user.",
+        responseDescription = """
+            List of properties, each in the following format:
+            key: The name of the property.
+            lastChangedTimestamp: The time at which the property was last changed.
+            value: The value for the property.
+
+        """,
+        minVersion = RestApiVersion.C5_3
+    )
+    fun getUserProperties(
+        @RestPathParameter(description = "The login name of the user")
+        loginName: String,
+    ): ResponseEntity<PropertyResponseType>
+
+    /**
+     * Gets all users for propertyKey = value
+     */
+    @HttpGET(
+        path = "findByProperty/{propertyKey}/{propertyValue}",
+        description = "This method gets all the users that have a specific value given a propertyKey.",
+        responseDescription = """
+            List of users, each with the following attributes:
+            id: Unique server generated identifier for the user
+            version: The version of the user; version 0 is assigned to a newly created user
+            updateTimestamp: The date and time when the user was last updated
+            fullName: The full name for the new user
+            loginName: The login name for the new user
+            enabled: If true, the user account is enabled; false, the account is disabled
+            ssoAuth: If true, the user account is enabled for SSO authentication;
+                false, the account is enabled for password authentication
+            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;
+                    value of null means that the password does not expire
+            parentGroup: An optional identifier of the user group for the new user to be included;
+                    value of null means that the user will belong to the root group
+            properties: An optional set of key/value properties associated with a user account
+            roleAssociations: A set of roles associated with the user account
+
+        """,
+        minVersion = RestApiVersion.C5_3
+    )
+    fun getUsersByPropertyKey(
+        @RestPathParameter(description = "Property key to look for.")
+        propertyKey: String,
+        @RestPathParameter(description = "Property value to match on.")
+        propertyValue: String
+    ): ResponseEntity<UserResponseType>
 }
