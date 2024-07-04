@@ -110,15 +110,18 @@ class KeyStoreHelper {
         certificateAlias: String,
         exportedCertFile: File
     ) {
-        val keyStore = KeyStore.getInstance(KEYSTORE_INSTANCE_TYPE)
-        keyStore.load(keyStoreFile.inputStream(), keyStorePassword.toCharArray())
-        val cert = keyStore.getCertificate(certificateAlias)
-        val writer = StringWriter()
-        PemWriter(writer).use { pw ->
-            val gen: PemObjectGenerator = JcaMiscPEMGenerator(cert)
-            pw.writeObject(gen)
+        keyStoreFile.inputStream().use {
+            val keyStore = KeyStore.getInstance(KEYSTORE_INSTANCE_TYPE)
+            keyStore.load(it, keyStorePassword.toCharArray())
+            val cert = keyStore.getCertificate(certificateAlias)
+            val writer = StringWriter()
+            PemWriter(writer).use { pw ->
+                val gen: PemObjectGenerator = JcaMiscPEMGenerator(cert)
+                pw.writeObject(gen)
+            }
+            exportedCertFile.writeText(writer.toString())
+            writer.close()
         }
-        exportedCertFile.writeText(writer.toString())
     }
 
     /**

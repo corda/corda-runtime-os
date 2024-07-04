@@ -93,19 +93,23 @@ class CordappTasksImpl(var pc: ProjectContext) {
                 password = pc.keystorePassword
             )
             pc.logger.quiet("Importing default gradle certificate")
-            KeyStoreHelper().importCertificateIntoKeyStore(
-                keyStoreFile = keystoreFile,
-                keyStorePassword = pc.keystorePassword,
-                certificateInputStream = File(pc.gradleDefaultCertFilePath).inputStream(),
-                certificateAlias = pc.gradleDefaultCertAlias
-            )
+            File(pc.gradleDefaultCertFilePath).inputStream().use {
+                KeyStoreHelper().importCertificateIntoKeyStore(
+                    keyStoreFile = keystoreFile,
+                    keyStorePassword = pc.keystorePassword,
+                    certificateInputStream = it,
+                    certificateAlias = pc.gradleDefaultCertAlias
+                )
+            }
             pc.logger.quiet("Importing R3 signing certificate")
-            KeyStoreHelper().importCertificateIntoKeyStore(
-                keyStoreFile = keystoreFile,
-                keyStorePassword = pc.keystorePassword,
-                certificateInputStream = File(pc.r3RootCertFile).inputStream(),
-                certificateAlias = pc.r3RootCertKeyAlias
-            )
+            File(pc.r3RootCertFile).inputStream().use {
+                KeyStoreHelper().importCertificateIntoKeyStore(
+                    keyStoreFile = keystoreFile,
+                    keyStorePassword = pc.keystorePassword,
+                    certificateInputStream = it,
+                    certificateAlias = pc.r3RootCertKeyAlias
+                )
+            }
 
             KeyStoreHelper().exportCertificateFromKeyStore(
                 keyStoreFile = keystoreFile,
