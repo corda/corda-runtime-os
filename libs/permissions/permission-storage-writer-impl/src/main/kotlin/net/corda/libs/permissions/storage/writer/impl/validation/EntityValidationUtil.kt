@@ -105,11 +105,12 @@ class EntityValidationUtil(private val entityManager: EntityManager) {
             .singleResult
 
         if (numSubgroups + numUsers > 0) {
-            throw IllegalEntityStateException("Group '$groupId' must be empty. " +
-                    "$numSubgroups subgroups and $numUsers users are associated with it.")
+            throw IllegalEntityStateException(
+                "Group '$groupId' must be empty. " +
+                    "$numSubgroups subgroups and $numUsers users are associated with it."
+            )
         }
     }
-
 
     fun validateRoleNotAlreadyAssignedToUser(user: User, roleId: String) {
         if (user.roleUserAssociations.any { it.role.id == roleId }) {

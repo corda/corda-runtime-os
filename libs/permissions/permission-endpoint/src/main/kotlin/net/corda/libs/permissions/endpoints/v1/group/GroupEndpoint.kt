@@ -106,7 +106,7 @@ interface GroupEndpoint : RestResource {
     @HttpGET(
         path = "{groupId}",
         description = "This method retrieves the content of a specified group, " +
-                "including users and groups with this group as parent.",
+            "including users and groups with this group as parent.",
         responseDescription = """
             The content of the specified group with the following attributes:
             id: Unique server generated identifier for the group

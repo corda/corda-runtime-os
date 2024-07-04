@@ -47,7 +47,6 @@ class GroupWriterImplTest {
         whenever(entityManager.transaction).thenReturn(entityTransaction)
     }
 
-
     @Test
     fun `create a group with no parent specified successfully persists the group`() {
         val createGroupRequest = CreateGroupRequest().apply {
@@ -378,7 +377,7 @@ class GroupWriterImplTest {
             groupId = "groupId"
         }
         val group = Group("groupId", Instant.now(), "groupName", null)
-        val user = User("userId", Instant.now(), "userName", "login", true, null, null, null,group)
+        val user = User("userId", Instant.now(), "userName", "login", true, null, null, null, group)
         val role = Role("roleId", Instant.now(), "roleName", null)
         val assoc = RoleGroupAssociation("id", role, group, Instant.now())
         group.roleGroupAssociations.add(assoc)

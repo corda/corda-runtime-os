@@ -37,10 +37,10 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
+import net.corda.data.permissions.Group as AvroGroup
 import net.corda.data.permissions.Permission as AvroPermission
 import net.corda.data.permissions.Role as AvroRole
 import net.corda.data.permissions.User as AvroUser
-import net.corda.data.permissions.Group as AvroGroup
 
 class PermissionStorageWriterProcessorImplTest {
 

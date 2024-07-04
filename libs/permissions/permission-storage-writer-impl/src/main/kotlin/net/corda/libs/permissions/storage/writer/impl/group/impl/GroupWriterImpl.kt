@@ -157,7 +157,7 @@ class GroupWriterImpl(
             actorUser = requestUserId,
             changeType = RestPermissionOperation.ADD_ROLE_TO_GROUP,
             details = "Role '${role.id}' assigned to Group '${group.id}' by '$requestUserId'. " +
-                    "Created RoleGroupAssociation '${association.id}'."
+                "Created RoleGroupAssociation '${association.id}'."
         )
 
         group.roleGroupAssociations.add(association)
@@ -183,7 +183,7 @@ class GroupWriterImpl(
             actorUser = requestUserId,
             changeType = RestPermissionOperation.DELETE_ROLE_FROM_GROUP,
             details = "Role '$roleId' unassigned from Group '${group.id}' by '$requestUserId'. " +
-                    "Removed RoleGroupAssociation '${association.id}'."
+                "Removed RoleGroupAssociation '${association.id}'."
         )
 
         group.roleGroupAssociations.remove(association)
