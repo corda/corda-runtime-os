@@ -5,6 +5,7 @@ import io.javalin.core.util.Header.ACCESS_CONTROL_ALLOW_CREDENTIALS
 import io.javalin.core.util.Header.ACCESS_CONTROL_ALLOW_ORIGIN
 import io.javalin.core.util.Header.CACHE_CONTROL
 import io.javalin.core.util.Header.WWW_AUTHENTICATE
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.server.apigen.test.TestJavaPrimitivesRestResourceImpl
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.toExample
@@ -261,7 +262,7 @@ class RestServerRequestsTest : RestServerTestBase() {
         val fullUrl = "testEntity/getProtocolVersion"
         val clientV52 = TestHttpClientUnirestImpl(
             "http://${restServerSettings.address.host}:${server.port}/" +
-                "${restServerSettings.context.basePath}/v5_2/"
+                "${restServerSettings.context.basePath}/${RestApiVersion.C5_2.versionPath}/"
         )
         val helloResponse = clientV52.call(
             GET,
