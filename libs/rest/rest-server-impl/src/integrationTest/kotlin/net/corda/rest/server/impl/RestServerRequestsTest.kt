@@ -261,7 +261,7 @@ class RestServerRequestsTest : RestServerTestBase() {
         val fullUrl = "testEntity/getProtocolVersion"
         val clientV52 = TestHttpClientUnirestImpl(
             "http://${restServerSettings.address.host}:${server.port}/" +
-                    "${restServerSettings.context.basePath}/v5_2/"
+                "${restServerSettings.context.basePath}/v5_2/"
         )
         val helloResponse = clientV52.call(
             GET,
