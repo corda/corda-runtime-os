@@ -38,17 +38,18 @@ import kotlin.test.assertEquals
 
 class RestServerRequestsTest : RestServerTestBase() {
     companion object {
+        val restServerSettings = RestServerSettings(
+            NetworkHostAndPort("localhost", 0),
+            context,
+            null,
+            null,
+            RestServerSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+            20000L
+        )
+
         @BeforeAll
         @JvmStatic
         fun setUpBeforeClass() {
-            val restServerSettings = RestServerSettings(
-                NetworkHostAndPort("localhost", 0),
-                context,
-                null,
-                null,
-                RestServerSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
-                20000L
-            )
             server = RestServerImpl(
                 listOf(
                     TestHealthCheckAPIImpl(),
@@ -253,6 +254,29 @@ class RestServerRequestsTest : RestServerTestBase() {
 
         // Check full URL received by the Security Manager
         assertThat(securityManager.checksExecuted.map { it.action }).hasSize(1).allMatch { it.contains(fullUrl) }
+    }
+
+    @Test
+    fun `Verify no permission check on GetProtocolVersion`() {
+        val fullUrl = "testEntity/getProtocolVersion"
+        val clientV52 = TestHttpClientUnirestImpl(
+            "http://${restServerSettings.address.host}:${server.port}/" +
+                    "${restServerSettings.context.basePath}/v5_2/"
+        )
+        val helloResponse = clientV52.call(
+            GET,
+            WebRequest<Any>(fullUrl),
+            userName,
+            password
+        )
+        assertEquals(HttpStatus.SC_OK, helloResponse.responseStatus)
+        assertEquals("3", helloResponse.body)
+
+        // Check that the response returned a deprecation warning in the header
+        assertThat(helloResponse.headers.toMap()["Warning"]!!.contains("299"))
+
+        // Check that security managed has not been called for GetProtocolVersion which is exempt from permissions check
+        assertThat(securityManager.checksExecuted).hasSize(0)
     }
 
     @Test
