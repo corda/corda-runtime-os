@@ -917,7 +917,7 @@
     "/group/{groupid}" : {
       "get" : {
         "tags" : [ "RBAC Group" ],
-        "description" : "This method retrieves the content of a specified group.",
+        "description" : "This method retrieves the content of a specified group, including users and groups with this group as parent.",
         "operationId" : "get_group__groupid_",
         "parameters" : [ {
           "name" : "groupid",
@@ -933,7 +933,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "\n            The content of the specified group with the following attributes:\n            id: Unique server generated identifier for the group\n            version: The version of the group; version 0 is assigned to a newly created group\n            updateTimestamp: The date and time when the group was last updated\n            name: The name of the group\n            parentGroupId: The ID of the parent group\n            properties: An optional set of key/value properties associated with a group\n            roleAssociations: A set of roles associated with the group",
+            "description" : "\n            The content of the specified group with the following attributes:\n            id: Unique server generated identifier for the group\n            version: The version of the group; version 0 is assigned to a newly created group\n            updateTimestamp: The date and time when the group was last updated\n            name: The name of the group\n            parentGroupId: The ID of the parent group\n            properties: An optional set of key/value properties associated with a group\n            roleAssociations: A set of roles associated with the group\n            users: A set of users which have this group as their parent group\n            subgroups: A set of groups which have this group as their parent group\n            ",
             "content" : {
               "application/json" : {
                 "schema" : {
