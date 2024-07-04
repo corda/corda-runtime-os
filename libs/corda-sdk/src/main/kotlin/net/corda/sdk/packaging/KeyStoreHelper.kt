@@ -85,15 +85,18 @@ class KeyStoreHelper {
         certificateAlias: String,
         certificateFactoryType: String = "X.509"
     ) {
-        val keyStore = KeyStore.getInstance(KEYSTORE_INSTANCE_TYPE)
-        keyStore.load(keyStoreFile.inputStream(), keyStorePassword.toCharArray())
-        keyStore.setCertificateEntry(
-            certificateAlias,
-            CertificateFactory.getInstance(certificateFactoryType)
-                .generateCertificate(certificateInputStream),
-        )
-        keyStoreFile.outputStream().use {
-            keyStore.store(it, keyStorePassword.toCharArray())
+        keyStoreFile.inputStream().use { inputStream ->
+            val keyStore = KeyStore.getInstance(KEYSTORE_INSTANCE_TYPE)
+            keyStore.load(inputStream, keyStorePassword.toCharArray())
+            keyStore.setCertificateEntry(
+                certificateAlias,
+                CertificateFactory.getInstance(certificateFactoryType)
+                    .generateCertificate(certificateInputStream),
+            )
+
+            keyStoreFile.outputStream().use { outputStream ->
+                keyStore.store(outputStream, keyStorePassword.toCharArray())
+            }
         }
     }
 
@@ -114,13 +117,13 @@ class KeyStoreHelper {
             val keyStore = KeyStore.getInstance(KEYSTORE_INSTANCE_TYPE)
             keyStore.load(it, keyStorePassword.toCharArray())
             val cert = keyStore.getCertificate(certificateAlias)
-            val writer = StringWriter()
-            PemWriter(writer).use { pw ->
-                val gen: PemObjectGenerator = JcaMiscPEMGenerator(cert)
-                pw.writeObject(gen)
+            StringWriter().use { sw ->
+                PemWriter(sw).use { pw ->
+                    val gen: PemObjectGenerator = JcaMiscPEMGenerator(cert)
+                    pw.writeObject(gen)
+                }
+                exportedCertFile.writeText(sw.toString())
             }
-            exportedCertFile.writeText(writer.toString())
-            writer.close()
         }
     }
 
