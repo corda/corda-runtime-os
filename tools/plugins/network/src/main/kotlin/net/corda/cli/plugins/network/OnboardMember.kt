@@ -9,6 +9,7 @@ import net.corda.sdk.network.RegistrationRequest
 import net.corda.sdk.packaging.CpiAttributes
 import net.corda.sdk.packaging.CpiUploader
 import net.corda.sdk.packaging.CpiV2Creator
+import net.corda.sdk.rest.RestClientUtils.executeWithRetry
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
@@ -90,7 +91,12 @@ class OnboardMember : Runnable, BaseOnboard() {
         } else {
             val checksumValue = uploadCpb(cpbFile!!)
             // Suspected flakiness between getting checksum and creating member vnode - https://r3-cev.atlassian.net/browse/CORE-20760
-            Thread.sleep(1000)
+            executeWithRetry(waitDuration = waitDurationSeconds.seconds, operationName = "Waiting for checksum to appear in CPI list") {
+                val found = CpiUploader(restClient).cpiChecksumExists(checksum = checksumValue, wait = waitDurationSeconds.seconds)
+                if (!found) {
+                    throw CordaRuntimeException("CPI checksum not found in the list")
+                }
+            }
             checksumValue
         }
     }
