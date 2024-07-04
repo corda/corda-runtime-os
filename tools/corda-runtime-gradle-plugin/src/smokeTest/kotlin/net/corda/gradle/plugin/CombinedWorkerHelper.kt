@@ -24,7 +24,7 @@ object CombinedWorkerHelper {
         val start = Instant.now()
         while (true) {
             try {
-                restClient.helloRestClient.getHelloGetprotocolversion()
+                restClient.helloRestClient.postHello("Test")
                 return
             } catch (e: Exception) {
                 if (Duration.between(start, Instant.now()) < timeout) {
