@@ -1,5 +1,7 @@
 package net.corda.gradle.plugin.cordalifecycle
 
+import net.corda.gradle.plugin.CombinedWorkerHelper.restClient
+import net.corda.gradle.plugin.CombinedWorkerHelper.waitUntilRestOrThrow
 import net.corda.gradle.plugin.SmokeTestBase
 import org.assertj.core.api.Assertions.catchThrowable
 import org.junit.jupiter.api.AfterEach
@@ -8,13 +10,13 @@ import org.junit.jupiter.api.Test
 import java.io.StringWriter
 import java.util.concurrent.Executors
 
-class CordaLifeCycleTasksTest : SmokeTestBase() {
+class LifeCycleTasksTest : SmokeTestBase() {
 
     private val executorService =  Executors.newSingleThreadExecutor()
 
     @BeforeEach
     fun verifyRestIsUnavailable() {
-        catchThrowable { restClient.helloRestClient.getHelloGetprotocolversion() }
+        catchThrowable { restClient.helloRestClient.postHello("Test") }
     }
 
     @AfterEach
@@ -23,8 +25,7 @@ class CordaLifeCycleTasksTest : SmokeTestBase() {
     }
 
     @Test
-    fun startAndStopCorda() {
-        appendCordaRuntimeGradlePluginExtension()
+    fun startCordaWaitForReadinessThenStopCorda() {
         val startTaskOutput = StringWriter()
 
         val startTaskFuture = executorService.submit {

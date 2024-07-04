@@ -8,6 +8,7 @@ import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.v2.RegistrationStatus
+import net.corda.data.membership.db.request.command.SessionKeyAndCertificate
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -163,6 +164,15 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         viewOwningIdentity: HoldingIdentity,
         newGroupParameters: Map<String, String>,
     ): MembershipPersistenceOperation<InternalGroupParameters> =
+        throw NotImplementedError("Not implemented for test service")
+
+    override fun persistHostedIdentity(
+        holdingIdentity: HoldingIdentity,
+        p2pTlsCertificateChainAlias: String,
+        useClusterLevelTlsCertificateAndKey: Boolean,
+        preferredSessionKeyAndCertificate: SessionKeyAndCertificate,
+        alternateSessionKeyAndCertificates: List<SessionKeyAndCertificate>
+    ): MembershipPersistenceOperation<Int> =
         throw NotImplementedError("Not implemented for test service")
 
     private val persistenceCoordinator =

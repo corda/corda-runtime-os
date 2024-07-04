@@ -16,7 +16,7 @@ dependencies {
     implementation libs.guava
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'net.corda:corda-base'
-    implementation 'org.slf4j:slf4j-api'
+    implementation libs.slf4j.api
 
     testImplementation project(":testing:test-utilities")
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")

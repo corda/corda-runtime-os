@@ -50,7 +50,7 @@ dependencies {
     implementation 'net.corda:corda-db-schema'
     implementation 'net.corda:corda-topic-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation 'org.slf4j:slf4j-api'
+    implementation libs.slf4j.api
     implementation libs.micrometer.registry.prometheus
 
     testImplementation project(':testing:db-testkit')

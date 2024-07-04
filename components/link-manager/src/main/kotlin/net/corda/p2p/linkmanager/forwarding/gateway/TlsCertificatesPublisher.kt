@@ -22,11 +22,13 @@ import net.corda.virtualnode.toAvro
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
+import net.corda.configuration.read.ConfigurationReadService
 
 @Suppress("LongParameterList")
 internal class TlsCertificatesPublisher(
     subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
+    configurationReadService: ConfigurationReadService,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     messagingConfiguration: SmartConfig,
 ) : LifecycleWithDominoTile, HostingMapListener {
@@ -117,6 +119,7 @@ internal class TlsCertificatesPublisher(
         lifecycleCoordinatorFactory,
         subscription,
         subscriptionConfig,
+        configurationReadService,
         emptyList(),
         emptyList(),
     )

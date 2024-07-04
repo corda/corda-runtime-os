@@ -2,7 +2,6 @@ package net.corda.gradle.plugin.cordapp
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
-import kong.unirest.Unirest
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
 import net.corda.restclient.CordaRestClient
 import net.corda.sdk.data.Checksum
@@ -19,7 +18,6 @@ class DeployCpiHelper {
     private val mapper = ObjectMapper()
 
     init {
-        Unirest.config().verifySsl(false)
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
     }
 

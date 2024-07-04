@@ -9,6 +9,7 @@ import net.corda.libs.permissions.endpoints.v1.converter.convertToDto
 import net.corda.libs.permissions.endpoints.v1.converter.convertToEndpointType
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
+import net.corda.libs.permissions.endpoints.v1.user.types.PropertyResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserPermissionSummaryResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.libs.permissions.manager.PermissionManager
@@ -45,6 +46,7 @@ import kotlin.reflect.full.memberFunctions
 /**
  * A REST resource endpoint for User operations.
  */
+@Suppress("TooManyFunctions")
 @Component(service = [PluggableRestResource::class])
 class UserEndpointImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -129,6 +131,10 @@ class UserEndpointImpl @Activate constructor(
 
     override fun deleteUser(loginName: String): ResponseEntity<UserResponseType> {
         val principal = getRestThreadLocalContext()
+
+        if (principal.equals(loginName, ignoreCase = true)) {
+            throw BadRequestException("User cannot delete self")
+        }
 
         val userResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {
             deleteUser(DeleteUserRequestDto(principal, loginName.lowercase()))
@@ -229,6 +235,21 @@ class UserEndpointImpl @Activate constructor(
         )
     }
 
+    override fun addProperty(loginName: String, properties: Map<String, String>): ResponseEntity<UserResponseType> {
+        TODO("CORE-20757")
+    }
+
+    override fun removeProperty(loginName: String, propertyKey: String): ResponseEntity<UserResponseType> {
+        TODO("CORE-20757")
+    }
+
+    override fun getUserProperties(loginName: String): ResponseEntity<PropertyResponseType> {
+        TODO("CORE-20757")
+    }
+
+    override fun getUsersByPropertyKey(propertyKey: String, propertyValue: String): ResponseEntity<UserResponseType> {
+        TODO("CORE-20757")
+    }
     private fun getRestThreadLocalContext(): String {
         val restContext = CURRENT_REST_CONTEXT.get()
         return restContext.principal

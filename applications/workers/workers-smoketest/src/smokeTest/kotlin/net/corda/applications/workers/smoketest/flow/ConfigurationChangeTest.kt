@@ -97,9 +97,11 @@ class ConfigurationChangeTest : ClusterReadiness by ClusterReadinessChecker() {
             waitForConfigurationChange(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue.toString(), false)
 
             // Ensure the cluster is ready after Config Update.
+            logger.info("Waiting for workers to become ready")
             assertIsReady(Duration.ofMinutes(2), Duration.ofMillis(100))
 
             // Ensure that the cluster remains in ready state for at least 30 seconds
+            logger.info("Ensuring the workers remain ready")
             remainsReady()
 
             // Execute some flows which require functionality from different workers and make sure they succeed

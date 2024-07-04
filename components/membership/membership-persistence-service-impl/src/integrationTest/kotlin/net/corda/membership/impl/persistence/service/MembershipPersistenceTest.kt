@@ -21,6 +21,7 @@ import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.v2.RegistrationStatus
+import net.corda.data.membership.db.request.command.SessionKeyAndCertificate
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
@@ -47,6 +48,8 @@ import net.corda.membership.datamodel.ApprovalRulesEntity
 import net.corda.membership.datamodel.ApprovalRulesEntityPrimaryKey
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.datamodel.GroupPolicyEntity
+import net.corda.membership.datamodel.HostedIdentityEntity
+import net.corda.membership.datamodel.HostedIdentitySessionKeyInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.MembershipEntities
@@ -421,6 +424,22 @@ class MembershipPersistenceTest {
                 newGroupParameters: Map<String, String>
             ) = safeCall {
                 membershipPersistenceClient.updateGroupParameters(viewOwningIdentity, newGroupParameters)
+            }
+
+            override fun persistHostedIdentity(
+                holdingIdentity: HoldingIdentity,
+                p2pTlsCertificateChainAlias: String,
+                useClusterLevelTlsCertificateAndKey: Boolean,
+                preferredSessionKeyAndCertificate: SessionKeyAndCertificate,
+                alternateSessionKeyAndCertificates: List<SessionKeyAndCertificate>
+            ) = safeCall {
+                membershipPersistenceClient.persistHostedIdentity(
+                    holdingIdentity,
+                    p2pTlsCertificateChainAlias,
+                    useClusterLevelTlsCertificateAndKey,
+                    preferredSessionKeyAndCertificate,
+                    alternateSessionKeyAndCertificates,
+                )
             }
 
             fun <T> safeCall(func: () -> T): T {
@@ -2070,6 +2089,47 @@ class MembershipPersistenceTest {
                 .containsExactlyInAnyOrderElementsOf(expectedGroupParameters)
             assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
         }
+    }
+
+    @Test
+    fun `persistHostedIdentity persists correct entities and returns the version`() {
+        val tlsCertAlias = "tls"
+        val keyId1 = "123412341234"
+        val certAlias1 = "session-1"
+        val keyId2 = "567856785678"
+        val certAlias2 = "session-2"
+        val preferred = SessionKeyAndCertificate(keyId1, certAlias1, true)
+        val alternate = listOf(SessionKeyAndCertificate(keyId2, certAlias2, false))
+        clusterEmf.transaction {
+            it.createQuery("DELETE FROM HostedIdentityEntity").executeUpdate()
+            it.createQuery("DELETE FROM HostedIdentitySessionKeyInfoEntity").executeUpdate()
+        }
+
+        val returnedVersion = membershipPersistenceClientWrapper.persistHostedIdentity(
+            viewOwningHoldingIdentity,
+            tlsCertAlias,
+            true,
+            preferred,
+            alternate,
+        ).getOrThrow()
+
+        assertThat(returnedVersion).isEqualTo(1)
+        val (hostedIdentityEntity, sessionKeyInfoEntities) = clusterEmf.transaction {
+            val identityResult = it.find(
+                HostedIdentityEntity::class.java,
+                holdingIdentityShortHash.value
+            )
+            val keyInfoResult = it.createQuery("SELECT k FROM HostedIdentitySessionKeyInfoEntity k").resultList
+                .mapNotNull { entity -> entity as? HostedIdentitySessionKeyInfoEntity }
+            identityResult to keyInfoResult
+        }
+        assertThat(hostedIdentityEntity).isEqualTo(
+            HostedIdentityEntity(holdingIdentityShortHash.value, keyId1, tlsCertAlias, true, 1)
+        )
+        assertThat(sessionKeyInfoEntities).containsExactlyInAnyOrder(
+            HostedIdentitySessionKeyInfoEntity(holdingIdentityShortHash.value, keyId1, certAlias1),
+            HostedIdentitySessionKeyInfoEntity(holdingIdentityShortHash.value, keyId2, certAlias2)
+        )
     }
 
     private fun ByteArray.deserializeContextAsMap(): Map<String, String> =

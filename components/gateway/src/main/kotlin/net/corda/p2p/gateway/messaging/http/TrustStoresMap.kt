@@ -1,5 +1,6 @@
 package net.corda.p2p.gateway.messaging.http
 
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.utils.convertToKeyStore
 import net.corda.data.p2p.GatewayTruststore
 import net.corda.libs.configuration.SmartConfig
@@ -24,6 +25,7 @@ internal class TrustStoresMap(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
+    configurationReadService: ConfigurationReadService,
     private val certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
 ) :
     LifecycleWithDominoTile {
@@ -49,6 +51,7 @@ internal class TrustStoresMap(
         lifecycleCoordinatorFactory,
         subscription,
         subscriptionConfig,
+        configurationReadService,
         emptyList(),
         emptyList(),
     )

@@ -78,6 +78,7 @@ internal class DeliveryTracker(
         coordinatorFactory,
         messageTrackerSubscription,
         subscriptionConfig,
+        configReadService,
         setOf(
             replayScheduler.dominoTile.coordinatorName,
             LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),

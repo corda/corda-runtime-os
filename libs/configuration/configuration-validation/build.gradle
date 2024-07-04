@@ -28,4 +28,5 @@ dependencies {
             because "Version bundled with current version of 'com.networknt:json-schema-validator' does not have OSGi manifest."
         }
     }
+    integrationTestRuntimeOnly project(':testing:slf4jv1')
 }

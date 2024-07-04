@@ -5,6 +5,7 @@ import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.v2.RegistrationStatus
+import net.corda.data.membership.db.request.command.SessionKeyAndCertificate
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -33,6 +34,8 @@ import java.util.*
  */
 interface TestMembershipPersistenceClient : MembershipPersistenceClient {
     fun getPersistedGroupParameters(): InternalGroupParameters?
+
+    fun getPersistedMemberInfos(): Collection<SelfSignedMemberInfo>?
 }
 
 @Suppress("TooManyFunctions")
@@ -48,6 +51,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     }
 
     private var persistedGroupParameters: InternalGroupParameters? = null
+    private var persistedMemberInfos: Collection<SelfSignedMemberInfo>? = null
 
     private val coordinator =
         coordinatorFactory.createCoordinator(LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>()) { event, coordinator ->
@@ -58,13 +62,19 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
 
     override fun getPersistedGroupParameters(): InternalGroupParameters? = persistedGroupParameters
 
+    override fun getPersistedMemberInfos(): Collection<SelfSignedMemberInfo>? = persistedMemberInfos
+
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         memberInfos: Collection<SelfSignedMemberInfo>
     ): MembershipPersistenceOperation<Unit> {
-        with(UNIMPLEMENTED_FUNCTION) {
-            logger.warn(this)
-            throw UnsupportedOperationException(this)
+        persistedMemberInfos = memberInfos
+        return object : MembershipPersistenceOperation<Unit> {
+            override fun execute() = MembershipPersistenceResult.success()
+
+            override fun createAsyncCommands(): Collection<Record<*, *>> {
+                return emptyList()
+            }
         }
     }
 
@@ -199,6 +209,19 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         viewOwningIdentity: HoldingIdentity,
         newGroupParameters: Map<String, String>
     ): MembershipPersistenceOperation<InternalGroupParameters> {
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
+    }
+
+    override fun persistHostedIdentity(
+        holdingIdentity: HoldingIdentity,
+        p2pTlsCertificateChainAlias: String,
+        useClusterLevelTlsCertificateAndKey: Boolean,
+        preferredSessionKeyAndCertificate: SessionKeyAndCertificate,
+        alternateSessionKeyAndCertificates: List<SessionKeyAndCertificate>
+    ): MembershipPersistenceOperation<Int> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)

@@ -89,6 +89,7 @@ class LocallyHostedIdentitiesServiceImplTest {
             listOf("sessionCertificate"),
         ),
         emptyList(),
+        1,
     )
     private val publicKey = mock<PublicKey>()
     private val publicKeyFactory = mock<(Reader) -> PublicKey?> {
@@ -281,6 +282,7 @@ class LocallyHostedIdentitiesServiceImplTest {
                     listOf("sessionCertificate"),
                 ),
                 emptyList(),
+                1,
             )
             processor.firstValue.onSnapshot(
                 mapOf("id1" to identityEntry),
@@ -446,6 +448,35 @@ class LocallyHostedIdentitiesServiceImplTest {
         @Test
         fun `it return false the identity doesn't exist`() {
             assertThat(service.isHostedLocally(identity)).isFalse
+        }
+    }
+
+    @Nested
+    inner class ReconcilerReaderTest {
+        @Test
+        fun `getAllVersionedRecords returns correct records`() {
+            handler.firstValue.processEvent(
+                ConfigChangedEvent(
+                    emptySet(),
+                    mapOf(
+                        ConfigKeys.MESSAGING_CONFIG to messagingConfig,
+                    ),
+                ),
+                coordinator,
+            )
+            processor.firstValue.onSnapshot(
+                mapOf("id1" to identityEntry),
+            )
+
+            val records = service.getAllVersionedRecords()
+
+            assertThat(records).hasSize(1)
+                .anySatisfy {
+                    assertThat(it.isDeleted).isFalse
+                    assertThat(it.key).isEqualTo(identity.shortHash.value)
+                    assertThat(it.version).isEqualTo(1)
+                    assertThat(it.value).isEqualTo(identityEntry)
+                }
         }
     }
 }

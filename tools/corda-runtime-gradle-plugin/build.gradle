@@ -1,5 +1,6 @@
 plugins {
     id 'java-gradle-plugin'
+    id 'corda.javadoc-generation'
     id 'com.r3.internal.gradle.plugins.r3Publish'
     id 'org.jetbrains.kotlin.jvm'
     id 'corda.common-library'
@@ -7,6 +8,7 @@ plugins {
 
 ext {
     releasable = true
+    vcsUrl = System.getenv('GIT_URL') ?: 'https://github.com/corda/corda-runtime-os.git'
 }
 
 group 'net.corda.gradle.plugin'
@@ -56,6 +58,13 @@ tasks.register('cordaRuntimeGradlePluginSmokeTest', Test) {
 
     testClassesDirs = project.sourceSets["smokeTest"].output.classesDirs
     classpath = project.sourceSets["smokeTest"].runtimeClasspath
+
+    // Propagate properties to the test
+    [
+        'artifactoryContextUrl',
+        'cordaApiVersion',
+        'cordaGradlePluginsVersion',
+    ].forEach { systemProperty(it, findProperty(it)) }
 }
 
 dependencies {
@@ -95,6 +104,7 @@ gradlePlugin {
             id = 'net.corda.gradle.plugin'
             implementationClass = 'net.corda.gradle.plugin.CordaRuntimeGradlePlugin'
             displayName = 'corda-runtime-gradle-plugin'
+            description = 'A Gradle plugin that wraps a subset of the SDK functions to facilitate their use in developer and CI scenarios.'
         }
     }
     automatedPublishing = true
@@ -102,10 +112,37 @@ gradlePlugin {
 
 publishing {
     publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifact(javadocJar) {
+                classifier "javadoc"
+            }
+        }
         configureEach {
             pom {
                 name = 'corda-runtime-gradle-plugin'
                 description = 'A Gradle plugin that wraps a subset of the SDK functions to facilitate their use in developer and CI scenarios.'
+                url = vcsUrl - '.git'
+
+                scm {
+                    url = vcsUrl
+                }
+
+                licenses {
+                    license {
+                        name = licenseName
+                        url = licenseUrl
+                        distribution = 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'R3'
+                        name = 'R3'
+                        email = 'dev@corda.net'
+                    }
+                }
             }
         }
     }

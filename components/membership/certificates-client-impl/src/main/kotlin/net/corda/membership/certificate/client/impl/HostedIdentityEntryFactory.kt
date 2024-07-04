@@ -11,6 +11,7 @@ import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
+import net.corda.membership.certificates.toPemCertificateChain
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
@@ -22,11 +23,7 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
-import org.bouncycastle.cert.X509CertificateHolder
-import org.bouncycastle.openssl.PEMParser
-import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.slf4j.LoggerFactory
-import java.io.StringWriter
 import java.security.InvalidKeyException
 import java.security.PublicKey
 import java.security.SignatureException
@@ -80,21 +77,7 @@ internal class HostedIdentityEntryFactory(
             ?: throw CertificatesResourceNotFoundException(
                 "Please import certificate chain with usage \"${usage.publicName}\" and alias $certificateChainAlias"
             )
-        return certificateChain.reader().use { reader ->
-            PEMParser(reader).use {
-                generateSequence { it.readObject() }
-                    .filterIsInstance<X509CertificateHolder>()
-                    .map { certificate ->
-                        StringWriter().use { str ->
-                            JcaPEMWriter(str).use { writer ->
-                                writer.writeObject(certificate)
-                            }
-                            str.toString()
-                        }
-                    }
-                    .toList()
-            }
-        }
+        return certificateChain.toPemCertificateChain()
     }
 
     fun createIdentityRecord(

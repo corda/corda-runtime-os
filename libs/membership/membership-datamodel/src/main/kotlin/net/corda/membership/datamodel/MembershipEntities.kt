@@ -12,6 +12,8 @@ object MembershipEntities {
     )
 
     val clusterClasses = setOf(
-        StaticNetworkInfoEntity::class.java
+        StaticNetworkInfoEntity::class.java,
+        HostedIdentityEntity::class.java,
+        HostedIdentitySessionKeyInfoEntity::class.java,
     )
 }

@@ -275,24 +275,13 @@ fun ClusterInfo.getStatusForWrappingKeysRotation(
 }
 
 /**
- * This method fetch the protocol version for unmanaged key Rotation.
- */
-fun ClusterInfo.getProtocolVersionForKeyRotation(
-) = cluster {
-    assertWithRetry {
-        command { getWrappingKeysProtocolVersion() }
-        condition { it.code == ResponseCode.OK.statusCode }
-    }
-}
-
-/**
  * This method fetches the local time of the corda cluster
  */
 fun ClusterInfo.getTime(
 ) = SimpleDateFormat("EEE,dd MMM yyyy HH:mm:ss zzz") // RFC 822
     .parse(cluster {
         assertWithRetry {
-            command { initialClient.get("/api/$REST_API_VERSION_PATH/hello/getprotocolversion") }
+            command { initialClient.post("/api/$REST_API_VERSION_PATH/hello?addressee=Test", "") }
             condition { it.code == ResponseCode.OK.statusCode }
         }
     }.headers.single { it.first == "Date" }.second

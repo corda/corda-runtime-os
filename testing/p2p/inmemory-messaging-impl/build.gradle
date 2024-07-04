@@ -20,9 +20,10 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:utilities')
-    implementation 'org.slf4j:slf4j-api'
+    implementation libs.slf4j.api
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
 
     integrationTestApi project(":testing:test-utilities")
     testImplementation project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly project(':testing:slf4jv1')
 }

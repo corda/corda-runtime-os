@@ -65,7 +65,7 @@ class RevocationCheckerTest {
             @Suppress("UNCHECKED_CAST")
             (context.arguments()[1] as () -> RPCSubscription<RevocationCheckRequest, RevocationCheckResponse>)()
         }
-        revocationChecker = RevocationChecker(subscriptionFactory, mock(), mock())
+        revocationChecker = RevocationChecker(subscriptionFactory, mock(), mock(), mock())
     }
 
     @AfterEach

@@ -3,7 +3,6 @@ package net.corda.gradle.plugin.network
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
-import kong.unirest.Unirest
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.ShortHash
@@ -53,7 +52,6 @@ class VNodeHelper {
     private lateinit var caHome: File // must be set before we call [certificateAuthority]
 
     init {
-        Unirest.config().verifySsl(false)
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
     }
 

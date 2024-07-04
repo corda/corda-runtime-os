@@ -13,6 +13,7 @@ import net.corda.rest.annotations.retrieveApiVersionsSet
 import net.corda.rest.durablestream.DurableStreamContext
 import net.corda.rest.durablestream.api.isFiniteDurableStreamsMethod
 import net.corda.rest.durablestream.api.returnsDurableCursorBuilder
+import net.corda.rest.response.ResponseEntity
 import net.corda.rest.server.impl.apigen.models.Endpoint
 import net.corda.rest.server.impl.apigen.models.EndpointMethod
 import net.corda.rest.server.impl.apigen.models.EndpointParameter
@@ -26,6 +27,7 @@ import net.corda.rest.tools.annotations.extensions.path
 import net.corda.rest.tools.annotations.extensions.title
 import net.corda.rest.tools.annotations.validation.RestInterfaceValidator
 import net.corda.rest.tools.isStaticallyExposedGet
+import net.corda.rest.tools.maxVersion
 import net.corda.rest.tools.methodDescription
 import net.corda.rest.tools.responseDescription
 import net.corda.utilities.debug
@@ -168,8 +170,12 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
                         method.toClassAndParameterizedTypes().second,
                         method.kotlinFunction?.returnType?.isMarkedNullable ?: false
                     ),
-                    method.getInvocationMethod(clazz),
-                    retrieveApiVersionsSet(annotation.minVersion, annotation.maxVersion)
+                    method.getInvocationMethod(clazz, transform = {
+                        val msg = "Method \"${method.name}\" is deprecated."
+                        log.warn(msg)
+                        ResponseEntity.okButDeprecated(it, msg)
+                    }),
+                    retrieveApiVersionsSet(annotation.minVersion, method.maxVersion)
                 )
             }
         }
@@ -334,7 +340,10 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
         ).also { log.trace { """"Method "$name" to WS endpoint completed.""" } }
     }
 
-    private fun Method.getInvocationMethod(clazz: Class<out RestResource>? = null): InvocationMethod {
+    private fun Method.getInvocationMethod(
+        clazz: Class<out RestResource>? = null,
+        transform: ((Any?) -> ResponseEntity<Any?>)? = null
+    ): InvocationMethod {
         try {
             log.debug { "Get invocation method for \"${this.name}\"." }
             return InvocationMethod(
@@ -343,7 +352,8 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
                 // so direct class scanning now must also be checked
                 delegationTargetsMap[this.declaringClass]
                     ?: delegationTargetsMap[clazz]
-                    ?: throw NoSuchElementException("No valid implementation for  \"${this.declaringClass.name}#${this.name} \" found.")
+                    ?: throw NoSuchElementException("No valid implementation for  \"${this.declaringClass.name}#${this.name} \" found."),
+                transform
             ).also { log.trace { "Get invocation method for \"${this.name}\" completed." } }
         } catch (e: Exception) {
             "Error during Get invocation method for \"${this.name}\"".let {

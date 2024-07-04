@@ -1,5 +1,7 @@
 package net.corda.gradle.plugin.queries
 
+import net.corda.gradle.plugin.CombinedWorkerHelper.startCompose
+import net.corda.gradle.plugin.CombinedWorkerHelper.stopCompose
 import net.corda.gradle.plugin.SmokeTestBase
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -23,7 +25,6 @@ class QueriesSmokeTest : SmokeTestBase() {
 
     @Test
     fun listVNodesIsSuccessful() {
-        appendCordaRuntimeGradlePluginExtension()
         val result = executeWithRunner(LIST_VNODES_TASK_NAME, "--info")
         assertThat(result.output)
             .containsPattern("CPI Name\\s+Holding identity short hash\\s+X500 Name")
@@ -31,7 +32,6 @@ class QueriesSmokeTest : SmokeTestBase() {
 
     @Test
     fun listCPIsIsSuccessful() {
-        appendCordaRuntimeGradlePluginExtension()
         val result = executeWithRunner(LIST_CPIS_TASK_NAME)
         assertThat(result.output)
             .containsPattern("CpiName\\s+CpiVersion\\s+CpiFileCheckSum")

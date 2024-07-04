@@ -1,7 +1,9 @@
 package net.corda.lifecycle.domino.logic.util
 
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -40,10 +42,12 @@ import org.slf4j.LoggerFactory
  * they are all up).
  * @param managedChildren the children that the class will start, when it is started.
  */
+@Suppress("LongParameterList")
 abstract class SubscriptionDominoTileBase(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val subscriptionGenerator: () -> SubscriptionBase,
     private val subscriptionConfig: SubscriptionConfig,
+    private val configurationReadService: ConfigurationReadService,
     final override val dependentChildren: Collection<LifecycleCoordinatorName>,
     final override val managedChildren: Collection<NamedLifecycle>
 ): DominoTile() {
@@ -70,6 +74,7 @@ abstract class SubscriptionDominoTileBase(
     override val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
 
     private val currentState = AtomicReference(Created)
+    private val configSet = AtomicBoolean(false)
 
     private val internalState: DominoTileState
         get() = currentState.get()
@@ -88,11 +93,16 @@ abstract class SubscriptionDominoTileBase(
 
     override fun start() {
         coordinator.start()
+        configurationReadService.registerForUpdates { _, _ ->
+            coordinator.postEvent(ConfigPublished)
+        }
     }
+
+    object ConfigPublished: LifecycleEvent
 
     private fun startTile() {
         managedChildren.forEach { it.lifecycle.start() }
-        if (dependentChildren.isEmpty()) {
+        if (dependentChildren.isEmpty() && configSet.get()) {
             createAndStartSubscription()
         }
     }
@@ -116,10 +126,11 @@ abstract class SubscriptionDominoTileBase(
     }
 
     private fun createAndStartSubscription() {
+        subscriptionRegistration.get()?.close()
         coordinator.createManagedResource(SUBSCRIPTION, subscriptionGenerator)
         val subscriptionName = coordinator.getManagedResource<SubscriptionBase>(SUBSCRIPTION)?.subscriptionName
             ?: throw CordaRuntimeException("Subscription could not be extracted from the lifecycle coordinator.")
-        subscriptionRegistration.getAndSet(coordinator.followStatusChangesByName(setOf(subscriptionName)))?.close()
+        subscriptionRegistration.getAndSet(coordinator.followStatusChangesByName(setOf(subscriptionName)))
         coordinator.getManagedResource<SubscriptionBase>(SUBSCRIPTION)?.start()
     }
 
@@ -148,6 +159,20 @@ abstract class SubscriptionDominoTileBase(
                         }
                     }
                 }
+                is ConfigPublished -> {
+                    configSet.set(true)
+                    val notReady = latestChildStateMap.entries.filter {
+                        it.value != LifecycleStatus.UP
+                    }.map {
+                        it.key
+                    }
+                    if (notReady.isEmpty()) {
+                        logger.info("All dependencies are started now, starting subscription.")
+                        createAndStartSubscription()
+                    } else {
+                        logger.info("Received initial config. Waiting for $notReady.")
+                    }
+                }
             }
         }
     }
@@ -161,11 +186,13 @@ abstract class SubscriptionDominoTileBase(
                 }.map {
                     it.key
                 }
-                if (notReady.isEmpty()) {
+                if (notReady.isEmpty() && configSet.get()) {
                     logger.info("All dependencies are started now, starting subscription.")
                     createAndStartSubscription()
-                } else {
+                } else if (notReady.isNotEmpty()) {
                     logger.info("The status of $name had started. Waiting for $notReady.")
+                } else if (!configSet.get()) {
+                    logger.info("All dependencies have started. Waiting for initial config.")
                 }
             }
             LifecycleStatus.DOWN, LifecycleStatus.ERROR -> {
@@ -180,5 +207,4 @@ abstract class SubscriptionDominoTileBase(
             }
         }
     }
-
 }

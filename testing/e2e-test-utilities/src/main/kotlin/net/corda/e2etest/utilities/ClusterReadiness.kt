@@ -80,7 +80,7 @@ class ClusterReadinessChecker : ClusterReadiness {
         softly: SoftAssertions
     ) {
         var lastResponse: HttpResponse<String>? = null
-        val isReady: Boolean = tryUntilSuccess(timeOut, sleepDuration) {
+        val isReady: Boolean = tryUntilSuccess(timeOut, sleepDuration, workerUrl.value) {
             sendAndReceiveResponse(workerUrl.key, workerUrl.value).also {
                 lastResponse = it
             }
@@ -106,8 +106,9 @@ class ClusterReadinessChecker : ClusterReadiness {
         workerUrl: Map.Entry<String, String>,
         softAssertions: SoftAssertions
     ) {
+        logger.info("Checking worker ${workerUrl.key} remains ready")
         var lastResponse: HttpResponse<String>? = null
-        val lastReady: Boolean = tryContinuously(timeOut, sleepDuration) {
+        val lastReady: Boolean = tryContinuously(timeOut, sleepDuration, workerUrl.value) {
             sendAndReceiveResponse(workerUrl.key, workerUrl.value).also {
                 lastResponse = it
             }
@@ -123,7 +124,7 @@ class ClusterReadinessChecker : ClusterReadiness {
         }
     }
 
-    private fun tryUntilSuccess(timeOut: Duration, sleepDuration: Duration, function: () -> HttpResponse<String>): Boolean {
+    private fun tryUntilSuccess(timeOut: Duration, sleepDuration: Duration, url: String, function: () -> HttpResponse<String>): Boolean {
         val startTime = Instant.now()
         while (Instant.now() < startTime.plusNanos(timeOut.toNanos())) {
             try {
@@ -133,7 +134,7 @@ class ClusterReadinessChecker : ClusterReadiness {
                     logger.info("Response code success: $statusCode")
                     return true
                 } else {
-                    logger.info("Returned status $statusCode.")
+                    logger.info("Call to: $url returned status $statusCode.")
                 }
             } catch (connectionException: IOException) {
                 logger.info("Cannot connect.", connectionException)
@@ -146,6 +147,7 @@ class ClusterReadinessChecker : ClusterReadiness {
     private fun tryContinuously(
         timeOut: Duration,
         sleepDuration: Duration,
+        url: String,
         function: () -> HttpResponse<String>
     ): Boolean {
         val startTime = Instant.now()
@@ -157,7 +159,7 @@ class ClusterReadinessChecker : ClusterReadiness {
                 if (statusCode in 200..299) {
                     lastSuccess = true
                 } else {
-                    logger.info("Returned status during continuous polling: $statusCode.")
+                    logger.info("Call to $url returned status during continuous polling: $statusCode.")
                     lastSuccess = false
                 }
             } catch (connectionException: IOException) {

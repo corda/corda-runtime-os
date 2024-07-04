@@ -23,7 +23,6 @@ import net.corda.membership.lib.deserializeContext
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
-import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
@@ -37,7 +36,6 @@ import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtilit
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception.MigrationsFailedException
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception.VirtualNodeUpgradeRejectedException
-import net.corda.virtualnode.write.db.impl.writer.asyncoperation.factories.RecordFactory
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.UUID
@@ -50,13 +48,10 @@ internal class VirtualNodeUpgradeOperationHandler(
     private val oldVirtualNodeEntityRepository: VirtualNodeEntityRepository,
     private val virtualNodeInfoPublisher: Publisher,
     private val migrationUtility: MigrationUtility,
-    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val memberResourceClient: MemberResourceClient,
     private val membershipQueryClient: MembershipQueryClient,
     private val externalMessagingRouteConfigGenerator: ExternalMessagingRouteConfigGenerator,
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    private val recordFactory: RecordFactory,
-    private val policyParser: GroupPolicyParser,
     private val cpkDbChangeLogRepository: CpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository(),
     private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
 ) : VirtualNodeAsyncOperationHandler<VirtualNodeUpgradeRequest> {
@@ -87,9 +82,9 @@ internal class VirtualNodeUpgradeOperationHandler(
         request.validateMandatoryFields()
 
         try {
-            val (upgradedVNodeInfo, cpkChangelogs, targetCpi) = upgradeVirtualNodeEntityTransaction(requestTimestamp, requestId, request)
+            val (upgradedVNodeInfo, cpkChangelogs) = upgradeVirtualNodeEntityTransaction(requestTimestamp, requestId, request)
             upgradeVirtualNodeCpi(requestId, request, upgradedVNodeInfo, cpkChangelogs)
-            reRegisterMember(upgradedVNodeInfo, targetCpi)
+            reRegisterMember(upgradedVNodeInfo)
         } catch (e: Exception) {
             handleUpgradeException(e, requestId, request, requestTimestamp)
         }
@@ -219,32 +214,10 @@ internal class VirtualNodeUpgradeOperationHandler(
     /**
      * Re-register the member if the member already exists
      * after the virtual node has been upgraded, so that the member CPI version is up-to-date.
-     * Republishes the MGM's Member Info, if the Group Policy was changed.
      */
     @Suppress("NestedBlockDepth")
-    private fun reRegisterMember(upgradedVNodeInfo: VirtualNodeInfo, cpiMetadata: CpiMetadata) {
+    private fun reRegisterMember(upgradedVNodeInfo: VirtualNodeInfo) {
         val holdingIdentity = upgradedVNodeInfo.holdingIdentity
-        val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
-
-        val mgmInfo = if (!GroupPolicyParser.isStaticNetwork(cpiMetadata.groupPolicy!!)) {
-            policyParser.getMgmInfo(holdingIdentity, cpiMetadata.groupPolicy!!)
-        } else {
-            // If it's a static network there is no MGM to re-register with.
-            return
-        }
-
-        val records = if (mgmInfo == null) {
-            logger.info("No MGM information found in group policy. MGM member info not published.")
-            emptyList()
-        } else {
-            val oldMgmMemberInfo = membershipGroupReader.lookup(mgmInfo.name)
-            if (mgmInfo != oldMgmMemberInfo) {
-                listOf(recordFactory.createMgmInfoRecord(holdingIdentity, mgmInfo))
-            } else {
-                emptyList()
-            }
-        }
-        virtualNodeInfoPublisher.publish(records)
 
         val registrationRequest = membershipQueryClient.queryRegistrationRequests(
             viewOwningIdentity = holdingIdentity,
@@ -313,8 +286,8 @@ internal class VirtualNodeUpgradeOperationHandler(
         requestTimestamp: Instant,
         requestId: String,
         request: VirtualNodeUpgradeRequest
-    ): Triple<VirtualNodeInfo, List<CpkDbChangeLog>, CpiMetadata> {
-        val (upgradedVNodeInfo, cpkChangelogs, targetCpi) = entityManagerFactory.createEntityManager().transaction { em ->
+    ): Pair<VirtualNodeInfo, List<CpkDbChangeLog>> {
+        val (upgradedVNodeInfo, cpkChangelogs) = entityManagerFactory.createEntityManager().transaction { em ->
             val (virtualNode, targetCpi) = validateUpgradeRequest(em, request, requestId, request.forceUpgrade)
 
             val externalMessagingRouteConfig = externalMessagingRouteConfigGenerator.generateUpgradeConfig(
@@ -327,7 +300,7 @@ internal class VirtualNodeUpgradeOperationHandler(
 
             upgradeVirtualNodeEntity(em, request, requestId, requestTimestamp, targetCpi, externalMessagingRouteConfig)
         }
-        return Triple(upgradedVNodeInfo, cpkChangelogs, targetCpi)
+        return Pair(upgradedVNodeInfo, cpkChangelogs)
     }
 
     private fun upgradeVirtualNodeEntity(
@@ -356,7 +329,6 @@ internal class VirtualNodeUpgradeOperationHandler(
         return UpgradeTransactionCompleted(
             upgradedVnodeInfo,
             migrationChangelogs,
-            targetCpiMetadata,
         )
     }
 
@@ -471,7 +443,6 @@ internal class VirtualNodeUpgradeOperationHandler(
     data class UpgradeTransactionCompleted(
         val upgradedVirtualNodeInfo: VirtualNodeInfo,
         val cpkChangelogs: List<CpkDbChangeLog>,
-        val cpiMetadata: CpiMetadata,
     )
 
     private fun VirtualNodeUpgradeRequest.validateMandatoryFields() {

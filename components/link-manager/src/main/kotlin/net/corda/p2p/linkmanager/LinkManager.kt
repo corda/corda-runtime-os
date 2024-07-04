@@ -51,6 +51,7 @@ class LinkManager(
             lifecycleCoordinatorFactory,
             subscriptionFactory,
             messagingConfiguration,
+            configurationReaderService,
         ),
     clock: Clock = UTCClock()
 ) : LifecycleWithDominoTile {
@@ -83,6 +84,7 @@ class LinkManager(
         cryptoOpsClient,
         cordaAvroSerializationFactory,
         commonComponents,
+        configurationReaderService,
     )
     private val outboundLinkManager = OutboundLinkManager(
         lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,
@@ -106,7 +108,8 @@ class LinkManager(
         messagingConfiguration = messagingConfiguration,
         publisherFactory = publisherFactory,
         clock = clock,
-    )
+        configurationReadService = configurationReaderService,
+        )
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,

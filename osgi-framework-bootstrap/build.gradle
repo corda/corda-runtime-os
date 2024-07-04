@@ -18,7 +18,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':osgi-framework-api')
-    implementation 'org.slf4j:slf4j-api'
+    implementation libs.slf4j.api
     implementation libs.slf4j.jul
     runtimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     runtimeOnly libs.log4j.slf4j

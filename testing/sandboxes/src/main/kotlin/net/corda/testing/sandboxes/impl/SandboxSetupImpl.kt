@@ -70,7 +70,7 @@ class SandboxSetupImpl @Activate constructor(
             "org.apache.felix.scr",
             "org.hibernate.orm.core",
             "org.jetbrains.kotlin.osgi-bundle",
-            "slf4j.api"
+            "net.corda.testing.slf4jv1"
         ))
 
         private val REPLACEMENT_SERVICES = unmodifiableSet(setOf(

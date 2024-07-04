@@ -73,8 +73,19 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
                     command {
                         assignRoleToUser(vNodeCreatorName, vNodeCreatorRole["id"].textValue())
                     }
-                    condition { it.code == 200 }
+                    condition { it.code == 200 || it.code == 409 }
                 }
+
+                assertWithRetry {
+                    command {
+                     getRbacUser(vNodeCreatorName)
+                    }
+                    condition {
+                        it.body.toJson()["roleAssociations"].first()["roleId"].textValue().equals(vNodeCreatorRole["id"].textValue())
+                    }
+                }
+
+
                 UnirestHttpsClient(clusterInfo.rest.uri, vNodeCreatorName, vNodeCreatorName)
             } else {
                 initialClient
@@ -851,8 +862,6 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
 
     fun getCryptoWrappingKeysRotationStatus(tenantId: String) =
         initialClient.get("/api/$REST_API_VERSION_PATH/wrappingkey/rotation/${tenantId}")
-
-    fun getWrappingKeysProtocolVersion() = initialClient.get("/api/$REST_API_VERSION_PATH/wrappingkey/getprotocolversion")
 
 }
 

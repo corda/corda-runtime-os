@@ -124,7 +124,6 @@ import org.mockito.kotlin.spy
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.lang.StringBuilder
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.PublicKey
