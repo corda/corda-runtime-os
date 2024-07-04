@@ -37,6 +37,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import net.corda.utilities.time.Clock
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
@@ -133,53 +134,56 @@ class RegistrationProcessor(
         state: State<RegistrationState>?,
         event: Record<String, RegistrationCommand>,
     ): StateAndEventProcessor.Response<RegistrationState> {
-        logger.info("Processing registration command for registration ID ${event.key}.")
+        val stateValue = state?.value
+        logger.info(
+            "Received registration command for registration ID '${stateValue?.registrationId}', " +
+                "member '${stateValue?.registeringMember?.x500Name}'."
+        )
         val result = try {
-            val stateValue = state?.value
             when (val command = event.value?.command) {
                 is QueueRegistration -> {
-                    logger.info("Received queue registration command.")
+                    logger.logCommand(QueueRegistration::class.java)
                     handlers[QueueRegistration::class.java]?.invoke(stateValue, event)
                 }
 
                 is CheckForPendingRegistration -> {
-                    logger.info("Received check for pending registration command.")
+                    logger.logCommand(CheckForPendingRegistration::class.java)
                     handlers[CheckForPendingRegistration::class.java]?.invoke(stateValue, event)
                 }
 
                 is StartRegistration -> {
-                    logger.info("Received start registration command.")
+                    logger.logCommand(StartRegistration::class.java)
                     handlers[StartRegistration::class.java]?.invoke(stateValue, event)
                 }
 
                 is VerifyMember -> {
-                    logger.info("Received verify member during registration command.")
+                    logger.logCommand(VerifyMember::class.java)
                     handlers[VerifyMember::class.java]?.invoke(stateValue, event)
                 }
 
                 is ProcessMemberVerificationResponse -> {
-                    logger.info("Received process member verification response during registration command.")
+                    logger.logCommand(ProcessMemberVerificationResponse::class.java)
                     handlers[ProcessMemberVerificationResponse::class.java]?.invoke(stateValue, event)
                 }
 
                 is ApproveRegistration -> {
-                    logger.info("Received approve registration command.")
+                    logger.logCommand(ApproveRegistration::class.java)
                     handlers[ApproveRegistration::class.java]?.invoke(stateValue, event)
                 }
 
                 is DeclineRegistration -> {
-                    logger.info("Received decline registration command.")
+                    logger.logCommand(DeclineRegistration::class.java)
                     logger.warn("Declining registration because: ${command.reason}")
                     handlers[DeclineRegistration::class.java]?.invoke(stateValue, event)
                 }
 
                 is ProcessMemberVerificationRequest -> {
-                    logger.info("Received process member verification request during registration command.")
+                    logger.logCommand(ProcessMemberVerificationRequest::class.java)
                     handlers[ProcessMemberVerificationRequest::class.java]?.invoke(stateValue, event)
                 }
 
                 is PersistMemberRegistrationState -> {
-                    logger.info("Received persist member registration state command.")
+                    logger.logCommand(PersistMemberRegistrationState::class.java)
                     handlers[PersistMemberRegistrationState::class.java]?.invoke(stateValue, event)
                 }
 
@@ -205,5 +209,9 @@ class RegistrationProcessor(
 
     private fun createEmptyResult(state: RegistrationState? = null): RegistrationHandlerResult {
         return RegistrationHandlerResult(state, emptyList())
+    }
+
+    private fun <T> Logger.logCommand(command: Class<T>) {
+        info("Processing registration command: ${command.simpleName}.")
     }
 }
