@@ -116,13 +116,9 @@ class CordaRestClient(
 
             val urlWithDefaultBasePath = baseUrl.toString() + defaultBasePath
 
-            val builder = ApiClient.apply {
-                // TODO: is this necessary? Interceptor will set the Auth header anyway, overriding whatever there was before
-                // Make sure static credentials are not used
-                this.username = null
-                this.password = null
-            }.builder
+            val builder = ApiClient.builder
 
+            // Always add the basic auth header with the supplied credentials
             builder.addInterceptor { chain ->
                 val request = chain.request().newBuilder()
                     .header("Authorization", okhttp3.Credentials.basic(username, password))

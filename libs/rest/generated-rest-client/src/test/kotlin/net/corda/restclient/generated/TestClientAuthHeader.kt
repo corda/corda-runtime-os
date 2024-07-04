@@ -21,19 +21,19 @@ class TestClientAuthHeader {
         fun setup() {
             app = Javalin.create().start(0)
             app.get("api/v5_3/mgm/1234/info") { ctx ->
+
+                assertThat(ctx.basicAuthCredentialsExist()).isTrue()
+
+                // Respond with the credentials from the basic auth header
                 val (user, password) = ctx.basicAuthCredentials()
                 ctx.contentType(ContentType.APPLICATION_JSON)
-                    .status(200)
                     .result("$user:$password")
             }
         }
 
         @AfterAll
         @JvmStatic
-        fun teardown() {
-            app.stop()
-        }
-
+        fun teardown() { app.stop() }
     }
 
     private val localhost = URI.create("http:localhost:${app.port()}")
@@ -43,9 +43,14 @@ class TestClientAuthHeader {
     }
 
     @BeforeEach
-    fun resetStaticCredentialsIfNotNull() {
-        ApiClient.username?.let { ApiClient.username = null }
-        ApiClient.password?.let { ApiClient.password = null }
+    fun resetStaticCredentials() {
+        ApiClient.username = null
+        ApiClient.password = null
+    }
+
+    private fun assertThatStaticCredsAreNull() {
+        assertThat(ApiClient.username).isNull()
+        assertThat(ApiClient.password).isNull()
     }
 
     @Test
@@ -53,8 +58,7 @@ class TestClientAuthHeader {
         val defaultClient = CordaRestClient.createHttpClient(localhost)
         assertThat(defaultClient.echoCredentials()).isEqualTo("admin:admin")
 
-        assertThat(ApiClient.username).isNull()
-        assertThat(ApiClient.password).isNull()
+        assertThatStaticCredsAreNull()
     }
 
     @Test
@@ -62,8 +66,7 @@ class TestClientAuthHeader {
         val defaultClient = CordaRestClient.createHttpClient(localhost, "foo", "bar")
         assertThat(defaultClient.echoCredentials()).isEqualTo("foo:bar")
 
-        assertThat(ApiClient.username).isNull()
-        assertThat(ApiClient.password).isNull()
+        assertThatStaticCredsAreNull()
 
         ApiClient.apply {
             username = "foo-static"
@@ -86,11 +89,9 @@ class TestClientAuthHeader {
         assertThat(client1.echoCredentials()).isEqualTo("user-one:password-one")
         assertThat(client2.echoCredentials()).isEqualTo("user-two:password-two")
 
-        resetStaticCredentialsIfNotNull()
+        resetStaticCredentials()
 
         assertThat(client1.echoCredentials()).isEqualTo("user-one:password-one")
         assertThat(client2.echoCredentials()).isEqualTo("user-two:password-two")
     }
-
-    // TODO: check that default static cred fields are null and not overwritten by the client
 }
