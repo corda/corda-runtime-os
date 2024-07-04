@@ -102,6 +102,7 @@ interface ClientRequestContext {
      * Basic auth credentials. Returns false otherwise.
      */
     fun basicAuthCredentialsExist(): Boolean = getBasicAuthCredentials() != null
+
     /**
      * Gets basic-auth credentials from the request, or throws.
      *
