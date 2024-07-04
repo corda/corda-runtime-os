@@ -83,9 +83,9 @@ object Permissions {
 
         // Property manipulation permissions
         "AddPropertyToUser" to "POST:/api/$VERSION_PATH_REGEX/user/${RbacKeys.USER_URL_REGEX}/property",
-        "DeletePropertyFromUser" to "DELETE:/api/$VERSION_PATH_REGEX/user/${RbacKeys.USER_URL_REGEX}/property/*",
+        "DeletePropertyFromUser" to "DELETE:/api/$VERSION_PATH_REGEX/user/${RbacKeys.USER_URL_REGEX}/property\\/.*",
         "GetUserProperties" to "GET:/api/$VERSION_PATH_REGEX/user/${RbacKeys.USER_URL_REGEX}/property",
-        "GetUsersByProperty" to "GET:/api/$VERSION_PATH_REGEX/user/findByProperty/*/*"
+        "GetUsersByProperty" to "GET:/api/$VERSION_PATH_REGEX/user/findByProperty\\/.*\\/.*"
     ).toMap()
 
     val vNodeCreator: Map<String, String> = listOf(
