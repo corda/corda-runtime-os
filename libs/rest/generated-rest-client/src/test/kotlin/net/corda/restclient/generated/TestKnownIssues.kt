@@ -6,6 +6,7 @@ import net.corda.restclient.generated.apis.CertificateApi
 import net.corda.restclient.generated.models.GenerateCsrWrapperRequest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatCode
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -224,5 +225,39 @@ class TestKnownIssues {
             val response: String = client.helloRestClient.postHello(username)
             assertThat(response).isEqualTo(greeting)
         }
+    }
+
+    /**
+     * Test workaround `applyWorkaroundForClientErrorMessage`
+     * By default generated client doesn't include the response body
+     * in the exception message of client errors (4xx).
+     * We want to include the error response body in the exception message for better logging.
+     */
+    @Test
+    fun clientAndServerErrorsIncludeBodyInMessage() {
+        val errorJson = """
+            {
+                "title": "Test error",
+                "reason": "Test reason"
+            }
+        """.trimIndent()
+        app
+            .get("api/v5_3/key/client/error") { ctx ->
+                ctx.status(400)
+                ctx.result(errorJson)
+            }
+            .get("api/v5_3/key/server/error") { ctx ->
+                ctx.status(500)
+                ctx.result(errorJson)
+            }
+        val client = CordaRestClient.createHttpClient(baseUrl = localhost)
+
+        // Default behaviour: Server errors include the response body in the exception message
+        assertThatThrownBy { client.keyManagementClient.getKeyTenantidKeyid("server", "error") }
+            .hasMessageContaining(errorJson)
+
+        // Behaviour added by the workaround: Client errors should include the response body in the exception message
+        assertThatThrownBy { client.keyManagementClient.getKeyTenantidKeyid("client", "error") }
+            .hasMessageContaining(errorJson)
     }
 }

@@ -36,6 +36,7 @@ dependencies {
     implementation libs.okHttp
 
     testImplementation libs.javalin
+    testRuntimeOnly libs.log4j.slf4j
 }
 
 // Pick up the generated code so we can use it in src/main & src/test
