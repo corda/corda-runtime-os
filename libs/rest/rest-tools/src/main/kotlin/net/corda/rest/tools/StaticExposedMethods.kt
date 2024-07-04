@@ -1,9 +1,10 @@
 package net.corda.rest.tools
 
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.ws.DuplexChannel
 import java.lang.reflect.Method
 
-private data class MethodDocs(val methodDescription: String, val responseDescription: String)
+private data class MethodDocs(val methodDescription: String, val responseDescription: String, val maxVersion: RestApiVersion)
 
 /**
  * These methods are automatically exposed from the HTTP-RPC functionality as GET methods.
@@ -15,7 +16,8 @@ private val staticExposedGetMethods: Map<String, MethodDocs> =
     mapOf(
         "getProtocolVersion" to MethodDocs(
             "Returns the version of the endpoint",
-            "An integer value specifying the version of the endpoint"
+            "An integer value specifying the version of the endpoint",
+            RestApiVersion.C5_2
         )
     )
         .mapKeys { it.key.lowercase() }
@@ -32,6 +34,11 @@ val Method.methodDescription: String
 val Method.responseDescription: String
     get() {
         return staticExposedGetMethods[name.lowercase()]?.responseDescription ?: ""
+    }
+
+val Method.maxVersion: RestApiVersion
+    get() {
+        return staticExposedGetMethods[name.lowercase()]!!.maxVersion
     }
 
 fun Class<*>.isDuplexChannel(): Boolean = (this == DuplexChannel::class.java)
