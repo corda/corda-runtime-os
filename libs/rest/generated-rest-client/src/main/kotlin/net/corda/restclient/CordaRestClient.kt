@@ -118,9 +118,7 @@ class CordaRestClient(
                 val request = chain.request().newBuilder()
                     .header("Authorization", okhttp3.Credentials.basic(username, password))
                     .build()
-                println("!!! Using credentials $username:$password to authenticate with ${request.url}")
                 val response = chain.proceed(request)
-                println("!!! Response code: ${response.code}")
                 response
             }
 
