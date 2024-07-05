@@ -28,7 +28,7 @@ public class OSGiFrameworkUtilsTest {
 
     @Test
     void getFrameworkFromReturnsFramework() throws Exception {
-        final Logger logger = LoggerFactory.getLogger(OSGiFrameworkMain.class);
+        final Logger logger = LoggerFactory.getLogger(OSGiFrameworkUtilsTest.class);
         final Framework framework = getFrameworkFrom(frameworkStorageDir, this.getClass().getClassLoader(), logger);
         assertNotNull(framework);
     }

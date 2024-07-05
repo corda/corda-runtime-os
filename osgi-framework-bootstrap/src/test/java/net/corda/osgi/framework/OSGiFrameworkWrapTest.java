@@ -1,6 +1,5 @@
 package net.corda.osgi.framework;
 
-import static java.util.stream.Collectors.toUnmodifiableList;
 import static net.corda.osgi.framework.OSGiFrameworkUtils.getFrameworkFrom;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -81,13 +80,13 @@ final class OSGiFrameworkWrapTest {
             return reader.lines().map(OSGiFrameworkUtils::removeTrailingComment)
                     .map(String::trim)
                     .filter(line -> !line.isEmpty())
-                    .collect(toUnmodifiableList());
+                    .toList();
         }
     }
 
     private Path frameworkStorageDir;
 
-    final Logger logger = LoggerFactory.getLogger(OSGiFrameworkMain.class);
+    private final Logger logger = LoggerFactory.getLogger(OSGiFrameworkWrapTest.class);
 
     @BeforeEach
     void setup(@TempDir Path frameworkStorageDir) {
@@ -95,12 +94,11 @@ final class OSGiFrameworkWrapTest {
     }
 
     private Framework getFramework() throws ClassNotFoundException, IOException {
-        final Framework framework = getFrameworkFrom(
+        return getFrameworkFrom(
                 frameworkStorageDir,
                 this.getClass().getClassLoader(),
                 logger
         );
-        return framework;
     }
 
     @Test
