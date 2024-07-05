@@ -58,7 +58,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
             ).apply { start() }
             client = TestHttpClientUnirestImpl(
                 "http://${restServerSettings.address.host}:${server.port}/" +
-                        "${restServerSettings.context.basePath}/${apiVersion.versionPath}/"
+                    "${restServerSettings.context.basePath}/${apiVersion.versionPath}/"
             )
         }
 
@@ -543,5 +543,4 @@ class RestServerOpenApiTest : RestServerTestBase() {
         }
       }
     """.trimIndent()
-
 }
