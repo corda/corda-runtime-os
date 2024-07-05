@@ -1,6 +1,7 @@
 package net.corda.libs.permissions.storage.reader
 
 import net.corda.lifecycle.Resource
+import net.corda.data.permissions.Group as AvroGroup
 import net.corda.data.permissions.Permission as AvroPermission
 import net.corda.data.permissions.Role as AvroRole
 import net.corda.data.permissions.User as AvroUser
@@ -57,6 +58,27 @@ interface PermissionStorageReader : Resource {
      * @param permission The permission to be published.
      */
     fun publishNewPermission(permission: AvroPermission)
+
+    /**
+     * Broadcasts a new group onto the messaging bus.
+     *
+     * @param group The group to be published.
+     */
+    fun publishNewGroup(group: AvroGroup)
+
+    /**
+     * Broadcasts an updated group onto the messaging bus.
+     *
+     * @param group The group to be published.
+     */
+    fun publishUpdatedGroup(group: AvroGroup)
+
+    /**
+     * Broadcasts the deleted group onto the messaging bus.
+     *
+     * @param id The id of the group to be deleted.
+     */
+    fun publishDeletedGroup(id: String)
 
     /**
      * Reads updated groups based on the ids passed into this method and publishes them to the message bus.
