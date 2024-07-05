@@ -266,12 +266,12 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
     private fun Method.createResponseBody(responseDescription: String, successCode: Int): ResponseBody {
         val isReturnTypeNullable = this.kotlinFunction?.returnType?.isMarkedNullable ?: false
         return ResponseBody(
-                    responseDescription,
-                    successCode,
-                    this.toClassAndParameterizedTypes().first,
-                    this.toClassAndParameterizedTypes().second,
-                    isReturnTypeNullable
-                )
+            responseDescription,
+            successCode,
+            this.toClassAndParameterizedTypes().first,
+            this.toClassAndParameterizedTypes().second,
+            isReturnTypeNullable
+        )
     }
 
     private fun Method.toPUTEndpoint(annotation: HttpPUT): Endpoint {
