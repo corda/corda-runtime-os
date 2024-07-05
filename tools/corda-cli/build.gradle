@@ -57,13 +57,18 @@ tasks.register("cliInstallArchive", Zip) {
     destinationDirectory = file("$buildDir/zip")
 }
 
+tasks.register("cleanDir", Delete) {
+    description 'Removes any previously generated scripts'
+    delete 'build/generatedScripts'
+}
+
 tasks.register("cliS3Download", Copy) {
     dependsOn cleanDir
     description 'Copy corda-cli install scripts to a location in build dir and update to use correct version'
     if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
         def s3Url = System.getenv('HTTPS_PATH') + '/' + s3_upload_group_id.replace('.', '/') + "/corda-cli-downloader/$version/corda-cli-downloader-$version"
         logger.info("S3 Https URL: $s3Url")
-        from 'installScripts'
+        from 'templateScripts'
         into 'build/generatedScripts'
         filter {
             String line -> line.replaceAll("TEMPLATE_URL", s3Url)
