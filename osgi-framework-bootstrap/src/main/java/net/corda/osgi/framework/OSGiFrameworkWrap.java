@@ -32,8 +32,6 @@ import java.util.stream.Stream;
 
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Comparator.comparing;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toUnmodifiableList;
 import static net.corda.osgi.framework.OSGiFrameworkUtils.isFragmentBundle;
 import static net.corda.osgi.framework.OSGiFrameworkUtils.isBundleStartable;
 import static net.corda.osgi.framework.OSGiFrameworkUtils.isBundleStoppable;
@@ -115,7 +113,7 @@ class OSGiFrameworkWrap implements AutoCloseable {
      */
     private final List<Bundle> bundles = Collections.synchronizedList(new ArrayList<>());
 
-    private static final Logger logger = LoggerFactory.getLogger(OSGiFrameworkMain.class);
+    private static final Logger logger = LoggerFactory.getLogger(OSGiFrameworkWrap.class);
 
     /**
      * @param framework to bootstrap.
@@ -142,7 +140,7 @@ class OSGiFrameworkWrap implements AutoCloseable {
 
         final List<Bundle> sortedBundles = this.bundles.stream()
                 .sorted(comparing(Bundle::getSymbolicName))
-                .collect(toUnmodifiableList());
+                .toList();
         for (Bundle bundle : sortedBundles) {
             if (isFragmentBundle(bundle)) {
                 logger.info("OSGi bundle {} ID = {} {} {} {} fragment.",
@@ -213,7 +211,7 @@ class OSGiFrameworkWrap implements AutoCloseable {
      * @see #install
      */
     private void installBundleJar(String resource, ClassLoader classLoader) throws BundleException, IOException {
-        logger.debug("OSGi bundle {} installing...", resource);
+        logger.debug("OSGi bundle {} installing from resource: ", resource);
         final URL resourceUrl = classLoader.getResource(resource);
         if (resourceUrl == null) {
             throw new IOException("OSGi bundle at " + resource + " not found");
@@ -245,7 +243,7 @@ class OSGiFrameworkWrap implements AutoCloseable {
                 try (Stream<Path> stream = Files.walk(directory, 1)) {
                     paths = stream.filter(Files::isRegularFile)
                             .filter(p -> p.toString().endsWith(JAR_EXTENSION))
-                            .collect(toList());
+                            .toList();
                 }
                 // We want to install all files from this directory.
                 // In the case of jdbc drivers we need the jdbc `Bundle` and
@@ -264,7 +262,7 @@ class OSGiFrameworkWrap implements AutoCloseable {
      * @param fileUri URI to the file, i.e. `file:///tmp/some.jar`
      */
     private void installBundleFile(URI fileUri) throws BundleException, IOException {
-        logger.debug("OSGi bundle {} installing...", fileUri);
+        logger.debug("OSGi bundle {} installing from file: ", fileUri);
 
         try (InputStream inputStream = new BufferedInputStream(new FileInputStream(fileUri.getPath()))) {
             final BundleContext bundleContext = framework.getBundleContext();
@@ -316,7 +314,7 @@ class OSGiFrameworkWrap implements AutoCloseable {
             bundleResources = reader.lines().map(OSGiFrameworkUtils::removeTrailingComment)
                     .map(String::trim)
                     .filter(s -> !s.isEmpty())
-                    .collect(toList());
+                    .toList();
         }
         for (String bundleResource : bundleResources) {
             install(bundleResource);
@@ -430,7 +428,14 @@ class OSGiFrameworkWrap implements AutoCloseable {
         frameworkContext.addFrameworkListener(evt -> {
             if ((evt.getType() & FrameworkEvent.ERROR) != 0) {
                 final Throwable throwable = evt.getThrowable();
-                logger.error(throwable.getLocalizedMessage(), throwable.getCause());
+                final String bundleId;
+                if (evt.getBundle() == null) {
+                    bundleId = "<unknown>";
+                } else {
+                    bundleId = evt.getBundle().getSymbolicName() + "-" + evt.getBundle().getVersion();
+                }
+                logger.error("{} from bundle: {} at source: {}",
+                        throwable.getLocalizedMessage(), bundleId, evt.getSource(), throwable);
             }
         });
 
@@ -439,11 +444,12 @@ class OSGiFrameworkWrap implements AutoCloseable {
             if (application != null) {
                 application.startup(args);
             } else {
-                logger.error("Your Application could not be instantiated:\n" +
-                        "* Check your constructor @Reference parameters\n" +
-                        "  Remove all parameters and add them back one at a time to locate the problem.\n" +
-                        "* Split packages are NOT allowed in OSGi:\n" +
-                        "  check that your interface (bundle) and impl (bundle) are in different packages");
+                logger.error("""
+                        Your Application could not be instantiated:
+                        * Check your constructor @Reference parameters
+                          Remove all parameters and add them back one at a time to locate the problem.
+                        * Split packages are NOT allowed in OSGi:
+                          check that your interface (bundle) and impl (bundle) are in different packages""");
             }
         } else {
             throw new ClassNotFoundException(
@@ -543,7 +549,7 @@ class OSGiFrameworkWrap implements AutoCloseable {
             switch (frameworkEvent.getType()) {
                 case FrameworkEvent.ERROR:
                     final Throwable throwable = frameworkEvent.getThrowable();
-                    logger.error("OSGi framework stop error: " + throwable.getMessage(), throwable);
+                    logger.error("OSGi framework stop error: {}", throwable.getMessage(), throwable);
                     break;
                 case FrameworkEvent.STOPPED:
                     logger.info("OSGi framework {} {} stopped.", framework.getClass().getCanonicalName(), framework.getVersion());
