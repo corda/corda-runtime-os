@@ -12,6 +12,7 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionMetadataUtils.parseMetadata
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.filtered.ComponentGroupFilterParameters
 import net.corda.ledger.common.data.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
@@ -52,6 +53,7 @@ import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
+import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -247,6 +249,187 @@ class UtxoPersistenceServiceImpl(
             }
             return status
         }
+    }
+
+    override fun persistTxIfDoesNotExist(
+        signedTransaction: UtxoSignedTransaction,
+        wireTransaction: WireTransaction,
+        transactionStatus: TransactionStatus,
+        visibleStatesIndexes: List<Int>,
+        utxoTokenMap: Map<StateRef, UtxoToken>,
+        serializer: SerializationService
+    ): String {
+        entityManagerFactory.transaction { em ->
+            val transactionIdString = signedTransaction.id.toString()
+            val status = repository.findSignedTransactionStatus(em, transactionIdString) ?: run {
+                persistTx(signedTransaction, wireTransaction, transactionStatus, visibleStatesIndexes, utxoTokenMap, serializer) {
+                    block -> block(em)
+                }
+                return ""
+            }
+            return status
+        }
+    }
+
+    override fun persistTx(
+        signedTransaction: UtxoSignedTransaction,
+        wireTransaction: WireTransaction,
+        transactionStatus: TransactionStatus,
+        visibleStatesIndexes: List<Int>,
+        utxoTokenMap: Map<StateRef, UtxoToken>,
+        serializer: SerializationService,
+        optionalTransactionBlock: ((EntityManager) -> Unit) -> Unit
+    ): Instant {
+        val wrappedUtxoWireTransaction = WrappedUtxoWireTransaction(wireTransaction, serializer)
+        val nowUtc = utcClock.instant()
+        val transactionIdString = wireTransaction.id.toString()
+
+        val metadataBytes = wireTransaction.componentGroupLists[0][0]
+        val metadataHash = sandboxDigestService.hash(metadataBytes, DigestAlgorithmName.SHA2_256).toString()
+
+        val metadata = wireTransaction.metadata as TransactionMetadataInternal
+
+        val visibleStatesSet = visibleStatesIndexes.toSet()
+        val visibleStates: Map<Int, StateAndRef<ContractState>> = wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal]
+            .zip(wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal])
+            .withIndex()
+            .filter { indexed -> visibleStatesSet.contains(indexed.index) }
+            .associate { (index, value) ->
+                index to UtxoVisibleTransactionOutputDto(transactionIdString, index, value.second, value.first).toStateAndRef(
+                    serializer
+                )
+            }
+
+        val visibleTransactionOutputs = visibleStates.entries.map { (stateIndex, stateAndRef) ->
+            UtxoRepository.VisibleTransactionOutput(
+                stateIndex,
+                stateAndRef.state.contractState::class.java.canonicalName,
+                CustomRepresentation(extractJsonDataFromState(stateAndRef)),
+                utxoTokenMap[stateAndRef.ref],
+                stateAndRef.state.notaryName.toString()
+            )
+        }
+
+        val transactionSignatures = signedTransaction.signatures.map { signature ->
+            UtxoRepository.TransactionSignature(
+                transactionIdString,
+                serializationService.serialize(signature).bytes,
+                signature.by
+            )
+        }
+
+        optionalTransactionBlock { em ->
+
+            repository.persistTransactionMetadata(
+                em,
+                metadataHash,
+                metadataBytes,
+                requireNotNull(metadata.getMembershipGroupParametersHash()) { "Metadata without membership group parameters hash" },
+                requireNotNull(metadata.getCpiMetadata()) { "Metadata without CPI metadata" }.fileChecksum
+            )
+
+            val inserted =
+                if (transactionStatus != TransactionStatus.UNVERIFIED) {
+                    /**
+                     * Insert the Transaction
+                     * The record will only be inserted when:
+                     * - there is no record exists given txId
+                     * - there is record which is UNVERIFIED stx
+                     * - there is record which is DRAFT stx
+                     * */
+                    repository.persistTransaction(
+                        em,
+                        transactionIdString,
+                        wireTransaction.privacySalt.bytes,
+                        "account=TODO", // TODO how?
+                        nowUtc,
+                        transactionStatus,
+                        metadataHash,
+                    )
+                } else {
+                    // ignore if the incoming transaction is an unverified stx
+                    repository.persistUnverifiedTransaction(
+                        em,
+                        transactionIdString,
+                        wireTransaction.privacySalt.bytes,
+                        "account=TODO", // TODO how?
+                        nowUtc,
+                        metadataHash
+                    )
+                    null
+                }
+
+            repository.persistTransactionComponents(
+                em,
+                transactionIdString,
+                wireTransaction.componentGroupLists,
+                this::hash
+            )
+
+            val consumedTransactionSources = wrappedUtxoWireTransaction.inputStateRefs.mapIndexed { index, input ->
+                UtxoRepository.TransactionSource(UtxoComponentGroup.INPUTS, index, input.transactionId.toString(), input.index)
+            }
+
+            val referenceTransactionSources = wrappedUtxoWireTransaction.referenceStateRefs.mapIndexed { index, input ->
+                UtxoRepository.TransactionSource(UtxoComponentGroup.REFERENCES, index, input.transactionId.toString(), input.index)
+            }
+
+            repository.persistTransactionSources(em, transactionIdString, consumedTransactionSources + referenceTransactionSources)
+
+            // rectify data from U -> V
+            if (inserted != null && !inserted) {
+                // inserted != null means the incoming tx is not UNVERIFIED (incoming U is always stx)
+                // tx not being inserted implies that tx of the same ID exists in the table, and need to be rectified
+
+                val indexes = repository.findConsumedTransactionSourcesForTransaction(
+                    em,
+                    transactionIdString,
+                    visibleTransactionOutputs.map { output -> output.stateIndex }
+                )
+
+                // insert outputs to be able to mark spent outputs as consumed
+                repository.persistVisibleTransactionOutputs(
+                    em,
+                    transactionIdString,
+                    nowUtc,
+                    visibleTransactionOutputs
+                )
+
+                if (indexes.isNotEmpty()) {
+                    repository.markTransactionVisibleStatesConsumed(
+                        em,
+                        indexes.map { index -> StateRef(wireTransaction.id, index) },
+                        nowUtc
+                    )
+                }
+                repository.updateTransactionToVerified(em, transactionIdString, nowUtc)
+            } else {
+                // outputs of stx UNVERIFIED would be empty
+                repository.persistVisibleTransactionOutputs(
+                    em,
+                    transactionIdString,
+                    nowUtc,
+                    visibleTransactionOutputs
+                )
+            }
+
+            // Mark inputs as consumed
+            if (transactionStatus == TransactionStatus.VERIFIED) {
+                val inputStateRefs = wrappedUtxoWireTransaction.inputStateRefs
+                if (inputStateRefs.isNotEmpty()) {
+                    repository.markTransactionVisibleStatesConsumed(
+                        em,
+                        inputStateRefs,
+                        nowUtc
+                    )
+                }
+            }
+
+            // Insert the Transactions signatures
+            repository.persistTransactionSignatures(em, transactionSignatures, nowUtc)
+        }
+
+        return nowUtc
     }
 
     private inline fun persistTransaction(

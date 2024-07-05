@@ -11,6 +11,7 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.common.NotaryLookup
+import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.token.selection.TokenClaimCriteria
 import net.corda.v5.ledger.utxo.token.selection.TokenSelection
 import org.slf4j.LoggerFactory
@@ -32,6 +33,10 @@ class TokenSelectionFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var notaryLookup: NotaryLookup
+
+    @CordaInject
+    lateinit var ledgerService: UtxoLedgerService
+
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
         log.info("Starting Token Selection Flow...")

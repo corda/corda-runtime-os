@@ -493,6 +493,7 @@ include 'tools:plugins:topic-config'
 include 'tools:plugins:virtual-node'
 include 'tools:plugins:cpi'
 include 'tools:plugins:common-utils'
+include 'ledger-lib'
 
 // The following logic dictates if we use the composite build gradle functionality,
 // If this evaluates to true local source code will be used in place of binary dependencies.

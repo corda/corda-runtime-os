@@ -3,16 +3,20 @@ package net.corda.ledger.persistence.utxo
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken
+import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import java.time.Instant
+import javax.persistence.EntityManager
 
 @Suppress("TooManyFunctions")
 interface UtxoPersistenceService {
@@ -63,6 +67,25 @@ interface UtxoPersistenceService {
     ): Instant
 
     fun persistTransactionIfDoesNotExist(transaction: UtxoTransactionReader): String
+
+    fun persistTx(
+        signedTransaction: UtxoSignedTransaction,
+        wireTransaction: WireTransaction,
+        transactionStatus: TransactionStatus,
+        visibleStatesIndexes: List<Int>,
+        utxoTokenMap: Map<StateRef, UtxoToken>,
+        serializer: SerializationService,
+        optionalTransactionBlock: ((EntityManager) -> Unit) -> Unit
+    ): Instant
+
+    fun persistTxIfDoesNotExist(
+        signedTransaction: UtxoSignedTransaction,
+        wireTransaction: WireTransaction,
+        transactionStatus: TransactionStatus,
+        visibleStatesIndexes: List<Int>,
+        utxoTokenMap: Map<StateRef, UtxoToken>,
+        serializer: SerializationService
+    ): String
 
     fun updateStatus(id: String, transactionStatus: TransactionStatus)
 

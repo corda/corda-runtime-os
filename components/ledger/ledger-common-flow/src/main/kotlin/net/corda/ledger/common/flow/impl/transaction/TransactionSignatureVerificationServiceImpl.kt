@@ -35,16 +35,28 @@ import java.security.PublicKey
     scope = ServiceScope.PROTOTYPE
 )
 class TransactionSignatureVerificationServiceImpl @Activate constructor(
+
+    // Need to stub
     @Reference(service = SerializationServiceInternal::class)
     private val serializationService: SerializationServiceInternal,
+
+    // Can instantiate
     @Reference(service = DigitalSignatureVerificationService::class)
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
+
+    // Can instantiate
     @Reference(service = SignatureSpecService::class)
     private val signatureSpecService: SignatureSpecService,
+
+    // Can instantiate
     @Reference(service = MerkleTreeProvider::class)
     private val merkleTreeProvider: MerkleTreeProvider,
+
+    // Can instantiate
     @Reference(service = DigestService::class)
     private val digestService: DigestService,
+
+    // Can instantiate
     @Reference(service = KeyEncodingService::class)
     private val keyEncodingService: KeyEncodingService
 ) : TransactionSignatureVerificationService,

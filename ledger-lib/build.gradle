@@ -1,0 +1,52 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    api "net.corda:corda-avro-schema"
+
+    compileOnly platform("net.corda:corda-api:$cordaApiVersion")
+    compileOnly 'org.osgi:osgi.core'
+    compileOnly 'org.jetbrains:annotations'
+
+    implementation 'org.apache.commons:commons-lang3:3.14.0'
+
+    implementation 'net.corda:corda-ledger-utxo'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation libs.postgresql.jdbc
+
+    implementation project(':components:crypto:crypto-persistence')
+    implementation project(':components:crypto:crypto-softhsm-impl')
+    implementation project(':components:db:db-connection-manager-impl')
+    implementation project(':components:ledger:ledger-utxo-flow')
+    implementation project(':components:ledger:ledger-persistence')
+    implementation project(':components:ledger:ledger-common-flow')
+    implementation project(':components:ledger:ledger-common-flow-api')
+    implementation project(':components:flow:flow-service')
+    implementation project(':components:virtual-node:sandbox-group-context-service')
+    implementation project(':libs:application:application-impl')
+    implementation project(':libs:db:db-orm')
+    implementation project(':libs:db:db-orm-impl')
+    implementation project(':libs:cache:cache-caffeine')
+    implementation project(':libs:crypto:crypto-impl')
+    implementation project(':libs:crypto:cipher-suite-impl')
+    implementation project(':libs:crypto:merkle-impl')
+    implementation project(':libs:flows:flow-api')
+    implementation project(':libs:layered-property-map')
+    implementation project(':libs:membership:membership-common')
+    implementation project(':libs:membership:membership-impl')
+    implementation project(':libs:messaging:kafka-message-bus-impl')
+    implementation project(':libs:ledger:ledger-common-data')
+    implementation project(':libs:ledger:ledger-utxo-data')
+    implementation project(':libs:ledger:ledger-utxo-transaction-verifier')
+    implementation project(':libs:platform-info')
+    implementation project(':libs:serialization:serialization-checkpoint-api')
+    implementation project(':libs:serialization:serialization-amqp-api')
+    implementation project(':libs:serialization:serialization-amqp')
+    implementation project(':libs:serialization:json-validator')
+    implementation project(':libs:schema-registry:schema-registry')
+    implementation project(':libs:schema-registry:schema-registry-impl')
+    implementation project(':libs:utilities')
+    implementation project(':libs:virtual-node:virtual-node-info')
+    implementation project(':libs:virtual-node:sandbox-group-context')
+}

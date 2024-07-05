@@ -44,32 +44,68 @@ import java.security.PublicKey
 @Suppress("LongParameterList")
 @Component(service = [UtxoSignedTransactionFactory::class, UsedByFlow::class], scope = ServiceScope.PROTOTYPE)
 class UtxoSignedTransactionFactoryImpl @Activate constructor(
+
+
     @Reference(service = CurrentSandboxGroupContext::class)
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
+
+
     @Reference(service = JsonMarshallingService::class, scope = PROTOTYPE_REQUIRED)
     private val jsonMarshallingService: JsonMarshallingService,
+
+
     @Reference(service = JsonValidator::class, scope = PROTOTYPE_REQUIRED)
     private val jsonValidator: JsonValidator,
+
+
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
+
+
     @Reference(service = TransactionSignatureServiceInternal::class)
     private val transactionSignatureService: TransactionSignatureServiceInternal,
+
+
+    // TODO probably stub?
     @Reference(service = TransactionMetadataFactory::class)
     private val transactionMetadataFactory: TransactionMetadataFactory,
+
+
+    // instantiate
     @Reference(service = WireTransactionFactory::class)
     private val wireTransactionFactory: WireTransactionFactory,
+
+
+    // TODO need to stub because of the external event executor
     @Reference(service = UtxoLedgerTransactionFactory::class)
     private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
+
+
+    // TODO need to stub because of the external event executor
     @Reference(service = UtxoLedgerTransactionVerificationService::class)
     private val utxoLedgerTransactionVerificationService: UtxoLedgerTransactionVerificationService,
+
+
+    // Stub?
     @Reference(service = UtxoLedgerGroupParametersPersistenceService::class)
     private val utxoLedgerGroupParametersPersistenceService: UtxoLedgerGroupParametersPersistenceService,
+
+
+    // Stub
     @Reference(service = GroupParametersLookupInternal::class)
     private val groupParametersLookup: GroupParametersLookupInternal,
+
+
+    // Stub
     @Reference(service = SignedGroupParametersVerifier::class)
     private val signedGroupParametersVerifier: SignedGroupParametersVerifier,
+
+
+    // Stub SerializationServiceInternal and it should be ok
     @Reference(service = NotarySignatureVerificationServiceInternal::class)
     private val notarySignatureVerificationService: NotarySignatureVerificationServiceInternal,
+
+    // Stubbed
     @Reference(service = PrivacySaltProviderService::class)
     private val privacySaltProviderService: PrivacySaltProviderService
 ) : UtxoSignedTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
