@@ -19,7 +19,6 @@ import net.corda.restclient.generated.apis.RBACRoleApi
 import net.corda.restclient.generated.apis.RBACUserApi
 import net.corda.restclient.generated.apis.VirtualNodeApi
 import net.corda.restclient.generated.apis.VirtualNodeMaintenanceApi
-import net.corda.restclient.generated.infrastructure.ApiClient
 import okhttp3.OkHttpClient
 import java.net.URI
 import java.security.SecureRandom
@@ -31,8 +30,6 @@ import javax.net.ssl.X509TrustManager
 
 @Suppress("LongParameterList")
 class CordaRestClient(
-    private val baseUrl: String,
-    private val httpClient: OkHttpClient,
     val certificatesClient: CertificateApi,
     val configurationClient: ConfigurationApi,
     val cpiClient: CPIApi,
@@ -59,11 +56,6 @@ class CordaRestClient(
 
         /**
          * Create an instance of CordaRestClient with the given baseUrl, username and password.
-         * Please note, if you use this multiple times with different credentials, you will be overwriting the previous credentials.
-         * e.g.
-         * val adminClient = createHttpClient(baseUrl, "admin", adminPassword)
-         * val userClient = createHttpClient(baseUrl, "user", userPassword)
-         * The `adminClient` will have the credentials of the `userClient` after the second call.
          *
          * @param baseUrl The base URL of the Corda node.
          * @param username The username to authenticate with.
@@ -119,10 +111,16 @@ class CordaRestClient(
 
             val urlWithDefaultBasePath = baseUrl.toString() + defaultBasePath
 
-            val builder = ApiClient.apply {
-                this.username = username
-                this.password = password
-            }.builder
+            val builder = OkHttpClient.Builder()
+
+            // Always add the basic auth header with the supplied credentials
+            builder.addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .header("Authorization", okhttp3.Credentials.basic(username, password))
+                    .build()
+                val response = chain.proceed(request)
+                response
+            }
 
             // Disable SSL verification if insecure is true
             if (insecure) {
@@ -135,8 +133,6 @@ class CordaRestClient(
 
             val client = builder.build()
             return CordaRestClient(
-                baseUrl = urlWithDefaultBasePath,
-                httpClient = client,
                 certificatesClient = certificatesClient ?: CertificateApi(urlWithDefaultBasePath, client),
                 configurationClient = configurationClient ?: ConfigurationApi(urlWithDefaultBasePath, client),
                 cpiClient = cpiClient ?: CPIApi(urlWithDefaultBasePath, client),

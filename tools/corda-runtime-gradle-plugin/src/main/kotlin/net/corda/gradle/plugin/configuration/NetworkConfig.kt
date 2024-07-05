@@ -20,8 +20,9 @@ class NetworkConfig(val configFilePath: String) {
     init {
         val mapper = ObjectMapper()
         vNodes = try {
-            val fis = FileInputStream(configFilePath)
-            mapper.readValue(fis, object : TypeReference<List<VNode>>() {})
+            FileInputStream(configFilePath).use {
+                mapper.readValue(it, object : TypeReference<List<VNode>>() {})
+            }
         } catch (e: Exception) {
             throw CordaRuntimeGradlePluginException("Failed to read network configuration file, with exception: $e")
         }
