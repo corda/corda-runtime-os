@@ -10,9 +10,6 @@ import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.annotations.HttpWS
 import net.corda.rest.annotations.isRestEndpointAnnotation
 import net.corda.rest.annotations.retrieveApiVersionsSet
-import net.corda.rest.durablestream.DurableStreamContext
-import net.corda.rest.durablestream.api.isFiniteDurableStreamsMethod
-import net.corda.rest.durablestream.api.returnsDurableCursorBuilder
 import net.corda.rest.response.ResponseEntity
 import net.corda.rest.server.impl.apigen.models.Endpoint
 import net.corda.rest.server.impl.apigen.models.EndpointMethod
@@ -20,8 +17,6 @@ import net.corda.rest.server.impl.apigen.models.EndpointParameter
 import net.corda.rest.server.impl.apigen.models.InvocationMethod
 import net.corda.rest.server.impl.apigen.models.Resource
 import net.corda.rest.server.impl.apigen.models.ResponseBody
-import net.corda.rest.server.impl.apigen.processing.streams.DurableReturnResult
-import net.corda.rest.server.impl.apigen.processing.streams.FiniteDurableReturnResult
 import net.corda.rest.tools.annotations.extensions.name
 import net.corda.rest.tools.annotations.extensions.path
 import net.corda.rest.tools.annotations.extensions.title
@@ -261,7 +256,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
             annotation.title(this),
             annotation.description,
             annotation.path(),
-            retrieveParameters(true),
+            retrieveParameters(),
             responseBody,
             this.getInvocationMethod(),
             retrieveApiVersionsSet(annotation.minVersion, annotation.maxVersion)
@@ -270,38 +265,13 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
 
     private fun Method.createResponseBody(responseDescription: String, successCode: Int): ResponseBody {
         val isReturnTypeNullable = this.kotlinFunction?.returnType?.isMarkedNullable ?: false
-        val responseBody = when {
-            this.returnsDurableCursorBuilder() && !this.isFiniteDurableStreamsMethod() -> {
-                ResponseBody(
-                    responseDescription,
-                    successCode,
-                    DurableReturnResult::class.java,
-                    this.toClassAndParameterizedTypes().second,
-                    isReturnTypeNullable
-                )
-            }
-
-            this.isFiniteDurableStreamsMethod() -> {
-                ResponseBody(
-                    responseDescription,
-                    successCode,
-                    FiniteDurableReturnResult::class.java,
-                    this.toClassAndParameterizedTypes().second,
-                    isReturnTypeNullable
-                )
-            }
-
-            else -> {
-                ResponseBody(
+        return ResponseBody(
                     responseDescription,
                     successCode,
                     this.toClassAndParameterizedTypes().first,
                     this.toClassAndParameterizedTypes().second,
                     isReturnTypeNullable
                 )
-            }
-        }
-        return responseBody
     }
 
     private fun Method.toPUTEndpoint(annotation: HttpPUT): Endpoint {
@@ -313,7 +283,7 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
             annotation.title(this),
             annotation.description,
             annotation.path(),
-            retrieveParameters(true),
+            retrieveParameters(),
             responseBody,
             this.getInvocationMethod(),
             retrieveApiVersionsSet(annotation.minVersion, annotation.maxVersion)
@@ -367,20 +337,12 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
         return this.kotlinFunction?.parameters?.filter { it.kind == KParameter.Kind.VALUE } ?: emptyList()
     }
 
-    private fun Method.retrieveParameters(includeContextParam: Boolean = false): List<EndpointParameter> {
+    private fun Method.retrieveParameters(): List<EndpointParameter> {
         try {
             log.trace { """Retrieve parameters for method "$name".""" }
             val methodParams = this.kotlinValueKParameters().map { ParametersTransformerFactory.create(it).transform() }
-            val contextParam = ParametersTransformerFactory.create(
-                "context",
-                DurableStreamContext::class.java.toEndpointParameterParameterizedType()!!
-            )
-                .transform()
-
-            return when {
-                returnsDurableCursorBuilder() && includeContextParam -> methodParams.plus(contextParam)
-                else -> methodParams
-            }.also { log.trace { """Retrieve parameters for method "$name" completed.""" } }
+            log.trace { """Retrieve parameters for method "$name" completed.""" }
+            return methodParams
         } catch (e: Exception) {
             """Error during Retrieve parameters for method "$name".""".let {
                 log.error("$it: ${e.message}")

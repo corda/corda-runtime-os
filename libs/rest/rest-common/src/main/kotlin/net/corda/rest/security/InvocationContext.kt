@@ -1,6 +1,5 @@
 package net.corda.rest.security
 
-import net.corda.rest.durablestream.DurableStreamContext
 import net.corda.v5.base.types.MemberX500Name
 import java.security.Principal
 
@@ -13,7 +12,6 @@ import java.security.Principal
 data class InvocationContext(
     val actor: Actor,
     val arguments: List<Any?> = emptyList(),
-    val durableStreamContext: DurableStreamContext? = null,
     val clientId: String? = null
 ) {
     /**

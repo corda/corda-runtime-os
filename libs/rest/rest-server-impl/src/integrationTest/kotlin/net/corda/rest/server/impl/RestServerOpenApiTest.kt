@@ -8,7 +8,6 @@ import io.swagger.v3.oas.models.media.Schema
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.server.impl.internal.OptionalDependency
 import net.corda.rest.server.impl.utils.compact
-import net.corda.rest.test.CalendarRestResourceImpl
 import net.corda.rest.test.ObjectsInJsonEndpointImpl
 import net.corda.rest.test.TestEntityRestResourceImpl
 import net.corda.rest.test.TestFileUploadImpl

@@ -12,7 +12,6 @@ import net.corda.rest.server.impl.apigen.processing.openapi.schema.builders.Sche
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.builders.SchemaDateBuilder
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.builders.SchemaDateTimeBuilder
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.builders.SchemaDoubleBuilder
-import net.corda.rest.server.impl.apigen.processing.openapi.schema.builders.SchemaDurableReturnResultBuilder
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.builders.SchemaDurationBuilder
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.builders.SchemaEnumBuilder
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.builders.SchemaFloatBuilder
@@ -23,7 +22,6 @@ import net.corda.rest.server.impl.apigen.processing.openapi.schema.builders.Sche
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.builders.SchemaMapBuilder
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.builders.SchemaObjectBuilder
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.builders.SchemaPairBuilder
-import net.corda.rest.server.impl.apigen.processing.openapi.schema.builders.SchemaPositionedValueBuilder
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.builders.SchemaSetBuilder
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.builders.SchemaStringBuilder
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.builders.SchemaUUIDBuilder
@@ -84,8 +82,6 @@ internal class DefaultSchemaModelProvider(private val schemaModelContextHolder: 
         SchemaDurationBuilder(),
         StringSchemaModelBuilder(),
         SchemaPairBuilder(this),
-        SchemaDurableReturnResultBuilder(this),
-        SchemaPositionedValueBuilder(this),
         JsonSchemaBuilder(),
         HttpResponseTypeBuilder(this)
     )
