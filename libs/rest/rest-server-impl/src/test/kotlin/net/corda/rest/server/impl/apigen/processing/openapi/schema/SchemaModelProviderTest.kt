@@ -1,7 +1,6 @@
 package net.corda.rest.server.impl.apigen.processing.openapi.schema
 
 import net.corda.rest.HttpFileUpload
-import net.corda.rest.durablestream.api.Cursor
 import net.corda.rest.server.apigen.processing.openapi.schema.TestNestedClass
 import net.corda.rest.server.impl.apigen.models.EndpointParameter
 import net.corda.rest.server.impl.apigen.models.GenericParameterizedType
@@ -13,8 +12,6 @@ import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.SchemaE
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.SchemaMapModel
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.SchemaPairModel
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.model.SchemaRefObjectModel
-import net.corda.rest.server.impl.apigen.processing.streams.DurableReturnResult
-import net.corda.rest.server.impl.apigen.processing.streams.FiniteDurableReturnResult
 import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -314,7 +311,7 @@ class SchemaModelProviderTest {
 
         assertEquals(null, result.type)
         assertEquals(null, result.format)
-        assertEquals(2, (result as SchemaEnumModel).enum!!.size)
+        assertEquals(1, (result as SchemaEnumModel).enum!!.size)
     }
 
     @Test
@@ -328,7 +325,7 @@ class SchemaModelProviderTest {
 
         assertEquals(null, result.type)
         assertEquals(null, result.format)
-        assertEquals(2, (result as SchemaEnumModel).enum!!.size)
+        assertEquals(1, (result as SchemaEnumModel).enum!!.size)
     }
 
     @Test
@@ -609,41 +606,6 @@ class SchemaModelProviderTest {
     }
 
     @Test
-    fun `build with DurableReturnResult succeeds`() {
-        val schemaModelContextHolder = SchemaModelContextHolder()
-        val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
-        val data = DurableReturnResult(listOf(testPositionedValue("a")), 1)
-        val mockParam = endpointParameter(
-            data::class.javaObjectType,
-            listOf(GenericParameterizedType(String::class.java, emptyList()))
-        )
-
-        val result = provider.toSchemaModel(mockParam)
-        assertNull(result.format)
-        assertNull(result.type)
-        result as SchemaRefObjectModel
-        assertEquals("DurableReturnResult_of_String", result.ref)
-    }
-
-    @Test
-    fun `build with FiniteDurableReturnResult succeeds`() {
-        val schemaModelContextHolder = SchemaModelContextHolder()
-        val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
-        val data = FiniteDurableReturnResult(listOf(testPositionedValue("a")), 1, false)
-        val mockParam = endpointParameter(
-            data::class.javaObjectType,
-            listOf(GenericParameterizedType(String::class.java, emptyList()))
-        )
-
-        val result = provider.toSchemaModel(mockParam)
-
-        assertNull(result.type)
-        assertNull(result.format)
-        result as SchemaRefObjectModel
-        assertEquals("FiniteDurableReturnResult_of_String", result.ref)
-    }
-
-    @Test
     fun `build with multiple generics types succeeds`() {
         val schemaModelContextHolder = SchemaModelContextHolder()
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
@@ -659,45 +621,6 @@ class SchemaModelProviderTest {
         assertEquals(null, result.format)
         assertEquals("TestClass_of_String_int", (result as SchemaRefObjectModel).ref)
     }
-
-    @Test
-    fun `build with same class name in different packages succeeds`() {
-        val schemaModelContextHolder = SchemaModelContextHolder()
-        val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
-
-        val result =
-            provider.toSchemaModel(
-                ParameterizedClass(net.corda.rest.server.impl.apigen.processing.DurableStreamsMethodInvoker::class.java)
-            )
-        assertEquals("DurableStreamsMethodInvoker", (result as SchemaRefObjectModel).ref)
-
-        val result2 = provider.toSchemaModel(ParameterizedClass(DurableStreamsMethodInvoker::class.java))
-        assertEquals("DurableStreamsMethodInvoker_1", (result2 as SchemaRefObjectModel).ref)
-    }
-
-    @Test
-    fun `build with same class succeeds`() {
-        val schemaModelContextHolder = SchemaModelContextHolder()
-        val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
-
-        val result = provider.toSchemaModel(
-            ParameterizedClass(
-                DurableStreamsMethodInvoker::class.java,
-                listOf(GenericParameterizedType(String::class.java))
-            )
-        )
-        assertEquals("DurableStreamsMethodInvoker_of_String", (result as SchemaRefObjectModel).ref)
-
-        val result2 = provider.toSchemaModel(
-            ParameterizedClass(
-                DurableStreamsMethodInvoker::class.java,
-                listOf(GenericParameterizedType(Date::class.java))
-            )
-        )
-        assertEquals("DurableStreamsMethodInvoker_of_Date", (result2 as SchemaRefObjectModel).ref)
-    }
-
-    class DurableStreamsMethodInvoker
 
     class NestedTestClass(
         val aa: List<String> = listOf("aa"),
@@ -726,15 +649,6 @@ class SchemaModelProviderTest {
     }
 
     private enum class TestEnum {
-        ONE, TWO
-    }
-
-    private fun <T> testPositionedValue(value: T): Cursor.PollResult.PositionedValue<T> {
-        return object : Cursor.PollResult.PositionedValue<T> {
-            override val position: Long
-                get() = 1
-            override val value: T
-                get() = value
-        }
+        ONE
     }
 }
