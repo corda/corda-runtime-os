@@ -20,6 +20,7 @@ import net.corda.libs.permissions.manager.request.GetPermissionSummaryRequestDto
 import net.corda.libs.permissions.manager.request.GetRoleRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
+import net.corda.libs.permissions.manager.request.AddPropertyToUserRequestDto
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -236,7 +237,12 @@ class UserEndpointImpl @Activate constructor(
     }
 
     override fun addProperty(loginName: String, properties: Map<String, String>): ResponseEntity<UserResponseType> {
-        TODO("CORE-20757")
+        val principal = getRestThreadLocalContext()
+
+        val result = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            addPropertyToUser(AddPropertyToUserRequestDto(principal, loginName.lowercase(), properties))
+        }
+        return ResponseEntity.ok(result.convertToEndpointType())
     }
 
     override fun removeProperty(loginName: String, propertyKey: String): ResponseEntity<UserResponseType> {
