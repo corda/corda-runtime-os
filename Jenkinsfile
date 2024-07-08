@@ -13,7 +13,7 @@ cordaPipelineKubernetesAgent(
     // allow publishing artifacts to S3 bucket
     publishToMavenS3Repository: true,
     // allow publishing an installer to a download site
-    publishToDownloadSiteTask: ':tools:plugins:publish',
+    publishToDownloadSiteTask: ':tools:corda-cli:publish',
     // TODO - remove this when J17 is the default in the pipeline
     javaVersion: '17',
 )
