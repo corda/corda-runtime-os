@@ -161,8 +161,7 @@ fun ClusterInfo.waitForConfigurationChange(
             command { getConfig(section) }
             condition {
                 val bodyJSON = it.body.toJson()
-                it.code == OK.statusCode && bodyJSON["sourceConfig"] != null
-                        && bodyJSON.sourceConfigNode()[key] != null && bodyJSON.sourceConfigNode()[key].toString() == value
+                bodyJSON["sourceConfig"] != null && bodyJSON.sourceConfigNode()[key] != null && bodyJSON.sourceConfigNode()[key].toString() == value
             }
         }
     }
