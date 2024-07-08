@@ -76,8 +76,8 @@ internal class CpiMetadataRepositoryImpl: CpiMetadataRepository {
         // Joining the other tables to ensure all data is fetched eagerly
         return em.createQuery(
             "FROM ${CpiMetadataEntity::class.simpleName} cpi_ " +
-                    "INNER JOIN FETCH cpi_.cpks cpk_ " +
-                    "INNER JOIN FETCH cpk_.metadata cpk_meta_ " +
+                    "LEFT JOIN FETCH cpi_.cpks cpk_ " +
+                    "LEFT JOIN FETCH cpk_.metadata cpk_meta_ " +
                     "ORDER BY cpi_.name, cpi_.version, cpi_.signerSummaryHash",
             CpiMetadataEntity::class.java
         ).resultList.map { cpiMetadataEntity ->
