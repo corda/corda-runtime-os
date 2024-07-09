@@ -10,7 +10,7 @@ data class GroupResponseDto(
     val lastUpdatedTimestamp: Instant,
     val version: Int,
     val groupName: String,
-    val parentGroupId: String,
+    val parentGroupId: String?,
     val properties: List<PropertyResponseDto>,
     val roleAssociations: List<RoleAssociationResponseDto>
 )

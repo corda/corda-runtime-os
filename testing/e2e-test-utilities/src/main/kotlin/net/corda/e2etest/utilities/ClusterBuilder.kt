@@ -798,7 +798,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
 
     @Suppress("unused")
     // This method is used to change the parent group of an existing RBAC group
-    fun changeParentGroup(groupId: String, newParentGroupId: String): SimpleResponse {
+    fun changeParentGroup(groupId: String, newParentGroupId: String?): SimpleResponse {
         return initialClient.put("/api/$REST_API_VERSION_PATH/group/$groupId/parent/changeParentId/$newParentGroupId", "")
     }
 
@@ -812,12 +812,6 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     // This method is used to remove a role from an existing RBAC group
     fun removeRoleFromGroup(groupId: String, roleId: String): SimpleResponse {
         return initialClient.delete("/api/$REST_API_VERSION_PATH/group/$groupId/role/$roleId")
-    }
-
-    @Suppress("unused")
-    // This method is used to get the content of an existing RBAC group
-    fun getGroupContent(groupId: String): SimpleResponse {
-        return initialClient.get("/api/$REST_API_VERSION_PATH/group/$groupId")
     }
 
     /** Start a flow */

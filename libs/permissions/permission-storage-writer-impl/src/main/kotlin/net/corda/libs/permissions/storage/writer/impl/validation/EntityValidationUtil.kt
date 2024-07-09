@@ -91,7 +91,7 @@ class EntityValidationUtil(private val entityManager: EntityManager) {
             WHERE ${Group::parentGroup.name}.${Group::id.name} = :groupId
         """.trimIndent()
 
-        val numSubgroups = entityManager.createQuery(subgroupsQuery, Long::class.java)
+        val numSubgroups = entityManager.createQuery(subgroupsQuery, Long::class.javaObjectType)
             .setParameter("groupId", groupId)
             .singleResult
 
@@ -100,7 +100,7 @@ class EntityValidationUtil(private val entityManager: EntityManager) {
             WHERE ${User::parentGroup.name}.${Group::id.name} = :groupId
         """.trimIndent()
 
-        val numUsers = entityManager.createQuery(usersQuery, Long::class.java)
+        val numUsers = entityManager.createQuery(usersQuery, Long::class.javaObjectType)
             .setParameter("groupId", groupId)
             .singleResult
 

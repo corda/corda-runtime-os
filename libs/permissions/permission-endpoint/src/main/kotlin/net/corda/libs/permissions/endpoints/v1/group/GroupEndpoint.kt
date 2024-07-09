@@ -60,7 +60,7 @@ interface GroupEndpoint : RestResource {
         @RestPathParameter(description = "ID of the group to change parent.")
         groupId: String,
         @RestPathParameter(description = "New parent group ID.")
-        newParentGroupId: String
+        newParentGroupId: String?
     ): ResponseEntity<GroupResponseType>
 
     @HttpPUT(

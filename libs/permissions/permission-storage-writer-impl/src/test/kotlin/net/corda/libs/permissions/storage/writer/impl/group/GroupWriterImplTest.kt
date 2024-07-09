@@ -349,7 +349,7 @@ class GroupWriterImplTest {
         val group = Group("groupId", Instant.now(), "groupName", null)
 
         val query = mock<TypedQuery<Long>>()
-        whenever(entityManager.createQuery(any(), eq(Long::class.java))).thenReturn(query)
+        whenever(entityManager.createQuery(any(), eq(Long::class.javaObjectType))).thenReturn(query)
         whenever(query.setParameter(any<String>(), any<String>())).thenReturn(query)
         whenever(query.singleResult).thenReturn(0)
 
@@ -389,7 +389,7 @@ class GroupWriterImplTest {
         group.roleGroupAssociations.add(assoc)
 
         val query = mock<TypedQuery<Long>>()
-        whenever(entityManager.createQuery(any(), eq(Long::class.java))).thenReturn(query)
+        whenever(entityManager.createQuery(any(), eq(Long::class.javaObjectType))).thenReturn(query)
         whenever(query.setParameter(any<String>(), any<String>())).thenReturn(query)
         whenever(query.singleResult).thenReturn(1)
 

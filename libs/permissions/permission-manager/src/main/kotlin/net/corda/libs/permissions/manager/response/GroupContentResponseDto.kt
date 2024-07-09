@@ -9,7 +9,7 @@ data class GroupContentResponseDto(
     val id: String,
     val lastUpdatedTimestamp: Instant,
     val groupName: String,
-    val parentGroupId: String,
+    val parentGroupId: String?,
     val properties: List<PropertyResponseDto>,
     val roleAssociations: List<RoleAssociationResponseDto>,
     val users: Set<String>,
