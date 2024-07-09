@@ -3,17 +3,18 @@ package net.corda.libs.permissions.manager.impl
 import net.corda.data.permissions.User
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
+import net.corda.data.permissions.management.user.AddPropertyToUserRequest
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
 import net.corda.data.permissions.management.user.ChangeUserPasswordRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.DeleteUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
-import net.corda.data.permissions.management.user.AddPropertyToUserRequest
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.libs.permissions.manager.PermissionUserManager
 import net.corda.libs.permissions.manager.impl.SmartConfigUtil.getEndpointTimeout
 import net.corda.libs.permissions.manager.impl.converter.convertToResponseDto
+import net.corda.libs.permissions.manager.request.AddPropertyToUserRequestDto
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.ChangeUserPasswordDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
@@ -21,7 +22,6 @@ import net.corda.libs.permissions.manager.request.DeleteUserRequestDto
 import net.corda.libs.permissions.manager.request.GetPermissionSummaryRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
-import net.corda.libs.permissions.manager.request.AddPropertyToUserRequestDto
 import net.corda.libs.permissions.manager.response.UserPermissionSummaryResponseDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.libs.permissions.validation.cache.PermissionValidationCache
