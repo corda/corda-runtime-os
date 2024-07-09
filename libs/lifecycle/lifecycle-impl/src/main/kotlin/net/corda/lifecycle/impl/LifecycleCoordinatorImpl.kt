@@ -1,9 +1,5 @@
 package net.corda.lifecycle.impl
 
-import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
 import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -23,6 +19,10 @@ import net.corda.lifecycle.registry.LifecycleRegistryException
 import net.corda.utilities.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 
 /**
@@ -84,6 +84,15 @@ class LifecycleCoordinatorImpl(
     private val _isClosed = AtomicBoolean(false)
 
     /**
+     * This mapping lays out the valid state transitions for a given lifecycle component.
+     */
+    private val transitions = mapOf(
+        LifecycleStatus.UP to setOf(LifecycleStatus.DOWN, LifecycleStatus.ERROR),
+        LifecycleStatus.DOWN to setOf(LifecycleStatus.UP, LifecycleStatus.ERROR),
+        LifecycleStatus.ERROR to emptySet()
+    )
+
+    /**
      * Process a batch of events in the event queue.
      *
      * The main processing functionality is delegated to the LifecycleProcessor class. On a processing error, the
@@ -135,6 +144,16 @@ class LifecycleCoordinatorImpl(
     }
 
     /**
+     * Checks if a transition between two given states is possible within our defined [transitions] map.
+     *
+     * @param from The [LifecycleStatus] we are transitioning from.
+     * @param to The [LifecycleStatus] we are transitioning to.
+     */
+    private fun canTransition(from: LifecycleStatus, to: LifecycleStatus): Boolean {
+        return transitions[from]?.contains(to) ?: false
+    }
+
+    /**
      * See [LifecycleCoordinator].
      */
     override fun postEvent(event: LifecycleEvent) {
@@ -176,9 +195,16 @@ class LifecycleCoordinatorImpl(
      * See [LifecycleCoordinator].
      */
     override fun updateStatus(newStatus: LifecycleStatus, reason: String) {
-        logger.trace { "$name: Updating status from ${lifecycleState.status} to $newStatus ($reason)" }
-        if (!isClosed) {
-            postEvent(StatusChange(newStatus, reason))
+        if (canTransition(lifecycleState.status, newStatus)) {
+            logger.trace { "$name: Updating status from ${lifecycleState.status} to $newStatus ($reason)" }
+            if (!isClosed) {
+                postEvent(StatusChange(newStatus, reason))
+            }
+        } else {
+            logger.trace {
+                "An attempt was made to transition coordinator $name from ${lifecycleState.status} to $newStatus. " +
+                "However, ${lifecycleState.status} can only transition to: ${transitions[lifecycleState.status]}."
+            }
         }
     }
 
