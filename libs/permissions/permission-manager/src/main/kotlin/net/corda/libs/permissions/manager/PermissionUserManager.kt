@@ -7,6 +7,7 @@ import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.DeleteUserRequestDto
 import net.corda.libs.permissions.manager.request.GetPermissionSummaryRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
+import net.corda.libs.permissions.manager.request.RemovePropertyFromUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.libs.permissions.manager.response.UserPermissionSummaryResponseDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
@@ -61,4 +62,9 @@ interface PermissionUserManager {
      * Add a property to a User in the RBAC Permission System.
      */
     fun addPropertyToUser(addPropertyToUserRequestDto: AddPropertyToUserRequestDto): UserResponseDto
+
+    /**
+     * Remove a property from a User in the RBAC Permission System.
+     */
+    fun removePropertyFromUser(removePropertyFromUserRequestDto: RemovePropertyFromUserRequestDto): UserResponseDto
 }

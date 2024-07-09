@@ -21,6 +21,7 @@ import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.DeleteUserRequestDto
 import net.corda.libs.permissions.manager.request.GetPermissionSummaryRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
+import net.corda.libs.permissions.manager.request.RemovePropertyFromUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.libs.permissions.manager.response.UserPermissionSummaryResponseDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
@@ -214,6 +215,21 @@ class PermissionUserManagerImpl(
                 AddPropertyToUserRequest(
                     addPropertyToUserRequestDto.loginName,
                     addPropertyToUserRequestDto.properties
+                )
+            )
+        )
+        return result.convertToResponseDto()
+    }
+    override fun removePropertyFromUser(removePropertyFromUserRequestDto: RemovePropertyFromUserRequestDto): UserResponseDto {
+        val result = sendPermissionWriteRequest<User>(
+            rpcSender,
+            writerTimeout,
+            PermissionManagementRequest(
+                removePropertyFromUserRequestDto.requestedBy,
+                null,
+                RemovePropertyFromUserRequest(
+                    removePropertyFromUserRequestDto.loginName,
+                    removePropertyFromUserRequestDto.propertyKey
                 )
             )
         )
