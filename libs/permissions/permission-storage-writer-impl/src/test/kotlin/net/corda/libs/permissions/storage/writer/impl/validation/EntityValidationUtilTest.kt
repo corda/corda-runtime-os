@@ -239,7 +239,7 @@ class EntityValidationUtilTest {
             on { id }.thenReturn(groupId)
         }
         val query = mock<TypedQuery<Long>>()
-        whenever(entityManager.createQuery(any(), eq(Long::class.java))).thenReturn(query)
+        whenever(entityManager.createQuery(any(), eq(Long::class.javaObjectType))).thenReturn(query)
         whenever(query.setParameter("groupId", groupId)).thenReturn(query)
         whenever(query.singleResult).thenReturn(0L)
 
@@ -255,7 +255,7 @@ class EntityValidationUtilTest {
             on { id }.thenReturn(groupId)
         }
         val query = mock<TypedQuery<Long>>()
-        whenever(entityManager.createQuery(any(), eq(Long::class.java))).thenReturn(query)
+        whenever(entityManager.createQuery(any(), eq(Long::class.javaObjectType))).thenReturn(query)
         whenever(query.setParameter("groupId", groupId)).thenReturn(query)
         whenever(query.singleResult).thenReturn(1L)
 
