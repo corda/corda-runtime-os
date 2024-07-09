@@ -814,12 +814,6 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         return initialClient.delete("/api/$REST_API_VERSION_PATH/group/$groupId/role/$roleId")
     }
 
-    @Suppress("unused")
-    // This method is used to get the content of an existing RBAC group
-    fun getGroupContent(groupId: String): SimpleResponse {
-        return initialClient.get("/api/$REST_API_VERSION_PATH/group/$groupId")
-    }
-
     /** Start a flow */
     fun flowStart(
         holdingIdentityShortHash: String,
