@@ -4,7 +4,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import org.slf4j.Logger
-import java.lang.IllegalStateException
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
@@ -215,6 +214,7 @@ class ThreadLooper(
             loopFunction()
             _isRunning = false
             if (lifecycleCoordinator.status != LifecycleStatus.ERROR) {
+                log.warn("CLOSING LOG LINE. Status is : ${lifecycleCoordinator.status}")
                 lifecycleCoordinator.close()
             }
         } catch (t: Throwable) {
