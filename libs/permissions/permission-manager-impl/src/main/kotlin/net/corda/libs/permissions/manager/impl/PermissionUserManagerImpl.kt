@@ -8,6 +8,7 @@ import net.corda.data.permissions.management.user.ChangeUserPasswordRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.DeleteUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
+import net.corda.data.permissions.management.user.AddPropertyToUserRequest
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.libs.permissions.manager.PermissionUserManager
@@ -208,7 +209,7 @@ class PermissionUserManagerImpl(
             rpcSender,
             writerTimeout,
             PermissionManagementRequest(
-                AddPropertyToUserRequestDto.requestedBy,
+                addPropertyToUserRequestDto.requestedBy,
                 null,
                 AddPropertyToUserRequest(
                     addPropertyToUserRequestDto.loginName,
