@@ -1010,7 +1010,7 @@
           "schema" : {
             "type" : "string",
             "description" : "New parent group ID.",
-            "nullable" : false,
+            "nullable" : true,
             "example" : "string"
           }
         } ],
@@ -4979,7 +4979,7 @@
         }
       },
       "GroupContentResponseType" : {
-        "required" : [ "id", "name", "parentGroupId", "properties", "roleAssociations", "subgroups", "updateTimestamp", "users" ],
+        "required" : [ "id", "name", "properties", "roleAssociations", "subgroups", "updateTimestamp", "users" ],
         "type" : "object",
         "properties" : {
           "id" : {
@@ -4994,7 +4994,7 @@
           },
           "parentGroupId" : {
             "type" : "string",
-            "nullable" : false,
+            "nullable" : true,
             "example" : "string"
           },
           "properties" : {
