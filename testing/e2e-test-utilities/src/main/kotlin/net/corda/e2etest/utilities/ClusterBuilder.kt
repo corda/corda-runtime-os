@@ -798,7 +798,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
 
     @Suppress("unused")
     // This method is used to change the parent group of an existing RBAC group
-    fun changeParentGroup(groupId: String, newParentGroupId: String): SimpleResponse {
+    fun changeParentGroup(groupId: String, newParentGroupId: String?): SimpleResponse {
         return initialClient.put("/api/$REST_API_VERSION_PATH/group/$groupId/parent/changeParentId/$newParentGroupId", "")
     }
 

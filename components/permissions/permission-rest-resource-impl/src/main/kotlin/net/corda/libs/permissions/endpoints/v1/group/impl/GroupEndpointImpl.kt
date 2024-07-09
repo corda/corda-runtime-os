@@ -60,7 +60,7 @@ class GroupEndpointImpl @Activate constructor(
         return ResponseEntity.created(createGroupResult.convertToEndpointType())
     }
 
-    override fun changeParentGroup(groupId: String, newParentGroupId: String): ResponseEntity<GroupResponseType> {
+    override fun changeParentGroup(groupId: String, newParentGroupId: String?): ResponseEntity<GroupResponseType> {
         val principal = getRestThreadLocalContext()
 
         val groupResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {

@@ -26,7 +26,7 @@ data class GroupContentResponseType(
     /**
      * ID of the parent group.
      */
-    val parentGroupId: String,
+    val parentGroupId: String?,
 
     /**
      * Group properties.
