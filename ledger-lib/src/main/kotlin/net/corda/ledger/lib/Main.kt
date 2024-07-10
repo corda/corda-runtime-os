@@ -6,6 +6,8 @@ import net.corda.ledger.lib.impl.PersistenceServiceImpl
 import net.corda.ledger.lib.dependencies.crypto.CryptoDependencies.digestService
 import net.corda.ledger.lib.dependencies.crypto.CryptoDependencies.merkleProofFactory
 import net.corda.ledger.lib.dependencies.crypto.CryptoDependencies.merkleTreeProvider
+import net.corda.ledger.lib.dependencies.db.DbDependencies.cryptoEntityManagerFactory
+import net.corda.ledger.lib.dependencies.db.DbDependencies.cryptoEntityManagerFactory2
 import net.corda.ledger.lib.dependencies.db.DbDependencies.ledgerEntityManagerFactory
 import net.corda.ledger.lib.dependencies.json.JsonDependencies.jsonMarshallingService
 import net.corda.ledger.lib.dependencies.json.JsonDependencies.jsonValidator
@@ -19,6 +21,7 @@ import net.corda.ledger.persistence.json.impl.ContractStateVaultJsonFactoryRegis
 import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFactoryImpl
 import net.corda.ledger.persistence.utxo.impl.UtxoPersistenceServiceImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
+import net.corda.orm.utils.transaction
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.NotaryLookup
@@ -55,10 +58,9 @@ fun main() {
     val persistenceService = PersistenceServiceImpl(
         utxoPersistenceService,
         utxoSignedTransactionFactoryImpl,
-        utxoLedgerTransactionFactory
+        utxoLedgerTransactionFactory,
+        ledgerEntityManagerFactory
     )
-
-
     // Get a key
     val key = signingRepoFactory.getInstance(TENANT_ID).findKey("30E895BAE560-LEDGER")!!
 
@@ -72,11 +74,6 @@ fun main() {
     val tx = txBuilder.toSignedTransaction()
 
     persistenceService.persist(tx, TransactionStatus.VERIFIED)
-
-    // Existing tx
-    /*val tx = persistenceService.findSignedLedgerTransaction(parseSecureHash(
-        "SHA-256D:F6B1133B03B0D8D8AE4EC79089187E31557D7A4F0D0D27977A68D7F63109A905")
-    )*/
 
     println(tx)
 }

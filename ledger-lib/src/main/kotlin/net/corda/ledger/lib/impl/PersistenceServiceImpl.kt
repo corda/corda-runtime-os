@@ -15,6 +15,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionImpl
+import net.corda.orm.utils.transaction
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
@@ -24,6 +25,7 @@ import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransactionAndSignatures
 import java.security.PublicKey
 import java.time.Instant
+import javax.persistence.EntityManagerFactory
 
 
 /**
@@ -38,7 +40,8 @@ class PersistenceServiceImpl(
     // FIXME is it ok to depend on this?
     private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
     // FIXME is it ok to depend on this?
-    private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory
+    private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
+    private val entityManagerFactory: EntityManagerFactory
 ) : PersistenceService {
 
     // This is OK, no extra dependency
@@ -143,14 +146,16 @@ class PersistenceServiceImpl(
         transactionStatus: TransactionStatus,
         visibleStatesIndexes: List<Int>
     ): Instant {
-        return utxoPersistenceService.persistTx(
-            transaction,
-            (transaction as UtxoSignedTransactionInternal).wireTransaction,
-            transactionStatus,
-            visibleStatesIndexes,
-            emptyMap(), // TODO how to populate?
-            StubSerializationService() // TODO how to pass in a proper serialization service?
-        ) {}
+        return entityManagerFactory.transaction { em ->
+            utxoPersistenceService.persistTx(
+                transaction,
+                (transaction as UtxoSignedTransactionInternal).wireTransaction,
+                transactionStatus,
+                visibleStatesIndexes,
+                emptyMap(), // TODO how to populate?
+                StubSerializationService() // TODO how to pass in a proper serialization service?
+            ) { block -> block(em) }
+        }
     }
 
     // TODO Check if having UtxoSignedTransactionInternal as a dependency is acceptable (probably not?)

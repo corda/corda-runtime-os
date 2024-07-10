@@ -43,7 +43,7 @@ class PostgresUtxoQueryProvider @Activate constructor(
     override val persistFilteredTransaction: (batchSize: Int) -> String
         get() = { batchSize ->
             """
-            INSERT INTO utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered, repair_attempt_count)
+            INSERT INTO vnode_vault_30e895bae560.utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered, repair_attempt_count)
             VALUES ${List(batchSize) { "(?, ?, ?, ?, '$VERIFIED', ?, ?, TRUE, 0)" }.joinToString(",")}
             ON CONFLICT(id) DO
             UPDATE SET is_filtered = TRUE
@@ -61,7 +61,7 @@ class PostgresUtxoQueryProvider @Activate constructor(
     override val persistTransactionSources: (batchSize: Int) -> String
         get() = { batchSize ->
             """
-            INSERT INTO utxo_transaction_sources(transaction_id, group_idx, leaf_idx, source_state_transaction_id, source_state_idx)
+            INSERT INTO vnode_vault_30e895bae560.utxo_transaction_sources(transaction_id, group_idx, leaf_idx, source_state_transaction_id, source_state_idx)
             VALUES ${List(batchSize) { "(?, ?, ?, ?, ?)" }.joinToString(",")}
             ON CONFLICT DO NOTHING
             """.trimIndent()
@@ -70,7 +70,7 @@ class PostgresUtxoQueryProvider @Activate constructor(
     override val persistTransactionComponents: (batchSize: Int) -> String
         get() = { batchSize ->
             """
-            INSERT INTO utxo_transaction_component(transaction_id, group_idx, leaf_idx, data, hash)
+            INSERT INTO vnode_vault_30e895bae560.utxo_transaction_component(transaction_id, group_idx, leaf_idx, data, hash)
             VALUES ${List(batchSize) { "(?, ?, ?, ?, ?)" }.joinToString(",")}
             ON CONFLICT DO NOTHING
             """.trimIndent()
@@ -79,7 +79,7 @@ class PostgresUtxoQueryProvider @Activate constructor(
     override val persistVisibleTransactionOutputs: (batchSize: Int) -> String
         get() = { batchSize ->
             """
-            INSERT INTO utxo_visible_transaction_output(
+            INSERT INTO vnode_vault_30e895bae560.utxo_visible_transaction_output(
                 transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
                 token_symbol, token_tag, token_owner_hash, token_amount, token_priority, created, consumed, custom_representation
             )
@@ -91,7 +91,7 @@ class PostgresUtxoQueryProvider @Activate constructor(
     override val persistTransactionSignatures: (batchSize: Int) -> String
         get() = { batchSize ->
             """
-            INSERT INTO utxo_transaction_signature(transaction_id, pub_key_hash, signature, created)
+            INSERT INTO vnode_vault_30e895bae560.utxo_transaction_signature(transaction_id, pub_key_hash, signature, created)
             VALUES ${List(batchSize) { "(?, ?, ?, ?)" }.joinToString(",")}
             ON CONFLICT DO NOTHING
             """.trimIndent()
@@ -109,7 +109,7 @@ class PostgresUtxoQueryProvider @Activate constructor(
     override val persistMerkleProofs: (batchSize: Int) -> String
         get() = { batchSize ->
             """
-            INSERT INTO utxo_transaction_merkle_proof(merkle_proof_id, transaction_id, group_idx, tree_size, leaf_indexes, hashes)
+            INSERT INTO vnode_vault_30e895bae560.utxo_transaction_merkle_proof(merkle_proof_id, transaction_id, group_idx, tree_size, leaf_indexes, hashes)
             VALUES ${List(batchSize) { "(?, ?, ?, ?, ?, ?)" }.joinToString(",")}
             ON CONFLICT DO NOTHING
             """.trimIndent()
@@ -118,7 +118,7 @@ class PostgresUtxoQueryProvider @Activate constructor(
     override val persistMerkleProofLeaves: (batchSize: Int) -> String
         get() = { batchSize ->
             """
-            INSERT INTO utxo_transaction_merkle_proof_leaves(merkle_proof_id, leaf_index)
+            INSERT INTO vnode_vault_30e895bae560.utxo_transaction_merkle_proof_leaves(merkle_proof_id, leaf_index)
             VALUES ${List(batchSize) { "(?, ?)" }.joinToString(",")}
             ON CONFLICT DO NOTHING
             """.trimIndent()

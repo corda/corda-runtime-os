@@ -20,7 +20,7 @@ import net.corda.ledger.lib.dependencies.serialization.SerializationDependencies
 import net.corda.ledger.lib.dependencies.signing.SigningDependencies.layeredPropertyMapFactory
 import net.corda.ledger.lib.dependencies.signing.SigningDependencies.signingService
 import net.corda.ledger.lib.impl.stub.checkpoint.StubFlowCheckpointService
-import net.corda.ledger.lib.impl.stub.external.event.VerificationExternalEventExecutor
+import net.corda.ledger.lib.impl.stub.external.event.ExternalEventCallback
 import net.corda.ledger.lib.impl.stub.flow.StubFlowEngine
 import net.corda.ledger.lib.impl.stub.groupparameters.StubGroupParametersCache
 import net.corda.ledger.lib.impl.stub.groupparameters.StubGroupParametersLookup
@@ -121,7 +121,9 @@ object LedgerDependencies {
     private val groupParamsVerifier = StubSignedGroupParametersVerifier()
 
     private val utxoLedgerTransactionVerificationService = UtxoLedgerTransactionVerificationServiceImpl(
-        VerificationExternalEventExecutor(serializationService),
+        ExternalEventCallback { _, _ ->
+            // TODO We have no verification logic for now
+        },
         serializationService,
         currentSandboxGroupContext,
         groupParamsVerifier

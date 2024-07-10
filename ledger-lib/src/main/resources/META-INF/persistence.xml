@@ -21,7 +21,7 @@
             <property name="javax.persistence.jdbc.password" value="postgres" />
             <property name="show_sql" value="true"/>
             <property name="hibernate.format_sql" value="true"/>
-            <property name="hibernate.default_schema" value="vnode_crypto_30E895BAE560"/>
+            <property name="hibernate.default_schema" value="vnode_crypto_30e895bae560"/>
             <property name="hibernate.connection.isolation" value="TRANSACTION_READ_COMMITTED"/>
         </properties>
     </persistence-unit>
@@ -36,8 +36,7 @@
             <property name="javax.persistence.jdbc.password" value="postgres" />
             <property name="show_sql" value="true"/>
             <property name="hibernate.format_sql" value="true"/>
-            <property name="hibernate.default_schema" value="vnode_vault_30E895BAE560"/>
-            <property name="hibernate.connection.isolation" value="TRANSACTION_READ_COMMITTED"/>
+            <property name="hibernate.default_schema" value="vnode_vault_30e895bae560"/>
         </properties>
     </persistence-unit>
 </persistence>
