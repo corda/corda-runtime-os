@@ -15,6 +15,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import java.util.UUID
 
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -50,10 +51,12 @@ class CpiMetadataRepositoryImplTest {
     }
 
     @Test
-    fun `findAll stores CPI MetaData without any cpks successfully`(){
+    fun `findAll finds CPI metadata without any CPKs successfully`(){
         emf.transaction {
             val hashValue = SecureHashImpl("SHA-256", byteArrayOf(0))
-            val cpiIdentifier = CpiIdentifier("test","1.0", hashValue)
+            val randomID = UUID.randomUUID()
+            val randomIDString = "$randomID"
+            val cpiIdentifier = CpiIdentifier(randomIDString,"1.0", hashValue)
             cpiMetadataRepository.put(
                 em = it,
                 cpiId = cpiIdentifier,
