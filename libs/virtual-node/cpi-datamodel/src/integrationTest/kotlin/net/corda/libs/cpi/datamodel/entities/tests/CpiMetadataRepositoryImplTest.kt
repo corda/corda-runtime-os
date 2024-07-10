@@ -49,8 +49,9 @@ class CpiMetadataRepositoryImplTest {
 
     @BeforeEach
     fun clearCpkFileTable(){
-        // This is required because when the tests run using Jenkins a real database is used and the data
-        // is not wiped out. The tests in this class require a clean CpkFileEntity table.
+        //The CpiMetaDataEntity table is linked to the CpiCpkEntity table
+        //If we delete the CpiMetadataEntity first, failures occur due to the foreign key constraints
+        //So the deletion of the CpiCpkEntity table is needed to be deleted first before the CpiMetadataEntity
         emf.transaction {
             it.createQuery("DELETE FROM ${CpiCpkEntity::class.simpleName}").executeUpdate()
             it.createQuery("DELETE FROM ${CpiMetadataEntity::class.simpleName}").executeUpdate()
@@ -63,7 +64,7 @@ class CpiMetadataRepositoryImplTest {
     }
 
     @Test
-    fun `cpis with no cpks`(){
+    fun `put stores CPI MetaData without any cpks successfully`(){
         emf.transaction {
             val hashValue = SecureHashImpl("SHA-256", byteArrayOf(0))
             val cpiIndentifier = CpiIdentifier("test","1.0", hashValue)
