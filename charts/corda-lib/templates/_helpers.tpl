@@ -401,9 +401,11 @@ metadata:
   name: {{ $secretName }}
   annotations:
     "helm.sh/hook-weight": "-1"
-    "helm.sh/hook": pre-install, pre-upgrade
 {{- if $options.cleanup }}
+    "helm.sh/hook": pre-install
     "helm.sh/hook-delete-policy": hook-succeeded
+{{- else }}
+    "helm.sh/hook": pre-install, pre-upgrade
 {{- end }}
   labels:
     {{- include "corda.labels" $ | nindent 4 }}
