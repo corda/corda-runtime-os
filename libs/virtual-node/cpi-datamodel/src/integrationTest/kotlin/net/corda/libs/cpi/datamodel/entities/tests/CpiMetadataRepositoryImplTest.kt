@@ -6,6 +6,7 @@ import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.CpiEntities
+import net.corda.libs.cpi.datamodel.entities.internal.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.entities.internal.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -51,6 +52,7 @@ class CpiMetadataRepositoryImplTest {
         // This is required because when the tests run using Jenkins a real database is used and the data
         // is not wiped out. The tests in this class require a clean CpkFileEntity table.
         emf.transaction {
+            it.createQuery("DELETE FROM ${CpiCpkEntity::class.simpleName}").executeUpdate()
             it.createQuery("DELETE FROM ${CpiMetadataEntity::class.simpleName}").executeUpdate()
         }
     }
