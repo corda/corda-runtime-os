@@ -145,12 +145,13 @@ class LifecycleCoordinatorImpl(
 
     /**
      * Checks if a transition between two given states is possible within our defined [transitions] map.
+     * If the states are the same, the transition is always possible.
      *
      * @param from The [LifecycleStatus] we are transitioning from.
      * @param to The [LifecycleStatus] we are transitioning to.
      */
     private fun canTransition(from: LifecycleStatus, to: LifecycleStatus): Boolean {
-        return transitions[from]?.contains(to) ?: false
+        return (from == to) || transitions[from]?.contains(to) ?: false
     }
 
     /**
