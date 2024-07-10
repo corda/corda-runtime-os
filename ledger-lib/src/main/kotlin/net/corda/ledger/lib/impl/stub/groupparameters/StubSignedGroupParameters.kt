@@ -1,31 +1,31 @@
 package net.corda.ledger.lib.impl.stub.groupparameters
 
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.ledger.lib.keyPairExample
 import net.corda.membership.lib.SignedGroupParameters
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.NotaryInfo
+import java.security.KeyPair
+import java.security.KeyPairGenerator
+import java.security.spec.ECGenParameterSpec
 import java.time.Instant
 
 class StubSignedGroupParameters : SignedGroupParameters {
     override val hash: SecureHash
         get() = SecureHashImpl("SHA-256", ByteArray(12))
-
-
-
-
-
-
     override val mgmSignature: DigitalSignatureWithKey
-        get() = TODO("Not yet implemented")
+        get() = DigitalSignatureWithKey(keyPairExample.public, byteArrayOf(42))
     override val mgmSignatureSpec: SignatureSpec
-        get() = TODO("Not yet implemented")
+        get() = SignatureSpecImpl("NONE")
     override val groupParameters: ByteArray
-        get() = TODO("Not yet implemented")
+        get() = ByteArray(0)
 
     override fun getEntries(): MutableSet<MutableMap.MutableEntry<String, String>> {
-        TODO("Not yet implemented")
+        return mutableSetOf()
     }
 
     override fun get(key: String): String? {
@@ -49,14 +49,25 @@ class StubSignedGroupParameters : SignedGroupParameters {
     }
 
     override fun getModifiedTime(): Instant {
-        TODO("Not yet implemented")
+        return Instant.now()
     }
 
     override fun getEpoch(): Int {
-        TODO("Not yet implemented")
+        return 1
     }
 
     override fun getNotaries(): MutableCollection<NotaryInfo> {
-        TODO("Not yet implemented")
+        return mutableListOf(object : NotaryInfo {
+            override fun getName() = MemberX500Name("Alice", "Alice Corp", "LDN", "GB")
+            override fun getProtocol() = "whatever"
+            override fun getProtocolVersions() = mutableListOf(1)
+            override fun getPublicKey() = keyPairExample.public
+            override fun isBackchainRequired() = false
+        })
     }
 }
+
+private val kpg = KeyPairGenerator.getInstance("EC")
+    .apply { initialize(ECGenParameterSpec("secp256r1")) }
+
+val keyPairExample: KeyPair = kpg.generateKeyPair()

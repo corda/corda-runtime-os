@@ -42,15 +42,26 @@ class ConfigEntityFactory(
 
     fun createCryptoConfig(): ConfigEntity {
         val random = SecureRandom()
+
+        val rs1 = random.randomString()
+        val rs2 = random.randomString()
+        val rs3 = random.randomString()
+        val rs4 = random.randomString()
+
+        log.error("rs1: $rs1")
+        log.error("rs2: $rs2")
+        log.error("rs3: $rs3")
+        log.error("rs4: $rs4")
+
         val config = createDefaultCryptoConfig(
             listOf(
                 KeyDerivationParameters(
-                    smartConfigFactory.makeSecret(random.randomString(), "corda-master-wrapping-key-passphrase").root(),
-                    smartConfigFactory.makeSecret(random.randomString(), "corda-master-wrapping-key-salt").root()
+                    smartConfigFactory.makeSecret(rs1, "corda-master-wrapping-key-passphrase").root(),
+                    smartConfigFactory.makeSecret(rs2, "corda-master-wrapping-key-salt").root()
                 ),
                 KeyDerivationParameters(
-                    smartConfigFactory.makeSecret(random.randomString(), "corda-master-wrapping-key-2-passphrase").root(),
-                    smartConfigFactory.makeSecret(random.randomString(), "corda-master-wrapping-key-2-salt").root()
+                    smartConfigFactory.makeSecret(rs3, "corda-master-wrapping-key-2-passphrase").root(),
+                    smartConfigFactory.makeSecret(rs4, "corda-master-wrapping-key-2-salt").root()
                 )
             ),
         ).root().render(ConfigRenderOptions.concise())

@@ -13,10 +13,14 @@ dependencies {
 
     implementation 'net.corda:corda-ledger-utxo'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation libs.jackson.module.kotlin
+    implementation libs.jackson.datatype.jsr310
     implementation libs.postgresql.jdbc
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.1"
 
     implementation project(':components:crypto:crypto-persistence')
     implementation project(':components:crypto:crypto-softhsm-impl')
+    implementation project(':components:crypto:crypto-persistence-model')
     implementation project(':components:db:db-connection-manager-impl')
     implementation project(':components:ledger:ledger-utxo-flow')
     implementation project(':components:ledger:ledger-persistence')

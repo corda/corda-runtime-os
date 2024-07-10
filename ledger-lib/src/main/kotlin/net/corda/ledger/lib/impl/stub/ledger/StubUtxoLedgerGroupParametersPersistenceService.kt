@@ -23,31 +23,11 @@ class StubUtxoLedgerGroupParametersPersistenceService(
     private val keyEncodingService: KeyEncodingService
 ) : UtxoLedgerGroupParametersPersistenceService {
     override fun find(hash: SecureHash): SignedGroupParameters? {
-        return entityManagerFactory.createEntityManager().transaction { em ->
-            utxoRepository.findSignedGroupParameters(em, hash.toString())?.let {
-                groupParametersFactory.create(it) as SignedGroupParameters
-            }
-        }
+        // FIXME Do we need this at all?
+        return null
     }
 
     override fun persistIfDoesNotExist(signedGroupParameters: SignedGroupParameters) {
-        groupParametersCache.get(signedGroupParameters.hash) ?: run {
-            entityManagerFactory.createEntityManager().transaction { em ->
-                utxoRepository.persistSignedGroupParameters(
-                    em,
-                    signedGroupParameters.hash.toString(),
-                    AvroGroupParameters(
-                        ByteBuffer.wrap(signedGroupParameters.groupParameters),
-                        CryptoSignatureWithKey(
-                            ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(signedGroupParameters.mgmSignature.by)),
-                            ByteBuffer.wrap(signedGroupParameters.mgmSignature.bytes)
-                        ),
-                        CryptoSignatureSpec(signedGroupParameters.mgmSignatureSpec.signatureName, null, null)
-                    ),
-                    Instant.now()
-                )
-            }
-            groupParametersCache.put(signedGroupParameters)
-        }
+        // FIXME Do we need to persist at all?
     }
 }

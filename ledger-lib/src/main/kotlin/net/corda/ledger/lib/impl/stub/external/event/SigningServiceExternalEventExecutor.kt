@@ -3,6 +3,7 @@ package net.corda.ledger.lib.impl.stub.external.event
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.fullId
+import net.corda.crypto.core.fullIdHash
 import net.corda.flow.application.crypto.external.events.SignParameters
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.external.events.factory.ExternalEventFactory
@@ -23,7 +24,7 @@ class SigningServiceExternalEventExecutor(private val cryptoService: CryptoServi
                 val keySet = parameters as Set<PublicKey>
                 cryptoService.lookupSigningKeysByPublicKeyShortHash(
                     TENANT_ID,
-                    keySet.map { ShortHash.Companion.of(it.fullId()) }
+                    keySet.map { ShortHash.Companion.of(it.fullIdHash()) }
                 ).map { it.publicKey } as RESUME
             }
             is SignParameters -> {

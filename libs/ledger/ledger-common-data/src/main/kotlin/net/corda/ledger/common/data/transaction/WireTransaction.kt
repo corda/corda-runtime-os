@@ -13,8 +13,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 @CordaSerializable
 class WireTransaction(
-    private val merkleTreeProvider: MerkleTreeProvider,
-    private val digestService: DigestService,
+    private val merkleTreeProvider: MerkleTreeProvider? = null,
+    private val digestService: DigestService? = null,
     val privacySalt: PrivacySalt,
     val componentGroupLists: List<List<ByteArray>>,
     private val metadata: TransactionMetadata
@@ -35,9 +35,9 @@ class WireTransaction(
     val componentMerkleTrees: ConcurrentHashMap<Int, MerkleTree> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         ConcurrentHashMap(
             componentGroupLists.mapIndexed { index, group ->
-                index to merkleTreeProvider.createTree(
+                index to merkleTreeProvider!!.createTree(
                     group.ifEmpty { listOf(ByteArray(0)) },
-                    metadata.getComponentGroupMerkleTreeDigestProvider(privacySalt, index, merkleTreeProvider, digestService)
+                    metadata.getComponentGroupMerkleTreeDigestProvider(privacySalt, index, merkleTreeProvider, digestService!!)
                 )
             }.toMap()
         )
@@ -48,7 +48,7 @@ class WireTransaction(
             componentMerkleTrees[index]!!.root.bytes
         }
 
-        merkleTreeProvider.createTree(componentGroupRoots, metadata.getRootMerkleTreeDigestProvider(merkleTreeProvider))
+        merkleTreeProvider!!.createTree(componentGroupRoots, metadata.getRootMerkleTreeDigestProvider(merkleTreeProvider))
     }
 
     override fun equals(other: Any?): Boolean {

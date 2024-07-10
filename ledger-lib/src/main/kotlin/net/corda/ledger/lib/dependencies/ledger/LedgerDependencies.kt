@@ -12,7 +12,7 @@ import net.corda.ledger.lib.dependencies.crypto.CryptoDependencies.digestService
 import net.corda.ledger.lib.dependencies.crypto.CryptoDependencies.merkleTreeProvider
 import net.corda.ledger.lib.dependencies.crypto.CryptoDependencies.signatureSpecService
 import net.corda.ledger.lib.dependencies.crypto.CryptoDependencies.signatureVerificationService
-import net.corda.ledger.lib.dependencies.db.DbDependencies.entityManagerFactory
+import net.corda.ledger.lib.dependencies.db.DbDependencies.ledgerEntityManagerFactory
 import net.corda.ledger.lib.dependencies.json.JsonDependencies.jsonMarshallingService
 import net.corda.ledger.lib.dependencies.json.JsonDependencies.jsonValidator
 import net.corda.ledger.lib.dependencies.sandbox.SandboxDependencies.currentSandboxGroupContext
@@ -30,8 +30,6 @@ import net.corda.ledger.lib.impl.stub.ledger.StubUtxoLedgerGroupParametersPersis
 import net.corda.ledger.lib.impl.stub.ledger.StubUtxoLedgerStateQueryService
 import net.corda.ledger.lib.impl.stub.platform.StubPlatformInfoProvider
 import net.corda.ledger.lib.impl.stub.transaction.StubTransactionMetadataFactory
-import net.corda.ledger.lib.impl.stub.transaction.StubUtxoLedgerTransactionFactory
-import net.corda.ledger.lib.impl.stub.verification.StubUtxoLedgerTransactionVerificationService
 import net.corda.ledger.persistence.utxo.impl.PostgresUtxoQueryProvider
 import net.corda.ledger.persistence.utxo.impl.UtxoRepositoryImpl
 import net.corda.ledger.utxo.flow.impl.transaction.factory.impl.UtxoLedgerTransactionFactoryImpl
@@ -93,7 +91,7 @@ object LedgerDependencies {
     )
 
     private val utxoLedgerStateQueryService = StubUtxoLedgerStateQueryService(
-        entityManagerFactory,
+        ledgerEntityManagerFactory,
         serializationService,
         utxoRepo,
         stateAndRefCache
@@ -106,7 +104,7 @@ object LedgerDependencies {
 
 
     private val utxoLedgerGroupParametersPersistenceService = StubUtxoLedgerGroupParametersPersistenceService(
-        entityManagerFactory,
+        ledgerEntityManagerFactory,
         utxoRepo,
         groupParametersCache,
         groupParametersFactory,

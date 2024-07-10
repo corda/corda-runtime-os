@@ -1,6 +1,7 @@
 package net.corda.ledger.lib.impl.stub.signing
 
 import com.github.benmanes.caffeine.cache.Cache
+import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.CryptoServiceExtensions
@@ -30,6 +31,7 @@ import net.corda.crypto.impl.getSigningData
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.softhsm.SigningRepositoryFactory
 import net.corda.crypto.softhsm.WrappingRepositoryFactory
+import net.corda.crypto.softhsm.deriveSupportedSchemes
 import net.corda.crypto.softhsm.impl.OwnedKeyRecord
 import net.corda.crypto.softhsm.impl.ShortHashCacheKey
 import net.corda.crypto.softhsm.impl.WRAPPING_KEY_ENCODING_VERSION
@@ -322,8 +324,7 @@ class StubCryptoService(
      */
     override val extensions: List<CryptoServiceExtensions>
         get() = TODO("Not yet implemented")
-    override val supportedSchemes: Map<KeyScheme, List<SignatureSpec>>
-        get() = TODO("Not yet implemented")
+    override val supportedSchemes: Map<KeyScheme, List<SignatureSpec>> = deriveSupportedSchemes(CipherSchemeMetadataImpl())
 
     override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedWrappedKey {
         TODO("Not yet implemented")

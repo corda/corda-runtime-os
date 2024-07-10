@@ -20,23 +20,22 @@ class VerificationExternalEventExecutor(
         factoryClass: Class<out ExternalEventFactory<PARAMETERS, RESPONSE, RESUME>>,
         parameters: PARAMETERS
     ): RESUME {
-        val params = parameters as TransactionVerificationParameters
+        // TODO ADD ACTUAL VERIFICATION LOGIC
+        
+        //val params = parameters as TransactionVerificationParameters
 
 
-        val transactionFactory = { serializationService.deserialize<UtxoLedgerTransactionContainer>(params.transaction).run {
+        /*val transactionFactory = { serializationService.deserialize<UtxoLedgerTransactionContainer>(params.transaction).run {
             UtxoLedgerTransactionImpl(
                 WrappedUtxoWireTransaction(wireTransaction, serializationService),
                 inputStateAndRefs,
                 referenceStateAndRefs,
                 groupParameters
             )
-        } }
-        val transaction = transactionFactory.invoke()
-        // TODO ADD ACTUAL VERIFICATION LOGIC
+        } }*/
+        //val transaction = transactionFactory.invoke()
 
-        println(transaction)
-
+        //println(transaction)
         return TransactionVerificationResult(TransactionVerificationStatus.VERIFIED) as RESUME
-
     }
 }

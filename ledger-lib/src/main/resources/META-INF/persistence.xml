@@ -4,7 +4,29 @@
   http://xmlns.jcp.org/xml/ns/persistence/persistence_2_1.xsd"
              version="2.1">
 
-    <persistence-unit name="whatever" transaction-type="RESOURCE_LOCAL">
+    <persistence-unit name="crypto" transaction-type="RESOURCE_LOCAL">
+        <!-- Persistence provider -->
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+
+        <class>net.corda.crypto.persistence.db.model.SigningKeyEntity</class>
+        <class>net.corda.crypto.persistence.db.model.SigningKeyMaterialEntity</class>
+        <class>net.corda.crypto.persistence.db.model.WrappingKeyEntity</class>
+        <class>net.corda.crypto.persistence.db.model.HSMAssociationEntity</class>
+        <class>net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity</class>
+
+        <properties>
+            <property name="javax.persistence.jdbc.driver" value="org.postgresql.Driver" />
+            <property name="javax.persistence.jdbc.url" value="jdbc:postgresql://localhost:5432/cordacluster" />
+            <property name="javax.persistence.jdbc.user" value="postgres" />
+            <property name="javax.persistence.jdbc.password" value="postgres" />
+            <property name="show_sql" value="true"/>
+            <property name="hibernate.format_sql" value="true"/>
+            <property name="hibernate.default_schema" value="vnode_crypto_30E895BAE560"/>
+            <property name="hibernate.connection.isolation" value="TRANSACTION_READ_COMMITTED"/>
+        </properties>
+    </persistence-unit>
+
+    <persistence-unit name="ledger" transaction-type="RESOURCE_LOCAL">
         <!-- Persistence provider -->
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
         <properties>
@@ -14,7 +36,8 @@
             <property name="javax.persistence.jdbc.password" value="postgres" />
             <property name="show_sql" value="true"/>
             <property name="hibernate.format_sql" value="true"/>
-            <property name="hibernate.default_schema" value="vnode_vault_3247aa2e5f7d"/>
+            <property name="hibernate.default_schema" value="vnode_vault_30E895BAE560"/>
+            <property name="hibernate.connection.isolation" value="TRANSACTION_READ_COMMITTED"/>
         </properties>
     </persistence-unit>
 </persistence>
