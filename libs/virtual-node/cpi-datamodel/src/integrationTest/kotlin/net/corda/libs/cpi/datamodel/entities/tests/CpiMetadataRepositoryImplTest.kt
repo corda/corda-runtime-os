@@ -55,8 +55,7 @@ class CpiMetadataRepositoryImplTest {
         emf.transaction {
             val hashValue = SecureHashImpl("SHA-256", byteArrayOf(0))
             val randomID = UUID.randomUUID()
-            val randomIDString = "$randomID"
-            val cpiIdentifier = CpiIdentifier(randomIDString,"1.0", hashValue)
+            val cpiIdentifier = CpiIdentifier(randomID.toString(),"1.0", hashValue)
             cpiMetadataRepository.put(
                 em = it,
                 cpiId = cpiIdentifier,
