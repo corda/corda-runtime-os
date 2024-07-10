@@ -21,7 +21,7 @@ import java.util.UUID
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CpiMetadataRepositoryImplTest {
 
-    private val dbConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration("cpk_file_db")
+    private val dbConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration("cpi_metadata_db")
     private val emf = EntityManagerFactoryFactoryImpl().create(
         "test_unit",
         CpiEntities.classes.toList(),
