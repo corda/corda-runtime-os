@@ -19,7 +19,9 @@ import net.corda.libs.permissions.manager.request.ChangeUserPasswordDto
 import net.corda.libs.permissions.manager.request.DeleteUserRequestDto
 import net.corda.libs.permissions.manager.request.GetPermissionSummaryRequestDto
 import net.corda.libs.permissions.manager.request.GetRoleRequestDto
+import net.corda.libs.permissions.manager.request.GetUserPropertiesRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
+import net.corda.libs.permissions.manager.request.GetUsersByPropertyRequestDto
 import net.corda.libs.permissions.manager.request.RemovePropertyFromUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.libs.platform.PlatformInfoProvider
@@ -254,12 +256,20 @@ class UserEndpointImpl @Activate constructor(
         return ResponseEntity.deleted(result.convertToEndpointType())
     }
 
-    override fun getUserProperties(loginName: String): ResponseEntity<PropertyResponseType> {
-        TODO("CORE-20757")
+    override fun getUserProperties(loginName: String): ResponseEntity<List<PropertyResponseType>> {
+        val principal = getRestThreadLocalContext()
+        val result = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            getUserProperties(GetUserPropertiesRequestDto(principal, loginName.lowercase()))
+        } ?: throw ResourceNotFoundException("User", loginName)
+        return ResponseEntity.ok(result.map { it.convertToEndpointType() })
     }
 
-    override fun getUsersByPropertyKey(propertyKey: String, propertyValue: String): ResponseEntity<UserResponseType> {
-        TODO("CORE-20757")
+    override fun getUsersByPropertyKey(propertyKey: String, propertyValue: String): ResponseEntity<List<UserResponseType>> {
+        val principal = getRestThreadLocalContext()
+        val result = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            getUsersByProperty(GetUsersByPropertyRequestDto(principal, propertyKey, propertyValue))
+        } ?: throw ResourceNotFoundException("Value", propertyValue)
+        return ResponseEntity.ok(result.map { it.convertToEndpointType() })
     }
     private fun getRestThreadLocalContext(): String {
         val restContext = CURRENT_REST_CONTEXT.get()

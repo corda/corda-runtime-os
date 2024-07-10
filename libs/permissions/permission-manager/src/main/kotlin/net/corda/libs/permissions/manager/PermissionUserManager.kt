@@ -6,9 +6,12 @@ import net.corda.libs.permissions.manager.request.ChangeUserPasswordDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.DeleteUserRequestDto
 import net.corda.libs.permissions.manager.request.GetPermissionSummaryRequestDto
+import net.corda.libs.permissions.manager.request.GetUserPropertiesRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
+import net.corda.libs.permissions.manager.request.GetUsersByPropertyRequestDto
 import net.corda.libs.permissions.manager.request.RemovePropertyFromUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
+import net.corda.libs.permissions.manager.response.PropertyResponseDto
 import net.corda.libs.permissions.manager.response.UserPermissionSummaryResponseDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
 
@@ -67,4 +70,14 @@ interface PermissionUserManager {
      * Remove a property from a User in the RBAC Permission System.
      */
     fun removePropertyFromUser(removePropertyFromUserRequestDto: RemovePropertyFromUserRequestDto): UserResponseDto
+
+    /**
+     * Get properties of a User in the RBAC Permission System.
+     */
+    fun getUserProperties(getUserPropertiesRequestDto: GetUserPropertiesRequestDto): List<PropertyResponseDto>?
+
+    /**
+     * Get all the users with a given property in the RBAC Permission System.
+     */
+    fun getUsersByProperty(getUsersByPropertyRequestDto: GetUsersByPropertyRequestDto): List<UserResponseDto>?
 }

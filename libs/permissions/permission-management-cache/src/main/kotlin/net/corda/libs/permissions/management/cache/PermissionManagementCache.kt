@@ -20,4 +20,5 @@ interface PermissionManagementCache : Lifecycle {
     fun getGroup(groupId: String): Group?
     fun getRole(roleId: String): Role?
     fun getPermission(permissionId: String): Permission?
+    fun getUsersByProperty(propertyKey: String, propertyValue: String): List<User>?
 }
