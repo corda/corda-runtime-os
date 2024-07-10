@@ -270,6 +270,7 @@ spec:
             value: {{ required (printf "Must specify workers.%s.kafka.sasl.password.value, workers.%s.kafka.sasl.password.valueFrom.secretKeyRef.name, kafka.sasl.password.value, or kafka.sasl.password.valueFrom.secretKeyRef.name" $worker $worker) $.Values.kafka.sasl.password.value }}
             {{- end }}
           {{- end }}
+        {{- include "corda.dummyDebugSecretEnv" $ | nindent 10 }}
         {{- if not (($.Values).vault).url }}
         {{- include "corda.configSaltAndPassphraseEnv" $ | nindent 10 }}
         {{- end }}
