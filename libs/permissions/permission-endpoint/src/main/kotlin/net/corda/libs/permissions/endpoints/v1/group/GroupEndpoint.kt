@@ -44,7 +44,7 @@ interface GroupEndpoint : RestResource {
     ): ResponseEntity<GroupResponseType>
 
     @HttpPUT(
-        path = "{groupId}/parent/changeParentId/{newParentGroupId}",
+        path = "{groupId}/parent/changeparentid/{newParentGroupId}",
         description = "This method changes the parent group of a specified group.",
         responseDescription = """
             The group with the updated parent group with the following attributes:
