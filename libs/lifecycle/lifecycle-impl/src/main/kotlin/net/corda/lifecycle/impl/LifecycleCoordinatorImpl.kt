@@ -55,6 +55,15 @@ class LifecycleCoordinatorImpl(
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        /**
+         * This mapping lays out the valid state transitions for a given lifecycle component.
+         */
+        private val permittedTransitions = mapOf(
+            LifecycleStatus.UP to setOf(LifecycleStatus.DOWN, LifecycleStatus.ERROR),
+            LifecycleStatus.DOWN to setOf(LifecycleStatus.UP, LifecycleStatus.ERROR),
+            LifecycleStatus.ERROR to emptySet()
+        )
     }
 
     /**
@@ -82,15 +91,6 @@ class LifecycleCoordinatorImpl(
      * shut down.
      */
     private val _isClosed = AtomicBoolean(false)
-
-    /**
-     * This mapping lays out the valid state transitions for a given lifecycle component.
-     */
-    private val transitions = mapOf(
-        LifecycleStatus.UP to setOf(LifecycleStatus.DOWN, LifecycleStatus.ERROR),
-        LifecycleStatus.DOWN to setOf(LifecycleStatus.UP, LifecycleStatus.ERROR),
-        LifecycleStatus.ERROR to emptySet()
-    )
 
     /**
      * Process a batch of events in the event queue.
@@ -144,14 +144,14 @@ class LifecycleCoordinatorImpl(
     }
 
     /**
-     * Checks if a transition between two given states is possible within our defined [transitions] map.
+     * Checks if a transition between two given states is possible within our defined [permittedTransitions] map.
      * If the states are the same, the transition is always possible.
      *
      * @param from The [LifecycleStatus] we are transitioning from.
      * @param to The [LifecycleStatus] we are transitioning to.
      */
     private fun canTransition(from: LifecycleStatus, to: LifecycleStatus): Boolean {
-        return (from == to) || transitions[from]?.contains(to) ?: false
+        return (from == to) || permittedTransitions[from]?.contains(to) ?: false
     }
 
     /**
@@ -204,7 +204,7 @@ class LifecycleCoordinatorImpl(
         } else {
             logger.trace {
                 "An attempt was made to transition coordinator $name from ${lifecycleState.status} to $newStatus. " +
-                "However, ${lifecycleState.status} can only transition to: ${transitions[lifecycleState.status]}."
+                "However, ${lifecycleState.status} can only transition to: ${permittedTransitions[lifecycleState.status]}."
             }
         }
     }
