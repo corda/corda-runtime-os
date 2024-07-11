@@ -2,11 +2,15 @@ package net.corda.libs.permissions.endpoints.v1.user.impl
 
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.manager.PermissionManager
+import net.corda.libs.permissions.manager.request.AddPropertyToUserRequestDto
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.DeleteUserRequestDto
+import net.corda.libs.permissions.manager.request.GetUserPropertiesRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
+import net.corda.libs.permissions.manager.request.RemovePropertyFromUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
+import net.corda.libs.permissions.manager.response.PropertyResponseDto
 import net.corda.libs.permissions.manager.response.RoleAssociationResponseDto
 import net.corda.libs.permissions.manager.response.RoleResponseDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
@@ -62,6 +66,19 @@ internal class UserEndpointImplTest {
         emptyList(),
         emptyList(),
     )
+
+    private val propertyResponseDto1 = PropertyResponseDto(
+        Instant.now(),
+        "propertyKey1",
+        "propertyValue1"
+    )
+
+    private val propertyResponseDto2 = PropertyResponseDto(
+        Instant.now(),
+        "propertyKey2",
+        "propertyValue2"
+    )
+
 
     private val roleResponseDto = RoleResponseDto("roleId1", 1, Instant.now(), "Role Name", null, emptyList())
 
@@ -302,5 +319,97 @@ internal class UserEndpointImplTest {
             endpoint.createUser(createUserType.copy(loginName = "foo/bar"))
         }.isInstanceOf(InvalidInputDataException::class.java)
             .hasMessageContaining("Invalid input data for user creation.")
+    }
+
+    @Test
+    fun `add a property to a user`() {
+        val userResponseDtoWithProperty = UserResponseDto(
+            "uuid",
+            0,
+            now,
+            "fullName1",
+            "loginName1",
+            true,
+            false,
+            now,
+            parentGroup,
+            listOf(PropertyResponseDto(Instant.now(), "key1", "value1")),
+            emptyList()
+        )
+
+        val capture = argumentCaptor<AddPropertyToUserRequestDto>()
+        whenever(lifecycleCoordinator.isRunning).thenReturn(true)
+        whenever(permissionService.isRunning).thenReturn(true)
+        whenever(permissionManager.addPropertyToUser(capture.capture())).thenReturn(userResponseDtoWithProperty)
+
+        endpoint.start()
+        val response = endpoint.addProperty("userLogin1", mapOf("key1" to "value1"))
+        val responseType = response.responseBody
+
+        assertEquals(ResponseCode.OK, response.responseCode)
+
+        assertEquals(1, capture.allValues.size)
+        assertEquals("aRestUser", capture.firstValue.requestedBy)
+        assertEquals("userlogin1", capture.firstValue.loginName)
+        assertEquals(mapOf("key1" to "value1"), capture.firstValue.properties)
+
+        assertNotNull(responseType)
+        assertEquals("uuid", responseType.id)
+        assertEquals(0, responseType.version)
+        assertEquals(now, responseType.updateTimestamp)
+        assertEquals("fullName1", responseType.fullName)
+        assertEquals("loginName1", responseType.loginName)
+        assertEquals(true, responseType.enabled)
+        assertEquals(now, responseType.passwordExpiry)
+        assertEquals(parentGroup, responseType.parentGroup)
+        assertEquals(1, responseType.properties.size)
+        assertEquals("key1", responseType.properties.first().key)
+        assertEquals("value1", responseType.properties.first().value)
+    }
+
+    @Test
+    fun `remove property from a user`() {
+        val capture = argumentCaptor<RemovePropertyFromUserRequestDto>()
+        whenever(lifecycleCoordinator.isRunning).thenReturn(true)
+        whenever(permissionService.isRunning).thenReturn(true)
+        whenever(permissionManager.removePropertyFromUser(capture.capture())).thenReturn(userResponseDto)
+        whenever(permissionManager.getRole(any())).thenReturn(roleResponseDto)
+        whenever(permissionManager.getUser(any())).thenReturn(userResponseDto)
+
+        endpoint.start()
+        val response = endpoint.removeProperty("userLogin1", "key1")
+        val responseType = response.responseBody
+
+        assertEquals(ResponseCode.OK, response.responseCode)
+
+        assertEquals(1, capture.allValues.size)
+        assertEquals("aRestUser", capture.firstValue.requestedBy)
+        assertEquals("userlogin1", capture.firstValue.loginName)
+        assertEquals("key1", capture.firstValue.propertyKey)
+
+        assertNotNull(responseType)
+        assertEquals("uuid", responseType.id)
+        assertEquals(0, responseType.version)
+        assertEquals(now, responseType.updateTimestamp)
+        assertEquals("fullName1", responseType.fullName)
+        assertEquals("loginName1", responseType.loginName)
+        assertEquals(true, responseType.enabled)
+        assertEquals(now, responseType.passwordExpiry)
+        assertEquals(parentGroup, responseType.parentGroup)
+        assertTrue(responseType.properties.isEmpty())
+    }
+
+    @Test
+    fun `get properties of a user`() {
+        val getUserPropertyRequestDtoCapture = argumentCaptor<GetUserPropertiesRequestDto>()
+        whenever(lifecycleCoordinator.isRunning).thenReturn(true)
+        whenever(permissionService.isRunning).thenReturn(true)
+        whenever(permissionManager.getUserProperties(getUserPropertyRequestDtoCapture.capture())).thenReturn(listOf(propertyResponseDto1, propertyResponseDto2))
+
+        endpoint.start()
+        val responseType = endpoint.getUserProperties("loginName1")
+
+        assertNotNull(responseType)
+        assertEquals("", responseType)
     }
 }
