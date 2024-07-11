@@ -81,7 +81,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
                      getRbacUser(vNodeCreatorName)
                     }
                     condition {
-                        it.body.toJson()["roleAssociations"].first()["roleId"].textValue().equals(vNodeCreatorRole["id"].textValue())
+                        it.body.toJson()["roleAssociations"].firstOrNull()?.get("roleId")?.textValue().equals(vNodeCreatorRole["id"].textValue())
                     }
                 }
 
