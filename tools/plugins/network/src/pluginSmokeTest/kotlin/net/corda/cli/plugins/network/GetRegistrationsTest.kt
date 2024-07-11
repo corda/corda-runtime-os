@@ -58,6 +58,7 @@ class GetRegistrationsTest {
             user,
             password,
             INSECURE,
+            WAIT
         )
         val holdingIdentity = HoldingIdentityUtils.getHoldingIdentity(
             null,
