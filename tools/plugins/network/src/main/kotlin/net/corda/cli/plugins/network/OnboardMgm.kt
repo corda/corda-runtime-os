@@ -90,6 +90,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
         cpiFile.parentFile.mkdirs()
 
         val cpiName = "MGM-${UUID.randomUUID()}"
+        println("Creating and uploading CPI: $cpiName.")
         runCatching {
             CpiV2Creator.createCpi(
                 null,
