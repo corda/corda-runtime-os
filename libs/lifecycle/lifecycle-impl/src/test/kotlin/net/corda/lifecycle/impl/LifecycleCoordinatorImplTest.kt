@@ -1,10 +1,5 @@
 package net.corda.lifecycle.impl
 
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
-import kotlin.random.Random
 import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.ErrorEvent
@@ -31,6 +26,8 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -38,6 +35,11 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 
 // These tests create simple lifecycle coordinator, provide an event handler to do some processing of events, and then
 // deliver some series of events to the coordinator to process. There are some subtleties to keep in mind when adding to
@@ -1387,6 +1389,47 @@ internal class LifecycleCoordinatorImplTest {
 
         coordinator.stop()
         verify(dependency).stop()
+    }
+
+    @ParameterizedTest(name = "coordinator cannot transition from ERROR status to {0}")
+    @EnumSource(value = LifecycleStatus::class, names = ["UP", "DOWN"])
+    fun `coordinator cannot transition from ERROR status to UP or DOWN`(targetStatus: LifecycleStatus) {
+        val coordinator = createTestCoordinator { _, _ -> }
+        coordinator.postEvent(StartEvent())
+
+        // Set the coordinator to an error state
+        coordinator.updateStatus(LifecycleStatus.ERROR)
+        assertThat(coordinator.status).isEqualTo(LifecycleStatus.ERROR)
+
+        // Ensure that any further transitions result in a NO-OP
+        coordinator.updateStatus(targetStatus)
+        assertThat(coordinator.status).isEqualTo(LifecycleStatus.ERROR)
+    }
+
+    @ParameterizedTest(name = "coordinator can transition from UP status to {0}")
+    @EnumSource(value = LifecycleStatus::class, names = ["DOWN", "ERROR"])
+    fun `coordinator can transition from UP status to DOWN or ERROR`(targetStatus: LifecycleStatus) {
+        val coordinator = createTestCoordinator { _, _ -> }
+        coordinator.postEvent(StartEvent())
+
+        coordinator.updateStatus(LifecycleStatus.UP)
+        assertEquals(LifecycleStatus.UP, coordinator.status)
+
+        coordinator.updateStatus(targetStatus)
+        assertEquals(targetStatus, coordinator.status)
+    }
+
+    @ParameterizedTest(name = "coordinator can transition from DOWN status to {0}")
+    @EnumSource(value = LifecycleStatus::class, names = ["UP", "ERROR"])
+    fun `coordinator can transition from DOWN status to UP or ERROR`(targetStatus: LifecycleStatus) {
+        val coordinator = createTestCoordinator { _, _ -> }
+        coordinator.postEvent(StartEvent())
+
+        coordinator.updateStatus(LifecycleStatus.DOWN)
+        assertEquals(LifecycleStatus.DOWN, coordinator.status)
+
+        coordinator.updateStatus(targetStatus)
+        assertEquals(targetStatus, coordinator.status)
     }
 
     private fun createCoordinator(
