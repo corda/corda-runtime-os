@@ -69,11 +69,11 @@ internal class PermissionManagementCacheImpl(
     override fun getUsersByProperty(propertyKey: String, propertyValue: String): List<User>? {
         validateCacheIsRunning()
         val usersByProperty = users.values.filter {
-            it.properties.firstOrNull { userProperty ->
+            it.properties!!.firstOrNull {
+                    userProperty ->
                 userProperty.key.equals(propertyKey) && userProperty.value.equals(propertyValue)
             } != null
         }
-
         return usersByProperty.ifEmpty {
             null
         }

@@ -8,6 +8,7 @@ import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.DeleteUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUserPropertiesRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
+import net.corda.libs.permissions.manager.request.GetUsersByPropertyRequestDto
 import net.corda.libs.permissions.manager.request.RemovePropertyFromUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.libs.permissions.manager.response.PropertyResponseDto
@@ -53,6 +54,12 @@ internal class UserEndpointImplTest {
         parentGroup
     )
 
+    private val propertyResponseDto1 = PropertyResponseDto(
+        Instant.now(),
+        "key1",
+        "value1"
+    )
+
     private val userResponseDto = UserResponseDto(
         "uuid",
         0,
@@ -63,22 +70,9 @@ internal class UserEndpointImplTest {
         false,
         now,
         parentGroup,
+        listOf(propertyResponseDto1),
         emptyList(),
-        emptyList(),
     )
-
-    private val propertyResponseDto1 = PropertyResponseDto(
-        Instant.now(),
-        "propertyKey1",
-        "propertyValue1"
-    )
-
-    private val propertyResponseDto2 = PropertyResponseDto(
-        Instant.now(),
-        "propertyKey2",
-        "propertyValue2"
-    )
-
 
     private val roleResponseDto = RoleResponseDto("roleId1", 1, Instant.now(), "Role Name", null, emptyList())
 
@@ -198,7 +192,11 @@ internal class UserEndpointImplTest {
         val e = assertThrows<ResourceNotFoundException> {
             endpoint.getUserPath("abc")
         }
-        assertEquals(ResponseCode.RESOURCE_NOT_FOUND, e.responseCode, "Resource not found exception should have correct response code.")
+        assertEquals(
+            ResponseCode.RESOURCE_NOT_FOUND,
+            e.responseCode,
+            "Resource not found exception should have correct response code."
+        )
         assertEquals("User 'abc' not found.", e.message)
         assertEquals("abc", getUserRequestDtoCapture.firstValue.loginName)
     }
@@ -388,6 +386,7 @@ internal class UserEndpointImplTest {
         assertEquals("key1", capture.firstValue.propertyKey)
 
         assertNotNull(responseType)
+        print(responseType)
         assertEquals("uuid", responseType.id)
         assertEquals(0, responseType.version)
         assertEquals(now, responseType.updateTimestamp)
@@ -396,7 +395,6 @@ internal class UserEndpointImplTest {
         assertEquals(true, responseType.enabled)
         assertEquals(now, responseType.passwordExpiry)
         assertEquals(parentGroup, responseType.parentGroup)
-        assertTrue(responseType.properties.isEmpty())
     }
 
     @Test
@@ -404,12 +402,45 @@ internal class UserEndpointImplTest {
         val getUserPropertyRequestDtoCapture = argumentCaptor<GetUserPropertiesRequestDto>()
         whenever(lifecycleCoordinator.isRunning).thenReturn(true)
         whenever(permissionService.isRunning).thenReturn(true)
-        whenever(permissionManager.getUserProperties(getUserPropertyRequestDtoCapture.capture())).thenReturn(listOf(propertyResponseDto1, propertyResponseDto2))
+        whenever(permissionManager.getUserProperties(getUserPropertyRequestDtoCapture.capture())).thenReturn(
+            listOf(
+                propertyResponseDto1
+            )
+        )
 
         endpoint.start()
-        val responseType = endpoint.getUserProperties("loginName1")
-
+        val response = endpoint.getUserProperties("loginName1")
+        val responseType = response.responseBody[0]
         assertNotNull(responseType)
-        assertEquals("", responseType)
+        assertEquals("key1", responseType.key)
+        assertEquals("value1", responseType.value)
+    }
+
+    @Test
+    fun `get users by property`() {
+        val getUsersByPropertyRequestDtoCapture = argumentCaptor<GetUsersByPropertyRequestDto>()
+        whenever(lifecycleCoordinator.isRunning).thenReturn(true)
+        whenever(permissionService.isRunning).thenReturn(true)
+        whenever(permissionManager.getUsersByProperty(getUsersByPropertyRequestDtoCapture.capture())).thenReturn(
+            listOf(
+                userResponseDto
+            )
+        )
+
+        endpoint.start()
+        val response = endpoint.getUsersByPropertyKey("key1", "value1")
+        val responseType = response.responseBody[0]
+        assertNotNull(responseType)
+        println(responseType)
+        assertEquals("uuid", responseType.id)
+        assertEquals(0, responseType.version)
+        assertEquals(now, responseType.updateTimestamp)
+        assertEquals("fullName1", responseType.fullName)
+        assertEquals("loginName1", responseType.loginName)
+        assertEquals(true, responseType.enabled)
+        assertEquals(now, responseType.passwordExpiry)
+        assertEquals(parentGroup, responseType.parentGroup)
+        assertEquals("key1", responseType.properties[0].key)
+        assertEquals("value1", responseType.properties[0].value)
     }
 }

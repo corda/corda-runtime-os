@@ -204,9 +204,4 @@ internal class PermissionManagementCacheImplTest {
             "GetPermissions result should contain expected permissions in the map."
         )
     }
-
-    @Test
-    fun getUsersByProperty() {
-
-    }
 }

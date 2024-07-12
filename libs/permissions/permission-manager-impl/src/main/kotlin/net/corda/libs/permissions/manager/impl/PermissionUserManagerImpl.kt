@@ -255,6 +255,8 @@ class PermissionUserManagerImpl(
         val cachedUsers: List<User> = permissionManagementCache.getUsersByProperty(
             getUsersByPropertyRequestDto.propertyKey, getUsersByPropertyRequestDto.propertyValue
         ) ?: return null
-        return cachedUsers.map { it.convertToResponseDto() }
+        return cachedUsers.map { it.convertToResponseDto() }.ifEmpty {
+            null
+        }
     }
 }
