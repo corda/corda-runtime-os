@@ -2,6 +2,8 @@ package net.corda.rest.server.impl.internal
 
 import io.javalin.Javalin
 import io.javalin.config.JavalinConfig
+import io.javalin.config.MultipartConfig
+import io.javalin.config.SizeUnit
 import io.javalin.http.BadRequestResponse
 import io.javalin.http.ContentType
 import io.javalin.http.Context
@@ -11,10 +13,8 @@ import io.javalin.http.HttpResponseException
 import io.javalin.http.NotFoundResponse
 import io.javalin.http.staticfiles.Location
 import io.javalin.http.util.JsonEscapeUtil
-import io.javalin.http.util.MultipartUtil
 import io.javalin.json.JavalinJackson
 import io.javalin.plugin.bundled.RedirectToLowercasePathPlugin
-import jakarta.servlet.MultipartConfigElement
 import net.corda.rest.authorization.AuthorizationUtils.authorize
 import net.corda.rest.server.config.RestServerSettingsProvider
 import net.corda.rest.server.impl.apigen.processing.RouteInfo
@@ -123,18 +123,12 @@ internal class RestServerInternal(
             addOpenApiRoutes()
             addWsRoutes()
             // In order for multipart content to be stored onto disk, we need to override some properties
-            // which are set by default by Javalin such that entire content is read into memory
-            @Suppress("DEPRECATION")
-            MultipartUtil.preUploadFunction = { req ->
-                req.setAttribute(
-                    "org.eclipse.jetty.multipartConfig",
-                    MultipartConfigElement(
-                        multiPartDir.toString(),
-                        configurationsProvider.maxContentLength().toLong(),
-                        configurationsProvider.maxContentLength().toLong(),
-                        1024
-                    )
-                )
+            // which are set by default by Javalin such that the entire content is read into memory
+            MultipartConfig().apply {
+                cacheDirectory(multiPartDir.toString())
+                maxFileSize(configurationsProvider.maxContentLength().toLong(), SizeUnit.BYTES)
+                maxTotalRequestSize(configurationsProvider.maxContentLength().toLong(), SizeUnit.BYTES)
+                maxInMemoryFileSize(1024, SizeUnit.BYTES)
             }
         }
     }
