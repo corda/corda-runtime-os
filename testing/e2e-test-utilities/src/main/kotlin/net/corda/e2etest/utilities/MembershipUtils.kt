@@ -303,11 +303,12 @@ fun ClusterInfo.waitForRegistrationStatus(
                 it.code == ResponseCode.OK.statusCode && run {
                     val json = it.toJson()
                     val status = if (registrationId != null) {
-                        json.get("registrationStatus")?.textValue()
+                        json["registrationStatus"]?.textValue()
                     } else {
-                        json.firstOrNull()?.get("registrationStatus")?.textValue() == registrationStatus
+                        json.firstOrNull()?.get("registrationStatus")?.textValue()
                     }
-                    (status != registrationStatus) && (finalRegistrationStates.contains(status))
+
+                    status != registrationStatus && finalRegistrationStates.contains(status)
                 }
             }
             failMessage("Registration was not completed for $holdingIdentityShortHash")
