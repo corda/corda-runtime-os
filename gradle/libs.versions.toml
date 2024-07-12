@@ -19,7 +19,7 @@ micrometerVersion = "1.12.4"
 nimbusVersion = "11.13"
 kafkaClientVersion = "3.7.0_1"
 kubernetesClientVersion = "6.13.1"
-log4jVersion = "2.23.0"
+log4jVersion = "2.23.1"
 # If upgrading liquibase to 4.28, enable `LiquibaseSchemaMigratorImplTest.when updateDb create DB schema`
 # and `LiquibaseSchemaMigratorImplTest.when createUpdateSql generate DB schema` on Windows
 liquibaseVersion = "4.28.0"
