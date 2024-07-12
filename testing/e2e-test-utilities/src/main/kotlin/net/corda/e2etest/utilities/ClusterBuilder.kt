@@ -78,10 +78,11 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
 
                 assertWithRetry {
                     command {
-                     getRbacUser(vNodeCreatorName)
+                        getRbacUser(vNodeCreatorName)
                     }
                     condition {
-                        it.body.toJson()["roleAssociations"].firstOrNull()?.get("roleId")?.textValue().equals(vNodeCreatorRole["id"].textValue())
+                        it.body.toJson()["roleAssociations"].firstOrNull()?.get("roleId")?.textValue()
+                            .equals(vNodeCreatorRole["id"].textValue())
                     }
                 }
 
