@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.NullNode
+import net.corda.rest.ResponseCode
 import net.corda.utilities.minutes
 import org.apache.commons.text.StringEscapeUtils.escapeJson
 import org.junit.jupiter.api.TestInfo
@@ -90,9 +91,10 @@ fun ClusterInfo.awaitRestFlowFinished(holdingId: String, requestId: String): Flo
                 command { flowStatus(holdingId, requestId) }
                 timeout(RETRY_TIMEOUT)
                 condition {
-                    it.code == 200 &&
-                            (it.toJson()["flowStatus"].textValue() == REST_FLOW_STATUS_SUCCESS ||
-                                    it.toJson()["flowStatus"].textValue() == REST_FLOW_STATUS_FAILED)
+                    it.code == ResponseCode.OK.statusCode && run {
+                        val flowStatus = it.toJson()["flowStatus"].textValue()
+                        flowStatus == REST_FLOW_STATUS_SUCCESS || flowStatus == REST_FLOW_STATUS_FAILED
+                    }
                 }
             }.body, FlowStatus::class.java
         )
@@ -111,9 +113,10 @@ fun ClusterInfo.awaitRestFlowResult(holdingId: String, requestId: String): FlowR
                 command { flowResult(holdingId, requestId) }
                 timeout(RETRY_TIMEOUT)
                 condition {
-                    it.code == 200 &&
-                            (it.toJson()["flowStatus"].textValue() == REST_FLOW_STATUS_SUCCESS ||
-                                    it.toJson()["flowStatus"].textValue() == REST_FLOW_STATUS_FAILED)
+                    it.code == ResponseCode.OK.statusCode && run {
+                        val flowStatus = it.toJson()["flowStatus"].textValue()
+                        flowStatus == REST_FLOW_STATUS_SUCCESS || flowStatus == REST_FLOW_STATUS_FAILED
+                    }
                 }
             }.body
         )
@@ -168,13 +171,15 @@ fun awaitMultipleRestFlowFinished(holdingId: String, expectedFlowCount: Int) {
             command { multipleFlowStatus(holdingId) }
             timeout(RETRY_TIMEOUT)
             condition {
-                val json = it.toJson()
-                val flowStatuses = json["flowStatusResponses"]
-                val allStatusComplete = flowStatuses.map { flowStatus ->
-                    flowStatus["flowStatus"].textValue() == REST_FLOW_STATUS_SUCCESS ||
-                            flowStatus["flowStatus"].textValue() == REST_FLOW_STATUS_FAILED
-                }.all { true }
-                it.code == 200 && flowStatuses.size() == expectedFlowCount && allStatusComplete
+                it.code == ResponseCode.OK.statusCode && run {
+                    val json = it.toJson()
+                    val flowStatuses = json["flowStatusResponses"]
+                    val allStatusComplete = flowStatuses.all { flowStatus ->
+                        flowStatus["flowStatus"].textValue() in setOf(REST_FLOW_STATUS_SUCCESS, REST_FLOW_STATUS_FAILED)
+                    }
+
+                    allStatusComplete && flowStatuses.size() == expectedFlowCount
+                }
             }
         }
     }
@@ -209,7 +214,7 @@ fun ClusterInfo.getFlowClasses(holdingId: String): List<String> {
         val vNodeJson = assertWithRetryIgnoringExceptions {
             timeout(RETRY_TIMEOUT)
             command { runnableFlowClasses(holdingId) }
-            condition { it.code == 200 }
+            condition { it.code == ResponseCode.OK.statusCode }
             failMessage("Failed to get flows for holdingId '$holdingId'")
         }.toJson()
 

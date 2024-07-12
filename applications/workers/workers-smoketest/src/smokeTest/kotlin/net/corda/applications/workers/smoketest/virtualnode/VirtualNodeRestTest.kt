@@ -93,7 +93,7 @@ class VirtualNodeRestTest : ClusterReadiness by ClusterReadinessChecker() {
                 timeout(retryTimeout)
                 interval(retryInterval)
                 command { importCertificate(CODE_SIGNER_CERT, CODE_SIGNER_CERT_USAGE, CODE_SIGNER_CERT_ALIAS) }
-                condition { it.code == 204 }
+                condition { it.code == ResponseCode.NO_CONTENT.statusCode }
             }
         }
     }
@@ -130,7 +130,7 @@ class VirtualNodeRestTest : ClusterReadiness by ClusterReadinessChecker() {
                 timeout(retryTimeout)
                 interval(retryInterval)
                 command { cpiList() }
-                condition { it.code == 200 && it.toJson()["cpis"].size() > 0 }
+                condition { it.code == ResponseCode.OK.statusCode && it.toJson()["cpis"].size() > 0 }
             }.toJson()
 
             assertThat(json["cpis"].size()).isGreaterThan(0)
@@ -158,7 +158,7 @@ class VirtualNodeRestTest : ClusterReadiness by ClusterReadinessChecker() {
                     val nodes = vNodeList().toJson()["virtualNodes"].map {
                         it["holdingIdentity"]["x500Name"].textValue()
                     }
-                    response.code == 200 && nodes.contains(aliceX500)
+                    response.code == ResponseCode.OK.statusCode && nodes.contains(aliceX500)
                 }
             }
         }
@@ -173,7 +173,7 @@ class VirtualNodeRestTest : ClusterReadiness by ClusterReadinessChecker() {
                 interval(retryInterval)
                 command { getVNode(aliceHoldingId) }
                 condition { response ->
-                    response.code == 200 &&
+                    response.code == ResponseCode.OK.statusCode &&
                             response.toJson()["holdingIdentity"]["x500Name"].textValue().contains(aliceX500)
                 }
             }
