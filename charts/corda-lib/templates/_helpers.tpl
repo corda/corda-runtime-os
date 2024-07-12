@@ -158,14 +158,6 @@ Kafka bootstrap servers
 {{- end }}
 
 {{/*
-Dummy debug secret name
-*/}}
-{{- define "corda.dummyDebugSecretName" -}}
-{{ default (printf "%s-dummy-debug" (include "corda.fullname" .)) }}
-{{- end }}
-
-
-{{/*
 Initial REST API admin secret name
 */}}
 {{- define "corda.restApiAdminSecretName" -}}
@@ -213,22 +205,6 @@ Initial REST API admin secret password key
 {{- else -}}
 password
 {{- end -}}
-{{- end -}}
-
-{{/*
-Dummy debug secret environment variable
-*/}}
-{{- define "corda.dummyDebugSecretEnv" -}}
-- name: DUMMY_DEBUG_USERNAME
-  valueFrom:
-    secretKeyRef:
-      name: {{ include "corda.dummyDebugSecretName" . }}
-      key: username
-- name: DUMMY_DEBUG_PASSWORD
-  valueFrom:
-    secretKeyRef:
-      name: {{ include "corda.dummyDebugSecretName" . }}
-      key: password
 {{- end -}}
 
 {{/*
