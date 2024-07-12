@@ -385,5 +385,5 @@ interface UserEndpoint : RestResource {
         propertyKey: String,
         @RestPathParameter(description = "Property value to match on.")
         propertyValue: String
-    ): ResponseEntity<List<UserResponseType>>
+    ): ResponseEntity<Set<UserResponseType>>
 }
