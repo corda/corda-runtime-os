@@ -307,7 +307,7 @@ fun ClusterInfo.waitForRegistrationStatus(
                     } else {
                         json.firstOrNull()?.get("registrationStatus")?.textValue() == registrationStatus
                     }
-                    status != registrationStatus && finalRegistrationStates.contains(status)
+                    (status != registrationStatus) && (finalRegistrationStates.contains(status))
                 }
             }
             failMessage("Registration was not completed for $holdingIdentityShortHash")
