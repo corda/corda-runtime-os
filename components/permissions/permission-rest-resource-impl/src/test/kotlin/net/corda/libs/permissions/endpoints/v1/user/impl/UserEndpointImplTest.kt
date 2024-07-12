@@ -386,7 +386,6 @@ internal class UserEndpointImplTest {
         assertEquals("key1", capture.firstValue.propertyKey)
 
         assertNotNull(responseType)
-        print(responseType)
         assertEquals("uuid", responseType.id)
         assertEquals(0, responseType.version)
         assertEquals(now, responseType.updateTimestamp)
@@ -431,7 +430,6 @@ internal class UserEndpointImplTest {
         val response = endpoint.getUsersByPropertyKey("key1", "value1")
         val responseType = response.responseBody[0]
         assertNotNull(responseType)
-        println(responseType)
         assertEquals("uuid", responseType.id)
         assertEquals(0, responseType.version)
         assertEquals(now, responseType.updateTimestamp)

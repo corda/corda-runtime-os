@@ -451,7 +451,6 @@ class PermissionUserManagerImplTest {
 
         val requestDto = AddPropertyToUserRequestDto("requestUserId", "user-login1", mapOf("email" to "a@b.com"))
         val result = manager.addPropertyToUser(requestDto)
-        println(result)
         assertEquals("requestUserId", capture.firstValue.requestUserId)
         assertNull(capture.firstValue.virtualNodeId)
 
