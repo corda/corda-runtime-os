@@ -2,6 +2,7 @@ package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import net.corda.rest.ResponseCode
 import java.time.Instant
 
 object RbacTestUtils {
@@ -10,7 +11,7 @@ object RbacTestUtils {
         return DEFAULT_CLUSTER.cluster {
             val bodyAsString = assertWithRetryIgnoringExceptions {
                 command { getRbacRoles() }
-                condition { it.code == 200 }
+                condition { it.code == ResponseCode.OK.statusCode }
                 failMessage("Failed to get all the RBAC roles in the cluster")
             }.body
             ObjectMapper()

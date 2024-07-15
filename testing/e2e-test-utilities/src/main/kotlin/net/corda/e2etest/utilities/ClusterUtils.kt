@@ -130,7 +130,7 @@ fun ClusterInfo.getOrCreateVirtualNodeFor(
     vNodeCreationSemaphore.runWith {
         val vNodesJson = assertWithRetryIgnoringExceptions {
             command { vNodeList() }
-            condition { it.code == 200 }
+            condition { it.code == ResponseCode.OK.statusCode }
             failMessage("Failed to retrieve virtual nodes")
         }.toJson()
 
@@ -206,9 +206,9 @@ fun ClusterInfo.createKeyFor(
             )
         }
         condition {
-            it.code == 200 &&
-                    it.toJson().isObject &&
-                    !it.toJson().isEmpty
+            it.code == ResponseCode.OK.statusCode
+                    && it.toJson().isObject
+                    && !it.toJson().isEmpty
         }
         failMessage("Failed to get keys for holding id '$tenantId' and alias '$alias'")
     }.toJson()
