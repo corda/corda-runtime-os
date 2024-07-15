@@ -105,14 +105,14 @@ class PermissionUserManagerImplTest {
 
     private val avroUser = User(
         UUID.randomUUID().toString(), 0, ChangeDetails(userCreationTime), "user-login1", fullName, true,
-        "temp-hashed-password", "temporary-salt", userCreationTime, false, parentGroup, listOf(userProperty),
+        "temp-hashed-password", "temporary-salt", userCreationTime, false, parentGroup, setOf(userProperty),
         listOf(RoleAssociation(ChangeDetails(userCreationTime), "roleId1"))
     )
 
     private val avroUserWithoutPassword = User(
         UUID.randomUUID().toString(), 0, ChangeDetails(userCreationTime),
         "user-login2", fullName, true, null, null, null,
-        true, parentGroup, listOf(userProperty), listOf(RoleAssociation(ChangeDetails(userCreationTime), "roleId1"))
+        true, parentGroup, setOf(userProperty), listOf(RoleAssociation(ChangeDetails(userCreationTime), "roleId1"))
     )
 
     private val permissionManagementResponse = PermissionManagementResponse(avroUser)
@@ -457,6 +457,7 @@ class PermissionUserManagerImplTest {
         val capturedRequest = capture.firstValue.request as AddPropertyToUserRequest
         assertEquals("user-login1", capturedRequest.loginName)
         assertEquals(mapOf("email" to "a@b.com"), capturedRequest.properties)
+        println(result)
 
         assertEquals("user-login1", result.loginName)
         assertEquals(1, result.properties.size)
@@ -485,7 +486,7 @@ class PermissionUserManagerImplTest {
     fun `remove property from user sends rpc request and converts result to response dto`() {
         val avroUser = User(
             UUID.randomUUID().toString(), 0, ChangeDetails(userCreationTime), "user-login1", fullName, true,
-            "temp-hashed-password", "temporary-salt", userCreationTime, false, parentGroup, emptyList(),
+            "temp-hashed-password", "temporary-salt", userCreationTime, false, parentGroup, emptySet(),
             emptyList()
         )
         val permissionManagementResponse = PermissionManagementResponse(avroUser)

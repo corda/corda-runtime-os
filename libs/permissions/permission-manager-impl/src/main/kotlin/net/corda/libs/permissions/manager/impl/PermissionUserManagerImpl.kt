@@ -240,22 +240,22 @@ class PermissionUserManagerImpl(
         return result.convertToResponseDto()
     }
 
-    override fun getUserProperties(getUserPropertiesRequestDto: GetUserPropertiesRequestDto): List<PropertyResponseDto>? {
+    override fun getUserProperties(getUserPropertiesRequestDto: GetUserPropertiesRequestDto): Set<PropertyResponseDto>? {
         val permissionManagementCache = checkNotNull(permissionManagementCacheRef.get()) {
             "Permission management cache is null."
         }
         val cachedUser: User = permissionManagementCache.getUser(getUserPropertiesRequestDto.loginName) ?: return null
-        return cachedUser.properties.map { it.convertToResponseDto() }
+        return cachedUser.properties.toList().map { it.convertToResponseDto() }.toSet()
     }
 
-    override fun getUsersByProperty(getUsersByPropertyRequestDto: GetUsersByPropertyRequestDto): List<UserResponseDto>? {
+    override fun getUsersByProperty(getUsersByPropertyRequestDto: GetUsersByPropertyRequestDto): Set<UserResponseDto>? {
         val permissionManagementCache = checkNotNull(permissionManagementCacheRef.get()) {
             "Permission management cache is null."
         }
-        val cachedUsers: List<User> = permissionManagementCache.getUsersByProperty(
+        val cachedUsers: Set<User> = permissionManagementCache.getUsersByProperty(
             getUsersByPropertyRequestDto.propertyKey, getUsersByPropertyRequestDto.propertyValue
         ) ?: return null
-        return cachedUsers.map { it.convertToResponseDto() }.ifEmpty {
+        return cachedUsers.toList().map { it.convertToResponseDto() }.toSet().ifEmpty {
             null
         }
     }
