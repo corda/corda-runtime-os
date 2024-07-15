@@ -70,8 +70,8 @@ internal class PermissionManagementCacheImpl(
         validateCacheIsRunning()
         return users.values.filter { user ->
             user.properties.any { userProperty ->
-                userProperty.key.lowercase() == propertyKey.lowercase()
-                        && userProperty.value.lowercase() == propertyValue.lowercase()
+                userProperty.key.lowercase() == propertyKey.lowercase() &&
+                    userProperty.value.lowercase() == propertyValue.lowercase()
             }
         }.toSet()
     }
