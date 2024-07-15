@@ -142,8 +142,30 @@ if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
     }
 }
 
-jar {
+def mergeLog4j2Plugins = tasks.register('mergeLog4j2Plugins') {
     dependsOn configurations.runtimeClasspath
+    inputs.files(configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) })
+    def outputDir = layout.buildDirectory.dir('log4j')
+    outputs.dir(outputDir)
+
+    doLast {
+        def inputFiles = inputs.files.getFiles().findAll { it.name == 'Log4j2Plugins.dat' }.collect { it.toURI().toURL() }
+        if (inputFiles) {
+            def combinedCache = new org.apache.logging.log4j.core.config.plugins.processor.PluginCache()
+            combinedCache.loadCacheFiles(Collections.enumeration(inputFiles))
+            def outputFile = outputDir.get().file('META-INF/org/apache/logging/log4j/core/config/plugins/Log4j2Plugins.dat').asFile
+            outputFile.parentFile.mkdirs()
+            try (OutputStream out = new FileOutputStream(outputFile)) {
+                combinedCache.writeCache(out)
+            }
+        }
+    }
+}
+
+jar {
+    dependsOn configurations.runtimeClasspath // TODO: ??
+    dependsOn mergeLog4j2Plugins
+
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } } {
         exclude "META-INF/*.SF"
         exclude "META-INF/*.DSA"
@@ -154,7 +176,7 @@ jar {
         exclude "META-INF/org/apache/logging/log4j/core/config/plugins/Log4j2Plugins.dat"
         exclude "module-info.class"
     }
-
+    from(mergeLog4j2Plugins)
 
     finalizedBy 'cliInstallArchive'
     if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
@@ -176,7 +198,7 @@ jar {
     subprojects.each { subproject ->
         from subproject.sourceSets.main.output
     }
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE // TODO: INCLUDE?
 }
 
 
