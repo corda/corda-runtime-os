@@ -35,16 +35,16 @@ dependencies {
 
     implementation "info.picocli:picocli:$picocliVersion"
 
-//    api project(':tools:plugins:common-utils')
-//    api project(':tools:plugins:cpi')
-//    api project(':tools:plugins:db-config')
-//    api project(':tools:plugins:initial-config')
-//    api project(':tools:plugins:initial-rbac')
-//    api project(':tools:plugins:network')
-//    api project(':tools:plugins:package')
-//    api project(':tools:plugins:preinstall')
-//    api project(':tools:plugins:secret-config')
-//    api project(':tools:plugins:topic-config')
-//    api project(':tools:plugins:virtual-node')
-//    api project(':tools:plugins:profile')
+    api project(':tools:plugins:common-utils')
+    api project(':tools:plugins:cpi')
+    api project(':tools:plugins:db-config')
+    api project(':tools:plugins:initial-config')
+    api project(':tools:plugins:initial-rbac')
+    api project(':tools:plugins:network')
+    api project(':tools:plugins:package')
+    api project(':tools:plugins:preinstall')
+    api project(':tools:plugins:secret-config')
+    api project(':tools:plugins:topic-config')
+    api project(':tools:plugins:virtual-node')
+    api project(':tools:plugins:profile')
 }
