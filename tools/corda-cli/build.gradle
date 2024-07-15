@@ -163,7 +163,7 @@ def mergeLog4j2Plugins = tasks.register('mergeLog4j2Plugins') {
 }
 
 jar {
-    dependsOn configurations.runtimeClasspath // TODO: ??
+    dependsOn configurations.runtimeClasspath
     dependsOn mergeLog4j2Plugins
 
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } } {
@@ -198,7 +198,7 @@ jar {
     subprojects.each { subproject ->
         from subproject.sourceSets.main.output
     }
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE // TODO: INCLUDE?
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 

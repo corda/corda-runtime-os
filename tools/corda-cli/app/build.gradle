@@ -13,14 +13,8 @@ application {
 
 dependencies {
     implementation libs.kotlin.stdlib
-    implementation libs.slf4j.api
-    runtimeOnly libs.log4j.slf4j
+    implementation libs.log4j.slf4j
     runtimeOnly libs.log4j.layout.json
-
-    // Jackson dependencies for JSON formatted logs
-//    runtimeOnly libs.jackson.core
-//    runtimeOnly libs.jackson.databind
-//    runtimeOnly libs.jackson.annotations
 
     implementation "info.picocli:picocli:$picocliVersion"
 
