@@ -156,7 +156,7 @@ fun ClusterInfo.waitForConfigurationChange(
             timeout(timeout)
             command { getConfig(section) }
             condition {
-                it.code != OK.statusCode && run {
+                it.code == OK.statusCode && run {
                     val bodyJSON = it.body.toJson()
 
                     bodyJSON["sourceConfig"] != null &&
