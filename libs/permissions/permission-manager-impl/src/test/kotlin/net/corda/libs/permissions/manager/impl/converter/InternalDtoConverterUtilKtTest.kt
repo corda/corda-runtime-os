@@ -79,12 +79,12 @@ internal class InternalDtoConverterUtilKtTest {
         assertEquals(2, userResponseDto.properties.size)
 
         val propertyResponseDtos = userResponseDto.properties
-        assertEquals("key1", propertyResponseDtos[0].key)
-        assertEquals("a@b", propertyResponseDtos[0].value)
-        assertEquals(property1ChangeTimestamp, propertyResponseDtos[0].lastChangedTimestamp)
-        assertEquals("key2", propertyResponseDtos[1].key)
-        assertEquals("c@d", propertyResponseDtos[1].value)
-        assertEquals(property2ChangeTimestamp, propertyResponseDtos[1].lastChangedTimestamp)
+        assertEquals("key1", propertyResponseDtos.first().key)
+        assertEquals("a@b", propertyResponseDtos.first().value)
+        assertEquals(property1ChangeTimestamp, propertyResponseDtos.first().lastChangedTimestamp)
+        assertEquals("key2", propertyResponseDtos.last().key)
+        assertEquals("c@d", propertyResponseDtos.last().value)
+        assertEquals(property2ChangeTimestamp, propertyResponseDtos.last().lastChangedTimestamp)
     }
 
     @Test

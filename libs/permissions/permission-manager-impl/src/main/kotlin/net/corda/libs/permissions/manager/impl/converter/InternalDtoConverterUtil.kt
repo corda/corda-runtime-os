@@ -53,7 +53,7 @@ fun AvroUser.convertToResponseDto(): UserResponseDto {
                 it.key,
                 it.value
             )
-        },
+        }.toSet(),
         roleAssociations.map {
             RoleAssociationResponseDto(it.roleId, it.changeDetails.updateTimestamp)
         }

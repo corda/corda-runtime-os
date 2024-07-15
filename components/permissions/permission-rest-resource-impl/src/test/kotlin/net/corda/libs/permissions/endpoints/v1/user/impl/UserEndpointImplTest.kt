@@ -409,8 +409,9 @@ internal class UserEndpointImplTest {
 
         endpoint.start()
         val response = endpoint.getUserProperties("loginName1")
-        val responseType = response.responseBody
+        val responseType = response.responseBody.first()
         assertNotNull(responseType)
+
         assertEquals("key1", responseType.key)
         assertEquals("value1", responseType.value)
     }
@@ -428,9 +429,9 @@ internal class UserEndpointImplTest {
 
         endpoint.start()
         val response = endpoint.getUsersByPropertyKey("key1", "value1")
-        val responseType = response.responseBody
+        val responseType = response.responseBody.first()
+
         assertNotNull(responseType)
-        println(responseType)
         assertEquals("uuid", responseType.id)
         assertEquals(0, responseType.version)
         assertEquals(now, responseType.updateTimestamp)
@@ -439,7 +440,7 @@ internal class UserEndpointImplTest {
         assertEquals(true, responseType.enabled)
         assertEquals(now, responseType.passwordExpiry)
         assertEquals(parentGroup, responseType.parentGroup)
-//        assertEquals("key1", responseType.properties)
-//        assertEquals("value1", responseType.properties.value)
+        assertEquals("key1", responseType.properties.first().key)
+        assertEquals("value1", responseType.properties.first().value)
     }
 }

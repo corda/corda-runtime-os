@@ -105,14 +105,14 @@ class PermissionUserManagerImplTest {
 
     private val avroUser = User(
         UUID.randomUUID().toString(), 0, ChangeDetails(userCreationTime), "user-login1", fullName, true,
-        "temp-hashed-password", "temporary-salt", userCreationTime, false, parentGroup, setOf(userProperty),
+        "temp-hashed-password", "temporary-salt", userCreationTime, false, parentGroup, listOf(userProperty),
         listOf(RoleAssociation(ChangeDetails(userCreationTime), "roleId1"))
     )
 
     private val avroUserWithoutPassword = User(
         UUID.randomUUID().toString(), 0, ChangeDetails(userCreationTime),
         "user-login2", fullName, true, null, null, null,
-        true, parentGroup, setOf(userProperty), listOf(RoleAssociation(ChangeDetails(userCreationTime), "roleId1"))
+        true, parentGroup, listOf(userProperty), listOf(RoleAssociation(ChangeDetails(userCreationTime), "roleId1"))
     )
 
     private val permissionManagementResponse = PermissionManagementResponse(avroUser)
@@ -461,8 +461,8 @@ class PermissionUserManagerImplTest {
 
         assertEquals("user-login1", result.loginName)
         assertEquals(1, result.properties.size)
-        assertEquals("email", result.properties[0].key)
-        assertEquals("a@b.com", result.properties[0].value)
+        assertEquals("email", result.properties.first().key)
+        assertEquals("a@b.com", result.properties.first().value)
     }
 
     @Test
@@ -486,7 +486,7 @@ class PermissionUserManagerImplTest {
     fun `remove property from user sends rpc request and converts result to response dto`() {
         val avroUser = User(
             UUID.randomUUID().toString(), 0, ChangeDetails(userCreationTime), "user-login1", fullName, true,
-            "temp-hashed-password", "temporary-salt", userCreationTime, false, parentGroup, emptySet(),
+            "temp-hashed-password", "temporary-salt", userCreationTime, false, parentGroup, emptyList(),
             emptyList()
         )
         val permissionManagementResponse = PermissionManagementResponse(avroUser)
@@ -532,9 +532,9 @@ class PermissionUserManagerImplTest {
         whenever(permissionManagementCache.getUser("loginname123")).thenReturn(avroUser)
         val result = manager.getUserProperties(getUserPropertiesRequestDto)
         assertNotNull(result)
-        assertEquals(userProperty.lastChangeDetails.updateTimestamp, result!![0].lastChangedTimestamp)
-        assertEquals(userProperty.key, result[0].key)
-        assertEquals(userProperty.value, result[0].value)
+        assertEquals(userProperty.lastChangeDetails.updateTimestamp, result!!.first().lastChangedTimestamp)
+        assertEquals(userProperty.key, result.first().key)
+        assertEquals(userProperty.value, result.first().value)
     }
 
     @Test
@@ -548,8 +548,8 @@ class PermissionUserManagerImplTest {
 
     @Test
     fun `get users by property using the cache`() {
-        whenever(permissionManagementCache.getUsersByProperty("email", "a@b.com")).thenReturn(listOf(avroUser))
-        val result = manager.getUsersByProperty(getUsersByPropertyRequestDto)!![0]
+        whenever(permissionManagementCache.getUsersByProperty("email", "a@b.com")).thenReturn(setOf(avroUser))
+        val result = manager.getUsersByProperty(getUsersByPropertyRequestDto)!!.first()
 
         assertNotNull(result)
         assertEquals(fullName, result.fullName)

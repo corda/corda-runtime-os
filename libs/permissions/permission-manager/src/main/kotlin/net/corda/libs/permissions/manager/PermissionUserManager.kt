@@ -74,10 +74,10 @@ interface PermissionUserManager {
     /**
      * Get properties of a User in the RBAC Permission System.
      */
-    fun getUserProperties(getUserPropertiesRequestDto: GetUserPropertiesRequestDto): List<PropertyResponseDto>?
+    fun getUserProperties(getUserPropertiesRequestDto: GetUserPropertiesRequestDto): Set<PropertyResponseDto>?
 
     /**
      * Get all the users with a given property in the RBAC Permission System.
      */
-    fun getUsersByProperty(getUsersByPropertyRequestDto: GetUsersByPropertyRequestDto): List<UserResponseDto>?
+    fun getUsersByProperty(getUsersByPropertyRequestDto: GetUsersByPropertyRequestDto): Set<UserResponseDto>?
 }

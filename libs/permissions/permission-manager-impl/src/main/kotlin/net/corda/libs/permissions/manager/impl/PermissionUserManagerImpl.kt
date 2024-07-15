@@ -245,7 +245,7 @@ class PermissionUserManagerImpl(
             "Permission management cache is null."
         }
         val cachedUser: User = permissionManagementCache.getUser(getUserPropertiesRequestDto.loginName) ?: return null
-        return cachedUser.properties.toList().map { it.convertToResponseDto() }.toSet()
+        return cachedUser.properties.map { it.convertToResponseDto() }.toSet()
     }
 
     override fun getUsersByProperty(getUsersByPropertyRequestDto: GetUsersByPropertyRequestDto): Set<UserResponseDto>? {
@@ -255,7 +255,7 @@ class PermissionUserManagerImpl(
         val cachedUsers: Set<User> = permissionManagementCache.getUsersByProperty(
             getUsersByPropertyRequestDto.propertyKey, getUsersByPropertyRequestDto.propertyValue
         ) ?: return null
-        return cachedUsers.toList().map { it.convertToResponseDto() }.toSet().ifEmpty {
+        return cachedUsers.map { it.convertToResponseDto() }.toSet().ifEmpty {
             null
         }
     }

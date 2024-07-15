@@ -261,7 +261,7 @@ class UserEndpointImpl @Activate constructor(
         val result = withPermissionManager(permissionManagementService.permissionManager, logger) {
             getUserProperties(GetUserPropertiesRequestDto(principal, loginName.lowercase()))
         } ?: throw ResourceNotFoundException("User", loginName)
-        return ResponseEntity.ok(result.toList().map { it.convertToEndpointType() }.toSet())
+        return ResponseEntity.ok(result.map { it.convertToEndpointType() }.toSet())
     }
 
     override fun getUsersByPropertyKey(propertyKey: String, propertyValue: String): ResponseEntity<Set<UserResponseType>> {
@@ -269,7 +269,7 @@ class UserEndpointImpl @Activate constructor(
         val result = withPermissionManager(permissionManagementService.permissionManager, logger) {
             getUsersByProperty(GetUsersByPropertyRequestDto(principal, propertyKey, propertyValue))
         } ?: throw ResourceNotFoundException("Value", propertyValue)
-        return ResponseEntity.ok(result.toList().map { it.convertToEndpointType() }.toSet())
+        return ResponseEntity.ok(result.map { it.convertToEndpointType() }.toSet())
     }
     private fun getRestThreadLocalContext(): String {
         val restContext = CURRENT_REST_CONTEXT.get()
