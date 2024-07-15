@@ -3402,7 +3402,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "uniqueItems" : false,
+                  "uniqueItems" : true,
                   "type" : "array",
                   "nullable" : false,
                   "items" : {
@@ -3636,7 +3636,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "uniqueItems" : false,
+                  "uniqueItems" : true,
                   "type" : "array",
                   "nullable" : false,
                   "items" : {
@@ -6042,7 +6042,7 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "properties" : {
-            "uniqueItems" : false,
+            "uniqueItems" : true,
             "type" : "array",
             "nullable" : false,
             "items" : {

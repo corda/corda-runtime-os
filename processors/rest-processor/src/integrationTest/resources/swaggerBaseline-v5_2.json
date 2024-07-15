@@ -4922,8 +4922,7 @@
           "json" : {
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "type" : "object"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "timestamp" : {
             "type" : "string",
@@ -5780,8 +5779,7 @@
           "requestBody" : {
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : false,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "type" : "object"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           }
         },
         "description" : "\n                Information required to start a flow for this holdingId, including:\n                clientRequestId: a client provided flow identifier\n                flowClassName: fully qualified class name of the flow to start\n                requestBody: optional start arguments string passed to the flow; defaults to an empty string\n            "
@@ -5831,8 +5829,7 @@
           "config" : {
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : false,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "type" : "object"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "schemaVersion" : {
             "$ref" : "#/components/schemas/ConfigSchemaVersion"
@@ -5882,38 +5879,32 @@
           "cryptoDdlConnection" : {
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "type" : "object"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "cryptoDmlConnection" : {
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "type" : "object"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "uniquenessDdlConnection" : {
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "type" : "object"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "uniquenessDmlConnection" : {
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "type" : "object"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "vaultDdlConnection" : {
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "type" : "object"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           },
           "vaultDmlConnection" : {
             "description" : "Either nested JSON object or a valid JSON-escaped string.",
             "nullable" : true,
-            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            "type" : "object"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}"
           }
         },
         "description" : "Details of the virtual node to be updated"
@@ -5984,7 +5975,7 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "properties" : {
-            "uniqueItems" : false,
+            "uniqueItems" : true,
             "type" : "array",
             "nullable" : false,
             "items" : {
