@@ -457,7 +457,6 @@ class PermissionUserManagerImplTest {
         val capturedRequest = capture.firstValue.request as AddPropertyToUserRequest
         assertEquals("user-login1", capturedRequest.loginName)
         assertEquals(mapOf("email" to "a@b.com"), capturedRequest.properties)
-        println(result)
 
         assertEquals("user-login1", result.loginName)
         assertEquals(1, result.properties.size)
@@ -532,7 +531,7 @@ class PermissionUserManagerImplTest {
         whenever(permissionManagementCache.getUser("loginname123")).thenReturn(avroUser)
         val result = manager.getUserProperties(getUserPropertiesRequestDto)
         assertNotNull(result)
-        assertEquals(userProperty.lastChangeDetails.updateTimestamp, result!!.first().lastChangedTimestamp)
+        assertEquals(userProperty.lastChangeDetails.updateTimestamp, result.first().lastChangedTimestamp)
         assertEquals(userProperty.key, result.first().key)
         assertEquals(userProperty.value, result.first().value)
     }
@@ -549,7 +548,7 @@ class PermissionUserManagerImplTest {
     @Test
     fun `get users by property using the cache`() {
         whenever(permissionManagementCache.getUsersByProperty("email", "a@b.com")).thenReturn(setOf(avroUser))
-        val result = manager.getUsersByProperty(getUsersByPropertyRequestDto)!!.first()
+        val result = manager.getUsersByProperty(getUsersByPropertyRequestDto).first()
 
         assertNotNull(result)
         assertEquals(fullName, result.fullName)
