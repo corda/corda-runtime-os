@@ -90,7 +90,8 @@ class PermissionUserManagerImplTest {
     private val deleteUserRequestDto = DeleteUserRequestDto(requestedBy = requestUserName, loginName = "loginname123")
     private val userCreationTime = Instant.now()
     private val getUserRequestDto = GetUserRequestDto(requestedBy = requestUserName, loginName = "loginname123")
-    private val getUserPropertiesRequestDto = GetUserPropertiesRequestDto(requestedBy = requestUserName, loginName = "loginname123")
+    private val getUserPropertiesRequestDto =
+        GetUserPropertiesRequestDto(requestedBy = requestUserName, loginName = "loginname123")
     private val getUsersByPropertyRequestDto = GetUsersByPropertyRequestDto(
         requestedBy = requestUserName,
         propertyKey = "email",
@@ -543,7 +544,6 @@ class PermissionUserManagerImplTest {
         whenever(permissionManagementCache.getUser("invalid-user-login-name")).thenReturn(null)
 
         val result = manager.getUserProperties(getUserPropertiesRequestDto)
-
         assertEquals(emptySet<PropertyResponseDto>(), result)
     }
 
