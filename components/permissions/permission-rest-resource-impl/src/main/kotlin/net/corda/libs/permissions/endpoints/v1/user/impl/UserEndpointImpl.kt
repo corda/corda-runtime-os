@@ -13,12 +13,16 @@ import net.corda.libs.permissions.endpoints.v1.user.types.PropertyResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserPermissionSummaryResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.libs.permissions.manager.PermissionManager
+import net.corda.libs.permissions.manager.request.AddPropertyToUserRequestDto
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.ChangeUserPasswordDto
 import net.corda.libs.permissions.manager.request.DeleteUserRequestDto
 import net.corda.libs.permissions.manager.request.GetPermissionSummaryRequestDto
 import net.corda.libs.permissions.manager.request.GetRoleRequestDto
+import net.corda.libs.permissions.manager.request.GetUserPropertiesRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
+import net.corda.libs.permissions.manager.request.GetUsersByPropertyRequestDto
+import net.corda.libs.permissions.manager.request.RemovePropertyFromUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.Lifecycle
@@ -236,19 +240,36 @@ class UserEndpointImpl @Activate constructor(
     }
 
     override fun addProperty(loginName: String, properties: Map<String, String>): ResponseEntity<UserResponseType> {
-        TODO("CORE-20757")
+        val principal = getRestThreadLocalContext()
+
+        val result = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            addPropertyToUser(AddPropertyToUserRequestDto(principal, loginName.lowercase(), properties))
+        }
+        return ResponseEntity.ok(result.convertToEndpointType())
     }
 
     override fun removeProperty(loginName: String, propertyKey: String): ResponseEntity<UserResponseType> {
-        TODO("CORE-20757")
+        val principal = getRestThreadLocalContext()
+        val result = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            removePropertyFromUser(RemovePropertyFromUserRequestDto(principal, loginName.lowercase(), propertyKey))
+        }
+        return ResponseEntity.deleted(result.convertToEndpointType())
     }
 
-    override fun getUserProperties(loginName: String): ResponseEntity<PropertyResponseType> {
-        TODO("CORE-20757")
+    override fun getUserProperties(loginName: String): ResponseEntity<Set<PropertyResponseType>> {
+        val principal = getRestThreadLocalContext()
+        val result = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            getUserProperties(GetUserPropertiesRequestDto(principal, loginName.lowercase()))
+        }
+        return ResponseEntity.ok(result.map { it.convertToEndpointType() }.toSet())
     }
 
-    override fun getUsersByPropertyKey(propertyKey: String, propertyValue: String): ResponseEntity<UserResponseType> {
-        TODO("CORE-20757")
+    override fun getUsersByPropertyKey(propertyKey: String, propertyValue: String): ResponseEntity<Set<UserResponseType>> {
+        val principal = getRestThreadLocalContext()
+        val result = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            getUsersByProperty(GetUsersByPropertyRequestDto(principal, propertyKey, propertyValue))
+        }
+        return ResponseEntity.ok(result.map { it.convertToEndpointType() }.toSet())
     }
     private fun getRestThreadLocalContext(): String {
         val restContext = CURRENT_REST_CONTEXT.get()

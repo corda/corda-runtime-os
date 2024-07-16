@@ -3402,7 +3402,12 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/UserResponseType"
+                  "uniqueItems" : true,
+                  "type" : "array",
+                  "nullable" : false,
+                  "items" : {
+                    "$ref" : "#/components/schemas/UserResponseType"
+                  }
                 }
               }
             }
@@ -3631,7 +3636,12 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/PropertyResponseType"
+                  "uniqueItems" : true,
+                  "type" : "array",
+                  "nullable" : false,
+                  "items" : {
+                    "$ref" : "#/components/schemas/PropertyResponseType"
+                  }
                 }
               }
             }
@@ -6032,7 +6042,7 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "properties" : {
-            "uniqueItems" : false,
+            "uniqueItems" : true,
             "type" : "array",
             "nullable" : false,
             "items" : {

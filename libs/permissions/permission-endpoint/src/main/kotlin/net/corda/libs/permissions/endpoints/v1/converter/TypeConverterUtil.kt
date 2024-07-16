@@ -101,7 +101,7 @@ fun UserResponseDto.convertToEndpointType(): UserResponseType {
         ssoAuth,
         passwordExpiry,
         parentGroup,
-        properties.map { it.convertToEndpointType() },
+        properties.map { it.convertToEndpointType() }.toSet(),
         roles.map { it.convertToEndpointType() }
     )
 }

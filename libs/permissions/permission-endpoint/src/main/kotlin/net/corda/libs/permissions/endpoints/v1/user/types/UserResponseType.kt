@@ -56,7 +56,7 @@ data class UserResponseType(
     /**
      * User properties.
      */
-    val properties: List<PropertyResponseType>,
+    val properties: Set<PropertyResponseType>,
 
     /**
      * The User's role associations.

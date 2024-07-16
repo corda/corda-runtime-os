@@ -352,7 +352,7 @@ interface UserEndpoint : RestResource {
     fun getUserProperties(
         @RestPathParameter(description = "The login name of the user")
         loginName: String,
-    ): ResponseEntity<PropertyResponseType>
+    ): ResponseEntity<Set<PropertyResponseType>>
 
     /**
      * Gets all users for propertyKey = value
@@ -385,5 +385,5 @@ interface UserEndpoint : RestResource {
         propertyKey: String,
         @RestPathParameter(description = "Property value to match on.")
         propertyValue: String
-    ): ResponseEntity<UserResponseType>
+    ): ResponseEntity<Set<UserResponseType>>
 }
