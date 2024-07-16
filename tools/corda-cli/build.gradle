@@ -232,10 +232,3 @@ publishing {
         }
     }
 }
-
-tasks.named("installDist") {
-    dependsOn jar
-    def homePath = System.properties['user.home']
-    from jar
-    into "$homePath/.corda/cli/"
-}
