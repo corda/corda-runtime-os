@@ -1,15 +1,8 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm'
-    id 'application'
 }
 
 group = 'net.corda.cli'
-
-mainClassName = 'net.corda.cli.application.AppKt'
-
-application {
-    mainClass = mainClassName
-}
 
 dependencies {
     implementation libs.kotlin.stdlib
