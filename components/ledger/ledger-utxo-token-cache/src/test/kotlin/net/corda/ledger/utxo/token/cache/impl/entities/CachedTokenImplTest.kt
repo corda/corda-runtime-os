@@ -20,7 +20,7 @@ class CachedTokenImplTest {
 
     @Test
     fun `amount returns amount from underlying object`() {
-        val tokenAmount = BigDecimal(1)
+        val tokenAmount = BigDecimal(2)
         whenever(entityConverter.amountToBigDecimal(token.amount)).thenReturn(tokenAmount)
 
         assertThat(CachedTokenImpl(token, entityConverter).amount).isEqualTo(tokenAmount)
