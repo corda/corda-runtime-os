@@ -130,10 +130,10 @@ class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFa
         val allRootGroups =
             em.createQuery("SELECT g.id FROM Group g WHERE g.parentGroup IS NULL", String::class.java).resultList
 
-        var userPermissionsList: MutableList<InternalPermissionQueryDto> = mutableListOf()
+        val userPermissionsList: MutableList<InternalPermissionQueryDto> = mutableListOf()
 
         allRootGroups.forEach {
-            var rootGroupPermissions: MutableList<String> = mutableListOf()
+            val rootGroupPermissions: MutableList<String> = mutableListOf()
 
             getAllUserPermissions(em, it, rootGroupPermissions, userPermissionsList)
         }
