@@ -15,6 +15,12 @@ import net.corda.data.permissions.PermissionType as AvroPermissionType
 import net.corda.data.permissions.summary.PermissionSummary as AvroPermissionSummary
 import net.corda.data.permissions.summary.UserPermissionSummary as AvroUserPermissionSummary
 
+internal class TestPermissionQueryDtoComparator : Comparator<InternalPermissionQueryDto> {
+    override fun compare(o1: InternalPermissionQueryDto, o2: InternalPermissionQueryDto): Int {
+        return 1
+    }
+}
+
 internal class PermissionSummaryReconcilerImplTest {
 
     private val reconciler = PermissionSummaryReconcilerImpl()
@@ -28,6 +34,7 @@ internal class PermissionSummaryReconcilerImplTest {
             "loginName",
             true,
             sortedSetOf(
+                TestPermissionQueryDtoComparator(),
                 InternalPermissionQueryDto("loginName", "id1", null, null, "A", PermissionType.ALLOW),
                 InternalPermissionQueryDto("loginName", "id2", null, null, "B", PermissionType.DENY),
                 InternalPermissionQueryDto("loginName", "id3", null, null, "C", PermissionType.DENY),
@@ -81,6 +88,7 @@ internal class PermissionSummaryReconcilerImplTest {
             "loginName",
             true,
             sortedSetOf(
+                TestPermissionQueryDtoComparator(),
                 InternalPermissionQueryDto("loginName", "id1", null, null, "A", PermissionType.ALLOW),
                 InternalPermissionQueryDto("loginName", "id2", null, null, "B", PermissionType.DENY),
                 InternalPermissionQueryDto("loginName", "id3", null, null, "C", PermissionType.DENY),
@@ -146,6 +154,7 @@ internal class PermissionSummaryReconcilerImplTest {
             "loginName",
             true,
             sortedSetOf(
+                TestPermissionQueryDtoComparator(),
                 InternalPermissionQueryDto("loginName", "id1", null, null, "A", PermissionType.ALLOW),
                 InternalPermissionQueryDto("loginName", "id2", null, null, "F", PermissionType.DENY),
                 InternalPermissionQueryDto("loginName", "id3", null, null, "C", PermissionType.DENY),
@@ -201,6 +210,7 @@ internal class PermissionSummaryReconcilerImplTest {
             "loginName",
             true,
             sortedSetOf(
+                TestPermissionQueryDtoComparator(),
                 InternalPermissionQueryDto("loginName", "id1", null, null, "A", PermissionType.ALLOW),
                 InternalPermissionQueryDto("loginName", "id2", null, null, "B", PermissionType.ALLOW),
                 InternalPermissionQueryDto("loginName", "id3", null, null, "C", PermissionType.DENY),
@@ -258,6 +268,7 @@ internal class PermissionSummaryReconcilerImplTest {
             "loginName",
             true,
             sortedSetOf(
+                TestPermissionQueryDtoComparator(),
                 InternalPermissionQueryDto("loginName", "id1", "grp", null, "A", PermissionType.ALLOW)
             ),
             now
@@ -304,6 +315,7 @@ internal class PermissionSummaryReconcilerImplTest {
             "loginName",
             true,
             sortedSetOf(
+                TestPermissionQueryDtoComparator(),
                 InternalPermissionQueryDto("loginName", "id1", null, "vrtnode", "A", PermissionType.ALLOW)
             ),
             now
@@ -350,6 +362,7 @@ internal class PermissionSummaryReconcilerImplTest {
             "loginName",
             true,
             sortedSetOf(
+                TestPermissionQueryDtoComparator(),
                 InternalPermissionQueryDto("loginName", "id1", null, "vrtnode", "A", PermissionType.ALLOW),
                 InternalPermissionQueryDto("loginName", "id2", "grp", null, "B", PermissionType.DENY)
             ),
@@ -402,6 +415,7 @@ internal class PermissionSummaryReconcilerImplTest {
             "loginName",
             true,
             sortedSetOf(
+                TestPermissionQueryDtoComparator(),
                 InternalPermissionQueryDto("loginName", "id1", null, null, "A", PermissionType.ALLOW),
                 InternalPermissionQueryDto("loginName", "id2", null, null, "B", PermissionType.DENY),
                 InternalPermissionQueryDto("loginName", "id3", null, null, "C", PermissionType.DENY),
@@ -440,6 +454,7 @@ internal class PermissionSummaryReconcilerImplTest {
             "loginName",
             true,
             sortedSetOf(
+                TestPermissionQueryDtoComparator(),
                 InternalPermissionQueryDto("loginName", "id1", null, null, "A", PermissionType.ALLOW),
                 InternalPermissionQueryDto("loginName", "id2", null, null, "B", PermissionType.DENY)
             ),
@@ -490,6 +505,7 @@ internal class PermissionSummaryReconcilerImplTest {
                 "loginName",
                 true,
                 sortedSetOf(
+                    TestPermissionQueryDtoComparator(),
                     InternalPermissionQueryDto("loginName", "id1", null, null, "A", PermissionType.ALLOW)
                 ),
                 now
@@ -498,6 +514,7 @@ internal class PermissionSummaryReconcilerImplTest {
                 "addedUser",
                 true,
                 sortedSetOf(
+                    TestPermissionQueryDtoComparator(),
                     InternalPermissionQueryDto("addedUser", "id1", "grp", "vrtnode", "A", PermissionType.ALLOW)
                 ),
                 now
@@ -546,6 +563,7 @@ internal class PermissionSummaryReconcilerImplTest {
                 "loginName",
                 true,
                 sortedSetOf(
+                    TestPermissionQueryDtoComparator(),
                     InternalPermissionQueryDto("loginName", "id1", null, null, "A", PermissionType.ALLOW)
                 ),
                 now
@@ -581,6 +599,7 @@ internal class PermissionSummaryReconcilerImplTest {
                 "loginName",
                 true,
                 sortedSetOf(
+                    TestPermissionQueryDtoComparator(),
                     InternalPermissionQueryDto("loginName", "new", "grp", "vrtnode", "A", PermissionType.ALLOW)
                 ),
                 now
@@ -629,6 +648,7 @@ internal class PermissionSummaryReconcilerImplTest {
                 "loginName",
                 false,
                 sortedSetOf(
+                    TestPermissionQueryDtoComparator(),
                     InternalPermissionQueryDto("loginName", "id", "grp", "vrtnode", "A", PermissionType.ALLOW)
                 ),
                 now
@@ -668,6 +688,7 @@ internal class PermissionSummaryReconcilerImplTest {
                 "loginName",
                 true,
                 sortedSetOf(
+                    TestPermissionQueryDtoComparator(),
                     InternalPermissionQueryDto("loginName", "id", "grp", "vrtnode", "A", PermissionType.ALLOW)
                 ),
                 now
