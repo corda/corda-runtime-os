@@ -224,6 +224,7 @@ class PermissionUserManagerImpl(
         )
         return result.convertToResponseDto()
     }
+
     override fun removePropertyFromUser(removePropertyFromUserRequestDto: RemovePropertyFromUserRequestDto): UserResponseDto {
         val result = sendPermissionWriteRequest<User>(
             rpcSender,
@@ -240,23 +241,22 @@ class PermissionUserManagerImpl(
         return result.convertToResponseDto()
     }
 
-    override fun getUserProperties(getUserPropertiesRequestDto: GetUserPropertiesRequestDto): Set<PropertyResponseDto>? {
+    override fun getUserProperties(getUserPropertiesRequestDto: GetUserPropertiesRequestDto): Set<PropertyResponseDto> {
         val permissionManagementCache = checkNotNull(permissionManagementCacheRef.get()) {
             "Permission management cache is null."
         }
-        val cachedUser: User = permissionManagementCache.getUser(getUserPropertiesRequestDto.loginName) ?: return null
+        val cachedUser: User = permissionManagementCache.getUser(getUserPropertiesRequestDto.loginName) ?: return emptySet()
         return cachedUser.properties.map { it.convertToResponseDto() }.toSet()
     }
 
-    override fun getUsersByProperty(getUsersByPropertyRequestDto: GetUsersByPropertyRequestDto): Set<UserResponseDto>? {
+    override fun getUsersByProperty(getUsersByPropertyRequestDto: GetUsersByPropertyRequestDto): Set<UserResponseDto> {
         val permissionManagementCache = checkNotNull(permissionManagementCacheRef.get()) {
             "Permission management cache is null."
         }
         val cachedUsers: Set<User> = permissionManagementCache.getUsersByProperty(
-            getUsersByPropertyRequestDto.propertyKey, getUsersByPropertyRequestDto.propertyValue
-        ) ?: return null
-        return cachedUsers.map { it.convertToResponseDto() }.toSet().ifEmpty {
-            null
-        }
+            getUsersByPropertyRequestDto.propertyKey,
+            getUsersByPropertyRequestDto.propertyValue
+        )
+        return cachedUsers.map { it.convertToResponseDto() }.toSet()
     }
 }

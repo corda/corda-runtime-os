@@ -27,6 +27,8 @@ import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUsersByPropertyRequestDto
 import net.corda.libs.permissions.manager.request.RemovePropertyFromUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
+import net.corda.libs.permissions.manager.response.PropertyResponseDto
+import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.permissions.password.PasswordHash
@@ -88,7 +90,8 @@ class PermissionUserManagerImplTest {
     private val deleteUserRequestDto = DeleteUserRequestDto(requestedBy = requestUserName, loginName = "loginname123")
     private val userCreationTime = Instant.now()
     private val getUserRequestDto = GetUserRequestDto(requestedBy = requestUserName, loginName = "loginname123")
-    private val getUserPropertiesRequestDto = GetUserPropertiesRequestDto(requestedBy = requestUserName, loginName = "loginname123")
+    private val getUserPropertiesRequestDto =
+        GetUserPropertiesRequestDto(requestedBy = requestUserName, loginName = "loginname123")
     private val getUsersByPropertyRequestDto = GetUsersByPropertyRequestDto(
         requestedBy = requestUserName,
         propertyKey = "email",
@@ -457,7 +460,6 @@ class PermissionUserManagerImplTest {
         val capturedRequest = capture.firstValue.request as AddPropertyToUserRequest
         assertEquals("user-login1", capturedRequest.loginName)
         assertEquals(mapOf("email" to "a@b.com"), capturedRequest.properties)
-        println(result)
 
         assertEquals("user-login1", result.loginName)
         assertEquals(1, result.properties.size)
@@ -532,24 +534,23 @@ class PermissionUserManagerImplTest {
         whenever(permissionManagementCache.getUser("loginname123")).thenReturn(avroUser)
         val result = manager.getUserProperties(getUserPropertiesRequestDto)
         assertNotNull(result)
-        assertEquals(userProperty.lastChangeDetails.updateTimestamp, result!!.first().lastChangedTimestamp)
+        assertEquals(userProperty.lastChangeDetails.updateTimestamp, result.first().lastChangedTimestamp)
         assertEquals(userProperty.key, result.first().key)
         assertEquals(userProperty.value, result.first().value)
     }
 
     @Test
-    fun `get user properties returns null when user does not exist`() {
+    fun `get user properties returns empty set when user does not exist`() {
         whenever(permissionManagementCache.getUser("invalid-user-login-name")).thenReturn(null)
 
         val result = manager.getUserProperties(getUserPropertiesRequestDto)
-
-        assertNull(result)
+        assertEquals(emptySet<PropertyResponseDto>(), result)
     }
 
     @Test
     fun `get users by property using the cache`() {
         whenever(permissionManagementCache.getUsersByProperty("email", "a@b.com")).thenReturn(setOf(avroUser))
-        val result = manager.getUsersByProperty(getUsersByPropertyRequestDto)!!.first()
+        val result = manager.getUsersByProperty(getUsersByPropertyRequestDto).first()
 
         assertNotNull(result)
         assertEquals(fullName, result.fullName)
@@ -566,10 +567,10 @@ class PermissionUserManagerImplTest {
     }
 
     @Test
-    fun `get users by property returns null when property does not exist`() {
+    fun `get users by property returns empty set when property does not exist`() {
         whenever(permissionManagementCache.getUsersByProperty("invalid-key", "invalid-value")).thenReturn(null)
 
         val result = manager.getUsersByProperty(getUsersByPropertyRequestDto)
-        assertNull(result)
+        assertEquals(emptySet<UserResponseDto>(), result)
     }
 }
