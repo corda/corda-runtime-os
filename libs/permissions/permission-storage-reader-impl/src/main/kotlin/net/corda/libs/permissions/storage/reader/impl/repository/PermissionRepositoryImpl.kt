@@ -17,6 +17,34 @@ import javax.persistence.EntityManagerFactory
 @Suppress("TooManyFunctions")
 class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFactory) : PermissionRepository {
 
+    companion object {
+        // Query to get Permission Ids for a specific group(not including parent group permissions)
+        const val permissionIdsOfGroupQuery =
+            """
+                SELECT DISTINCT p.id
+                FROM Group g
+                JOIN RoleGroupAssociation rga ON rga.group.id = :groupId
+                JOIN Role r ON rga.role.id = r.id
+                JOIN RolePermissionAssociation rpa ON rpa.role.id = r.id
+                JOIN Permission p ON rpa.permission.id = p.id
+            """
+
+        // Query to get Permission Dto with specified Parent Group Id and Permission Id
+        const val userGroupPermissionsQuery =
+            """
+                SELECT DISTINCT NEW net.corda.permissions.query.dto.InternalPermissionQueryDto(
+                    u.loginName,
+                    p.id,
+                    p.groupVisibility.id, 
+                    p.virtualNode, 
+                    p.permissionString, 
+                    p.permissionType
+                )
+                FROM User u, Permission p
+                WHERE u.parentGroup.id = :groupId AND p.id = :permissionId
+            """
+    }
+
     override fun findAllUsers(): List<User> {
         return findAll("SELECT u from User u")
     }
@@ -85,8 +113,11 @@ class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFa
     ): Map<String, InternalUserPermissionSummary> {
         return userLogins.associateBy({ it.loginName }) {
             // rolePermissionsQuery features inner joins so a user without roles won't be present in this map
-            val permissionsInheritedFromRoles = (userPermissionsFromRoles[it.loginName] ?: emptyList()) +
-                (userPermissionsFromGroups[it.loginName] ?: emptyList())
+            val permissionsInheritedFromRoles = (
+                (userPermissionsFromRoles[it.loginName] ?: emptyList()) +
+                    (userPermissionsFromGroups[it.loginName] ?: emptyList())
+                )
+                .toSortedSet(PermissionQueryDtoComparator())
 
             InternalUserPermissionSummary(
                 it.loginName,
@@ -150,32 +181,6 @@ class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFa
         parentPermissionIds: MutableList<String>,
         userPermissionsList: MutableList<InternalPermissionQueryDto>
     ) {
-        // Query to get Permission Ids for a specific group(not including parent group permissions)
-        val permissionIdsOfGroupQuery =
-            """
-                SELECT DISTINCT p.id
-                FROM Group g
-                JOIN RoleGroupAssociation rga ON rga.group.id = :groupId
-                JOIN Role r ON rga.role.id = r.id
-                JOIN RolePermissionAssociation rpa ON rpa.role.id = r.id
-                JOIN Permission p ON rpa.permission.id = p.id
-            """
-
-        // Query to get Permission Dto with specified Parent Group Id and Permission Id
-        val userGroupPermissionsQuery =
-            """
-                SELECT DISTINCT NEW net.corda.permissions.query.dto.InternalPermissionQueryDto(
-                    u.loginName,
-                    p.id,
-                    p.groupVisibility.id, 
-                    p.virtualNode, 
-                    p.permissionString, 
-                    p.permissionType
-                )
-                FROM User u, Permission p
-                WHERE u.parentGroup.id = :groupId AND p.id = :permissionId
-            """
-
         // Adds the Permission Ids of the current group to the parentPermissionIds list
         parentPermissionIds.addAll(
             em.createQuery(permissionIdsOfGroupQuery, String::class.java)

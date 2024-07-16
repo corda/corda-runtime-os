@@ -72,23 +72,23 @@ class PermissionSummaryReconcilerImpl : PermissionSummaryReconciler {
 
         // we want ordering of permissions to be preserved
         for (i in permissionsDb.indices) {
-            if (permissionsDb[i].permissionString != permissionsCache[i].permissionString) {
+            if (permissionsDb.elementAt(i).permissionString != permissionsCache[i].permissionString) {
                 return permissionSummaryDb.toAvroUserPermissionSummary()
             }
 
-            if (permissionsDb[i].permissionType.name != permissionsCache[i].permissionType.name) {
+            if (permissionsDb.elementAt(i).permissionType.name != permissionsCache[i].permissionType.name) {
                 return permissionSummaryDb.toAvroUserPermissionSummary()
             }
 
-            if (permissionsDb[i].groupVisibility != permissionsCache[i].groupVisibility) {
+            if (permissionsDb.elementAt(i).groupVisibility != permissionsCache[i].groupVisibility) {
                 return permissionSummaryDb.toAvroUserPermissionSummary()
             }
 
-            if (permissionsDb[i].virtualNode != permissionsCache[i].virtualNode) {
+            if (permissionsDb.elementAt(i).virtualNode != permissionsCache[i].virtualNode) {
                 return permissionSummaryDb.toAvroUserPermissionSummary()
             }
 
-            if (permissionsDb[i].id != permissionsCache[i].id) {
+            if (permissionsDb.elementAt(i).id != permissionsCache[i].id) {
                 return permissionSummaryDb.toAvroUserPermissionSummary()
             }
         }
