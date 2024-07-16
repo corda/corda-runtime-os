@@ -27,6 +27,8 @@ import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUsersByPropertyRequestDto
 import net.corda.libs.permissions.manager.request.RemovePropertyFromUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
+import net.corda.libs.permissions.manager.response.PropertyResponseDto
+import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.permissions.password.PasswordHash
@@ -537,12 +539,12 @@ class PermissionUserManagerImplTest {
     }
 
     @Test
-    fun `get user properties returns null when user does not exist`() {
+    fun `get user properties returns empty set when user does not exist`() {
         whenever(permissionManagementCache.getUser("invalid-user-login-name")).thenReturn(null)
 
         val result = manager.getUserProperties(getUserPropertiesRequestDto)
 
-        assertNull(result)
+        assertEquals(emptySet<PropertyResponseDto>(), result)
     }
 
     @Test
@@ -565,10 +567,10 @@ class PermissionUserManagerImplTest {
     }
 
     @Test
-    fun `get users by property returns null when property does not exist`() {
+    fun `get users by property returns empty set when property does not exist`() {
         whenever(permissionManagementCache.getUsersByProperty("invalid-key", "invalid-value")).thenReturn(null)
 
         val result = manager.getUsersByProperty(getUsersByPropertyRequestDto)
-        assertNull(result)
+        assertEquals(emptySet<UserResponseDto>(), result)
     }
 }
