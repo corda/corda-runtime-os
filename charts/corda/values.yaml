@@ -1431,7 +1431,7 @@ workers:
     # logging configuration
     logging:
       # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
-      level: null
+      level: trace
       # -- additional Log4j 2 XML configuration
       override: ""
     profiling:
