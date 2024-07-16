@@ -6,6 +6,11 @@ import net.corda.data.permissions.PermissionType
 import net.corda.data.permissions.RoleAssociation
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
+import net.corda.data.permissions.management.group.AddRoleToGroupRequest
+import net.corda.data.permissions.management.group.ChangeGroupParentIdRequest
+import net.corda.data.permissions.management.group.CreateGroupRequest
+import net.corda.data.permissions.management.group.DeleteGroupRequest
+import net.corda.data.permissions.management.group.RemoveRoleFromGroupRequest
 import net.corda.data.permissions.management.permission.CreatePermissionRequest
 import net.corda.data.permissions.management.role.CreateRoleRequest
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
@@ -13,6 +18,7 @@ import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.DeleteUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
+import net.corda.libs.permissions.storage.writer.impl.group.GroupWriter
 import net.corda.libs.permissions.storage.writer.impl.permission.PermissionWriter
 import net.corda.libs.permissions.storage.writer.impl.role.RoleWriter
 import net.corda.libs.permissions.storage.writer.impl.user.UserWriter
@@ -31,6 +37,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
+import net.corda.data.permissions.Group as AvroGroup
 import net.corda.data.permissions.Permission as AvroPermission
 import net.corda.data.permissions.Role as AvroRole
 import net.corda.data.permissions.User as AvroUser
@@ -65,11 +72,12 @@ class PermissionStorageWriterProcessorImplTest {
 
     private val userWriter = mock<UserWriter>()
     private val roleWriter = mock<RoleWriter>()
+    private val groupWriter = mock<GroupWriter>()
     private val permissionWriter = mock<PermissionWriter>()
     private val permissionStorageReader = mock<PermissionStorageReader>()
 
     private val processor =
-        PermissionStorageWriterProcessorImpl({ permissionStorageReader }, userWriter, roleWriter, permissionWriter)
+        PermissionStorageWriterProcessorImpl({ permissionStorageReader }, userWriter, roleWriter, groupWriter, permissionWriter)
 
     @Test
     fun `receiving invalid request completes exceptionally`() {
@@ -313,5 +321,206 @@ class PermissionStorageWriterProcessorImplTest {
         (response as? AvroUser)?.let { user ->
             assertEquals(avroUser, user)
         }
+    }
+
+    @Test
+    fun `receiving CreateGroupRequest calls group writer and publishes new group`() {
+        val createGroupRequest = CreateGroupRequest("New Group", "Parent Group ID")
+        val avroGroup = AvroGroup().apply {
+            id = "group-id"
+            name = "New Group"
+            parentGroupId = "Parent Group ID"
+        }
+
+        whenever(groupWriter.createGroup(createGroupRequest, creatorUserId)).thenReturn(avroGroup)
+
+        val future = CompletableFuture<PermissionManagementResponse>()
+        processor.onNext(
+            request = PermissionManagementRequest().apply {
+                request = createGroupRequest
+                requestUserId = creatorUserId
+            },
+            respFuture = future
+        )
+
+        verify(permissionStorageReader, times(1)).publishNewGroup(avroGroup)
+
+        val response = future.getOrThrow().response
+        assertTrue(response is AvroGroup)
+        (response as? AvroGroup)?.let { group ->
+            assertEquals(avroGroup, group)
+            assertEquals(group.name, createGroupRequest.groupName)
+            assertEquals(group.parentGroupId, createGroupRequest.parentGroupId)
+        }
+    }
+
+    @Test
+    fun `create group receives exception and completes future with exception in response`() {
+        val createGroupRequest = CreateGroupRequest("New Group", "Parent Group ID")
+        whenever(groupWriter.createGroup(createGroupRequest, creatorUserId))
+            .thenThrow(IllegalArgumentException("Group creation error."))
+
+        val future = CompletableFuture<PermissionManagementResponse>()
+        processor.onNext(
+            request = PermissionManagementRequest().apply {
+                request = createGroupRequest
+                requestUserId = creatorUserId
+            },
+            respFuture = future
+        )
+
+        verify(permissionStorageReader, times(0)).publishNewGroup(any())
+
+        val result = future.getOrThrow()
+        assertTrue(result.response is ExceptionEnvelope)
+        val exception = result.response as ExceptionEnvelope
+        assertEquals(IllegalArgumentException::class.java.name, exception.errorType)
+        assertEquals("Group creation error.", exception.errorMessage)
+    }
+
+    @Test
+    fun `receiving ChangeGroupParentIdRequest calls group writer and publishes updated group`() {
+        val changeGroupParentIdRequest = ChangeGroupParentIdRequest("group-id", "new-parent-id")
+        val updatedAvroGroup = AvroGroup().apply {
+            id = "group-id"
+            name = "Test Group"
+            parentGroupId = "new-parent-id"
+        }
+
+        whenever(groupWriter.changeParentGroup(changeGroupParentIdRequest, creatorUserId)).thenReturn(updatedAvroGroup)
+
+        val future = CompletableFuture<PermissionManagementResponse>()
+        processor.onNext(
+            request = PermissionManagementRequest().apply {
+                request = changeGroupParentIdRequest
+                requestUserId = creatorUserId
+            },
+            respFuture = future
+        )
+
+        verify(permissionStorageReader, times(1)).publishUpdatedGroup(updatedAvroGroup)
+        verify(permissionStorageReader, times(1)).reconcilePermissionSummaries()
+
+        val response = future.getOrThrow().response
+        assertTrue(response is AvroGroup)
+        (response as? AvroGroup)?.let { group ->
+            assertEquals(updatedAvroGroup, group)
+            assertEquals(group.parentGroupId, changeGroupParentIdRequest.newParentGroupId)
+        }
+    }
+
+    @Test
+    fun `receiving AddRoleToGroupRequest calls group writer and publishes updated group`() {
+        val addRoleToGroupRequest = AddRoleToGroupRequest("group-id", "role-id")
+        val updatedAvroGroup = AvroGroup().apply {
+            id = "group-id"
+            name = "Test Group"
+            roleAssociations = listOf(RoleAssociation(ChangeDetails(Instant.now()), "role-id"))
+        }
+
+        whenever(groupWriter.addRoleToGroup(addRoleToGroupRequest, creatorUserId)).thenReturn(updatedAvroGroup)
+
+        val future = CompletableFuture<PermissionManagementResponse>()
+        processor.onNext(
+            request = PermissionManagementRequest().apply {
+                request = addRoleToGroupRequest
+                requestUserId = creatorUserId
+            },
+            respFuture = future
+        )
+
+        verify(permissionStorageReader, times(1)).publishUpdatedGroup(updatedAvroGroup)
+        verify(permissionStorageReader, times(1)).reconcilePermissionSummaries()
+
+        val response = future.getOrThrow().response
+        assertTrue(response is AvroGroup)
+        (response as? AvroGroup)?.let { group ->
+            assertEquals(updatedAvroGroup, group)
+            assertTrue(group.roleAssociations.any { it.roleId == addRoleToGroupRequest.roleId })
+        }
+    }
+
+    @Test
+    fun `receiving RemoveRoleFromGroupRequest calls group writer and publishes updated group`() {
+        val removeRoleFromGroupRequest = RemoveRoleFromGroupRequest("group-id", "role-id")
+        val updatedAvroGroup = AvroGroup().apply {
+            id = "group-id"
+            name = "Test Group"
+            roleAssociations = emptyList()
+        }
+
+        whenever(groupWriter.removeRoleFromGroup(removeRoleFromGroupRequest, creatorUserId)).thenReturn(updatedAvroGroup)
+
+        val future = CompletableFuture<PermissionManagementResponse>()
+        processor.onNext(
+            request = PermissionManagementRequest().apply {
+                request = removeRoleFromGroupRequest
+                requestUserId = creatorUserId
+            },
+            respFuture = future
+        )
+
+        verify(permissionStorageReader, times(1)).publishUpdatedGroup(updatedAvroGroup)
+        verify(permissionStorageReader, times(1)).reconcilePermissionSummaries()
+
+        val response = future.getOrThrow().response
+        assertTrue(response is AvroGroup)
+        (response as? AvroGroup)?.let { group ->
+            assertEquals(updatedAvroGroup, group)
+            assertTrue(group.roleAssociations.isEmpty())
+        }
+    }
+
+    @Test
+    fun `receiving DeleteGroupRequest calls group writer and publishes deleted group`() {
+        val deleteGroupRequest = DeleteGroupRequest("group-id")
+        val deletedAvroGroup = AvroGroup().apply {
+            id = "group-id"
+            name = "Deleted Group"
+        }
+
+        whenever(groupWriter.deleteGroup(deleteGroupRequest, creatorUserId)).thenReturn(deletedAvroGroup)
+
+        val future = CompletableFuture<PermissionManagementResponse>()
+        processor.onNext(
+            request = PermissionManagementRequest().apply {
+                request = deleteGroupRequest
+                requestUserId = creatorUserId
+            },
+            respFuture = future
+        )
+
+        verify(permissionStorageReader, times(1)).publishDeletedGroup(deletedAvroGroup.id)
+
+        val response = future.getOrThrow().response
+        assertTrue(response is AvroGroup)
+        (response as? AvroGroup)?.let { group ->
+            assertEquals(deletedAvroGroup, group)
+            assertEquals(group.id, deleteGroupRequest.groupId)
+        }
+    }
+
+    @Test
+    fun `DeleteGroupRequest receives exception and completes future with exception in response`() {
+        val deleteGroupRequest = DeleteGroupRequest("group-id")
+        whenever(groupWriter.deleteGroup(deleteGroupRequest, creatorUserId))
+            .thenThrow(IllegalArgumentException("Group deletion error."))
+
+        val future = CompletableFuture<PermissionManagementResponse>()
+        processor.onNext(
+            request = PermissionManagementRequest().apply {
+                request = deleteGroupRequest
+                requestUserId = creatorUserId
+            },
+            respFuture = future
+        )
+
+        verify(permissionStorageReader, never()).publishDeletedGroup(any())
+
+        val result = future.getOrThrow()
+        assertTrue(result.response is ExceptionEnvelope)
+        val exception = result.response as ExceptionEnvelope
+        assertEquals(IllegalArgumentException::class.java.name, exception.errorType)
+        assertEquals("Group deletion error.", exception.errorMessage)
     }
 }

@@ -10,6 +10,7 @@ import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import java.text.SimpleDateFormat
 import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Semaphore
 import java.util.concurrent.locks.ReentrantLock
@@ -130,7 +131,7 @@ fun ClusterInfo.getOrCreateVirtualNodeFor(
     vNodeCreationSemaphore.runWith {
         val vNodesJson = assertWithRetryIgnoringExceptions {
             command { vNodeList() }
-            condition { it.code == 200 }
+            condition { it.code == ResponseCode.OK.statusCode }
             failMessage("Failed to retrieve virtual nodes")
         }.toJson()
 
@@ -141,7 +142,7 @@ fun ClusterInfo.getOrCreateVirtualNodeFor(
                 it["holdingIdentity"]["x500Name"].textValue() == normalizedX500
             }["holdingIdentity"]["shortHash"].textValue()
         } else {
-            val createVNodeRequest = assertWithRetry {
+            val createVNodeRequest = assertWithRetryIgnoringExceptions {
                 command { vNodeCreate(hash, x500) }
                 condition { it.code == 202 }
                 failMessage("Failed to create the virtual node for '$x500'")
@@ -206,9 +207,9 @@ fun ClusterInfo.createKeyFor(
             )
         }
         condition {
-            it.code == 200 &&
-                    it.toJson().isObject &&
-                    !it.toJson().isEmpty
+            it.code == ResponseCode.OK.statusCode
+                    && it.toJson().isObject
+                    && !it.toJson().isEmpty
         }
         failMessage("Failed to get keys for holding id '$tenantId' and alias '$alias'")
     }.toJson()
@@ -245,6 +246,7 @@ fun ClusterInfo.whenNoKeyExists(
  *   @param expectedHttpStatusCode Status code that should be displayed when the API is hit,
  *   helps to validate both positive or negative scenarios.
  */
+@Suppress("unused")
 fun ClusterInfo.rotateCryptoWrappingKeys(
     tenantId: String,
     expectedHttpStatusCode: Int
@@ -264,6 +266,7 @@ fun ClusterInfo.rotateCryptoWrappingKeys(
  *  @param expectedHttpStatusCode Status code that should be displayed when the API is hit,
  *      helps to validate both positive or negative scenarios.
  */
+@Suppress("unused")
 fun ClusterInfo.getStatusForWrappingKeysRotation(
     tenantId: String,
     expectedHttpStatusCode: Int
@@ -277,8 +280,9 @@ fun ClusterInfo.getStatusForWrappingKeysRotation(
 /**
  * This method fetches the local time of the corda cluster
  */
+@Suppress("unused")
 fun ClusterInfo.getTime(
-) = SimpleDateFormat("EEE,dd MMM yyyy HH:mm:ss zzz") // RFC 822
+): Instant = SimpleDateFormat("EEE,dd MMM yyyy HH:mm:ss zzz") // RFC 822
     .parse(cluster {
         assertWithRetry {
             command { initialClient.post("/api/$REST_API_VERSION_PATH/hello?addressee=Test", "") }

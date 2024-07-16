@@ -31,7 +31,7 @@ fun ClusterBuilder.eventuallyUploadCpi(
         interval(retryInterval)
         command { cpiStatus(requestId) }
         condition {
-            it.code == 200 && it.toJson()["status"].textValue() == "OK"
+            it.code == ResponseCode.OK.statusCode && it.toJson()["status"].textValue() == "OK"
         }
         immediateFailCondition {
             it.code == ResponseCode.CONFLICT.statusCode

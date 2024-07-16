@@ -12,5 +12,5 @@ data class ChangeGroupParentIdDto(
     /**
      * ID of the new parent Group.
      */
-    val newParentGroupId: String
+    val newParentGroupId: String?
 )

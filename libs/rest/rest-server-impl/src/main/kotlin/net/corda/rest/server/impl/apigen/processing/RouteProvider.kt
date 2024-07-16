@@ -2,8 +2,6 @@ package net.corda.rest.server.impl.apigen.processing
 
 import io.javalin.websocket.WsConfig
 import net.corda.rest.annotations.RestApiVersion
-import net.corda.rest.durablestream.api.isFiniteDurableStreamsMethod
-import net.corda.rest.durablestream.api.returnsDurableCursorBuilder
 import net.corda.rest.server.impl.apigen.models.Endpoint
 import net.corda.rest.server.impl.apigen.models.EndpointMethod
 import net.corda.rest.server.impl.apigen.models.EndpointParameter
@@ -114,14 +112,7 @@ internal class RouteInfo(
     val method get() = endpoint.invocationMethod
     val isMultipartFileUpload get() = endpoint.parameters.any { it.isFile }
 
-    private val methodInvoker = when {
-        endpoint.invocationMethod.method.isFiniteDurableStreamsMethod() ->
-            FiniteDurableStreamsMethodInvoker(endpoint.invocationMethod)
-        endpoint.invocationMethod.method.returnsDurableCursorBuilder() &&
-            !endpoint.invocationMethod.method.isFiniteDurableStreamsMethod() ->
-            DurableStreamsMethodInvoker(endpoint.invocationMethod)
-        else -> DefaultMethodInvoker(endpoint.invocationMethod)
-    }
+    private val methodInvoker = DefaultMethodInvoker(endpoint.invocationMethod)
 
     @Suppress("SpreadOperator")
     fun invokeDelegatedMethod(vararg args: Any?): Any? {

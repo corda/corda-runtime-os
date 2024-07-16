@@ -289,20 +289,27 @@ fun ClusterInfo.waitForRegistrationStatus(
                 }
             }
             condition {
-                if (registrationId != null) {
-                    it.toJson().get("registrationStatus")?.textValue() == registrationStatus
-                } else {
-                    it.toJson().firstOrNull()?.get("registrationStatus")?.textValue() == registrationStatus
+                it.code == ResponseCode.OK.statusCode && run {
+                    val json = it.toJson()
+                    val status = if (registrationId != null) {
+                        json.get("registrationStatus")?.textValue()
+                    } else {
+                        json.firstOrNull()?.get("registrationStatus")?.textValue()
+                    }
+                    status == registrationStatus
                 }
             }
             immediateFailCondition {
-                val status = if (registrationId != null) {
-                    it.toJson().get("registrationStatus")?.textValue()
-                } else {
-                    it.toJson().firstOrNull()?.get("registrationStatus")?.textValue() == registrationStatus
+                it.code == ResponseCode.OK.statusCode && run {
+                    val json = it.toJson()
+                    val status = if (registrationId != null) {
+                        json["registrationStatus"]?.textValue()
+                    } else {
+                        json.firstOrNull()?.get("registrationStatus")?.textValue()
+                    }
+
+                    status != registrationStatus && finalRegistrationStates.contains(status)
                 }
-                (status != registrationStatus) &&
-                    (finalRegistrationStates.contains(status))
             }
             failMessage("Registration was not completed for $holdingIdentityShortHash")
         }

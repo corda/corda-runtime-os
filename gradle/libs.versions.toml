@@ -9,16 +9,16 @@ caffeineVersion = "3.1.8"
 commonsioVersion = "2.16.1"
 guavaVersion = "33.2.1-jre"
 hikariCpVersion = "5.1.0"
-jacksonVersion = "2.17.1"
+jacksonVersion = "2.17.2"
 javalinVersion = "4.6.8"
 jcipAnnotationsVersion = "1.0_2"
 # This version of Jetty must be the same major version as used by Javalin, please see above.
 # Once Javalin version is upgraded to the latest, this override may be removed.
-jettyVersion = "9.4.54.v20240208"
+jettyVersion = "9.4.55.v20240627"
 micrometerVersion = "1.12.4"
 nimbusVersion = "11.13"
 kafkaClientVersion = "3.7.0_1"
-kubernetesClientVersion = "6.13.0"
+kubernetesClientVersion = "6.13.1"
 log4jVersion = "2.23.0"
 # If upgrading liquibase to 4.28, enable `LiquibaseSchemaMigratorImplTest.when updateDb create DB schema`
 # and `LiquibaseSchemaMigratorImplTest.when createUpdateSql generate DB schema` on Windows
@@ -56,7 +56,7 @@ snykVersion = "0.5.1"
 cyclonedxVersion = "1.8.2"
 dokkaVersion = "1.9.10"
 testLoggerVersion = "4.0.0"
-sonarVersion = "5.0.0.4638"
+sonarVersion = "5.1.0.4882"
 openApiGeneratorVersion = "7.6.0"
 
 [libraries]
