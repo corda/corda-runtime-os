@@ -85,7 +85,7 @@ class CpiUploadRestResourceImpl @Activate constructor(
         }
 
         val checksum = if (uploadStatus.checksum != null) toShortHash(uploadStatus.checksum.toCorda()) else ""
-        logger.info("Upload status request for CPI id: $id status: $uploadStatus")
+        logger.info("Got upload status request for CPI id: $id status: $uploadStatus")
         return CpiUploadRestResource.CpiUploadStatus(uploadStatus.message, checksum)
     }
 
