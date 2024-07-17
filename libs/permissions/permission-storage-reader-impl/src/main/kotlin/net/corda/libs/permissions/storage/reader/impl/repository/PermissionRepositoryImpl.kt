@@ -9,6 +9,7 @@ import net.corda.permissions.model.Permission
 import net.corda.permissions.model.Role
 import net.corda.permissions.model.User
 import net.corda.permissions.query.dto.InternalPermissionQueryDto
+import net.corda.permissions.query.dto.InternalPermissionWithParentGroupQueryDto
 import net.corda.permissions.query.dto.InternalUserEnabledQueryDto
 import java.time.Instant
 import javax.persistence.EntityManager
@@ -18,30 +19,40 @@ import javax.persistence.EntityManagerFactory
 class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFactory) : PermissionRepository {
 
     companion object {
-        // Query to get Permission Ids for a specific group(not including parent group permissions)
-        const val permissionIdsOfGroupQuery =
+        const val groupPermissionsQuery =
             """
-                SELECT DISTINCT p.id
-                FROM Group g
-                JOIN RoleGroupAssociation rga ON rga.group.id = :groupId
-                JOIN Role r ON rga.role.id = r.id
-                JOIN RolePermissionAssociation rpa ON rpa.role.id = r.id
-                JOIN Permission p ON rpa.permission.id = p.id
-            """
-
-        // Query to get Permission Dto with specified Parent Group Id and Permission Id
-        const val userGroupPermissionsQuery =
-            """
-                SELECT DISTINCT NEW net.corda.permissions.query.dto.InternalPermissionQueryDto(
-                    u.loginName,
+            SELECT DISTINCT NEW net.corda.permissions.query.dto.InternalPermissionWithParentGroupQueryDto(
+                    g.id,
                     p.id,
                     p.groupVisibility.id, 
                     p.virtualNode, 
                     p.permissionString, 
-                    p.permissionType
+                    p.permissionType,
+                    g.parentGroup.id
                 )
-                FROM User u, Permission p
-                WHERE u.parentGroup.id = :groupId AND p.id = :permissionId
+            FROM Group g
+            JOIN RoleGroupAssociation rga ON rga.group.id = g.id
+            JOIN Role r ON rga.role.id = r.id
+            JOIN RolePermissionAssociation rpa ON rpa.role.id = r.id
+            JOIN Permission p ON rpa.permission.id = p.id
+            """
+
+        const val usersPermissionQuery =
+            """
+            SELECT DISTINCT NEW net.corda.permissions.query.dto.InternalPermissionWithParentGroupQueryDto(
+                u.id,
+                p.id,
+                p.groupVisibility.id, 
+                p.virtualNode, 
+                p.permissionString, 
+                p.permissionType,
+                u.parentGroup.id
+            )
+            FROM User u
+                JOIN RoleUserAssociation rua ON rua.user.id = u.id
+                JOIN Role r ON rua.role.id = r.id
+                JOIN RolePermissionAssociation rpa ON rpa.role.id = r.id
+                JOIN Permission p ON rpa.permission.id = p.id
             """
     }
 
@@ -157,58 +168,44 @@ class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFa
     }
 
     private fun findPermissionsForUsersFromGroupRoleAssignment(em: EntityManager): Map<UserLogin, List<InternalPermissionQueryDto>> {
-        // Query to get all the root groups
-        val allRootGroups =
-            em.createQuery("SELECT g.id FROM Group g WHERE g.parentGroup IS NULL", String::class.java).resultList
-
-        val userPermissionsList: MutableList<InternalPermissionQueryDto> = mutableListOf()
-
-        allRootGroups.forEach {
-            val rootGroupPermissions: MutableList<String> = mutableListOf()
-
-            getAllUserPermissions(em, it, rootGroupPermissions, userPermissionsList)
+        val groupPermissionMap = em.createQuery(
+            groupPermissionsQuery,
+            InternalPermissionWithParentGroupQueryDto::class.java
+        ).resultList.groupBy { it.id }
+        val userPermissionMap = em.createQuery(
+            usersPermissionQuery,
+            InternalPermissionWithParentGroupQueryDto::class.java
+        ).resultList.groupBy { it.id }
+        val userGroupHierarchyMap = userPermissionMap.mapValues {
+            var parent = it.value.first().parentGroupId
+            val userGroupHierarchyList = mutableListOf(parent)
+            while (!parent.isNullOrBlank()) {
+                parent = groupPermissionMap[parent]?.first()?.parentGroupId
+                userGroupHierarchyList.add(parent)
+            }
+            userGroupHierarchyList
         }
 
-        return userPermissionsList
-            .sortedWith(PermissionQueryDtoComparator())
-            .groupBy { it.loginName }
-    }
+        val allUserPermissionsMap = mutableMapOf<String, MutableList<InternalPermissionQueryDto>>()
 
-    // Recursively updates a list with all the users and their permissions
-    private fun getAllUserPermissions(
-        em: EntityManager,
-        currentGroupId: String,
-        parentPermissionIds: MutableList<String>,
-        userPermissionsList: MutableList<InternalPermissionQueryDto>
-    ) {
-        // Adds the Permission Ids of the current group to the parentPermissionIds list
-        parentPermissionIds.addAll(
-            em.createQuery(permissionIdsOfGroupQuery, String::class.java)
-                .setParameter("groupId", currentGroupId)
-                .resultList
-        )
-
-        // For every user directly associated with the current group,
-        // create an InternalPermissionQueryDto for each permission and add to the userPermissionList
-        parentPermissionIds.forEach {
-            userPermissionsList.addAll(
-                em.createQuery(userGroupPermissionsQuery, InternalPermissionQueryDto::class.java)
-                    .setParameter("groupId", currentGroupId)
-                    .setParameter("permissionId", it)
-                    .resultList
-            )
-        }
-
-        // Get all Group Ids that are children of the current group and recursively call this function for each child
-        val childGroupIds =
-            em.createQuery("SELECT g.id FROM Group g WHERE g.parentGroup.id = :groupId", String::class.java)
-                .setParameter("groupId", currentGroupId)
-                .resultList
-
-        if (childGroupIds.isNotEmpty()) {
-            childGroupIds.forEach {
-                getAllUserPermissions(em, it, parentPermissionIds, userPermissionsList)
+        userGroupHierarchyMap.forEach { userGroupHierarchy ->
+            userGroupHierarchy.value.forEach { groupId ->
+                groupPermissionMap[groupId]?.let { groupPermissions ->
+                    groupPermissions.forEach { groupPermission ->
+                        allUserPermissionsMap[userGroupHierarchy.key]?.add(
+                            InternalPermissionQueryDto(
+                                userGroupHierarchy.key,
+                                groupPermission.id,
+                                groupPermission.groupVisibility,
+                                groupPermission.virtualNode,
+                                groupPermission.permissionString,
+                                groupPermission.permissionType
+                            )
+                        )
+                    }
+                }
             }
         }
+        return allUserPermissionsMap
     }
 }
