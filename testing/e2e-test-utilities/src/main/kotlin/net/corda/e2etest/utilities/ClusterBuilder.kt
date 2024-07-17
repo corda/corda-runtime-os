@@ -394,6 +394,11 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         return body.joinToString(prefix = "{", postfix = "}")
     }
 
+    private fun createUserPropertyBody(properties: Map<String, String>): String {
+        val body = properties.map { "\"${it.key}\" : \"${it.value}\"" }
+        return body.joinToString(prefix = "{", postfix = "}")
+    }
+
     @Suppress("unused")
     fun changeUserPasswordSelf(password: String) =
         initialClient.post(
@@ -728,6 +733,23 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     /** Get a summary of the user's permissions */
     fun getPermissionSummary(loginName: String) =
         initialClient.get("/api/$REST_API_VERSION_PATH/user/$loginName/permissionsummary")
+
+    @Suppress("unused")
+    fun addPropertyToUser(loginName: String, property: Map<String, String>) =
+        initialClient.post("/api/$REST_API_VERSION_PATH/user/$loginName/property",
+            createUserPropertyBody(property))
+
+    @Suppress("unused")
+    fun removePropertyFromUser(loginName: String, propertyKey: String) =
+        initialClient.delete("/api/$REST_API_VERSION_PATH/user/$loginName/property/$propertyKey")
+
+    @Suppress("unused")
+    fun getUserProperties(loginName: String) =
+        initialClient.get("/api/$REST_API_VERSION_PATH/user/$loginName/property")
+
+    @Suppress("unused")
+    fun getUsersByPropertyKey(propertyKey: String, propertyValue: String) =
+        initialClient.get("/api/$REST_API_VERSION_PATH/findByProperty/$propertyKey/$propertyValue")
 
     @Suppress("unused")
     /** Create a new permission */
