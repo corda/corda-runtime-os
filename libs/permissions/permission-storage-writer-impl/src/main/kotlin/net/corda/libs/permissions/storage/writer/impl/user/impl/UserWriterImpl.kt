@@ -154,7 +154,6 @@ class UserWriterImpl(
             val resultUser = removeUserProperty(entityManager, requestUserId, user, property)
             resultUser.toAvroUser()
         }
-
     }
 
     private fun persistNewUser(
@@ -231,7 +230,7 @@ class UserWriterImpl(
             actorUser = requestUserId,
             changeType = RestPermissionOperation.ADD_ROLE_TO_USER,
             details = "Role '${role.id}' assigned to User '${user.loginName}' by '$requestUserId'. " +
-                    "Created RoleUserAssociation '${association.id}'."
+                "Created RoleUserAssociation '${association.id}'."
         )
 
         user.roleUserAssociations.add(association)
@@ -257,7 +256,7 @@ class UserWriterImpl(
             actorUser = requestUserId,
             changeType = RestPermissionOperation.DELETE_ROLE_FROM_USER,
             details = "Role '$roleId' unassigned from User '${user.loginName}' by '$requestUserId'. " +
-                    "Removed RoleUserAssociation '${association.id}'."
+                "Removed RoleUserAssociation '${association.id}'."
         )
 
         user.roleUserAssociations.remove(association)
@@ -283,7 +282,7 @@ class UserWriterImpl(
                 actorUser = requestUserId,
                 changeType = RestPermissionOperation.ADD_PROPERTY_TO_USER,
                 details = "Property with key '${it.key}' and value '${it.value}' added to " +
-                        "User '${user.loginName}' by '$requestUserId'"
+                    "User '${user.loginName}' by '$requestUserId'"
             )
 
             user.userProperties.add(it)
@@ -313,6 +312,4 @@ class UserWriterImpl(
         entityManager.persist(changeAudit)
         return user
     }
-
-
 }

@@ -129,7 +129,7 @@ class EntityValidationUtil(private val entityManager: EntityManager) {
     }
 
     fun validateAndGetPropertyByKey(user: User, propertyKey: String): UserProperty {
-        val value = user.userProperties.singleOrNull {it.key == propertyKey}
+        val value = user.userProperties.singleOrNull { it.key == propertyKey }
         if (value == null) {
             throw EntityAssociationDoesNotExistException("Property '$propertyKey' is not assigned to User '${user.loginName}'.")
         } else {

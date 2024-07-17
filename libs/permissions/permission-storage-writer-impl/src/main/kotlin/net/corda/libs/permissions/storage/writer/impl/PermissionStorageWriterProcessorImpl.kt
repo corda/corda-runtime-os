@@ -128,7 +128,7 @@ class PermissionStorageWriterProcessorImpl(
                     permissionStorageReader.publishUpdatedUser(avroUser)
                     avroUser
                 }
-                is RemovePropertyFromUserRequest ->  {
+                is RemovePropertyFromUserRequest -> {
                     val avroUser = userWriter.removePropertyFromUser(permissionRequest, request.requestUserId)
                     permissionStorageReader.publishUpdatedUser(avroUser)
                     avroUser
