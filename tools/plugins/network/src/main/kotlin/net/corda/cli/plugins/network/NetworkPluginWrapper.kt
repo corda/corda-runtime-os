@@ -18,6 +18,7 @@ class NetworkPluginWrapper {
             GetRegistrations::class,
             Lookup::class,
             Operate::class,
+            UpgradeCpi::class,
         ],
         hidden = true,
         mixinStandardHelpOptions = true,
