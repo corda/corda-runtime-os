@@ -70,8 +70,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             ArithmeticException::class.java,
             FencedInstanceIdException::class.java,
             InconsistentGroupProtocolException::class.java,
-            InvalidOffsetException::class.java,
-            CommitFailedException::class.java
+            InvalidOffsetException::class.java
         )
         val transientExceptions: Set<Class<out Throwable>> = setOf(
             TimeoutException::class.java,
@@ -79,7 +78,8 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             InterruptException::class.java,
             KafkaException::class.java,
             ConcurrentModificationException::class.java,
-            RebalanceInProgressException::class.java
+            RebalanceInProgressException::class.java,
+            CommitFailedException::class.java
         )
     }
 
