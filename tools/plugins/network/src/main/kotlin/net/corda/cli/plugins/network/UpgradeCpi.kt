@@ -5,9 +5,10 @@ import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
 
+// TODO only for dynamic?
 @Command(
     name = "upgrade-cpi",
-    description = ["Upgrade the CPI used in a network"], // TODO: add more description
+    description = ["Upgrade the CPI used in a network"], // TODO add more description
     mixinStandardHelpOptions = true,
 )
 class UpgradeCpi : Runnable, RestCommand() {
@@ -20,7 +21,7 @@ class UpgradeCpi : Runnable, RestCommand() {
 
     @Option(
         names = ["--network-config-file"],
-        description = ["Location of the network configuration file."], // TODO: add more description
+        description = ["Location of the network configuration file."], // TODO add more description
         required = true,
     )
     lateinit var networkConfigFile: File
