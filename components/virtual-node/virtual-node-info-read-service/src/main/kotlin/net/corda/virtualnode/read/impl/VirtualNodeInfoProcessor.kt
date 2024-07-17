@@ -127,7 +127,6 @@ class VirtualNodeInfoProcessor(private val onStatusUpCallback: () -> Unit, priva
             onErrorCallback()
             return
         }
-
     }
 
     fun getAll(): List<VirtualNodeInfo> =
