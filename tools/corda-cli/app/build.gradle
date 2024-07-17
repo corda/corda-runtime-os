@@ -1,19 +1,14 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm'
-    id 'application'
 }
 
 group = 'net.corda.cli'
 
-mainClassName = 'net.corda.cli.application.AppKt'
-
-application {
-    mainClass = mainClassName
-}
-
 dependencies {
     implementation libs.kotlin.stdlib
     implementation libs.log4j.slf4j
+    // This alone isn't enough to enable JSON logging, please see :tools:corda-cli:jar task for details
+    runtimeOnly libs.log4j.layout.json
 
     implementation "info.picocli:picocli:$picocliVersion"
 

@@ -142,8 +142,33 @@ if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
     }
 }
 
+// This is a workaround for https://issues.apache.org/jira/browse/LOG4J2-954,
+// which causes the Log4J2 plugins cache to be overwritten by the last one on the classpath, making it incompatible with a fat jar.
+// There's a similar logic in `corda.common-app`, but we don't want to use OSGi approach in Corda CLI.
+def mergeLog4j2Plugins = tasks.register('mergeLog4j2Plugins') {
+    dependsOn configurations.runtimeClasspath
+    inputs.files(configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) })
+    def outputDir = layout.buildDirectory.dir('log4j')
+    outputs.dir(outputDir)
+
+    doLast {
+        def inputFiles = inputs.files.getFiles().findAll { it.name == 'Log4j2Plugins.dat' }.collect { it.toURI().toURL() }
+        if (inputFiles) {
+            def combinedCache = new org.apache.logging.log4j.core.config.plugins.processor.PluginCache()
+            combinedCache.loadCacheFiles(Collections.enumeration(inputFiles))
+            def outputFile = outputDir.get().file('META-INF/org/apache/logging/log4j/core/config/plugins/Log4j2Plugins.dat').asFile
+            outputFile.parentFile.mkdirs()
+            try (OutputStream out = new FileOutputStream(outputFile)) {
+                combinedCache.writeCache(out)
+            }
+        }
+    }
+}
+
 jar {
     dependsOn configurations.runtimeClasspath
+    dependsOn mergeLog4j2Plugins
+
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } } {
         exclude "META-INF/*.SF"
         exclude "META-INF/*.DSA"
@@ -151,10 +176,11 @@ jar {
         exclude "META-INF/*.EC"
         exclude "META-INF/INDEX.LIST"
         exclude "META-INF/versions/*/module-info.class"
+        // Exclude the Log4J2 plugins caches as the merged version is included from mergeLog4J2Plugins
         exclude "META-INF/org/apache/logging/log4j/core/config/plugins/Log4j2Plugins.dat"
         exclude "module-info.class"
     }
-
+    from(mergeLog4j2Plugins)
 
     finalizedBy 'cliInstallArchive'
     if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
@@ -209,11 +235,4 @@ publishing {
             }
         }
     }
-}
-
-tasks.named("installDist") {
-    dependsOn jar
-    def homePath = System.properties['user.home']
-    from jar
-    into "$homePath/.corda/cli/"
 }
