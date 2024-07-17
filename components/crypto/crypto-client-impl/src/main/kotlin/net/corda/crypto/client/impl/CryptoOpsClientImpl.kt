@@ -445,7 +445,7 @@ class CryptoOpsClientImpl(
     } catch (e: CordaRPCAPIResponderException) {
         throw e.toClientException()
     } catch (e: Throwable) {
-        logger.error("Failed executing ${request::class.java.name} for tenant ${context.tenantId}", e)
+        logger.warn("Failed executing ${request::class.java.name} for tenant ${context.tenantId}", e)
         throw e
     }
 }
