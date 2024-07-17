@@ -142,6 +142,9 @@ if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
     }
 }
 
+// This is a workaround for https://issues.apache.org/jira/browse/LOG4J2-954,
+// which causes the Log4J2 plugins cache to be overwritten by the last one on the classpath, making it incompatible with a fat jar.
+// There's a similar logic in `corda.common-app`, but we don't want to use OSGi approach in Corda CLI.
 def mergeLog4j2Plugins = tasks.register('mergeLog4j2Plugins') {
     dependsOn configurations.runtimeClasspath
     inputs.files(configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) })
@@ -173,6 +176,7 @@ jar {
         exclude "META-INF/*.EC"
         exclude "META-INF/INDEX.LIST"
         exclude "META-INF/versions/*/module-info.class"
+        // Exclude the Log4J2 plugins caches as the merged version is included from mergeLog4J2Plugins
         exclude "META-INF/org/apache/logging/log4j/core/config/plugins/Log4j2Plugins.dat"
         exclude "module-info.class"
     }
