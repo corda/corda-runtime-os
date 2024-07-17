@@ -11,6 +11,7 @@ import net.corda.permissions.model.RoleGroupAssociation
 import net.corda.permissions.model.RolePermissionAssociation
 import net.corda.permissions.model.RoleUserAssociation
 import net.corda.permissions.model.User
+import net.corda.permissions.model.UserProperty
 import javax.persistence.EntityManager
 
 class EntityValidationUtil(private val entityManager: EntityManager) {
@@ -122,6 +123,15 @@ class EntityValidationUtil(private val entityManager: EntityManager) {
         val value = user.roleUserAssociations.singleOrNull { it.role.id == roleId }
         if (value == null) {
             throw EntityAssociationDoesNotExistException("Role '$roleId' is not associated with User '${user.loginName}'.")
+        } else {
+            return value
+        }
+    }
+
+    fun validateAndGetPropertyByKey(user: User, propertyKey: String): UserProperty {
+        val value = user.userProperties.singleOrNull {it.key == propertyKey}
+        if (value == null) {
+            throw EntityAssociationDoesNotExistException("Property '$propertyKey' is not assigned to User '${user.loginName}'.")
         } else {
             return value
         }

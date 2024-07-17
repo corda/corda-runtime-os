@@ -1,6 +1,5 @@
 package net.corda.libs.permissions.storage.writer.impl.user.impl
 
-import net.corda.data.permissions.Property
 import net.corda.data.permissions.management.user.AddPropertyToUserRequest
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
 import net.corda.data.permissions.management.user.ChangeUserPasswordRequest
@@ -146,8 +145,16 @@ class UserWriterImpl(
     override fun removePropertyFromUser(
         request: RemovePropertyFromUserRequest,
         requestUserId: String
-    ): net.corda.data.permissions.User {
-        TODO("Not yet implemented")
+    ): AvroUser {
+        log.debug { "Received request to remove Property with key ${request.propertyKey} from User ${request.loginName}" }
+        return entityManagerFactory.transaction { entityManager ->
+            val validator = EntityValidationUtil(entityManager)
+            val user = validator.validateAndGetUniqueUser(request.loginName)
+            val property = validator.validateAndGetPropertyByKey(user, request.propertyKey)
+            val resultUser = removeUserProperty(entityManager, requestUserId, user, property)
+            resultUser.toAvroUser()
+        }
+
     }
 
     private fun persistNewUser(
@@ -285,4 +292,27 @@ class UserWriterImpl(
         }
         return user
     }
+
+    private fun removeUserProperty(
+        entityManager: EntityManager,
+        requestUserId: String,
+        user: User,
+        property: UserProperty
+    ): User {
+        val updateTimestamp = Instant.now()
+        val changeAudit = ChangeAudit(
+            id = UUID.randomUUID().toString(),
+            updateTimestamp = updateTimestamp,
+            actorUser = requestUserId,
+            changeType = RestPermissionOperation.DELETE_PROPERTY_FROM_USER,
+            details = "Property with key '${property.key}' removed from User '${user.loginName}' by '$requestUserId'"
+        )
+
+        user.userProperties.remove(property)
+        entityManager.merge(user)
+        entityManager.persist(changeAudit)
+        return user
+    }
+
+
 }
