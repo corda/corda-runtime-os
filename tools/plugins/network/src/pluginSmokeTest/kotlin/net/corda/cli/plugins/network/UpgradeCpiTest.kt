@@ -1,23 +1,17 @@
 package net.corda.cli.plugins.network
 
-import net.corda.cli.plugins.network.utils.HoldingIdentityUtils
-import net.corda.cli.plugins.network.utils.inferCpiName
+import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.restclient.CordaRestClient
-import net.corda.restclient.generated.models.PreAuthTokenRequest
-import net.corda.sdk.network.MgmGeneratePreAuth
-import net.corda.sdk.network.VirtualNode
-import net.corda.sdk.packaging.CpiUploader
+import net.corda.restclient.generated.models.RestMemberInfo
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import picocli.CommandLine
 import java.io.File
 import java.util.UUID
-import kotlin.time.Duration.Companion.seconds
 
 class UpgradeCpiTest {
     companion object {
@@ -35,12 +29,9 @@ class UpgradeCpiTest {
         private val memberNameBob = getMemberName("Bob")
         private val memberNameCharlie = getMemberName("Charlie")
 
-//        val cpbLocation = this::class.java.classLoader.getResource("OnboardMemberTest/single-use.cpb")!!.path
-
         private lateinit var outputStub: OutputStub
-        private lateinit var command: OnboardMgm
-        private lateinit var cpbLocation: String
-        private lateinit var defaulGroupPolicyLocation: String
+        private val cpbLocation: String = this::class.java.classLoader.getResource(CPB_FILE)!!.path
+        private val defaultGroupPolicyLocation: String = "${System.getProperty("user.home")}/.corda/gp/groupPolicy.json"
         private val restClient = CordaRestClient.createHttpClient(
             baseUrl = DEFAULT_CLUSTER.rest.uri,
             username = DEFAULT_CLUSTER.rest.user,
@@ -48,59 +39,51 @@ class UpgradeCpiTest {
             insecure = true,
         )
 
+        private lateinit var groupId: String
+        private lateinit var mgmHoldingId: String
+
         @BeforeAll
         @JvmStatic
         fun setup() {
-            command = OnboardMgm()
-            outputStub = OutputStub()
-            cpbLocation = this::class.java.classLoader.getResource(CPB_FILE)!!.path
-            defaulGroupPolicyLocation = "${System.getProperty("user.home")}/.corda/gp/groupPolicy.json"
+            onboardMgm()
 
-            CommandLine(command).execute(
-                mgmName.toString(),
-                targetUrl,
-                user,
-                password,
-                INSECURE,
-            )
-            CommandLine(MemberLookup(outputStub)).execute(
-                "-n=$mgmName",
-                targetUrl,
-                user,
-                password,
-                INSECURE,
-            )
-            assertEquals(mgmName, outputStub.getFirstPartyName())
+            // TODO is it needed?
+            groupId = ObjectMapper().readTree(File(defaultGroupPolicyLocation).readText()).get("groupId").asText()
 
             onboardMember(memberNameAlice)
             onboardMember(memberNameBob)
+
+            assertThat(getGroupMembers().size).isEqualTo(3)
         }
+
+        private fun onboardMgm() {
+            CommandLine(OnboardMgm()).execute(mgmName.toString(), targetUrl, user, password, INSECURE)
+            mgmHoldingId = getHoldingIdForMember(mgmName)
+            assertThat(getGroupMembersNames()).containsExactly(mgmName.toString())
+        }
+
+        private fun getGroupMembers(): List<RestMemberInfo> =
+            restClient.memberLookupClient.getMembersHoldingidentityshorthash(mgmHoldingId).members
+
+        private fun getGroupMembersNames(): List<String> = getGroupMembers().map { it.memberContext["corda.name"]!! }
+
+        private fun getHoldingIdForMember(memberName: MemberX500Name): String =
+            restClient.virtualNodeClient.getVirtualnode().virtualNodes
+                .first { it.holdingIdentity.x500Name == memberName.toString() }
+                .holdingIdentity.shortHash
 
         private fun onboardMember(memberName: MemberX500Name) {
             CommandLine(OnboardMember()).execute(
                 memberName.toString(),
-                "--cpb-file=$cpbLocation",
-                "--group-policy-file=$defaulGroupPolicyLocation",
+                "--cpb-file=$cpbLocation", // TODO: prepare the CPI file
+                "--group-policy-file=$defaultGroupPolicyLocation",
                 targetUrl,
                 user,
                 password,
                 INSECURE,
                 "--wait",
             )
-
-            outputStub.lookup(memberName)
-            assertThat(outputStub.getAllPartyNames().contains(memberName)).isTrue
-        }
-
-        private fun OutputStub.lookup(memberName: MemberX500Name) {
-            CommandLine(MemberLookup(this)).execute(
-                "-n=$mgmName",
-                "-o=${memberName.organization}",
-                targetUrl,
-                user,
-                password,
-                INSECURE,
-            )
+            assertThat(getGroupMembersNames()).contains(memberName.toString())
         }
     }
 
@@ -112,42 +95,5 @@ class UpgradeCpiTest {
     @Test
     fun `foo`() {
         println("Foo")
-        val virtualNodes = VirtualNode(restClient).getAllVirtualNodes()
-        println("Total virtual nodes: ${virtualNodes.virtualNodes.size}")
-        virtualNodes.virtualNodes.filter {
-            it.holdingIdentity.x500Name in listOf(
-                memberNameAlice.toString(),
-                memberNameBob.toString(),
-                memberNameCharlie.toString(),
-                mgmName.toString(),
-            )
-        }.forEach {
-            println(it.holdingIdentity.toString() + " " + it.cpiIdentifier)
-        }
-
-        val mgmHoldingId = virtualNodes.virtualNodes.first { it.holdingIdentity.x500Name == mgmName.toString() }.holdingIdentity.shortHash
-        val members = restClient.memberLookupClient.getMembersHoldingidentityshorthash(mgmHoldingId)
-
-        println("Found members for mgm with holding id $mgmHoldingId: ${members.members.size}")
-        println(members.members.map { it.memberContext["corda.name"] }.joinToString("\n"))
-        Unit
-    }
-
-    private fun OnboardMgm.getExistingCpiHash(): String {
-        val cpiName = inferCpiName(File(cpbLocation), File(defaulGroupPolicyLocation))
-        val cpisFromCluster = CpiUploader(restClient).getAllCpis(wait = waitDurationSeconds.seconds).cpis
-        return cpisFromCluster.first { it.id.cpiName == cpiName }.cpiFileChecksum
-    }
-
-    private fun OnboardMgm.createPreAuthToken(member: String): String {
-        val holdingIdentity = HoldingIdentityUtils.getHoldingIdentity(
-            null,
-            mgmName,
-            null,
-        )
-        return MgmGeneratePreAuth(restClient).generatePreAuthToken(
-            holdingIdentityShortHash = holdingIdentity,
-            request = PreAuthTokenRequest(member),
-        ).id
     }
 }
