@@ -23,6 +23,8 @@ class MessageBusClient(
     override fun send(message: MediatorMessage<*>): MediatorMessage<*> {
         val future = CompletableFuture<Unit>()
         val record = message.toCordaProducerRecord()
+
+        // CordaMessageAPIProducerRequiresReset could be thrown here
         producer.send(record) { ex ->
             setFutureFromResponse(ex, future, record.topic)
         }

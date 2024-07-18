@@ -247,6 +247,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             val record = CordaProducerRecord(config.topic, correlationId, request)
             futureTracker.addFuture(correlationId, future, partition)
             try {
+                // CordaMessageAPIProducerRequiresReset could be thrown here
                 producer?.sendRecords(listOf(record))
             } catch (ex: Exception) {
                 future.completeExceptionally(CordaRPCAPISenderException("Failed to publish", ex))

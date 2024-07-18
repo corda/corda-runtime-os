@@ -1,8 +1,5 @@
 package net.corda.messaging.subscription
 
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.concurrent.CompletableFuture
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
@@ -32,6 +29,9 @@ import net.corda.messaging.utils.ExceptionUtils
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.concurrent.CompletableFuture
 
 /**
  * RPC subscription implementation utilizing a message bus with producer and consumer to achieve asynchronous
@@ -126,6 +126,7 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             try {
                 processRecords(consumerRecords, producer)
             } catch (ex: Exception) {
+                // CordaMessageAPIProducerRequiresReset could be thrown here
                 when (ex::class.java) {
                     in ExceptionUtils.CordaMessageAPIException -> {
                         throw ex

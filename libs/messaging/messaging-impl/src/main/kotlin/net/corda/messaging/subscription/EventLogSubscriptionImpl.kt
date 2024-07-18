@@ -1,6 +1,5 @@
 package net.corda.messaging.subscription
 
-import java.util.UUID
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -31,6 +30,7 @@ import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getDLQTopic
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 /**
  * Implementation of an EventLogSubscription.
@@ -167,6 +167,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                 processDurableRecords(consumer.poll(config.pollTimeout), producer, consumer)
                 attempts = 0
             } catch (ex: Exception) {
+                // CordaMessageAPIProducerRequiresReset could be thrown here
                 when (ex) {
                     is CordaMessageAPIFatalException -> {
                         throw ex
