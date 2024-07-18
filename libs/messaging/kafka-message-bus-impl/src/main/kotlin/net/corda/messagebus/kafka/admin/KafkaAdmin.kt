@@ -15,21 +15,34 @@ class KafkaAdmin(private val adminClient: AdminClient) : Admin {
     }
 
     override fun getTopics(): Set<String> {
-        return try {
-            tryWithBackoff(
-                logger = logger,
-                maxRetries = 3,
-                maxTimeMillis = 3000,
-                backoffStrategy = Linear(200)
-            ) {
+        return tryWithBackoff(
+            logger = logger,
+            maxRetries = 3,
+            maxTimeMillis = 3000,
+            backoffStrategy = Linear(200),
+            shouldRetry = { _, _, throwable -> throwable.isRecoverable() },
+            onRetryAttempt = { attempt, delayMillis, throwable ->
+                logger.warn("Attempt $attempt failed with \"${throwable.message}\", will try again after $delayMillis milliseconds")
+            },
+            onRetryExhaustion = { attempts, elapsedMillis, throwable ->
+                val errorMessage =
+                    "Execution failed with \"${throwable.message}\" after retrying $attempts times for $elapsedMillis milliseconds."
+                logger.warn(errorMessage)
+                CordaRuntimeException(errorMessage, throwable)
+            },
+            {
                 adminClient.listTopics().names().get()
             }
-        } catch (e: ExecutionException) {
-            logger.warn("could not get Topics")
-            throw CordaRuntimeException(e.message)
-        }
-
+        )
     }
+
+    private fun Throwable.isRecoverable(): Boolean {
+        return when (this) {
+            is ExecutionException -> true
+            else -> false
+        }
+    }
+
 
     override fun close() {
         adminClient.close()
