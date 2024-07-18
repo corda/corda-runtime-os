@@ -1,6 +1,5 @@
 package net.corda.libs.permissions.endpoints.common
 
-import net.corda.libs.permissions.common.exception.ConcurrentEntityModificationException
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.exception.RemotePermissionManagementException
 import net.corda.libs.permissions.manager.exception.UnexpectedPermissionResponseException
@@ -8,7 +7,6 @@ import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.rest.exception.InternalServerException
-import net.corda.rest.exception.InvalidStateChangeException
 import net.corda.rest.exception.ServiceUnavailableException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
