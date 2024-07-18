@@ -4,6 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.restclient.CordaRestClient
 import net.corda.restclient.generated.models.RestMemberInfo
+import net.corda.sdk.data.Checksum
+import net.corda.sdk.data.RequestId
+import net.corda.sdk.packaging.CpiAttributes
+import net.corda.sdk.packaging.CpiUploader
+import net.corda.sdk.packaging.CpiV2Creator
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
@@ -11,10 +16,14 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import picocli.CommandLine
 import java.io.File
+import java.nio.file.Path
+import java.time.Duration
+import java.time.Instant
 import java.util.UUID
 
 class UpgradeCpiTest {
     companion object {
+        // TODO do everything in beforeEach
         private const val CPB_FILE = "test-cordapp.cpb"
 
         private val targetUrl = "--target=${DEFAULT_CLUSTER.rest.uri}"
@@ -22,7 +31,7 @@ class UpgradeCpiTest {
         private val password = "--password=${DEFAULT_CLUSTER.rest.password}"
         private const val INSECURE = "--insecure=true"
 
-        private fun getMemberName(name: String = "Member") = MemberX500Name.parse("O=$name-${UUID.randomUUID()}, L=London, C=GB")
+        private fun getMemberName(name: String = "Member") = MemberX500Name.parse("CN=$name-${UUID.randomUUID()}, L=London, C=GB")
 
         private val mgmName = getMemberName("MGM")
         private val memberNameAlice = getMemberName("Alice")
@@ -42,6 +51,10 @@ class UpgradeCpiTest {
         private lateinit var groupId: String
         private lateinit var mgmHoldingId: String
 
+        private val cpiName = "MyCorDapp-${UUID.randomUUID()}"
+        private val signingOptions = OnboardMember().createDefaultSingingOptions().asSigningOptionsSdk
+        private val cpiUploader = CpiUploader(restClient)
+
         @BeforeAll
         @JvmStatic
         fun setup() {
@@ -50,10 +63,38 @@ class UpgradeCpiTest {
             // TODO is it needed?
             groupId = ObjectMapper().readTree(File(defaultGroupPolicyLocation).readText()).get("groupId").asText()
 
-            onboardMember(memberNameAlice)
-            onboardMember(memberNameBob)
+            val cpiFile = createTestCpiOfVersion("1.0")
+            val cpiChecksum = uploadCpi(cpiFile)
+
+            onboardMember(memberNameAlice, cpiChecksum)
+            onboardMember(memberNameBob, cpiChecksum)
 
             assertThat(getGroupMembers().size).isEqualTo(3)
+        }
+
+        private fun createTestCpiOfVersion(cpiVersion: String): File {
+            val cpiFile = File.createTempFile("test-cpi-v$cpiVersion-", ".cpi").also {
+                it.deleteOnExit()
+                it.delete()
+            }
+            CpiV2Creator.createCpi(
+                cpbPath = Path.of(cpbLocation),
+                outputFilePath = cpiFile.toPath(),
+                cpiAttributes = CpiAttributes(
+                    cpiName = cpiName,
+                    cpiVersion = cpiVersion,
+                    cpiUpgrade = false,
+                ),
+                groupPolicy = File(defaultGroupPolicyLocation).readText(),
+                signingOptions = signingOptions,
+            )
+            require(cpiFile.isFile) { "Failed to create CPI file $cpiFile" }
+            return cpiFile
+        }
+
+        private fun uploadCpi(cpiFile: File): Checksum {
+            val cpiUploadStatus = cpiUploader.uploadCPI(cpiFile)
+            return cpiUploader.cpiChecksum(RequestId(cpiUploadStatus.id))
         }
 
         private fun onboardMgm() {
@@ -72,10 +113,10 @@ class UpgradeCpiTest {
                 .first { it.holdingIdentity.x500Name == memberName.toString() }
                 .holdingIdentity.shortHash
 
-        private fun onboardMember(memberName: MemberX500Name) {
+        private fun onboardMember(memberName: MemberX500Name, cpiChecksum: Checksum) {
             CommandLine(OnboardMember()).execute(
                 memberName.toString(),
-                "--cpb-file=$cpbLocation", // TODO: prepare the CPI file
+                "--cpi-hash=${cpiChecksum.value}",
                 "--group-policy-file=$defaultGroupPolicyLocation",
                 targetUrl,
                 user,
