@@ -2,6 +2,7 @@ package net.corda.cli.plugins.network
 
 import net.corda.cli.plugins.common.RestCommand
 import picocli.CommandLine.Command
+import picocli.CommandLine.ExitCode
 import picocli.CommandLine.Option
 import java.io.File
 
@@ -42,11 +43,13 @@ class UpgradeCpi : Runnable, RestCommand() {
         // Input Validation:
 
         // 1. Require dynamic network (network config array includes mgmNode)
+        // 1.5 Ignore Notary nodes from the config file !!!
         // 2. Use mgmNode's X500Name and cpi name to query MGM VNode holdingId
         // 3. Lookup members known to MGM holdingId
         // 4. Validate that all members from the config file are present in the response:
         //      - based on X500 name
         //      - NOT based on CPI name, which might be different to what is defined in the config file
+        // TODO what should we do with the members' CPI name defined in the config file?
 
         // 5. Validate that all members' CPI information is different from the new CPI file's attributes
         // 6. For every target member, we can use groupId and X500 name to infer holdingId

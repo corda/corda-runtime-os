@@ -11,14 +11,15 @@ import net.corda.sdk.packaging.CpiUploader
 import net.corda.sdk.packaging.CpiV2Creator
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatCode
+import org.assertj.core.api.Assertions.assertThatException
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import picocli.CommandLine
 import java.io.File
 import java.nio.file.Path
-import java.time.Duration
-import java.time.Instant
 import java.util.UUID
 
 class UpgradeCpiTest {
@@ -54,6 +55,8 @@ class UpgradeCpiTest {
         private val cpiName = "MyCorDapp-${UUID.randomUUID()}"
         private val signingOptions = OnboardMember().createDefaultSingingOptions().asSigningOptionsSdk
         private val cpiUploader = CpiUploader(restClient)
+        private lateinit var mgmMemberInfo: RestMemberInfo
+        private lateinit var mgmCpiName: String
 
         @BeforeAll
         @JvmStatic
@@ -63,22 +66,20 @@ class UpgradeCpiTest {
             // TODO is it needed?
             groupId = ObjectMapper().readTree(File(defaultGroupPolicyLocation).readText()).get("groupId").asText()
 
-            val cpiFile = createTestCpiOfVersion("1.0")
+            val cpiFile = createCpiFile("1.0")
             val cpiChecksum = uploadCpi(cpiFile)
-
-
 
             onboardMember(memberNameAlice, cpiChecksum)
             // Use different CPI metadata for Bob (but same corDapp)
             onboardMember(
                 memberNameBob,
-                uploadCpi(createTestCpiOfVersion("2.0", "FOOBAR")),
+                uploadCpi(createCpiFile("2.0", "FOOBAR-${UUID.randomUUID()}")),
             )
 
             assertThat(getGroupMembers().size).isEqualTo(3)
         }
 
-        private fun createTestCpiOfVersion(cpiVersion: String, cpiName: String = UpgradeCpiTest.cpiName): File {
+        private fun createCpiFile(cpiVersion: String, cpiName: String = UpgradeCpiTest.cpiName): File {
             val cpiFile = File.createTempFile("test-cpi-v$cpiVersion-", ".cpi").also {
                 it.deleteOnExit()
                 it.delete()
@@ -107,6 +108,8 @@ class UpgradeCpiTest {
             CommandLine(OnboardMgm()).execute(mgmName.toString(), targetUrl, user, password, INSECURE)
             mgmHoldingId = getHoldingIdForMember(mgmName)
             assertThat(getGroupMembersNames()).containsExactly(mgmName.toString())
+            mgmMemberInfo = getGroupMembers().first { it.memberContext["corda.name"] == mgmName.toString() }
+            mgmCpiName = mgmMemberInfo.memberContext["corda.cpi.name"]!!
         }
 
         private fun getGroupMembers(): List<RestMemberInfo> =
@@ -114,7 +117,7 @@ class UpgradeCpiTest {
 
         private fun getGroupMembersNames(): List<String> = getGroupMembers().map { it.memberContext["corda.name"]!! }
 
-        private fun getHoldingIdForMember(memberName: MemberX500Name): String =
+        private fun getHoldingIdForMember(memberName: MemberX500Name): String = // TODO rework to use groupId?
             restClient.virtualNodeClient.getVirtualnode().virtualNodes
                 .first { it.holdingIdentity.x500Name == memberName.toString() }
                 .holdingIdentity.shortHash
@@ -139,8 +142,54 @@ class UpgradeCpiTest {
         outputStub = OutputStub()
     }
 
+    private fun createFile(contents: String): File {
+        val networkConfigFile = File.createTempFile("network-config-", ".json").also {
+            it.deleteOnExit()
+            it.writeText(contents)
+        }
+        return networkConfigFile
+    }
+
     @Test
-    fun `foo`() {
-        println("Foo")
+    fun `feature not implemented throws an error`() {
+        val newCpiName = "MyCorDapp-${UUID.randomUUID()}"
+        val cpiFile = createCpiFile(cpiVersion = "2.0", cpiName = newCpiName)
+        val networkConfigFile = createFile(
+            """
+                [
+                  {
+                    "x500Name" : "$mgmName",
+                    "cpi" : "$mgmCpiName",
+                    "mgmNode" : "true"
+                  },
+                  {
+                    "x500Name" : "$memberNameAlice",
+                    "cpi" : "whatever",
+                    "mgmNode" : "false"
+                  },
+                  {
+                    "x500Name" : "$memberNameBob",
+                    "cpi" : "ignored"
+                  },
+                  {
+                    "x500Name" : "CN=NotaryRep1, OU=Test Dept, O=R3, L=London, C=GB",
+                    "cpi" : "NotaryServer",
+                    "serviceX500Name": "CN=NotaryService, OU=Test Dept, O=R3, L=London, C=GB",
+                    "flowProtocolName" : "com.r3.corda.notary.plugin.nonvalidating",
+                    "backchainRequired" : "true"
+                  }
+                ]
+            """.trimIndent()
+        )
+        assertThatThrownBy {
+            CommandLine(UpgradeCpi()).execute(
+                "--cpi-file=${cpiFile.absolutePath}",
+                "--network-config-file=${networkConfigFile.absolutePath}",
+                targetUrl,
+                user,
+                password,
+                INSECURE,
+            )
+        }.isInstanceOf(NotImplementedError::class.java)
     }
 }
