@@ -32,8 +32,29 @@ class UpgradeCpi : Runnable, RestCommand() {
     }
 
     private fun upgradeCpi() {
+        // Require input files exist
         require(cpiFile.isFile) { "CPI file '$cpiFile' not found." }
         require(networkConfigFile.isFile) { "Network configuration file '$cpiFile' not found." }
+
+        // Require that CPI is a valid CPI file, output the CPI attributes (name, version, etc.)
+        // Parse network configuration file. Require that it is successfully parsed.
+
+        // Input Validation:
+
+        // 1. Require dynamic network (network config array includes mgmNode)
+        // 2. Use mgmNode's X500Name and cpi name to query MGM VNode holdingId
+        // 3. Lookup members known to MGM holdingId
+        // 4. Validate that all members from the config file are present in the response:
+        //      - based on X500 name
+        //      - NOT based on CPI name, which might be different to what is defined in the config file
+
+        // 5. Validate that all members' CPI information is different from the new CPI file's attributes
+        // 6. For every target member, we can use groupId and X500 name to infer holdingId
+        // 7. Verify that VNodes with the holdingId exist
+        // 8. Verify that VNodes _don't use BYODB feature_
+
+        // Once all requirements are met, we can loop through each target member and perform the upgrade
+
         TODO("Not implemented yet")
     }
 }

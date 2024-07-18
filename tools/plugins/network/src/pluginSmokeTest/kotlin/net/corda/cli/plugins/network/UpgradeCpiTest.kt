@@ -31,7 +31,7 @@ class UpgradeCpiTest {
         private val password = "--password=${DEFAULT_CLUSTER.rest.password}"
         private const val INSECURE = "--insecure=true"
 
-        private fun getMemberName(name: String = "Member") = MemberX500Name.parse("CN=$name-${UUID.randomUUID()}, L=London, C=GB")
+        private fun getMemberName(name: String = "Member") = MemberX500Name.parse("O=$name-${UUID.randomUUID()}, L=London, C=GB")
 
         private val mgmName = getMemberName("MGM")
         private val memberNameAlice = getMemberName("Alice")
@@ -66,13 +66,19 @@ class UpgradeCpiTest {
             val cpiFile = createTestCpiOfVersion("1.0")
             val cpiChecksum = uploadCpi(cpiFile)
 
+
+
             onboardMember(memberNameAlice, cpiChecksum)
-            onboardMember(memberNameBob, cpiChecksum)
+            // Use different CPI metadata for Bob (but same corDapp)
+            onboardMember(
+                memberNameBob,
+                uploadCpi(createTestCpiOfVersion("2.0", "FOOBAR")),
+            )
 
             assertThat(getGroupMembers().size).isEqualTo(3)
         }
 
-        private fun createTestCpiOfVersion(cpiVersion: String): File {
+        private fun createTestCpiOfVersion(cpiVersion: String, cpiName: String = UpgradeCpiTest.cpiName): File {
             val cpiFile = File.createTempFile("test-cpi-v$cpiVersion-", ".cpi").also {
                 it.deleteOnExit()
                 it.delete()
