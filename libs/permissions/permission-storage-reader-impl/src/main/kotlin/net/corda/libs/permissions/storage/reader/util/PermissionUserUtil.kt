@@ -8,7 +8,7 @@ private typealias UserLogin = String
 internal object PermissionUserUtil {
     // Query to get all the Permissions for each Group
     // InternalPermissionWithParentGroupQueryDto.loginName is empty to signify that it is a Group
-    const val userGroupPermissionsQuery =
+    const val allGroupPermissionsQuery =
         """
                 SELECT DISTINCT NEW net.corda.permissions.query.dto.InternalPermissionWithParentGroupQueryDto(
                 g.id,
@@ -49,7 +49,7 @@ internal object PermissionUserUtil {
     fun calculatePermissionsForUsers(em: EntityManager): Map<UserLogin, List<InternalPermissionQueryDto>> {
         // Gets a map with a key of Group ID and value of its associated list of Permissions
         val groupPermissionMap = em.createQuery(
-            userGroupPermissionsQuery,
+            allGroupPermissionsQuery,
             InternalPermissionWithParentGroupQueryDto::class.java
         ).resultList.groupBy { it.id }
 
