@@ -1,5 +1,6 @@
 package net.corda.libs.permissions.endpoints.common
 
+import net.corda.libs.permissions.common.exception.ConcurrentEntityModificationException
 import net.corda.libs.permissions.common.exception.EntityAlreadyExistsException
 import net.corda.libs.permissions.common.exception.EntityAssociationAlreadyExistsException
 import net.corda.libs.permissions.common.exception.EntityAssociationDoesNotExistException
@@ -14,6 +15,7 @@ import net.corda.rest.exception.ExceptionDetails
 import net.corda.rest.exception.HttpApiException
 import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.exception.InvalidStateChangeException
 import net.corda.rest.exception.ResourceAlreadyExistsException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
@@ -50,6 +52,10 @@ fun <T : Any?> withPermissionManager(
             )
             EntityAssociationAlreadyExistsException::class.java.name,
             EntityAlreadyExistsException::class.java.name -> throw ResourceAlreadyExistsException(
+                exceptionSimpleName,
+                ExceptionDetails(e.exceptionType, e.message!!)
+            )
+            ConcurrentEntityModificationException::class.java.name -> throw InvalidStateChangeException(
                 exceptionSimpleName,
                 ExceptionDetails(e.exceptionType, e.message!!)
             )
