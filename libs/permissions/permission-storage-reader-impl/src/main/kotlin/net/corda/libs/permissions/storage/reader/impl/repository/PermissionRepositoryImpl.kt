@@ -18,8 +18,6 @@ import javax.persistence.EntityManagerFactory
 @Suppress("TooManyFunctions")
 class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFactory) : PermissionRepository {
 
-    private val ROOT = null
-
     companion object {
         // Query to get all the Permissions for each Group
         // InternalPermissionWithParentGroupQueryDto.loginName is empty to signify that it is a Group
@@ -126,15 +124,15 @@ class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFa
         userPermissionsFromRolesAndGroups: Map<UserLogin, List<InternalPermissionQueryDto>>,
         timeOfPermissionSummary: Instant,
     ): Map<String, InternalUserPermissionSummary> {
-        return userLogins.associateBy({ it.loginName }) {
+        return userLogins.associateBy({ user -> user.loginName }) { user ->
             // rolePermissionsQuery features inner joins so a user without roles won't be present in this map
             val permissionsInheritedFromRoles = (
-                (userPermissionsFromRolesAndGroups[it.loginName] ?: emptyList()).toSortedSet(PermissionQueryDtoComparator())
+                (userPermissionsFromRolesAndGroups[user.loginName] ?: emptyList()).toSortedSet(PermissionQueryDtoComparator())
                 )
 
             InternalUserPermissionSummary(
-                it.loginName,
-                it.enabled,
+                user.loginName,
+                user.enabled,
                 permissionsInheritedFromRoles,
                 timeOfPermissionSummary
             )
@@ -160,30 +158,24 @@ class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFa
             InternalPermissionWithParentGroupQueryDto::class.java
         ).resultList.groupBy { it.id }
 
+        // Generate a map that allows us to find all children given a parentId
         val parentIdToChildListMap = HashMap<String?, MutableList<Node>>()
+        getParentToChildListMap(parentIdToChildListMap, groupPermissionMap)
+        getParentToChildListMap(parentIdToChildListMap, userPermissionMap)
 
-        // For each Group check if the first permission's parentGroupId exists in parentIdToChildListMap and add the Node to its value
+        return calculatePermissions(parentIdToChildListMap)
+    }
+
+    private fun getParentToChildListMap(
+        parentIdToChildListMap: HashMap<String?, MutableList<Node>>,
+        permissionMap: Map<String, List<InternalPermissionWithParentGroupQueryDto>>
+    ) {
+        // For each element check if the first permission's parentId exists in parentIdToChildListMap and add the Node to its value
         // otherwise create a new entry with the parentGroupId and add the Node
-        groupPermissionMap.forEach { groupIdAndPermissionList ->
-            parentIdToChildListMap.computeIfAbsent(groupIdAndPermissionList.value.first().parentGroupId) { mutableListOf() }
-                .add(Node(groupIdAndPermissionList.value))
+        permissionMap.forEach { (_, permissionsList) ->
+            parentIdToChildListMap.computeIfAbsent(permissionsList.first().parentGroupId) { mutableListOf() }
+                .add(Node(permissionsList))
         }
-
-        // For each User check if the first permission's parentGroupId exists in parentIdToChildListMap and add the Node to its value
-        // otherwise create a new entry with the parentGroupId and add the Node
-        userPermissionMap.forEach { userIdAndPermissionList ->
-            parentIdToChildListMap.computeIfAbsent(userIdAndPermissionList.value.first().parentGroupId) { mutableListOf() }
-                .add(Node(userIdAndPermissionList.value))
-        }
-
-        val userPermissions = mutableMapOf<UserLogin, List<InternalPermissionQueryDto>>()
-
-        // For each root node build a tree and calculate the permissions for each user
-        parentIdToChildListMap[ROOT]?.forEach { root ->
-            buildTree(root, parentIdToChildListMap)
-            calculatePermissions(root, mutableListOf(), userPermissions)
-        }
-        return userPermissions
     }
 
     // Builds the tree from the root node
@@ -197,6 +189,20 @@ class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFa
         }
     }
 
+    private fun calculatePermissions(
+        parentIdToChildListMap: HashMap<String?, MutableList<Node>>
+    ): Map<UserLogin, List<InternalPermissionQueryDto>> {
+        val userPermissions = mutableMapOf<UserLogin, List<InternalPermissionQueryDto>>()
+        // For each root node build a tree and calculate the permissions for each user
+        val root = null
+        parentIdToChildListMap[root]?.forEach { rootNode ->
+            buildTree(rootNode, parentIdToChildListMap)
+            calculatePermissions(rootNode, mutableListOf(), userPermissions)
+        }
+
+        return userPermissions
+    }
+
     // Calculates all the permissions for each user by traversing the tree and adding the permissions to the userPermissions map
     private fun calculatePermissions(
         node: Node,
@@ -208,7 +214,7 @@ class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFa
 
         // If the current Node has no children, add the permissions to the userPermissions map
         if (!node.hasChildren()) {
-            // If loginName there is no loginName, it means it is a group and we don't want to add it to the userPermissions map
+            // If there is no loginName, it means it is a group and we don't want to add it to the userPermissions map
             if (!node.permissionList.first().loginName.isNullOrEmpty()) {
                 userPermissions[node.permissionList.first().loginName!!] = permissions.map {
                     InternalPermissionQueryDto(
