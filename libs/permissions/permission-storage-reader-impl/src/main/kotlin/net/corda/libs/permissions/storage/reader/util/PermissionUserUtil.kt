@@ -119,7 +119,7 @@ internal object PermissionUserUtil {
             if (!node.permissionList.first().loginName.isNullOrEmpty()) {
                 userPermissions[node.permissionList.first().loginName!!] = permissions.map {
                     InternalPermissionQueryDto(
-                        it.loginName!!,
+                        node.permissionList.first().loginName!!,
                         it.permissionId,
                         it.groupVisibility,
                         it.virtualNode,
