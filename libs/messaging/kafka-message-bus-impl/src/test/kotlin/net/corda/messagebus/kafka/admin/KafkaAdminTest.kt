@@ -1,19 +1,24 @@
 package net.corda.messagebus.kafka.admin
 
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.clients.admin.ListTopicsResult
 import org.apache.kafka.common.KafkaFuture
+import org.apache.kafka.common.errors.TimeoutException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.util.concurrent.ExecutionException
 
 class KafkaAdminTest {
 
-    private var adminClient = mock<AdminClient>()
-
     @Test
-    fun `When list topics then return all none internal topics from kafka`() {
+    fun `listTopics returns all internal topics from kafka`() {
+        var adminClient = mock<AdminClient>()
+
         val kafkaFuture = mock<KafkaFuture<Set<String>>>().apply {
             whenever(get()).thenReturn(setOf("topic1"))
         }
@@ -23,8 +28,56 @@ class KafkaAdminTest {
 
         whenever(adminClient.listTopics()).thenReturn(result)
 
-        val target = KafkaAdmin(adminClient)
+        val admin = KafkaAdmin(adminClient)
 
-        assertThat(target.getTopics()).containsOnly("topic1")
+        assertThat(admin.getTopics()).containsOnly("topic1")
+    }
+
+    @Test
+    fun `getTopics will retry an exception and be successful when retries not exceeded`() {
+        val adminClient = mock<AdminClient>()
+        val kafkaFuture: KafkaFuture<Set<String>> = mock()
+
+        val topicResult = mock<ListTopicsResult>()
+        Mockito.`when`(adminClient.listTopics()).thenReturn(topicResult)
+        Mockito.`when`(topicResult.names()).thenReturn(kafkaFuture)
+
+        var retryNumber = 0
+        Mockito.`when`(kafkaFuture.get()).thenAnswer {
+            if (retryNumber <= 3) {
+                retryNumber++
+                throw (ExecutionException(TimeoutException("timed out")))
+            } else {
+                setOf("topic1")
+            }
+        }
+
+        val admin = KafkaAdmin(adminClient)
+
+        assertThat(admin.getTopics()).containsOnly("topic1")
+    }
+
+    @Test
+    fun `getTopics will retry an exception and rethrow when retries exceeded`() {
+        val adminClient = mock<AdminClient>()
+        val kafkaFuture: KafkaFuture<Set<String>> = mock()
+
+        val topicResult = mock<ListTopicsResult>()
+        Mockito.`when`(adminClient.listTopics()).thenReturn(topicResult)
+        Mockito.`when`(topicResult.names()).thenReturn(kafkaFuture)
+
+        var retryNumber = 0
+        Mockito.`when`(kafkaFuture.get()).thenAnswer {
+            if (retryNumber <= 8) {
+                retryNumber++
+                throw (ExecutionException(TimeoutException("timed out")))
+            } else {
+                setOf("topic1")
+            }
+        }
+
+        val admin = KafkaAdmin(adminClient)
+
+        assertThrows<CordaRuntimeException> { admin.getTopics() }
     }
 }
