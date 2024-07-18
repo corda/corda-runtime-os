@@ -24,7 +24,8 @@ data class InternalPermissionWithParentGroupQueryDto(
     val virtualNode: String?,
     val permissionString: String,
     val permissionType: PermissionType,
-    val parentGroupId: String?
+    val parentGroupId: String?,
+    val loginName: String?
 )
 
 /**
