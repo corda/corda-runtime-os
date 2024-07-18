@@ -6,10 +6,10 @@ import javax.persistence.EntityManager
 
 private typealias UserLogin = String
 internal object PermissionUserUtil {
-        // Query to get all the Permissions for each Group
-        // InternalPermissionWithParentGroupQueryDto.loginName is empty to signify that it is a Group
-        const val userGroupPermissionsQuery =
-            """
+    // Query to get all the Permissions for each Group
+    // InternalPermissionWithParentGroupQueryDto.loginName is empty to signify that it is a Group
+    const val userGroupPermissionsQuery =
+        """
                 SELECT DISTINCT NEW net.corda.permissions.query.dto.InternalPermissionWithParentGroupQueryDto(
                 g.id,
                 p.id,
@@ -27,9 +27,9 @@ internal object PermissionUserUtil {
             JOIN Permission p ON rpa.permission.id = p.id
             """
 
-        // Query to get all the Permissions for each User
-        const val allUsersPermissionsQuery =
-            """
+    // Query to get all the Permissions for each User
+    const val allUsersPermissionsQuery =
+        """
                 SELECT DISTINCT NEW net.corda.permissions.query.dto.InternalPermissionWithParentGroupQueryDto(
                 u.id,
                 p.id,
