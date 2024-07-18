@@ -3,6 +3,7 @@ package net.corda.messaging.mediator
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient
@@ -70,7 +71,7 @@ class MessageBusClient(
 
         future.completeExceptionally(
             if (fatal) CordaMessageAPIFatalException(message, exception)
-            else CordaMessageAPIProducerRequiresReset(message, exception)
+            else CordaMessageAPIIntermittentException(message, exception)
         )
     }
 
