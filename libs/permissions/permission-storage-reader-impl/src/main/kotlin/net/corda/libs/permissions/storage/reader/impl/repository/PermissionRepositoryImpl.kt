@@ -179,7 +179,7 @@ class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFa
         val userPermissions = mutableMapOf<UserLogin, List<InternalPermissionQueryDto>>()
 
         // For each root node build a tree and calculate the permissions for each user
-        parentIdToChildListMap[ROOT]!!.forEach { root ->
+        parentIdToChildListMap[ROOT]?.forEach { root ->
             buildTree(root, parentIdToChildListMap)
             calculatePermissions(root, mutableListOf(), userPermissions)
         }
