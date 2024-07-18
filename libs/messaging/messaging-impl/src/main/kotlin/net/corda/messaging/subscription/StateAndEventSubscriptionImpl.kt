@@ -247,7 +247,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             return true
         }
 
-        // CordaMessageAPIProducerRequiresReset could be thrown here
         commitTimer.recordCallable {
             producer.beginTransaction()
             producer.sendRecords(outputRecords.toCordaProducerRecords())
