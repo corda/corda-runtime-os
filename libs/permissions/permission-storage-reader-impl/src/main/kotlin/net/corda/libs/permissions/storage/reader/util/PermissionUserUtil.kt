@@ -8,10 +8,14 @@ import net.corda.permissions.query.dto.InternalPermissionQueryDto
 import net.corda.permissions.query.dto.InternalPermissionWithParentGroupQueryDto
 import net.corda.permissions.query.dto.InternalUserEnabledQueryDto
 import net.corda.permissions.query.dto.InternalUserGroup
+import org.slf4j.LoggerFactory
 import java.time.Instant
 import javax.persistence.EntityManager
 
 internal object PermissionUserUtil {
+
+    private val logger = LoggerFactory.getLogger(this::class.java)
+
     /**
      * Query to get all the Permissions for each Group.
      * InternalPermissionWithParentGroupQueryDto.loginName is empty to signify that it is a Group.
@@ -66,12 +70,18 @@ internal object PermissionUserUtil {
         val groupList = getUserGroupPermissions(em, allGroupPermissionsQuery)
         val userList = getUserGroupPermissions(em, allUsersPermissionsQuery)
 
+        logger.debug("List of Group permissions: {}", groupList)
+        logger.debug("List of User permissions {}", userList)
+
         // Generate a map that allows us to find all children given a parentId
         val parentIdToChildListMap = HashMap<String?, MutableList<Node>>()
         getParentToChildListMap(parentIdToChildListMap, groupList)
         getParentToChildListMap(parentIdToChildListMap, userList)
 
-        return calculatePermissions(parentIdToChildListMap)
+        val calculatedPermission = calculatePermissions(parentIdToChildListMap)
+        logger.debug("Calculated permissions: {}", calculatedPermission)
+
+        return calculatedPermission
     }
 
     fun aggregatePermissionSummariesForUsers(
@@ -79,7 +89,7 @@ internal object PermissionUserUtil {
         userMap: Map<UserLogin, InternalUserGroup>,
         timeOfPermissionSummary: Instant,
     ): Map<String, InternalUserPermissionSummary> {
-        return userLogins.associateBy({ user -> user.loginName }) { userLogin ->
+        val userPermissionSummaries = userLogins.associateBy({ user -> user.loginName }) { userLogin ->
             val permissionSortedSet =
                 getPermissionListAsDto(userLogin.loginName, userMap).toSortedSet(PermissionQueryDtoComparator())
 
@@ -90,6 +100,10 @@ internal object PermissionUserUtil {
                 timeOfPermissionSummary
             )
         }
+
+        logger.debug("User permission summaries: {}", userPermissionSummaries)
+
+        return userPermissionSummaries
     }
 
     private fun getPermissionListAsDto(
