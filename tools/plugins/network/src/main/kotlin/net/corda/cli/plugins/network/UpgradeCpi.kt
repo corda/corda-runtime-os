@@ -2,7 +2,6 @@ package net.corda.cli.plugins.network
 
 import net.corda.cli.plugins.common.RestCommand
 import picocli.CommandLine.Command
-import picocli.CommandLine.ExitCode
 import picocli.CommandLine.Option
 import java.io.File
 import java.nio.file.Files
@@ -59,9 +58,10 @@ class UpgradeCpi : Runnable, RestCommand() {
         // 7. Verify that VNodes with the holdingId exist
         // 8. Verify that VNodes _don't use BYOD feature_
 
-        // 9. Upload the new CPI file and get checksum
+        // 9. Verify that target members list is not empty
+
+        // 10. Upload the new CPI file and get checksum
 
         // Once all requirements are met, we can loop through each target member and perform the upgrade
-
     }
 }

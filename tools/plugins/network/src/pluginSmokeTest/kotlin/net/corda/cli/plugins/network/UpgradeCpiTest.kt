@@ -164,7 +164,7 @@ class UpgradeCpiTest {
     // TODO Move to a separate file
     data class MemberNode(val x500Name: MemberX500Name, val cpi: String = "Whatever", val mgmNode: Boolean? = null)
 
-    private fun createNetworkConfigFile(): File = createNetworkConfigFile(
+    private fun createDefaultNetworkConfigFile(): File = createNetworkConfigFile(
         MemberNode(memberNameAlice),
         MemberNode(memberNameBob),
     )
@@ -216,7 +216,7 @@ class UpgradeCpiTest {
     fun `feature not implemented throws an error`() {
         val newCpiName = "MyCorDapp-${UUID.randomUUID()}"
         val cpiFile = createCpiFile(cpiVersion = "2.0", cpiName = newCpiName)
-        val networkConfigFile = createNetworkConfigFile()
+        val networkConfigFile = createDefaultNetworkConfigFile()
         assertThatThrownBy {
             executeUpgradeCpi(
                 "--cpi-file=${cpiFile.absolutePath}",
@@ -240,7 +240,7 @@ class UpgradeCpiTest {
 
     @Test
     fun `CPI file is not readable`() {
-        val networkConfigFilePath = createNetworkConfigFile().absolutePath
+        val networkConfigFilePath = createDefaultNetworkConfigFile().absolutePath
         val cpiFilePath = File("non-existing-${UUID.randomUUID()}.cpi").absolutePath
 
         val (errText, exitCode) = TestUtils.captureStdErr {
@@ -271,7 +271,7 @@ class UpgradeCpiTest {
 
     @Test
     fun `CPI is not a valid corda package`() {
-        val networkConfigFile = createNetworkConfigFile()
+        val networkConfigFile = createDefaultNetworkConfigFile()
         val invalidCpiFile = File.createTempFile("invalid-cpi-", ".cpi").also {
             it.deleteOnExit()
             it.writeText("This is not a valid CPI file")
@@ -304,44 +304,122 @@ class UpgradeCpiTest {
 
     @Test
     fun `MGM node is not found in the network config file`() {
-
+        val noMgmConfigFile = createNetworkConfigFile(mgm = false)
+        val (errText, exitCode) = TestUtils.captureStdErr {
+            executeUpgradeCpi(
+                "--cpi-file=${initialCpiFile.absolutePath}",
+                "--network-config-file=${noMgmConfigFile.absolutePath}",
+            )
+        }
+        assertThat(exitCode).isNotZero()
+        assertThat(errText).contains("Network configuration file does not contain MGM node")
     }
 
     @Test
     fun `more that one MGM node in the network config file`() {
-
+        val twoMgmConfigFile = createNetworkConfigFile(
+            MemberNode(memberNameAlice),
+            MemberNode(memberNameBob, mgmNode = true),
+            mgm = true,
+        )
+        val (errText, exitCode) = TestUtils.captureStdErr {
+            executeUpgradeCpi(
+                "--cpi-file=${initialCpiFile.absolutePath}",
+                "--network-config-file=${twoMgmConfigFile.absolutePath}",
+            )
+        }
+        assertThat(exitCode).isNotZero()
+        assertThat(errText).contains("Network configuration file contains more than one MGM node")
     }
 
     @Test
     fun `members are not found in the network config file`() {
-
+        val noMembersConfigFile = createNetworkConfigFile()
+        val (errText, exitCode) = TestUtils.captureStdErr {
+            executeUpgradeCpi(
+                "--cpi-file=${initialCpiFile.absolutePath}",
+                "--network-config-file=${noMembersConfigFile.absolutePath}",
+            )
+        }
+        assertThat(exitCode).isNotZero()
+        assertThat(errText).contains("Network configuration file does not contain any members to upgrade")
     }
 
     @Test
     fun `MGM is not found in Corda`() {
-
+        val aliceMgmConfigFile = createNetworkConfigFile(
+            MemberNode(memberNameAlice, "MGM", mgmNode = true),
+            mgm = false,
+        )
+        val (errText, exitCode) = TestUtils.captureStdErr {
+            executeUpgradeCpi(
+                "--cpi-file=${initialCpiFile.absolutePath}",
+                "--network-config-file=${aliceMgmConfigFile.absolutePath}",
+            )
+        }
+        assertThat(exitCode).isNotZero()
+        assertThat(errText).contains("MGM node $memberNameAlice is not found in Corda")
     }
 
     @Test
     fun `MGM in Corda doesn't hold any members`() {
-
+        // TODO this is a special case of the below test,
+        //  and it with the static test network setup it's problematic to setup another one with no members
     }
 
     @Test
     fun `(negative) some members from the config file are missing in Corda`() {
+        val missingMemberConfigFile = createNetworkConfigFile(
+            MemberNode(memberNameAlice),
+            MemberNode(memberNameBob),
+            MemberNode(memberNameCharlie),
+        )
+        val (errText, exitCode) = TestUtils.captureStdErr {
+            executeUpgradeCpi(
+                "--cpi-file=${initialCpiFile.absolutePath}",
+                "--network-config-file=${missingMemberConfigFile.absolutePath}",
+            )
+        }
+        assertThat(exitCode).isNotZero()
+        assertThat(errText)
+            .contains("One or more members from the network configuration file are not found in the target membership group:")
+            .contains(memberNameCharlie.toString())
+            .doesNotContain(
+                memberNameAlice.toString(),
+                memberNameBob.toString(),
+                notaryName.toString(),
+            )
 
     }
 
     @Test
-    fun `(or rather) validate that all members from the config file are present in Corda`() {
+    fun `all members from the config file are missing in Corda`() {
+        val dale = getMemberName("Dale")
+        val eddie = getMemberName("Eddie")
+        val frank = getMemberName("Frank")
 
+        val allUnknownMembersConfigFile = createNetworkConfigFile(
+            MemberNode(dale),
+            MemberNode(eddie),
+            MemberNode(frank),
+        )
+        val (errText, exitCode) = TestUtils.captureStdErr {
+            executeUpgradeCpi(
+                "--cpi-file=${initialCpiFile.absolutePath}",
+                "--network-config-file=${allUnknownMembersConfigFile.absolutePath}",
+            )
+        }
+
+        assertThat(exitCode).isNotZero()
+        assertThat(errText)
+            .contains("One or more members from the network configuration file are not found in the target membership group:")
+            .contains(dale.toString(), eddie.toString(), frank.toString())
     }
 
     @Test
     fun `some members CPI information is the same as the target CPI file's attributes`() {
         // read CPI information of the existing members
         // prepare CPI file with the same attributes as of one of the members
-
 
     }
 
@@ -350,15 +428,22 @@ class UpgradeCpiTest {
 
     }
 
-
     @Test
     fun `only members from the config file are upgraded, the rest in the group are skipped`() {
+        // read CPI information of the exiting members
 
+        // execute upgrade
+
+        // read CPI information of the member and verify CPI information of the upgraded and the skipped members
     }
 
     @Test
     fun `members are upgraded, MGM and Notary are skipped`() {
+        // read CPI information of the existing Notary and MGM members, as well as members
 
+        // execute upgrade
+
+        // verify that members are upgraded but MGM and Notary remain intact
     }
 
 }

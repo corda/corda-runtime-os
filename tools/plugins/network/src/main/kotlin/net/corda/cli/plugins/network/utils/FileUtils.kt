@@ -3,7 +3,6 @@ package net.corda.cli.plugins.network.utils
 import net.corda.v5.base.util.EncodingUtils.toBase64
 import java.io.File
 import java.nio.file.Files
-import java.nio.file.Path
 import java.security.MessageDigest
 
 fun Collection<File>.hash(): String {
