@@ -20,6 +20,7 @@ class GetRegistrationsTest {
         private val user = "--user=${DEFAULT_CLUSTER.rest.user}"
         private val password = "--password=${DEFAULT_CLUSTER.rest.password}"
         private const val INSECURE = "--insecure=true"
+        private const val WAIT = "--wait"
 
         private val mgmName = MemberX500Name.parse("O=MGM-${UUID.randomUUID()}, L=London, C=GB").toString()
         private fun memberName() = MemberX500Name.parse("O=Member-${UUID.randomUUID()}, L=London, C=GB")
@@ -57,6 +58,7 @@ class GetRegistrationsTest {
             user,
             password,
             INSECURE,
+            WAIT
         )
         val holdingIdentity = HoldingIdentityUtils.getHoldingIdentity(
             null,
@@ -86,6 +88,7 @@ class GetRegistrationsTest {
             user,
             password,
             INSECURE,
+            WAIT
         )
 
         CommandLine(GetRegistrations(outputStub)).execute(
@@ -110,6 +113,7 @@ class GetRegistrationsTest {
             user,
             password,
             INSECURE,
+            WAIT
         )
 
         CommandLine(GetRegistrations(outputStub)).execute(
@@ -133,6 +137,7 @@ class GetRegistrationsTest {
             user,
             password,
             INSECURE,
+            WAIT
         )
 
         CommandLine(GetRegistrations(outputStub)).execute(
