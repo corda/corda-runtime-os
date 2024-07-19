@@ -54,7 +54,9 @@ class UpgradeCpi : Runnable, RestCommand() {
         // 5. Validate that all members' CPI information is different from the new CPI file's attributes
         // 6. For every target member, we can use groupId and X500 name to infer holdingId
         // 7. Verify that VNodes with the holdingId exist
-        // 8. Verify that VNodes _don't use BYODB feature_
+        // 8. Verify that VNodes _don't use BYOD feature_
+
+        // 9. Upload the new CPI file and get checksum
 
         // Once all requirements are met, we can loop through each target member and perform the upgrade
 
