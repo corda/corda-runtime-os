@@ -19,7 +19,7 @@ data class InternalPermissionQueryDto(
  */
 data class InternalPermissionWithParentGroupQueryDto(
     val id: String,
-    val permissionId: String,
+    val permissionId: String?,
     val groupVisibility: String?,
     val virtualNode: String?,
     val permissionString: String?,

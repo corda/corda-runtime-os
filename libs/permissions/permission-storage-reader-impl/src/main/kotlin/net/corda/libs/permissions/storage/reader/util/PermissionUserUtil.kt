@@ -69,11 +69,10 @@ internal object PermissionUserUtil {
         userPermissionsFromRolesAndGroups: Map<UserLogin, List<InternalPermissionQueryDto>>,
         timeOfPermissionSummary: Instant,
     ): Map<String, InternalUserPermissionSummary> {
-        val userPermissionMap = userPermissionsFromRolesAndGroups.filter { it.value.isNotEmpty() }
         return userLogins.associateBy({ user -> user.loginName }) { user ->
             // rolePermissionsQuery features inner joins so a user without roles won't be present in this map
             val permissionsInheritedFromRoles = (
-                    (userPermissionMap[user.loginName] ?: emptyList()).toSortedSet(
+                    (userPermissionsFromRolesAndGroups[user.loginName] ?: emptyList()).toSortedSet(
                         PermissionQueryDtoComparator())
                     )
 
@@ -101,7 +100,7 @@ internal object PermissionUserUtil {
                 permissionList.firstOrNull()?.loginName,
                 permissionList.filter { !it.permissionString.isNullOrEmpty() }.map { permission ->
                     Permission(
-                        permission.permissionId,
+                        permission.permissionId!!,
                         permission.groupVisibility,
                         permission.virtualNode,
                         permission.permissionString!!,
