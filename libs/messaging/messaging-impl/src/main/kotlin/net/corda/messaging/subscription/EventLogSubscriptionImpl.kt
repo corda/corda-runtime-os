@@ -16,7 +16,6 @@ import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
-import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
@@ -75,9 +74,6 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.ON_NEXT_OPERATION)
         .build()
 
-    private lateinit var cordaProducer: CordaProducer
-    private lateinit var cordaConsumer: CordaConsumer<K, V>
-
     override val isRunning: Boolean
         get() = threadLooper.isRunning
 
@@ -103,14 +99,36 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
             attempts++
             try {
                 log.debug { "Attempt: $attempts" }
+                deadLetterRecords = mutableListOf()
+                val rebalanceListener = if (partitionAssignmentListener == null) {
+                    LoggingConsumerRebalanceListener(config.clientId)
+                } else {
+                    ForwardingRebalanceListener(config.topic, config.clientId, partitionAssignmentListener)
+                }
+                val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.EVENT_LOG)
 
-                createProducer()
-                createConsumer()
-
-                cordaConsumer.subscribe(config.topic)
-
-                threadLooper.updateLifecycleStatus(LifecycleStatus.UP)
-                pollAndProcessRecords(cordaConsumer, cordaProducer)
+                cordaConsumerBuilder.createConsumer(
+                    consumerConfig,
+                    config.messageBusConfig,
+                    processor.keyClass,
+                    processor.valueClass,
+                    { data ->
+                        log.error("Failed to deserialize record from ${config.topic}")
+                        deadLetterRecords.add(data)
+                    },
+                    rebalanceListener
+                ).use { cordaConsumer ->
+                    cordaConsumer.subscribe(config.topic)
+                    val producerConfig =
+                        ProducerConfig(config.clientId, config.instanceId, true, ProducerRoles.EVENT_LOG, false)
+                    cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig) { data ->
+                        log.warn("Failed to serialize record from ${config.topic}")
+                        deadLetterRecords.add(data)
+                    }.use { cordaProducer ->
+                        threadLooper.updateLifecycleStatus(LifecycleStatus.UP)
+                        pollAndProcessRecords(cordaConsumer, cordaProducer)
+                    }
+                }
 
                 attempts = 0
             } catch (ex: Exception) {
@@ -152,11 +170,6 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                 when (ex) {
                     is CordaMessageAPIFatalException -> {
                         throw ex
-                    }
-                    is CordaMessageAPIProducerRequiresReset -> {
-                        resetProducer()
-                        attempts++
-                        handlePollAndProcessIntermittentError(attempts, consumer, ex)
                     }
                     is CordaMessageAPIIntermittentException -> {
                         attempts++
@@ -250,61 +263,5 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                 }
             }
         }
-    }
-
-    /**
-     * Create a producer with the given [config].
-     */
-    private fun createProducer() {
-        val producerConfig = ProducerConfig(
-            clientId=config.clientId,
-            instanceId=config.instanceId,
-            transactional=true,
-            role=ProducerRoles.EVENT_LOG,
-            throwOnSerializationError=false
-        )
-
-        cordaProducer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig) { data ->
-            log.warn("Failed to serialize record from ${config.topic}")
-            deadLetterRecords.add(data)
-        }
-    }
-
-    /**
-     * Create a consumer with the given [config] and [partitionAssignmentListener].
-     */
-    private fun createConsumer() {
-        deadLetterRecords = mutableListOf()
-        val rebalanceListener = if (partitionAssignmentListener == null) {
-            LoggingConsumerRebalanceListener(config.clientId)
-        } else {
-            ForwardingRebalanceListener(config.topic, config.clientId, partitionAssignmentListener)
-        }
-
-        val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.EVENT_LOG)
-        cordaConsumer = cordaConsumerBuilder.createConsumer(
-            consumerConfig,
-            config.messageBusConfig,
-            processor.keyClass,
-            processor.valueClass,
-            { data ->
-                log.error("Failed to deserialize record from ${config.topic}")
-                deadLetterRecords.add(data)
-            },
-            rebalanceListener
-        )
-    }
-
-    /**
-     * Reset the producer by closing the current producer, and creating a new one.
-     */
-    private fun resetProducer() {
-        try {
-            cordaProducer.close()
-        } catch (ex: Exception) {
-            log.warn("Failed to close producer safely.", ex)
-        }
-
-        createProducer()
     }
 }
