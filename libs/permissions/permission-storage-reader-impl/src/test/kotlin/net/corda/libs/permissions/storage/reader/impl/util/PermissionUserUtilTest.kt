@@ -5,10 +5,10 @@ import net.corda.libs.permissions.storage.reader.util.PermissionUserUtil.allGrou
 import net.corda.libs.permissions.storage.reader.util.PermissionUserUtil.allUsersPermissionsQuery
 import net.corda.libs.permissions.storage.reader.util.PermissionUserUtil.calculatePermissionsForUsers
 import net.corda.permissions.model.PermissionType
+import net.corda.permissions.query.dto.InternalPermission
 import net.corda.permissions.query.dto.InternalPermissionQueryDto
 import net.corda.permissions.query.dto.InternalPermissionWithParentGroupQueryDto
 import net.corda.permissions.query.dto.InternalUserEnabledQueryDto
-import net.corda.permissions.query.dto.Permission
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doAnswer
@@ -142,9 +142,9 @@ class PermissionUserUtilTest {
         assertThat(calculatedPermissions).containsOnlyKeys("user1")
         assertThat(calculatedPermissions["user1"]?.permissionsList).size().isEqualTo(3)
         assertThat(calculatedPermissions["user1"]?.permissionsList).containsExactlyInAnyOrder(
-            Permission("permissionId1", null, null, "ABC", PermissionType.ALLOW),
-            Permission("permissionId2", null, null, "XYZ", PermissionType.ALLOW),
-            Permission("permissionId3", null, null, "XYZ", PermissionType.DENY)
+            InternalPermission("permissionId1", null, null, "ABC", PermissionType.ALLOW),
+            InternalPermission("permissionId2", null, null, "XYZ", PermissionType.ALLOW),
+            InternalPermission("permissionId3", null, null, "XYZ", PermissionType.DENY)
         )
     }
 
@@ -221,12 +221,12 @@ class PermissionUserUtilTest {
         assertThat(calculatedPermissions).containsOnlyKeys("user1")
         assertThat(calculatedPermissions["user1"]?.permissionsList).size().isEqualTo(6)
         assertThat(calculatedPermissions["user1"]?.permissionsList).containsExactlyInAnyOrder(
-            Permission("permissionId1", null, null, "ABC", PermissionType.ALLOW),
-            Permission("permissionId2", null, null, "XYZ", PermissionType.ALLOW),
-            Permission("permissionId3", null, null, "DEF", PermissionType.ALLOW),
-            Permission("permissionId4", null, null, "GHI", PermissionType.ALLOW),
-            Permission("permissionId5", null, null, "XYZ", PermissionType.ALLOW),
-            Permission("permissionId6", null, null, "XYZ", PermissionType.DENY)
+            InternalPermission("permissionId1", null, null, "ABC", PermissionType.ALLOW),
+            InternalPermission("permissionId2", null, null, "XYZ", PermissionType.ALLOW),
+            InternalPermission("permissionId3", null, null, "DEF", PermissionType.ALLOW),
+            InternalPermission("permissionId4", null, null, "GHI", PermissionType.ALLOW),
+            InternalPermission("permissionId5", null, null, "XYZ", PermissionType.ALLOW),
+            InternalPermission("permissionId6", null, null, "XYZ", PermissionType.DENY)
         )
     }
 
@@ -403,9 +403,9 @@ class PermissionUserUtilTest {
         assertThat(calculatedPermissions).containsOnlyKeys("user1")
         assertThat(calculatedPermissions["user1"]?.permissionsList).size().isEqualTo(3)
         assertThat(calculatedPermissions["user1"]?.permissionsList).containsExactlyInAnyOrder(
-            Permission("permissionId1", null, null, "ABC", PermissionType.ALLOW),
-            Permission("permissionId2", null, null, "XYZ", PermissionType.ALLOW),
-            Permission("permissionId3", null, null, "DEF", PermissionType.ALLOW)
+            InternalPermission("permissionId1", null, null, "ABC", PermissionType.ALLOW),
+            InternalPermission("permissionId2", null, null, "XYZ", PermissionType.ALLOW),
+            InternalPermission("permissionId3", null, null, "DEF", PermissionType.ALLOW)
         )
     }
 
@@ -435,7 +435,7 @@ class PermissionUserUtilTest {
         assertThat(calculatedPermissions).containsOnlyKeys("user1")
         assertThat(calculatedPermissions["user1"]?.permissionsList).size().isEqualTo(1)
         assertThat(calculatedPermissions["user1"]?.permissionsList).containsExactlyInAnyOrder(
-            Permission("permissionId1", null, null, "XYZ", PermissionType.ALLOW)
+            InternalPermission("permissionId1", null, null, "XYZ", PermissionType.ALLOW)
         )
     }
 
@@ -602,7 +602,7 @@ class PermissionUserUtilTest {
         assertThat(aggregatedPermissions).containsOnlyKeys("user1")
         assertThat(aggregatedPermissions["user1"]!!.permissions.size).isEqualTo(2)
 
-        // containsExactly() will check the order of the elements and we should expect DENY first
+        // containsExactly() will check the order of the elements, and we should expect DENY first
         assertThat(aggregatedPermissions["user1"]!!.permissions).containsExactly(
             InternalPermissionQueryDto("user1", "permissionId2", null, null, "ABC", PermissionType.DENY),
             InternalPermissionQueryDto("user1", "permissionId1", null, null, "ABC", PermissionType.ALLOW)

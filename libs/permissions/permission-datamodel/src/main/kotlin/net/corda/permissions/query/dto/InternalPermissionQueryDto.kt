@@ -29,14 +29,17 @@ data class InternalPermissionWithParentGroupQueryDto(
     val loginName: String?
 )
 
+/**
+ * Internal data class which represents a group or a user with associated permissions depending on whether the loginName is null or not.
+ */
 data class InternalUserGroup(
     val id: String,
     val parentId: String?,
     val loginName: String?,
-    val permissionsList: List<Permission>
+    val permissionsList: List<InternalPermission>
 )
 
-data class Permission(
+data class InternalPermission(
     val id: String,
     val groupVisibility: String?,
     val virtualNode: String?,

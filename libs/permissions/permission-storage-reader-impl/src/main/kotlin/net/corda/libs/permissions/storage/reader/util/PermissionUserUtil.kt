@@ -3,11 +3,11 @@ package net.corda.libs.permissions.storage.reader.util
 import net.corda.libs.permissions.storage.reader.impl.repository.PermissionQueryDtoComparator
 import net.corda.libs.permissions.storage.reader.repository.UserLogin
 import net.corda.libs.permissions.storage.reader.summary.InternalUserPermissionSummary
+import net.corda.permissions.query.dto.InternalPermission
 import net.corda.permissions.query.dto.InternalPermissionQueryDto
 import net.corda.permissions.query.dto.InternalPermissionWithParentGroupQueryDto
 import net.corda.permissions.query.dto.InternalUserEnabledQueryDto
 import net.corda.permissions.query.dto.InternalUserGroup
-import net.corda.permissions.query.dto.Permission
 import java.time.Instant
 import javax.persistence.EntityManager
 
@@ -63,8 +63,8 @@ internal object PermissionUserUtil {
             LEFT JOIN Permission p ON rpa.permission.id = p.id
             """
     fun calculatePermissionsForUsers(em: EntityManager): Map<UserLogin, InternalUserGroup> {
-        val groupList = getInternalPermissionWithParentGroupQueryDtoToInternalUserGroup(em, allGroupPermissionsQuery)
-        val userList = getInternalPermissionWithParentGroupQueryDtoToInternalUserGroup(em, allUsersPermissionsQuery)
+        val groupList = getUserGroupPermissions(em, allGroupPermissionsQuery)
+        val userList = getUserGroupPermissions(em, allUsersPermissionsQuery)
 
         // Generate a map that allows us to find all children given a parentId
         val parentIdToChildListMap = HashMap<String?, MutableList<Node>>()
@@ -80,8 +80,8 @@ internal object PermissionUserUtil {
         timeOfPermissionSummary: Instant,
     ): Map<String, InternalUserPermissionSummary> {
         return userLogins.associateBy({ user -> user.loginName }) { userLogin ->
-            // rolePermissionsQuery features inner joins so a user without roles won't be present in this map
-            val permissionSortedSet = getPermissionListAsDto(userLogin.loginName, userMap).toSortedSet(PermissionQueryDtoComparator())
+            val permissionSortedSet =
+                getPermissionListAsDto(userLogin.loginName, userMap).toSortedSet(PermissionQueryDtoComparator())
 
             InternalUserPermissionSummary(
                 userLogin.loginName,
@@ -92,12 +92,18 @@ internal object PermissionUserUtil {
         }
     }
 
-    private fun getPermissionListAsDto(loginName: String, usersMap: Map<UserLogin, InternalUserGroup>): List<InternalPermissionQueryDto> {
+    private fun getPermissionListAsDto(
+        loginName: String,
+        usersMap: Map<UserLogin, InternalUserGroup>
+    ): List<InternalPermissionQueryDto> {
         val permissionList = usersMap[loginName]?.permissionsList ?: emptyList()
         return getPermissionListAsDto(loginName, permissionList)
     }
 
-    private fun getPermissionListAsDto(loginName: String, permissionList: List<Permission>): List<InternalPermissionQueryDto> {
+    private fun getPermissionListAsDto(
+        loginName: String,
+        permissionList: List<InternalPermission>
+    ): List<InternalPermissionQueryDto> {
         return permissionList.map { permission ->
             InternalPermissionQueryDto(
                 loginName,
@@ -110,7 +116,7 @@ internal object PermissionUserUtil {
         }
     }
 
-    private fun getInternalPermissionWithParentGroupQueryDtoToInternalUserGroup(
+    private fun getUserGroupPermissions(
         em: EntityManager,
         query: String
     ): List<InternalUserGroup> {
@@ -121,10 +127,12 @@ internal object PermissionUserUtil {
         ).resultList.groupBy { it.id }.map { (id, permissionList) ->
             InternalUserGroup(
                 id,
+                // Use the first parentGroupId and loginName as they will be the same for all the permissions in the list
                 permissionList.firstOrNull()?.parentGroupId,
                 permissionList.firstOrNull()?.loginName,
+                // Filter out any permissions that have a null permissionString, so we do not add the null permissions to the permissionList
                 permissionList.filter { !it.permissionString.isNullOrEmpty() }.map { permission ->
-                    Permission(
+                    InternalPermission(
                         permission.permissionId!!,
                         permission.groupVisibility,
                         permission.virtualNode,
@@ -176,20 +184,21 @@ internal object PermissionUserUtil {
     // Calculates all the permissions for each user by traversing the tree and adding the permissions to the userPermissions map
     private fun calculatePermissions(
         node: Node,
-        permissions: MutableList<Permission>,
+        permissions: MutableList<InternalPermission>,
         userPermissions: MutableMap<UserLogin, InternalUserGroup>
     ) {
         val userGroup = node.userGroup
         // Adds the current Node's permissions to the permissions list
         permissions.addAll(userGroup.permissionsList)
 
-        // If the current Node has no children, add the permissions to the userPermissions map
+        // If the current Node is a user then add the permissions to the userPermissions map.
+        // A node represents a user if it does not have children and the loginName is not null or empty.
         if (!node.hasChildren()) {
             if (!userGroup.loginName.isNullOrEmpty()) {
                 userPermissions[userGroup.loginName!!] = node.userGroup.copy(permissionsList = permissions.toList())
             }
         } else {
-            // Recursively calls calculatePermissions for each child of the current Node
+            // Calculate the permissions for each child node recursively
             node.children.forEach { child ->
                 calculatePermissions(
                     child,
