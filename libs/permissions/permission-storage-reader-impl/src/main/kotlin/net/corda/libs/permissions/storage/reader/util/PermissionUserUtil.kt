@@ -12,8 +12,13 @@ import java.time.Instant
 import javax.persistence.EntityManager
 
 internal object PermissionUserUtil {
-    // Query to get all the Permissions for each Group
-    // InternalPermissionWithParentGroupQueryDto.loginName is empty to signify that it is a Group
+    /**
+     * Query to get all the Permissions for each Group.
+     * InternalPermissionWithParentGroupQueryDto.loginName is empty to signify that it is a Group.
+     * We are using LEFT JOIN to get all the Groups even if they don't have any permissions and
+     * p.id, p.permissionString, p.permissionType will be null if a Group exists without any permissions.
+     * This is necessary to get all the relationships between all Groups as some Groups may inherit permissions from other Groups.
+     */
     const val allGroupPermissionsQuery =
         """
                 SELECT DISTINCT NEW net.corda.permissions.query.dto.InternalPermissionWithParentGroupQueryDto(
@@ -33,7 +38,12 @@ internal object PermissionUserUtil {
             LEFT JOIN Permission p ON rpa.permission.id = p.id
             """
 
-    // Query to get all the Permissions for each User
+    /**
+     * Query to get all the Permissions for each User.
+     * We are using LEFT JOIN to get all the Users even if they don't have any permissions and
+     * p.id, p.permissionString, p.permissionType will be null if a User exists without any permissions.
+     * This is necessary as some Users may inherit permissions from Groups.
+     */
     const val allUsersPermissionsQuery =
         """
                 SELECT DISTINCT NEW net.corda.permissions.query.dto.InternalPermissionWithParentGroupQueryDto(
