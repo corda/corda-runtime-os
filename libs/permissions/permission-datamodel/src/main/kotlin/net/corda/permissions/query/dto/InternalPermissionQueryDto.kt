@@ -16,6 +16,7 @@ data class InternalPermissionQueryDto(
 
 /**
  * Internal permission query data transfer object holding data for one permission, its associated parent group and user/group id.
+ * [loginName] will be null if it is a group.
  */
 data class InternalPermissionWithParentGroupQueryDto(
     val id: String,

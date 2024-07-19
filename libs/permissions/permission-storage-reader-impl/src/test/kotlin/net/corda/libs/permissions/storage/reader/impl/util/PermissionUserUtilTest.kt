@@ -62,9 +62,36 @@ class PermissionUserUtilTest {
         val calculatedPermissions = calculatePermissionsForUsers(
             createEntityManager(
                 listOf(
-                    InternalPermissionWithParentGroupQueryDto("groupId1", "permissionId1", null, null, "ABC", PermissionType.ALLOW, null, null),
-                    InternalPermissionWithParentGroupQueryDto("groupId2", "permissionId2", null, null, "XYZ", PermissionType.ALLOW, "groupId1", null),
-                    InternalPermissionWithParentGroupQueryDto("groupId3", "permissionId3", null, null, "XYZ", PermissionType.DENY, "groupId1", null)
+                    InternalPermissionWithParentGroupQueryDto(
+                        "groupId1",
+                        "permissionId1",
+                        null,
+                        null,
+                        "ABC",
+                        PermissionType.ALLOW,
+                        null,
+                        null
+                    ),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "groupId2",
+                        "permissionId2",
+                        null,
+                        null,
+                        "XYZ",
+                        PermissionType.ALLOW,
+                        "groupId1",
+                        null
+                    ),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "groupId3",
+                        "permissionId3",
+                        null,
+                        null,
+                        "XYZ",
+                        PermissionType.DENY,
+                        "groupId1",
+                        null
+                    )
                 ),
                 emptyList()
             )
@@ -78,9 +105,36 @@ class PermissionUserUtilTest {
             createEntityManager(
                 emptyList(),
                 listOf(
-                    InternalPermissionWithParentGroupQueryDto("userId1", "permissionId1", null, null, "ABC", PermissionType.ALLOW, null, "user1"),
-                    InternalPermissionWithParentGroupQueryDto("userId1", "permissionId2", null, null, "XYZ", PermissionType.ALLOW, null, "user1"),
-                    InternalPermissionWithParentGroupQueryDto("userId1", "permissionId3", null, null, "XYZ", PermissionType.DENY, null, "user1")
+                    InternalPermissionWithParentGroupQueryDto(
+                        "userId1",
+                        "permissionId1",
+                        null,
+                        null,
+                        "ABC",
+                        PermissionType.ALLOW,
+                        null,
+                        "user1"
+                    ),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "userId1",
+                        "permissionId2",
+                        null,
+                        null,
+                        "XYZ",
+                        PermissionType.ALLOW,
+                        null,
+                        "user1"
+                    ),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "userId1",
+                        "permissionId3",
+                        null,
+                        null,
+                        "XYZ",
+                        PermissionType.DENY,
+                        null,
+                        "user1"
+                    )
                 )
             )
         )
@@ -94,18 +148,72 @@ class PermissionUserUtilTest {
     }
 
     @Test
-    fun `single user with parent group hierarchy returns the permissions of the user and its associated groups` () {
+    fun `single user with parent group hierarchy returns the permissions of the user and its associated groups`() {
         val calculatedPermissions = calculatePermissionsForUsers(
             createEntityManager(
                 listOf(
-                    InternalPermissionWithParentGroupQueryDto("groupId1", "permissionId1", null, null, "ABC", PermissionType.ALLOW, null, null),
-                    InternalPermissionWithParentGroupQueryDto("groupId2", "permissionId2", null, null, "XYZ", PermissionType.ALLOW, "groupId1", null),
-                    InternalPermissionWithParentGroupQueryDto("groupId3", "permissionId3", null, null, "DEF", PermissionType.ALLOW, "groupId2", null)
+                    InternalPermissionWithParentGroupQueryDto(
+                        "groupId1",
+                        "permissionId1",
+                        null,
+                        null,
+                        "ABC",
+                        PermissionType.ALLOW,
+                        null,
+                        null
+                    ),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "groupId2",
+                        "permissionId2",
+                        null,
+                        null,
+                        "XYZ",
+                        PermissionType.ALLOW,
+                        "groupId1",
+                        null
+                    ),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "groupId3",
+                        "permissionId3",
+                        null,
+                        null,
+                        "DEF",
+                        PermissionType.ALLOW,
+                        "groupId2",
+                        null
+                    )
                 ),
                 listOf(
-                    InternalPermissionWithParentGroupQueryDto("userId1", "permissionId4", null, null, "GHI", PermissionType.ALLOW, "groupId3", "user1"),
-                    InternalPermissionWithParentGroupQueryDto("userId1", "permissionId5", null, null, "XYZ", PermissionType.ALLOW, "groupId3", "user1"),
-                    InternalPermissionWithParentGroupQueryDto("userId1", "permissionId6", null, null, "XYZ", PermissionType.DENY, "groupId3", "user1")
+                    InternalPermissionWithParentGroupQueryDto(
+                        "userId1",
+                        "permissionId4",
+                        null,
+                        null,
+                        "GHI",
+                        PermissionType.ALLOW,
+                        "groupId3",
+                        "user1"
+                    ),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "userId1",
+                        "permissionId5",
+                        null,
+                        null,
+                        "XYZ",
+                        PermissionType.ALLOW,
+                        "groupId3",
+                        "user1"
+                    ),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "userId1",
+                        "permissionId6",
+                        null,
+                        null,
+                        "XYZ",
+                        PermissionType.DENY,
+                        "groupId3",
+                        "user1"
+                    )
                 )
             )
         )
@@ -126,15 +234,78 @@ class PermissionUserUtilTest {
         val calculatedPermissions = calculatePermissionsForUsers(
             createEntityManager(
                 listOf(
-                    InternalPermissionWithParentGroupQueryDto("groupId1", "permissionId1", null, null, "ABC", PermissionType.ALLOW, null, null),
-                    InternalPermissionWithParentGroupQueryDto("groupId2", "permissionId2", null, null, "XYZ", PermissionType.ALLOW, "groupId1", null),
-                    InternalPermissionWithParentGroupQueryDto("groupId3", "permissionId3", null, null, "DEF", PermissionType.ALLOW, "groupId2", null),
-                    InternalPermissionWithParentGroupQueryDto("groupId4", "permissionId4", null, null, "GHI", PermissionType.ALLOW, "groupId1", null),
-                    InternalPermissionWithParentGroupQueryDto("groupId5", "permissionId5", null, null, "JKL", PermissionType.ALLOW, "groupId2", null),
-                    InternalPermissionWithParentGroupQueryDto("groupId6", "permissionId6", null, null, "MNO", PermissionType.ALLOW, "groupId3", null),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "groupId1",
+                        "permissionId1",
+                        null,
+                        null,
+                        "ABC",
+                        PermissionType.ALLOW,
+                        null,
+                        null
+                    ),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "groupId2",
+                        "permissionId2",
+                        null,
+                        null,
+                        "XYZ",
+                        PermissionType.ALLOW,
+                        "groupId1",
+                        null
+                    ),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "groupId3",
+                        "permissionId3",
+                        null,
+                        null,
+                        "DEF",
+                        PermissionType.ALLOW,
+                        "groupId2",
+                        null
+                    ),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "groupId4",
+                        "permissionId4",
+                        null,
+                        null,
+                        "GHI",
+                        PermissionType.ALLOW,
+                        "groupId1",
+                        null
+                    ),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "groupId5",
+                        "permissionId5",
+                        null,
+                        null,
+                        "JKL",
+                        PermissionType.ALLOW,
+                        "groupId2",
+                        null
+                    ),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "groupId6",
+                        "permissionId6",
+                        null,
+                        null,
+                        "MNO",
+                        PermissionType.ALLOW,
+                        "groupId3",
+                        null
+                    ),
                 ),
                 listOf(
-                    InternalPermissionWithParentGroupQueryDto("userId1", "permissionId7", null, null, "GHI", PermissionType.DENY, "groupId6", "user1"),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "userId1",
+                        "permissionId7",
+                        null,
+                        null,
+                        "GHI",
+                        PermissionType.DENY,
+                        "groupId6",
+                        "user1"
+                    ),
                     InternalPermissionWithParentGroupQueryDto("userId2", null, null, null, null, null, "groupId3", "user2"),
                     InternalPermissionWithParentGroupQueryDto("userId3", null, null, null, null, null, "groupId5", "user3"),
                     InternalPermissionWithParentGroupQueryDto("userId4", null, null, null, null, null, "groupId2", "user4"),
@@ -157,7 +328,16 @@ class PermissionUserUtilTest {
         val calculatedPermissions = calculatePermissionsForUsers(
             createEntityManager(
                 listOf(
-                    InternalPermissionWithParentGroupQueryDto("groupId1", "permissionId1", null, null, "ABC", PermissionType.ALLOW, "groupId2", null),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "groupId1",
+                        "permissionId1",
+                        null,
+                        null,
+                        "ABC",
+                        PermissionType.ALLOW,
+                        "groupId2",
+                        null
+                    ),
                     InternalPermissionWithParentGroupQueryDto("groupId2", null, null, null, null, null, null, null),
                 ),
                 listOf(
@@ -173,7 +353,7 @@ class PermissionUserUtilTest {
             ),
             calculatedPermissions,
             Instant.now()
-            )
+        )
         assertThat(aggregatedPermissions).containsOnlyKeys("user1")
         assertThat(aggregatedPermissions["user1"]!!.permissions).isEmpty()
     }
@@ -183,9 +363,36 @@ class PermissionUserUtilTest {
         val calculatedPermissions = calculatePermissionsForUsers(
             createEntityManager(
                 listOf(
-                    InternalPermissionWithParentGroupQueryDto("groupId1", "permissionId1", null, null, "ABC", PermissionType.ALLOW, null, null),
-                    InternalPermissionWithParentGroupQueryDto("groupId2", "permissionId2", null, null, "XYZ", PermissionType.ALLOW, "groupId1", null),
-                    InternalPermissionWithParentGroupQueryDto("groupId3", "permissionId3", null, null, "DEF", PermissionType.ALLOW, "groupId2", null),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "groupId1",
+                        "permissionId1",
+                        null,
+                        null,
+                        "ABC",
+                        PermissionType.ALLOW,
+                        null,
+                        null
+                    ),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "groupId2",
+                        "permissionId2",
+                        null,
+                        null,
+                        "XYZ",
+                        PermissionType.ALLOW,
+                        "groupId1",
+                        null
+                    ),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "groupId3",
+                        "permissionId3",
+                        null,
+                        null,
+                        "DEF",
+                        PermissionType.ALLOW,
+                        "groupId2",
+                        null
+                    ),
                 ),
                 listOf(
                     InternalPermissionWithParentGroupQueryDto("userId1", null, null, null, null, null, "groupId3", "user1"),
@@ -207,7 +414,16 @@ class PermissionUserUtilTest {
             createEntityManager(
                 listOf(
                     InternalPermissionWithParentGroupQueryDto("groupId1", null, null, null, null, null, null, null),
-                    InternalPermissionWithParentGroupQueryDto("groupId2", "permissionId1", null, null, "XYZ", PermissionType.ALLOW, "groupId1", null),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "groupId2",
+                        "permissionId1",
+                        null,
+                        null,
+                        "XYZ",
+                        PermissionType.ALLOW,
+                        "groupId1",
+                        null
+                    ),
                     InternalPermissionWithParentGroupQueryDto("groupId3", null, null, null, null, null, "groupId2", null),
                 ),
                 listOf(
@@ -221,17 +437,72 @@ class PermissionUserUtilTest {
             InternalPermissionQueryDto("user1", "permissionId1", null, null, "XYZ", PermissionType.ALLOW)
         )
     }
+
     @Test
     fun `multiple trees of different groups and associated users test`() {
         val calculatedPermissions = calculatePermissionsForUsers(
             createEntityManager(
                 listOf(
-                    InternalPermissionWithParentGroupQueryDto("groupId1", "permissionId1", null, null, "ABC", PermissionType.ALLOW, null, null),
-                    InternalPermissionWithParentGroupQueryDto("groupId2", "permissionId2", null, null, "XYZ", PermissionType.ALLOW, "groupId1", null),
-                    InternalPermissionWithParentGroupQueryDto("groupId3", "permissionId3", null, null, "DEF", PermissionType.ALLOW, "groupId1", null),
-                    InternalPermissionWithParentGroupQueryDto("groupId4", "permissionId4", null, null, "GHI", PermissionType.ALLOW, null, null),
-                    InternalPermissionWithParentGroupQueryDto("groupId5", "permissionId5", null, null, "JKL", PermissionType.ALLOW, null, null),
-                    InternalPermissionWithParentGroupQueryDto("groupId6", "permissionId6", null, null, "MNO", PermissionType.ALLOW, "groupId5", null),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "groupId1",
+                        "permissionId1",
+                        null,
+                        null,
+                        "ABC",
+                        PermissionType.ALLOW,
+                        null,
+                        null
+                    ),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "groupId2",
+                        "permissionId2",
+                        null,
+                        null,
+                        "XYZ",
+                        PermissionType.ALLOW,
+                        "groupId1",
+                        null
+                    ),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "groupId3",
+                        "permissionId3",
+                        null,
+                        null,
+                        "DEF",
+                        PermissionType.ALLOW,
+                        "groupId1",
+                        null
+                    ),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "groupId4",
+                        "permissionId4",
+                        null,
+                        null,
+                        "GHI",
+                        PermissionType.ALLOW,
+                        null,
+                        null
+                    ),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "groupId5",
+                        "permissionId5",
+                        null,
+                        null,
+                        "JKL",
+                        PermissionType.ALLOW,
+                        null,
+                        null
+                    ),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "groupId6",
+                        "permissionId6",
+                        null,
+                        null,
+                        "MNO",
+                        PermissionType.ALLOW,
+                        "groupId5",
+                        null
+                    ),
                     InternalPermissionWithParentGroupQueryDto("groupId7", null, null, null, null, null, null, null)
                 ),
                 listOf(
@@ -239,7 +510,16 @@ class PermissionUserUtilTest {
                     InternalPermissionWithParentGroupQueryDto("userId2", null, null, null, null, null, "groupId3", "user2"),
                     InternalPermissionWithParentGroupQueryDto("userId3", null, null, null, null, null, "groupId4", "user3"),
                     InternalPermissionWithParentGroupQueryDto("userId4", null, null, null, null, null, "groupId6", "user4"),
-                    InternalPermissionWithParentGroupQueryDto("userId5", "permissionId7", null, null, "ABC", PermissionType.DENY, "groupId6", "user5"),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "userId5",
+                        "permissionId7",
+                        null,
+                        null,
+                        "ABC",
+                        PermissionType.DENY,
+                        "groupId6",
+                        "user5"
+                    ),
                     InternalPermissionWithParentGroupQueryDto("userId6", null, null, null, null, null, "groupId5", "user6"),
                     InternalPermissionWithParentGroupQueryDto("userId7", null, null, null, null, null, "groupId7", "user7"),
                     InternalPermissionWithParentGroupQueryDto("userId8", null, null, null, null, null, null, "user8")
@@ -262,13 +542,49 @@ class PermissionUserUtilTest {
         val calculatedPermissions = calculatePermissionsForUsers(
             createEntityManager(
                 listOf(
-                    InternalPermissionWithParentGroupQueryDto("groupId1", "permissionId1", null, null, "ABC", PermissionType.ALLOW, null, null),
-                    InternalPermissionWithParentGroupQueryDto("groupId1", "permissionId2", null, null, "ABC", PermissionType.DENY, null, null),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "groupId1",
+                        "permissionId1",
+                        null,
+                        null,
+                        "ABC",
+                        PermissionType.ALLOW,
+                        null,
+                        null
+                    ),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "groupId1",
+                        "permissionId2",
+                        null,
+                        null,
+                        "ABC",
+                        PermissionType.DENY,
+                        null,
+                        null
+                    ),
                     InternalPermissionWithParentGroupQueryDto("groupId2", null, null, null, null, null, "groupId1", null),
                 ),
                 listOf(
-                    InternalPermissionWithParentGroupQueryDto("userId1", "permissionId2", null, null, "ABC", PermissionType.DENY, "groupId2", "user1"),
-                    InternalPermissionWithParentGroupQueryDto("userId1", "permissionId1", null, null, "ABC", PermissionType.ALLOW, "groupId2", "user1"),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "userId1",
+                        "permissionId2",
+                        null,
+                        null,
+                        "ABC",
+                        PermissionType.DENY,
+                        "groupId2",
+                        "user1"
+                    ),
+                    InternalPermissionWithParentGroupQueryDto(
+                        "userId1",
+                        "permissionId1",
+                        null,
+                        null,
+                        "ABC",
+                        PermissionType.ALLOW,
+                        "groupId2",
+                        "user1"
+                    ),
                 )
             )
         )

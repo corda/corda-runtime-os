@@ -71,10 +71,10 @@ internal object PermissionUserUtil {
     ): Map<String, InternalUserPermissionSummary> {
         return userLogins.associateBy({ user -> user.loginName }) { user ->
             // rolePermissionsQuery features inner joins so a user without roles won't be present in this map
-            val permissionsInheritedFromRoles = (
-                    (userPermissionsFromRolesAndGroups[user.loginName] ?: emptyList()).toSortedSet(
-                        PermissionQueryDtoComparator())
-                    )
+            val permissionsInheritedFromRoles =
+                (userPermissionsFromRolesAndGroups[user.loginName] ?: emptyList()).toSortedSet(
+                    PermissionQueryDtoComparator()
+                )
 
             InternalUserPermissionSummary(
                 user.loginName,
