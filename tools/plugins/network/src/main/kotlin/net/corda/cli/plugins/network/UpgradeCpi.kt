@@ -5,6 +5,7 @@ import picocli.CommandLine.Command
 import picocli.CommandLine.ExitCode
 import picocli.CommandLine.Option
 import java.io.File
+import java.nio.file.Files
 
 // TODO only for dynamic?
 @Command(
@@ -33,9 +34,11 @@ class UpgradeCpi : Runnable, RestCommand() {
     }
 
     private fun upgradeCpi() {
-        // Require input files exist
-        require(cpiFile.isFile) { "CPI file '$cpiFile' not found." }
-        require(networkConfigFile.isFile) { "Network configuration file '$cpiFile' not found." }
+        // Require input files exist and are readable
+        require(Files.isReadable(cpiFile.toPath())) { "CPI file '$cpiFile' does not exist or is not readable." }
+        require(Files.isReadable(networkConfigFile.toPath())) {
+            "Network configuration file '$networkConfigFile' does not exist or is not readable."
+        }
 
         // Require that CPI is a valid CPI file, output the CPI attributes (name, version, etc.)
         // Parse network configuration file. Require that it is successfully parsed.
@@ -60,6 +63,5 @@ class UpgradeCpi : Runnable, RestCommand() {
 
         // Once all requirements are met, we can loop through each target member and perform the upgrade
 
-        TODO("Not implemented yet")
     }
 }

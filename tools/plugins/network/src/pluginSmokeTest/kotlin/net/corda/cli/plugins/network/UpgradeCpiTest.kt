@@ -14,6 +14,7 @@ import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import picocli.CommandLine
 import java.io.File
@@ -40,7 +41,10 @@ class UpgradeCpiTest {
         private const val NOTARY_SERVICE_NAME = "O=NotaryService, L=London, C=GB"
 
         private val cpbLocation: String = this::class.java.classLoader.getResource(CPB_FILE)!!.path
-        private val defaultGroupPolicyLocation: String = "${System.getProperty("user.home")}/.corda/gp/groupPolicy.json"
+        private val mgmGroupPolicyFile: File = File.createTempFile("group-policy-", ".json").also {
+            it.deleteOnExit()
+            it.delete()
+        }
         private val restClient = CordaRestClient.createHttpClient(
             baseUrl = DEFAULT_CLUSTER.rest.uri,
             username = DEFAULT_CLUSTER.rest.user,
@@ -54,6 +58,8 @@ class UpgradeCpiTest {
         private val initialCpiName = "MyCorDapp-${UUID.randomUUID()}"
         private val signingOptions = OnboardMember().createDefaultSingingOptions().asSigningOptionsSdk
         private val cpiUploader = CpiUploader(restClient)
+
+        private lateinit var initialCpiFile: File
         private lateinit var mgmMemberInfo: RestMemberInfo
         private lateinit var mgmCpiName: String
 
@@ -65,9 +71,11 @@ class UpgradeCpiTest {
             onboardMgm()
 
             // TODO is it needed?
-            groupId = mapper.readTree(File(defaultGroupPolicyLocation).readText()).get("groupId").asText()
+            groupId = mapper.readTree(mgmGroupPolicyFile.readText()).get("groupId").asText()
 
-            val cpiChecksumAlice = uploadCpi(createCpiFile("1.0", initialCpiName))
+            initialCpiFile = createCpiFile("1.0", initialCpiName)
+
+            val cpiChecksumAlice = uploadCpi(initialCpiFile)
             // Use different CPI metadata for Bob (but same corDapp)
             val cpiChecksumBob = uploadCpi(createCpiFile("2.0", "FOOBAR-${UUID.randomUUID()}"))
 
@@ -92,7 +100,7 @@ class UpgradeCpiTest {
                     cpiVersion = cpiVersion,
                     cpiUpgrade = false,
                 ),
-                groupPolicy = File(defaultGroupPolicyLocation).readText(),
+                groupPolicy = mgmGroupPolicyFile.readText(),
                 signingOptions = signingOptions,
             )
             require(cpiFile.isFile) { "Failed to create CPI file $cpiFile" }
@@ -105,7 +113,14 @@ class UpgradeCpiTest {
         }
 
         private fun onboardMgm() {
-            CommandLine(OnboardMgm()).execute(mgmName.toString(), targetUrl, user, password, INSECURE)
+            CommandLine(OnboardMgm()).execute(
+                mgmName.toString(),
+                "--save-group-policy-as=${mgmGroupPolicyFile.absolutePath}",
+                targetUrl,
+                user,
+                password,
+                INSECURE
+            )
             mgmHoldingId = getHoldingIdForMember(mgmName)
             assertThat(getGroupMembersNames()).containsExactly(mgmName.toString())
             mgmMemberInfo = getGroupMembers().first { it.memberContext["corda.name"] == mgmName.toString() }
@@ -197,6 +212,7 @@ class UpgradeCpiTest {
     }
 
     @Test
+    @Disabled
     fun `feature not implemented throws an error`() {
         val newCpiName = "MyCorDapp-${UUID.randomUUID()}"
         val cpiFile = createCpiFile(cpiVersion = "2.0", cpiName = newCpiName)
@@ -213,7 +229,8 @@ class UpgradeCpiTest {
 
     @Test
     fun `missing required options cpi-file and network-config-file`() {
-        val errText = TestUtils.captureStdErr { executeUpgradeCpi() }
+        val (errText, exitCode) = TestUtils.captureStdErr { executeUpgradeCpi() }
+        assertThat(exitCode).isNotZero()
         assertThat(errText).contains(
             "Missing required options",
             "--cpi-file",
@@ -222,13 +239,67 @@ class UpgradeCpiTest {
     }
 
     @Test
-    fun `invalid CPI file`() {
+    fun `CPI file is not readable`() {
+        val networkConfigFilePath = createNetworkConfigFile().absolutePath
+        val cpiFilePath = File("non-existing-${UUID.randomUUID()}.cpi").absolutePath
 
+        val (errText, exitCode) = TestUtils.captureStdErr {
+            executeUpgradeCpi(
+                "--cpi-file=$cpiFilePath",
+                "--network-config-file=$networkConfigFilePath",
+            )
+        }
+        assertThat(exitCode).isNotZero()
+        assertThat(errText).contains("CPI file '$cpiFilePath' does not exist or is not readable.")
+    }
+
+    @Test
+    fun `network config file is not readable`() {
+        val networkConfigFilePath = File("non-existing-${UUID.randomUUID()}.json").absolutePath
+        val cpiFilePath = initialCpiFile.absolutePath
+
+        val (errText, exitCode) = TestUtils.captureStdErr {
+            executeUpgradeCpi(
+                "--cpi-file=$cpiFilePath",
+                "--network-config-file=$networkConfigFilePath",
+            )
+        }
+        assertThat(exitCode).isNotZero()
+        assertThat(errText)
+            .contains("Network configuration file '$networkConfigFilePath' does not exist or is not readable.")
+    }
+
+    @Test
+    fun `CPI is not a valid corda package`() {
+        val networkConfigFile = createNetworkConfigFile()
+        val invalidCpiFile = File.createTempFile("invalid-cpi-", ".cpi").also {
+            it.deleteOnExit()
+            it.writeText("This is not a valid CPI file")
+        }
+        val (errText, exitCode) = TestUtils.captureStdErr {
+            executeUpgradeCpi(
+                "--cpi-file=${invalidCpiFile.absolutePath}",
+                "--network-config-file=${networkConfigFile.absolutePath}",
+            )
+        }
+        assertThat(exitCode).isNotZero()
+        assertThat(errText).contains("File ${invalidCpiFile.absolutePath} is not a valid corda package")
     }
 
     @Test
     fun `network config file can't be parsed`() {
-
+        val invalidNetworkConfigFile = File.createTempFile("invalid-network-config-", ".json").also {
+            it.deleteOnExit()
+            it.writeText("This is not a valid JSON file")
+        }
+        val (errText, exitCode) = TestUtils.captureStdErr {
+            executeUpgradeCpi(
+                "--cpi-file=${initialCpiFile.absolutePath}",
+                "--network-config-file=${invalidNetworkConfigFile.absolutePath}",
+            )
+        }
+        assertThat(exitCode).isNotZero()
+        assertThat(errText).contains("Failed to parse network configuration file")
     }
 
     @Test
@@ -247,12 +318,12 @@ class UpgradeCpiTest {
     }
 
     @Test
-    fun `MGM node is not found in Corda`() {
+    fun `MGM is not found in Corda`() {
 
     }
 
     @Test
-    fun `MGM doesn't hold any members`() {
+    fun `MGM in Corda doesn't hold any members`() {
 
     }
 

@@ -2,6 +2,8 @@ package net.corda.cli.plugins.network.utils
 
 import net.corda.v5.base.util.EncodingUtils.toBase64
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.Path
 import java.security.MessageDigest
 
 fun Collection<File>.hash(): String {
@@ -16,4 +18,11 @@ fun Collection<File>.hash(): String {
 fun inferCpiName(cpbFile: File, groupPolicyFile: File): String {
     val combinedHash = listOf(cpbFile, groupPolicyFile).hash()
     return "${cpbFile.name}-$combinedHash"
+}
+
+/**
+ * Check file exists and is readable.
+ */
+fun requireFileExists(file: File) {
+    require(Files.isReadable(file.toPath())) { "\"$file\" does not exist or is not readable" }
 }
