@@ -5,6 +5,7 @@ import net.corda.data.permissions.management.group.ChangeGroupParentIdRequest
 import net.corda.data.permissions.management.group.CreateGroupRequest
 import net.corda.data.permissions.management.group.DeleteGroupRequest
 import net.corda.data.permissions.management.group.RemoveRoleFromGroupRequest
+import net.corda.libs.permissions.common.exception.ConcurrentEntityModificationException
 import net.corda.libs.permissions.storage.common.converter.toAvroGroup
 import net.corda.libs.permissions.storage.writer.impl.group.GroupWriter
 import net.corda.libs.permissions.storage.writer.impl.validation.EntityValidationUtil
@@ -50,9 +51,14 @@ class GroupWriterImpl(
         log.debug { "Received request to change parent group of Group ${request.groupId} to ${request.newParentGroupId}" }
         return entityManagerFactory.transaction { entityManager ->
 
+            val requestVersion = request.version
             val validator = EntityValidationUtil(entityManager)
             val group = validator.validateAndGetUniqueGroup(request.groupId)
             val newParentGroup = validator.validateAndGetUniqueGroup(request.newParentGroupId)
+
+            if (group.version != requestVersion) {
+                throw ConcurrentEntityModificationException("Group '${group.id}' has been modified since version '$requestVersion'.")
+            }
 
             group.parentGroup = newParentGroup
 

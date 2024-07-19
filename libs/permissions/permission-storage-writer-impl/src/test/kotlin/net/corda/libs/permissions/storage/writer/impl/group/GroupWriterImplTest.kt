@@ -5,6 +5,7 @@ import net.corda.data.permissions.management.group.ChangeGroupParentIdRequest
 import net.corda.data.permissions.management.group.CreateGroupRequest
 import net.corda.data.permissions.management.group.DeleteGroupRequest
 import net.corda.data.permissions.management.group.RemoveRoleFromGroupRequest
+import net.corda.libs.permissions.common.exception.ConcurrentEntityModificationException
 import net.corda.libs.permissions.common.exception.EntityAssociationAlreadyExistsException
 import net.corda.libs.permissions.common.exception.EntityAssociationDoesNotExistException
 import net.corda.libs.permissions.common.exception.EntityNotFoundException
@@ -180,6 +181,28 @@ class GroupWriterImplTest {
         assertNotNull(audit)
         assertEquals(RestPermissionOperation.GROUP_UPDATE, audit.changeType)
         assertEquals("Parent group of Group '${persistedGroup.id}' changed to '${parentGroup.id}' by '$requestUserId'.", audit.details)
+    }
+
+    @Test
+    fun `changing parent group fails if group has been modified concurrently`() {
+        val changeGroupParentIdRequest = ChangeGroupParentIdRequest().apply {
+            groupId = "groupId"
+            newParentGroupId = "parentId"
+            version = 1 // Set an initial version
+        }
+        val group = Group("groupId", Instant.now(), "groupName", null).apply {
+            version = 2 // Simulate that the group has been modified concurrently
+        }
+        val parentGroup = Group("parentId", Instant.now(), "parentGroupName", null)
+
+        whenever(entityManager.find(Group::class.java, "groupId")).thenReturn(group)
+        whenever(entityManager.find(Group::class.java, "parentId")).thenReturn(parentGroup)
+
+        val e = assertThrows<ConcurrentEntityModificationException> {
+            groupWriter.changeParentGroup(changeGroupParentIdRequest, requestUserId)
+        }
+
+        assertEquals("Group 'groupId' has been modified since version '1'.", e.message)
     }
 
     @Test
