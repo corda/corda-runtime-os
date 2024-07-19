@@ -418,23 +418,75 @@ class UpgradeCpiTest {
 
     @Test
     fun `some members CPI information is the same as the target CPI file's attributes`() {
-        // read CPI information of the existing members
-        // prepare CPI file with the same attributes as of one of the members
+        val existingMembers = getGroupMembers()
 
+        // prepare CPI file with the same attributes as of one of the members
+        val bobMemberContext = existingMembers.first { it.memberContext["corda.name"] == memberNameBob.toString() }.memberContext
+        val bobCpiName = bobMemberContext["corda.cpi.name"]!!
+        val bobCpiVersion = bobMemberContext["corda.cpi.version"]!!
+        val cpiFile = createCpiFile(cpiVersion = bobCpiVersion, cpiName = bobCpiName)
+
+        val networkConfigFile = createDefaultNetworkConfigFile()
+        val (errText, exitCode) = TestUtils.captureStdErr {
+            executeUpgradeCpi(
+                "--cpi-file=${cpiFile.absolutePath}",
+                "--network-config-file=${networkConfigFile.absolutePath}",
+            )
+        }
+        assertThat(exitCode).isNotZero()
+        assertThat(errText)
+            .contains("One or more members from the network configuration file have the same CPI information as the target CPI file:")
+            .contains(memberNameBob.toString())
+            .doesNotContain(
+                memberNameAlice.toString(),
+                notaryName.toString(),
+                mgmName.toString(),
+            )
     }
 
     @Test
     fun `some of the target VNodes use BYOD feature`() {
-
+        // TODO figure out how to setup and test this
     }
 
     @Test
     fun `only members from the config file are upgraded, the rest in the group are skipped`() {
         // read CPI information of the exiting members
+        val existingMembersOtherThanBob = getGroupMembers().filter {
+            it.memberContext["corda.name"] != memberNameBob.toString()
+        }
 
-        // execute upgrade
+        // execute upgrade with only one member from the config file
+        val networkConfigFile = createNetworkConfigFile(MemberNode(memberNameBob))
+        val newCpiName = "MyCorDapp-${UUID.randomUUID()}"
+        val newCpiVersion = "111.1"
+        val cpiFile = createCpiFile(newCpiVersion, newCpiName)
+
+        val (outText, exitCode) = TestUtils.captureStdErr {
+            executeUpgradeCpi(
+                "--cpi-file=${cpiFile.absolutePath}",
+                "--network-config-file=${networkConfigFile.absolutePath}",
+            )
+        }
+        assertThat(exitCode).isZero()
+        assertThat(outText).isEmpty()
 
         // read CPI information of the member and verify CPI information of the upgraded and the skipped members
+        val membersWithNewCpiName = getGroupMembers().filter {
+            it.memberContext["corda.cpi.name"] == newCpiName
+        }
+        val membersWithNewCpiVersion = getGroupMembers().filter {
+            it.memberContext["corda.cpi.version"] == newCpiVersion
+        }
+        assertThat(membersWithNewCpiName).hasSize(1)
+        assertThat(membersWithNewCpiVersion).hasSize(1)
+        assertThat(membersWithNewCpiName).isEqualTo(membersWithNewCpiVersion)
+        assertThat(membersWithNewCpiName.first().memberContext["corda.name"]).isEqualTo(memberNameBob.toString())
+
+        val skippedMembers = getGroupMembers().filter {
+            it.memberContext["corda.cpi.name"] != newCpiName
+        }
+        assertThat(skippedMembers).isEqualTo(existingMembersOtherThanBob)
     }
 
     @Test
