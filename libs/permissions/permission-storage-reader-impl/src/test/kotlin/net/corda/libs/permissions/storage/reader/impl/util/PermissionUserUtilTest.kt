@@ -8,6 +8,7 @@ import net.corda.permissions.model.PermissionType
 import net.corda.permissions.query.dto.InternalPermissionQueryDto
 import net.corda.permissions.query.dto.InternalPermissionWithParentGroupQueryDto
 import net.corda.permissions.query.dto.InternalUserEnabledQueryDto
+import net.corda.permissions.query.dto.Permission
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doAnswer
@@ -139,11 +140,11 @@ class PermissionUserUtilTest {
             )
         )
         assertThat(calculatedPermissions).containsOnlyKeys("user1")
-        assertThat(calculatedPermissions["user1"]).size().isEqualTo(3)
-        assertThat(calculatedPermissions["user1"]).containsExactlyInAnyOrder(
-            InternalPermissionQueryDto("user1", "permissionId1", null, null, "ABC", PermissionType.ALLOW),
-            InternalPermissionQueryDto("user1", "permissionId2", null, null, "XYZ", PermissionType.ALLOW),
-            InternalPermissionQueryDto("user1", "permissionId3", null, null, "XYZ", PermissionType.DENY)
+        assertThat(calculatedPermissions["user1"]?.permissionsList).size().isEqualTo(3)
+        assertThat(calculatedPermissions["user1"]?.permissionsList).containsExactlyInAnyOrder(
+            Permission("permissionId1", null, null, "ABC", PermissionType.ALLOW),
+            Permission("permissionId2", null, null, "XYZ", PermissionType.ALLOW),
+            Permission("permissionId3", null, null, "XYZ", PermissionType.DENY)
         )
     }
 
@@ -218,14 +219,14 @@ class PermissionUserUtilTest {
             )
         )
         assertThat(calculatedPermissions).containsOnlyKeys("user1")
-        assertThat(calculatedPermissions["user1"]).size().isEqualTo(6)
-        assertThat(calculatedPermissions["user1"]).containsExactlyInAnyOrder(
-            InternalPermissionQueryDto("user1", "permissionId1", null, null, "ABC", PermissionType.ALLOW),
-            InternalPermissionQueryDto("user1", "permissionId2", null, null, "XYZ", PermissionType.ALLOW),
-            InternalPermissionQueryDto("user1", "permissionId3", null, null, "DEF", PermissionType.ALLOW),
-            InternalPermissionQueryDto("user1", "permissionId4", null, null, "GHI", PermissionType.ALLOW),
-            InternalPermissionQueryDto("user1", "permissionId5", null, null, "XYZ", PermissionType.ALLOW),
-            InternalPermissionQueryDto("user1", "permissionId6", null, null, "XYZ", PermissionType.DENY)
+        assertThat(calculatedPermissions["user1"]?.permissionsList).size().isEqualTo(6)
+        assertThat(calculatedPermissions["user1"]?.permissionsList).containsExactlyInAnyOrder(
+            Permission("permissionId1", null, null, "ABC", PermissionType.ALLOW),
+            Permission("permissionId2", null, null, "XYZ", PermissionType.ALLOW),
+            Permission("permissionId3", null, null, "DEF", PermissionType.ALLOW),
+            Permission("permissionId4", null, null, "GHI", PermissionType.ALLOW),
+            Permission("permissionId5", null, null, "XYZ", PermissionType.ALLOW),
+            Permission("permissionId6", null, null, "XYZ", PermissionType.DENY)
         )
     }
 
@@ -315,12 +316,12 @@ class PermissionUserUtilTest {
             )
         )
         assertThat(calculatedPermissions).containsOnlyKeys("user1", "user2", "user3", "user4", "user5", "user6")
-        assertThat(calculatedPermissions["user1"]).size().isEqualTo(5)
-        assertThat(calculatedPermissions["user2"]).size().isEqualTo(3)
-        assertThat(calculatedPermissions["user3"]).size().isEqualTo(3)
-        assertThat(calculatedPermissions["user4"]).size().isEqualTo(2)
-        assertThat(calculatedPermissions["user5"]).size().isEqualTo(2)
-        assertThat(calculatedPermissions["user6"]).size().isEqualTo(1)
+        assertThat(calculatedPermissions["user1"]?.permissionsList).size().isEqualTo(5)
+        assertThat(calculatedPermissions["user2"]?.permissionsList).size().isEqualTo(3)
+        assertThat(calculatedPermissions["user3"]?.permissionsList).size().isEqualTo(3)
+        assertThat(calculatedPermissions["user4"]?.permissionsList).size().isEqualTo(2)
+        assertThat(calculatedPermissions["user5"]?.permissionsList).size().isEqualTo(2)
+        assertThat(calculatedPermissions["user6"]?.permissionsList).size().isEqualTo(1)
     }
 
     @Test
@@ -345,7 +346,7 @@ class PermissionUserUtilTest {
                 )
             )
         )
-        assertThat(calculatedPermissions["user1"]).isEmpty()
+        assertThat(calculatedPermissions["user1"]?.permissionsList).isEmpty()
 
         val aggregatedPermissions = aggregatePermissionSummariesForUsers(
             listOf(
@@ -400,11 +401,11 @@ class PermissionUserUtilTest {
             )
         )
         assertThat(calculatedPermissions).containsOnlyKeys("user1")
-        assertThat(calculatedPermissions["user1"]).size().isEqualTo(3)
-        assertThat(calculatedPermissions["user1"]).containsExactlyInAnyOrder(
-            InternalPermissionQueryDto("user1", "permissionId1", null, null, "ABC", PermissionType.ALLOW),
-            InternalPermissionQueryDto("user1", "permissionId2", null, null, "XYZ", PermissionType.ALLOW),
-            InternalPermissionQueryDto("user1", "permissionId3", null, null, "DEF", PermissionType.ALLOW)
+        assertThat(calculatedPermissions["user1"]?.permissionsList).size().isEqualTo(3)
+        assertThat(calculatedPermissions["user1"]?.permissionsList).containsExactlyInAnyOrder(
+            Permission("permissionId1", null, null, "ABC", PermissionType.ALLOW),
+            Permission("permissionId2", null, null, "XYZ", PermissionType.ALLOW),
+            Permission("permissionId3", null, null, "DEF", PermissionType.ALLOW)
         )
     }
 
@@ -432,9 +433,9 @@ class PermissionUserUtilTest {
             )
         )
         assertThat(calculatedPermissions).containsOnlyKeys("user1")
-        assertThat(calculatedPermissions["user1"]).size().isEqualTo(1)
-        assertThat(calculatedPermissions["user1"]).containsExactlyInAnyOrder(
-            InternalPermissionQueryDto("user1", "permissionId1", null, null, "XYZ", PermissionType.ALLOW)
+        assertThat(calculatedPermissions["user1"]?.permissionsList).size().isEqualTo(1)
+        assertThat(calculatedPermissions["user1"]?.permissionsList).containsExactlyInAnyOrder(
+            Permission("permissionId1", null, null, "XYZ", PermissionType.ALLOW)
         )
     }
 
@@ -527,14 +528,14 @@ class PermissionUserUtilTest {
             )
         )
         assertThat(calculatedPermissions).containsOnlyKeys("user1", "user2", "user3", "user4", "user5", "user6", "user7", "user8")
-        assertThat(calculatedPermissions["user1"]).size().isEqualTo(2)
-        assertThat(calculatedPermissions["user2"]).size().isEqualTo(2)
-        assertThat(calculatedPermissions["user3"]).size().isEqualTo(1)
-        assertThat(calculatedPermissions["user4"]).size().isEqualTo(2)
-        assertThat(calculatedPermissions["user5"]).size().isEqualTo(3)
-        assertThat(calculatedPermissions["user6"]).size().isEqualTo(1)
-        assertThat(calculatedPermissions["user7"]).size().isEqualTo(0)
-        assertThat(calculatedPermissions["user8"]).size().isEqualTo(0)
+        assertThat(calculatedPermissions["user1"]?.permissionsList).size().isEqualTo(2)
+        assertThat(calculatedPermissions["user2"]?.permissionsList).size().isEqualTo(2)
+        assertThat(calculatedPermissions["user3"]?.permissionsList).size().isEqualTo(1)
+        assertThat(calculatedPermissions["user4"]?.permissionsList).size().isEqualTo(2)
+        assertThat(calculatedPermissions["user5"]?.permissionsList).size().isEqualTo(3)
+        assertThat(calculatedPermissions["user6"]?.permissionsList).size().isEqualTo(1)
+        assertThat(calculatedPermissions["user7"]?.permissionsList).size().isEqualTo(0)
+        assertThat(calculatedPermissions["user8"]?.permissionsList).size().isEqualTo(0)
     }
 
     @Test
@@ -589,7 +590,7 @@ class PermissionUserUtilTest {
             )
         )
         assertThat(calculatedPermissions).containsOnlyKeys("user1")
-        assertThat(calculatedPermissions["user1"]!!.size).isEqualTo(4)
+        assertThat(calculatedPermissions["user1"]?.permissionsList?.size).isEqualTo(4)
 
         val aggregatedPermissions = aggregatePermissionSummariesForUsers(
             listOf(
