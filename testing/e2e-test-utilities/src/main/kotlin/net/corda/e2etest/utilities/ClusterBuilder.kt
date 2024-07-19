@@ -749,7 +749,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
 
     @Suppress("unused")
     fun getUsersByPropertyKey(propertyKey: String, propertyValue: String) =
-        initialClient.get("/api/$REST_API_VERSION_PATH/findByProperty/$propertyKey/$propertyValue")
+        initialClient.get("/api/$REST_API_VERSION_PATH/findbyproperty/$propertyKey/$propertyValue")
 
     @Suppress("unused")
     /** Create a new permission */
