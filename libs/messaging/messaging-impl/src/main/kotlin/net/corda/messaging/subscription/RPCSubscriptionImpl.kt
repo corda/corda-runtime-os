@@ -126,7 +126,6 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             try {
                 processRecords(consumerRecords, producer)
             } catch (ex: Exception) {
-                // CordaMessageAPIProducerRequiresReset could be thrown here
                 when (ex::class.java) {
                     in ExceptionUtils.CordaMessageAPIException -> {
                         throw ex
