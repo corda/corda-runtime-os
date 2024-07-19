@@ -9,7 +9,6 @@ import net.corda.permissions.model.Group
 import net.corda.permissions.model.Permission
 import net.corda.permissions.model.Role
 import net.corda.permissions.model.User
-import net.corda.permissions.query.dto.InternalPermissionQueryDto
 import net.corda.permissions.query.dto.InternalUserEnabledQueryDto
 import java.time.Instant
 import javax.persistence.EntityManager
@@ -52,7 +51,7 @@ class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFa
             val userLoginsWithEnabledFlag = findAllUserLoginsAndEnabledFlags(entityManager)
             val userPermissionsFromRolesAndGroups = PermissionUserUtil.calculatePermissionsForUsers(entityManager)
 
-            return aggregatePermissionSummariesForUsers(
+            return PermissionUserUtil.aggregatePermissionSummariesForUsers(
                 userLoginsWithEnabledFlag,
                 userPermissionsFromRolesAndGroups,
                 timeOfPermissionSummary
@@ -73,26 +72,6 @@ class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFa
                     .setParameter("ids", chunkedIds)
                     .resultList
             }.flatten()
-        }
-    }
-
-    private fun aggregatePermissionSummariesForUsers(
-        userLogins: List<InternalUserEnabledQueryDto>,
-        userPermissionsFromRolesAndGroups: Map<UserLogin, List<InternalPermissionQueryDto>>,
-        timeOfPermissionSummary: Instant,
-    ): Map<String, InternalUserPermissionSummary> {
-        return userLogins.associateBy({ user -> user.loginName }) { user ->
-            // rolePermissionsQuery features inner joins so a user without roles won't be present in this map
-            val permissionsInheritedFromRoles = (
-                (userPermissionsFromRolesAndGroups[user.loginName] ?: emptyList()).toSortedSet(PermissionQueryDtoComparator())
-                )
-
-            InternalUserPermissionSummary(
-                user.loginName,
-                user.enabled,
-                permissionsInheritedFromRoles,
-                timeOfPermissionSummary
-            )
         }
     }
 

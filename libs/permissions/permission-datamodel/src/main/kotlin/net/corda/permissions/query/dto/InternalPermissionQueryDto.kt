@@ -22,10 +22,25 @@ data class InternalPermissionWithParentGroupQueryDto(
     val permissionId: String,
     val groupVisibility: String?,
     val virtualNode: String?,
-    val permissionString: String,
-    val permissionType: PermissionType,
+    val permissionString: String?,
+    val permissionType: PermissionType?,
     val parentGroupId: String?,
     val loginName: String?
+)
+
+data class InternalUserGroup(
+    val id: String,
+    val parentId: String?,
+    val loginName: String?,
+    val permissionsList: List<Permission>
+)
+
+data class Permission(
+    val id: String,
+    val groupVisibility: String?,
+    val virtualNode: String?,
+    val permissionString: String,
+    val permissionType: PermissionType
 )
 
 /**
