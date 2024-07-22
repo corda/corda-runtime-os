@@ -471,7 +471,7 @@ class UpgradeCpiTest {
         assertThat(exitCode).isZero()
         assertThat(outText).isEmpty()
 
-        // read CPI information of the member and verify CPI information of the upgraded and the skipped members
+        // read CPI information of the upgraded member and verify CPI information
         val membersWithNewCpiName = getGroupMembers().filter {
             it.memberContext["corda.cpi.name"] == newCpiName
         }
@@ -483,6 +483,7 @@ class UpgradeCpiTest {
         assertThat(membersWithNewCpiName).isEqualTo(membersWithNewCpiVersion)
         assertThat(membersWithNewCpiName.first().memberContext["corda.name"]).isEqualTo(memberNameBob.toString())
 
+        // verify that the rest of the members were not upgraded
         val skippedMembers = getGroupMembers().filter {
             it.memberContext["corda.cpi.name"] != newCpiName
         }
@@ -491,11 +492,43 @@ class UpgradeCpiTest {
 
     @Test
     fun `members are upgraded, MGM and Notary are skipped`() {
-        // read CPI information of the existing Notary and MGM members, as well as members
+        // read CPI information of the existing Notary, MGM, and all members
+        val existingMembers = getGroupMembers()
 
-        // execute upgrade
+        // execute upgrade of both Alice and Bob members
+        val networkConfigFile = createDefaultNetworkConfigFile()
+        val newCpiName = "NewCorDapp-${UUID.randomUUID()}"
+        val newCpiVersion = "200.0"
+        val newCpiFile = createCpiFile(newCpiVersion, newCpiName)
+
+        val (outText, exitCode) = TestUtils.captureStdErr {
+            executeUpgradeCpi(
+                "--cpi-file=${newCpiFile.absolutePath}",
+                "--network-config-file=${networkConfigFile.absolutePath}",
+            )
+        }
+        assertThat(exitCode).isZero()
+        assertThat(outText).isEmpty()
+
+        val membersWithNewCpiName = getGroupMembers().filter {
+            it.memberContext["corda.cpi.name"] == newCpiName
+        }
+        val membersWithNewCpiVersion = getGroupMembers().filter {
+            it.memberContext["corda.cpi.version"] == newCpiVersion
+        }
+        assertThat(membersWithNewCpiName).hasSize(2)
+        assertThat(membersWithNewCpiVersion).hasSize(2)
+        assertThat(membersWithNewCpiName).isEqualTo(membersWithNewCpiVersion)
+        val upgradedCordaNames = membersWithNewCpiName.map { it.memberContext["corda.name"] }
+        assertThat(upgradedCordaNames).containsExactlyInAnyOrder(memberNameAlice.toString(), memberNameBob.toString())
 
         // verify that members are upgraded but MGM and Notary remain intact
+        val skippedMembers = getGroupMembers().filter {
+            it.memberContext["corda.cpi.name"] != newCpiName
+        }
+        assertThat(skippedMembers).containsExactlyInAnyOrder(
+            existingMembers.first { it.memberContext["corda.name"] == mgmName.toString() },
+            existingMembers.first { it.memberContext["corda.name"] == notaryName.toString() },
+        )
     }
-
 }
