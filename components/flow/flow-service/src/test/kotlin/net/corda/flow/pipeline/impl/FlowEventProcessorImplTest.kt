@@ -56,6 +56,14 @@ import java.time.Instant
 import java.util.UUID
 
 class FlowEventProcessorImplTest {
+
+    private companion object {
+        fun <S : Any> StateAndEventProcessor.Response<S>.withoutHeaders(): StateAndEventProcessor.Response<S> {
+            val modifiedEvents = responseEvents.map { event -> event.copy(headers = emptyList()) }
+            return this.copy(responseEvents = modifiedEvents)
+        }
+    }
+
     private val payload = ExternalEventResponse()
     private val aliceHoldingIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1")
     private val bobHoldingIdentity = HoldingIdentity("CN=Bob, O=Alice Corp, L=LDN, C=GB", "1")
@@ -193,7 +201,7 @@ class FlowEventProcessorImplTest {
 
         val expectedRecords = updatedContext.outputRecords
         verify(flowEventContextConverter).convert(argThat { outputRecords == expectedRecords })
-        assertThat(response).isEqualTo(outputResponse)
+        assertThat(response.withoutHeaders()).isEqualTo(outputResponse)
 
         verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
     }
@@ -226,7 +234,7 @@ class FlowEventProcessorImplTest {
 
         val response = processor.onNext(state, getFlowEventRecord(FlowEvent(flowKey, payload)))
 
-        assertThat(response).isEqualTo(errorResponse)
+        assertThat(response.withoutHeaders()).isEqualTo(errorResponse)
     }
 
     @Test
@@ -238,7 +246,7 @@ class FlowEventProcessorImplTest {
 
         val response = processor.onNext(state, getFlowEventRecord(FlowEvent(flowKey, payload)))
 
-        assertThat(response).isEqualTo(outputResponse)
+        assertThat(response.withoutHeaders()).isEqualTo(outputResponse)
     }
 
     @Test
@@ -250,7 +258,7 @@ class FlowEventProcessorImplTest {
 
         val response = processor.onNext(state, getFlowEventRecord(FlowEvent(flowKey, payload)))
 
-        assertThat(response).isEqualTo(errorResponse)
+        assertThat(response.withoutHeaders()).isEqualTo(errorResponse)
     }
 
     @Test
@@ -262,7 +270,7 @@ class FlowEventProcessorImplTest {
 
         val response = processor.onNext(state, getFlowEventRecord(FlowEvent(flowKey, payload)))
 
-        assertThat(response).isEqualTo(errorResponse)
+        assertThat(response.withoutHeaders()).isEqualTo(errorResponse)
     }
 
     @Test
@@ -274,7 +282,7 @@ class FlowEventProcessorImplTest {
 
         val response = processor.onNext(state, getFlowEventRecord(FlowEvent(flowKey, payload)))
 
-        assertThat(response).isEqualTo(errorResponse)
+        assertThat(response.withoutHeaders()).isEqualTo(errorResponse)
     }
 
     @Test
@@ -286,7 +294,7 @@ class FlowEventProcessorImplTest {
 
         val response = processor.onNext(state, getFlowEventRecord(FlowEvent(flowKey, payload)))
 
-        assertThat(response).isEqualTo(errorResponse)
+        assertThat(response.withoutHeaders()).isEqualTo(errorResponse)
     }
 
     @Test
@@ -307,7 +315,7 @@ class FlowEventProcessorImplTest {
 
         val result = processor.onNext(state, getFlowEventRecord(FlowEvent(flowKey, payload)))
 
-        assertThat(result).isEqualTo(killErrorResponse)
+        assertThat(result.withoutHeaders()).isEqualTo(killErrorResponse)
     }
 
     @Test
@@ -316,7 +324,7 @@ class FlowEventProcessorImplTest {
 
         val response = processor.onNext(null, inputEvent)
 
-        assertThat(response).isEqualTo(outputResponse)
+        assertThat(response.withoutHeaders()).isEqualTo(outputResponse)
         verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
     }
 
@@ -326,7 +334,7 @@ class FlowEventProcessorImplTest {
 
         val response = processor.onNext(null, inputEvent)
 
-        assertThat(response).isEqualTo(outputResponse)
+        assertThat(response.withoutHeaders()).isEqualTo(outputResponse)
         verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
     }
 
@@ -353,7 +361,7 @@ class FlowEventProcessorImplTest {
 
         val response = processor.onNext(null, inputEvent)
 
-        assertThat(response).isEqualTo(responseWithPostProcessingRecords)
+        assertThat(response.withoutHeaders()).isEqualTo(responseWithPostProcessingRecords)
     }
 
     @Test
@@ -378,7 +386,7 @@ class FlowEventProcessorImplTest {
 
         val response = processor.onNext(null, inputEvent)
 
-        assertThat(response).isEqualTo(responseWithPostProcessingRecords)
+        assertThat(response.withoutHeaders()).isEqualTo(responseWithPostProcessingRecords)
     }
 
     private fun getFlowEventRecord(flowEvent: FlowEvent?): Record<String, FlowEvent> {
