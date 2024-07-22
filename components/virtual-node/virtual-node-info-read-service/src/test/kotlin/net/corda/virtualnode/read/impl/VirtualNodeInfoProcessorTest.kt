@@ -376,7 +376,5 @@ class VirtualNodeInfoProcessorTest {
         assertThat(onError).isFalse
         assertDoesNotThrow { processor.onNext(Record("", holdingIdentity.toAvro(), virtualNodeInfo.toAvro()), null, emptyMap()) }
         assertThat(onError).isTrue
-
     }
-
 }
