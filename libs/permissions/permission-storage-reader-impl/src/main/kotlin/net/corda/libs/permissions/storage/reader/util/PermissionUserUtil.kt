@@ -71,7 +71,7 @@ internal object PermissionUserUtil {
         val userList = getUserGroupPermissions(em, allUsersPermissionsQuery)
 
         logger.debug("List of Group permissions: {}", groupList)
-        logger.debug("List of User permissions {}", userList)
+        logger.debug("List of User permissions: {}", userList)
 
         // Generate a map that allows us to find all children given a parentId
         val parentIdToChildListMap = HashMap<String?, MutableList<Node>>()
