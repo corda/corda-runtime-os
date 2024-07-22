@@ -173,7 +173,7 @@ internal object PermissionUserUtil {
     // Builds the tree from the root node
     private fun buildTree(
         node: Node,
-        parentIdToChildListMap: HashMap<String?, MutableList<Node>>
+        parentIdToChildListMap: Map<String?, MutableList<Node>>
     ) {
         parentIdToChildListMap[node.userGroup.id]?.forEach { child ->
             node.addChild(child)
@@ -182,7 +182,7 @@ internal object PermissionUserUtil {
     }
 
     private fun calculatePermissions(
-        parentIdToChildListMap: HashMap<String?, MutableList<Node>>
+        parentIdToChildListMap: Map<String?, MutableList<Node>>
     ): Map<UserLogin, InternalUserGroup> {
         val userPermissions = mutableMapOf<UserLogin, InternalUserGroup>()
         // For each root node build a tree and calculate the permissions for each user
@@ -198,13 +198,13 @@ internal object PermissionUserUtil {
     // Calculates all the permissions for each user by traversing the tree and adding the permissions to the userPermissions map
     private fun calculatePermissions(
         node: Node,
-        permissions: MutableList<InternalPermission>,
+        parentPermissions: List<InternalPermission>,
         userPermissions: MutableMap<UserLogin, InternalUserGroup>
     ) {
         val userGroup = node.userGroup
         // Adds the current Node's permissions to the permissions list
+        val permissions = mutableListOf<InternalPermission>().apply { addAll(parentPermissions) }
         permissions.addAll(userGroup.permissionsList)
-
         // If the current Node is a user then add the permissions to the userPermissions map.
         // A node represents a user if it does not have children and the loginName is not null or empty.
         if (!node.hasChildren()) {
@@ -221,11 +221,6 @@ internal object PermissionUserUtil {
                 )
             }
         }
-
-        // Remove the current Node's permissions from the permissions list when we go up the tree
-        for (count in 1..userGroup.permissionsList.size) {
-            permissions.removeLast()
-        }
     }
 
     private data class Node(val userGroup: InternalUserGroup) {
@@ -236,6 +231,6 @@ internal object PermissionUserUtil {
         }
 
         fun hasChildren(): Boolean =
-            children.size >= 1
+            children.isNotEmpty()
     }
 }
