@@ -7,17 +7,8 @@ import net.corda.tracing.BatchRecordTracer
 import net.corda.tracing.TraceContext
 import net.corda.tracing.TracingService
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.atomic.AtomicInteger
 
 class NoopTracingService : TracingService {
-
-    private companion object {
-        // Same as brave.propagation.B3Propagation.TRACE_ID, but to avoid creating dependency on this library
-        // Meant to be 128 bit lowercase hexadecimal string
-        const val TRACE_ID: String = "X-B3-TraceId"
-        val counter = AtomicInteger(0)
-        const val ANCHOR = "deddababa"
-    }
 
     class NoopTraceContext : TraceContext {
 
@@ -75,14 +66,7 @@ class NoopTracingService : TracingService {
         traceHeadersToOverrideContext: List<Pair<String, String>>
     ): List<Pair<String, String>> {
         // Do nothing. Return the current headers
-        return headers + traceId()
-    }
-
-    private fun traceId(): Pair<String, String> {
-        // Artificially populate traceId such that it is set to a value which will be useful
-        // during multithreaded tests execution, without adding dependency on Brave library.
-        return TRACE_ID to
-                (ANCHOR + Integer.toHexString(counter.incrementAndGet()).padStart(7, '0')).lowercase()
+        return headers
     }
 
     override fun addTraceHeaders(
