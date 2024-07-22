@@ -56,7 +56,7 @@ interface UserWriter {
     /**
      * Add a property to a User and return its Avro representation.
      *
-     * @param request AddPropertyToUserRequest containing the information of the Role and User to dissociate.
+     * @param request AddPropertyToUserRequest containing the Property to add to a User.
      * @param requestUserId ID of the user who made the request.
      */
     fun addPropertyToUser(request: AddPropertyToUserRequest, requestUserId: String): AvroUser
@@ -64,7 +64,7 @@ interface UserWriter {
     /**
      * Remove a property from a User and return its Avro representation.
      *
-     * @param request RemovePropertyFromUserRequest containing the information of the Role and User to dissociate.
+     * @param request RemovePropertyFromUserRequest containing the Property to remove from a User.
      * @param requestUserId ID of the user who made the request.
      */
     fun removePropertyFromUser(request: RemovePropertyFromUserRequest, requestUserId: String): AvroUser
