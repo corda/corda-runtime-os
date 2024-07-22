@@ -42,10 +42,12 @@ class KafkaAdminTest {
         Mockito.`when`(adminClient.listTopics()).thenReturn(topicResult)
         Mockito.`when`(topicResult.names()).thenReturn(kafkaFuture)
 
-        var retryNumber = 0
+        //retries hardcoded in getTopics to max 3 attempts
+
+        var attemptNumber = 1
         Mockito.`when`(kafkaFuture.get()).thenAnswer {
-            if (retryNumber <= 3) {
-                retryNumber++
+            if (attemptNumber <= 2) {
+                attemptNumber++
                 throw (ExecutionException(TimeoutException("timed out")))
             } else {
                 setOf("topic1")
@@ -66,10 +68,12 @@ class KafkaAdminTest {
         Mockito.`when`(adminClient.listTopics()).thenReturn(topicResult)
         Mockito.`when`(topicResult.names()).thenReturn(kafkaFuture)
 
-        var retryNumber = 0
+        //retries hardcoded in getTopics to max 3 attempts
+
+        var attemptNumber = 1
         Mockito.`when`(kafkaFuture.get()).thenAnswer {
-            if (retryNumber <= 8) {
-                retryNumber++
+            if (attemptNumber <= 3) {
+                attemptNumber++
                 throw (ExecutionException(TimeoutException("timed out")))
             } else {
                 setOf("topic1")
