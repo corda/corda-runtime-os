@@ -62,7 +62,7 @@ class NetworkConfigTest : FunctionalBaseTest() {
             it.toFile().deleteOnExit()
         }.toFile()
         networkFile.writeText(inputText)
-        val em = assertThrows<CordaRuntimeGradlePluginException> {
+        val em = assertThrows<IllegalArgumentException> {
             NetworkConfig(configFilePath = networkFile.absolutePath)
         }
         assertThat(em.message).isEqualTo(MULTIPLE_MGM_ERROR_MESSAGE)
