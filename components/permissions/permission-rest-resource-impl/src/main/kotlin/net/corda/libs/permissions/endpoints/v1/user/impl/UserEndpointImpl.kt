@@ -260,7 +260,7 @@ class UserEndpointImpl @Activate constructor(
         val principal = getRestThreadLocalContext()
         val result = withPermissionManager(permissionManagementService.permissionManager, logger) {
             getUserProperties(GetUserPropertiesRequestDto(principal, loginName.lowercase()))
-        }?: throw ResourceNotFoundException("User", loginName)
+        }
         return ResponseEntity.ok(result.map { it.convertToEndpointType() }.toSet())
     }
 
