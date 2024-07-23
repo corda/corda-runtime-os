@@ -1,9 +1,7 @@
-package net.corda.gradle.plugin.configuration
+package net.corda.sdk.network.config
 
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.gradle.plugin.dtos.VNode
-import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
 import java.io.FileInputStream
 
 /**
@@ -24,7 +22,7 @@ class NetworkConfig(val configFilePath: String) {
                 mapper.readValue(it, object : TypeReference<List<VNode>>() {})
             }
         } catch (e: Exception) {
-            throw CordaRuntimeGradlePluginException("Failed to read network configuration file, with exception: $e")
+            throw IllegalArgumentException("Failed to read network configuration file, with exception: $e")
         }
     }
 
@@ -33,7 +31,7 @@ class NetworkConfig(val configFilePath: String) {
     fun getMgmNode(): VNode? {
         val mgmNodes = vNodes.filter { it.mgmNode.toBoolean() }
         if (mgmNodes.size > 1) {
-            throw CordaRuntimeGradlePluginException(MULTIPLE_MGM_ERROR_MESSAGE)
+            throw IllegalArgumentException(MULTIPLE_MGM_ERROR_MESSAGE)
         }
         return mgmNodes.singleOrNull()
     }

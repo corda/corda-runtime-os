@@ -1,6 +1,6 @@
 package net.corda.gradle.plugin.cordalifecycle
 
-import net.corda.gradle.plugin.configuration.NetworkConfig
+import net.corda.sdk.network.config.NetworkConfig
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

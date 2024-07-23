@@ -2,6 +2,7 @@ package net.corda.gradle.plugin.configuration
 
 import net.corda.gradle.plugin.cordalifecycle.EnvironmentSetupHelper
 import net.corda.restclient.CordaRestClient
+import net.corda.sdk.network.config.NetworkConfig
 import org.gradle.api.Project
 import org.gradle.api.logging.Logger
 import java.net.URI

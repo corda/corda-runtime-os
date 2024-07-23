@@ -2,7 +2,7 @@ package net.corda.gradle.plugin.network
 
 import net.corda.crypto.core.ShortHash
 import net.corda.gradle.plugin.configuration.ProjectContext
-import net.corda.gradle.plugin.dtos.VNode
+import net.corda.sdk.network.config.VNode
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
 import net.corda.restclient.generated.models.RegistrationRequestProgress
 import net.corda.sdk.data.RequestId
