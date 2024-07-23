@@ -1,43 +1,39 @@
-package net.corda.gradle.plugin.network
+package net.corda.sdk.network.config
 
-import net.corda.gradle.plugin.FunctionalBaseTest
-import net.corda.sdk.network.config.NetworkConfig
 import net.corda.sdk.network.config.NetworkConfig.Companion.MULTIPLE_MGM_ERROR_MESSAGE
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
-class NetworkConfigTest : FunctionalBaseTest() {
+class NetworkConfigTest {
+    private val staticNetworkConfigFile = this::class.java.getResource("/config/static-network-config.json")!!.file
+    private val dynamicNetworkConfigFile = this::class.java.getResource("/config/dynamic-network-config.json")!!.file
 
     @Test
     fun canParseStaticNetworkFile() {
-        appendCordaRuntimeGradlePluginExtension(isStaticNetwork = true)
-        val networkFile = getNetworkConfigFile()
-        val networkConfig = NetworkConfig(configFilePath = networkFile.absolutePath)
+        val networkFile = this::class.java.getResource("/config/static-network-config.json")!!.file
+        val networkConfig = NetworkConfig(configFilePath = networkFile)
         assertThat(networkConfig.vNodes).isNotEmpty
     }
 
     @Test
     fun mgmIsNotPresentInStaticNetworkFile() {
-        appendCordaRuntimeGradlePluginExtension(isStaticNetwork = true)
-        val networkFile = getNetworkConfigFile()
-        val networkConfig = NetworkConfig(configFilePath = networkFile.absolutePath)
+        val networkFile = this::class.java.getResource("/config/static-network-config.json")!!.file
+        val networkConfig = NetworkConfig(configFilePath = networkFile)
         assertThat(networkConfig.mgmNodeIsPresentInNetworkDefinition).isFalse
     }
 
     @Test
     fun canParseDynamicNetworkFile() {
-        appendCordaRuntimeGradlePluginExtension(isStaticNetwork = false)
-        val networkFile = getNetworkConfigFile()
-        val networkConfig = NetworkConfig(configFilePath = networkFile.absolutePath)
+        val networkFile = this::class.java.getResource("/config/dynamic-network-config.json")!!.file
+        val networkConfig = NetworkConfig(configFilePath = networkFile)
         assertThat(networkConfig.vNodes).isNotEmpty
     }
 
     @Test
     fun mgmIsPresentInDynamicNetworkFile() {
-        appendCordaRuntimeGradlePluginExtension(isStaticNetwork = false)
-        val networkFile = getNetworkConfigFile()
-        val networkConfig = NetworkConfig(configFilePath = networkFile.absolutePath)
+        val networkFile = this::class.java.getResource("/config/dynamic-network-config.json")!!.file
+        val networkConfig = NetworkConfig(configFilePath = networkFile)
         assertThat(networkConfig.mgmNodeIsPresentInNetworkDefinition).isTrue
     }
 
@@ -69,18 +65,16 @@ class NetworkConfigTest : FunctionalBaseTest() {
 
     @Test
     fun canFilterListToNonMgmStaticNetwork() {
-        appendCordaRuntimeGradlePluginExtension(isStaticNetwork = true)
-        val networkFile = getNetworkConfigFile()
-        val networkConfig = NetworkConfig(configFilePath = networkFile.absolutePath)
+        val networkFile = this::class.java.getResource("/config/static-network-config.json")!!.file
+        val networkConfig = NetworkConfig(configFilePath = networkFile)
         val nodesWhoArentMgm = networkConfig.getVNodesWhoAreNotMgm()
         assertThat(nodesWhoArentMgm).hasSize(5)
     }
 
     @Test
     fun canFilterListToNonMgmDynamicNetwork() {
-        appendCordaRuntimeGradlePluginExtension(isStaticNetwork = false)
-        val networkFile = getNetworkConfigFile()
-        val networkConfig = NetworkConfig(configFilePath = networkFile.absolutePath)
+        val networkFile = this::class.java.getResource("/config/dynamic-network-config.json")!!.file
+        val networkConfig = NetworkConfig(configFilePath = networkFile)
         val nodesWhoArentMgm = networkConfig.getVNodesWhoAreNotMgm()
         assertThat(nodesWhoArentMgm).hasSize(5)
     }
