@@ -27,7 +27,6 @@ import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUsersByPropertyRequestDto
 import net.corda.libs.permissions.manager.request.RemovePropertyFromUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
-import net.corda.libs.permissions.manager.response.PropertyResponseDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.messaging.api.publisher.RPCSender
