@@ -532,7 +532,7 @@ class PermissionUserManagerImplTest {
     @Test
     fun `get user properties using the cache`() {
         whenever(permissionManagementCache.getUser("loginname123")).thenReturn(avroUser)
-        val result = manager.getUserProperties(getUserPropertiesRequestDto)
+        val result = manager.getUserProperties(getUserPropertiesRequestDto)!!
         assertNotNull(result)
         assertEquals(userProperty.lastChangeDetails.updateTimestamp, result.first().lastChangedTimestamp)
         assertEquals(userProperty.key, result.first().key)
