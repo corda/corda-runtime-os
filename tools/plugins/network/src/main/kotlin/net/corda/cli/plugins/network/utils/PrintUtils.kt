@@ -7,8 +7,8 @@ import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.datatype.jsr310.deser.InstantDeserializer
 import com.fasterxml.jackson.datatype.jsr310.ser.InstantSerializer
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import net.corda.cli.plugins.network.output.ConsoleOutput
 import net.corda.cli.plugins.network.output.Output
+import picocli.CommandLine.ExitCode
 import java.time.Instant
 
 object PrintUtils {
@@ -34,15 +34,13 @@ object PrintUtils {
         )
     }
 
-    fun verifyAndPrintError(action: () -> Unit) {
-        try {
+    fun verifyAndPrintError(action: () -> Unit): Int {
+        return try {
             action()
+            ExitCode.OK
         } catch (e: Exception) {
-            /**
-             * This is present to address the issue of the RemoteClient in
-             * rest-client automatically converting any non-200 codes into exceptions with the response body as message.
-             */
-            printJsonOutput(e.localizedMessage, ConsoleOutput())
+            System.err.println(e.localizedMessage)
+            ExitCode.SOFTWARE
         }
     }
 }

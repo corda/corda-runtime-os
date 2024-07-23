@@ -264,6 +264,7 @@ class UpgradeCpiTest {
                 "--network-config-file=$networkConfigFilePath",
             )
         }
+        // TODO either don't check for exit code, or consistently return it
         assertThat(exitCode).isNotZero()
         assertThat(errText)
             .contains("Network configuration file '$networkConfigFilePath' does not exist or is not readable.")
@@ -294,12 +295,12 @@ class UpgradeCpiTest {
         }
         val (errText, exitCode) = TestUtils.captureStdErr {
             executeUpgradeCpi(
-                "--cpi-file=${initialCpiFile.absolutePath}",
+                "--cpi-file=${initialCpiFile.absolutePath}", // Use valid CPI file
                 "--network-config-file=${invalidNetworkConfigFile.absolutePath}",
             )
         }
         assertThat(exitCode).isNotZero()
-        assertThat(errText).contains("Failed to parse network configuration file")
+        assertThat(errText).contains("Failed to read network configuration file")
     }
 
     @Test
@@ -329,7 +330,7 @@ class UpgradeCpiTest {
             )
         }
         assertThat(exitCode).isNotZero()
-        assertThat(errText).contains("Network configuration file contains more than one MGM node")
+        assertThat(errText).contains("Invalid number of MGM nodes defined, can only specify one.")
     }
 
     @Test
@@ -349,6 +350,7 @@ class UpgradeCpiTest {
     fun `MGM is not found in Corda`() {
         val aliceMgmConfigFile = createNetworkConfigFile(
             MemberNode(memberNameAlice, "MGM", mgmNode = true),
+            MemberNode(memberNameBob),
             mgm = false,
         )
         val (errText, exitCode) = TestUtils.captureStdErr {
@@ -358,7 +360,7 @@ class UpgradeCpiTest {
             )
         }
         assertThat(exitCode).isNotZero()
-        assertThat(errText).contains("MGM node $memberNameAlice is not found in Corda")
+        assertThat(errText).contains("MGM virtual node with X.500 name '$memberNameAlice' and CPI name 'MGM' not found among existing virtual nodes.")
     }
 
     @Test
@@ -382,7 +384,7 @@ class UpgradeCpiTest {
         }
         assertThat(exitCode).isNotZero()
         assertThat(errText)
-            .contains("One or more members from the network configuration file are not found in the target membership group:")
+            .contains("The following members from the network configuration file are not present in the network:")
             .contains(memberNameCharlie.toString())
             .doesNotContain(
                 memberNameAlice.toString(),
@@ -412,7 +414,7 @@ class UpgradeCpiTest {
 
         assertThat(exitCode).isNotZero()
         assertThat(errText)
-            .contains("One or more members from the network configuration file are not found in the target membership group:")
+            .contains("The following members from the network configuration file are not present in the network:")
             .contains(dale.toString(), eddie.toString(), frank.toString())
     }
 
