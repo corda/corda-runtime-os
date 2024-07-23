@@ -74,6 +74,28 @@ class EntityValidationUtil(private val entityManager: EntityManager) {
         }
     }
 
+    fun validateNewParentGroupNotADescendant(groupToModify: String, newParentGroupId: String) {
+        val query = "SELECT g.id, g.parent_group FROM rbac_group g"
+        val groupMap = entityManager.createNativeQuery(query)
+            .resultList
+            .associate { row ->
+                val (groupId, parentGroupId) = row as Array<*>
+                groupId.toString() to parentGroupId?.toString()
+            }
+
+        var currentGroup: String? = newParentGroupId
+        while (currentGroup != null && currentGroup != groupToModify) {
+            currentGroup = groupMap[currentGroup]
+        }
+
+        if (currentGroup == groupToModify) {
+            throw IllegalEntityStateException(
+                "Cannot set Group '$newParentGroupId' as the parent of " +
+                    "Group '$groupToModify' because it would create a cycle in the group hierarchy."
+            )
+        }
+    }
+
     fun validateAndGetRoleAssociatedWithGroup(group: Group, roleId: String): RoleGroupAssociation {
         val value = group.roleGroupAssociations.singleOrNull { it.role.id == roleId }
         if (value == null) {

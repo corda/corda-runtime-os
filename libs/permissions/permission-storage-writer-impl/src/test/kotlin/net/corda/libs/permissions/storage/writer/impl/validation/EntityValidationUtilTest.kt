@@ -204,6 +204,48 @@ class EntityValidationUtilTest {
     }
 
     @Test
+    fun `validateNewParentGroupNotADescendant throws exception when new parent is a descendant`() {
+        val groupToModify = "group1"
+        val newParentGroupId = "group2"
+        val query = "SELECT g.id, g.parent_group FROM rbac_group g"
+        val resultList = listOf(
+            arrayOf<Any?>("group1", null),
+            arrayOf<Any?>("group2", "group1"),
+            arrayOf<Any?>("group3", "group2")
+        )
+
+        whenever(entityManager.createNativeQuery(query)).thenReturn(mock())
+        whenever(entityManager.createNativeQuery(query).resultList).thenReturn(resultList)
+
+        assertThrows<IllegalEntityStateException>(
+            "Cannot set Group '$newParentGroupId' as the parent of Group '$groupToModify' because it " +
+                "would create a cycle in the group hierarchy."
+        ) {
+            validator.validateNewParentGroupNotADescendant(groupToModify, newParentGroupId)
+        }
+    }
+
+    @Test
+    fun `validateNewParentGroupNotADescendant throws exception when new parent is the same group`() {
+        val groupToModify = "group1"
+        val newParentGroupId = "group1"
+        val query = "SELECT g.id, g.parent_group FROM rbac_group g"
+        val resultList = listOf(
+            arrayOf<Any?>("group1", null)
+        )
+
+        whenever(entityManager.createNativeQuery(query)).thenReturn(mock())
+        whenever(entityManager.createNativeQuery(query).resultList).thenReturn(resultList)
+
+        assertThrows<IllegalEntityStateException>(
+            "Cannot set Group '$newParentGroupId' as the parent of Group '$groupToModify' because it " +
+                "would create a cycle in the group hierarchy."
+        ) {
+            validator.validateNewParentGroupNotADescendant(groupToModify, newParentGroupId)
+        }
+    }
+
+    @Test
     fun `validateAndGetRoleAssociatedWithGroup returns association when role is associated with group`() {
         val roleId = "role1"
         val role = mock<Role> {

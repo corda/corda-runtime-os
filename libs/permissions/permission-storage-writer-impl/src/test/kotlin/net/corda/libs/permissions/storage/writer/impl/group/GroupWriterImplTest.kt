@@ -206,6 +206,38 @@ class GroupWriterImplTest {
     }
 
     @Test
+    fun `changing parent group fails if it creates a circular dependency`() {
+        val changeGroupParentIdRequest = ChangeGroupParentIdRequest().apply {
+            groupId = "group1"
+            newParentGroupId = "group2"
+        }
+        val group1 = Group("group1", Instant.now(), "Group 1", null)
+        val group2 = Group("group2", Instant.now(), "Group 2", group1)
+
+        val query = "SELECT g.id, g.parent_group FROM rbac_group g"
+        val resultList = listOf(
+            arrayOf<Any?>("group1", null),
+            arrayOf<Any?>("group2", "group1"),
+            arrayOf<Any?>("group3", "group2")
+        )
+
+        whenever(entityManager.find(Group::class.java, "group1")).thenReturn(group1)
+        whenever(entityManager.find(Group::class.java, "group2")).thenReturn(group2)
+        whenever(entityManager.createNativeQuery(query)).thenReturn(mock())
+        whenever(entityManager.createNativeQuery(query).resultList).thenReturn(resultList)
+
+        val e = assertThrows<IllegalEntityStateException> {
+            groupWriter.changeParentGroup(changeGroupParentIdRequest, requestUserId)
+        }
+
+        assertEquals(
+            "Cannot set Group 'group2' as the parent of Group 'group1' because it would " +
+                "create a cycle in the group hierarchy.",
+            e.message
+        )
+    }
+
+    @Test
     fun `add role to group fails when group does not exist`() {
         val addRoleToGroupRequest = AddRoleToGroupRequest().apply {
             groupId = "groupId"

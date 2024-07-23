@@ -60,6 +60,8 @@ class GroupWriterImpl(
                 throw ConcurrentEntityModificationException("Group '${group.id}' has been modified since version '$requestVersion'.")
             }
 
+            validator.validateNewParentGroupNotADescendant(group.id, newParentGroup.id)
+
             group.parentGroup = newParentGroup
 
             val updateTimestamp = Instant.now()
