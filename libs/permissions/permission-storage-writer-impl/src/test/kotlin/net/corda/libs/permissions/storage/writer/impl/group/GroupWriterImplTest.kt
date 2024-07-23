@@ -159,6 +159,7 @@ class GroupWriterImplTest {
 
         whenever(entityManager.find(Group::class.java, "groupId")).thenReturn(group)
         whenever(entityManager.find(Group::class.java, "parentId")).thenReturn(parentGroup)
+        whenever(entityManager.createNativeQuery(any())).thenReturn(mock()) // Add this line
 
         groupWriter.changeParentGroup(changeGroupParentIdRequest, requestUserId)
 
