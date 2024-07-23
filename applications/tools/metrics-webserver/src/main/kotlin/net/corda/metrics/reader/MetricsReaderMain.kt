@@ -1,8 +1,8 @@
 package net.corda.metrics.reader
 
 import io.javalin.Javalin
-import io.javalin.core.util.Header
 import io.javalin.http.HandlerType
+import io.javalin.http.Header
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
@@ -27,7 +27,7 @@ class MetricsReaderMain {
             loadMeasurements(Paths.get(metricsFile))
             server = Javalin.create()
 
-            server?.addHandler(HandlerType.GET, "/metrics") { context ->
+            server?.addHttpHandler(HandlerType.GET, "/metrics") { context ->
                 context.result(nextReading())
                 context.header(Header.CACHE_CONTROL, "no-cache")
             }

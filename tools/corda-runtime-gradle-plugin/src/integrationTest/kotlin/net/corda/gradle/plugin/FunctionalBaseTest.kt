@@ -1,6 +1,7 @@
 package net.corda.gradle.plugin
 
 import io.javalin.Javalin
+import io.javalin.config.JavalinConfig
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.BuildTask
 import org.gradle.testkit.runner.GradleRunner
@@ -12,7 +13,7 @@ import org.junit.jupiter.api.io.TempDir
 import java.io.File
 
 // https://docs.gradle.org/current/userguide/test_kit.html
-abstract class FunctionalBaseTest : Javalin() {
+abstract class FunctionalBaseTest : Javalin(JavalinConfig()) {
     @field:TempDir
     lateinit var projectDir: File
     protected lateinit var buildFile: File
