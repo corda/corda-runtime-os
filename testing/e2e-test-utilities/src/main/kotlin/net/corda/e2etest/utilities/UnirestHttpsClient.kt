@@ -99,6 +99,7 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
 
         val response = Unirest.put(url).basicAuth(username, password)
             .body(body)
+            .headers(obtainTracingHeaders())
             .asString()
 
         return SimpleResponse(response.status, response.body, url, response.headers.toInternal())
@@ -110,6 +111,7 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
         val response = Unirest.put(url)
             .basicAuth(username, password)
             .multiPartContent()
+            .headers(obtainTracingHeaders())
             .fields(fields)
             .files(files)
             .asString()
@@ -120,14 +122,14 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
     override fun get(cmd: String): SimpleResponse {
         val url = endpoint.resolve(cmd).toURL().toString()
 
-        val response = Unirest.get(url).basicAuth(username, password).asString()
+        val response = Unirest.get(url).headers(obtainTracingHeaders()).basicAuth(username, password).asString()
         return SimpleResponse(response.status, response.body, url, response.headers.toInternal())
     }
 
     override fun delete(cmd: String): SimpleResponse {
         val url = endpoint.resolve(cmd).toURL().toString()
 
-        val response = Unirest.delete(url).basicAuth(username, password).asString()
+        val response = Unirest.delete(url).headers(obtainTracingHeaders()).basicAuth(username, password).asString()
         return SimpleResponse(response.status, response.body, url, response.headers.toInternal())
     }
 
