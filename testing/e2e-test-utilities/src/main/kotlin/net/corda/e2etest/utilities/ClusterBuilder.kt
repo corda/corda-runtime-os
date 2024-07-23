@@ -629,7 +629,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         }
 
     @Suppress("unused")
-    fun getVNodeOperationStatus(requestId: String): SimpleResponse = trace("vNodeOperationStatus") {
+    fun getVNodeOperationStatus(requestId: String): SimpleResponse = trace("getVNodeOperationStatus") {
         vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/virtualnode/status/$requestId")
     }
 
@@ -754,7 +754,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     }
 
     @Suppress("unused")
-            /** Create a new RBAC role */
+    /** Create a new RBAC role */
     fun createRbacRole(roleName: String, groupVisibility: String? = null): SimpleResponse = trace("createRbacRole") {
         initialClient.post("/api/$REST_API_VERSION_PATH/role", createRbacRoleBody(roleName, groupVisibility))
     }
@@ -763,7 +763,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     fun getRbacRoles(): SimpleResponse = trace("getRbacRoles") { initialClient.get("/api/$REST_API_VERSION_PATH/role") }
 
     @Suppress("unused")
-            /** Get a role for a specified ID */
+    /** Get a role for a specified ID */
     fun getRole(roleId: String) = trace("getRole") { initialClient.get("/api/$REST_API_VERSION_PATH/role/$roleId") }
 
     /** Create new RBAC user */
