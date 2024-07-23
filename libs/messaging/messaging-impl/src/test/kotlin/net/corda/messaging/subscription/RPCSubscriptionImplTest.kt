@@ -360,6 +360,7 @@ class RPCSubscriptionImplTest {
         waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
 
         verify(kafkaConsumer, times(2)).subscribe(config.topic)
+        verify(cordaProducerBuilder, times(2)).createProducer(any(), any(), anyOrNull())
         assertThat(processor.incomingRecords.size).isEqualTo(1)
         assertFalse(firstTime)
 

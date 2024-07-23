@@ -11,6 +11,7 @@ import net.corda.messaging.TOPIC_PREFIX
 import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
+import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
@@ -127,16 +128,10 @@ class StateAndEventSubscriptionImplTest {
     fun `state and event subscription retries after intermittent exception`() {
         val (builder, producer, stateAndEventConsumer) = setupMocks(5)
 
-        // Note this exception can be (and probably _is_) thrown from the processor
-        var exceptionThrown = false
-        doAnswer {
-            if (!exceptionThrown) {
-                exceptionThrown = true
-                throw CordaMessageAPIIntermittentException("test")
-            } else {
-                producer
-            }
-        }.whenever(builder).createProducer(any(), anyOrNull())
+        whenever(builder.createProducer(any(), anyOrNull()))
+            // Note this exception can be (and probably _is_) thrown from the processor
+            .thenThrow(CordaMessageAPIIntermittentException("test"))
+            .thenReturn(producer)
 
         val subscription = StateAndEventSubscriptionImpl<String, String, String>(
             config,
@@ -172,19 +167,51 @@ class StateAndEventSubscriptionImplTest {
 
     @Test
     @Timeout(TEST_TIMEOUT_SECONDS * 100)
+    fun `producer is recreated following a CordaMessageAPIProducerRequiresReset exception`() {
+        val (builder, producer, stateAndEventConsumer) = setupMocks(5)
+
+        whenever(builder.createProducer(any(), anyOrNull()))
+            .thenThrow(CordaMessageAPIProducerRequiresReset("test"))
+            .thenReturn(producer)
+
+        val subscription = StateAndEventSubscriptionImpl<String, String, String>(
+            config,
+            builder,
+            mock(),
+            cordaAvroSerializer,
+            lifecycleCoordinatorFactory,
+            chunkSerializerService
+        )
+
+        subscription.start()
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning }
+
+        verify(builder, times(1)).createStateEventConsumerAndRebalanceListener<Any, Any, Any>(
+            any(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull(),
+            anyOrNull()
+        )
+
+        verify(producer, times(1)).close()
+        verify(stateAndEventConsumer, times(1)).close()
+        verify(builder, times(2)).createProducer(any(), anyOrNull())
+
+        assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
+    }
+
+    @Test
+    @Timeout(TEST_TIMEOUT_SECONDS * 100)
     fun `state and event subscription does not retry after fatal exception`() {
         val (builder, producer, stateAndEventConsumer) = setupMocks(5)
 
-        // Note this exception can be (and probably _is_) thrown from the processor
-        var exceptionThrown = false
-        doAnswer {
-            if (!exceptionThrown) {
-                exceptionThrown = true
-                throw CordaMessageAPIFatalException("No coming back")
-            } else {
-                CompletableFuture.completedFuture(null)
-            }
-        }.whenever(stateAndEventConsumer).waitForFunctionToFinish(any(), any(), any())
+        whenever(stateAndEventConsumer.waitForFunctionToFinish(any(), any(), any()))
+            // Note this exception can be (and probably _is_) thrown from the processor
+            .thenThrow(CordaMessageAPIFatalException("test"))
+            .thenAnswer { CompletableFuture.completedFuture(null) }
 
         val subscription = StateAndEventSubscriptionImpl<String, String, String>(
             config,
