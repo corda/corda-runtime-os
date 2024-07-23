@@ -70,14 +70,16 @@ class UpgradeCpi : Runnable, RestCommand() {
         // 1.5 Ignore Notary nodes from the config file !!!
         val configMembers = networkConfig.vNodes.filter { it.serviceX500Name == null && !it.mgmNode.toBoolean() }
         require(configMembers.isNotEmpty()) { "Network configuration file does not contain any members to upgrade." }
-        // TODO: test this
+        // TODO test this
         require(configMembers.all { it.x500Name != null }) { "Network configuration file contains members without X.500 name." }
 
         val configMgmVNode = networkConfig.getMgmNode()
 
         // 2. Use mgmNode's X500Name and cpi name to query MGM VNode holdingId
-        val mgmCpiName = configMgmVNode?.cpi ?: error("MGM node in the network configuration file does not have a CPI name defined.")
-        val mgmX500Name = configMgmVNode.x500Name ?: error("MGM node in the network configuration file does not have an X.500 name defined.")
+        val mgmCpiName = configMgmVNode?.cpi
+            ?: error("MGM node in the network configuration file does not have a CPI name defined.")
+        val mgmX500Name = configMgmVNode.x500Name
+            ?: error("MGM node in the network configuration file does not have an X.500 name defined.")
 
         val existingVNodes = restClient.virtualNodeClient.getVirtualnode().virtualNodes
         val mgmHoldingId = existingVNodes.firstOrNull {
@@ -94,7 +96,7 @@ class UpgradeCpi : Runnable, RestCommand() {
         //      - NOT based on CPI name, which might be different to what is defined in the config file
         // TODO what should we do with the members' CPI name defined in the config file? - Ignore it
 
-        // TODO: convert x500 names to MemberX500Name objects for comparison
+        // TODO convert x500 names to MemberX500Name objects for comparison
         val unknownConfigMembers = configMembers.filter { configMember ->
             configMember.x500Name !in existingMembers.map { it.memberContext["corda.name"] }
         }
