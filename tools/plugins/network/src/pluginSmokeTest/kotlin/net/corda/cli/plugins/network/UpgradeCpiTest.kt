@@ -23,8 +23,8 @@ import java.util.UUID
 
 class UpgradeCpiTest {
     companion object {
-        // TODO do everything in beforeEach
-        private const val CPB_FILE = "test-cordapp.cpb"
+        // TODO do everything in beforeEach?
+        private const val CPB_FILE = "test-cordapp-5.3.0.0-SNAPSHOT-package.cpb"
 
         private val targetUrl = "--target=${DEFAULT_CLUSTER.rest.uri}"
         private val user = "--user=${DEFAULT_CLUSTER.rest.user}"
@@ -447,6 +447,7 @@ class UpgradeCpiTest {
     @Test
     fun `some of the target VNodes use BYOD feature`() {
         // TODO figure out how to setup and test this
+        //  !!! looks like there's no way to determine whether a VNode uses that feature or not
     }
 
     @Test
