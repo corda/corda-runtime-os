@@ -11,29 +11,25 @@ class NetworkConfigTest {
 
     @Test
     fun canParseStaticNetworkFile() {
-        val networkFile = this::class.java.getResource("/config/static-network-config.json")!!.file
-        val networkConfig = NetworkConfig(configFilePath = networkFile)
+        val networkConfig = NetworkConfig(configFilePath = staticNetworkConfigFile)
         assertThat(networkConfig.vNodes).isNotEmpty
     }
 
     @Test
     fun mgmIsNotPresentInStaticNetworkFile() {
-        val networkFile = this::class.java.getResource("/config/static-network-config.json")!!.file
-        val networkConfig = NetworkConfig(configFilePath = networkFile)
+        val networkConfig = NetworkConfig(configFilePath = staticNetworkConfigFile)
         assertThat(networkConfig.mgmNodeIsPresentInNetworkDefinition).isFalse
     }
 
     @Test
     fun canParseDynamicNetworkFile() {
-        val networkFile = this::class.java.getResource("/config/dynamic-network-config.json")!!.file
-        val networkConfig = NetworkConfig(configFilePath = networkFile)
+        val networkConfig = NetworkConfig(configFilePath = dynamicNetworkConfigFile)
         assertThat(networkConfig.vNodes).isNotEmpty
     }
 
     @Test
     fun mgmIsPresentInDynamicNetworkFile() {
-        val networkFile = this::class.java.getResource("/config/dynamic-network-config.json")!!.file
-        val networkConfig = NetworkConfig(configFilePath = networkFile)
+        val networkConfig = NetworkConfig(configFilePath = dynamicNetworkConfigFile)
         assertThat(networkConfig.mgmNodeIsPresentInNetworkDefinition).isTrue
     }
 
@@ -65,16 +61,14 @@ class NetworkConfigTest {
 
     @Test
     fun canFilterListToNonMgmStaticNetwork() {
-        val networkFile = this::class.java.getResource("/config/static-network-config.json")!!.file
-        val networkConfig = NetworkConfig(configFilePath = networkFile)
+        val networkConfig = NetworkConfig(configFilePath = staticNetworkConfigFile)
         val nodesWhoArentMgm = networkConfig.getVNodesWhoAreNotMgm()
         assertThat(nodesWhoArentMgm).hasSize(5)
     }
 
     @Test
     fun canFilterListToNonMgmDynamicNetwork() {
-        val networkFile = this::class.java.getResource("/config/dynamic-network-config.json")!!.file
-        val networkConfig = NetworkConfig(configFilePath = networkFile)
+        val networkConfig = NetworkConfig(configFilePath = dynamicNetworkConfigFile)
         val nodesWhoArentMgm = networkConfig.getVNodesWhoAreNotMgm()
         assertThat(nodesWhoArentMgm).hasSize(5)
     }
