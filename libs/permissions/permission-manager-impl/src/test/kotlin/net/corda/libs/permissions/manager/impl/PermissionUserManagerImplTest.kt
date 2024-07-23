@@ -540,11 +540,11 @@ class PermissionUserManagerImplTest {
     }
 
     @Test
-    fun `get user properties returns empty set when user does not exist`() {
+    fun `get user properties returns null when user does not exist`() {
         whenever(permissionManagementCache.getUser("invalid-user-login-name")).thenReturn(null)
 
         val result = manager.getUserProperties(getUserPropertiesRequestDto)
-        assertEquals(emptySet<PropertyResponseDto>(), result)
+        assertNull(result)
     }
 
     @Test
