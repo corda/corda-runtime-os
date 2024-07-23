@@ -28,7 +28,7 @@ class GetRegistrationsTest {
             File(File(File(System.getProperty("user.home")), ".corda"), "gp"),
             "groupPolicy.json",
         )
-        private val cpbLocation = this::class.java.classLoader.getResource("test-cordapp.cpb")!!.path
+        private val cpbLocation = this::class.java.classLoader.getResource("test-cordapp-5.3.0.0-SNAPSHOT-package.cpb")!!.path
 
         @BeforeAll
         @JvmStatic

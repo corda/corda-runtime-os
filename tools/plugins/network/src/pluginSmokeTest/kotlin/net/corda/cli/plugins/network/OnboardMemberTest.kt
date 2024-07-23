@@ -21,7 +21,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class OnboardMemberTest {
     companion object {
-        private const val CPB_FILE = "test-cordapp.cpb"
+        private const val CPB_FILE = "test-cordapp-5.3.0.0-SNAPSHOT-package.cpb"
 
         private val targetUrl = "--target=${DEFAULT_CLUSTER.rest.uri}"
         private val user = "--user=${DEFAULT_CLUSTER.rest.user}"
