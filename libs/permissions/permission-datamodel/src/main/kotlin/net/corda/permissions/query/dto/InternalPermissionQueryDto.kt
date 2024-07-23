@@ -15,6 +15,39 @@ data class InternalPermissionQueryDto(
 )
 
 /**
+ * Internal permission query data transfer object holding data for one permission, its associated parent group and user/group id.
+ * [loginName] will be null if it is a group.
+ */
+data class InternalPermissionWithParentGroupQueryDto(
+    val id: String,
+    val permissionId: String?,
+    val groupVisibility: String?,
+    val virtualNode: String?,
+    val permissionString: String?,
+    val permissionType: PermissionType?,
+    val parentGroupId: String?,
+    val loginName: String?
+)
+
+/**
+ * Internal data class which represents a group or a user with associated permissions depending on whether the loginName is null or not.
+ */
+data class InternalUserGroup(
+    val id: String,
+    val parentId: String?,
+    val loginName: String?,
+    val permissionsList: List<InternalPermission>
+)
+
+data class InternalPermission(
+    val id: String,
+    val groupVisibility: String?,
+    val virtualNode: String?,
+    val permissionString: String,
+    val permissionType: PermissionType
+)
+
+/**
  * Internal permission query data transfer object holding the login name and if user is enabled.
  */
 data class InternalUserEnabledQueryDto(

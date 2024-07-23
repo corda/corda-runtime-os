@@ -3,6 +3,8 @@ package net.corda.messaging.mediator
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
+import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_ENDPOINT
@@ -13,16 +15,19 @@ import java.util.concurrent.CompletableFuture
 
 class MessageBusClient(
     override val id: String,
-    private val producer: CordaProducer,
+    private val createProducer: () -> CordaProducer,
 ) : MessagingClient {
 
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    var producer: CordaProducer = createProducer()
+
     override fun send(message: MediatorMessage<*>): MediatorMessage<*> {
         val future = CompletableFuture<Unit>()
         val record = message.toCordaProducerRecord()
+
         producer.send(record) { ex ->
             setFutureFromResponse(ex, future, record.topic)
         }
@@ -38,15 +43,56 @@ class MessageBusClient(
         future: CompletableFuture<Unit>,
         topic: String
     ) {
-        if (exception == null) {
-            future.complete(Unit)
-        } else {
-            val message = "Producer clientId $id for topic $topic failed to send."
-            log.warn(message, exception)
-            future.completeExceptionally(CordaMessageAPIFatalException(message, exception))
+        val message = "Producer clientId $id for topic $topic failed to send."
+        when (exception) {
+            null -> future.complete(Unit)
+            is CordaMessageAPIProducerRequiresReset -> {
+                logErrorAndSetFuture("$message Resetting producer.", exception, future, false)
+                resetProducer()
+            }
+            else -> logErrorAndSetFuture(message, exception, future, true)
         }
     }
 
+    /**
+     * Log the [message] and [exception] and set the [future] with the appropriate exception.
+     */
+    private fun logErrorAndSetFuture(
+        message: String,
+        exception: Exception,
+        future: CompletableFuture<Unit>,
+        fatal: Boolean
+    ) {
+        if (fatal) {
+            log.error(message, exception)
+        } else {
+            log.warn(message, exception)
+        }
+
+        future.completeExceptionally(
+            if (fatal) CordaMessageAPIFatalException(message, exception)
+            else CordaMessageAPIIntermittentException(message, exception)
+        )
+    }
+
+    /**
+     * Reset the producer by closing the current producer and creating a new one.
+     */
+    private fun resetProducer() {
+        try {
+            producer.close()
+        } catch (ex: Exception) {
+            log.warn(
+                "Failed to close message bus messaging client [$id] safely.", ex
+            )
+        }
+
+        producer = createProducer()
+    }
+
+    /**
+     * Close the producer
+     */
     override fun close() {
         try {
             producer.close()

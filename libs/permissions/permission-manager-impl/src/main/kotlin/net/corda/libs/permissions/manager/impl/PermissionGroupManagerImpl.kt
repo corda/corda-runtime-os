@@ -50,6 +50,12 @@ class PermissionGroupManagerImpl(
     }
 
     override fun changeParentGroup(changeGroupParentIdDto: ChangeGroupParentIdDto): GroupResponseDto {
+        val permissionManagementCache = checkNotNull(permissionManagementCacheRef.get()) {
+            "Permission management cache is null."
+        }
+        val cachedGroup = permissionManagementCache.getGroup(changeGroupParentIdDto.groupId)!!
+        val groupEntityVersion = cachedGroup.version
+
         val result = sendPermissionWriteRequest<Group>(
             rpcSender,
             writerTimeout,
@@ -58,6 +64,7 @@ class PermissionGroupManagerImpl(
                 null,
                 ChangeGroupParentIdRequest(
                     changeGroupParentIdDto.groupId,
+                    groupEntityVersion,
                     changeGroupParentIdDto.newParentGroupId,
                 )
             )

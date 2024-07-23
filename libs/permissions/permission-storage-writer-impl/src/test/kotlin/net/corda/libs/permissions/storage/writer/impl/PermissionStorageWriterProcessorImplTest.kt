@@ -380,7 +380,7 @@ class PermissionStorageWriterProcessorImplTest {
 
     @Test
     fun `receiving ChangeGroupParentIdRequest calls group writer and publishes updated group`() {
-        val changeGroupParentIdRequest = ChangeGroupParentIdRequest("group-id", "new-parent-id")
+        val changeGroupParentIdRequest = ChangeGroupParentIdRequest("group-id", 1, "new-parent-id")
         val updatedAvroGroup = AvroGroup().apply {
             id = "group-id"
             name = "Test Group"

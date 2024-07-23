@@ -15,19 +15,19 @@ import net.corda.messaging.generateMockCordaConsumerRecordList
 import net.corda.messaging.stubs.StubEventLogProcessor
 import net.corda.messaging.subscription.consumer.listener.ForwardingRebalanceListener
 import net.corda.messaging.subscription.consumer.listener.LoggingConsumerRebalanceListener
+import net.corda.test.util.waitWhile
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import org.mockito.kotlin.argumentCaptor
-import net.corda.test.util.waitWhile
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.util.concurrent.CountDownLatch
@@ -268,21 +268,9 @@ class EventLogSubscriptionImplTest {
 
     @Test
     fun testIntermittentExceptionDuringProcessing() {
-        doAnswer {
-            if (builderInvocationCount == 0) {
-                builderInvocationCount++
-                mockCordaConsumer
-            } else {
-                throw CordaMessageAPIFatalException("Consumer Create Fatal Error", Exception())
-            }
-        }.whenever(cordaConsumerBuilder).createConsumer<String, ByteBuffer>(
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any()
-        )
+        whenever(cordaProducerBuilder.createProducer(any(), any(), any()))
+            .thenReturn(mockCordaProducer)
+            .thenThrow(CordaMessageAPIFatalException("Consumer Create Fatal Error", Exception()))
 
         pollInvocationLatch = CountDownLatch(consumerPollAndProcessRetriesCount)
         processor = StubEventLogProcessor(
@@ -313,7 +301,7 @@ class EventLogSubscriptionImplTest {
             any(),
             anyOrNull()
         )
-        verify(cordaProducerBuilder, times(1)).createProducer(any(), any(), anyOrNull())
+        verify(cordaProducerBuilder, times(2)).createProducer(any(), any(), anyOrNull())
         verify(mockCordaProducer, times(consumerPollAndProcessRetriesCount + 1)).beginTransaction()
         verify(mockCordaProducer, times(0)).sendRecords(any())
         verify(mockCordaProducer, times(0)).sendAllOffsetsToTransaction(any())

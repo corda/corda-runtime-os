@@ -107,6 +107,7 @@ class PermissionGroupManagerImplTest {
 
         val future = mock<CompletableFuture<PermissionManagementResponse>>()
         whenever(future.getOrThrow(defaultTimeout)).thenReturn(PermissionManagementResponse(avroGroup))
+        whenever(permissionManagementCache.getGroup(groupId)).thenReturn(avroGroup)
 
         val requestCaptor = argumentCaptor<PermissionManagementRequest>()
         whenever(rpcSender.sendRequest(requestCaptor.capture())).thenReturn(future)
