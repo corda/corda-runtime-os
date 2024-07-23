@@ -63,5 +63,10 @@ class UpgradeCpi : Runnable, RestCommand() {
         // 10. Upload the new CPI file and get checksum
 
         // Once all requirements are met, we can loop through each target member and perform the upgrade
+        // -- if unable to put VNode back to ACTIVE (failed schemas check),
+        //  report what's wrong and suggest that user either
+        //   - completes the upgrade process manually (generates the SQL and executes against the DB)
+        //   - or reverts the upgrade (replaces the CPI file with the old one)
+        //  and then puts the VNode back to ACTIVE manually
     }
 }
