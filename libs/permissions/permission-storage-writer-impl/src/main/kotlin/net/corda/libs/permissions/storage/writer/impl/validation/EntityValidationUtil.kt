@@ -13,7 +13,6 @@ import net.corda.permissions.model.RoleUserAssociation
 import net.corda.permissions.model.User
 import javax.persistence.EntityManager
 
-@Suppress("TooManyFunctions")
 class EntityValidationUtil(private val entityManager: EntityManager) {
 
     fun <T : Any> requireEntityExists(type: Class<T>, id: Any): T {
@@ -72,26 +71,6 @@ class EntityValidationUtil(private val entityManager: EntityManager) {
     fun validateRoleNotAlreadyAssignedToGroup(group: Group, roleId: String) {
         if (group.roleGroupAssociations.any { it.role.id == roleId }) {
             throw EntityAssociationAlreadyExistsException("Role '$roleId' is already associated with Group '${group.id}'.")
-        }
-    }
-
-    fun validateNewParentGroupNotADescendant(groupToModify: String, newParentGroupId: String) {
-        val groupMap = entityManager.createQuery("FROM Group", Group::class.java)
-            .resultList
-            .associate { group ->
-                group.id to group.parentGroup?.id
-            }
-
-        var currentGroup: String? = newParentGroupId
-        while (currentGroup != null) {
-            currentGroup = groupMap[currentGroup]
-
-            if (currentGroup == groupToModify) {
-                throw IllegalEntityStateException(
-                    "Cannot set Group '$newParentGroupId' as the parent of " +
-                        "Group '$groupToModify' because it would create a cycle in the group hierarchy."
-                )
-            }
         }
     }
 
