@@ -37,15 +37,12 @@ class MessageBusClientFactory(
             throwOnSerializationError = false
         )
 
-        val eventProducer = cordaProducerBuilder.createProducer(
-            eventProducerConfig,
-            messageBusConfig,
-            config.onSerializationError
-        )
-
-        return MessageBusClient(
-            id,
-            eventProducer,
-        )
+        return MessageBusClient(id) {
+            cordaProducerBuilder.createProducer(
+                eventProducerConfig,
+                messageBusConfig,
+                config.onSerializationError
+            )
+        }
     }
 }

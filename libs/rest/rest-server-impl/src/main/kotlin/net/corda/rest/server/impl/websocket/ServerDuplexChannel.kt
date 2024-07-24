@@ -5,7 +5,6 @@ import net.corda.rest.ws.DuplexChannel
 import org.eclipse.jetty.websocket.api.CloseStatus
 import org.eclipse.jetty.websocket.api.StatusCode
 import java.lang.Exception
-import java.util.concurrent.Future
 
 internal class ServerDuplexChannel(
     private val ctx: WsConnectContext,
@@ -18,12 +17,12 @@ internal class ServerDuplexChannel(
     private var connectHook: (() -> Unit)? = null
     private var closeHook: ((statusCode: Int, reason: String?) -> Unit)? = null
 
-    override fun send(message: String): Future<Void> {
-        return ctx.send(message)
+    override fun send(message: String) {
+        ctx.send(message)
     }
 
-    override fun send(message: Any): Future<Void> {
-        return ctx.send(message)
+    override fun send(message: Any) {
+        ctx.send(message)
     }
 
     override fun close() {

@@ -118,11 +118,9 @@ class TestHealthCheckAPIImpl : TestHealthCheckAPI, PluggableRestResource<TestHea
             scheduledFuture = scheduler.scheduleAtFixedRate(
                 {
                     log.debug { "Sending: $counter" }
-                    val future = channel.send("${counter++}")
+                    channel.send("${counter++}")
                     if (range != null) {
                         if (counter >= start + range) {
-                            // Wait for sent confirmation then close the channel
-                            future.get()
                             channel.close()
                         }
                     }

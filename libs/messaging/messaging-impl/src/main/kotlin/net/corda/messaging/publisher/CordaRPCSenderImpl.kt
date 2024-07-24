@@ -22,6 +22,7 @@ import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
+import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.RPCSender
@@ -93,8 +94,8 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             attempts++
             try {
                 log.debug { "Creating rpc response consumer. Attempt: $attempts" }
-                val producerConfig = ProducerConfig(config.clientId, config.instanceId, false, ProducerRoles.RPC_SENDER)
-                producer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)
+
+                resetProducer()
 
                 val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.RPC_SENDER)
                 cordaConsumerBuilder.createConsumer(
@@ -249,11 +250,48 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             try {
                 producer?.sendRecords(listOf(record))
             } catch (ex: Exception) {
-                future.completeExceptionally(CordaRPCAPISenderException("Failed to publish", ex))
-                log.warn("Failed to publish. Exception: ${ex.message}", ex)
+                val message = "Failed to send request $correlationId."
+
+                when (ex) {
+                    is CordaMessageAPIProducerRequiresReset -> {
+                        logErrorAndSetFuture("$message Resetting producer.", ex, future)
+                        resetProducer()
+                    }
+                    else -> {
+                        logErrorAndSetFuture(message, ex, future)
+                    }
+                }
             }
         }
 
         return future
+    }
+
+    /**
+     * Log the [message] and [exception] and set the [future] with the appropriate exception.
+     */
+    private fun logErrorAndSetFuture(
+        message: String,
+        exception: Exception,
+        future: CompletableFuture<RESPONSE>,
+    ) {
+        log.warn(message, exception)
+        future.completeExceptionally(CordaRPCAPISenderException(message, exception))
+    }
+
+    /**
+     * Reset the producer by closing the current producer, if it exists, and creating a new one.
+     */
+    private fun resetProducer() {
+        try {
+            producer?.close()
+        } catch (ex: Exception) {
+            log.warn("Failed to close producer safely.", ex)
+        }
+
+        producer = cordaProducerBuilder.createProducer(
+            ProducerConfig(config.clientId, config.instanceId, false, ProducerRoles.RPC_SENDER),
+            config.messageBusConfig
+        )
     }
 }

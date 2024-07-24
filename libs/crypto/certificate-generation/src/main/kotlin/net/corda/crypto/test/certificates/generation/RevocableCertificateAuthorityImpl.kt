@@ -30,7 +30,7 @@ internal class RevocableCertificateAuthorityImpl(
         internal const val PATH = "/ocsp"
     }
     private val app = Javalin.create().start(port)
-        .addHandler(HandlerType.GET, "$PATH/*", OcspHandler())
+        .addHttpHandler(HandlerType.GET, "$PATH/*", OcspHandler())
     private val revokedCertificates = ConcurrentHashMap.newKeySet<BigInteger>()
     private val clock = Clock.systemUTC()
 
@@ -51,7 +51,7 @@ internal class RevocableCertificateAuthorityImpl(
     }
 
     override fun close() {
-        app.close()
+        app.stop()
     }
 
     private inner class OcspHandler : Handler {
