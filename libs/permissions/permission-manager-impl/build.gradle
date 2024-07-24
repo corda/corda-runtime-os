@@ -17,6 +17,7 @@ dependencies {
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-crypto"
 
+    implementation project(':libs:permissions:permission-common')
     implementation project(":libs:permissions:permission-manager")
     implementation project(":libs:permissions:permission-management-cache")
     implementation project(":libs:permissions:permission-validation-cache")
