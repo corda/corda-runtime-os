@@ -1,6 +1,5 @@
 package net.corda.rest.server.impl.internal
 
-import io.javalin.http.util.ContextUtil
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.server.impl.context.ClientRequestContext
 import org.slf4j.LoggerFactory
@@ -48,7 +47,8 @@ internal class ParametersRetrieverContext(private val ctx: ClientRequestContext)
     fun formParamMap(): Map<String, List<String>> = ctx.formParamMap()
 
     fun pathParam(key: String): String {
-        return ContextUtil.pathParamOrThrow(pathParamsMap, key.lowercase(), ctx.matchedPath)
+        return pathParamsMap[key.lowercase()]
+            ?: throw IllegalArgumentException("Path parameter '$key' not found in path '${ctx.matchedPath}'")
     }
 
     fun queryParams(key: String): List<String> = queryParamsMap[key.lowercase()] ?: emptyList()
@@ -58,10 +58,26 @@ internal class ParametersRetrieverContext(private val ctx: ClientRequestContext)
 
     fun uploadedFiles(paramName: String): List<HttpFileUpload> {
         val files = ctx.uploadedFiles(paramName)
-        return files.map { file -> HttpFileUpload(file.content, file.contentType, file.extension, file.filename, file.size) }
+        return files.map { file ->
+            HttpFileUpload(
+                file.content(),
+                file.contentType(),
+                file.extension(),
+                file.filename(),
+                file.size()
+            )
+        }
     }
 
-    fun <T> fromJsonString(json: String, targetClass: Class<T>): T {
+    fun <T> fromJsonString(json: String, targetClass: Class<T>): T? {
+        // The method fromJsonString does not accept null as a return value
+        // because the type accepted by the method must be a subclass of Any.
+        // In order for the function to be able to return null, the type should be a
+        // subclass of Any?.
+        // An attempt to return null results in a null exception.
+        if (json == "null") {
+            return null
+        }
         return ctx.jsonMapper.fromJsonString(json, targetClass)
     }
 }

@@ -3,6 +3,7 @@ package net.corda.messaging.mediator
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_ENDPOINT
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -22,6 +23,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.atomic.AtomicInteger
 
 class MessageBusClientTest {
     private companion object {
@@ -45,11 +47,17 @@ class MessageBusClientTest {
         messageProps.toHeaders(),
     )
 
+    private val timesProducerCreated = AtomicInteger(0)
+    private fun createMockedProducer(): CordaProducer {
+        timesProducerCreated.getAndIncrement()
+        return cordaProducer
+    }
 
     @BeforeEach
     fun setup() {
         cordaProducer = mock()
-        messageBusClient = MessageBusClient("client-id", cordaProducer)
+        timesProducerCreated.set(0)
+        messageBusClient = MessageBusClient("client-id", ::createMockedProducer)
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -104,6 +112,32 @@ class MessageBusClientTest {
             assertTrue(exception is CordaMessageAPIFatalException)
             assertEquals("Producer clientId client-id for topic topic failed to send.", exception.message)
         }?.get()
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    @Test
+    fun `producer is recreated following a CordaMessageAPIProducerRequiresReset exception`() {
+        doAnswer {
+            val callback = it.getArgument<CordaProducer.Callback>(1)
+            callback.onCompletion(CordaMessageAPIProducerRequiresReset("test"))
+        }.whenever(cordaProducer).send(eq(record), any())
+
+        val result = messageBusClient.send(message) as MediatorMessage<CompletableFuture<Unit>>
+
+        verify(cordaProducer).send(eq(record), any())
+        assertNotNull(result.payload)
+
+        result.payload?.isCompletedExceptionally?.let { assertTrue(it) }
+
+        result.payload?.handle { _, exception ->
+            assertTrue(exception is CordaMessageAPIProducerRequiresReset)
+            assertEquals(
+                "Producer clientId client-id for topic topic failed to send. Resetting Producer.",
+                exception.message
+            )
+        }
+
+        assertEquals(2, timesProducerCreated.get())
     }
 
     @Suppress("UNCHECKED_CAST")

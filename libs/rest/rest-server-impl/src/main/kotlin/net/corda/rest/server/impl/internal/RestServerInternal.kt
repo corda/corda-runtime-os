@@ -1,18 +1,20 @@
 package net.corda.rest.server.impl.internal
 
 import io.javalin.Javalin
-import io.javalin.core.util.Header
+import io.javalin.config.JavalinConfig
+import io.javalin.config.MultipartConfig
+import io.javalin.config.SizeUnit
 import io.javalin.http.BadRequestResponse
 import io.javalin.http.ContentType
 import io.javalin.http.Context
 import io.javalin.http.HandlerType
+import io.javalin.http.Header
 import io.javalin.http.HttpResponseException
 import io.javalin.http.NotFoundResponse
 import io.javalin.http.staticfiles.Location
 import io.javalin.http.util.JsonEscapeUtil
-import io.javalin.http.util.MultipartUtil
-import io.javalin.http.util.RedirectToLowercasePathPlugin
-import io.javalin.plugin.json.JavalinJackson
+import io.javalin.json.JavalinJackson
+import io.javalin.plugin.bundled.RedirectToLowercasePathPlugin
 import net.corda.rest.authorization.AuthorizationUtils.authorize
 import net.corda.rest.server.config.RestServerSettingsProvider
 import net.corda.rest.server.impl.apigen.processing.RouteInfo
@@ -20,7 +22,6 @@ import net.corda.rest.server.impl.apigen.processing.RouteProvider
 import net.corda.rest.server.impl.apigen.processing.openapi.OpenApiInfoProvider
 import net.corda.rest.server.impl.context.ClientHttpRequestContext
 import net.corda.rest.server.impl.context.ContextUtils.authenticate
-import net.corda.rest.server.impl.context.ContextUtils.contentTypeApplicationJson
 import net.corda.rest.server.impl.context.ContextUtils.invokeHttpMethod
 import net.corda.rest.server.impl.context.ContextUtils.userNotAuthorized
 import net.corda.rest.server.impl.security.RestAuthenticationProvider
@@ -34,10 +35,8 @@ import net.corda.utilities.debug
 import net.corda.utilities.trace
 import net.corda.web.server.JavalinStarter
 import org.eclipse.jetty.http2.HTTP2Cipher
-import org.eclipse.jetty.server.HttpConfiguration
 import org.eclipse.jetty.server.HttpConnectionFactory
 import org.eclipse.jetty.server.SecureRequestCustomizer
-import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.ServerConnector
 import org.eclipse.jetty.server.SslConnectionFactory
 import org.eclipse.jetty.util.ssl.SslContextFactory
@@ -47,7 +46,6 @@ import org.osgi.framework.wiring.BundleWiring
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
 import java.util.LinkedList
-import javax.servlet.MultipartConfigElement
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown", "LongParameterList")
 internal class RestServerInternal(
@@ -78,10 +76,10 @@ internal class RestServerInternal(
 
     private lateinit var server: Javalin
     private val serverFactory: () -> Javalin = {
-        Javalin.create {
-            it.jsonMapper(JavalinJackson(serverJacksonObjectMapper))
-            it.registerPlugin(RedirectToLowercasePathPlugin())
-            configureJavalinForTracing(it)
+        Javalin.create { config ->
+            config.jsonMapper(JavalinJackson(serverJacksonObjectMapper))
+            config.registerPlugin(RedirectToLowercasePathPlugin())
+            configureJavalinForTracing(config)
 
             val swaggerUiBundle = getSwaggerUiBundle()
             // In an OSGi context, webjars cannot be loaded automatically using `JavalinConfig.enableWebJars`.
@@ -91,53 +89,53 @@ internal class RestServerInternal(
             if (swaggerUiBundle != null) {
                 val swaggerUiClassloader = swaggerUiBundle.adapt(BundleWiring::class.java).classLoader
                 executeWithThreadContextClassLoader(swaggerUiClassloader) {
-                    it.addStaticFiles("/META-INF/resources/", Location.CLASSPATH)
+                    config.staticFiles.add("/META-INF/resources/", Location.CLASSPATH)
                 }
             } else {
-                it.enableWebjars()
+                config.staticFiles.enableWebjars()
             }
 
             if (log.isDebugEnabled) {
-                it.enableDevLogging()
+                config.bundledPlugins.enableDevLogging()
             }
-            it.server {
-                configurationsProvider.getSSLKeyStorePath()
-                    ?.let { createSecureServer() }
-                    ?: INSECURE_SERVER_DEV_MODE_WARNING.let { msg ->
-                        if (configurationsProvider.isDevModeEnabled()) {
-                            log.warn(msg)
-                        } else {
-                            log.error(msg)
-                            throw UnsupportedOperationException(msg)
-                        }
-                        createInsecureServer()
-                    }
+
+            if (configurationsProvider.getSSLKeyStorePath() != null) {
+                createSecureServer(config)
+            } else {
+                if (configurationsProvider.isDevModeEnabled()) {
+                    log.warn(INSECURE_SERVER_DEV_MODE_WARNING)
+                } else {
+                    log.error(INSECURE_SERVER_DEV_MODE_WARNING)
+                    throw UnsupportedOperationException(INSECURE_SERVER_DEV_MODE_WARNING)
+                }
+                createInsecureServer(config)
             }
-            it.defaultContentType = contentTypeApplicationJson
-            it.enableCorsForAllOrigins()
+
+            config.http.defaultContentType = ContentType.APPLICATION_JSON.mimeType
+            config.bundledPlugins.enableCors { cors ->
+                cors.addRule { rule ->
+                    rule.reflectClientOrigin = true
+                    rule.allowCredentials = true
+                }
+            }
         }.apply {
             addRoutes()
             addOpenApiRoutes()
             addWsRoutes()
             // In order for multipart content to be stored onto disk, we need to override some properties
-            // which are set by default by Javalin such that entire content is read into memory
-            MultipartUtil.preUploadFunction = { req ->
-                req.setAttribute(
-                    "org.eclipse.jetty.multipartConfig",
-                    MultipartConfigElement(
-                        multiPartDir.toString(),
-                        configurationsProvider.maxContentLength().toLong(),
-                        configurationsProvider.maxContentLength().toLong(),
-                        1024
-                    )
-                )
+            // which are set by default by Javalin such that the entire content is read into memory
+            MultipartConfig().apply {
+                cacheDirectory(multiPartDir.toString())
+                maxFileSize(configurationsProvider.maxContentLength().toLong(), SizeUnit.BYTES)
+                maxTotalRequestSize(configurationsProvider.maxContentLength().toLong(), SizeUnit.BYTES)
+                maxInMemoryFileSize(1024, SizeUnit.BYTES)
             }
         }
     }
 
     private fun addExceptionHandlers(app: Javalin) {
         app.exception(NotFoundResponse::class.java) { e, ctx ->
-            val detailsWithUrl = e.details.plus("url" to ctx.req.requestURL.toString())
+            val detailsWithUrl = e.details.plus("url" to ctx.req().requestURL.toString())
             commonResult(NotFoundResponse(details = detailsWithUrl), ctx)
         }
         app.exception(HttpResponseException::class.java) { e, ctx ->
@@ -146,7 +144,7 @@ internal class RestServerInternal(
     }
 
     private fun commonResult(e: HttpResponseException, ctx: Context) {
-        if (ctx.header(Header.ACCEPT)?.contains(ContentType.JSON) == true || ctx.res.contentType == ContentType.JSON) {
+        if (ctx.header(Header.ACCEPT)?.contains(ContentType.JSON) == true || ctx.res().contentType == ContentType.JSON) {
             ctx.status(e.status).result(
                 """{
                 |    "title": "${e.message?.let { JsonEscapeUtil.escape(it) }}",
@@ -202,7 +200,7 @@ internal class RestServerInternal(
                     // "testEntity/getprotocolversion" and mistakenly finds "before" handler where there should be none.
                     // Javalin provides no way for modifying "before" handler finding logic.
                     if (resourceProvider.httpNoAuthRequiredGetRoutes.none { routeInfo -> routeInfo.fullPath == it.path() } &&
-                        it.method() == "GET"
+                        it.method().name == "GET"
                     ) {
                         val clientHttpRequestContext = ClientHttpRequestContext(it)
                         val authorizingSubject = authenticate(clientHttpRequestContext, restAuthProvider, credentialResolver)
@@ -236,7 +234,7 @@ internal class RestServerInternal(
 
     private fun Javalin.registerHandlerForRoute(routeInfo: RouteInfo, handlerType: HandlerType) {
         try {
-            addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeHttpMethod())
+            addHttpHandler(handlerType, routeInfo.fullPath, routeInfo.invokeHttpMethod())
             log.info("Added \"$handlerType\" handler for \"${routeInfo.fullPath}\".")
         } catch (e: Exception) {
             "Error during adding route. Handler type=$handlerType, Path=\"${routeInfo.fullPath}\"".let {
@@ -252,7 +250,7 @@ internal class RestServerInternal(
                 // For "before" handlers we have a global space of handlers in Javalin regardless of which method was actually
                 // used. In case when two separate handlers created for GET and for DELETE for the same resource, without "if"
                 // condition below both handlers will be used - which will be redundant.
-                if (it.method() == handlerType.name) {
+                if (it.method().name == handlerType.name) {
                     with(configurationsProvider.maxContentLength()) {
                         if (it.contentLength() > this) {
                             throw BadRequestResponse(
@@ -264,7 +262,8 @@ internal class RestServerInternal(
                         }
                     }
                     val clientHttpRequestContext = ClientHttpRequestContext(it)
-                    val authorizingSubject = authenticate(clientHttpRequestContext, restAuthProvider, credentialResolver)
+                    val authorizingSubject =
+                        authenticate(clientHttpRequestContext, restAuthProvider, credentialResolver)
                     val authorizationProvider = routeInfo.method.instance.authorizationProvider
                     val resourceAccessString = clientHttpRequestContext.getResourceAccessString()
 
@@ -283,7 +282,7 @@ internal class RestServerInternal(
             openApiInfoProviders.forEach { openApiInfoProvider ->
                 get(
                     openApiInfoProvider.pathForOpenApiJson
-                ) { ctx -> ctx.result(openApiInfoProvider.openApiString).contentType(contentTypeApplicationJson) }
+                ) { ctx -> ctx.result(openApiInfoProvider.openApiString).contentType(ContentType.APPLICATION_JSON.mimeType) }
                 get(openApiInfoProvider.pathForOpenApiUI, openApiInfoProvider.swaggerUIRenderer)
             }
             log.trace { "Add OpenApi route completed." }
@@ -316,80 +315,54 @@ internal class RestServerInternal(
     }
 
     @SuppressWarnings("ComplexMethod")
-    private fun createSecureServer(): Server {
+    private fun createSecureServer(config: JavalinConfig) {
         log.trace { "Create secure (HTTPS) server." }
         require(configurationsProvider.getSSLKeyStorePath() != null) {
             "SSL key store path must be present in order to start a secure server"
         }
         require(configurationsProvider.getSSLKeyStorePassword() != null) { SSL_PASSWORD_MISSING }
 
-        log.trace { "Get SslContextFactory." }
-        val sslContextFactory = SslContextFactory.Server().apply {
-            keyStorePath = configurationsProvider.getSSLKeyStorePath()!!.toAbsolutePath().toString()
-            setKeyStorePassword(configurationsProvider.getSSLKeyStorePassword()!!)
-            cipherComparator = HTTP2Cipher.COMPARATOR
-            provider = "Conscrypt"
-        }
-        log.trace { "Get SslConnectionFactory." }
-        log.trace { "Get HttpConfiguration." }
-        val httpsConfig = HttpConfiguration().apply {
-            sendServerVersion = false
-            secureScheme = "https"
-            securePort = configurationsProvider.getHostAndPort().port
-            addCustomizer(SecureRequestCustomizer())
-        }
-
-        val http11 = HttpConnectionFactory(httpsConfig)
-
-        fun Server.addHttp11SslConnector() {
-            val ssl = SslConnectionFactory(sslContextFactory, http11.protocol)
-            addConnector(
-                ServerConnector(this, ssl, http11).apply {
-                    port = configurationsProvider.getHostAndPort().port
-                    host = configurationsProvider.getHostAndPort().host
+        config.jetty.modifyHttpConfiguration { httpConfig ->
+            httpConfig.sendServerVersion = false
+            httpConfig.secureScheme = "https"
+            httpConfig.securePort = configurationsProvider.getHostAndPort().port
+            httpConfig.addCustomizer(
+                SecureRequestCustomizer().apply {
+                    isSniHostCheck = false
                 }
             )
         }
 
-        try {
-            return Server().apply {
-                /**
-                 * HTTP2 connector currently disabled because:
-                 * - There is no explicit requirement to support HTTP2
-                 * - There are not that many HTTP clients exist in Java that support HTTP2
-                 * - Fallback mechanism to HTTP 1.1 is not working as expected
-                 */
-                // addHttp2SslConnector()
-                // HTTP/1.1 Connector
-                addHttp11SslConnector()
-            }.also { log.trace { "Create secure (HTTPS) server completed." } }
-        } catch (e: Exception) {
-            "Error during Create secure (HTTPS) server".let {
-                log.error("$it: ${e.message}")
-                throw Exception(it, e)
+        config.jetty.addConnector { server, httpConfig ->
+            log.trace { "Get SslContextFactory." }
+            val sslContextFactory = SslContextFactory.Server().apply {
+                keyStorePath = configurationsProvider.getSSLKeyStorePath()!!.toAbsolutePath().toString()
+                setKeyStorePassword(configurationsProvider.getSSLKeyStorePassword()!!)
+                cipherComparator = HTTP2Cipher.COMPARATOR
+            }
+
+            val http11 = HttpConnectionFactory(httpConfig)
+            val ssl = SslConnectionFactory(sslContextFactory, http11.protocol)
+
+            ServerConnector(server, ssl, http11).apply {
+                port = configurationsProvider.getHostAndPort().port
+                host = configurationsProvider.getHostAndPort().host
             }
         }
+        log.trace { "Create secure (HTTPS) server completed." }
     }
 
-    private fun createInsecureServer(): Server {
-        try {
-            log.trace { "Create insecure (HTTP) server." }
+    private fun createInsecureServer(config: JavalinConfig) {
+        log.trace { "Create insecure (HTTP) server." }
 
-            return Server().apply {
-                // HTTP/1.1 Connector
-                addConnector(
-                    ServerConnector(this).apply {
-                        port = configurationsProvider.getHostAndPort().port
-                        host = configurationsProvider.getHostAndPort().host
-                    }
-                )
-            }.also { log.trace { "Create insecure (HTTP) server completed." } }
-        } catch (e: Exception) {
-            "Error during Create insecure (HTTP) server".let {
-                log.error("$it: ${e.message}")
-                throw Exception(it, e)
+        config.jetty.addConnector { server, _ ->
+            ServerConnector(server).apply {
+                port = configurationsProvider.getHostAndPort().port
+                host = configurationsProvider.getHostAndPort().host
             }
         }
+
+        log.trace { "Create insecure (HTTP) server." }
     }
 
     private fun Javalin.addWsRoutes() {
