@@ -54,7 +54,7 @@ import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicReference
-import javax.persistence.EntityNotFoundException
+import net.corda.libs.permissions.common.exception.EntityNotFoundException
 
 class PermissionUserManagerImplTest {
 
