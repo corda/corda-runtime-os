@@ -11,6 +11,7 @@ import net.corda.data.permissions.management.user.DeleteUserRequest
 import net.corda.data.permissions.management.user.RemovePropertyFromUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.permissions.common.exception.EntityNotFoundException
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.libs.permissions.manager.PermissionUserManager
 import net.corda.libs.permissions.manager.impl.SmartConfigUtil.getEndpointTimeout
@@ -37,7 +38,6 @@ import net.corda.schema.configuration.ConfigKeys
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.atomic.AtomicReference
-import javax.persistence.EntityNotFoundException
 
 @Suppress("TooManyFunctions", "LongParameterList")
 class PermissionUserManagerImpl(
