@@ -795,6 +795,12 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     }
 
     @Suppress("unused")
+    /** Change the parent group of a specified user */
+    fun changeUserParentGroup(loginName: String, newParentGroupId: String?): SimpleResponse = trace("changeUserParentGroup") {
+        initialClient.put("/api/$REST_API_VERSION_PATH/user/$loginName/parent/changeparentid/$newParentGroupId", "")
+    }
+
+    @Suppress("unused")
     /** Assign a specified role to a specified user */
     fun assignRoleToUser(loginName: String, roleId: String): SimpleResponse = trace("assignRoleToUser") {
         initialClient.put("/api/$REST_API_VERSION_PATH/user/$loginName/role/$roleId", "")

@@ -9,6 +9,7 @@ import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.data.permissions.management.user.AddPropertyToUserRequest
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
+import net.corda.data.permissions.management.user.ChangeUserParentGroupIdRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.DeleteUserRequest
 import net.corda.data.permissions.management.user.RemovePropertyFromUserRequest
@@ -19,6 +20,7 @@ import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.libs.permissions.manager.exception.UnexpectedPermissionResponseException
 import net.corda.libs.permissions.manager.request.AddPropertyToUserRequestDto
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
+import net.corda.libs.permissions.manager.request.ChangeUserParentIdDto
 import net.corda.libs.permissions.manager.request.ChangeUserPasswordDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.DeleteUserRequestDto
@@ -39,6 +41,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -49,7 +52,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.lang.IllegalArgumentException
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -291,6 +293,43 @@ class PermissionUserManagerImplTest {
         val result = manager.getUser(getUserRequestDto)
 
         assertNull(result)
+    }
+
+    @Test
+    fun `change user's parent group sends rpc request and converts result to response dto`() {
+        val userId = UUID.randomUUID().toString()
+        val newParentGroupId = UUID.randomUUID().toString()
+        val avroUser = User(
+            userId, 0,
+            ChangeDetails(
+                Instant.now()
+            ),
+            "loginName", "fullName", true, "hashedPass", "salt", Instant.now(), false, newParentGroupId, emptyList(), emptyList()
+        )
+
+        val future = mock<CompletableFuture<PermissionManagementResponse>>()
+        whenever(future.getOrThrow(defaultTimeout)).thenReturn(PermissionManagementResponse(avroUser))
+        whenever(permissionManagementCache.getUser(userId)).thenReturn(avroUser)
+
+        val requestCaptor = argumentCaptor<PermissionManagementRequest>()
+        whenever(rpcSender.sendRequest(requestCaptor.capture())).thenReturn(future)
+
+        val changeUserParentIdDto = ChangeUserParentIdDto("requestedBy", userId, newParentGroupId)
+        val result = manager.changeUserParentGroup(changeUserParentIdDto)
+
+        val capturedPermissionManagementRequest = requestCaptor.firstValue
+        assertEquals("requestedBy", capturedPermissionManagementRequest.requestUserId)
+        assertNull(capturedPermissionManagementRequest.virtualNodeId)
+
+        val capturedChangeUserParentGroupIdRequest = capturedPermissionManagementRequest.request as ChangeUserParentGroupIdRequest
+        assertEquals(userId, capturedChangeUserParentGroupIdRequest.userId)
+        assertEquals(newParentGroupId, capturedChangeUserParentGroupIdRequest.newParentGroupId)
+
+        assertEquals(userId, result.id)
+        assertEquals("loginName", result.loginName)
+        assertEquals(newParentGroupId, result.parentGroup)
+        assertTrue(result.properties.isEmpty())
+        assertTrue(result.roles.isEmpty())
     }
 
     @Test

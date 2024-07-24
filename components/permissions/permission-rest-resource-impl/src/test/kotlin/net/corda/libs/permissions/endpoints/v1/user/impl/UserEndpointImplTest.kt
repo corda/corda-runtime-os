@@ -4,6 +4,7 @@ import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.request.AddPropertyToUserRequestDto
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
+import net.corda.libs.permissions.manager.request.ChangeUserParentIdDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.DeleteUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUserPropertiesRequestDto
@@ -199,6 +200,29 @@ internal class UserEndpointImplTest {
         )
         assertEquals("User 'abc' not found.", e.message)
         assertEquals("abc", getUserRequestDtoCapture.firstValue.loginName)
+    }
+
+    @Test
+    fun `change a user's parent group successfully`() {
+        val changeUserParentIdDtoCapture = argumentCaptor<ChangeUserParentIdDto>()
+        whenever(lifecycleCoordinator.isRunning).thenReturn(true)
+        whenever(permissionService.isRunning).thenReturn(true)
+        whenever(permissionManager.changeUserParentGroup(changeUserParentIdDtoCapture.capture())).thenReturn(userResponseDto)
+
+        endpoint.start()
+        val response = endpoint.changeUserParentGroup("loginName1", parentGroup)
+        val responseType = response.responseBody
+
+        assertEquals(ResponseCode.OK, response.responseCode)
+        assertNotNull(responseType)
+        assertEquals("uuid", responseType.id)
+        assertEquals(0, responseType.version)
+        assertEquals(now, responseType.updateTimestamp)
+        assertEquals("fullName1", responseType.fullName)
+        assertEquals("loginName1", responseType.loginName)
+        assertEquals(true, responseType.enabled)
+        assertEquals(now, responseType.passwordExpiry)
+        assertEquals(parentGroup, responseType.parentGroup)
     }
 
     @Test
