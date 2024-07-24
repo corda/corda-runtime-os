@@ -844,7 +844,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         }
 
     @Suppress("unused")
-            /** Create a new permission */
+    /** Create a new permission */
     fun createPermission(
         permissionString: String,
         permissionType: String,
@@ -858,7 +858,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     }
 
     @Suppress("unused")
-            /** Create a set of permissions and optionally assigns them to existing roles */
+    /** Create a set of permissions and optionally assigns them to existing roles */
     fun createBulkPermissions(
         permissionsToCreate: Set<Pair<String, String>>,
         roleIds: Set<String>
@@ -870,7 +870,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     }
 
     @Suppress("unused")
-            /** Get the permissions which satisfy the query */
+    /** Get the permissions which satisfy the query */
     fun getPermissionByQuery(
         limit: Int,
         permissionType: String,
