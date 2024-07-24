@@ -37,6 +37,7 @@ import net.corda.schema.configuration.ConfigKeys
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.atomic.AtomicReference
+import javax.persistence.EntityNotFoundException
 
 @Suppress("TooManyFunctions", "LongParameterList")
 class PermissionUserManagerImpl(
@@ -199,7 +200,8 @@ class PermissionUserManagerImpl(
             "Permission validation cache is null."
         }
 
-        val cachedPermissionSummary = permissionValidationCache.getPermissionSummary(permissionSummaryRequestDto.userLogin) ?: return null
+        val cachedPermissionSummary =
+            permissionValidationCache.getPermissionSummary(permissionSummaryRequestDto.userLogin) ?: return null
 
         return UserPermissionSummaryResponseDto(
             cachedPermissionSummary.loginName,
@@ -241,11 +243,12 @@ class PermissionUserManagerImpl(
         return result.convertToResponseDto()
     }
 
-    override fun getUserProperties(getUserPropertiesRequestDto: GetUserPropertiesRequestDto): Set<PropertyResponseDto>? {
+    override fun getUserProperties(getUserPropertiesRequestDto: GetUserPropertiesRequestDto): Set<PropertyResponseDto> {
         val permissionManagementCache = checkNotNull(permissionManagementCacheRef.get()) {
             "Permission management cache is null."
         }
-        val cachedUser: User = permissionManagementCache.getUser(getUserPropertiesRequestDto.loginName) ?: return null
+        val cachedUser: User = permissionManagementCache.getUser(getUserPropertiesRequestDto.loginName)
+            ?: throw EntityNotFoundException("Invalid user.")
         return cachedUser.properties.map { it.convertToResponseDto() }.toSet()
     }
 

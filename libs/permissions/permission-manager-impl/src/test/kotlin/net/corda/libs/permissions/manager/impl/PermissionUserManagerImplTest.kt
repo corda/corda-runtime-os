@@ -54,6 +54,7 @@ import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicReference
+import javax.persistence.EntityNotFoundException
 
 class PermissionUserManagerImplTest {
 
@@ -531,7 +532,7 @@ class PermissionUserManagerImplTest {
     @Test
     fun `get user properties using the cache`() {
         whenever(permissionManagementCache.getUser("loginname123")).thenReturn(avroUser)
-        val result = manager.getUserProperties(getUserPropertiesRequestDto)!!
+        val result = manager.getUserProperties(getUserPropertiesRequestDto)
         assertNotNull(result)
         assertEquals(userProperty.lastChangeDetails.updateTimestamp, result.first().lastChangedTimestamp)
         assertEquals(userProperty.key, result.first().key)
@@ -539,11 +540,19 @@ class PermissionUserManagerImplTest {
     }
 
     @Test
-    fun `get user properties returns null when user does not exist`() {
-        whenever(permissionManagementCache.getUser("invalid-user-login-name")).thenReturn(null)
+    fun `get user properties throws when user does not exist`() {
+        val future = mock<CompletableFuture<PermissionManagementResponse>>()
+        whenever(future.getOrThrow(defaultTimeout)).thenThrow(EntityNotFoundException("Invalid user."))
 
-        val result = manager.getUserProperties(getUserPropertiesRequestDto)
-        assertNull(result)
+        val capture = argumentCaptor<PermissionManagementRequest>()
+        whenever(rpcSender.sendRequest(capture.capture())).thenReturn(future)
+
+        val requestDto = GetUserPropertiesRequestDto("requestUserId", "user-login1")
+
+        val e = assertThrows<EntityNotFoundException> {
+            manager.getUserProperties(requestDto)
+        }
+        assertEquals("Invalid user.", e.message)
     }
 
     @Test
