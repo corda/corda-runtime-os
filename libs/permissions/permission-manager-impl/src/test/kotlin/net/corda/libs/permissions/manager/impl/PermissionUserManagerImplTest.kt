@@ -297,24 +297,24 @@ class PermissionUserManagerImplTest {
 
     @Test
     fun `change user's parent group sends rpc request and converts result to response dto`() {
-        val userId = UUID.randomUUID().toString()
+        val loginName = UUID.randomUUID().toString()
         val newParentGroupId = UUID.randomUUID().toString()
         val avroUser = User(
-            userId, 0,
+            "userId", 0,
             ChangeDetails(
                 Instant.now()
             ),
-            "loginName", "fullName", true, "hashedPass", "salt", Instant.now(), false, newParentGroupId, emptyList(), emptyList()
+            loginName, "fullName", true, "hashedPass", "salt", Instant.now(), false, newParentGroupId, emptyList(), emptyList()
         )
 
         val future = mock<CompletableFuture<PermissionManagementResponse>>()
         whenever(future.getOrThrow(defaultTimeout)).thenReturn(PermissionManagementResponse(avroUser))
-        whenever(permissionManagementCache.getUser(userId)).thenReturn(avroUser)
+        whenever(permissionManagementCache.getUser(loginName)).thenReturn(avroUser)
 
         val requestCaptor = argumentCaptor<PermissionManagementRequest>()
         whenever(rpcSender.sendRequest(requestCaptor.capture())).thenReturn(future)
 
-        val changeUserParentIdDto = ChangeUserParentIdDto("requestedBy", userId, newParentGroupId)
+        val changeUserParentIdDto = ChangeUserParentIdDto("requestedBy", loginName, newParentGroupId)
         val result = manager.changeUserParentGroup(changeUserParentIdDto)
 
         val capturedPermissionManagementRequest = requestCaptor.firstValue
@@ -322,11 +322,11 @@ class PermissionUserManagerImplTest {
         assertNull(capturedPermissionManagementRequest.virtualNodeId)
 
         val capturedChangeUserParentGroupIdRequest = capturedPermissionManagementRequest.request as ChangeUserParentGroupIdRequest
-        assertEquals(userId, capturedChangeUserParentGroupIdRequest.userId)
+        assertEquals(loginName, capturedChangeUserParentGroupIdRequest.loginName)
         assertEquals(newParentGroupId, capturedChangeUserParentGroupIdRequest.newParentGroupId)
 
-        assertEquals(userId, result.id)
-        assertEquals("loginName", result.loginName)
+        assertEquals("userId", result.id)
+        assertEquals(loginName, result.loginName)
         assertEquals(newParentGroupId, result.parentGroup)
         assertTrue(result.properties.isEmpty())
         assertTrue(result.roles.isEmpty())
