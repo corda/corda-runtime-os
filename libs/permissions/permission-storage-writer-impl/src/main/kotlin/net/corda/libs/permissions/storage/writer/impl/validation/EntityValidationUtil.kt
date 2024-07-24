@@ -13,6 +13,7 @@ import net.corda.permissions.model.RoleUserAssociation
 import net.corda.permissions.model.User
 import javax.persistence.EntityManager
 
+@Suppress("TooManyFunctions")
 class EntityValidationUtil(private val entityManager: EntityManager) {
 
     fun <T : Any> requireEntityExists(type: Class<T>, id: Any): T {
