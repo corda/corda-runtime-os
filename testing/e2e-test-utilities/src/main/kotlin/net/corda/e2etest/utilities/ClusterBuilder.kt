@@ -27,6 +27,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         init {
             configureTracing("E2eClusterTracing", null, null, emptyMap())
         }
+
         private const val vNodeCreatorName = "vnodecreatoruser"
         private val lock = ReentrantLock()
     }
@@ -211,7 +212,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/certificate/cluster/$usage/$alias")
 
     @Suppress("unused")
-    /** Assumes the resource *is* a CPB */
+            /** Assumes the resource *is* a CPB */
     fun cpbUpload(resourceName: String) = uploadUnmodifiedResource("/api/$REST_API_VERSION_PATH/cpi/", resourceName)
 
     /**
@@ -253,7 +254,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         vNodeCreatorClient.put("/api/$REST_API_VERSION_PATH/virtualnode/$holdingIdHash/state/$newState", "")
 
     @Suppress("unused")
-    /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
+            /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
     fun forceCpiUpload(
         cpbResourceName: String?,
         groupId: String,
@@ -271,9 +272,12 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         )
 
     @Suppress("unused")
-    /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
+            /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
     fun syncVirtualNode(virtualNodeShortId: String) =
-        initialClient.post("/api/$REST_API_VERSION_PATH/maintenance/virtualnode/$virtualNodeShortId/vault-schema/force-resync", "")
+        initialClient.post(
+            "/api/$REST_API_VERSION_PATH/maintenance/virtualnode/$virtualNodeShortId/vault-schema/force-resync",
+            ""
+        )
 
     /** Return the status for the given request id */
     fun cpiStatus(id: String) = vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/cpi/status/$id")
@@ -452,22 +456,22 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     }
 
     @Suppress("unused")
-    /** Get schema SQL to create crypto DB */
+            /** Get schema SQL to create crypto DB */
     fun getCryptoSchemaSql() =
         vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/virtualnode/create/db/crypto")
 
     @Suppress("unused")
-    /** Get schema SQL to create uniqueness DB */
+            /** Get schema SQL to create uniqueness DB */
     fun getUniquenessSchemaSql() =
         vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/virtualnode/create/db/uniqueness")
 
     @Suppress("unused")
-    /** Get schema SQL to create vault and CPI DB */
+            /** Get schema SQL to create vault and CPI DB */
     fun getVaultSchemaSql(cpiChecksum: String) =
         vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/virtualnode/create/db/vault/$cpiChecksum")
 
     @Suppress("unused")
-    /** Get schema SQL to update vault and CPI DB */
+            /** Get schema SQL to update vault and CPI DB */
     fun getUpdateSchemaSql(virtualNodeShortHash: String, newCpiChecksum: String) =
         vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/virtualnode/$virtualNodeShortHash/db/vault/$newCpiChecksum")
 
@@ -576,9 +580,12 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
 
 
     @Suppress("unused")
-    /** Trigger upgrade of a virtual node's CPI to the given  */
+            /** Trigger upgrade of a virtual node's CPI to the given  */
     fun vNodeUpgrade(virtualNodeShortHash: String, targetCpiFileChecksum: String) =
-        vNodeCreatorClient.put("/api/$REST_API_VERSION_PATH/virtualnode/$virtualNodeShortHash/cpi/$targetCpiFileChecksum", "")
+        vNodeCreatorClient.put(
+            "/api/$REST_API_VERSION_PATH/virtualnode/$virtualNodeShortHash/cpi/$targetCpiFileChecksum",
+            ""
+        )
 
     @Suppress("unused")
     fun getVNodeOperationStatus(requestId: String) =
@@ -591,7 +598,8 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     fun getVNode(holdingIdentityShortHash: String) =
         vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/virtualnode/$holdingIdentityShortHash")
 
-    fun getVNodeStatus(requestId: String) = vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/virtualnode/status/$requestId")
+    fun getVNodeStatus(requestId: String) =
+        vNodeCreatorClient.get("/api/$REST_API_VERSION_PATH/virtualnode/status/$requestId")
 
     /**
      * Register a member to the network.
@@ -683,7 +691,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         initialClient.get("/api/$REST_API_VERSION_PATH/flowclass/$holdingIdentityShortHash")
 
     @Suppress("unused")
-    /** Create a new RBAC role */
+            /** Create a new RBAC role */
     fun createRbacRole(roleName: String, groupVisibility: String? = null) =
         initialClient.post("/api/$REST_API_VERSION_PATH/role", createRbacRoleBody(roleName, groupVisibility))
 
@@ -691,7 +699,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     fun getRbacRoles() = initialClient.get("/api/$REST_API_VERSION_PATH/role")
 
     @Suppress("unused")
-    /** Get a role for a specified ID */
+            /** Get a role for a specified ID */
     fun getRole(roleId: String) = initialClient.get("/api/$REST_API_VERSION_PATH/role/$roleId")
 
     /** Create new RBAC user */
@@ -710,49 +718,58 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         )
 
     @Suppress("unused")
-    /** Get a RBAC user for a specific login name */
+            /** Get a RBAC user for a specific login name */
     fun getRbacUser(loginName: String) =
         initialClient.get("/api/$REST_API_VERSION_PATH/user/$loginName")
 
     @Suppress("unused")
-    /** Delete a RBAC user */
+            /** Delete a RBAC user */
     fun deleteRbacUser(loginName: String) =
         initialClient.delete("/api/$REST_API_VERSION_PATH/user/$loginName")
 
     @Suppress("unused")
-    /** Assign a specified role to a specified user */
+            /** Assign a specified role to a specified user */
     fun assignRoleToUser(loginName: String, roleId: String) =
         initialClient.put("/api/$REST_API_VERSION_PATH/user/$loginName/role/$roleId", "")
 
     @Suppress("unused")
-    /** Remove the specified role from a specified user */
+            /** Remove the specified role from a specified user */
     fun removeRoleFromUser(loginName: String, roleId: String) =
         initialClient.delete("/api/$REST_API_VERSION_PATH/user/$loginName/role/$roleId")
 
     @Suppress("unused")
-    /** Get a summary of the user's permissions */
+            /** Get a summary of the user's permissions */
     fun getPermissionSummary(loginName: String) =
         initialClient.get("/api/$REST_API_VERSION_PATH/user/$loginName/permissionsummary")
 
     @Suppress("unused")
-    fun addPropertyToUser(loginName: String, property: Map<String, String>) =
-        initialClient.post("/api/$REST_API_VERSION_PATH/user/$loginName/property",
-            createUserPropertyBody(property))
+    fun addPropertyToUser(loginName: String, property: Map<String, String>): SimpleResponse =
+        trace("addPropertyToUser") {
+            initialClient.post(
+                "/api/$REST_API_VERSION_PATH/user/$loginName/property",
+                createUserPropertyBody(property)
+            )
+        }
 
     @Suppress("unused")
-    fun removePropertyFromUser(loginName: String, propertyKey: String) =
-        initialClient.delete("/api/$REST_API_VERSION_PATH/user/$loginName/property/$propertyKey")
+    fun removePropertyFromUser(loginName: String, propertyKey: String): SimpleResponse =
+        trace("removePropertyFromUser") {
+            initialClient.delete("/api/$REST_API_VERSION_PATH/user/$loginName/property/$propertyKey")
+        }
 
     @Suppress("unused")
-    fun getUserProperties(loginName: String) =
+    fun getUserProperties(loginName: String): SimpleResponse = trace("getUserProperties") {
         initialClient.get("/api/$REST_API_VERSION_PATH/user/$loginName/property")
+    }
 
     @Suppress("unused")
-    fun getUsersByPropertyKey(propertyKey: String, propertyValue: String) =
-        initialClient.get("/api/$REST_API_VERSION_PATH/user/findbyproperty/$propertyKey/$propertyValue")
+    fun getUsersByPropertyKey(propertyKey: String, propertyValue: String): SimpleResponse =
+        trace("getUsersByPropertyKey") {
+            initialClient.get("/api/$REST_API_VERSION_PATH/user/findbyproperty/$propertyKey/$propertyValue")
+        }
 
     @Suppress("unused")
-    /** Create a new permission */
+            /** Create a new permission */
     fun createPermission(
         permissionString: String,
         permissionType: String,
@@ -765,15 +782,18 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         )
 
     @Suppress("unused")
-    /** Create a set of permissions and optionally assigns them to existing roles */
+            /** Create a set of permissions and optionally assigns them to existing roles */
     fun createBulkPermissions(
         permissionsToCreate: Set<Pair<String, String>>,
         roleIds: Set<String>
     ) =
-        initialClient.post("/api/$REST_API_VERSION_PATH/permission/bulk", createBulkPermissionsBody(permissionsToCreate, roleIds))
+        initialClient.post(
+            "/api/$REST_API_VERSION_PATH/permission/bulk",
+            createBulkPermissionsBody(permissionsToCreate, roleIds)
+        )
 
     @Suppress("unused")
-    /** Get the permissions which satisfy the query */
+            /** Get the permissions which satisfy the query */
     fun getPermissionByQuery(
         limit: Int,
         permissionType: String,
@@ -787,17 +807,17 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     }
 
     @Suppress("unused")
-    /** Get the permission associated with a specific ID */
+            /** Get the permission associated with a specific ID */
     fun getPermissionById(permissionId: String) =
         initialClient.get("/api/$REST_API_VERSION_PATH/permission/$permissionId")
 
     @Suppress("unused")
-    /** Add the specified permission to the specified role */
+            /** Add the specified permission to the specified role */
     fun assignPermissionToRole(roleId: String, permissionId: String) =
         initialClient.put("/api/$REST_API_VERSION_PATH/role/$roleId/permission/$permissionId", "")
 
     @Suppress("unused")
-    /** Remove the specified permission from the specified role */
+            /** Remove the specified permission from the specified role */
     fun removePermissionFromRole(roleId: String, permissionId: String) =
         initialClient.delete("/api/$REST_API_VERSION_PATH/role/$roleId/permission/$permissionId")
 
@@ -822,7 +842,10 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     @Suppress("unused")
     // This method is used to change the parent group of an existing RBAC group
     fun changeParentGroup(groupId: String, newParentGroupId: String?): SimpleResponse {
-        return initialClient.put("/api/$REST_API_VERSION_PATH/group/$groupId/parent/changeparentid/$newParentGroupId", "")
+        return initialClient.put(
+            "/api/$REST_API_VERSION_PATH/group/$groupId/parent/changeparentid/$newParentGroupId",
+            ""
+        )
     }
 
     @Suppress("unused")
