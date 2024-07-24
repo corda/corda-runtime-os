@@ -87,6 +87,12 @@ fun <T : Any?> withPermissionManager(
             title = "Permission management operation timed out.",
             exceptionDetails = ExceptionDetails(e::class.java.name, "${e.message}")
         )
+    } catch (e: EntityNotFoundException) {
+        logger.warn("Resource not found during permission management operation")
+        throw ResourceNotFoundException(
+            title = "Resource not found during permission management operation",
+            ExceptionDetails(e::class.java.name, "${e.message}")
+        )
     } catch (e: Exception) {
         logger.warn("Unexpected error during permission management operation.", e)
         throw InternalServerException(

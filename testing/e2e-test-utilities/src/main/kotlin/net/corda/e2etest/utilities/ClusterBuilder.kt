@@ -284,7 +284,7 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         }
 
     @Suppress("unused")
-    /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
+            /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
     fun forceCpiUpload(
         cpbResourceName: String?,
         groupId: String,
@@ -429,6 +429,11 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
         ).apply {
             parentGroupId?.let { add(""""parentGroupId": "$it"""") }
         }
+        return body.joinToString(prefix = "{", postfix = "}")
+    }
+
+    private fun createUserPropertyBody(properties: Map<String, String>): String {
+        val body = properties.map { "\"${it.key}\" : \"${it.value}\"" }
         return body.joinToString(prefix = "{", postfix = "}")
     }
 
@@ -811,6 +816,32 @@ class ClusterBuilder(clusterInfo: ClusterInfo, val REST_API_VERSION_PATH: String
     fun getPermissionSummary(loginName: String): SimpleResponse = trace("getPermissionSummary") {
         initialClient.get("/api/$REST_API_VERSION_PATH/user/$loginName/permissionsummary")
     }
+
+    @Suppress("unused")
+    fun addPropertyToUser(loginName: String, property: Map<String, String>): SimpleResponse =
+        trace("addPropertyToUser") {
+            initialClient.post(
+                "/api/$REST_API_VERSION_PATH/user/$loginName/property",
+                createUserPropertyBody(property)
+            )
+        }
+
+    @Suppress("unused")
+    fun removePropertyFromUser(loginName: String, propertyKey: String): SimpleResponse =
+        trace("removePropertyFromUser") {
+            initialClient.delete("/api/$REST_API_VERSION_PATH/user/$loginName/property/$propertyKey")
+        }
+
+    @Suppress("unused")
+    fun getUserProperties(loginName: String): SimpleResponse = trace("getUserProperties") {
+        initialClient.get("/api/$REST_API_VERSION_PATH/user/$loginName/property")
+    }
+
+    @Suppress("unused")
+    fun getUsersByPropertyKey(propertyKey: String, propertyValue: String): SimpleResponse =
+        trace("getUsersByPropertyKey") {
+            initialClient.get("/api/$REST_API_VERSION_PATH/user/findbyproperty/$propertyKey/$propertyValue")
+        }
 
     @Suppress("unused")
     /** Create a new permission */

@@ -11,6 +11,7 @@ import net.corda.data.permissions.management.user.DeleteUserRequest
 import net.corda.data.permissions.management.user.RemovePropertyFromUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.permissions.common.exception.EntityNotFoundException
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.libs.permissions.manager.PermissionUserManager
 import net.corda.libs.permissions.manager.impl.SmartConfigUtil.getEndpointTimeout
@@ -199,7 +200,8 @@ class PermissionUserManagerImpl(
             "Permission validation cache is null."
         }
 
-        val cachedPermissionSummary = permissionValidationCache.getPermissionSummary(permissionSummaryRequestDto.userLogin) ?: return null
+        val cachedPermissionSummary =
+            permissionValidationCache.getPermissionSummary(permissionSummaryRequestDto.userLogin) ?: return null
 
         return UserPermissionSummaryResponseDto(
             cachedPermissionSummary.loginName,
@@ -245,7 +247,8 @@ class PermissionUserManagerImpl(
         val permissionManagementCache = checkNotNull(permissionManagementCacheRef.get()) {
             "Permission management cache is null."
         }
-        val cachedUser: User = permissionManagementCache.getUser(getUserPropertiesRequestDto.loginName) ?: return emptySet()
+        val cachedUser: User = permissionManagementCache.getUser(getUserPropertiesRequestDto.loginName)
+            ?: throw EntityNotFoundException("Invalid user.")
         return cachedUser.properties.map { it.convertToResponseDto() }.toSet()
     }
 

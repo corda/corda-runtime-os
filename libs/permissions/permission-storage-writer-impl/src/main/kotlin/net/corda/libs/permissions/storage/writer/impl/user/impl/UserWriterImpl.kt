@@ -1,9 +1,11 @@
 package net.corda.libs.permissions.storage.writer.impl.user.impl
 
+import net.corda.data.permissions.management.user.AddPropertyToUserRequest
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
 import net.corda.data.permissions.management.user.ChangeUserPasswordRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.DeleteUserRequest
+import net.corda.data.permissions.management.user.RemovePropertyFromUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.permissions.storage.common.converter.toAvroUser
 import net.corda.libs.permissions.storage.writer.impl.user.UserWriter
@@ -15,6 +17,7 @@ import net.corda.permissions.model.RestPermissionOperation
 import net.corda.permissions.model.Role
 import net.corda.permissions.model.RoleUserAssociation
 import net.corda.permissions.model.User
+import net.corda.permissions.model.UserProperty
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -117,6 +120,42 @@ class UserWriterImpl(
         }
     }
 
+    override fun addPropertyToUser(
+        request: AddPropertyToUserRequest,
+        requestUserId: String
+    ): AvroUser {
+        log.debug { "Received request to add Property ${request.properties} to User ${request.loginName}" }
+        return entityManagerFactory.transaction { entityManager ->
+            val validator = EntityValidationUtil(entityManager)
+            val user = validator.validateAndGetUniqueUser(request.loginName)
+            val properties = request.properties.map {
+                UserProperty(
+                    id = UUID.randomUUID().toString(),
+                    updateTimestamp = Instant.now(),
+                    userRef = user,
+                    key = it.key,
+                    value = it.value
+                )
+            }
+            val resultUser = assignUserProperty(entityManager, requestUserId, user, properties)
+            resultUser.toAvroUser()
+        }
+    }
+
+    override fun removePropertyFromUser(
+        request: RemovePropertyFromUserRequest,
+        requestUserId: String
+    ): AvroUser {
+        log.debug { "Received request to remove Property with key ${request.propertyKey} from User ${request.loginName}" }
+        return entityManagerFactory.transaction { entityManager ->
+            val validator = EntityValidationUtil(entityManager)
+            val user = validator.validateAndGetUniqueUser(request.loginName)
+            val property = validator.validateAndGetPropertyByKey(user, request.propertyKey)
+            val resultUser = removeUserProperty(entityManager, requestUserId, user, property)
+            resultUser.toAvroUser()
+        }
+    }
+
     private fun persistNewUser(
         request: CreateUserRequest,
         parentGroup: Group?,
@@ -177,7 +216,12 @@ class UserWriterImpl(
         return user
     }
 
-    private fun persistUserRoleAssociation(entityManager: EntityManager, requestUserId: String, user: User, role: Role): User {
+    private fun persistUserRoleAssociation(
+        entityManager: EntityManager,
+        requestUserId: String,
+        user: User,
+        role: Role
+    ): User {
         val updateTimestamp = Instant.now()
         val association = RoleUserAssociation(UUID.randomUUID().toString(), role, user, updateTimestamp)
         val changeAudit = ChangeAudit(
@@ -221,6 +265,51 @@ class UserWriterImpl(
         entityManager.merge(user)
         entityManager.persist(changeAudit)
 
+        return user
+    }
+
+    private fun assignUserProperty(
+        entityManager: EntityManager,
+        requestUserId: String,
+        user: User,
+        properties: List<UserProperty>
+    ): User {
+        val updateTimestamp = Instant.now()
+        properties.forEach {
+            val changeAudit = ChangeAudit(
+                id = UUID.randomUUID().toString(),
+                updateTimestamp = updateTimestamp,
+                actorUser = requestUserId,
+                changeType = RestPermissionOperation.ADD_PROPERTY_TO_USER,
+                details = "Property with key '${it.key}' and value '${it.value}' added to " +
+                    "User '${user.loginName}' by '$requestUserId'"
+            )
+
+            user.userProperties.add(it)
+            entityManager.merge(user)
+            entityManager.persist(changeAudit)
+        }
+        return user
+    }
+
+    private fun removeUserProperty(
+        entityManager: EntityManager,
+        requestUserId: String,
+        user: User,
+        property: UserProperty
+    ): User {
+        val updateTimestamp = Instant.now()
+        val changeAudit = ChangeAudit(
+            id = UUID.randomUUID().toString(),
+            updateTimestamp = updateTimestamp,
+            actorUser = requestUserId,
+            changeType = RestPermissionOperation.DELETE_PROPERTY_FROM_USER,
+            details = "Property with key '${property.key}' removed from User '${user.loginName}' by '$requestUserId'"
+        )
+
+        user.userProperties.remove(property)
+        entityManager.merge(user)
+        entityManager.persist(changeAudit)
         return user
     }
 }

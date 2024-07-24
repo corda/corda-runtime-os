@@ -15,6 +15,7 @@ import net.corda.data.permissions.management.user.RemovePropertyFromUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.permissions.common.exception.EntityNotFoundException
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.libs.permissions.manager.exception.UnexpectedPermissionResponseException
 import net.corda.libs.permissions.manager.request.AddPropertyToUserRequestDto
@@ -27,7 +28,6 @@ import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUsersByPropertyRequestDto
 import net.corda.libs.permissions.manager.request.RemovePropertyFromUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
-import net.corda.libs.permissions.manager.response.PropertyResponseDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.messaging.api.publisher.RPCSender
@@ -540,11 +540,19 @@ class PermissionUserManagerImplTest {
     }
 
     @Test
-    fun `get user properties returns empty set when user does not exist`() {
-        whenever(permissionManagementCache.getUser("invalid-user-login-name")).thenReturn(null)
+    fun `get user properties throws when user does not exist`() {
+        val future = mock<CompletableFuture<PermissionManagementResponse>>()
+        whenever(future.getOrThrow(defaultTimeout)).thenThrow(EntityNotFoundException("Invalid user."))
 
-        val result = manager.getUserProperties(getUserPropertiesRequestDto)
-        assertEquals(emptySet<PropertyResponseDto>(), result)
+        val capture = argumentCaptor<PermissionManagementRequest>()
+        whenever(rpcSender.sendRequest(capture.capture())).thenReturn(future)
+
+        val requestDto = GetUserPropertiesRequestDto("requestUserId", "user-login1")
+
+        val e = assertThrows<EntityNotFoundException> {
+            manager.getUserProperties(requestDto)
+        }
+        assertEquals("Invalid user.", e.message)
     }
 
     @Test
