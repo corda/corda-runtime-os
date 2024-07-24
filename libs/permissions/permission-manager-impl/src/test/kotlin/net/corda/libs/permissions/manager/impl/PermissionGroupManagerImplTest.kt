@@ -151,7 +151,10 @@ class PermissionGroupManagerImplTest {
             manager.changeParentGroup(changeGroupParentIdDto)
         }
 
-        assertEquals("Cannot set Group '$childGroupId' as the parent of Group '$groupId' because it would create a cycle in the group hierarchy.", exception.message)
+        assertEquals(
+            "Cannot set Group '$childGroupId' as the parent of Group '$groupId' because it would create a cycle in the group hierarchy.",
+            exception.message
+        )
     }
 
     @Test

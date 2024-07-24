@@ -150,10 +150,12 @@ class PermissionGroupManagerImpl(
             "Permission management cache is null."
         }
         var currentGroup: String? = newParentGroupId
-        while(currentGroup != null) {
+        while (currentGroup != null) {
             if (currentGroup == groupToModifyId) {
-                throw IllegalArgumentException("Cannot set Group '$newParentGroupId' as the parent of " +
-                        "Group '$groupToModifyId' because it would create a cycle in the group hierarchy.")
+                throw IllegalArgumentException(
+                    "Cannot set Group '$newParentGroupId' as the parent of " +
+                        "Group '$groupToModifyId' because it would create a cycle in the group hierarchy."
+                )
             }
             currentGroup = permissionManagementCache.getGroup(currentGroup)?.parentGroupId
         }
