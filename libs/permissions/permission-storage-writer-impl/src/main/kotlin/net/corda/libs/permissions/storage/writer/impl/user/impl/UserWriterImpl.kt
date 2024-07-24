@@ -63,11 +63,11 @@ class UserWriterImpl(
         request: ChangeUserParentGroupIdRequest,
         requestUserId: String
     ): AvroUser {
-        log.debug { "Received request to change parent group of Group ${request.userId} to ${request.newParentGroupId}" }
+        log.debug { "Received request to change parent group of User ${request.loginName} to ${request.newParentGroupId}" }
         return entityManagerFactory.transaction { entityManager ->
 
             val validator = EntityValidationUtil(entityManager)
-            val user = validator.validateAndGetUniqueUser(request.userId)
+            val user = validator.validateAndGetUniqueUser(request.loginName)
             val newParentGroup = validator.validateAndGetUniqueGroup(request.newParentGroupId)
 
             user.parentGroup = newParentGroup
@@ -78,7 +78,7 @@ class UserWriterImpl(
                 updateTimestamp = updateTimestamp,
                 actorUser = requestUserId,
                 changeType = RestPermissionOperation.USER_UPDATE,
-                details = "Parent group of User '${user.id}' changed to '${newParentGroup.id}' by '$requestUserId'."
+                details = "Parent group of User '${user.loginName}' changed to '${newParentGroup.id}' by '$requestUserId'."
             )
 
             entityManager.merge(user)

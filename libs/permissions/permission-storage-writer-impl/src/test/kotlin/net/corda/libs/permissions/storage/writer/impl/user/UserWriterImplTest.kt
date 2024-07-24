@@ -1,6 +1,7 @@
 package net.corda.libs.permissions.storage.writer.impl.user
 
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
+import net.corda.data.permissions.management.user.ChangeUserParentGroupIdRequest
 import net.corda.data.permissions.management.user.ChangeUserPasswordRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.DeleteUserRequest
@@ -56,6 +57,11 @@ internal class UserWriterImplTest {
 
     private val deleteUserRequest = DeleteUserRequest().apply {
         loginName = "lankydan"
+    }
+
+    private val changeUserParentGroupIdRequest = ChangeUserParentGroupIdRequest().apply {
+        loginName = "userId1"
+        newParentGroupId = "parentId"
     }
 
     private val now = Instant.now()
@@ -185,6 +191,73 @@ internal class UserWriterImplTest {
         assertNotNull(audit)
         assertEquals(RestPermissionOperation.USER_DELETE, audit.changeType)
         assertEquals("User '${user.loginName}' deleted by '$requestUserId'.", audit.details)
+    }
+
+    @Test
+    fun `changing parent group fails if user does not exist`() {
+        val typedQueryMock = mock<TypedQuery<User>>()
+        whenever(entityManager.createQuery(any<String>(), eq(User::class.java))).thenReturn(typedQueryMock)
+        whenever(typedQueryMock.setParameter(eq("loginName"), eq(changeUserParentGroupIdRequest.loginName)))
+            .thenReturn(typedQueryMock)
+        whenever(typedQueryMock.resultList).thenReturn(emptyList<User>())
+
+        val e = assertThrows<EntityNotFoundException> {
+            userWriter.changeUserParentGroup(changeUserParentGroupIdRequest, requestUserId)
+        }
+
+        assertEquals("User 'userId1' not found.", e.message)
+    }
+
+    @Test
+    fun `changing parent group fails if parent group does not exist`() {
+        val typedQueryMock = mock<TypedQuery<User>>()
+        whenever(entityManager.createQuery(any<String>(), eq(User::class.java))).thenReturn(typedQueryMock)
+        whenever(typedQueryMock.setParameter(eq("loginName"), eq(changeUserParentGroupIdRequest.loginName)))
+            .thenReturn(typedQueryMock)
+        whenever(typedQueryMock.resultList).thenReturn(listOf(user))
+
+        whenever(entityManager.find(Group::class.java, "parentId")).thenReturn(null)
+
+        val e = assertThrows<EntityNotFoundException> {
+            userWriter.changeUserParentGroup(changeUserParentGroupIdRequest, requestUserId)
+        }
+
+        assertEquals("Group 'parentId' not found.", e.message)
+    }
+
+    @Test
+    fun `changing parent group persists change to user and writes audit log`() {
+        val parentGroup = Group("parentId", Instant.now(), "parentGroupName", null)
+
+        val typedQueryMock = mock<TypedQuery<User>>()
+        whenever(entityManager.createQuery(any<String>(), eq(User::class.java))).thenReturn(typedQueryMock)
+        whenever(typedQueryMock.setParameter(eq("loginName"), eq(changeUserParentGroupIdRequest.loginName)))
+            .thenReturn(typedQueryMock)
+        whenever(typedQueryMock.resultList).thenReturn(listOf(user))
+
+        whenever(entityManager.find(Group::class.java, "parentId")).thenReturn(parentGroup)
+
+        userWriter.changeUserParentGroup(changeUserParentGroupIdRequest, requestUserId)
+
+        val userCaptor = argumentCaptor<User>()
+        val auditCaptor = argumentCaptor<ChangeAudit>()
+
+        inOrder(entityTransaction, entityManager) {
+            verify(entityTransaction).begin()
+            verify(entityManager, times(1)).merge(userCaptor.capture())
+            verify(entityManager, times(1)).persist(auditCaptor.capture())
+            verify(entityTransaction).commit()
+        }
+
+        val persistedUser = userCaptor.firstValue
+        assertNotNull(persistedUser)
+        assertEquals("userLogin1", persistedUser.loginName)
+        assertEquals(parentGroup, persistedUser.parentGroup)
+
+        val audit = auditCaptor.firstValue
+        assertNotNull(audit)
+        assertEquals(RestPermissionOperation.USER_UPDATE, audit.changeType)
+        assertEquals("Parent group of User '${persistedUser.loginName}' changed to '${parentGroup.id}' by '$requestUserId'.", audit.details)
     }
 
     @Test
