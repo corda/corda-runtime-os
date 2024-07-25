@@ -106,6 +106,14 @@ class PermissionUserManagerImpl(
     }
 
     override fun changeUserParentGroup(changeUserParentGroupIdDto: ChangeUserParentIdDto): UserResponseDto {
+        if(changeUserParentGroupIdDto.newParentGroupId != null) {
+            val permissionManagementCache = checkNotNull(permissionManagementCacheRef.get()) {
+                "Permission management cache is null."
+            }
+            permissionManagementCache.getGroup(changeUserParentGroupIdDto.newParentGroupId!!)
+                ?: throw NoSuchElementException("Could not find user with parent group id ${changeUserParentGroupIdDto.newParentGroupId}")
+        }
+
         val result = sendPermissionWriteRequest<User>(
             rpcSender,
             writerTimeout,
