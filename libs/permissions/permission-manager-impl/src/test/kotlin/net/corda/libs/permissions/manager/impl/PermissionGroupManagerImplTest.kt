@@ -131,6 +131,33 @@ class PermissionGroupManagerImplTest {
     }
 
     @Test
+    fun `change parent group throws exception if new parent group is a child of the group`() {
+        val groupId = UUID.randomUUID().toString()
+        val childGroupId = UUID.randomUUID().toString()
+        val avroGroup = Group(groupId, 0, ChangeDetails(Instant.now()), "groupName", null, emptyList(), emptyList())
+        val childGroup = Group(childGroupId, 0, ChangeDetails(Instant.now()), "childGroupName", groupId, emptyList(), emptyList())
+
+        val future = mock<CompletableFuture<PermissionManagementResponse>>()
+        whenever(future.getOrThrow(defaultTimeout)).thenReturn(PermissionManagementResponse(avroGroup))
+        whenever(permissionManagementCache.getGroup(groupId)).thenReturn(avroGroup)
+        whenever(permissionManagementCache.getGroup(childGroupId)).thenReturn(childGroup)
+
+        val requestCaptor = argumentCaptor<PermissionManagementRequest>()
+        whenever(rpcSender.sendRequest(requestCaptor.capture())).thenReturn(future)
+
+        val changeGroupParentIdDto = ChangeGroupParentIdDto("requestedBy", groupId, childGroupId)
+
+        val exception = assertThrows<IllegalArgumentException> {
+            manager.changeParentGroup(changeGroupParentIdDto)
+        }
+
+        assertEquals(
+            "Cannot set Group '$childGroupId' as the parent of Group '$groupId' because it would create a cycle in the group hierarchy.",
+            exception.message
+        )
+    }
+
+    @Test
     fun `add role to group sends rpc request and converts result to response dto`() {
         val groupId = UUID.randomUUID().toString()
         val avroGroup = Group(groupId, 0, ChangeDetails(Instant.now()), "groupName", "parentGroupId", emptyList(), emptyList())

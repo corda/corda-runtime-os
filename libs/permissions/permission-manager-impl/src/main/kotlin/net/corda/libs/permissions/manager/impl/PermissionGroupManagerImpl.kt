@@ -55,6 +55,7 @@ class PermissionGroupManagerImpl(
         }
         val cachedGroup = permissionManagementCache.getGroup(changeGroupParentIdDto.groupId)!!
         val groupEntityVersion = cachedGroup.version
+        validateNewGroupIsNotChildOfGroup(changeGroupParentIdDto.groupId, changeGroupParentIdDto.newParentGroupId)
 
         val result = sendPermissionWriteRequest<Group>(
             rpcSender,
@@ -139,5 +140,24 @@ class PermissionGroupManagerImpl(
             )
         )
         return result.convertToResponseDto()
+    }
+
+    private fun validateNewGroupIsNotChildOfGroup(groupToModifyId: String, newParentGroupId: String?) {
+        if (groupToModifyId == newParentGroupId) {
+            throw IllegalArgumentException("Group '$groupToModifyId' cannot be its own parent.")
+        }
+        val permissionManagementCache = checkNotNull(permissionManagementCacheRef.get()) {
+            "Permission management cache is null."
+        }
+        var currentGroup: String? = newParentGroupId
+        while (currentGroup != null) {
+            if (currentGroup == groupToModifyId) {
+                throw IllegalArgumentException(
+                    "Cannot set Group '$newParentGroupId' as the parent of " +
+                        "Group '$groupToModifyId' because it would create a cycle in the group hierarchy."
+                )
+            }
+            currentGroup = permissionManagementCache.getGroup(currentGroup)?.parentGroupId
+        }
     }
 }
