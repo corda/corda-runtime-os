@@ -8,7 +8,6 @@ import net.corda.libs.permissions.endpoints.v1.group.GroupEndpoint
 import net.corda.libs.permissions.endpoints.v1.group.types.CreateGroupType
 import net.corda.libs.permissions.endpoints.v1.group.types.GroupContentResponseType
 import net.corda.libs.permissions.endpoints.v1.group.types.GroupResponseType
-import net.corda.libs.permissions.endpoints.v1.user.impl.UserEndpointImpl
 import net.corda.libs.permissions.manager.request.AddRoleToGroupRequestDto
 import net.corda.libs.permissions.manager.request.ChangeGroupParentIdDto
 import net.corda.libs.permissions.manager.request.DeleteGroupRequestDto
