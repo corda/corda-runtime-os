@@ -308,7 +308,13 @@ class PermissionUserManagerImplTest {
             loginName, "fullName", true, "hashedPass", "salt", Instant.now(), false, newParentGroupId, emptyList(), emptyList()
         )
         val avroGroup = Group(
-            UUID.randomUUID().toString(), 0, ChangeDetails(Instant.now()), "groupName", newParentGroupId, emptyList(), emptyList()
+            UUID.randomUUID().toString(),
+            0,
+            ChangeDetails(Instant.now()),
+            "groupName",
+            newParentGroupId,
+            emptyList(),
+            emptyList()
         )
 
         val future = mock<CompletableFuture<PermissionManagementResponse>>()
