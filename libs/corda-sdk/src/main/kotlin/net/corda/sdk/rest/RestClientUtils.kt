@@ -33,7 +33,7 @@ object RestClientUtils {
     fun <T> executeWithRetry(
         waitDuration: Duration = maxWait,
         timeBetweenAttempts: Duration = cooldownInterval,
-        escapedResponseCodes: List<ResponseCode> = listOf(),
+        escapeOnResponses: List<ResponseCode> = listOf(),
         operationName: String,
         block: () -> T
     ): T {
@@ -49,7 +49,7 @@ object RestClientUtils {
                     ex is ResourceAlreadyExistsException ||
                     ex is WrongConfigVersionException ||
                     ex is OnboardFailedException ||
-                    ex.isEscapedResponseCode(escapedResponseCodes) -> throw ex
+                    ex.isEscapedResponseCode(escapeOnResponses) -> throw ex
                     // All other exceptions, perform retry
                     else -> {
                         lastException = ex

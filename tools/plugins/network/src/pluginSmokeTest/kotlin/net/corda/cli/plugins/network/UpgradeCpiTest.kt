@@ -1,12 +1,15 @@
 package net.corda.cli.plugins.network
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.cli.plugins.network.utils.PrintUtils
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.restclient.CordaRestClient
 import net.corda.restclient.generated.models.RestMemberInfo
 import net.corda.sdk.data.Checksum
 import net.corda.sdk.data.RequestId
+import net.corda.sdk.network.config.VNode
 import net.corda.sdk.packaging.CpiAttributes
 import net.corda.sdk.packaging.CpiUploader
 import net.corda.sdk.packaging.CpiV2Creator
@@ -17,7 +20,7 @@ import org.junit.jupiter.api.Test
 import picocli.CommandLine
 import java.io.File
 import java.nio.file.Path
-import java.util.UUID
+import java.util.*
 
 class UpgradeCpiTest {
     companion object {
@@ -57,7 +60,9 @@ class UpgradeCpiTest {
         private lateinit var mgmMemberInfo: RestMemberInfo
         private lateinit var mgmCpiName: String
 
-        private val mapper = ObjectMapper()
+        val mapper = ObjectMapper().apply {
+            setSerializationInclusion(JsonInclude.Include.NON_NULL)
+        }
 
         @BeforeAll
         @JvmStatic
@@ -65,12 +70,10 @@ class UpgradeCpiTest {
             onboardMgm()
 
             initialCpiFile = createCpiFile("1.0", cpiName)
-
             val cpiChecksum = uploadCpi(initialCpiFile)
 
             onboardMember(memberNameAlice, cpiChecksum)
             onboardMember(memberNameBob, cpiChecksum)
-
             onboardMember(notaryName, cpiChecksum, notary = true)
 
             assertThat(getGroupMembers().size).isEqualTo(4)
@@ -149,7 +152,6 @@ class UpgradeCpiTest {
         }
     }
 
-    // TODO Move to a separate file
     data class MemberNode(val x500Name: MemberX500Name, val cpi: String = "Whatever", val mgmNode: Boolean? = null)
 
     private fun createDefaultNetworkConfigFile(): File = createNetworkConfigFile(
@@ -157,48 +159,49 @@ class UpgradeCpiTest {
         MemberNode(memberNameBob),
     )
 
-    private fun createNetworkConfigFile(vararg members: MemberNode, mgm: Boolean = true, notary: Boolean = true): File {
-        val networkConfig = mapper.createArrayNode()
+    private fun createNetworkConfigFile(
+        vararg members: MemberNode,
+        mgm: Boolean = true,
+        notary: Boolean = true,
+    ): File {
+        val mgmNode = if (mgm) listOf(VNode(
+            mgmName.toString(),
+            mgmCpiName,
+            mgmNode = true.toString(),
+        )) else emptyList()
+
+        val notaryNode = if (notary) listOf(VNode(
+            notaryName.toString(),
+            cpiName, // Using the same initial test CPI for the notary
+            NOTARY_SERVICE_NAME,
+            "com.r3.corda.notary.plugin.nonvalidating",
+            backchainRequired = true.toString(),
+        )) else emptyList()
 
         val memberNodes = members.map { member ->
-            mapper.createObjectNode().apply {
-                put("x500Name", member.x500Name.toString())
-                put("cpi", member.cpi)
-                member.mgmNode?.let { put("mgmNode", it) }
-            }
-        }
-        networkConfig.addAll(memberNodes)
-
-        if (mgm) {
-            networkConfig.add(mapper.createObjectNode().apply {
-                put("x500Name", mgmName.toString())
-                put("cpi", mgmCpiName)
-                put("mgmNode", true)
-            })
-        }
-        if (notary) {
-            networkConfig.add(mapper.createObjectNode().apply {
-                put("x500Name", notaryName.toString())
-                put("cpi", cpiName) // Using the same initial test CPI for the notary
-                put("serviceX500Name", NOTARY_SERVICE_NAME)
-                put("flowProtocolName", "com.r3.corda.notary.plugin.nonvalidating")
-                put("backchainRequired", true)
-            })
+            VNode(
+                member.x500Name.toString(),
+                member.cpi,
+                mgmNode = member.mgmNode?.toString(),
+            )
         }
 
         val networkConfigFile = File.createTempFile("network-config-", ".json").also {
             it.deleteOnExit()
-            it.writeText(mapper.writeValueAsString(networkConfig))
+            it.writeText(
+                mapper
+                    .writer(PrintUtils.prettyPrintWriter)
+                    .writeValueAsString(memberNodes + mgmNode + notaryNode)
+            )
         }
+
         return networkConfigFile
     }
-
 
     private fun executeUpgradeCpi(vararg args: String): Int {
         val restArgs = listOf(targetUrl, user, password, INSECURE)
         return CommandLine(UpgradeCpi()).execute(*(args.toList() + restArgs).toTypedArray())
     }
-
 
     @Test
     fun `only members from the config file are upgraded, the rest in the group are skipped`() {
@@ -488,5 +491,29 @@ class UpgradeCpiTest {
     fun `some of the target VNodes use BYOD feature`() {
         // TODO figure out how to setup and test this
         //  !!! looks like there's no way to determine whether a VNode uses that feature or not
+    }
+
+    @Test
+    fun `new CPI has different name from what members use currently`() {
+        // read CPI information of the existing Notary, MGM, and all members
+        val existingMembers = getGroupMembers()
+
+        // execute upgrade of both Alice and Bob members
+        val networkConfigFile = createDefaultNetworkConfigFile()
+        val newCpiVersion = "222.0"
+        val newCpiFile = createCpiFile(newCpiVersion, "NewCpiName-${UUID.randomUUID()}")
+
+        val (outText, exitCode) = TestUtils.captureStdErr {
+            executeUpgradeCpi(
+                "--cpi-file=${newCpiFile.absolutePath}",
+                "--network-config-file=${networkConfigFile.absolutePath}",
+            )
+        }
+        assertThat(exitCode).isNotZero()
+        assertThat(outText).isEmpty()
+
+        // verify that members are not upgraded
+        val membersAfterFailedUpgrade = getGroupMembers()
+        assertThat(membersAfterFailedUpgrade).isEqualTo(existingMembers)
     }
 }

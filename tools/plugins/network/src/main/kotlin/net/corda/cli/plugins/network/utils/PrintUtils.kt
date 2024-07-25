@@ -22,7 +22,7 @@ object PrintUtils {
         configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
     }
 
-    private val prettyPrintWriter = DefaultPrettyPrinter().apply {
+    internal val prettyPrintWriter = DefaultPrettyPrinter().apply {
         indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE)
     }
 
@@ -34,10 +34,9 @@ object PrintUtils {
         )
     }
 
-    fun verifyAndPrintError(action: () -> Unit): Int {
+    fun verifyAndPrintError(action: () -> Any): Int {
         return try {
-            action()
-            ExitCode.OK
+            action() as? Int ?: ExitCode.OK
         } catch (e: Exception) {
             System.err.println(e.localizedMessage)
             ExitCode.SOFTWARE

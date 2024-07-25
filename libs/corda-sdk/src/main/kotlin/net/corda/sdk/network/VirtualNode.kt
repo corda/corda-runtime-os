@@ -2,6 +2,7 @@ package net.corda.sdk.network
 
 import net.corda.crypto.core.ShortHash
 import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
+import net.corda.rest.ResponseCode
 import net.corda.restclient.CordaRestClient
 import net.corda.restclient.generated.models.AsyncOperationStatus
 import net.corda.restclient.generated.models.AsyncResponse
@@ -118,10 +119,12 @@ class VirtualNode(val restClient: CordaRestClient) {
         holdingId: ShortHash,
         cpiChecksum: Checksum,
         wait: Duration = 30.seconds,
+        escapeOnResponses: List<ResponseCode> = emptyList(),
     ): AsyncResponse {
         return executeWithRetry(
             waitDuration = wait,
-            operationName = "Upgrade CPI for virtual node $holdingId"
+            operationName = "Upgrade CPI for virtual node $holdingId",
+            escapeOnResponses = escapeOnResponses,
         ) {
             restClient.virtualNodeClient.putVirtualnodeVirtualnodeshortidCpiTargetcpifilechecksum(holdingId.value, cpiChecksum.value)
         }
@@ -131,11 +134,13 @@ class VirtualNode(val restClient: CordaRestClient) {
         holdingId: ShortHash,
         cpiChecksum: Checksum,
         wait: Duration = 30.seconds,
+        escapeOnResponses: List<ResponseCode> = emptyList(),
     ) {
-        val requestId = upgradeCpi(holdingId, cpiChecksum, wait).requestId
+        val requestId = upgradeCpi(holdingId, cpiChecksum, wait, escapeOnResponses).requestId
         val status = executeWithRetry(
             waitDuration = wait,
-            operationName = "Wait for CPI upgrade to complete"
+            operationName = "Wait for CPI upgrade to complete",
+            escapeOnResponses = escapeOnResponses,
         ) {
             val response = restClient.virtualNodeClient.getVirtualnodeStatusRequestid(requestId)
             val inProgressStates = listOf(AsyncOperationStatus.Status.IN_PROGRESS, AsyncOperationStatus.Status.ACCEPTED)

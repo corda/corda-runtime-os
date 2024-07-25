@@ -5,6 +5,7 @@ import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.crypto.core.ShortHash
 import net.corda.data.flow.output.FlowStates
 import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
+import net.corda.rest.ResponseCode
 import net.corda.restclient.CordaRestClient
 import net.corda.sdk.data.Checksum
 import net.corda.sdk.data.RequestId
@@ -14,12 +15,12 @@ import net.corda.sdk.network.config.NetworkConfig
 import net.corda.sdk.packaging.CpiUploader
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
+import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
 import java.net.URI
 import java.nio.file.Files
-import java.time.Duration
 import java.util.concurrent.Callable
 import kotlin.time.Duration.Companion.seconds
 
@@ -63,7 +64,7 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
         return exitCode
     }
 
-    private fun upgradeCpi() {
+    private fun upgradeCpi(): Int {
         val virtualNode = VirtualNode(restClient)
         val memberLookup = MemberLookup(restClient)
 
@@ -169,7 +170,10 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
         val cpiUploader = CpiUploader(restClient)
 
         val uploadRequestId = cpiUploader.uploadCPI(cpiFile).id // If upload fails, this throws an exception
-        val cpiChecksum = cpiUploader.cpiChecksum(RequestId(uploadRequestId), wait = 30.seconds)
+        val cpiChecksum = cpiUploader.cpiChecksum(
+            RequestId(uploadRequestId),
+            escapeOnResponses = listOf(ResponseCode.CONFLICT, ResponseCode.BAD_REQUEST)
+        )
         println("Uploaded CPI checksum: $cpiChecksum")
 
         // Once all requirements are met, we can loop through each target member and perform the upgrade
@@ -191,9 +195,12 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
         if (errors.isNotEmpty()) {
             println("Upgrade failed for some virtual nodes:")
             errors.forEach { (holdingId, error) ->
-                println("HoldingId: $holdingId, error: ${error?.message}")
+                System.err.println("HoldingId: $holdingId, error: ${error?.message}")
             }
+            return CommandLine.ExitCode.SOFTWARE
         }
+
+        return CommandLine.ExitCode.OK
     }
 
     // TODO move most of the logic to SDK

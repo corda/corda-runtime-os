@@ -2,7 +2,6 @@ package net.corda.sdk.packaging
 
 import net.corda.rest.ResponseCode
 import net.corda.restclient.CordaRestClient
-import net.corda.restclient.generated.infrastructure.ClientException
 import net.corda.restclient.generated.models.CpiUploadResponse
 import net.corda.restclient.generated.models.GetCPIsResponse
 import net.corda.sdk.data.Checksum
@@ -64,12 +63,13 @@ class CpiUploader(val restClient: CordaRestClient) {
      */
     fun cpiChecksum(
         uploadRequestId: RequestId,
-        wait: Duration = 60.seconds
+        wait: Duration = 60.seconds,
+        escapeOnResponses: List<ResponseCode> = emptyList(),
     ): Checksum {
         return executeWithRetry(
             waitDuration = wait,
             operationName = "Wait for CPI to be ingested and return checksum",
-//            escapedResponseCodes = listOf(ResponseCode.BAD_REQUEST, ResponseCode.CONFLICT)
+            escapeOnResponses = escapeOnResponses,
         ) {
             val status = restClient.cpiClient.getCpiStatusId(uploadRequestId.value)
             if (status.status == "OK") {
