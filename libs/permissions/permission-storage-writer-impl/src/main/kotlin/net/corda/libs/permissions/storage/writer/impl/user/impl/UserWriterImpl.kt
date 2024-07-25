@@ -2,6 +2,7 @@ package net.corda.libs.permissions.storage.writer.impl.user.impl
 
 import net.corda.data.permissions.management.user.AddPropertyToUserRequest
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
+import net.corda.data.permissions.management.user.ChangeUserParentGroupIdRequest
 import net.corda.data.permissions.management.user.ChangeUserPasswordRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.DeleteUserRequest
@@ -61,10 +62,39 @@ class UserWriterImpl(
         }
     }
 
+    override fun changeUserParentGroup(
+        request: ChangeUserParentGroupIdRequest,
+        requestUserId: String
+    ): AvroUser {
+        log.debug { "Received request to change parent group of User ${request.loginName} to ${request.newParentGroupId}" }
+        return entityManagerFactory.transaction { entityManager ->
+
+            val validator = EntityValidationUtil(entityManager)
+            val user = validator.validateAndGetUniqueUser(request.loginName)
+            val newParentGroup = validator.validateAndGetUniqueGroup(request.newParentGroupId)
+
+            user.parentGroup = newParentGroup
+
+            val updateTimestamp = Instant.now()
+            val changeAudit = ChangeAudit(
+                id = UUID.randomUUID().toString(),
+                updateTimestamp = updateTimestamp,
+                actorUser = requestUserId,
+                changeType = RestPermissionOperation.USER_UPDATE,
+                details = "Parent group of User '${user.loginName}' changed to '${newParentGroup.id}' by '$requestUserId'."
+            )
+
+            entityManager.merge(user)
+            entityManager.persist(changeAudit)
+
+            user.toAvroUser()
+        }
+    }
+
     override fun changeUserPassword(
         request: ChangeUserPasswordRequest,
         requestUserId: String
-    ): net.corda.data.permissions.User {
+    ): AvroUser {
         log.debug { "Received request to change password for user: ${request.requestedBy}" }
         return entityManagerFactory.transaction { entityManager ->
 

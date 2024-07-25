@@ -17,6 +17,7 @@ import net.corda.data.permissions.management.role.CreateRoleRequest
 import net.corda.data.permissions.management.role.RemovePermissionFromRoleRequest
 import net.corda.data.permissions.management.user.AddPropertyToUserRequest
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
+import net.corda.data.permissions.management.user.ChangeUserParentGroupIdRequest
 import net.corda.data.permissions.management.user.ChangeUserPasswordRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.DeleteUserRequest
@@ -65,6 +66,12 @@ class PermissionStorageWriterProcessorImpl(
                     val avroRole = roleWriter.createRole(permissionRequest, request.requestUserId)
                     permissionStorageReader.publishNewRole(avroRole)
                     avroRole
+                }
+                is ChangeUserParentGroupIdRequest -> {
+                    val avroUser = userWriter.changeUserParentGroup(permissionRequest, request.requestUserId)
+                    permissionStorageReader.publishUpdatedUser(avroUser)
+                    permissionStorageReader.reconcilePermissionSummaries()
+                    avroUser
                 }
                 is ChangeUserPasswordRequest -> {
                     val avroUser = userWriter.changeUserPassword(permissionRequest, request.requestUserId)

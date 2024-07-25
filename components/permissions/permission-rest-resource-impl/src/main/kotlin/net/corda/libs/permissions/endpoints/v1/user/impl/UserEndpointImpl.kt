@@ -15,6 +15,7 @@ import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.request.AddPropertyToUserRequestDto
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
+import net.corda.libs.permissions.manager.request.ChangeUserParentIdDto
 import net.corda.libs.permissions.manager.request.ChangeUserPasswordDto
 import net.corda.libs.permissions.manager.request.DeleteUserRequestDto
 import net.corda.libs.permissions.manager.request.GetPermissionSummaryRequestDto
@@ -159,6 +160,23 @@ class UserEndpointImpl @Activate constructor(
         }
 
         return userResponseDto?.convertToEndpointType() ?: throw ResourceNotFoundException("User", loginName)
+    }
+
+    override fun changeUserParentGroup(loginName: String, newParentGroupId: String?): ResponseEntity<UserResponseType> {
+        val principal = getRestThreadLocalContext()
+
+        val userResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            try {
+                changeUserParentGroup(ChangeUserParentIdDto(principal, loginName, newParentGroupId))
+            } catch (e: NoSuchElementException) {
+                throw ResourceNotFoundException(
+                    e::class.java.simpleName,
+                    ExceptionDetails(e::class.java.name, e.message ?: "No resource found for this request.")
+                )
+            }
+        }
+
+        return ResponseEntity.updated(userResponseDto.convertToEndpointType())
     }
 
     override fun changeUserPasswordSelf(password: String): UserResponseType {

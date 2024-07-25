@@ -2,6 +2,7 @@ package net.corda.libs.permissions.manager
 
 import net.corda.libs.permissions.manager.request.AddPropertyToUserRequestDto
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
+import net.corda.libs.permissions.manager.request.ChangeUserParentIdDto
 import net.corda.libs.permissions.manager.request.ChangeUserPasswordDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.DeleteUserRequestDto
@@ -33,6 +34,11 @@ interface PermissionUserManager {
      * Delete a user in the RBAC Permission System.
      */
     fun deleteUser(deleteUserRequestDto: DeleteUserRequestDto): UserResponseDto
+
+    /**
+     * Change the parent group of a user in the RBAC Permission System.
+     */
+    fun changeUserParentGroup(changeUserParentGroupIdDto: ChangeUserParentIdDto): UserResponseDto
 
     /**
      * Change a user's own password.

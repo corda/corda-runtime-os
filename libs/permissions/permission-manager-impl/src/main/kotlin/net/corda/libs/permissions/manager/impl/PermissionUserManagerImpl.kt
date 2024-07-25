@@ -5,6 +5,7 @@ import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.data.permissions.management.user.AddPropertyToUserRequest
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
+import net.corda.data.permissions.management.user.ChangeUserParentGroupIdRequest
 import net.corda.data.permissions.management.user.ChangeUserPasswordRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.DeleteUserRequest
@@ -18,6 +19,7 @@ import net.corda.libs.permissions.manager.impl.SmartConfigUtil.getEndpointTimeou
 import net.corda.libs.permissions.manager.impl.converter.convertToResponseDto
 import net.corda.libs.permissions.manager.request.AddPropertyToUserRequestDto
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
+import net.corda.libs.permissions.manager.request.ChangeUserParentIdDto
 import net.corda.libs.permissions.manager.request.ChangeUserPasswordDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.DeleteUserRequestDto
@@ -101,6 +103,30 @@ class PermissionUserManagerImpl(
             )
         )
 
+        return result.convertToResponseDto()
+    }
+
+    override fun changeUserParentGroup(changeUserParentGroupIdDto: ChangeUserParentIdDto): UserResponseDto {
+        if (changeUserParentGroupIdDto.newParentGroupId != null) {
+            val permissionManagementCache = checkNotNull(permissionManagementCacheRef.get()) {
+                "Permission management cache is null."
+            }
+            permissionManagementCache.getGroup(changeUserParentGroupIdDto.newParentGroupId!!)
+                ?: throw NoSuchElementException("Could not find user with parent group id ${changeUserParentGroupIdDto.newParentGroupId}")
+        }
+
+        val result = sendPermissionWriteRequest<User>(
+            rpcSender,
+            writerTimeout,
+            PermissionManagementRequest(
+                changeUserParentGroupIdDto.requestedBy,
+                null,
+                ChangeUserParentGroupIdRequest(
+                    changeUserParentGroupIdDto.loginName,
+                    changeUserParentGroupIdDto.newParentGroupId,
+                )
+            )
+        )
         return result.convertToResponseDto()
     }
 
