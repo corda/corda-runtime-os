@@ -106,7 +106,7 @@ class PermissionUserManagerImpl(
     }
 
     override fun changeUserParentGroup(changeUserParentGroupIdDto: ChangeUserParentIdDto): UserResponseDto {
-        if(changeUserParentGroupIdDto.newParentGroupId != null) {
+        if (changeUserParentGroupIdDto.newParentGroupId != null) {
             val permissionManagementCache = checkNotNull(permissionManagementCacheRef.get()) {
                 "Permission management cache is null."
             }
