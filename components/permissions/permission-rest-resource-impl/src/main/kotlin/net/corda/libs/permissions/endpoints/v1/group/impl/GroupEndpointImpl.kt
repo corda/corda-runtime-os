@@ -8,6 +8,7 @@ import net.corda.libs.permissions.endpoints.v1.group.GroupEndpoint
 import net.corda.libs.permissions.endpoints.v1.group.types.CreateGroupType
 import net.corda.libs.permissions.endpoints.v1.group.types.GroupContentResponseType
 import net.corda.libs.permissions.endpoints.v1.group.types.GroupResponseType
+import net.corda.libs.permissions.endpoints.v1.user.impl.UserEndpointImpl
 import net.corda.libs.permissions.manager.request.AddRoleToGroupRequestDto
 import net.corda.libs.permissions.manager.request.ChangeGroupParentIdDto
 import net.corda.libs.permissions.manager.request.DeleteGroupRequestDto
@@ -19,6 +20,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.permissions.management.PermissionManagementService
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.ExceptionDetails
+import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.response.ResponseEntity
 import net.corda.rest.security.CURRENT_REST_CONTEXT
@@ -70,6 +72,14 @@ class GroupEndpointImpl @Activate constructor(
                 throw ResourceNotFoundException(
                     e::class.java.simpleName,
                     ExceptionDetails(e::class.java.name, e.message ?: "No resource found for this request.")
+                )
+            } catch (e: IllegalArgumentException) {
+                throw InvalidInputDataException(
+                    title = e::class.java.simpleName,
+                    exceptionDetails = ExceptionDetails(
+                        e::class.java.name,
+                        e.message ?: "Invalid argument in request."
+                    )
                 )
             }
         }
