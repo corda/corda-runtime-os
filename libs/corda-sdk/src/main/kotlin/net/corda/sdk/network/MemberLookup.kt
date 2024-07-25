@@ -25,12 +25,12 @@ class MemberLookup(val restClient: CordaRestClient) {
     @Suppress("LongParameterList")
     fun lookupMember(
         holdingIdentityShortHash: ShortHash,
-        commonName: String?,
-        organization: String?,
-        organizationUnit: String?,
-        locality: String?,
-        state: String?,
-        country: String?,
+        commonName: String? = null,
+        organization: String? = null,
+        organizationUnit: String? = null,
+        locality: String? = null,
+        state: String? = null,
+        country: String? = null,
         status: List<String> = listOf("ACTIVE"),
         wait: Duration = 10.seconds
     ): RestMemberInfoList {

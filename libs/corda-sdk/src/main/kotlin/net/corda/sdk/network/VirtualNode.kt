@@ -1,11 +1,15 @@
 package net.corda.sdk.network
 
 import net.corda.crypto.core.ShortHash
+import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
 import net.corda.restclient.CordaRestClient
+import net.corda.restclient.generated.models.AsyncOperationStatus
 import net.corda.restclient.generated.models.AsyncResponse
+import net.corda.restclient.generated.models.ChangeVirtualNodeStateResponse
 import net.corda.restclient.generated.models.JsonCreateVirtualNodeRequest
 import net.corda.restclient.generated.models.VirtualNodeInfo
 import net.corda.restclient.generated.models.VirtualNodes
+import net.corda.sdk.data.Checksum
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
 import net.corda.v5.base.types.MemberX500Name
 import kotlin.time.Duration
@@ -96,6 +100,55 @@ class VirtualNode(val restClient: CordaRestClient) {
             }
         }
     }
+
+    fun updateState(
+        holdingId: ShortHash,
+        state: VirtualNodeStateTransitions,
+        wait: Duration = 30.seconds
+    ): ChangeVirtualNodeStateResponse {
+        return executeWithRetry(
+            waitDuration = wait,
+            operationName = "Update virtual node state"
+        ) {
+            restClient.virtualNodeClient.putVirtualnodeVirtualnodeshortidStateNewstate(holdingId.value, state.name)
+        }
+    }
+
+    fun upgradeCpi(
+        holdingId: ShortHash,
+        cpiChecksum: Checksum,
+        wait: Duration = 30.seconds,
+    ): AsyncResponse {
+        return executeWithRetry(
+            waitDuration = wait,
+            operationName = "Upgrade CPI for virtual node $holdingId"
+        ) {
+            restClient.virtualNodeClient.putVirtualnodeVirtualnodeshortidCpiTargetcpifilechecksum(holdingId.value, cpiChecksum.value)
+        }
+    }
+
+    fun upgradeCpiAndWaitForSuccess(
+        holdingId: ShortHash,
+        cpiChecksum: Checksum,
+        wait: Duration = 30.seconds,
+    ) {
+        val requestId = upgradeCpi(holdingId, cpiChecksum, wait).requestId
+        val status = executeWithRetry(
+            waitDuration = wait,
+            operationName = "Wait for CPI upgrade to complete"
+        ) {
+            val response = restClient.virtualNodeClient.getVirtualnodeStatusRequestid(requestId)
+            val inProgressStates = listOf(AsyncOperationStatus.Status.IN_PROGRESS, AsyncOperationStatus.Status.ACCEPTED)
+            if (response.status in inProgressStates) {
+                throw VirtualNodeUpgradeException("CPI upgrade status is still in progress: ${response.status}")
+            }
+            response.status
+        }
+        if (status != AsyncOperationStatus.Status.SUCCEEDED) {
+            throw VirtualNodeUpgradeException("CPI upgrade failed with status: $status")
+        }
+    }
 }
 
 class VirtualNodeLookupException(message: String) : Exception(message)
+class VirtualNodeUpgradeException(message: String) : Exception(message)

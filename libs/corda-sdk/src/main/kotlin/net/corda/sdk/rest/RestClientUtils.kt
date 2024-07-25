@@ -1,7 +1,10 @@
 package net.corda.sdk.rest
 
 import net.corda.libs.configuration.exception.WrongConfigVersionException
+import net.corda.rest.ResponseCode
 import net.corda.rest.exception.ResourceAlreadyExistsException
+import net.corda.restclient.generated.infrastructure.ClientException
+import net.corda.restclient.generated.infrastructure.ServerException
 import net.corda.sdk.network.OnboardFailedException
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -30,6 +33,7 @@ object RestClientUtils {
     fun <T> executeWithRetry(
         waitDuration: Duration = maxWait,
         timeBetweenAttempts: Duration = cooldownInterval,
+        escapedResponseCodes: List<ResponseCode> = listOf(),
         operationName: String,
         block: () -> T
     ): T {
@@ -40,11 +44,12 @@ object RestClientUtils {
             try {
                 return block()
             } catch (ex: Exception) {
-                when (ex) {
+                when {
                     // Allow an escape without retrying
-                    is ResourceAlreadyExistsException,
-                    is WrongConfigVersionException,
-                    is OnboardFailedException -> throw ex
+                    ex is ResourceAlreadyExistsException ||
+                    ex is WrongConfigVersionException ||
+                    ex is OnboardFailedException ||
+                    ex.isEscapedResponseCode(escapedResponseCodes) -> throw ex
                     // All other exceptions, perform retry
                     else -> {
                         lastException = ex
@@ -58,5 +63,13 @@ object RestClientUtils {
 
         errOut.error("""Unable to perform operation "$operationName"""", lastException)
         throw lastException!!
+    }
+
+    private fun Exception.isEscapedResponseCode(statusCodes: List<ResponseCode>): Boolean {
+        val statusCode = (this as? ClientException)?.statusCode
+            ?: (this as? ServerException)?.statusCode
+            ?: return false
+
+        return statusCode in statusCodes.map { it.statusCode }
     }
 }

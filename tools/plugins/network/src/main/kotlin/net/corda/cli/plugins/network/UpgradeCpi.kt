@@ -1,13 +1,27 @@
 package net.corda.cli.plugins.network
 
 import net.corda.cli.plugins.common.RestCommand
+import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
+import net.corda.crypto.core.ShortHash
+import net.corda.data.flow.output.FlowStates
+import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
 import net.corda.restclient.CordaRestClient
+import net.corda.sdk.data.Checksum
+import net.corda.sdk.data.RequestId
+import net.corda.sdk.network.MemberLookup
+import net.corda.sdk.network.VirtualNode
 import net.corda.sdk.network.config.NetworkConfig
+import net.corda.sdk.packaging.CpiUploader
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.virtualnode.HoldingIdentity
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
 import java.net.URI
 import java.nio.file.Files
+import java.time.Duration
+import java.util.concurrent.Callable
+import kotlin.time.Duration.Companion.seconds
 
 // TODO only for dynamic?
 @Command(
@@ -15,7 +29,7 @@ import java.nio.file.Files
     description = ["Upgrade the CPI used in a network"], // TODO add more description
     mixinStandardHelpOptions = true,
 )
-class UpgradeCpi : Runnable, RestCommand() {
+class UpgradeCpi : Callable<Int>, RestCommand() {
     @Option(
         names = ["--cpi-file"],
         description = ["Location of the CPI file to upgrade the members to."],
@@ -39,17 +53,20 @@ class UpgradeCpi : Runnable, RestCommand() {
         )
     }
 
-    override fun run() {
+    override fun call(): Int {
         super.run()
 
-//        val exitCode = verifyAndPrintError {
-        upgradeCpi()
-//        }
+        val exitCode = verifyAndPrintError {
+            upgradeCpi()
+        }
 
-//        exitProcess(exitCode)
+        return exitCode
     }
 
     private fun upgradeCpi() {
+        val virtualNode = VirtualNode(restClient)
+        val memberLookup = MemberLookup(restClient)
+
         // Require input files exist and are readable
         require(Files.isReadable(cpiFile.toPath())) { "CPI file '$cpiFile' does not exist or is not readable." }
         require(Files.isReadable(networkConfigFile.toPath())) {
@@ -81,20 +98,29 @@ class UpgradeCpi : Runnable, RestCommand() {
         val mgmX500Name = configMgmVNode.x500Name
             ?: error("MGM node in the network configuration file does not have an X.500 name defined.")
 
-        val existingVNodes = restClient.virtualNodeClient.getVirtualnode().virtualNodes
+        val existingVNodes = virtualNode.getAllVirtualNodes().virtualNodes
         val mgmHoldingId = existingVNodes.firstOrNull {
             it.holdingIdentity.x500Name == mgmX500Name && it.cpiIdentifier.cpiName == mgmCpiName
         }?.holdingIdentity?.shortHash ?: error(
             "MGM virtual node with X.500 name '$mgmX500Name' and CPI name '$mgmCpiName' not found among existing virtual nodes."
         )
 
+        println("MGM holdingId: $mgmHoldingId")
+
         // 3. Lookup members known to MGM holdingId
-        val existingMembers = restClient.memberLookupClient.getMembersHoldingidentityshorthash(mgmHoldingId).members
+        val existingMembers = memberLookup.lookupMember(ShortHash.of(mgmHoldingId), status = emptyList()).members
 
         // 4. Validate that all members from the config file are present in the response:
         //      - based on X500 name
         //      - NOT based on CPI name, which might be different to what is defined in the config file
-        // TODO what should we do with the members' CPI name defined in the config file? - Ignore it
+        // TODO what should we do with the members' CPI name defined in the config file?
+
+        // TODO  - check this!!! PUT Upgrade CPI errors with 400 if CPI name is different:
+//        {
+//            "title": "Upgrade CPI must have the same name as the current CPI.",
+//            "status": 400,
+//            "details": {}
+//        }
 
         // TODO convert x500 names to MemberX500Name objects for comparison
         val unknownConfigMembers = configMembers.filter { configMember ->
@@ -109,16 +135,42 @@ class UpgradeCpi : Runnable, RestCommand() {
             existingMember.memberContext["corda.name"] in configMembers.map { it.x500Name }
         }
 
-        // 5. Validate that all members' CPI information is different from the new CPI file's attributes
-        // 6. For every target member, we can use groupId and X500 name to infer holdingId
-        // 7. Verify that VNodes with the holdingId exist
-        // 8. Verify that VNodes _don't use BYOD feature_
-
         // 9. Verify that target members list is not empty
+        // Double-checking, this should not be the case after the prior validations
+        require(targetExistingMembers.isNotEmpty()) { "No target members found." }
+
+        // 5. Validate that all members' CPI information is different from the new CPI file's attributes
+        // -- that is done on upload, check for 409. If any member has the same CPI name and version, this means such CPI
+        //    already exists in the given Corda instance, and the upload will fail with 409.
+        // TODO: check this before upload by analysing CPI file metadata - to save time.
+
+        // 6. For every target member, we can use groupId and X500 name to infer holdingId
+        val targetHoldingIds = targetExistingMembers.map {
+            HoldingIdentity(MemberX500Name.parse(it.memberContext["corda.name"]!!), it.memberContext["corda.groupId"]!!)
+                .shortHash.toString()
+        }
+
+        // 7. Verify that VNodes with the holdingId exist
+        val existingVNodesHoldingIds: List<String> = existingVNodes.map { it.holdingIdentity.shortHash }
+
+        // Double-checking, this should not be the case after the prior validations
+        require(existingVNodesHoldingIds.containsAll(targetHoldingIds)) {
+            "The following target members' holdingIds are not present among existing virtual nodes: " +
+                    targetHoldingIds.joinToString(", ") // TODO report together with the members' X500 names
+        }
+
+        // 8. Verify that VNodes _don't use BYOD feature_ - no way to do that!!
 
         // 9.5 Save members' current CPI information
+        // -- saved in targetExistingMembers
+
         // 10. Upload the new CPI file and get checksum
         //   -- if failed, report the error
+        val cpiUploader = CpiUploader(restClient)
+
+        val uploadRequestId = cpiUploader.uploadCPI(cpiFile).id // If upload fails, this throws an exception
+        val cpiChecksum = cpiUploader.cpiChecksum(RequestId(uploadRequestId), wait = 30.seconds)
+        println("Uploaded CPI checksum: $cpiChecksum")
 
         // Once all requirements are met, we can loop through each target member and perform the upgrade
         // -- if unable to put VNode back to ACTIVE (failed schemas check),
@@ -126,5 +178,55 @@ class UpgradeCpi : Runnable, RestCommand() {
         //   - completes the upgrade process manually (generates the SQL and executes against the DB)
         //   - or reverts the upgrade (replaces the CPI file with the old one - get info from the saved members' CPI information)
         //  and then puts the VNode back to ACTIVE manually
+
+        val errors = targetHoldingIds
+            .map { ShortHash.of(it) }
+            .associateWith{
+                runCatching { upgradeVirtualNode(it, cpiChecksum) }
+                    .onFailure { e -> println("Failed to upgrade virtual node with holdingId $it: ${e.message}") }
+                    .exceptionOrNull()
+            }
+            .filterValues { it != null }
+
+        if (errors.isNotEmpty()) {
+            println("Upgrade failed for some virtual nodes:")
+            errors.forEach { (holdingId, error) ->
+                println("HoldingId: $holdingId, error: ${error?.message}")
+            }
+        }
+    }
+
+    // TODO move most of the logic to SDK
+    private fun upgradeVirtualNode(holdingId: ShortHash, cpiChecksum: Checksum) {
+        val virtualNode = VirtualNode(restClient)
+
+        // 1. Set the state of the virtual node to MAINTENANCE
+        virtualNode.updateState(holdingId, VirtualNodeStateTransitions.MAINTENANCE)
+
+        // 2. Ensure no flows are running (that is, all flows have either “COMPLETED”, “FAILED” or “KILLED” status)
+        // TODO move to companion object
+        val terminatedFlowStates = listOf(FlowStates.COMPLETED, FlowStates.FAILED, FlowStates.KILLED).map { it.name }
+
+        // TODO wrap in SDK with a retry
+        val runningFlows = restClient.flowManagementClient.getFlowHoldingidentityshorthash(holdingId.value)
+            .flowStatusResponses.filter { it.flowStatus !in terminatedFlowStates }
+
+        require(runningFlows.isEmpty()) {
+            "There are running flows on the virtual node with holdingId $holdingId:\n" +
+            runningFlows.joinToString("\n")
+        }
+
+        // 3. For the BYODB - report to the user VNode HoldingIds, CPI checksum, and/or the API path they need to hit to get the SQL
+
+        // 4. Send the checksum of the CPI to upgrade to using the PUT method
+        virtualNode.upgradeCpiAndWaitForSuccess(holdingId, cpiChecksum)
+
+        // 5. TODO The endpoint triggers the member to re-register with the MGM - check if we need to wait for anything
+        //   -- probably not, as we have waited for the upgrade to complete with SUCCEEDED status
+
+        // 6. Set the state of the virtual node back to ACTIVE
+        virtualNode.updateState(holdingId, VirtualNodeStateTransitions.ACTIVE)
+        //   6.5 If failed, throw and collect the error
+        println("Virtual node with holdingId $holdingId upgraded successfully")
     }
 }
