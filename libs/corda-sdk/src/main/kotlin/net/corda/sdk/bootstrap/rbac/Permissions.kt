@@ -63,6 +63,7 @@ object Permissions {
         "CreateUser" to "POST:/api/$VERSION_PATH_REGEX/user",
         "GetUser" to "GET:/api/$VERSION_PATH_REGEX/user/${RbacKeys.USER_URL_REGEX}",
         "DeleteUser" to "DELETE:/api/$VERSION_PATH_REGEX/user/${RbacKeys.USER_URL_REGEX}",
+        "ChangeUserGroupParentId" to "PUT:/api/$VERSION_PATH_REGEX/user/$UUID_REGEX/parent/changeParentId/$UUID_REGEX",
         "ChangeOtherUserPassword" to "POST:/api/$VERSION_PATH_REGEX/user/otheruserpassword",
         "AddRoleToUser" to "PUT:/api/$VERSION_PATH_REGEX/user/${RbacKeys.USER_URL_REGEX}/role/$UUID_REGEX",
         "DeleteRoleFromUser" to "DELETE:/api/$VERSION_PATH_REGEX/user/${RbacKeys.USER_URL_REGEX}/role/$UUID_REGEX",
