@@ -2,6 +2,7 @@ package net.corda.libs.permissions.manager.impl
 
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.permissions.ChangeDetails
+import net.corda.data.permissions.Group
 import net.corda.data.permissions.Property
 import net.corda.data.permissions.RoleAssociation
 import net.corda.data.permissions.User
@@ -306,10 +307,14 @@ class PermissionUserManagerImplTest {
             ),
             loginName, "fullName", true, "hashedPass", "salt", Instant.now(), false, newParentGroupId, emptyList(), emptyList()
         )
+        val avroGroup = Group(
+            UUID.randomUUID().toString(), 0, ChangeDetails(Instant.now()), "groupName", newParentGroupId, emptyList(), emptyList()
+        )
 
         val future = mock<CompletableFuture<PermissionManagementResponse>>()
         whenever(future.getOrThrow(defaultTimeout)).thenReturn(PermissionManagementResponse(avroUser))
         whenever(permissionManagementCache.getUser(loginName)).thenReturn(avroUser)
+        whenever(permissionManagementCache.getGroup(newParentGroupId)).thenReturn(avroGroup)
 
         val requestCaptor = argumentCaptor<PermissionManagementRequest>()
         whenever(rpcSender.sendRequest(requestCaptor.capture())).thenReturn(future)
