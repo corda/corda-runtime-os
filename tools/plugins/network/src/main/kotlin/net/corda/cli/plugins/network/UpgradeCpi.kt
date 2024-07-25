@@ -12,7 +12,9 @@ import net.corda.sdk.data.RequestId
 import net.corda.sdk.network.MemberLookup
 import net.corda.sdk.network.VirtualNode
 import net.corda.sdk.network.config.NetworkConfig
+import net.corda.sdk.network.config.VNode
 import net.corda.sdk.packaging.CpiUploader
+import net.corda.sdk.packaging.CpiV2Creator
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import picocli.CommandLine
@@ -21,8 +23,9 @@ import picocli.CommandLine.Option
 import java.io.File
 import java.net.URI
 import java.nio.file.Files
+import java.nio.file.StandardOpenOption
 import java.util.concurrent.Callable
-import kotlin.time.Duration.Companion.seconds
+import java.util.jar.JarInputStream
 
 // TODO only for dynamic?
 @Command(
@@ -44,6 +47,13 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
         required = true,
     )
     lateinit var networkConfigFile: File
+
+    private lateinit var cpiName: String
+    private lateinit var cpiVersion: String
+    private lateinit var networkConfig: NetworkConfig
+    private lateinit var configMembers: List<VNode>
+    private lateinit var mgmCpiName: String
+    private lateinit var mgmX500Name: String
 
     private val restClient: CordaRestClient by lazy {
         CordaRestClient.createHttpClient(
@@ -68,36 +78,7 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
         val virtualNode = VirtualNode(restClient)
         val memberLookup = MemberLookup(restClient)
 
-        // Require input files exist and are readable
-        require(Files.isReadable(cpiFile.toPath())) { "CPI file '$cpiFile' does not exist or is not readable." }
-        require(Files.isReadable(networkConfigFile.toPath())) {
-            "Network configuration file '$networkConfigFile' does not exist or is not readable."
-        }
-
-        // Require that CPI is a valid CPI file, output the CPI attributes (name, version, etc.)
-        // !!! Can't do that properly, will verify on upload base on response from Corda
-
-        // Parse network configuration file. Require that it is successfully parsed.
-        val networkConfig = NetworkConfig(networkConfigFile.absolutePath)
-
-        // Input Validation:
-
-        // 1. Require dynamic network (network config array includes mgmNode)
-        require(networkConfig.mgmNodeIsPresentInNetworkDefinition) { "Network configuration file does not contain MGM node." }
-
-        // 1.5 Ignore Notary nodes from the config file !!!
-        val configMembers = networkConfig.vNodes.filter { it.serviceX500Name == null && !it.mgmNode.toBoolean() }
-        require(configMembers.isNotEmpty()) { "Network configuration file does not contain any members to upgrade." }
-        // TODO test this
-        require(configMembers.all { it.x500Name != null }) { "Network configuration file contains members without X.500 name." }
-
-        val configMgmVNode = networkConfig.getMgmNode()
-
-        // 2. Use mgmNode's X500Name and cpi name to query MGM VNode holdingId
-        val mgmCpiName = configMgmVNode?.cpi
-            ?: error("MGM node in the network configuration file does not have a CPI name defined.")
-        val mgmX500Name = configMgmVNode.x500Name
-            ?: error("MGM node in the network configuration file does not have an X.500 name defined.")
+        validateAndReadInputFiles()
 
         val existingVNodes = virtualNode.getAllVirtualNodes().virtualNodes
         val mgmHoldingId = existingVNodes.firstOrNull {
@@ -203,6 +184,44 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
         return CommandLine.ExitCode.OK
     }
 
+    private fun validateFileIsReadable(file: File, name: String) {
+        require(Files.isReadable(file.toPath())) { "$name file '$file' does not exist or is not readable." }
+    }
+
+    private fun validateAndReadInputFiles() {
+        validateFileIsReadable(cpiFile, "CPI")
+        validateFileIsReadable(networkConfigFile, "Network configuration")
+
+        readAndValidateCpiMetadata()
+
+        networkConfig = NetworkConfig(networkConfigFile.absolutePath)
+
+        require(networkConfig.mgmNodeIsPresentInNetworkDefinition) { "Network configuration file does not contain MGM node." }
+
+        configMembers = networkConfig.vNodes.filter { it.serviceX500Name == null && !it.mgmNode.toBoolean() }
+        require(configMembers.isNotEmpty()) { "Network configuration file does not contain any members to upgrade." }
+        require(configMembers.all { it.x500Name != null }) { "Network configuration file contains members without X.500 name." }
+
+        val configMgmVNode: VNode = networkConfig.getMgmNode()!!
+
+        mgmCpiName = configMgmVNode.cpi
+            ?: error("MGM node in the network configuration file does not have a CPI name defined.")
+        mgmX500Name = configMgmVNode.x500Name
+            ?: error("MGM node in the network configuration file does not have an X.500 name defined.")
+    }
+
+    private fun readAndValidateCpiMetadata() {
+        val (cpiAttributes, cpiEntries) = cpiAttributesAndEntries
+
+        cpiName = cpiAttributes[CpiV2Creator.CPI_NAME_ATTRIBUTE_NAME]?.toString() ?: error("CPI file does not contain a name attribute.")
+        cpiVersion = cpiAttributes[CpiV2Creator.CPI_VERSION_ATTRIBUTE_NAME]?.toString() ?: error("CPI file does not contain a version attribute.")
+
+        require(cpiEntries.isNotEmpty()) { "CPI file does not contain any entries." }
+        require(cpiEntries.any { it.key == CpiV2Creator.META_INF_GROUP_POLICY_JSON }) {
+            "CPI file does not contain a ${CpiV2Creator.META_INF_GROUP_POLICY_JSON} entry."
+        }
+    }
+
     // TODO move most of the logic to SDK
     private fun upgradeVirtualNode(holdingId: ShortHash, cpiChecksum: Checksum) {
         val virtualNode = VirtualNode(restClient)
@@ -235,5 +254,16 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
         virtualNode.updateState(holdingId, VirtualNodeStateTransitions.ACTIVE)
         //   6.5 If failed, throw and collect the error
         println("Virtual node with holdingId $holdingId upgraded successfully")
+    }
+
+    private val cpiAttributesAndEntries by lazy {
+        try {
+            JarInputStream(Files.newInputStream(cpiFile.toPath(), StandardOpenOption.READ)).use {
+                val manifest = it.manifest
+                manifest.mainAttributes to manifest.entries
+            }
+        } catch (e: Exception) {
+            error("Error reading CPI file: ${e.message}")
+        }
     }
 }
