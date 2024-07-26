@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.util.concurrent.ExecutionException
 
@@ -83,5 +85,7 @@ class KafkaAdminTest {
         val admin = KafkaAdmin(adminClient)
 
         assertThrows<CordaRuntimeException> { admin.getTopics() }
+
+        verify(kafkaFuture, times(3)).get()
     }
 }
