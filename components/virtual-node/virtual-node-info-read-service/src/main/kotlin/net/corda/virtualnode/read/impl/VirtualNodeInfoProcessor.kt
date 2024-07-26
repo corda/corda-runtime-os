@@ -113,7 +113,13 @@ class VirtualNodeInfoProcessor(private val onStatusUpCallback: () -> Unit, priva
         }
 
         val currentSnapshot = virtualNodeInfoMap.getAllAsCordaObjects()
-        listeners.forEach { it.value.onUpdate(setOf(newRecord.key.toCorda()), currentSnapshot) }
+        try {
+            listeners.forEach { it.value.onUpdate(setOf(newRecord.key.toCorda()), currentSnapshot) }
+        } catch (exception: Exception) {
+            log.error("Virtual Node Info service could not update", exception)
+            onErrorCallback()
+            return
+        }
     }
 
     fun getAll(): List<VirtualNodeInfo> =
