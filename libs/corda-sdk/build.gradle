@@ -42,6 +42,7 @@ dependencies {
     implementation project(":libs:db:db-admin-impl")
     implementation project(':libs:membership:certificates-common')
     implementation project(':libs:membership:membership-common')
+    implementation project(":libs:membership:membership-impl")
     implementation project(':libs:membership:schema-validation')
     implementation project(':libs:packaging:packaging-verify')
     implementation project(':libs:permissions:permission-common')

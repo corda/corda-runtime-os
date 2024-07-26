@@ -516,4 +516,6 @@ class UpgradeCpiTest {
         val membersAfterFailedUpgrade = getGroupMembers()
         assertThat(membersAfterFailedUpgrade).isEqualTo(existingMembers)
     }
+
+    // TODO: add run flows check before and after upgrade in positive tests
 }

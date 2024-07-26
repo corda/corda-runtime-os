@@ -2,6 +2,7 @@ package net.corda.cli.plugins.network
 
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
+import net.corda.cli.plugins.network.utils.requireFileExists
 import net.corda.crypto.core.ShortHash
 import net.corda.data.flow.output.FlowStates
 import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
@@ -10,9 +11,11 @@ import net.corda.restclient.CordaRestClient
 import net.corda.sdk.data.Checksum
 import net.corda.sdk.data.RequestId
 import net.corda.sdk.network.MemberLookup
+import net.corda.sdk.network.UpgradeVirtualNode
 import net.corda.sdk.network.VirtualNode
 import net.corda.sdk.network.config.NetworkConfig
 import net.corda.sdk.network.config.VNode
+import net.corda.sdk.packaging.CpiAttributes
 import net.corda.sdk.packaging.CpiUploader
 import net.corda.sdk.packaging.CpiV2Creator
 import net.corda.v5.base.types.MemberX500Name
@@ -63,6 +66,8 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
             insecure = insecure
         )
     }
+
+    private val upgradeVirtualNode by lazy { UpgradeVirtualNode(restClient) }
 
     override fun call(): Int {
         super.run()
@@ -164,18 +169,21 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
         //   - or reverts the upgrade (replaces the CPI file with the old one - get info from the saved members' CPI information)
         //  and then puts the VNode back to ACTIVE manually
 
-        val errors = targetHoldingIds
-            .map { ShortHash.of(it) }
-            .associateWith{
-                runCatching { upgradeVirtualNode(it, cpiChecksum) }
-                    .onFailure { e -> println("Failed to upgrade virtual node with holdingId $it: ${e.message}") }
-                    .exceptionOrNull()
-            }
-            .filterValues { it != null }
 
-        if (errors.isNotEmpty()) {
+        val upgradeHoldingIds = upgradeVirtualNode.getUpgradeHoldingIds(
+            networkConfig,
+            CpiAttributes(cpiName, cpiVersion)
+        )
+
+        val vNodeUpgradeErrors = upgradeHoldingIds.associateWith {
+            runCatching {
+                upgradeVirtualNode(it, cpiChecksum)
+            }.exceptionOrNull()
+        }.filterValues { it != null }
+
+        if (vNodeUpgradeErrors.isNotEmpty()) {
             System.err.println("Upgrade failed for some virtual nodes:")
-            errors.forEach { (holdingId, error) ->
+            vNodeUpgradeErrors.forEach { (holdingId, error) ->
                 System.err.println("HoldingId: $holdingId, error: ${error?.message}")
             }
             return CommandLine.ExitCode.SOFTWARE
@@ -184,13 +192,9 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
         return CommandLine.ExitCode.OK
     }
 
-    private fun validateFileIsReadable(file: File, name: String) {
-        require(Files.isReadable(file.toPath())) { "$name file '$file' does not exist or is not readable." }
-    }
-
     private fun validateAndReadInputFiles() {
-        validateFileIsReadable(cpiFile, "CPI")
-        validateFileIsReadable(networkConfigFile, "Network configuration")
+        requireFileExists(cpiFile)
+        requireFileExists(networkConfigFile)
 
         readAndValidateCpiMetadata()
 
