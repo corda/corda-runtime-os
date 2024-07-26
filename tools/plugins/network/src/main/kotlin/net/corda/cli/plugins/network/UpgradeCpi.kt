@@ -10,7 +10,6 @@ import net.corda.rest.ResponseCode
 import net.corda.restclient.CordaRestClient
 import net.corda.sdk.data.Checksum
 import net.corda.sdk.data.RequestId
-import net.corda.sdk.network.MemberLookup
 import net.corda.sdk.network.UpgradeVirtualNode
 import net.corda.sdk.network.VirtualNode
 import net.corda.sdk.network.config.NetworkConfig
@@ -18,8 +17,6 @@ import net.corda.sdk.network.config.VNode
 import net.corda.sdk.packaging.CpiAttributes
 import net.corda.sdk.packaging.CpiUploader
 import net.corda.sdk.packaging.CpiV2Creator
-import net.corda.v5.base.types.MemberX500Name
-import net.corda.virtualnode.HoldingIdentity
 import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
@@ -53,10 +50,6 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
 
     private lateinit var cpiName: String
     private lateinit var cpiVersion: String
-    private lateinit var networkConfig: NetworkConfig
-    private lateinit var configMembers: List<VNode>
-    private lateinit var mgmCpiName: String
-    private lateinit var mgmX500Name: String
 
     private val restClient: CordaRestClient by lazy {
         CordaRestClient.createHttpClient(
@@ -80,79 +73,19 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
     }
 
     private fun upgradeCpi(): Int {
-        val virtualNode = VirtualNode(restClient)
-        val memberLookup = MemberLookup(restClient)
+        requireFileExists(cpiFile)
+        requireFileExists(networkConfigFile)
 
-        validateAndReadInputFiles()
+        readAndValidateCpiMetadata()
 
-        val existingVNodes = virtualNode.getAllVirtualNodes().virtualNodes
-        val mgmHoldingId = existingVNodes.firstOrNull {
-            it.holdingIdentity.x500Name == mgmX500Name && it.cpiIdentifier.cpiName == mgmCpiName
-        }?.holdingIdentity?.shortHash ?: error(
-            "MGM virtual node with X.500 name '$mgmX500Name' and CPI name '$mgmCpiName' not found among existing virtual nodes."
+        val networkConfig = NetworkConfig(networkConfigFile.absolutePath)
+
+        // FROM SDK
+        val upgradeHoldingIds = upgradeVirtualNode.getUpgradeHoldingIds(
+            networkConfig,
+            CpiAttributes(cpiName, cpiVersion)
         )
 
-        println("MGM holdingId: $mgmHoldingId")
-
-        // 3. Lookup members known to MGM holdingId
-        val existingMembers = memberLookup.lookupMember(ShortHash.of(mgmHoldingId), status = emptyList()).members
-
-        // 4. Validate that all members from the config file are present in the response:
-        //      - based on X500 name
-        //      - NOT based on CPI name, which might be different to what is defined in the config file
-        // TODO what should we do with the members' CPI name defined in the config file?
-
-        // TODO  - check this!!! PUT Upgrade CPI errors with 400 if CPI name is different:
-//        {
-//            "title": "Upgrade CPI must have the same name as the current CPI.",
-//            "status": 400,
-//            "details": {}
-//        }
-
-        // TODO convert x500 names to MemberX500Name objects for comparison
-        val unknownConfigMembers = configMembers.filter { configMember ->
-            configMember.x500Name !in existingMembers.map { it.memberContext["corda.name"] }
-        }
-        require(unknownConfigMembers.isEmpty()) {
-            "The following members from the network configuration file are not present in the network: " +
-                unknownConfigMembers.joinToString(", ") { "'${it.x500Name!!}'" }
-        }
-
-        val targetExistingMembers = existingMembers.filter { existingMember ->
-            existingMember.memberContext["corda.name"] in configMembers.map { it.x500Name }
-        }
-
-        // 9. Verify that target members list is not empty
-        // Double-checking, this should not be the case after the prior validations
-        require(targetExistingMembers.isNotEmpty()) { "No target members found." }
-
-        // 5. Validate that all members' CPI information is different from the new CPI file's attributes
-        // -- that is done on upload, check for 409. If any member has the same CPI name and version, this means such CPI
-        //    already exists in the given Corda instance, and the upload will fail with 409.
-        // TODO: check this before upload by analysing CPI file metadata - to save time.
-
-        // 6. For every target member, we can use groupId and X500 name to infer holdingId
-        val targetHoldingIds = targetExistingMembers.map {
-            HoldingIdentity(MemberX500Name.parse(it.memberContext["corda.name"]!!), it.memberContext["corda.groupId"]!!)
-                .shortHash.toString()
-        }
-
-        // 7. Verify that VNodes with the holdingId exist
-        val existingVNodesHoldingIds: List<String> = existingVNodes.map { it.holdingIdentity.shortHash }
-
-        // Double-checking, this should not be the case after the prior validations
-        require(existingVNodesHoldingIds.containsAll(targetHoldingIds)) {
-            "The following target members' holdingIds are not present among existing virtual nodes: " +
-                    targetHoldingIds.joinToString(", ") // TODO report together with the members' X500 names
-        }
-
-        // 8. Verify that VNodes _don't use BYOD feature_ - no way to do that!!
-
-        // 9.5 Save members' current CPI information
-        // -- saved in targetExistingMembers
-
-        // 10. Upload the new CPI file and get checksum
-        //   -- if failed, report the error
         val cpiUploader = CpiUploader(restClient)
 
         val uploadRequestId = cpiUploader.uploadCPI(cpiFile).id // If upload fails, this throws an exception
@@ -169,12 +102,6 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
         //   - or reverts the upgrade (replaces the CPI file with the old one - get info from the saved members' CPI information)
         //  and then puts the VNode back to ACTIVE manually
 
-
-        val upgradeHoldingIds = upgradeVirtualNode.getUpgradeHoldingIds(
-            networkConfig,
-            CpiAttributes(cpiName, cpiVersion)
-        )
-
         val vNodeUpgradeErrors = upgradeHoldingIds.associateWith {
             runCatching {
                 upgradeVirtualNode(it, cpiChecksum)
@@ -190,28 +117,6 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
         }
 
         return CommandLine.ExitCode.OK
-    }
-
-    private fun validateAndReadInputFiles() {
-        requireFileExists(cpiFile)
-        requireFileExists(networkConfigFile)
-
-        readAndValidateCpiMetadata()
-
-        networkConfig = NetworkConfig(networkConfigFile.absolutePath)
-
-        require(networkConfig.mgmNodeIsPresentInNetworkDefinition) { "Network configuration file does not contain MGM node." }
-
-        configMembers = networkConfig.vNodes.filter { it.serviceX500Name == null && !it.mgmNode.toBoolean() }
-        require(configMembers.isNotEmpty()) { "Network configuration file does not contain any members to upgrade." }
-        require(configMembers.all { it.x500Name != null }) { "Network configuration file contains members without X.500 name." }
-
-        val configMgmVNode: VNode = networkConfig.getMgmNode()!!
-
-        mgmCpiName = configMgmVNode.cpi
-            ?: error("MGM node in the network configuration file does not have a CPI name defined.")
-        mgmX500Name = configMgmVNode.x500Name
-            ?: error("MGM node in the network configuration file does not have an X.500 name defined.")
     }
 
     private fun readAndValidateCpiMetadata() {

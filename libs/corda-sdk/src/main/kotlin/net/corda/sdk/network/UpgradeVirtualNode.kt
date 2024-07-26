@@ -69,7 +69,7 @@ class UpgradeVirtualNode(val restClient: CordaRestClient) {
             "Network configuration file contains members without X.500 name or CPI name defined."
         }
         require(networkConfig.memberNodes.all { it.cpi!! == upgradeCpiAttributes.cpiName }) {
-            "All target members must have the same CPI name as the one being upgraded (${upgradeCpiAttributes.cpiName})."
+            "Network configuration file contains members with CPI name which is different from the target CPI name '${upgradeCpiAttributes.cpiName}'"
         }
     }
 
@@ -129,7 +129,7 @@ class UpgradeVirtualNode(val restClient: CordaRestClient) {
             val invalidMembersString = sameCpiVersionMembers.joinToString("\n") {
                 """Name: "${it.partyName}", CPI name: ${it.cpiName}, CPI version: ${it.cpiVersion}"""
             }
-            "The following members have the same CPI version as the one being upgraded:\n$invalidMembersString"
+            "One or more target members in the network have the same CPI version as the target CPI file:\n$invalidMembersString"
         }
     }
 }
