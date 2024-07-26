@@ -4,8 +4,10 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.messaging.api.records.Record
 import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoListener
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -16,6 +18,10 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
+import org.mockito.Mockito
+import org.mockito.Mockito.mock
+import org.mockito.kotlin.any
 import java.time.Instant
 import java.util.UUID
 
@@ -349,6 +355,26 @@ class VirtualNodeInfoProcessorTest {
 
         assertThat(onError).isFalse
         processor.onSnapshot(mapOf(holdingIdentityOther.toAvro() to virtualNodeInfo.toAvro()))
+        assertThat(onError).isTrue
+    }
+
+    @Test
+    fun `exception is caught and onError called if update fails`() {
+        val exceptionalListener = mock<VirtualNodeInfoListener>()
+
+        var onError = false
+        val processor = VirtualNodeInfoProcessor({ /* don't care */ }, { onError = true })
+
+        processor.registerCallback(exceptionalListener)
+
+        Mockito.`when`(exceptionalListener.onUpdate(any(), any())).thenThrow(CordaRuntimeException(""))
+
+        val holdingIdentity = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "groupId")
+        val virtualNodeInfo =
+            newVirtualNodeInfo(holdingIdentity, CpiIdentifier("name", "version", secureHash))
+
+        assertThat(onError).isFalse
+        assertDoesNotThrow { processor.onNext(Record("", holdingIdentity.toAvro(), virtualNodeInfo.toAvro()), null, emptyMap()) }
         assertThat(onError).isTrue
     }
 }
