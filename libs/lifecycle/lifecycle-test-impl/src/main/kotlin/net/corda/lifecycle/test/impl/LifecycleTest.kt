@@ -139,6 +139,7 @@ class LifecycleTest<T : Lifecycle>(
      */
     fun bringDependencyUp(coordinatorName: LifecycleCoordinatorName) {
         val coordinator = registry.getCoordinator(coordinatorName)
+        coordinator.stop()
         coordinator.start()
         coordinator.updateStatus(LifecycleStatus.UP)
     }
