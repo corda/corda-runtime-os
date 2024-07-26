@@ -22,7 +22,7 @@ kubernetesClientVersion = "6.13.1"
 log4jVersion = "2.23.0"
 # If upgrading liquibase to 4.28, enable `LiquibaseSchemaMigratorImplTest.when updateDb create DB schema`
 # and `LiquibaseSchemaMigratorImplTest.when createUpdateSql generate DB schema` on Windows
-liquibaseVersion = "4.28.0"
+liquibaseVersion = "4.29.0"
 mssqlDriverVersion = "11.2.3.jre17"
 postgresDriverVersion = "42.7.3"
 slf4jVersion = "2.0.13"
