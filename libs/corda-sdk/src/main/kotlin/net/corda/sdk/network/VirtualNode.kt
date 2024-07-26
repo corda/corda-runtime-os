@@ -114,45 +114,6 @@ class VirtualNode(val restClient: CordaRestClient) {
             restClient.virtualNodeClient.putVirtualnodeVirtualnodeshortidStateNewstate(holdingId.value, state.name)
         }
     }
-
-    fun upgradeCpi(
-        holdingId: ShortHash,
-        cpiChecksum: Checksum,
-        wait: Duration = 30.seconds,
-        escapeOnResponses: List<ResponseCode> = emptyList(),
-    ): AsyncResponse {
-        return executeWithRetry(
-            waitDuration = wait,
-            operationName = "Upgrade CPI for virtual node $holdingId",
-            escapeOnResponses = escapeOnResponses,
-        ) {
-            restClient.virtualNodeClient.putVirtualnodeVirtualnodeshortidCpiTargetcpifilechecksum(holdingId.value, cpiChecksum.value)
-        }
-    }
-
-    fun upgradeCpiAndWaitForSuccess(
-        holdingId: ShortHash,
-        cpiChecksum: Checksum,
-        wait: Duration = 30.seconds,
-        escapeOnResponses: List<ResponseCode> = emptyList(),
-    ) {
-        val requestId = upgradeCpi(holdingId, cpiChecksum, wait, escapeOnResponses).requestId
-        val status = executeWithRetry(
-            waitDuration = wait,
-            operationName = "Wait for CPI upgrade to complete",
-            escapeOnResponses = escapeOnResponses,
-        ) {
-            val response = restClient.virtualNodeClient.getVirtualnodeStatusRequestid(requestId)
-            val inProgressStates = listOf(AsyncOperationStatus.Status.IN_PROGRESS, AsyncOperationStatus.Status.ACCEPTED)
-            if (response.status in inProgressStates) {
-                throw VirtualNodeUpgradeException("CPI upgrade status is still in progress: ${response.status}")
-            }
-            response.status
-        }
-        if (status != AsyncOperationStatus.Status.SUCCEEDED) {
-            throw VirtualNodeUpgradeException("CPI upgrade failed with status: $status")
-        }
-    }
 }
 
 class VirtualNodeLookupException(message: String) : Exception(message)

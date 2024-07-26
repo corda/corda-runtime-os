@@ -1,20 +1,32 @@
 package net.corda.sdk.network
 
 import net.corda.crypto.core.ShortHash
+import net.corda.data.flow.output.FlowStates
+import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
+import net.corda.rest.ResponseCode
 import net.corda.restclient.CordaRestClient
+import net.corda.restclient.generated.models.AsyncOperationStatus
+import net.corda.restclient.generated.models.AsyncResponse
+import net.corda.sdk.data.Checksum
 import net.corda.sdk.network.config.NetworkConfig
 import net.corda.sdk.network.config.VNode
 import net.corda.sdk.packaging.CpiAttributes
+import net.corda.sdk.rest.RestClientUtils.executeWithRetry
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 class UpgradeVirtualNode(val restClient: CordaRestClient) {
+    companion object {
+        val terminatedFlowStates = listOf(FlowStates.COMPLETED, FlowStates.FAILED, FlowStates.KILLED).map { it.name }
+    }
 
     private class MemberContext(private val memberContextMap: Map<String, String>) {
         val partyName get() = MemberX500Name.parse(
@@ -73,7 +85,7 @@ class UpgradeVirtualNode(val restClient: CordaRestClient) {
         }
     }
 
-    fun getUpgradeHoldingIds(networkConfig: NetworkConfig, upgradeCpiAttributes: CpiAttributes): List<ShortHash> {
+    fun getMembersHoldingIds(networkConfig: NetworkConfig, upgradeCpiAttributes: CpiAttributes): Pair<ShortHash, List<ShortHash>> {
         validateNetworkConfig(networkConfig, upgradeCpiAttributes)
 
         val mgmHoldingId = getMgmHoldingId(networkConfig.validateAndGetMgmNode())
@@ -86,7 +98,7 @@ class UpgradeVirtualNode(val restClient: CordaRestClient) {
         }
         validateMembersCpiVersion(targetExistingMembers, upgradeCpiAttributes)
 
-        return inferAndCheckTargetHoldingIds(targetExistingMembers)
+        return mgmHoldingId to inferAndCheckTargetHoldingIds(targetExistingMembers)
     }
 
     private fun inferAndCheckTargetHoldingIds(targetExistingMembers: List<MemberContext>): List<ShortHash> {
@@ -130,6 +142,72 @@ class UpgradeVirtualNode(val restClient: CordaRestClient) {
                 """Name: "${it.partyName}", CPI name: ${it.cpiName}, CPI version: ${it.cpiVersion}"""
             }
             "One or more target members in the network have the same CPI version as the target CPI file:\n$invalidMembersString"
+        }
+    }
+
+    fun upgradeVirtualNode(holdingId: ShortHash, cpiChecksum: Checksum) {
+        // 1. Set the state of the virtual node to MAINTENANCE
+        virtualNode.updateState(holdingId, VirtualNodeStateTransitions.MAINTENANCE)
+
+        // 2. Ensure no flows are running (that is, all flows have either “COMPLETED”, “FAILED” or “KILLED” status)
+        // TODO wrap in SDK with a retry
+        val runningFlows = restClient.flowManagementClient.getFlowHoldingidentityshorthash(holdingId.value)
+            .flowStatusResponses.filter { it.flowStatus !in terminatedFlowStates }
+
+        require(runningFlows.isEmpty()) {
+            "There are running flows on the virtual node with holdingId $holdingId:\n" +
+                    runningFlows.joinToString("\n")
+        }
+
+        // 3. For the BYODB - report to the user VNode HoldingIds, CPI checksum, and/or the API path they need to hit to get the SQL
+
+        // 4. Send the checksum of the CPI to upgrade to using the PUT method
+        upgradeCpiAndWaitForSuccess(holdingId, cpiChecksum)
+
+        // 5. TODO The endpoint triggers the member to re-register with the MGM - check if we need to wait for anything
+        //   -- probably not, as we have waited for the upgrade to complete with SUCCEEDED status
+
+        // 6. Set the state of the virtual node back to ACTIVE
+        virtualNode.updateState(holdingId, VirtualNodeStateTransitions.ACTIVE)
+        //   6.5 If failed, throw and collect the error
+    }
+
+    fun upgradeCpiAndWaitForSuccess(
+        holdingId: ShortHash,
+        cpiChecksum: Checksum,
+        wait: Duration = 30.seconds,
+        escapeOnResponses: List<ResponseCode> = emptyList(),
+    ) {
+        val requestId = upgradeCpi(holdingId, cpiChecksum, wait, escapeOnResponses).requestId
+        val status = executeWithRetry(
+            waitDuration = wait,
+            operationName = "Wait for CPI upgrade to complete",
+            escapeOnResponses = escapeOnResponses,
+        ) {
+            val response = restClient.virtualNodeClient.getVirtualnodeStatusRequestid(requestId)
+            val inProgressStates = listOf(AsyncOperationStatus.Status.IN_PROGRESS, AsyncOperationStatus.Status.ACCEPTED)
+            if (response.status in inProgressStates) {
+                throw VirtualNodeUpgradeException("CPI upgrade status is still in progress: ${response.status}")
+            }
+            response.status
+        }
+        if (status != AsyncOperationStatus.Status.SUCCEEDED) {
+            throw VirtualNodeUpgradeException("CPI upgrade failed with status: $status")
+        }
+    }
+
+    fun upgradeCpi(
+        holdingId: ShortHash,
+        cpiChecksum: Checksum,
+        wait: Duration = 30.seconds,
+        escapeOnResponses: List<ResponseCode> = emptyList(),
+    ): AsyncResponse {
+        return executeWithRetry(
+            waitDuration = wait,
+            operationName = "Upgrade CPI for virtual node $holdingId",
+            escapeOnResponses = escapeOnResponses,
+        ) {
+            restClient.virtualNodeClient.putVirtualnodeVirtualnodeshortidCpiTargetcpifilechecksum(holdingId.value, cpiChecksum.value)
         }
     }
 }
