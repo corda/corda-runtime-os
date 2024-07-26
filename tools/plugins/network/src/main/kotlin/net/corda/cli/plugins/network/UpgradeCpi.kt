@@ -174,7 +174,7 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
             .filterValues { it != null }
 
         if (errors.isNotEmpty()) {
-            println("Upgrade failed for some virtual nodes:")
+            System.err.println("Upgrade failed for some virtual nodes:")
             errors.forEach { (holdingId, error) ->
                 System.err.println("HoldingId: $holdingId, error: ${error?.message}")
             }
@@ -259,7 +259,7 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
     private val cpiAttributesAndEntries by lazy {
         try {
             JarInputStream(Files.newInputStream(cpiFile.toPath(), StandardOpenOption.READ)).use {
-                val manifest = it.manifest
+                val manifest = it.manifest ?: error("Error reading manifest.")
                 manifest.mainAttributes to manifest.entries
             }
         } catch (e: Exception) {

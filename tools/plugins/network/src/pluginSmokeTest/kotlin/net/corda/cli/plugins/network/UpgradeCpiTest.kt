@@ -332,7 +332,7 @@ class UpgradeCpiTest {
             )
         }
         assertThat(exitCode).isNotZero()
-        assertThat(errText).contains("Error validating CPI.  Manifest file is missing or is not the first entry in package")
+        assertThat(errText).contains("Error reading CPI file: Error reading manifest")
     }
 
     @Test
