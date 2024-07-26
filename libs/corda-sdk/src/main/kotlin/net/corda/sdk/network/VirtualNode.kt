@@ -105,7 +105,7 @@ class VirtualNode(val restClient: CordaRestClient) {
     fun updateState(
         holdingId: ShortHash,
         state: VirtualNodeStateTransitions,
-        wait: Duration = 30.seconds
+        wait: Duration = 10.seconds
     ): ChangeVirtualNodeStateResponse {
         return executeWithRetry(
             waitDuration = wait,
@@ -117,4 +117,3 @@ class VirtualNode(val restClient: CordaRestClient) {
 }
 
 class VirtualNodeLookupException(message: String) : Exception(message)
-class VirtualNodeUpgradeException(message: String) : Exception(message)

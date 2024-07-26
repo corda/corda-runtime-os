@@ -13,6 +13,7 @@ import net.corda.rest.ResponseCode
 import net.corda.restclient.CordaRestClient
 import net.corda.restclient.generated.models.AsyncOperationStatus
 import net.corda.restclient.generated.models.AsyncResponse
+import net.corda.restclient.generated.models.FlowStatusResponses
 import net.corda.sdk.data.Checksum
 import net.corda.sdk.network.config.NetworkConfig
 import net.corda.sdk.network.config.VNode
@@ -23,7 +24,7 @@ import net.corda.virtualnode.HoldingIdentity
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-class UpgradeVirtualNode(val restClient: CordaRestClient) {
+class VirtualNodeUpgrade(val restClient: CordaRestClient) {
     companion object {
         val terminatedFlowStates = listOf(FlowStates.COMPLETED, FlowStates.FAILED, FlowStates.KILLED).map { it.name }
     }
@@ -145,31 +146,28 @@ class UpgradeVirtualNode(val restClient: CordaRestClient) {
         }
     }
 
+    private fun waitUntilNoRunningFlows(holdingId: ShortHash, waitDuration: Duration = 30.seconds) {
+        executeWithRetry(
+            waitDuration = waitDuration,
+            operationName = "Get all flows for the virtual node with holdingId $holdingId",
+        ) {
+            val flows = restClient.flowManagementClient.getFlowHoldingidentityshorthash(holdingId.value)
+            val runningFlows = flows.flowStatusResponses.filter { it.flowStatus !in terminatedFlowStates }
+            require(runningFlows.isEmpty()) {
+                "There were running flows on the virtual node with holdingId $holdingId:\n" +
+                        runningFlows.joinToString("\n")
+            }
+        }
+    }
+
     fun upgradeVirtualNode(holdingId: ShortHash, cpiChecksum: Checksum) {
-        // 1. Set the state of the virtual node to MAINTENANCE
         virtualNode.updateState(holdingId, VirtualNodeStateTransitions.MAINTENANCE)
 
-        // 2. Ensure no flows are running (that is, all flows have either “COMPLETED”, “FAILED” or “KILLED” status)
-        // TODO wrap in SDK with a retry
-        val runningFlows = restClient.flowManagementClient.getFlowHoldingidentityshorthash(holdingId.value)
-            .flowStatusResponses.filter { it.flowStatus !in terminatedFlowStates }
+        waitUntilNoRunningFlows(holdingId)
 
-        require(runningFlows.isEmpty()) {
-            "There are running flows on the virtual node with holdingId $holdingId:\n" +
-                    runningFlows.joinToString("\n")
-        }
-
-        // 3. For the BYODB - report to the user VNode HoldingIds, CPI checksum, and/or the API path they need to hit to get the SQL
-
-        // 4. Send the checksum of the CPI to upgrade to using the PUT method
         upgradeCpiAndWaitForSuccess(holdingId, cpiChecksum)
 
-        // 5. TODO The endpoint triggers the member to re-register with the MGM - check if we need to wait for anything
-        //   -- probably not, as we have waited for the upgrade to complete with SUCCEEDED status
-
-        // 6. Set the state of the virtual node back to ACTIVE
         virtualNode.updateState(holdingId, VirtualNodeStateTransitions.ACTIVE)
-        //   6.5 If failed, throw and collect the error
     }
 
     fun upgradeCpiAndWaitForSuccess(
@@ -212,4 +210,4 @@ class UpgradeVirtualNode(val restClient: CordaRestClient) {
     }
 }
 
-
+class VirtualNodeUpgradeException(message: String) : Exception(message)

@@ -7,7 +7,7 @@ import net.corda.rest.ResponseCode
 import net.corda.restclient.CordaRestClient
 import net.corda.sdk.data.Checksum
 import net.corda.sdk.data.RequestId
-import net.corda.sdk.network.UpgradeVirtualNode
+import net.corda.sdk.network.VirtualNodeUpgrade
 import net.corda.sdk.network.config.NetworkConfig
 import net.corda.sdk.packaging.CpiAttributes
 import net.corda.sdk.packaging.CpiUploader
@@ -25,10 +25,21 @@ import java.util.jar.JarInputStream
 // TODO only for dynamic?
 @Command(
     name = "upgrade-cpi",
-    description = ["Upgrade the CPI used in a network"], // TODO add more description
+    description = [
+        "Upgrade the CPI used by the member parties in the dynamic network.",
+        "Network configuration file is required to determine the members to upgrade.",
+        "MGM node information from the configuration file is used to determine the membership group, " +
+                "then member nodes information is used to determine the virtual nodes to upgrade in the membership group."
+    ],
     mixinStandardHelpOptions = true,
 )
 class UpgradeCpi : Callable<Int>, RestCommand() {
+    companion object {
+        const val BYODB_WARNING_MESSAGE = "If virtual nodes use bring-your-own-database feature (BYODB), " +
+            "you might need to update the virtual nodes' vault databases manually. " +
+            "Please refer to 'Upgrading a CPI' section of Corda 5 documentation for details."
+    }
+
     @Option(
         names = ["--cpi-file"],
         description = ["Location of the CPI file to upgrade the members to."],
@@ -38,7 +49,10 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
 
     @Option(
         names = ["--network-config-file"],
-        description = ["Location of the network configuration file."], // TODO add more description
+        description = [
+            "Location of the network configuration file.",
+            "The file uses the same format as Corda Runtime Gradle Plugin."
+        ],
         required = true,
     )
     lateinit var networkConfigFile: File
@@ -52,7 +66,7 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
         )
     }
 
-    private val upgradeVirtualNode by lazy { UpgradeVirtualNode(restClient) }
+    private val virtualNodeUpgrade by lazy { VirtualNodeUpgrade(restClient) }
     private val cpiUploader by lazy { CpiUploader(restClient) }
 
     override fun call(): Int {
@@ -70,39 +84,29 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
         requireFileExists(networkConfigFile)
 
         val (cpiName, cpiVersion) = readAndValidateCpiMetadata()
-        println("Upgrading to CPI name '$cpiName' version '$cpiVersion'")
+        println("Upgrading to CPI '$cpiName' version '$cpiVersion'")
 
         val networkConfig = NetworkConfig(networkConfigFile.absolutePath)
 
-        val (mgmHoldingId, upgradeHoldingIds) = upgradeVirtualNode.getMembersHoldingIds(
+        val (mgmHoldingId, upgradeHoldingIds) = virtualNodeUpgrade.getMembersHoldingIds(
             networkConfig,
             CpiAttributes(cpiName, cpiVersion)
         )
         println("Using MGM with holdingId: $mgmHoldingId")
 
         val cpiChecksum = uploadCpiAndGetChecksum()
-        println("Uploaded CPI checksum: $cpiChecksum")
-
-        // Once all requirements are met, we can loop through each target member and perform the upgrade
-        // -- if unable to put VNode back to ACTIVE (failed schemas check),
-        //  report what's wrong and suggest that user either
-        //   - completes the upgrade process manually (generates the SQL and executes against the DB)
-        //   - or reverts the upgrade (replaces the CPI file with the old one - get info from the saved members' CPI information)
-        //  and then puts the VNode back to ACTIVE manually
+        println("Uploaded CPI checksum: ${cpiChecksum.value}")
 
         val vNodeUpgradeErrors = upgradeHoldingIds.associateWith {
             runCatching {
-                upgradeVirtualNode.upgradeVirtualNode(it, cpiChecksum)
+                virtualNodeUpgrade.upgradeVirtualNode(it, cpiChecksum)
                 println("Virtual node with holdingId $it upgraded successfully")
             }.exceptionOrNull()
         }.filterValues { it != null }
 
-        vNodeUpgradeErrors.map { (holdingId, error) ->
-            "Upgrade failed for virtual node with holdingId: $holdingId, error: ${error?.message}"
-        }
-
         if (vNodeUpgradeErrors.isNotEmpty()) {
-            System.err.println("Upgrade failed for some virtual nodes:")
+            System.err.println("Upgrade failed for some virtual nodes.\n$BYODB_WARNING_MESSAGE")
+
             vNodeUpgradeErrors.forEach { (holdingId, error) ->
                 System.err.println("HoldingId: $holdingId, error: ${error?.message}")
             }
@@ -121,7 +125,7 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
     }
 
     private fun readAndValidateCpiMetadata(): Pair<String, String> {
-        val (cpiAttributes, cpiEntries) = cpiAttributesAndEntries
+        val (cpiAttributes, cpiEntries) = getCpiAttributesAndEntries()
 
         val cpiName = cpiAttributes[CpiV2Creator.CPI_NAME_ATTRIBUTE_NAME]?.toString() ?: error("CPI file does not contain a name attribute.")
         val cpiVersion = cpiAttributes[CpiV2Creator.CPI_VERSION_ATTRIBUTE_NAME]?.toString() ?: error("CPI file does not contain a version attribute.")
@@ -133,14 +137,12 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
         return cpiName to cpiVersion
     }
 
-    private val cpiAttributesAndEntries by lazy {
-        try {
-            JarInputStream(Files.newInputStream(cpiFile.toPath(), StandardOpenOption.READ)).use {
-                val manifest = it.manifest ?: error("Error reading manifest.")
-                manifest.mainAttributes to manifest.entries
-            }
-        } catch (e: Exception) {
-            error("Error reading CPI file: ${e.message}")
+    private fun getCpiAttributesAndEntries() = try {
+        JarInputStream(Files.newInputStream(cpiFile.toPath(), StandardOpenOption.READ)).use {
+            val manifest = it.manifest ?: error("Error reading manifest.")
+            manifest.mainAttributes to manifest.entries
         }
+    } catch (e: Exception) {
+        error("Error reading CPI file: ${e.message}")
     }
 }
