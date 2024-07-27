@@ -84,7 +84,7 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
         requireFileExists(networkConfigFile)
 
         val (cpiName, cpiVersion) = readAndValidateCpiMetadata()
-        println("Upgrading to CPI '$cpiName' version '$cpiVersion'")
+        println("Upgrading CPI '$cpiName' version '$cpiVersion'")
 
         val networkConfig = NetworkConfig(networkConfigFile.absolutePath)
 

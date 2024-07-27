@@ -210,6 +210,9 @@ class UpgradeCpiTest {
             it.memberContext["corda.name"] != memberNameBob.toString()
         }
 
+        println("Test: only members from the config file are upgraded, the rest in the group are skipped")
+        println("existingMembersOtherThanBob: $existingMembersOtherThanBob")
+
         // execute upgrade with only one member from the config file
         val networkConfigFile = createNetworkConfigFile(MemberNode(memberNameBob))
         val newCpiVersion = "111.1"
@@ -223,6 +226,8 @@ class UpgradeCpiTest {
         }
         assertThat(exitCode).isZero()
         assertThat(outText).isEmpty()
+
+        println("After upgrade Get group members: ${getGroupMembers()}")
 
         // read CPI information of the upgraded member and verify CPI information
         val membersWithNewCpiVersion = getGroupMembers().filter {
@@ -243,6 +248,9 @@ class UpgradeCpiTest {
         // read CPI information of the existing Notary, MGM, and all members
         val existingMembers = getGroupMembers()
 
+        println("Test: members are upgraded, MGM and Notary are skipped")
+        println("existingMembers: $existingMembers")
+
         // execute upgrade of both Alice and Bob members
         val networkConfigFile = createDefaultNetworkConfigFile()
         val newCpiVersion = "200.0"
@@ -256,6 +264,8 @@ class UpgradeCpiTest {
         }
         assertThat(exitCode).isZero()
         assertThat(outText).isEmpty()
+
+        println("After upgrade Get group members: ${getGroupMembers()}")
 
         // verify that members are upgraded
         val membersWithNewCpiVersion = getGroupMembers().filter {
