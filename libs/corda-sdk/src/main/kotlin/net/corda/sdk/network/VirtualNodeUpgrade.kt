@@ -166,12 +166,14 @@ class VirtualNodeUpgrade(val restClient: CordaRestClient) {
 
     fun upgradeVirtualNode(holdingId: ShortHash, cpiChecksum: Checksum) {
         virtualNode.updateState(holdingId, VirtualNodeStateTransitions.MAINTENANCE)
+        Thread.sleep(1000) // Give the virtual node some time to transition to maintenance state
 
         waitUntilNoRunningFlows(holdingId)
 
         upgradeCpiAndWaitForSuccess(holdingId, cpiChecksum)
 
         virtualNode.updateState(holdingId, VirtualNodeStateTransitions.ACTIVE)
+        Thread.sleep(1000) // Give the virtual node some time to transition to active state
     }
 
     fun upgradeCpiAndWaitForSuccess(
