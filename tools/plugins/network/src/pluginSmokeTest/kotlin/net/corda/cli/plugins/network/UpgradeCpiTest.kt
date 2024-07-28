@@ -212,6 +212,7 @@ class UpgradeCpiTest {
 
         println("Test: only members from the config file are upgraded, the rest in the group are skipped")
         println("existingMembersOtherThanBob: $existingMembersOtherThanBob")
+        println("Existing vNodes: ${getVNodes()}")
 
         // execute upgrade with only one member from the config file
         val networkConfigFile = createNetworkConfigFile(MemberNode(memberNameBob))
@@ -228,6 +229,7 @@ class UpgradeCpiTest {
         assertThat(outText).isEmpty()
 
         println("After upgrade Get group members: ${getGroupMembers()}")
+        println("After upgrade Get vNodes: ${getVNodes()}")
 
         // read CPI information of the upgraded member and verify CPI information
         val membersWithNewCpiVersion = getGroupMembers().filter {
@@ -243,6 +245,12 @@ class UpgradeCpiTest {
         assertThat(skippedMembers).isEqualTo(existingMembersOtherThanBob)
     }
 
+    private fun getVNodes(): List<List<String>> {
+        return restClient.virtualNodeClient.getVirtualnode().virtualNodes.map {
+            listOf(it.holdingIdentity.x500Name, it.holdingIdentity.shortHash, it.cpiIdentifier.cpiName, it.cpiIdentifier.cpiVersion)
+        }
+    }
+
     @Test
     fun `members are upgraded, MGM and Notary are skipped`() {
         // read CPI information of the existing Notary, MGM, and all members
@@ -250,6 +258,7 @@ class UpgradeCpiTest {
 
         println("Test: members are upgraded, MGM and Notary are skipped")
         println("existingMembers: $existingMembers")
+        println("Existing vNodes: ${getVNodes()}")
 
         // execute upgrade of both Alice and Bob members
         val networkConfigFile = createDefaultNetworkConfigFile()
@@ -266,6 +275,7 @@ class UpgradeCpiTest {
         assertThat(outText).isEmpty()
 
         println("After upgrade Get group members: ${getGroupMembers()}")
+        println("After upgrade Get vNodes: ${getVNodes()}")
 
         // verify that members are upgraded
         val membersWithNewCpiVersion = getGroupMembers().filter {
