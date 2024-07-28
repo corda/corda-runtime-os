@@ -47,9 +47,9 @@ object RestClientUtils {
                 when {
                     // Allow an escape without retrying
                     ex is ResourceAlreadyExistsException ||
-                    ex is WrongConfigVersionException ||
-                    ex is OnboardFailedException ||
-                    ex.isEscapedResponseCode(escapeOnResponses) -> throw ex
+                        ex is WrongConfigVersionException ||
+                        ex is OnboardFailedException ||
+                        ex.isEscapedResponseCode(escapeOnResponses) -> throw ex
                     // All other exceptions, perform retry
                     else -> {
                         lastException = ex

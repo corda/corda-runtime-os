@@ -3,17 +3,16 @@ package net.corda.sdk.network
 import net.corda.crypto.core.ShortHash
 import net.corda.data.flow.output.FlowStates
 import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.rest.ResponseCode
 import net.corda.restclient.CordaRestClient
 import net.corda.restclient.generated.models.AsyncOperationStatus
 import net.corda.restclient.generated.models.AsyncResponse
-import net.corda.restclient.generated.models.FlowStatusResponses
 import net.corda.sdk.data.Checksum
 import net.corda.sdk.network.config.NetworkConfig
 import net.corda.sdk.network.config.VNode
@@ -82,7 +81,8 @@ class VirtualNodeUpgrade(val restClient: CordaRestClient) {
             "Network configuration file contains members without X.500 name or CPI name defined."
         }
         require(networkConfig.memberNodes.all { it.cpi!! == upgradeCpiAttributes.cpiName }) {
-            "Network configuration file contains members with CPI name which is different from the target CPI name '${upgradeCpiAttributes.cpiName}'"
+            "Network configuration file contains members with CPI name " +
+                "which is different from the target CPI name '${upgradeCpiAttributes.cpiName}'"
         }
     }
 
@@ -113,15 +113,19 @@ class VirtualNodeUpgrade(val restClient: CordaRestClient) {
         // Double-checking, this should not be the case after the prior validations
         require(notFoundHoldingIds.isEmpty()) {
             "The following inferred holding identity short hashes are not present among existing virtual nodes:\n" +
-             notFoundHoldingIds.joinToString("\n") {
-                 """Name: "${it.partyName}", short hash: ${it.holdingId}"""
-             }
+                notFoundHoldingIds.joinToString("\n") {
+                    """Name: "${it.partyName}", short hash: ${it.holdingId}"""
+                }
         }
 
         return targetExistingMembers.map { it.holdingId }
     }
 
-    private fun validateAllConfigMembersExist(networkConfig: NetworkConfig, existingMemberContexts: List<MemberContext>, upgradeCpiName: String) {
+    private fun validateAllConfigMembersExist(
+        networkConfig: NetworkConfig,
+        existingMemberContexts: List<MemberContext>,
+        upgradeCpiName: String
+    ) {
         val missingConfigMembers = networkConfig.memberNodes.filter { memberNode ->
             existingMemberContexts.none { it.partyName == memberNode.memberX500Name && it.cpiName == upgradeCpiName }
         }
@@ -155,7 +159,7 @@ class VirtualNodeUpgrade(val restClient: CordaRestClient) {
             val runningFlows = flows.flowStatusResponses.filter { it.flowStatus !in terminatedFlowStates }
             require(runningFlows.isEmpty()) {
                 "There were running flows on the virtual node with holdingId $holdingId:\n" +
-                        runningFlows.joinToString("\n")
+                    runningFlows.joinToString("\n")
             }
         }
     }

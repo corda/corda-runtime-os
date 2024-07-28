@@ -2,15 +2,12 @@ package net.corda.sdk.network
 
 import net.corda.crypto.core.ShortHash
 import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
-import net.corda.rest.ResponseCode
 import net.corda.restclient.CordaRestClient
-import net.corda.restclient.generated.models.AsyncOperationStatus
 import net.corda.restclient.generated.models.AsyncResponse
 import net.corda.restclient.generated.models.ChangeVirtualNodeStateResponse
 import net.corda.restclient.generated.models.JsonCreateVirtualNodeRequest
 import net.corda.restclient.generated.models.VirtualNodeInfo
 import net.corda.restclient.generated.models.VirtualNodes
-import net.corda.sdk.data.Checksum
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
 import net.corda.v5.base.types.MemberX500Name
 import kotlin.time.Duration

@@ -29,7 +29,7 @@ import java.util.jar.JarInputStream
         "Upgrade the CPI used by the member parties in the dynamic network.",
         "Network configuration file is required to determine the members to upgrade.",
         "MGM node information from the configuration file is used to determine the membership group, " +
-                "then member nodes information is used to determine the virtual nodes to upgrade in the membership group."
+            "then member nodes information is used to determine the virtual nodes to upgrade in the membership group."
     ],
     mixinStandardHelpOptions = true,
 )
@@ -120,15 +120,17 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
         val uploadRequestId = cpiUploader.uploadCPI(cpiFile).id // If upload fails, this throws an exception
         return cpiUploader.cpiChecksum(
             RequestId(uploadRequestId),
-            escapeOnResponses = listOf(ResponseCode.CONFLICT, ResponseCode.BAD_REQUEST) // TODO: do we still need this?
+            escapeOnResponses = listOf(ResponseCode.CONFLICT, ResponseCode.BAD_REQUEST) // TODO do we still need this?
         )
     }
 
     private fun readAndValidateCpiMetadata(): Pair<String, String> {
         val (cpiAttributes, cpiEntries) = getCpiAttributesAndEntries()
 
-        val cpiName = cpiAttributes[CpiV2Creator.CPI_NAME_ATTRIBUTE_NAME]?.toString() ?: error("CPI file does not contain a name attribute.")
-        val cpiVersion = cpiAttributes[CpiV2Creator.CPI_VERSION_ATTRIBUTE_NAME]?.toString() ?: error("CPI file does not contain a version attribute.")
+        val cpiName = cpiAttributes[CpiV2Creator.CPI_NAME_ATTRIBUTE_NAME]?.toString()
+            ?: error("CPI file does not contain a name attribute.")
+        val cpiVersion = cpiAttributes[CpiV2Creator.CPI_VERSION_ATTRIBUTE_NAME]?.toString()
+            ?: error("CPI file does not contain a version attribute.")
 
         require(cpiEntries.isNotEmpty()) { "CPI file does not contain any entries." }
         require(cpiEntries.any { it.key == CpiV2Creator.META_INF_GROUP_POLICY_JSON }) {
