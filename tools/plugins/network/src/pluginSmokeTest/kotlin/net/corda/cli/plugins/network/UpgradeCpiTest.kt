@@ -55,10 +55,11 @@ class UpgradeCpiTest {
         private val commonCpiName = "MyCorDapp-${UUID.randomUUID()}"
         private val cpiUploader = CpiUploader(restClient)
 
-        private val defaultKeystoreFile: File =
-            File(File(File(System.getProperty("user.home")), ".corda"), "signingkeys.pfx")
-                .also { it.parentFile.mkdirs() }
-        private val signingOptions = OnboardMember().createDefaultSingingOptions().asSigningOptionsSdk
+        private val signingOptions = run {
+            // Ensure dirs for the default keystore file used by the `createDefaultSingingOptions` method
+            File(File(File(System.getProperty("user.home")), ".corda"), "signingkeys.pfx").parentFile.mkdirs()
+            OnboardMember().createDefaultSingingOptions().asSigningOptionsSdk
+        }
 
         private lateinit var initialCpiFile: File
         private lateinit var mgmMemberInfo: RestMemberInfo
