@@ -20,15 +20,12 @@ import net.corda.sdk.packaging.CpiAttributes
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
-import org.slf4j.LoggerFactory
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 class VirtualNodeUpgrade(val restClient: CordaRestClient) {
     companion object {
         val terminatedFlowStates = listOf(FlowStates.COMPLETED, FlowStates.FAILED, FlowStates.KILLED).map { it.name }
-
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     // TODO move out
@@ -174,26 +171,32 @@ class VirtualNodeUpgrade(val restClient: CordaRestClient) {
         waitUntilNoRunningFlows(member.holdingId)
         upgradeCpiAndWaitForSuccess(member.holdingId, cpiChecksum)
 
-        logger.info("Before waiting for CPI version to be updated in member info: ${member.partyName} ${member.holdingId}")
-        val updatedVersion = waitUntilCpiVersionUpdatedInMemberInfo(member)
-        logger.info("New version: $updatedVersion")
-
         virtualNode.updateState(member.holdingId, VirtualNodeStateTransitions.ACTIVE)
     }
 
-    private fun waitUntilCpiVersionUpdatedInMemberInfo(memberToLookup: MemberContext): String {
-        return executeWithRetry(
-            waitDuration = 30.seconds,
-            operationName = "Wait for CPI version to be updated in member info",
+    fun waitUntilMembersInfoIsUpdated(
+        mgmHoldingId: ShortHash,
+        membersBeforeUpgrade: List<MemberContext>,
+        waitDuration: Duration = 60.seconds
+    ) {
+        executeWithRetry(
+            waitDuration = waitDuration,
+            operationName = "Wait for members info to be updated",
         ) {
-            val member = memberLookup.lookupPartyMembers(memberToLookup.holdingId).firstOrNull {
-                it.partyName == memberToLookup.partyName
-            } ?: error("Member not found after CPI upgrade: ${memberToLookup.partyName}")
-
-            require(member.cpiVersion != memberToLookup.cpiVersion) {
-                "CPI version in member info is still ${memberToLookup.cpiVersion}, expected to be updated."
+            val members = memberLookup.lookupPartyMembers(mgmHoldingId)
+            val membersNotUpdated = membersBeforeUpgrade.associateWith { before ->
+                members.firstOrNull { it.partyName == before.partyName }
+                    ?: error("Member ${before.partyName} not found after upgrade")
+            }.filter { (before, after) ->
+                before.cpiVersion == after.cpiVersion
             }
-            member.cpiVersion
+
+            require(membersNotUpdated.isEmpty()) {
+                "The following members did not have their CPI version updated after $waitDuration:\n" +
+                    membersNotUpdated.values.joinToString("\n") {
+                        """Name: "${it.partyName}", CPI version: ${it.cpiVersion}"""
+                    }
+            }
         }
     }
 

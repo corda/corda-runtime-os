@@ -3,6 +3,7 @@ package net.corda.cli.plugins.network
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.cli.plugins.network.utils.requireFileExists
+import net.corda.crypto.core.ShortHash
 import net.corda.rest.ResponseCode
 import net.corda.restclient.CordaRestClient
 import net.corda.sdk.data.Checksum
@@ -84,11 +85,11 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
         requireFileExists(networkConfigFile)
 
         val (cpiName, cpiVersion) = readAndValidateCpiMetadata()
-        println("Upgrading CPI '$cpiName' version '$cpiVersion'")
+        println("Upgrading CPI '$cpiName' to version '$cpiVersion'")
 
         val networkConfig = NetworkConfig(networkConfigFile.absolutePath)
 
-        val (mgmHoldingId, upgradeMembers) = virtualNodeUpgrade.getMembersWithHoldingId(
+        val (mgmHoldingId, membersBeforeUpgrade) = virtualNodeUpgrade.getMembersWithHoldingId(
             networkConfig,
             CpiAttributes(cpiName, cpiVersion)
         )
@@ -97,24 +98,34 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
         val cpiChecksum = uploadCpiAndGetChecksum()
         println("Uploaded CPI checksum: ${cpiChecksum.value}")
 
-        val vNodeUpgradeErrors = upgradeMembers.associateWith {
+        val vNodeUpgradeErrors = membersBeforeUpgrade.associateWith {
+            print("Upgrading virtual node ${it.holdingId} with name '${it.partyName}'... ")
             runCatching {
                 virtualNodeUpgrade.upgradeVirtualNode(it, cpiChecksum)
-                println("Virtual node ${it.holdingId} with name '${it.partyName}' upgraded successfully")
-            }.exceptionOrNull()
+            }
+                .onSuccess { print("done\n") }.onFailure { print("failed\n") }
+                .exceptionOrNull()
         }.filterValues { it != null }
 
         if (vNodeUpgradeErrors.isNotEmpty()) {
-            System.err.println("Upgrade failed for some virtual nodes.\n$BYODB_WARNING_MESSAGE")
-
-            vNodeUpgradeErrors.forEach { (member, error) ->
-                System.err.println("Virtual node ${member.holdingId} with name '${member.partyName}', error: ${error?.message}")
-            }
+            reportUpgradeErrors(vNodeUpgradeErrors)
             return CommandLine.ExitCode.SOFTWARE
         }
 
+        print("Waiting for members info to be updated... ")
+        virtualNodeUpgrade.waitUntilMembersInfoIsUpdated(mgmHoldingId, membersBeforeUpgrade)
+        print("done\n")
+
         return CommandLine.ExitCode.OK
     }
+
+    private fun reportUpgradeErrors(vNodeUpgradeErrors: Map<VirtualNodeUpgrade.MemberContext, Throwable?>) {
+        System.err.println("Upgrade failed for some virtual nodes.\n$BYODB_WARNING_MESSAGE")
+        vNodeUpgradeErrors.forEach { (member, error) ->
+            System.err.println("Virtual node ${member.holdingId} with name '${member.partyName}', error: ${error?.message}")
+        }
+    }
+
 
     private fun uploadCpiAndGetChecksum(): Checksum {
         val uploadRequestId = cpiUploader.uploadCPI(cpiFile).id // If upload fails, this throws an exception
@@ -141,7 +152,7 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
 
     private fun getCpiAttributesAndEntries() = try {
         JarInputStream(Files.newInputStream(cpiFile.toPath(), StandardOpenOption.READ)).use {
-            val manifest = it.manifest ?: error("Error reading manifest.")
+            val manifest = it.manifest ?: error("Error reading manifest from CPI file.")
             manifest.mainAttributes to manifest.entries
         }
     } catch (e: Exception) {
