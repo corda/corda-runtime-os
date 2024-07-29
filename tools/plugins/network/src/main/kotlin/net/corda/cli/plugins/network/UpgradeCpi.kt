@@ -3,7 +3,6 @@ package net.corda.cli.plugins.network
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.cli.plugins.network.utils.requireFileExists
-import net.corda.crypto.core.ShortHash
 import net.corda.rest.ResponseCode
 import net.corda.restclient.CordaRestClient
 import net.corda.sdk.data.Checksum
@@ -125,7 +124,6 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
             System.err.println("Virtual node ${member.holdingId} with name '${member.partyName}', error: ${error?.message}")
         }
     }
-
 
     private fun uploadCpiAndGetChecksum(): Checksum {
         val uploadRequestId = cpiUploader.uploadCPI(cpiFile).id // If upload fails, this throws an exception
