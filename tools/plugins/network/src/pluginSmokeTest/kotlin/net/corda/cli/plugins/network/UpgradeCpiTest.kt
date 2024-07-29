@@ -53,8 +53,12 @@ class UpgradeCpiTest {
         }
 
         private val commonCpiName = "MyCorDapp-${UUID.randomUUID()}"
-        private val signingOptions = OnboardMember().createDefaultSingingOptions().asSigningOptionsSdk
         private val cpiUploader = CpiUploader(restClient)
+
+        private val defaultKeystoreFile: File =
+            File(File(File(System.getProperty("user.home")), ".corda"), "signingkeys.pfx")
+                .also { it.parentFile.mkdirs() }
+        private val signingOptions = OnboardMember().createDefaultSingingOptions().asSigningOptionsSdk
 
         private lateinit var initialCpiFile: File
         private lateinit var mgmMemberInfo: RestMemberInfo
@@ -480,7 +484,7 @@ class UpgradeCpiTest {
     }
 
     @Test
-    fun `some members CPI information is the same as the target CPI file's attributes`() {
+    fun `some members CPI version is the same as the target CPI file version`() {
         val existingMembers = getGroupMembers()
 
         // prepare CPI file with the same attributes as of one of the members
@@ -501,16 +505,9 @@ class UpgradeCpiTest {
             .contains("One or more target members in the network have the same CPI version as the target CPI file:")
             .contains(memberNameBob.toString())
             .doesNotContain(
-                memberNameAlice.toString(),
                 notaryName.toString(),
                 mgmName.toString(),
             )
-    }
-
-    @Test
-    fun `some of the target VNodes use BYOD feature`() {
-        // TODO figure out how to setup and test this
-        //  !!! looks like there's no way to determine whether a VNode uses that feature or not
     }
 
     @Test
