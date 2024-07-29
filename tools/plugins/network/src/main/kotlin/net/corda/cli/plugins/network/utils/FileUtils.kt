@@ -23,5 +23,5 @@ fun inferCpiName(cpbFile: File, groupPolicyFile: File): String {
  * Check file exists and is readable.
  */
 fun requireFileExists(file: File) {
-    require(Files.isReadable(file.toPath())) { "\"$file\" does not exist or is not readable" }
+    require(Files.isReadable(file.toPath())) { "File \"$file\" does not exist or is not readable" }
 }

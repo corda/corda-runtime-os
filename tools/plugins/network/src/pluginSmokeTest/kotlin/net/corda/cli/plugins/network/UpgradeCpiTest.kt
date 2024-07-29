@@ -307,7 +307,7 @@ class UpgradeCpiTest {
             )
         }
         assertThat(exitCode).isNotZero()
-        assertThat(errText).contains("\"$cpiFilePath\" does not exist or is not readable")
+        assertThat(errText).contains("File \"$cpiFilePath\" does not exist or is not readable")
     }
 
     @Test
@@ -323,7 +323,7 @@ class UpgradeCpiTest {
         }
         assertThat(exitCode).isNotZero()
         assertThat(errText)
-            .contains("\"$networkConfigFilePath\" does not exist or is not readable")
+            .contains("File \"$networkConfigFilePath\" does not exist or is not readable")
     }
 
     @Test

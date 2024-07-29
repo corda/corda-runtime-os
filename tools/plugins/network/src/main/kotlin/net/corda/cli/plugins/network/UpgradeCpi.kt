@@ -12,8 +12,8 @@ import net.corda.sdk.network.config.NetworkConfig
 import net.corda.sdk.packaging.CpiAttributes
 import net.corda.sdk.packaging.CpiUploader
 import net.corda.sdk.packaging.CpiV2Creator
-import picocli.CommandLine
 import picocli.CommandLine.Command
+import picocli.CommandLine.ExitCode
 import picocli.CommandLine.Option
 import java.io.File
 import java.net.URI
@@ -108,14 +108,14 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
 
         if (vNodeUpgradeErrors.isNotEmpty()) {
             reportUpgradeErrors(vNodeUpgradeErrors)
-            return CommandLine.ExitCode.SOFTWARE
+            return ExitCode.SOFTWARE
         }
 
         print("Waiting for members info to be updated... ")
         virtualNodeUpgrade.waitUntilMembersInfoIsUpdated(mgmHoldingId, membersBeforeUpgrade)
         print("done\n")
 
-        return CommandLine.ExitCode.OK
+        return ExitCode.OK
     }
 
     private fun reportUpgradeErrors(vNodeUpgradeErrors: Map<VirtualNodeUpgrade.MemberContext, Throwable?>) {
