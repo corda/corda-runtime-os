@@ -6,10 +6,10 @@ interface Output {
     fun generateOutput(content: String)
 }
 
-class ConsoleOutput(private val printStream: PrintStream = System.out) : Output {
+class ConsoleOutput(private val printStream: PrintStream? = null) : Output {
     override fun generateOutput(content: String) {
         content.lines().forEach {
-            printStream.println(it)
+            printStream?.println(it) ?: println(it)
         }
     }
 }
