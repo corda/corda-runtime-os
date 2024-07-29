@@ -63,6 +63,7 @@ object Permissions {
         "CreateUser" to "POST:/api/$VERSION_PATH_REGEX/user",
         "GetUser" to "GET:/api/$VERSION_PATH_REGEX/user/${RbacKeys.USER_URL_REGEX}",
         "DeleteUser" to "DELETE:/api/$VERSION_PATH_REGEX/user/${RbacKeys.USER_URL_REGEX}",
+        "ChangeUserGroupParentId" to "PUT:/api/$VERSION_PATH_REGEX/user/${RbacKeys.USER_URL_REGEX}/parent/changeparentid/$UUID_REGEX",
         "ChangeOtherUserPassword" to "POST:/api/$VERSION_PATH_REGEX/user/otheruserpassword",
         "AddRoleToUser" to "PUT:/api/$VERSION_PATH_REGEX/user/${RbacKeys.USER_URL_REGEX}/role/$UUID_REGEX",
         "DeleteRoleFromUser" to "DELETE:/api/$VERSION_PATH_REGEX/user/${RbacKeys.USER_URL_REGEX}/role/$UUID_REGEX",
@@ -90,7 +91,7 @@ object Permissions {
         // Group manipulation permissions
         "CreateGroup" to "POST:/api/$VERSION_PATH_REGEX/group",
         "GetGroup" to "GET:/api/$VERSION_PATH_REGEX/group/$UUID_REGEX",
-        "ChangeGroupParentId" to "PUT:/api/$VERSION_PATH_REGEX/group/$UUID_REGEX/parent/changeParentId/$UUID_REGEX",
+        "ChangeGroupParentId" to "PUT:/api/$VERSION_PATH_REGEX/group/$UUID_REGEX/parent/changeparentid/$UUID_REGEX",
         "AddRoleToGroup" to "PUT:/api/$VERSION_PATH_REGEX/group/$UUID_REGEX/role/$UUID_REGEX",
         "DeleteRoleFromGroup" to "DELETE:/api/$VERSION_PATH_REGEX/group/$UUID_REGEX/role/$UUID_REGEX",
         "DeleteGroup" to "DELETE:/api/$VERSION_PATH_REGEX/group/$UUID_REGEX"

@@ -1,10 +1,10 @@
 package net.corda.rest.server.impl.context
 
-import io.javalin.core.security.BasicAuthCredentials
-import io.javalin.core.util.Header
+import io.javalin.http.Header
 import io.javalin.http.UploadedFile
-import io.javalin.http.util.ContextUtil
-import io.javalin.plugin.json.JsonMapper
+import io.javalin.http.servlet.getBasicAuthCredentials
+import io.javalin.json.JsonMapper
+import io.javalin.security.BasicAuthCredentials
 import net.corda.data.rest.PasswordExpiryStatus
 import net.corda.rest.server.impl.security.RestAuthenticationProvider
 
@@ -101,7 +101,7 @@ interface ClientRequestContext {
      * Returns a Boolean which is true if there is an Authorization header with
      * Basic auth credentials. Returns false otherwise.
      */
-    fun basicAuthCredentialsExist(): Boolean = ContextUtil.hasBasicAuthCredentials(header(Header.AUTHORIZATION))
+    fun basicAuthCredentialsExist(): Boolean = getBasicAuthCredentials() != null
 
     /**
      * Gets basic-auth credentials from the request, or throws.
@@ -109,5 +109,8 @@ interface ClientRequestContext {
      * Returns a wrapper object [BasicAuthCredentials] which contains the
      * Base64 decoded username and password from the Authorization header.
      */
-    fun basicAuthCredentials(): BasicAuthCredentials = ContextUtil.getBasicAuthCredentials(header(Header.AUTHORIZATION))
+    fun basicAuthCredentials(): BasicAuthCredentials = getBasicAuthCredentials()!!
+
+    private fun getBasicAuthCredentials() =
+        getBasicAuthCredentials(header(Header.AUTHORIZATION))
 }

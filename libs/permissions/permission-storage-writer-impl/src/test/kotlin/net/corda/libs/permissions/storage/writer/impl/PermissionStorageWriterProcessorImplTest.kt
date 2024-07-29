@@ -3,6 +3,7 @@ package net.corda.libs.permissions.storage.writer.impl
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.PermissionType
+import net.corda.data.permissions.Property
 import net.corda.data.permissions.RoleAssociation
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
@@ -13,9 +14,11 @@ import net.corda.data.permissions.management.group.DeleteGroupRequest
 import net.corda.data.permissions.management.group.RemoveRoleFromGroupRequest
 import net.corda.data.permissions.management.permission.CreatePermissionRequest
 import net.corda.data.permissions.management.role.CreateRoleRequest
+import net.corda.data.permissions.management.user.AddPropertyToUserRequest
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.DeleteUserRequest
+import net.corda.data.permissions.management.user.RemovePropertyFromUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.writer.impl.group.GroupWriter
@@ -77,7 +80,13 @@ class PermissionStorageWriterProcessorImplTest {
     private val permissionStorageReader = mock<PermissionStorageReader>()
 
     private val processor =
-        PermissionStorageWriterProcessorImpl({ permissionStorageReader }, userWriter, roleWriter, groupWriter, permissionWriter)
+        PermissionStorageWriterProcessorImpl(
+            { permissionStorageReader },
+            userWriter,
+            roleWriter,
+            groupWriter,
+            permissionWriter
+        )
 
     @Test
     fun `receiving invalid request completes exceptionally`() {
@@ -127,7 +136,12 @@ class PermissionStorageWriterProcessorImplTest {
 
     @Test
     fun `create user receives exception and completes future with exception in the response`() {
-        whenever(userWriter.createUser(createUserRequest, creatorUserId)).thenThrow(IllegalArgumentException("Entity manager error."))
+        whenever(
+            userWriter.createUser(
+                createUserRequest,
+                creatorUserId
+            )
+        ).thenThrow(IllegalArgumentException("Entity manager error."))
 
         val future = CompletableFuture<PermissionManagementResponse>()
         processor.onNext(
@@ -194,7 +208,12 @@ class PermissionStorageWriterProcessorImplTest {
 
     @Test
     fun `create role with exception completes future with exception in response`() {
-        whenever(roleWriter.createRole(createRoleRequest, creatorUserId)).thenThrow(IllegalArgumentException("Entity manager error."))
+        whenever(
+            roleWriter.createRole(
+                createRoleRequest,
+                creatorUserId
+            )
+        ).thenThrow(IllegalArgumentException("Entity manager error."))
 
         val future = CompletableFuture<PermissionManagementResponse>()
         processor.onNext(
@@ -303,6 +322,67 @@ class PermissionStorageWriterProcessorImplTest {
         val avroRequest = RemoveRoleFromUserRequest("userLogin1", "roleId")
 
         whenever(userWriter.removeRoleFromUser(avroRequest, creatorUserId)).thenReturn(avroUser)
+
+        val future = CompletableFuture<PermissionManagementResponse>()
+        processor.onNext(
+            request = PermissionManagementRequest().apply {
+                request = avroRequest
+                requestUserId = creatorUserId
+            },
+            respFuture = future
+        )
+
+        verify(permissionStorageReader, times(1)).publishUpdatedUser(avroUser)
+
+        val result = future.getOrThrow()
+        val response = result.response
+        assertTrue(response is AvroUser)
+        (response as? AvroUser)?.let { user ->
+            assertEquals(avroUser, user)
+        }
+    }
+
+    @Test
+    fun `receiving AddPropertyToUserRequest calls userWriter and publishes updated user`() {
+        val capture = argumentCaptor<PermissionManagementResponse>()
+        val avroUser = AvroUser().apply {
+            id = "userId1"
+            loginName = "userLogin1"
+            enabled = true
+            properties = listOf(Property("uuid", 0, ChangeDetails(Instant.now()), "key1", "value1"))
+        }
+
+        val avroRequest = AddPropertyToUserRequest("userlogin1", mapOf("key1" to "value1"))
+        val future = mock<CompletableFuture<PermissionManagementResponse>>()
+
+        whenever(userWriter.addPropertyToUser(avroRequest, creatorUserId)).thenReturn(avroUser)
+        whenever(future.complete(capture.capture())).thenReturn(true)
+
+        processor.onNext(
+            request = PermissionManagementRequest().apply {
+                request = avroRequest
+                requestUserId = creatorUserId
+            },
+            respFuture = future
+        )
+
+        verify(permissionStorageReader, times(1)).publishUpdatedUser(avroUser)
+
+        assertNotNull(capture.firstValue.response)
+        assertEquals(avroUser, capture.firstValue.response)
+    }
+
+    @Test
+    fun `receiving RemovePropertyFromUserRequest calls userWriter and publishes updated user`() {
+        val avroUser = AvroUser().apply {
+            id = "userId1"
+            loginName = "userLogin1"
+            enabled = true
+        }
+
+        val avroRequest = RemovePropertyFromUserRequest("userLogin1", "key1")
+
+        whenever(userWriter.removePropertyFromUser(avroRequest, creatorUserId)).thenReturn(avroUser)
 
         val future = CompletableFuture<PermissionManagementResponse>()
         processor.onNext(
@@ -449,7 +529,12 @@ class PermissionStorageWriterProcessorImplTest {
             roleAssociations = emptyList()
         }
 
-        whenever(groupWriter.removeRoleFromGroup(removeRoleFromGroupRequest, creatorUserId)).thenReturn(updatedAvroGroup)
+        whenever(
+            groupWriter.removeRoleFromGroup(
+                removeRoleFromGroupRequest,
+                creatorUserId
+            )
+        ).thenReturn(updatedAvroGroup)
 
         val future = CompletableFuture<PermissionManagementResponse>()
         processor.onNext(

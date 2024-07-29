@@ -5,18 +5,21 @@ import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.data.permissions.management.user.AddPropertyToUserRequest
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
+import net.corda.data.permissions.management.user.ChangeUserParentGroupIdRequest
 import net.corda.data.permissions.management.user.ChangeUserPasswordRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.DeleteUserRequest
 import net.corda.data.permissions.management.user.RemovePropertyFromUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.permissions.common.exception.EntityNotFoundException
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.libs.permissions.manager.PermissionUserManager
 import net.corda.libs.permissions.manager.impl.SmartConfigUtil.getEndpointTimeout
 import net.corda.libs.permissions.manager.impl.converter.convertToResponseDto
 import net.corda.libs.permissions.manager.request.AddPropertyToUserRequestDto
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
+import net.corda.libs.permissions.manager.request.ChangeUserParentIdDto
 import net.corda.libs.permissions.manager.request.ChangeUserPasswordDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.DeleteUserRequestDto
@@ -100,6 +103,30 @@ class PermissionUserManagerImpl(
             )
         )
 
+        return result.convertToResponseDto()
+    }
+
+    override fun changeUserParentGroup(changeUserParentGroupIdDto: ChangeUserParentIdDto): UserResponseDto {
+        if (changeUserParentGroupIdDto.newParentGroupId != null) {
+            val permissionManagementCache = checkNotNull(permissionManagementCacheRef.get()) {
+                "Permission management cache is null."
+            }
+            permissionManagementCache.getGroup(changeUserParentGroupIdDto.newParentGroupId!!)
+                ?: throw NoSuchElementException("Could not find user with parent group id ${changeUserParentGroupIdDto.newParentGroupId}")
+        }
+
+        val result = sendPermissionWriteRequest<User>(
+            rpcSender,
+            writerTimeout,
+            PermissionManagementRequest(
+                changeUserParentGroupIdDto.requestedBy,
+                null,
+                ChangeUserParentGroupIdRequest(
+                    changeUserParentGroupIdDto.loginName,
+                    changeUserParentGroupIdDto.newParentGroupId,
+                )
+            )
+        )
         return result.convertToResponseDto()
     }
 
@@ -199,7 +226,8 @@ class PermissionUserManagerImpl(
             "Permission validation cache is null."
         }
 
-        val cachedPermissionSummary = permissionValidationCache.getPermissionSummary(permissionSummaryRequestDto.userLogin) ?: return null
+        val cachedPermissionSummary =
+            permissionValidationCache.getPermissionSummary(permissionSummaryRequestDto.userLogin) ?: return null
 
         return UserPermissionSummaryResponseDto(
             cachedPermissionSummary.loginName,
@@ -245,7 +273,8 @@ class PermissionUserManagerImpl(
         val permissionManagementCache = checkNotNull(permissionManagementCacheRef.get()) {
             "Permission management cache is null."
         }
-        val cachedUser: User = permissionManagementCache.getUser(getUserPropertiesRequestDto.loginName) ?: return emptySet()
+        val cachedUser: User = permissionManagementCache.getUser(getUserPropertiesRequestDto.loginName)
+            ?: throw EntityNotFoundException("Invalid user.")
         return cachedUser.properties.map { it.convertToResponseDto() }.toSet()
     }
 

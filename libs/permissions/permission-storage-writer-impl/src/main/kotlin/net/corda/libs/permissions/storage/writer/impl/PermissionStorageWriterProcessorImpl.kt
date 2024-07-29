@@ -15,10 +15,13 @@ import net.corda.data.permissions.management.permission.CreatePermissionRequest
 import net.corda.data.permissions.management.role.AddPermissionToRoleRequest
 import net.corda.data.permissions.management.role.CreateRoleRequest
 import net.corda.data.permissions.management.role.RemovePermissionFromRoleRequest
+import net.corda.data.permissions.management.user.AddPropertyToUserRequest
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
+import net.corda.data.permissions.management.user.ChangeUserParentGroupIdRequest
 import net.corda.data.permissions.management.user.ChangeUserPasswordRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.DeleteUserRequest
+import net.corda.data.permissions.management.user.RemovePropertyFromUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.writer.PermissionStorageWriterProcessor
@@ -63,6 +66,12 @@ class PermissionStorageWriterProcessorImpl(
                     val avroRole = roleWriter.createRole(permissionRequest, request.requestUserId)
                     permissionStorageReader.publishNewRole(avroRole)
                     avroRole
+                }
+                is ChangeUserParentGroupIdRequest -> {
+                    val avroUser = userWriter.changeUserParentGroup(permissionRequest, request.requestUserId)
+                    permissionStorageReader.publishUpdatedUser(avroUser)
+                    permissionStorageReader.reconcilePermissionSummaries()
+                    avroUser
                 }
                 is ChangeUserPasswordRequest -> {
                     val avroUser = userWriter.changeUserPassword(permissionRequest, request.requestUserId)
@@ -119,6 +128,16 @@ class PermissionStorageWriterProcessorImpl(
                     val avroUser = userWriter.removeRoleFromUser(permissionRequest, request.requestUserId)
                     permissionStorageReader.publishUpdatedUser(avroUser)
                     permissionStorageReader.reconcilePermissionSummaries()
+                    avroUser
+                }
+                is AddPropertyToUserRequest -> {
+                    val avroUser = userWriter.addPropertyToUser(permissionRequest, request.requestUserId)
+                    permissionStorageReader.publishUpdatedUser(avroUser)
+                    avroUser
+                }
+                is RemovePropertyFromUserRequest -> {
+                    val avroUser = userWriter.removePropertyFromUser(permissionRequest, request.requestUserId)
+                    permissionStorageReader.publishUpdatedUser(avroUser)
                     avroUser
                 }
                 is AddPermissionToRoleRequest -> {

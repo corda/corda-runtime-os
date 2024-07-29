@@ -10,19 +10,17 @@ commonsioVersion = "2.16.1"
 guavaVersion = "33.2.1-jre"
 hikariCpVersion = "5.1.0"
 jacksonVersion = "2.17.2"
-javalinVersion = "4.6.8"
+javalinVersion = "6.2.0"
 jcipAnnotationsVersion = "1.0_2"
 # This version of Jetty must be the same major version as used by Javalin, please see above.
 # Once Javalin version is upgraded to the latest, this override may be removed.
-jettyVersion = "9.4.55.v20240627"
+jettyVersion = "11.0.21"
 micrometerVersion = "1.12.4"
 nimbusVersion = "11.13"
 kafkaClientVersion = "3.7.0_1"
 kubernetesClientVersion = "6.13.1"
 log4jVersion = "2.23.0"
-# If upgrading liquibase to 4.28, enable `LiquibaseSchemaMigratorImplTest.when updateDb create DB schema`
-# and `LiquibaseSchemaMigratorImplTest.when createUpdateSql generate DB schema` on Windows
-liquibaseVersion = "4.28.0"
+liquibaseVersion = "4.29.0"
 mssqlDriverVersion = "11.2.3.jre17"
 postgresDriverVersion = "42.7.3"
 slf4jVersion = "2.0.13"
@@ -41,7 +39,7 @@ zipkinReporterVersion = "3.4.0"
 nettyVersion = "4.1.112.Final"
 
 # Testing
-assertjVersion = "3.26.0"
+assertjVersion = "3.26.3"
 junitVersion = "5.10.3"
 junitPlatformVersion = "1.10.3"
 mockitoVersion = "5.12.0"
@@ -66,7 +64,7 @@ assertj-core = { group = "org.assertj", name = "assertj-core", version.ref = "as
 bouncycastle-pkix = { group = "org.bouncycastle", name = "bcpkix-jdk18on", version.ref = "bouncycastleVersion" }
 bouncycastle-prov = { group = "org.bouncycastle", name = "bcprov-jdk18on", version.ref = "bouncycastleVersion" }
 brave-context-slf4j = { group = "io.zipkin.brave", name = "brave-context-slf4j", version.ref = "braveVersion" }
-brave-instrumentation-servlet = { group = "io.zipkin.brave", name = "brave-instrumentation-servlet", version.ref = "braveVersion" }
+brave-instrumentation-servlet = { group = "io.zipkin.brave", name = "brave-instrumentation-servlet-jakarta", version.ref = "braveVersion" }
 caffeine = { group = "com.github.ben-manes.caffeine", name = "caffeine", version.ref = "caffeineVersion" }
 commonsio = { group = "commons-io", name = "commons-io", version.ref = "commonsioVersion" }
 guava = { group = "com.google.guava", name = "guava", version.ref = "guavaVersion" }
@@ -83,7 +81,7 @@ jetty-server = { group = "org.eclipse.jetty", name = "jetty-server", version.ref
 jetty-xml = { group = "org.eclipse.jetty", name = "jetty-xml", version.ref = "jettyVersion" }
 jetty-websocket-servlet = { group = "org.eclipse.jetty.websocket", name = "websocket-servlet", version.ref = "jettyVersion" }
 jetty-websocket-server = { group = "org.eclipse.jetty.websocket", name = "websocket-server", version.ref = "jettyVersion" }
-jetty-websocket-client = { group = "org.eclipse.jetty.websocket", name = "websocket-client", version.ref = "jettyVersion" }
+jetty-websocket-client = { group = "org.eclipse.jetty.websocket", name = "websocket-jetty-client", version.ref = "jettyVersion" }
 jetty-http2-server = { group = "org.eclipse.jetty.http2", name = "http2-server", version.ref = "jettyVersion" }
 junit = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junitVersion" }
 junit-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "junitVersion" }
