@@ -295,6 +295,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         options.keyStoreFileName = keyStoreFile.absolutePath
         val keyStoreHelper = KeyStoreHelper()
         if (!keyStoreFile.canRead()) {
+            keyStoreFile.parentFile.mkdirs()
             keyStoreHelper.generateKeyStore(
                 keyStoreFile = keyStoreFile,
                 alias = SIGNING_KEY_ALIAS,

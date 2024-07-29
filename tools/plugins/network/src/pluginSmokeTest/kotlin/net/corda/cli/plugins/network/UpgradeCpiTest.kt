@@ -56,12 +56,7 @@ class UpgradeCpiTest {
         private const val INITIAL_CPI_VERSION = "1.0"
         private val cpiUploader = CpiUploader(restClient)
 
-        private val defaultKeystoreFile = File(File(File(System.getProperty("user.home")), ".corda"), "signingkeys.pfx")
-        private val signingOptions = run {
-            // Ensure dirs for the default keystore file used by the `createDefaultSingingOptions` method
-            defaultKeystoreFile.parentFile.mkdirs()
-            OnboardMember().createDefaultSingingOptions().asSigningOptionsSdk
-        }
+        private val signingOptions = OnboardMember().createDefaultSingingOptions().asSigningOptionsSdk
 
         private lateinit var initialCpiFile: File
         private lateinit var mgmMemberInfo: RestMemberInfo
