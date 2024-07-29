@@ -88,7 +88,7 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
 
         val networkConfig = NetworkConfig(networkConfigFile.absolutePath)
 
-        val (mgmHoldingId, upgradeHoldingIds) = virtualNodeUpgrade.getMembersHoldingIds(
+        val (mgmHoldingId, upgradeMembers) = virtualNodeUpgrade.getMembersWithHoldingId(
             networkConfig,
             CpiAttributes(cpiName, cpiVersion)
         )
@@ -97,18 +97,18 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
         val cpiChecksum = uploadCpiAndGetChecksum()
         println("Uploaded CPI checksum: ${cpiChecksum.value}")
 
-        val vNodeUpgradeErrors = upgradeHoldingIds.associateWith {
+        val vNodeUpgradeErrors = upgradeMembers.associateWith {
             runCatching {
                 virtualNodeUpgrade.upgradeVirtualNode(it, cpiChecksum)
-                println("Virtual node with holdingId $it upgraded successfully")
+                println("Virtual node ${it.holdingId} with name '${it.partyName}' upgraded successfully")
             }.exceptionOrNull()
         }.filterValues { it != null }
 
         if (vNodeUpgradeErrors.isNotEmpty()) {
             System.err.println("Upgrade failed for some virtual nodes.\n$BYODB_WARNING_MESSAGE")
 
-            vNodeUpgradeErrors.forEach { (holdingId, error) ->
-                System.err.println("HoldingId: $holdingId, error: ${error?.message}")
+            vNodeUpgradeErrors.forEach { (member, error) ->
+                System.err.println("Virtual node ${member.holdingId} with name '${member.partyName}', error: ${error?.message}")
             }
             return CommandLine.ExitCode.SOFTWARE
         }

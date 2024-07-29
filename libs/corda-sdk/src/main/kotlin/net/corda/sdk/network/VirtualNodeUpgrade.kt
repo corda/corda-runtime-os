@@ -20,15 +20,19 @@ import net.corda.sdk.packaging.CpiAttributes
 import net.corda.sdk.rest.RestClientUtils.executeWithRetry
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
+import org.slf4j.LoggerFactory
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 class VirtualNodeUpgrade(val restClient: CordaRestClient) {
     companion object {
         val terminatedFlowStates = listOf(FlowStates.COMPLETED, FlowStates.FAILED, FlowStates.KILLED).map { it.name }
+
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private class MemberContext(private val memberContextMap: Map<String, String>) {
+    // TODO move out
+    class MemberContext(private val memberContextMap: Map<String, String>) {
         val partyName get() = MemberX500Name.parse(
             memberContextMap[PARTY_NAME] ?: error("Member context does not contain party name.")
         )
@@ -86,7 +90,7 @@ class VirtualNodeUpgrade(val restClient: CordaRestClient) {
         }
     }
 
-    fun getMembersHoldingIds(networkConfig: NetworkConfig, upgradeCpiAttributes: CpiAttributes): Pair<ShortHash, List<ShortHash>> {
+    fun getMembersWithHoldingId(networkConfig: NetworkConfig, upgradeCpiAttributes: CpiAttributes): Pair<ShortHash, List<MemberContext>> {
         validateNetworkConfig(networkConfig, upgradeCpiAttributes)
 
         val mgmHoldingId = getMgmHoldingId(networkConfig.validateAndGetMgmNode())
@@ -99,10 +103,10 @@ class VirtualNodeUpgrade(val restClient: CordaRestClient) {
         }
         validateMembersCpiVersion(targetExistingMembers, upgradeCpiAttributes)
 
-        return mgmHoldingId to inferAndCheckTargetHoldingIds(targetExistingMembers)
+        return mgmHoldingId to inferAndCheckTargetMembersWithHoldingId(targetExistingMembers)
     }
 
-    private fun inferAndCheckTargetHoldingIds(targetExistingMembers: List<MemberContext>): List<ShortHash> {
+    private fun inferAndCheckTargetMembersWithHoldingId(targetExistingMembers: List<MemberContext>): List<MemberContext> {
         val allVirtualNodes = virtualNode.getAllVirtualNodes().virtualNodes
         val existingVNodesHoldingIds = allVirtualNodes.map { ShortHash.of(it.holdingIdentity.shortHash) }
 
@@ -118,7 +122,7 @@ class VirtualNodeUpgrade(val restClient: CordaRestClient) {
                 }
         }
 
-        return targetExistingMembers.map { it.holdingId }
+        return targetExistingMembers
     }
 
     private fun validateAllConfigMembersExist(
@@ -164,16 +168,33 @@ class VirtualNodeUpgrade(val restClient: CordaRestClient) {
         }
     }
 
-    fun upgradeVirtualNode(holdingId: ShortHash, cpiChecksum: Checksum) {
-        virtualNode.updateState(holdingId, VirtualNodeStateTransitions.MAINTENANCE)
-        Thread.sleep(1000) // Give the virtual node some time to transition to maintenance state
+    fun upgradeVirtualNode(member: MemberContext, cpiChecksum: Checksum) {
+        virtualNode.updateState(member.holdingId, VirtualNodeStateTransitions.MAINTENANCE)
 
-        waitUntilNoRunningFlows(holdingId)
+        waitUntilNoRunningFlows(member.holdingId)
+        upgradeCpiAndWaitForSuccess(member.holdingId, cpiChecksum)
 
-        upgradeCpiAndWaitForSuccess(holdingId, cpiChecksum)
+        logger.info("Before waiting for CPI version to be updated in member info: ${member.partyName} ${member.holdingId}")
+        val updatedVersion = waitUntilCpiVersionUpdatedInMemberInfo(member)
+        logger.info("New version: $updatedVersion")
 
-        virtualNode.updateState(holdingId, VirtualNodeStateTransitions.ACTIVE)
-        Thread.sleep(1000) // Give the virtual node some time to transition to active state
+        virtualNode.updateState(member.holdingId, VirtualNodeStateTransitions.ACTIVE)
+    }
+
+    private fun waitUntilCpiVersionUpdatedInMemberInfo(memberToLookup: MemberContext): String {
+        return executeWithRetry(
+            waitDuration = 30.seconds,
+            operationName = "Wait for CPI version to be updated in member info",
+        ) {
+            val member = memberLookup.lookupPartyMembers(memberToLookup.holdingId).firstOrNull {
+                it.partyName == memberToLookup.partyName
+            } ?: error("Member not found after CPI upgrade: ${memberToLookup.partyName}")
+
+            require(member.cpiVersion != memberToLookup.cpiVersion) {
+                "CPI version in member info is still ${memberToLookup.cpiVersion}, expected to be updated."
+            }
+            member.cpiVersion
+        }
     }
 
     fun upgradeCpiAndWaitForSuccess(
