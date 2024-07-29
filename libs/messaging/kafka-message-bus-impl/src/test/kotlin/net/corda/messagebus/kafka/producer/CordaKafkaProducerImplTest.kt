@@ -20,6 +20,7 @@ import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
 import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.KafkaException
+import org.apache.kafka.common.errors.AuthorizationException
 import org.apache.kafka.common.errors.InterruptException
 import org.apache.kafka.common.errors.InvalidProducerEpochException
 import org.apache.kafka.common.errors.ProducerFencedException
@@ -160,7 +161,7 @@ class CordaKafkaProducerImplTest {
 
     @Test
     fun testBeginTransactionFatal() {
-        doThrow(ProducerFencedException("")).whenever(producer).beginTransaction()
+        doThrow(AuthorizationException("")).whenever(producer).beginTransaction()
         assertThrows<CordaMessageAPIFatalException> { cordaKafkaProducer.beginTransaction() }
         verify(producer, times(1)).beginTransaction()
     }
@@ -180,9 +181,9 @@ class CordaKafkaProducerImplTest {
     }
 
     @Test
-    fun testBeginTransactionZombieProducerThrowsFatalException() {
+    fun testBeginTransactionZombieProducerThrowsProducerResetException() {
         doThrow(ProducerFencedException("")).whenever(producer).beginTransaction()
-        assertThrows<CordaMessageAPIFatalException> { cordaKafkaProducer.beginTransaction() }
+        assertThrows<CordaMessageAPIProducerRequiresReset> { cordaKafkaProducer.beginTransaction() }
         verify(producer, times(1)).beginTransaction()
     }
 
@@ -218,9 +219,9 @@ class CordaKafkaProducerImplTest {
     }
 
     @Test
-    fun testCommitTransactionZombieProducerThrowsFatalException() {
+    fun testCommitTransactionZombieProducerThrowsProducerResetException() {
         doThrow(ProducerFencedException("")).whenever(producer).commitTransaction()
-        assertThrows<CordaMessageAPIFatalException> { cordaKafkaProducer.commitTransaction() }
+        assertThrows<CordaMessageAPIProducerRequiresReset> { cordaKafkaProducer.commitTransaction() }
         verify(producer, times(1)).commitTransaction()
     }
 
@@ -245,9 +246,9 @@ class CordaKafkaProducerImplTest {
     }
 
     @Test
-    fun testAbortTransactionZombieProducerThrowsFatalException() {
+    fun testAbortTransactionZombieProducerThrowsProducerResetException() {
         doThrow(ProducerFencedException("")).whenever(producer).abortTransaction()
-        assertThrows<CordaMessageAPIFatalException> { cordaKafkaProducer.abortTransaction() }
+        assertThrows<CordaMessageAPIProducerRequiresReset> { cordaKafkaProducer.abortTransaction() }
         verify(producer, times(1)).abortTransaction()
     }
 
@@ -265,10 +266,10 @@ class CordaKafkaProducerImplTest {
     }
 
     @Test
-    fun testSendAllOffsetsToTransactionsZombieProducerThrowsFatalException() {
+    fun testSendAllOffsetsToTransactionsZombieProducerThrowsProducerResetException() {
         doThrow(ProducerFencedException("")).whenever(producer)
             .sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
-        assertThrows<CordaMessageAPIFatalException> { cordaKafkaProducer.sendAllOffsetsToTransaction(cordaConsumer) }
+        assertThrows<CordaMessageAPIProducerRequiresReset> { cordaKafkaProducer.sendAllOffsetsToTransaction(cordaConsumer) }
         verify(producer, times(1)).sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
     }
 
@@ -304,10 +305,10 @@ class CordaKafkaProducerImplTest {
     }
 
     @Test
-    fun testSendRecordOffsetsToTransactionsZombieProducerThrowsFatalException() {
+    fun testSendRecordOffsetsToTransactionsZombieProducerThrowsProducerResetException() {
         doThrow(ProducerFencedException("")).whenever(producer)
             .sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
-        assertThrows<CordaMessageAPIFatalException> {
+        assertThrows<CordaMessageAPIProducerRequiresReset> {
             cordaKafkaProducer.sendRecordOffsetsToTransaction(
                 cordaConsumer,
                 generateMockConsumerRecordList(3, "TOPIC1", 0).map {
@@ -342,10 +343,10 @@ class CordaKafkaProducerImplTest {
     }
 
     @Test
-    fun testSendOffsetsZombieProducerThrowsFatalException() {
+    fun testSendOffsetsZombieProducerThrowsProducerResetException() {
         doThrow(ProducerFencedException("")).whenever(producer)
             .sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
-        assertThrows<CordaMessageAPIFatalException> { cordaKafkaProducer.sendAllOffsetsToTransaction(cordaConsumer) }
+        assertThrows<CordaMessageAPIProducerRequiresReset> { cordaKafkaProducer.sendAllOffsetsToTransaction(cordaConsumer) }
         verify(producer, times(1)).sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
     }
 
