@@ -28,7 +28,8 @@ import java.util.jar.JarInputStream
         "Upgrade the CPI used by the member parties in the dynamic network.",
         "Network configuration file is required to determine the members to upgrade.",
         "MGM node information from the configuration file is used to determine the membership group, " +
-            "then member nodes information is used to determine the virtual nodes to upgrade in the membership group."
+            "then member nodes information is used to determine the virtual nodes to upgrade in the membership group.",
+        "This is currently limited to networks with the MGM and member nodes on the same Corda instance."
     ],
     mixinStandardHelpOptions = true,
 )
