@@ -64,12 +64,10 @@ class CpiUploader(val restClient: CordaRestClient) {
     fun cpiChecksum(
         uploadRequestId: RequestId,
         wait: Duration = 60.seconds,
-        escapeOnResponses: List<ResponseCode> = emptyList(),
     ): Checksum {
         return executeWithRetry(
             waitDuration = wait,
             operationName = "Wait for CPI to be ingested and return checksum",
-            escapeOnResponses = escapeOnResponses,
         ) {
             val status = restClient.cpiClient.getCpiStatusId(uploadRequestId.value)
             if (status.status == "OK") {

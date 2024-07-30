@@ -204,13 +204,11 @@ class VirtualNodeUpgrade(val restClient: CordaRestClient) {
         holdingId: ShortHash,
         cpiChecksum: Checksum,
         wait: Duration = 30.seconds,
-        escapeOnResponses: List<ResponseCode> = emptyList(),
     ) {
-        val requestId = upgradeCpi(holdingId, cpiChecksum, wait, escapeOnResponses).requestId
+        val requestId = upgradeCpi(holdingId, cpiChecksum, wait).requestId
         val status = executeWithRetry(
             waitDuration = wait,
             operationName = "Wait for CPI upgrade to complete",
-            escapeOnResponses = escapeOnResponses,
         ) {
             val response = restClient.virtualNodeClient.getVirtualnodeStatusRequestid(requestId)
             val inProgressStates = listOf(AsyncOperationStatus.Status.IN_PROGRESS, AsyncOperationStatus.Status.ACCEPTED)
@@ -228,12 +226,10 @@ class VirtualNodeUpgrade(val restClient: CordaRestClient) {
         holdingId: ShortHash,
         cpiChecksum: Checksum,
         wait: Duration = 30.seconds,
-        escapeOnResponses: List<ResponseCode> = emptyList(),
     ): AsyncResponse {
         return executeWithRetry(
             waitDuration = wait,
             operationName = "Upgrade CPI for virtual node $holdingId",
-            escapeOnResponses = escapeOnResponses,
         ) {
             restClient.virtualNodeClient.putVirtualnodeVirtualnodeshortidCpiTargetcpifilechecksum(holdingId.value, cpiChecksum.value)
         }

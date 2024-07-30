@@ -3,7 +3,6 @@ package net.corda.cli.plugins.network
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.cli.plugins.network.utils.requireFileExists
-import net.corda.rest.ResponseCode
 import net.corda.restclient.CordaRestClient
 import net.corda.sdk.data.Checksum
 import net.corda.sdk.data.RequestId
@@ -127,10 +126,7 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
 
     private fun uploadCpiAndGetChecksum(): Checksum {
         val uploadRequestId = cpiUploader.uploadCPI(cpiFile).id // If upload fails, this throws an exception
-        return cpiUploader.cpiChecksum(
-            RequestId(uploadRequestId),
-            escapeOnResponses = listOf(ResponseCode.CONFLICT, ResponseCode.BAD_REQUEST) // TODO do we still need this?
-        )
+        return cpiUploader.cpiChecksum(RequestId(uploadRequestId))
     }
 
     private fun readAndValidateCpiMetadata(): Pair<String, String> {
