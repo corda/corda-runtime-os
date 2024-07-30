@@ -106,7 +106,7 @@ allprojects {
 
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         compilerOptions {
-            allWarningsAsErrors = false
+            allWarningsAsErrors = true
             languageVersion = KOTLIN_1_8
             apiVersion = KOTLIN_1_8
             jvmTarget = JVM_17
