@@ -37,6 +37,7 @@ dependencies {
 
     testImplementation libs.bundles.test
     testImplementation "com.github.stefanbirkner:system-lambda:1.2.1"
+    testImplementation 'net.corda:corda-rbac-schema'
 
     pluginSmokeTestImplementation project(':testing:e2e-test-utilities')
 }

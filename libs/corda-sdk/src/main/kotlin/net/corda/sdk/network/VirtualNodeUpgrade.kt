@@ -9,7 +9,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.rest.ResponseCode
 import net.corda.restclient.CordaRestClient
 import net.corda.restclient.generated.models.AsyncOperationStatus
 import net.corda.restclient.generated.models.AsyncResponse
@@ -206,7 +205,7 @@ class VirtualNodeUpgrade(val restClient: CordaRestClient) {
         wait: Duration = 30.seconds,
     ) {
         val requestId = upgradeCpi(holdingId, cpiChecksum, wait).requestId
-        val status = executeWithRetry(
+        val response = executeWithRetry(
             waitDuration = wait,
             operationName = "Wait for CPI upgrade to complete",
         ) {
@@ -215,10 +214,10 @@ class VirtualNodeUpgrade(val restClient: CordaRestClient) {
             if (response.status in inProgressStates) {
                 throw VirtualNodeUpgradeException("CPI upgrade status is still in progress: ${response.status}")
             }
-            response.status
+            response
         }
-        if (status != AsyncOperationStatus.Status.SUCCEEDED) {
-            throw VirtualNodeUpgradeException("CPI upgrade failed with status: $status")
+        if (response.status != AsyncOperationStatus.Status.SUCCEEDED) {
+            throw VirtualNodeUpgradeException("CPI upgrade failed: $response")
         }
     }
 

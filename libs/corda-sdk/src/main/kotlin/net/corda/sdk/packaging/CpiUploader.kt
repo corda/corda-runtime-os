@@ -1,6 +1,5 @@
 package net.corda.sdk.packaging
 
-import net.corda.rest.ResponseCode
 import net.corda.restclient.CordaRestClient
 import net.corda.restclient.generated.models.CpiUploadResponse
 import net.corda.restclient.generated.models.GetCPIsResponse

@@ -21,6 +21,8 @@ import picocli.CommandLine
 import java.io.File
 import java.nio.file.Path
 import java.util.*
+import net.corda.rbac.schema.RbacKeys.UUID_REGEX
+
 
 class UpgradeCpiTest {
     companion object {
@@ -81,7 +83,7 @@ class UpgradeCpiTest {
             assertThat(getGroupMembers().size).isEqualTo(4)
         }
 
-        private fun createCpiFile(cpiVersion: String, cpiName: String): File {
+        private fun createCpiFile(cpiVersion: String, cpiName: String, groupPolicyFile: File = mgmGroupPolicyFile): File {
             val cpiFile = File.createTempFile("test-cpi-v$cpiVersion-", ".cpi").also {
                 it.deleteOnExit()
                 it.delete()
@@ -94,7 +96,7 @@ class UpgradeCpiTest {
                     cpiVersion = cpiVersion,
                     cpiUpgrade = false,
                 ),
-                groupPolicy = mgmGroupPolicyFile.readText(),
+                groupPolicy = groupPolicyFile.readText(),
                 signingOptions = signingOptions,
             )
             require(cpiFile.isFile) { "Failed to create CPI file $cpiFile" }
@@ -238,12 +240,6 @@ class UpgradeCpiTest {
             it.memberContext["corda.cpi.version"] == newCpiVersion
         }
         assertThat(skippedMembers).isEqualTo(existingMembersOtherThanBob)
-    }
-
-    private fun getVNodes(): List<List<String>> {
-        return restClient.virtualNodeClient.getVirtualnode().virtualNodes.map {
-            listOf(it.holdingIdentity.x500Name, it.holdingIdentity.shortHash, it.cpiIdentifier.cpiName, it.cpiIdentifier.cpiVersion)
-        }
     }
 
     @Test
@@ -519,6 +515,37 @@ class UpgradeCpiTest {
         val membersAfterFailedUpgrade = getGroupMembers()
         assertThat(membersAfterFailedUpgrade).isEqualTo(existingMembers)
     }
+
+    @Test
+    fun `new CPI uses different groupId in GroupPolicy than the members currently have`() {
+        // TODO this test should verify things differently if implementation uses the groupId as a source of truth
+        val invalidGroupId = UUID.randomUUID()
+        val invalidGroupPolicy = mgmGroupPolicyFile.readText().replace(
+            Regex("\"groupId\" : \"$UUID_REGEX\""), "\"groupId\" : \"$invalidGroupId\""
+        )
+        val invalidGroupPolicyFile = File.createTempFile("GroupPolicy-", ".json").also {
+            it.deleteOnExit()
+            it.writeText(invalidGroupPolicy)
+        }
+
+        val networkConfigFile = createDefaultNetworkConfigFile()
+        val newCpiVersion = "333.0"
+        val newCpiFile = createCpiFile(newCpiVersion, commonCpiName, invalidGroupPolicyFile)
+
+        val (outText, exitCode) = TestUtils.captureStdErr {
+            executeUpgradeCpi(
+                "--cpi-file=${newCpiFile.absolutePath}",
+                "--network-config-file=${networkConfigFile.absolutePath}",
+            )
+        }
+        assertThat(exitCode).isNotZero()
+        assertThat(outText)
+            .contains("CPI upgrade failed:")
+            .contains("Expected MGM GroupId")
+            .contains("but was $invalidGroupId in CPI")
+    }
+
+
 
     // TODO: add run flows check before and after upgrade in positive tests
 }
