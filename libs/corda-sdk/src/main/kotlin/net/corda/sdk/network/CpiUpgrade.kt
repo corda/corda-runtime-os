@@ -98,14 +98,15 @@ class CpiUpgrade(val restClient: CordaRestClient) {
      *
      * @param holdingId the holding identity of the virtual node
      * @param cpiChecksum the checksum of the target CPI file
+     * @param timeout the [Duration] to wait for each of the steps to complete
      */
-    fun upgradeCpiOnVirtualNode(holdingId: ShortHash, cpiChecksum: Checksum) {
-        virtualNode.updateState(holdingId, VirtualNodeStateTransitions.MAINTENANCE)
+    fun upgradeCpiOnVirtualNode(holdingId: ShortHash, cpiChecksum: Checksum, timeout: Duration = 30.seconds) {
+        virtualNode.updateState(holdingId, VirtualNodeStateTransitions.MAINTENANCE, timeout)
 
-        waitUntilNoRunningFlows(holdingId)
-        upgradeCpiAndWaitForSuccess(holdingId, cpiChecksum)
+        waitUntilNoRunningFlows(holdingId, timeout)
+        upgradeCpiAndWaitForSuccess(holdingId, cpiChecksum, timeout)
 
-        virtualNode.updateState(holdingId, VirtualNodeStateTransitions.ACTIVE)
+        virtualNode.updateState(holdingId, VirtualNodeStateTransitions.ACTIVE, timeout)
     }
 
     private fun waitUntilNoRunningFlows(holdingId: ShortHash, waitDuration: Duration = 30.seconds) {
