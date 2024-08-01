@@ -7,8 +7,8 @@ import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.datatype.jsr310.deser.InstantDeserializer
 import com.fasterxml.jackson.datatype.jsr310.ser.InstantSerializer
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import net.corda.cli.plugins.network.output.ConsoleOutput
 import net.corda.cli.plugins.network.output.Output
+import picocli.CommandLine.ExitCode
 import java.time.Instant
 
 object PrintUtils {
@@ -22,7 +22,7 @@ object PrintUtils {
         configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
     }
 
-    private val prettyPrintWriter = DefaultPrettyPrinter().apply {
+    internal val prettyPrintWriter = DefaultPrettyPrinter().apply {
         indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE)
     }
 
@@ -34,15 +34,12 @@ object PrintUtils {
         )
     }
 
-    fun verifyAndPrintError(action: () -> Unit) {
-        try {
-            action()
+    fun verifyAndPrintError(action: () -> Any): Int {
+        return try {
+            action() as? Int ?: ExitCode.OK
         } catch (e: Exception) {
-            /**
-             * This is present to address the issue of the RemoteClient in
-             * rest-client automatically converting any non-200 codes into exceptions with the response body as message.
-             */
-            printJsonOutput(e.localizedMessage, ConsoleOutput())
+            System.err.println(e.localizedMessage)
+            ExitCode.SOFTWARE
         }
     }
 }
