@@ -21,6 +21,8 @@ import java.io.File
 import java.net.URI
 import java.util.concurrent.Callable
 import java.util.jar.JarFile
+import kotlin.math.max
+import kotlin.time.Duration.Companion.seconds
 
 @Command(
     name = "upgrade-cpi",
@@ -59,6 +61,9 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
         required = true,
     )
     lateinit var networkConfigFile: File
+
+    private val cpiUploadWait = max(waitDurationSeconds, 60).seconds
+    private val upgradeStepsWait = max(waitDurationSeconds, 30).seconds
 
     private val restClient: CordaRestClient by lazy {
         CordaRestClient.createHttpClient(
@@ -104,7 +109,7 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
             print("Upgrading virtual node $shortHash with name ${it.holdingIdentity.x500Name}... ")
 
             runCatching {
-                cpiUpgrade.upgradeCpiOnVirtualNode(shortHash, cpiChecksum)
+                cpiUpgrade.upgradeCpiOnVirtualNode(shortHash, cpiChecksum, upgradeStepsWait)
             }
                 .onSuccess { print("Done\n") }
                 .onFailure { print("Failed\n") }
@@ -129,7 +134,8 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
         return cpiUpgrade.getTargetVirtualNodes(
             networkConfig,
             CpiAttributes(cpiName, cpiVersion),
-            groupId
+            groupId,
+            waitDurationSeconds.seconds
         ).also { targetVirtualNodes ->
             println("Found target virtual nodes:")
             targetVirtualNodes.forEach {
@@ -159,7 +165,10 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
 
     private fun uploadCpiAndGetChecksum(): Checksum {
         val uploadRequestId = cpiUploader.uploadCPI(cpiFile).id
-        return cpiUploader.cpiChecksum(RequestId(uploadRequestId)).also {
+        return cpiUploader.cpiChecksum(
+            RequestId(uploadRequestId),
+            cpiUploadWait,
+        ).also {
             println("Uploaded CPI checksum: ${it.value}")
         }
     }

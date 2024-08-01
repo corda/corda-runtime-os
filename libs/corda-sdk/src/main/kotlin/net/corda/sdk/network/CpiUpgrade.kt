@@ -36,14 +36,20 @@ class CpiUpgrade(val restClient: CordaRestClient) {
      * @param networkConfig the network configuration
      * @param upgradeCpiAttributes the target CPI attributes (name and version)
      * @param groupId the network group ID
+     * @param waitDuration the [Duration] to wait for REST operations to complete
      *
      * @return the list of target [VirtualNodeInfo] objects
      */
-    fun getTargetVirtualNodes(networkConfig: NetworkConfig, upgradeCpiAttributes: CpiAttributes, groupId: String): List<VirtualNodeInfo> {
+    fun getTargetVirtualNodes(
+        networkConfig: NetworkConfig,
+        upgradeCpiAttributes: CpiAttributes,
+        groupId: String,
+        waitDuration: Duration = 10.seconds,
+    ): List<VirtualNodeInfo> {
         validateNetworkConfig(networkConfig, upgradeCpiAttributes)
 
         val inferredFullHashes = networkConfig.memberNodes.map { it.getHoldingIdentityForGroup(groupId).fullHash }
-        val targetVirtualNodes = virtualNode.getAllVirtualNodes().virtualNodes.filter {
+        val targetVirtualNodes = virtualNode.getAllVirtualNodes(waitDuration).virtualNodes.filter {
             it.holdingIdentity.fullHash in inferredFullHashes
         }
 
@@ -98,15 +104,15 @@ class CpiUpgrade(val restClient: CordaRestClient) {
      *
      * @param holdingId the holding identity of the virtual node
      * @param cpiChecksum the checksum of the target CPI file
-     * @param timeout the [Duration] to wait for each of the steps to complete
+     * @param waitDuration the [Duration] to wait for each of the steps to complete
      */
-    fun upgradeCpiOnVirtualNode(holdingId: ShortHash, cpiChecksum: Checksum, timeout: Duration = 30.seconds) {
-        virtualNode.updateState(holdingId, VirtualNodeStateTransitions.MAINTENANCE, timeout)
+    fun upgradeCpiOnVirtualNode(holdingId: ShortHash, cpiChecksum: Checksum, waitDuration: Duration = 30.seconds) {
+        virtualNode.updateState(holdingId, VirtualNodeStateTransitions.MAINTENANCE, waitDuration)
 
-        waitUntilNoRunningFlows(holdingId, timeout)
-        upgradeCpiAndWaitForSuccess(holdingId, cpiChecksum, timeout)
+        waitUntilNoRunningFlows(holdingId, waitDuration)
+        upgradeCpiAndWaitForSuccess(holdingId, cpiChecksum, waitDuration)
 
-        virtualNode.updateState(holdingId, VirtualNodeStateTransitions.ACTIVE, timeout)
+        virtualNode.updateState(holdingId, VirtualNodeStateTransitions.ACTIVE, waitDuration)
     }
 
     private fun waitUntilNoRunningFlows(holdingId: ShortHash, waitDuration: Duration = 30.seconds) {
