@@ -42,7 +42,7 @@ abstract class RestCommand {
                 "Defaults to 10 seconds if missing."
         ]
     )
-    open var waitDurationSeconds: Int = 10
+    var waitDurationSeconds: Int = 10
 
     @Option(
         names = ["-k", "--insecure"],
