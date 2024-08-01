@@ -31,9 +31,7 @@ class NetworkConfig(val configFilePath: String) {
     val x500Names get() = vNodes.map { it.x500Name }
 
     private fun validateUniqueX500Names() {
-        if (x500Names.size != x500Names.toSet().size) {
-            throw IllegalArgumentException(DUPLICATE_X500_NAMES_ERROR_MESSAGE)
-        }
+        require(x500Names.size == x500Names.toSet().size) { DUPLICATE_X500_NAMES_ERROR_MESSAGE }
     }
 
     val memberNodes: List<VNode>
@@ -41,9 +39,7 @@ class NetworkConfig(val configFilePath: String) {
 
     fun getMgmNode(): VNode? {
         val mgmNodes = vNodes.filter { it.mgmNode.toBoolean() }
-        if (mgmNodes.size > 1) {
-            throw IllegalArgumentException(MULTIPLE_MGM_ERROR_MESSAGE)
-        }
+        require(mgmNodes.size <= 1) { MULTIPLE_MGM_ERROR_MESSAGE }
         return mgmNodes.singleOrNull()
     }
 

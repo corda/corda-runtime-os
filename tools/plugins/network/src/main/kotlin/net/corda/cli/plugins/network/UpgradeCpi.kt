@@ -181,7 +181,7 @@ class UpgradeCpi : Callable<Int>, RestCommand() {
             val groupPolicyJson = cpiJarFile.getInputStream(groupPolicyEntry).bufferedReader().use {
                 it.readText()
             }
-            val groupId = json.readTree(groupPolicyJson).get("groupId").asText()
+            val groupId = json.readTree(groupPolicyJson)["groupId"].asText()
             manifest to groupId
         } catch (e: Exception) {
             error("Error reading CPI file: ${e.message}")
