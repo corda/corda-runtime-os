@@ -2,7 +2,7 @@ package net.corda.gradle.plugin.network
 
 import net.corda.crypto.core.ShortHash
 import net.corda.gradle.plugin.configuration.ProjectContext
-import net.corda.gradle.plugin.dtos.VNode
+import net.corda.sdk.network.config.VNode
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
 import net.corda.restclient.generated.models.RegistrationRequestProgress
 import net.corda.sdk.data.RequestId
@@ -49,7 +49,7 @@ class NetworkTasksImpl(var pc: ProjectContext) {
         nodesToCreate.forEach {
             // Check if the virtual node has been created.
             VirtualNode(pc.restClient).waitForX500NameToAppearInListOfAllVirtualNodes(
-                x500Name = MemberX500Name.parse(it.x500Name!!),
+                x500Name = MemberX500Name.parse(it.x500Name),
                 wait = 30.seconds
             )
             pc.logger.quiet("Virtual node for ${it.x500Name} is ready to be registered.")
@@ -91,7 +91,7 @@ class NetworkTasksImpl(var pc: ProjectContext) {
                     registrationRequest = regRequest,
                     shortHash = shortHash
                 )
-                val detail = Triple(MemberX500Name.parse(vn.x500Name!!), shortHash, registration)
+                val detail = Triple(MemberX500Name.parse(vn.x500Name), shortHash, registration)
                 listOfDetails.add(detail)
                 pc.logger.quiet(
                     "Registering vNode: ${vn.x500Name} with shortHash: $shortHash. Registration request id: ${registration.registrationId}"

@@ -1,6 +1,10 @@
 package net.corda.sdk.packaging
 
+import net.corda.rest.ResponseCode
+import net.corda.rest.exception.ExceptionDetails
+import net.corda.rest.exception.ResourceAlreadyExistsException
 import net.corda.restclient.CordaRestClient
+import net.corda.restclient.generated.infrastructure.ClientException
 import net.corda.restclient.generated.models.CpiUploadResponse
 import net.corda.restclient.generated.models.GetCPIsResponse
 import net.corda.sdk.data.Checksum
@@ -60,20 +64,32 @@ class CpiUploader(val restClient: CordaRestClient) {
      * @param wait Duration before timing out, default 60 seconds
      * @return checksum value
      */
+    @Suppress("ThrowsCount")
     fun cpiChecksum(
         uploadRequestId: RequestId,
-        wait: Duration = 60.seconds
+        wait: Duration = 60.seconds,
     ): Checksum {
         return executeWithRetry(
             waitDuration = wait,
-            operationName = "Wait for CPI to be ingested and return checksum"
+            operationName = "Wait for CPI to be ingested and return checksum",
         ) {
-            val status = restClient.cpiClient.getCpiStatusId(uploadRequestId.value)
-            if (status.status == "OK") {
-                Checksum(status.cpiFileChecksum)
-            } else {
+            val status = try {
+                restClient.cpiClient.getCpiStatusId(uploadRequestId.value)
+            } catch (e: ClientException) {
+                if (e.statusCode == ResponseCode.CONFLICT.statusCode) {
+                    throw ResourceAlreadyExistsException(
+                        e::class.java.simpleName,
+                        ExceptionDetails(e::class.java.name, "${e.message}")
+                    )
+                }
+                throw e
+            }
+
+            if (status.status != "OK") {
                 throw CpiUploadException("Cpi status is not ok: ${status.status}")
             }
+
+            Checksum(status.cpiFileChecksum)
         }
     }
 

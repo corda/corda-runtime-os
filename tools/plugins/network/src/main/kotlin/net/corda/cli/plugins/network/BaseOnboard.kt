@@ -288,13 +288,14 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         File(File(File(System.getProperty("user.home")), ".corda"), "signingkeys.pfx")
     }
 
-    protected fun createDefaultSingingOptions(): SigningOptions {
+    internal fun createDefaultSingingOptions(): SigningOptions {
         val options = SigningOptions()
         options.keyAlias = SIGNING_KEY_ALIAS
         options.keyStorePass = SIGNING_KEY_STORE_PASSWORD
         options.keyStoreFileName = keyStoreFile.absolutePath
         val keyStoreHelper = KeyStoreHelper()
         if (!keyStoreFile.canRead()) {
+            keyStoreFile.parentFile.mkdirs()
             keyStoreHelper.generateKeyStore(
                 keyStoreFile = keyStoreFile,
                 alias = SIGNING_KEY_ALIAS,

@@ -36,7 +36,7 @@ class CordappTasksImpl(var pc: ProjectContext) {
 
         if (!groupPolicyFile.exists() || groupPolicyFile.lastModified() < networkConfigFile.lastModified()) {
             pc.logger.quiet("Creating the Group policy.")
-            val configX500Names = pc.networkConfig.x500Names.filterNotNull().map { MemberX500Name.parse(it) }
+            val configX500Names = pc.networkConfig.x500Names.map { MemberX500Name.parse(it) }
 
             GroupPolicyHelper().createStaticGroupPolicy(
                 groupPolicyFile,

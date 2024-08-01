@@ -1,8 +1,10 @@
 package net.corda.sdk.network
 
 import net.corda.crypto.core.ShortHash
+import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
 import net.corda.restclient.CordaRestClient
 import net.corda.restclient.generated.models.AsyncResponse
+import net.corda.restclient.generated.models.ChangeVirtualNodeStateResponse
 import net.corda.restclient.generated.models.JsonCreateVirtualNodeRequest
 import net.corda.restclient.generated.models.VirtualNodeInfo
 import net.corda.restclient.generated.models.VirtualNodes
@@ -94,6 +96,19 @@ class VirtualNode(val restClient: CordaRestClient) {
             if (existingNodes.virtualNodes.none { it.holdingIdentity.x500Name == x500Name.toString() }) {
                 throw VirtualNodeLookupException("Failed to find virtual node with x500 name: $x500Name")
             }
+        }
+    }
+
+    fun updateState(
+        holdingId: ShortHash,
+        state: VirtualNodeStateTransitions,
+        wait: Duration = 10.seconds
+    ): ChangeVirtualNodeStateResponse {
+        return executeWithRetry(
+            waitDuration = wait,
+            operationName = "Update virtual node state"
+        ) {
+            restClient.virtualNodeClient.putVirtualnodeVirtualnodeshortidStateNewstate(holdingId.value, state.name)
         }
     }
 }

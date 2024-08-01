@@ -9,7 +9,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
-import net.corda.gradle.plugin.dtos.VNode
+import net.corda.sdk.network.config.VNode
 import net.corda.gradle.plugin.exception.CordaRuntimeGradlePluginException
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.restclient.CordaRestClient
@@ -66,7 +66,7 @@ class VNodeHelper {
         }
 
         val request = JsonCreateVirtualNodeRequest(
-            x500Name = vNode.x500Name!!,
+            x500Name = vNode.x500Name,
             cpiFileChecksum = cpiCheckSum.value,
             vaultDdlConnection = null,
             vaultDmlConnection = null,
