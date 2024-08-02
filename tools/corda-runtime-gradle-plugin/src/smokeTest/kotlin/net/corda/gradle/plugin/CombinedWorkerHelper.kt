@@ -11,9 +11,10 @@ import java.util.concurrent.TimeUnit
 val targetUrl = URI("https://localhost:8888")
 const val USER = "admin"
 const val PASSWORD = "admin"
-const val CORDA_RUNTIME_VERSION_STABLE = "5.3.0.0-HC01"
+const val CORDA_RUNTIME_VERSION_GRADLE_BETA = "^5.3.0-beta"
+const val CORDA_IMAGE_TAG_BETA = "unstable-5.3.0"
 // Get preTest image tag from the pipeline, or fallback to stable version
-val testEnvCordaImageTag = System.getenv("CORDA_IMAGE_TAG") ?: CORDA_RUNTIME_VERSION_STABLE
+val testEnvCordaImageTag = System.getenv("CORDA_IMAGE_TAG") ?: CORDA_IMAGE_TAG_BETA
 
 
 object CombinedWorkerHelper {
