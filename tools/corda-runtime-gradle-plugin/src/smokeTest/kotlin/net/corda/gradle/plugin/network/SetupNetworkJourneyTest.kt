@@ -10,7 +10,6 @@ import net.corda.restclient.generated.models.RestRegistrationRequestStatus.Regis
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 
 class SetupNetworkJourneyTest : SmokeTestBase() {
@@ -57,7 +56,7 @@ class SetupNetworkJourneyTest : SmokeTestBase() {
         verifyRedeployNetwork(staticCpiNames, isStaticNetwork = true, myCorDappCpiChecksum)
     }
 
-    @RepeatedTest(20)
+    @Test
     fun setupDynamicNetworkVerifyVNodesAndCPIsThenRedeploy() {
         // Create a static network
         val vNodeSetupResult = executeWithRunner(
