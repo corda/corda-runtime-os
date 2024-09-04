@@ -29,7 +29,7 @@ snakeyamlVersion = "2.2"
 swaggeruiVersion = "5.15.1"
 swaggerVersion = "2.2.22"
 #Snappy used for compression
-snappyJavaVersion="1.1.10.5"
+snappyJavaVersion="1.1.10.6"
 typeSafeConfigVersion = "1.4.3"
 okHttpVersion = { strictly = "4.9.2" }
 okioVersion = { strictly = "3.4.0" }
