@@ -1,7 +1,6 @@
 package net.corda.ledger.persistence.utxo
 
-import net.corda.ledger.persistence.common.mapToComponentGroups
-import net.corda.ledger.persistence.utxo.impl.UtxoComponentGroupMapper
+import net.corda.persistence.common.mapToComponentGroups
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

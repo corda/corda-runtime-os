@@ -1,6 +1,5 @@
 package net.corda.ledger.persistence.json.impl
 
-import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryRegistry
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory

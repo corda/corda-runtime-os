@@ -1,6 +1,7 @@
 package net.corda.ledger.persistence.query.impl.parsing
 
 import net.corda.ledger.persistence.query.parsing.PathReference
+import net.corda.ledger.persistence.query.parsing.VaultNamedQueryParser
 import net.corda.ledger.persistence.query.parsing.VaultNamedQueryParserImpl
 import net.corda.ledger.persistence.query.parsing.Where
 import net.corda.ledger.persistence.query.parsing.converters.VaultNamedQueryConverter
@@ -26,7 +27,8 @@ class VaultNamedQueryParserImplTest {
     private val expressionValidator = mock<VaultNamedQueryExpressionValidator>()
     private val converter = mock<VaultNamedQueryConverter>()
     private val stringBuilderCaptor = argumentCaptor<StringBuilder>()
-    private val vaultNamedQueryParser = VaultNamedQueryParserImpl(expressionParser, expressionValidator, converter)
+    private val delegateParser = mock<VaultNamedQueryParser>()
+    private val vaultNamedQueryParser = VaultNamedQueryParserImpl(delegateParser)
 
     @Test
     fun `parses query and validates it`() {

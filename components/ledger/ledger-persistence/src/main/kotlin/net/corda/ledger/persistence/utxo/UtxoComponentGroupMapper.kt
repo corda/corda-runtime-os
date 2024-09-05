@@ -1,6 +1,6 @@
-package net.corda.ledger.persistence.utxo.impl
+package net.corda.ledger.persistence.utxo
 
-import net.corda.ledger.persistence.common.ComponentGroupMapper
+import net.corda.persistence.common.ComponentGroupMapper
 import javax.persistence.Tuple
 
 /**

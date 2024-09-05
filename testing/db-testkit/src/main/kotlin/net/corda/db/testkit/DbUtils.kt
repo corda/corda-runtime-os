@@ -47,7 +47,7 @@ object DbUtils {
      * Creates Postgres [CloseableDataSource]
      *
      * @param dbUser DB user. If value is not provided, value of the system property "postgresUser" is used.
-     *               If system property is not set then value "postgress" is used.
+     *               If system property is not set then value "postgres" is used.
      * @param dbPassword DB password. If value is not provided, value of the system property "postgresPassword" is used.
      *                   If system property is not set then value "password" is used
      */

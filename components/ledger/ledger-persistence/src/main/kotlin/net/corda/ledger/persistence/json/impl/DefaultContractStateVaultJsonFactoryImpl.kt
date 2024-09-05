@@ -1,6 +1,5 @@
 package net.corda.ledger.persistence.json.impl
 
-import net.corda.ledger.persistence.json.DefaultContractStateVaultJsonFactory
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.ledger.utxo.StateAndRef
 

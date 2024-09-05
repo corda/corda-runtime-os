@@ -43,6 +43,7 @@ dependencies {
     implementation project(":libs:serialization:serialization-avro")
     implementation project(":libs:tracing")
     implementation project(':libs:virtual-node:sandbox-group-context')
+    implementation project(':libs:persistence')
 
     // TODO This might not be needed if code is refactored so that WireTransactionSerializer is not used and
     //  WireTransaction's ID is sent over wire (doesn't need to be calculated using MerkleTreeFactory)

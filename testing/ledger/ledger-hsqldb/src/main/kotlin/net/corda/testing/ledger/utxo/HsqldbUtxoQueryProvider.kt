@@ -1,10 +1,10 @@
 package net.corda.testing.ledger.utxo
 
 import net.corda.ledger.persistence.utxo.impl.AbstractUtxoQueryProvider
-import net.corda.ledger.persistence.utxo.impl.UtxoQueryProvider
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.orm.DatabaseTypeProvider
 import net.corda.orm.DatabaseTypeProvider.Companion.HSQLDB_TYPE_FILTER
+import net.corda.ledger.persistence.utxo.impl.UtxoQueryProvider
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
