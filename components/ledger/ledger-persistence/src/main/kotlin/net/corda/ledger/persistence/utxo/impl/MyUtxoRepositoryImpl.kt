@@ -14,7 +14,7 @@ import net.corda.ledger.utxo.data.transaction.MerkleProofDto
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionDto
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
-import net.corda.ledger.persistence.utxo.UtxoComponentGroupMapper
+import net.corda.persistence.utxo.impl.UtxoComponentGroupMapper
 import net.corda.utilities.debug
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
