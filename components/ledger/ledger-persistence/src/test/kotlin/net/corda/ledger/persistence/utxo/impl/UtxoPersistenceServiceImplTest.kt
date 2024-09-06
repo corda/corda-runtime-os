@@ -11,7 +11,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.json.DefaultContractStateVaultJsonFactory
 import net.corda.ledger.persistence.json.impl.ContractStateVaultJsonFactoryRegistryImpl
 import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFactoryImpl
-import net.corda.ledger.persistence.utxo.CustomRepresentation
+import net.corda.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.utilities.time.UTCClock

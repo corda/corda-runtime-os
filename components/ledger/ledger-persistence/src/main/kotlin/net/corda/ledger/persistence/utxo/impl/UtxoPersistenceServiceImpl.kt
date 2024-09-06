@@ -21,7 +21,7 @@ import net.corda.ledger.common.data.transaction.getRootMerkleTreeDigestProvider
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
 import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryRegistry
 import net.corda.ledger.persistence.json.DefaultContractStateVaultJsonFactory
-import net.corda.ledger.persistence.utxo.CustomRepresentation
+import net.corda.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
