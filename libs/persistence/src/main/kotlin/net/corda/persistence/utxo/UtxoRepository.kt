@@ -1,4 +1,4 @@
-package net.corda.ledger.persistence.utxo
+package net.corda.persistence.utxo
 
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
@@ -7,7 +7,6 @@ import net.corda.ledger.utxo.data.transaction.MerkleProofDto
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionDto
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
-import net.corda.persistence.utxo.CustomRepresentation
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef

@@ -8,6 +8,7 @@ description 'Corda persistence library'
 ext.cordaEnableFormatting = true
 
 dependencies {
+    api "net.corda:corda-avro-schema"
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
@@ -24,7 +25,7 @@ dependencies {
 //    implementation project(':libs:metrics')
 //    implementation project(':libs:serialization:json-validator')
 //    implementation project(':libs:utilities')
-//    implementation project(":libs:serialization:serialization-avro")
+    implementation project(":libs:serialization:serialization-avro")
 //    implementation project(":libs:tracing")
     implementation project(":libs:db:db-core")
     implementation project(":libs:db:db-orm")

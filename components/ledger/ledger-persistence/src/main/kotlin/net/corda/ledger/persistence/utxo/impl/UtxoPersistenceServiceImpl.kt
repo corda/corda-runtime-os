@@ -23,7 +23,7 @@ import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryRegistry
 import net.corda.ledger.persistence.json.DefaultContractStateVaultJsonFactory
 import net.corda.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
-import net.corda.ledger.persistence.utxo.UtxoRepository
+import net.corda.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup

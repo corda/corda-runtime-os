@@ -11,7 +11,7 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.mapToComponentGroups
-import net.corda.ledger.persistence.utxo.UtxoRepository
+import net.corda.persistence.utxo.UtxoRepository
 import net.corda.ledger.utxo.data.transaction.MerkleProofDto
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionDto
@@ -374,13 +374,13 @@ class UtxoRepositoryImpl(
                 statement.setString(parameterIndex.next(), visibleTransactionOutput.token?.filterFields?.tag)
                 statement.setString(parameterIndex.next(), visibleTransactionOutput.token?.filterFields?.ownerHash?.toString())
                 if (visibleTransactionOutput.token != null) {
-                    statement.setBigDecimal(parameterIndex.next(), visibleTransactionOutput.token.amount)
+                    statement.setBigDecimal(parameterIndex.next(), visibleTransactionOutput.token!!.amount)
                 } else {
                     statement.setNull(parameterIndex.next(), Types.NUMERIC)
                 }
 
                 if (visibleTransactionOutput.token?.priority != null) {
-                    statement.setLong(parameterIndex.next(), visibleTransactionOutput.token.priority!!)
+                    statement.setLong(parameterIndex.next(), visibleTransactionOutput.token!!.priority!!)
                 } else {
                     statement.setNull(parameterIndex.next(), Types.BIGINT)
                 }
