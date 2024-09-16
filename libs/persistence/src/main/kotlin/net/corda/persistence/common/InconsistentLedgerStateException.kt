@@ -1,4 +1,4 @@
-package net.corda.ledger.persistence.common
+package net.corda.persistence.common
 
 import net.corda.v5.base.exceptions.CordaRuntimeException
 
