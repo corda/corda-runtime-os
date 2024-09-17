@@ -1,4 +1,4 @@
-package net.corda.ledger.persistence.utxo.impl
+package net.corda.ledger.libs.utxo.impl
 
 /**
  * Provider for the SQL queries executed by [UtxoRepositoryImpl].
