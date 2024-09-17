@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.utxo.impl
 
+import net.corda.ledger.libs.utxo.impl.AbstractUtxoQueryProvider
 import net.corda.ledger.libs.utxo.impl.UtxoQueryProvider
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.orm.DatabaseTypeProvider

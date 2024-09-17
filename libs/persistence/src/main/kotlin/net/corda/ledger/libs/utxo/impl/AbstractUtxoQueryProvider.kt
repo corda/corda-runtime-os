@@ -1,7 +1,6 @@
-package net.corda.ledger.persistence.utxo.impl
+package net.corda.ledger.libs.utxo.impl
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.libs.utxo.impl.UtxoQueryProvider
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 
 abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
