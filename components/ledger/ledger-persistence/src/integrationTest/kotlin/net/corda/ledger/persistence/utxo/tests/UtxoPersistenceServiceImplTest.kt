@@ -29,9 +29,9 @@ import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.persistence.consensual.tests.datamodel.field
 import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryRegistry
 import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFactoryImpl
-import net.corda.persistence.utxo.CustomRepresentation
+import net.corda.ledger.libs.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
-import net.corda.persistence.utxo.UtxoRepository
+import net.corda.ledger.libs.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.persistence.utxo.impl.UtxoPersistenceServiceImpl
 import net.corda.ledger.persistence.utxo.tests.datamodel.UtxoEntityFactory
