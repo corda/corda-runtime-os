@@ -13,7 +13,7 @@ import net.corda.ledger.persistence.json.impl.ContractStateVaultJsonFactoryRegis
 import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFactoryImpl
 import net.corda.ledger.libs.utxo.CustomRepresentation
 import net.corda.ledger.libs.utxo.UtxoRepository
-import net.corda.ledger.persistence.utxo.UtxoTransactionReader
+import net.corda.ledger.libs.utxo.UtxoTransactionReader
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.marshalling.JsonMarshallingService

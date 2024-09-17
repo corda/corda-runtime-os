@@ -9,8 +9,8 @@ import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
 import net.corda.ledger.persistence.common.LedgerPersistenceUtils.findAccount
-import net.corda.ledger.persistence.utxo.UtxoPersistenceService
-import net.corda.ledger.persistence.utxo.UtxoTransactionReader
+import net.corda.ledger.libs.utxo.UtxoPersistenceService
+import net.corda.ledger.libs.utxo.UtxoTransactionReader
 import net.corda.ledger.utxo.data.state.cast
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto

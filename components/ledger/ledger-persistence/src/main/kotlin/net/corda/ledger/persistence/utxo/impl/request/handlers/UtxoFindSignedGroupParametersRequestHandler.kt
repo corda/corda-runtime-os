@@ -5,7 +5,7 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.FindSignedGroupParameters
 import net.corda.data.ledger.persistence.FindSignedGroupParametersResponse
 import net.corda.ledger.persistence.common.RequestHandler
-import net.corda.ledger.persistence.utxo.UtxoPersistenceService
+import net.corda.ledger.libs.utxo.UtxoPersistenceService
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.ResponseFactory
 

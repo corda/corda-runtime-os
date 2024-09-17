@@ -22,9 +22,9 @@ import net.corda.ledger.libs.common.InconsistentLedgerStateException
 import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryRegistry
 import net.corda.ledger.persistence.json.DefaultContractStateVaultJsonFactory
 import net.corda.ledger.libs.utxo.CustomRepresentation
-import net.corda.ledger.persistence.utxo.UtxoPersistenceService
+import net.corda.ledger.libs.utxo.UtxoPersistenceService
 import net.corda.ledger.libs.utxo.UtxoRepository
-import net.corda.ledger.persistence.utxo.UtxoTransactionReader
+import net.corda.ledger.libs.utxo.UtxoTransactionReader
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup.METADATA

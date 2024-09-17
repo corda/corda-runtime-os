@@ -1,4 +1,4 @@
-package net.corda.ledger.persistence.utxo
+package net.corda.ledger.libs.utxo
 
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer

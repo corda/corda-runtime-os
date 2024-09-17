@@ -3,8 +3,8 @@ package net.corda.ledger.persistence.utxo.impl.request.handlers
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.utxo.UtxoOutputRecordFactory
-import net.corda.ledger.persistence.utxo.UtxoPersistenceService
-import net.corda.ledger.persistence.utxo.UtxoTransactionReader
+import net.corda.ledger.libs.utxo.UtxoPersistenceService
+import net.corda.ledger.libs.utxo.UtxoTransactionReader
 import net.corda.messaging.api.records.Record
 
 class UtxoPersistTransactionIfDoesNotExistRequestHandler(

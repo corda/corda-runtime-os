@@ -1,4 +1,4 @@
-package net.corda.ledger.persistence.utxo
+package net.corda.ledger.libs.utxo
 
 import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
