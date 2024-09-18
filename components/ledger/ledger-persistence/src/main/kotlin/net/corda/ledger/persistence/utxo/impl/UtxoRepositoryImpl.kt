@@ -12,6 +12,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.libs.common.mapToComponentGroups
 import net.corda.ledger.libs.utxo.UtxoRepository
+import net.corda.ledger.libs.utxo.impl.UtxoComponentGroupMapper
 import net.corda.ledger.libs.utxo.impl.UtxoQueryProvider
 import net.corda.ledger.utxo.data.transaction.MerkleProofDto
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
