@@ -27,7 +27,7 @@ import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
 import net.corda.ledger.common.testkit.getPrivacySalt
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.persistence.consensual.tests.datamodel.field
-import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryRegistry
+import net.corda.ledger.libs.json.ContractStateVaultJsonFactoryRegistry
 import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFactoryImpl
 import net.corda.ledger.libs.utxo.CustomRepresentation
 import net.corda.ledger.libs.utxo.UtxoPersistenceService

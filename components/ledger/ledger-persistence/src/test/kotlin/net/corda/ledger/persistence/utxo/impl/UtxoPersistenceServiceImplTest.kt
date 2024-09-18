@@ -8,7 +8,7 @@ import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.persistence.json.DefaultContractStateVaultJsonFactory
+import net.corda.ledger.libs.json.DefaultContractStateVaultJsonFactory
 import net.corda.ledger.persistence.json.impl.ContractStateVaultJsonFactoryRegistryImpl
 import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFactoryImpl
 import net.corda.ledger.libs.utxo.CustomRepresentation

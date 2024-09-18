@@ -1,4 +1,4 @@
-package net.corda.ledger.persistence.json
+package net.corda.ledger.libs.json
 
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
