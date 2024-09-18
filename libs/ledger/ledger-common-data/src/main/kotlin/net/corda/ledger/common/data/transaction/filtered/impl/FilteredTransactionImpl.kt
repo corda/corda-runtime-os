@@ -1,6 +1,6 @@
 package net.corda.ledger.common.data.transaction.filtered.impl
 
-import net.corda.common.json.validation.JsonValidator
+import net.corda.libs.json.validator.JsonValidator
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY

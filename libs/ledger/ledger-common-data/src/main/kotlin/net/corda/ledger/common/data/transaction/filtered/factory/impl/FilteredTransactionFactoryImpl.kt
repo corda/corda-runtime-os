@@ -1,6 +1,6 @@
 package net.corda.ledger.common.data.transaction.filtered.factory.impl
 
-import net.corda.common.json.validation.JsonValidator
+import net.corda.libs.json.validator.JsonValidator
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.WireTransaction

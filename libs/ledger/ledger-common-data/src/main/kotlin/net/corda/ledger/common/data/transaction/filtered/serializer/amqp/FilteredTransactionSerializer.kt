@@ -1,6 +1,6 @@
 package net.corda.ledger.common.data.transaction.filtered.serializer.amqp
 
-import net.corda.common.json.validation.JsonValidator
+import net.corda.libs.json.validator.JsonValidator
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.filtered.FilteredComponentGroup

@@ -2,8 +2,8 @@
 
 package net.corda.ledger.common.data.transaction
 
-import net.corda.common.json.validation.JsonValidator
-import net.corda.common.json.validation.WrappedJsonSchema
+import net.corda.libs.json.validator.JsonValidator
+import net.corda.libs.json.validator.WrappedJsonSchema
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.core.bytes
 import net.corda.crypto.core.concatByteArrays

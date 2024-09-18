@@ -12,5 +12,6 @@ dependencies {
 
     implementation project(':components:ledger:ledger-consensual-flow')
     implementation project(":libs:serialization:json-validator")
+    implementation project(":libs:serialization:json-validator-common")
     implementation libs.mockito.kotlin
 }

@@ -1,6 +1,6 @@
 package net.corda.ledger.persistence.utxo.tests
 
-import net.corda.common.json.validation.JsonValidator
+import net.corda.libs.json.validator.JsonValidator
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.crypto.wire.CryptoSignatureSpec

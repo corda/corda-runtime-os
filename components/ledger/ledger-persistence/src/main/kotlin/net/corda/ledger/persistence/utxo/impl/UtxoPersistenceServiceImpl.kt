@@ -1,10 +1,11 @@
 package net.corda.ledger.persistence.utxo.impl
 
 import com.fasterxml.jackson.core.JsonProcessingException
-import net.corda.common.json.validation.JsonValidator
+import net.corda.libs.json.validator.JsonValidator
 import net.corda.crypto.cipher.suite.merkle.MerkleProofFactory
 import net.corda.crypto.cipher.suite.merkle.MerkleProofInternal
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.bytes
 import net.corda.crypto.core.parseSecureHash
 import net.corda.data.membership.SignedGroupParameters
@@ -33,7 +34,6 @@ import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.data.transaction.toMerkleProof
-import net.corda.libs.packaging.hash
 import net.corda.orm.utils.transaction
 import net.corda.utilities.serialization.deserialize
 import net.corda.utilities.time.Clock
@@ -54,6 +54,7 @@ import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.security.MessageDigest
 import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -652,7 +653,7 @@ class UtxoPersistenceServiceImpl(
     }
 
     @VisibleForTesting
-    internal fun findFilteredTransactions(
+    fun findFilteredTransactions(
         transactionIds: List<String>
     ): Map<SecureHash, Pair<FilteredTransaction?, List<DigitalSignatureAndMetadata>>> {
         return entityManagerFactory.transaction { em -> findFilteredTransactions(transactionIds, em) }
@@ -837,4 +838,13 @@ class UtxoPersistenceServiceImpl(
         val leaves: List<UtxoRepository.TransactionMerkleProofLeaf>,
         val components: List<UtxoRepository.TransactionComponent>
     )
+
+    /**
+     * Compute the [SecureHash] of a [ByteArray] using the specified [DigestAlgorithmName]
+     */
+    private fun ByteArray.hash(algo : DigestAlgorithmName = DigestAlgorithmName.SHA2_256) : SecureHash {
+        val md = MessageDigest.getInstance(algo.name)
+        md.update(this)
+        return SecureHashImpl(algo.name, md.digest())
+    }
 }

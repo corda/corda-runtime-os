@@ -1,4 +1,4 @@
-package net.corda.common.json.validation
+package net.corda.libs.json.validator
 
 import java.io.InputStream
 

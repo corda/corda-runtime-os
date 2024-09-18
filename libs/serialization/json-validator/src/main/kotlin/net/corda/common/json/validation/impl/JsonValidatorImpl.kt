@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.networknt.schema.JsonSchemaFactory
 import com.networknt.schema.SpecVersion
 import com.networknt.schema.ValidationMessage
-import net.corda.common.json.validation.JsonValidator
-import net.corda.common.json.validation.WrappedJsonSchema
+import net.corda.libs.json.validator.JsonValidator
+import net.corda.libs.json.validator.WrappedJsonSchema
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
