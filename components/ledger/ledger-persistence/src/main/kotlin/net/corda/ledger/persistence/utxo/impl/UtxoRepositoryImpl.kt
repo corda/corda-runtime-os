@@ -10,7 +10,7 @@ import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
-import net.corda.ledger.persistence.common.mapToComponentGroups
+import net.corda.ledger.libs.common.mapToComponentGroups
 import net.corda.ledger.libs.utxo.UtxoRepository
 import net.corda.ledger.libs.utxo.impl.UtxoQueryProvider
 import net.corda.ledger.utxo.data.transaction.MerkleProofDto
