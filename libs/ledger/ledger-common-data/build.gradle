@@ -23,7 +23,6 @@ dependencies {
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:flows:flow-api')
     implementation project(':libs:sandbox-types')
-    //implementation project(':libs:serialization:json-validator')
     implementation project(':libs:serialization:json-validator-common')
     implementation project(':libs:serialization:serialization-amqp-api')
     implementation project(':libs:serialization:serialization-internal')

@@ -1,4 +1,4 @@
-package net.corda.ledger.persistence.utxo.impl
+package net.corda.ledger.libs.utxo.impl
 
 import com.fasterxml.jackson.core.JsonProcessingException
 import net.corda.libs.json.validator.JsonValidator
