@@ -9,7 +9,7 @@ import net.corda.libs.json.validator.JsonValidator
 import org.erdtman.jcs.JsonCanonicalizer
 import java.io.InputStream
 
-open class JsonValidatorImpl : JsonValidator {
+class JsonValidatorImpl : JsonValidator {
     override fun validate(json: String, wrappedSchema: WrappedJsonSchema) {
         val errors = validateSchema(json, wrappedSchema)
 

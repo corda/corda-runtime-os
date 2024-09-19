@@ -7,6 +7,7 @@ import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
 import net.corda.v5.serialization.SingletonSerializeAsToken
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope
 
@@ -14,4 +15,8 @@ import org.osgi.service.component.annotations.ServiceScope
     service = [ JsonValidator::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
     scope = ServiceScope.PROTOTYPE
 )
-class JsonValidatorOsgiImpl: JsonValidatorImpl(), UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken
+class JsonValidatorOsgiImpl(delegate: JsonValidator) : JsonValidator by delegate, UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken {
+
+    @Activate
+    constructor() : this(JsonValidatorImpl())
+}
