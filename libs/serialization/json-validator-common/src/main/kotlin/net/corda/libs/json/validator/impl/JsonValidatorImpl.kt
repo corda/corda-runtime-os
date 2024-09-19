@@ -1,4 +1,4 @@
-package net.corda.common.json.validation.impl
+package net.corda.libs.json.validator.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.networknt.schema.JsonSchemaFactory
@@ -6,22 +6,10 @@ import com.networknt.schema.SpecVersion
 import com.networknt.schema.ValidationMessage
 import net.corda.libs.json.validator.JsonValidator
 import net.corda.libs.json.validator.WrappedJsonSchema
-import net.corda.sandbox.type.UsedByFlow
-import net.corda.sandbox.type.UsedByPersistence
-import net.corda.sandbox.type.UsedByVerification
-import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.erdtman.jcs.JsonCanonicalizer
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.ServiceScope
 import java.io.InputStream
 
-@Component(
-    service = [ JsonValidator::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
-    scope = ServiceScope.PROTOTYPE
-)
-class JsonValidatorImpl: JsonValidator,
-    UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken {
-
+open class JsonValidatorImpl : JsonValidator {
     override fun validate(json: String, wrappedSchema: WrappedJsonSchema) {
         val errors = validateSchema(json, wrappedSchema)
 
@@ -32,7 +20,8 @@ class JsonValidatorImpl: JsonValidator,
     override fun canonicalize(json: String): String = JsonCanonicalizer(json).encodedString
 
     override fun parseSchema(schema: InputStream): WrappedJsonSchema =
-        WrappedJsonSchema(JsonSchemaFactory
+        WrappedJsonSchema(
+            JsonSchemaFactory
             .getInstance(SpecVersion.VersionFlag.V201909)
             .getSchema(schema))
 
