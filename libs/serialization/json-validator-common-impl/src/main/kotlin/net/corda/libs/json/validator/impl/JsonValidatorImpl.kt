@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.networknt.schema.JsonSchemaFactory
 import com.networknt.schema.SpecVersion
 import com.networknt.schema.ValidationMessage
-import net.corda.libs.json.validator.JsonValidator
 import net.corda.libs.json.validator.WrappedJsonSchema
+import net.corda.libs.json.validator.JsonValidator
 import org.erdtman.jcs.JsonCanonicalizer
 import java.io.InputStream
 

@@ -5,13 +5,6 @@ plugins {
 
 description 'common objects for JSON validator'
 
-//configurations {
-//    bundle {
-//        canBeResolved = false
-//    }
-//    bundle.extendsFrom runtimeClasspath
-//}
-
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
@@ -19,39 +12,5 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
     implementation 'org.jetbrains.kotlin:kotlin-stdlib'
-
-//    implementation 'org.jetbrains.kotlin:kotlin-stdlib'
-
-
-//    implementation project(':libs:sandbox-types')
-//    implementation 'net.corda:corda-base'
-//    implementation 'net.corda:corda-serialization'
     implementation "io.github.erdtman:java-json-canonicalization:$jsonCanonicalizerVersion"
-//    constraints {
-//        implementation("com.ethlo.time:itu:$comEthloTimeItuVersion") {
-//            because "Version bundled with current version of 'com.networknt:json-schema-validator' does not have OSGi manifest."
-//        }
-//    }
-//    implementation libs.jackson.databind
 }
-
-//def jar = tasks.named('jar', Jar) {
-//    archiveBaseName = 'corda-json-validator'
-//
-//    bundle {
-//        bnd """\
-//Bundle-Name: Corda JSON validator
-//Bundle-SymbolicName: \${project.group}.json-validator
-//Import-Package:\
-//    !org.apache.hadoop.io.compress,\
-//    sun.misc;resolution:=optional,\
-//    *
-//-includeresource: @java-json-canonicalization-${jsonCanonicalizerVersion}.jar
-//"""
-//    }
-//}
-//
-//artifacts {
-//    bundle jar
-//}
-
