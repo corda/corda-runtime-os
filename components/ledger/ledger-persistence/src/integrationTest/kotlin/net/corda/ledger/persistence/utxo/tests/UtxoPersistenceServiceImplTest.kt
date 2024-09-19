@@ -1,6 +1,5 @@
 package net.corda.ledger.persistence.utxo.tests
 
-import net.corda.libs.json.validator.JsonValidator
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -26,14 +25,14 @@ import net.corda.ledger.common.testkit.cpiPackageSummaryExample
 import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
 import net.corda.ledger.common.testkit.getPrivacySalt
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
-import net.corda.ledger.persistence.consensual.tests.datamodel.field
 import net.corda.ledger.libs.json.ContractStateVaultJsonFactoryRegistry
-import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFactoryImpl
 import net.corda.ledger.libs.utxo.CustomRepresentation
 import net.corda.ledger.libs.utxo.UtxoPersistenceService
 import net.corda.ledger.libs.utxo.UtxoRepository
 import net.corda.ledger.libs.utxo.UtxoTransactionReader
 import net.corda.ledger.libs.utxo.impl.UtxoPersistenceServiceImpl
+import net.corda.ledger.persistence.consensual.tests.datamodel.field
+import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFactoryImpl
 import net.corda.ledger.persistence.utxo.tests.datamodel.UtxoEntityFactory
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
@@ -45,6 +44,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.utxoComponentGroupStructure
+import net.corda.libs.json.validator.JsonValidator
 import net.corda.libs.packaging.hash
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.getEntityManagerFactory

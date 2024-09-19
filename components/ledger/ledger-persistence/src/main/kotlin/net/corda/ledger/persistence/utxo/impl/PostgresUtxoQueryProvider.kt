@@ -23,5 +23,5 @@ class PostgresUtxoQueryProvider(
     @Activate constructor(
         @Reference(target = POSTGRES_TYPE_FILTER)
         databaseTypeProvider: DatabaseTypeProvider
-    ): this(databaseTypeProvider, LedgerLibPostgresUtxoQueryProvider())
+    ) : this(databaseTypeProvider, LedgerLibPostgresUtxoQueryProvider())
 }

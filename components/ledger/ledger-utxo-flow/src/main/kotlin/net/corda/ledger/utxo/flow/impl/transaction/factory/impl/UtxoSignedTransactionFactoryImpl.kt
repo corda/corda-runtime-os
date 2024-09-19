@@ -1,6 +1,5 @@
 package net.corda.ledger.utxo.flow.impl.transaction.factory.impl
 
-import net.corda.libs.json.validator.JsonValidator
 import net.corda.flow.application.GroupParametersLookupInternal
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
@@ -23,6 +22,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransaction
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.NotarySignatureVerificationServiceInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
+import net.corda.libs.json.validator.JsonValidator
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext

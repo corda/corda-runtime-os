@@ -19,7 +19,6 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
  * as "corda.marker.only" to force the sandbox to create it, despite it implementing
  * only the [UsedByPersistence] marker interface.
  */
-@Suppress("TooManyFunctions")
 @Component(
     service = [ UtxoRepository::class, UsedByPersistence::class ],
     property = [ CORDA_MARKER_ONLY_SERVICE ],

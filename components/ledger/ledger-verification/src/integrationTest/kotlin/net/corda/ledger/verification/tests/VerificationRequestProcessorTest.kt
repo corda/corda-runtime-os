@@ -3,7 +3,6 @@ package net.corda.ledger.verification.tests
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
-import net.corda.libs.json.validator.JsonValidator
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.core.DigitalSignatureWithKey
@@ -28,6 +27,7 @@ import net.corda.ledger.verification.processor.VerificationErrorType
 import net.corda.ledger.verification.processor.impl.VerificationRequestHandlerImpl
 import net.corda.ledger.verification.processor.impl.VerificationRequestProcessor
 import net.corda.ledger.verification.tests.helpers.VirtualNodeService
+import net.corda.libs.json.validator.JsonValidator
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext

@@ -1,7 +1,6 @@
 package net.corda.ledger.libs.utxo.impl
 
 import com.fasterxml.jackson.core.JsonProcessingException
-import net.corda.libs.json.validator.JsonValidator
 import net.corda.crypto.cipher.suite.merkle.MerkleProofFactory
 import net.corda.crypto.cipher.suite.merkle.MerkleProofInternal
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
@@ -34,6 +33,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.data.transaction.toMerkleProof
+import net.corda.libs.json.validator.JsonValidator
 import net.corda.orm.utils.transaction
 import net.corda.utilities.serialization.deserialize
 import net.corda.utilities.time.Clock
@@ -842,7 +842,7 @@ class UtxoPersistenceServiceImpl(
     /**
      * Compute the [SecureHash] of a [ByteArray] using the specified [DigestAlgorithmName]
      */
-    private fun ByteArray.hash(algo : DigestAlgorithmName = DigestAlgorithmName.SHA2_256) : SecureHash {
+    private fun ByteArray.hash(algo: DigestAlgorithmName = DigestAlgorithmName.SHA2_256): SecureHash {
         val md = MessageDigest.getInstance(algo.name)
         md.update(this)
         return SecureHashImpl(algo.name, md.digest())

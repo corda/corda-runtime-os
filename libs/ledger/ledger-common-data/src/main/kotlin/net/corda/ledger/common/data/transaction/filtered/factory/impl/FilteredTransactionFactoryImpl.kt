@@ -1,6 +1,5 @@
 package net.corda.ledger.common.data.transaction.filtered.factory.impl
 
-import net.corda.libs.json.validator.JsonValidator
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
@@ -11,6 +10,7 @@ import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.data.transaction.filtered.factory.FilteredTransactionFactory
 import net.corda.ledger.common.data.transaction.filtered.impl.FilteredTransactionImpl
 import net.corda.ledger.common.data.transaction.getComponentGroupMerkleTreeDigestProvider
+import net.corda.libs.json.validator.JsonValidator
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence

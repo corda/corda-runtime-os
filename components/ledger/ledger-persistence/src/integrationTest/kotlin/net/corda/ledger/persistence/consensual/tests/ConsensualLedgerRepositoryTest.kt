@@ -1,6 +1,5 @@
 package net.corda.ledger.persistence.consensual.tests
 
-import net.corda.libs.json.validator.JsonValidator
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.db.persistence.testkit.components.VirtualNodeService
@@ -18,6 +17,7 @@ import net.corda.ledger.persistence.consensual.ConsensualTransactionReader
 import net.corda.ledger.persistence.consensual.impl.ConsensualPersistenceServiceImpl
 import net.corda.ledger.persistence.consensual.tests.datamodel.ConsensualEntityFactory
 import net.corda.ledger.persistence.consensual.tests.datamodel.field
+import net.corda.libs.json.validator.JsonValidator
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService

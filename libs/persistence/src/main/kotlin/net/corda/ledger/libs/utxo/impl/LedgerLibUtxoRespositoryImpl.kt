@@ -33,13 +33,13 @@ import javax.persistence.EntityManager
 import javax.persistence.Query
 import javax.persistence.Tuple
 
-
+@Suppress("TooManyFunctions")
 class LedgerLibUtxoRespositoryImpl(
     private val batchPersistenceService: BatchPersistenceService,
     private val serializationService: SerializationService,
     private val wireTransactionFactory: WireTransactionFactory,
     private val queryProvider: UtxoQueryProvider
-): UtxoRepository {
+) : UtxoRepository {
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
@@ -506,7 +506,7 @@ class LedgerLibUtxoRespositoryImpl(
                     // We store the leaf indexes as a comma separated string, so we need to split it
                     (firstRow.get(4) as String).split(",").map { it.toInt() },
 
-                    )
+                )
             }.groupBy {
                 // Group by transaction ID
                 it.transactionId
