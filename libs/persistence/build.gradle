@@ -8,25 +8,17 @@ description 'Corda persistence library'
 ext.cordaEnableFormatting = true
 
 dependencies {
-    api "net.corda:corda-avro-schema" // won't need later
+    // TODO delete when we don't need this dependency later
+    api "net.corda:corda-avro-schema"
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-//    implementation project(':libs:flows:external-event-responses')
-//    implementation project(':libs:flows:flow-utils')
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:crypto:cipher-suite')
     implementation project(':libs:ledger:ledger-common-data')
-//    implementation project(':libs:ledger:ledger-consensual-data')
     implementation project(':libs:ledger:ledger-utxo-data')
-//    implementation project(':libs:messaging:messaging')
-//    implementation project(':libs:metrics')
-//    implementation project(':libs:serialization:json-validator')
-//    implementation project(':libs:utilities')
-    implementation project(":libs:serialization:serialization-avro") // remove at the end
-//    implementation project(":libs:tracing")
     implementation project(":libs:db:db-core")
     implementation project(":libs:db:db-orm")
     implementation project(":libs:utilities")
@@ -36,12 +28,9 @@ dependencies {
     //  WireTransaction's ID is sent over wire (doesn't need to be calculated using MerkleTreeFactory)
     runtimeOnly project(':libs:crypto:merkle-impl')
 
-//    implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-db-schema'
     implementation 'net.corda:corda-ledger-common'
-//    implementation 'net.corda:corda-ledger-consensual'
     implementation 'net.corda:corda-ledger-utxo'
-//    implementation 'net.corda:corda-topic-schema'
     implementation libs.slf4j.api
     implementation "org.hibernate:hibernate-core:$hibernateVersion"
     implementation 'org.jetbrains.kotlin:kotlin-stdlib'
