@@ -4,7 +4,7 @@ import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
-import net.corda.common.json.validation.impl.JsonValidatorOsgiImpl
+import net.corda.common.json.validation.impl.JsonValidatorImpl
 import net.corda.crypto.cipher.suite.merkle.MerkleProofProvider
 import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
@@ -64,7 +64,7 @@ open class UtxoFilteredTransactionTestBase {
     val digestService =
         DigestServiceImpl(PlatformDigestServiceImpl(CipherSchemeMetadataImpl()), null)
     protected val jsonMarshallingService = JsonMarshallingServiceImpl(mock<MerkleProofProvider> {})
-    protected val jsonValidator = JsonValidatorOsgiImpl()
+    protected val jsonValidator = JsonValidatorImpl()
     protected val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
     val serializationService = mock<SerializationService>()
 

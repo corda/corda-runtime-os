@@ -5,13 +5,13 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 
-class JsonValidatorOsgiImplTest {
+class JsonValidatorImplTest {
     private val json = """
        {    "name":   "Jimmy", "age" : 257
        }
        """.trimIndent()
 
-    private val validator = JsonValidatorOsgiImpl()
+    private val validator = JsonValidatorImpl()
     private val schema = validator.parseSchema(this::class.java.getResourceAsStream("/schema/simple.json"))
 
     @Test
