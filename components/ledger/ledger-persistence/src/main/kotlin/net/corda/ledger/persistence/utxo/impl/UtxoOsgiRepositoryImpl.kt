@@ -3,7 +3,7 @@ package net.corda.ledger.persistence.utxo.impl
 import net.corda.db.core.utils.BatchPersistenceServiceImpl
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.libs.utxo.UtxoRepository
-import net.corda.ledger.libs.utxo.impl.LedgerLibUtxoRespositoryImpl
+import net.corda.ledger.libs.utxo.impl.UtxoRespositoryImpl
 import net.corda.ledger.libs.utxo.impl.UtxoQueryProvider
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
@@ -24,7 +24,7 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
     property = [ CORDA_MARKER_ONLY_SERVICE ],
     scope = PROTOTYPE
 )
-class UtxoRepositoryImpl(delegate: UtxoRepository) : UtxoRepository by delegate, UsedByPersistence {
+class UtxoOsgiRepositoryImpl(delegate: UtxoRepository) : UtxoRepository by delegate, UsedByPersistence {
     @Suppress("Unused")
     @Activate
     constructor(
@@ -34,5 +34,5 @@ class UtxoRepositoryImpl(delegate: UtxoRepository) : UtxoRepository by delegate,
         wireTransactionFactory: WireTransactionFactory,
         @Reference(service = UtxoQueryProvider::class)
         queryProvider: UtxoQueryProvider
-    ) : this(LedgerLibUtxoRespositoryImpl(BatchPersistenceServiceImpl(), serializationService, wireTransactionFactory, queryProvider))
+    ) : this(UtxoRespositoryImpl(BatchPersistenceServiceImpl(), serializationService, wireTransactionFactory, queryProvider))
 }

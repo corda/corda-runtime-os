@@ -2,7 +2,7 @@ package net.corda.ledger.libs.utxo.impl
 
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 
-class LedgerLibPostgresUtxoQueryProvider : AbstractUtxoQueryProvider() {
+class PostgresUtxoQueryProvider : AbstractUtxoQueryProvider() {
     override val persistTransaction: String
         get() = """
             INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered, repair_attempt_count)

@@ -35,7 +35,7 @@ import javax.persistence.Query
 import javax.persistence.Tuple
 
 @Suppress("TooManyFunctions")
-class LedgerLibUtxoRespositoryImpl(
+class UtxoRespositoryImpl(
     private val batchPersistenceService: BatchPersistenceService,
     private val serializationService: SerializationService,
     private val wireTransactionFactory: WireTransactionFactory,

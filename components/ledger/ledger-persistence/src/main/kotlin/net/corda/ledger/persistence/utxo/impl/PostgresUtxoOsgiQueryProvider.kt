@@ -1,6 +1,6 @@
 package net.corda.ledger.persistence.utxo.impl
 
-import net.corda.ledger.libs.utxo.impl.LedgerLibPostgresUtxoQueryProvider
+import net.corda.ledger.libs.utxo.impl.PostgresUtxoQueryProvider
 import net.corda.ledger.libs.utxo.impl.UtxoQueryProvider
 import net.corda.orm.DatabaseTypeProvider
 import net.corda.orm.DatabaseTypeProvider.Companion.POSTGRES_TYPE_FILTER
@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory
 
 @Suppress("unused")
 @Component(service = [ UtxoQueryProvider::class ])
-class PostgresUtxoQueryProvider(
+class PostgresUtxoOsgiQueryProvider(
     databaseTypeProvider: DatabaseTypeProvider,
     delegate: UtxoQueryProvider
 ) : UtxoQueryProvider by delegate {
@@ -23,5 +23,5 @@ class PostgresUtxoQueryProvider(
     @Activate constructor(
         @Reference(target = POSTGRES_TYPE_FILTER)
         databaseTypeProvider: DatabaseTypeProvider
-    ) : this(databaseTypeProvider, LedgerLibPostgresUtxoQueryProvider())
+    ) : this(databaseTypeProvider, PostgresUtxoQueryProvider())
 }
