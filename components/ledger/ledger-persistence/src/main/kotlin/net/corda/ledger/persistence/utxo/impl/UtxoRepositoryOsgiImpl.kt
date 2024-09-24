@@ -24,7 +24,7 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
     property = [ CORDA_MARKER_ONLY_SERVICE ],
     scope = PROTOTYPE
 )
-class UtxoOsgiRepositoryImpl(delegate: UtxoRepository) : UtxoRepository by delegate, UsedByPersistence {
+class UtxoRepositoryOsgiImpl(delegate: UtxoRepository) : UtxoRepository by delegate, UsedByPersistence {
     @Suppress("Unused")
     @Activate
     constructor(
