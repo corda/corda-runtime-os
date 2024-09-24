@@ -8,8 +8,6 @@ description 'Corda persistence library'
 ext.cordaEnableFormatting = true
 
 dependencies {
-    // TODO delete when we don't need this dependency later
-    api "net.corda:corda-avro-schema"
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
@@ -28,10 +26,10 @@ dependencies {
     //  WireTransaction's ID is sent over wire (doesn't need to be calculated using MerkleTreeFactory)
     runtimeOnly project(':libs:crypto:merkle-impl')
 
-    implementation 'net.corda:corda-db-schema'
     implementation 'net.corda:corda-ledger-common'
     implementation 'net.corda:corda-ledger-utxo'
     implementation libs.slf4j.api
     implementation "org.hibernate:hibernate-core:$hibernateVersion"
     implementation 'org.jetbrains.kotlin:kotlin-stdlib'
+    implementation libs.jackson.core
 }
