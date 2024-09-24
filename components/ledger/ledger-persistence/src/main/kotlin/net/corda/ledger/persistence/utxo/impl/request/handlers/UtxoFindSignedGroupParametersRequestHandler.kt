@@ -7,11 +7,13 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.FindSignedGroupParameters
 import net.corda.data.ledger.persistence.FindSignedGroupParametersResponse
+import net.corda.ledger.libs.persistence.utxo.SignedGroupParameters
 import net.corda.ledger.libs.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.ResponseFactory
 import java.nio.ByteBuffer
+import net.corda.data.membership.SignedGroupParameters as SignedGroupParametersAvro
 
 class UtxoFindSignedGroupParametersRequestHandler(
     private val findSignedGroupParameters: FindSignedGroupParameters,
@@ -28,25 +30,24 @@ class UtxoFindSignedGroupParametersRequestHandler(
             responseFactory.successResponse(
                 externalEventContext,
                 FindSignedGroupParametersResponse(
-                    listOfNotNull(
-                        net.corda.data.membership.SignedGroupParameters(
-                            ByteBuffer.wrap(signedGroupParameters?.groupParameters),
-                            CryptoSignatureWithKey(
-                                ByteBuffer.wrap(signedGroupParameters?.mgmSignature?.publicKey),
-                                ByteBuffer.wrap(signedGroupParameters?.mgmSignature?.bytes)
-                            ),
-                            CryptoSignatureSpec(
-                                signedGroupParameters?.mgmSignatureSpec?.signatureName,
-                                signedGroupParameters?.mgmSignatureSpec?.customDigestName,
-                                CryptoSignatureParameterSpec(
-                                    signedGroupParameters?.mgmSignatureSpec?.params?.javaClass?.name,
-                                    ByteBuffer.wrap(signedGroupParameters?.mgmSignatureSpec?.params)
-                                )
-                            )
-                        )
-                    )
+                    listOfNotNull(signedGroupParameters?.toAvro())
                 )
             )
         )
     }
+}
+
+private fun SignedGroupParameters.toAvro(): SignedGroupParametersAvro {
+    return SignedGroupParametersAvro(
+        ByteBuffer.wrap(groupParameters),
+        CryptoSignatureWithKey(ByteBuffer.wrap(mgmSignature.publicKey), ByteBuffer.wrap(mgmSignature.bytes)),
+        CryptoSignatureSpec(
+            mgmSignatureSpec.signatureName,
+            mgmSignatureSpec.customDigestName,
+            CryptoSignatureParameterSpec(
+                mgmSignatureSpec.params?.javaClass?.name,
+                ByteBuffer.wrap(mgmSignatureSpec.params)
+            )
+        )
+    )
 }
