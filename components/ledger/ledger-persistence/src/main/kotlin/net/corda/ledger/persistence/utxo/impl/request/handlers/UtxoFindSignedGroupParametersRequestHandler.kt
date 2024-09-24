@@ -28,21 +28,23 @@ class UtxoFindSignedGroupParametersRequestHandler(
             responseFactory.successResponse(
                 externalEventContext,
                 FindSignedGroupParametersResponse(
-                    listOfNotNull(net.corda.data.membership.SignedGroupParameters(
-                        ByteBuffer.wrap(signedGroupParameters?.groupParameters),
-                        CryptoSignatureWithKey(
-                            ByteBuffer.wrap(signedGroupParameters?.mgmSignature?.publicKey),
-                            ByteBuffer.wrap(signedGroupParameters?.mgmSignature?.bytes)
-                        ),
-                        CryptoSignatureSpec(
-                            signedGroupParameters?.mgmSignatureSpec?.signatureName,
-                            signedGroupParameters?.mgmSignatureSpec?.customDigestName,
-                            CryptoSignatureParameterSpec(
-                                signedGroupParameters?.mgmSignatureSpec?.params?.javaClass?.name,
-                                ByteBuffer.wrap(signedGroupParameters?.mgmSignatureSpec?.params)
+                    listOfNotNull(
+                        net.corda.data.membership.SignedGroupParameters(
+                            ByteBuffer.wrap(signedGroupParameters?.groupParameters),
+                            CryptoSignatureWithKey(
+                                ByteBuffer.wrap(signedGroupParameters?.mgmSignature?.publicKey),
+                                ByteBuffer.wrap(signedGroupParameters?.mgmSignature?.bytes)
+                            ),
+                            CryptoSignatureSpec(
+                                signedGroupParameters?.mgmSignatureSpec?.signatureName,
+                                signedGroupParameters?.mgmSignatureSpec?.customDigestName,
+                                CryptoSignatureParameterSpec(
+                                    signedGroupParameters?.mgmSignatureSpec?.params?.javaClass?.name,
+                                    ByteBuffer.wrap(signedGroupParameters?.mgmSignatureSpec?.params)
+                                )
                             )
                         )
-                    ))
+                    )
                 )
             )
         )

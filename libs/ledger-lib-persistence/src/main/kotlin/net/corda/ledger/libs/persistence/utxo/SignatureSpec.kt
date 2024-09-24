@@ -5,7 +5,7 @@ data class SignatureSpec(val signatureName: String, val customDigestName: String
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as net.corda.ledger.libs.persistence.utxo.SignatureSpec
+        other as SignatureSpec
 
         if (signatureName != other.signatureName) return false
         if (customDigestName != other.customDigestName) return false

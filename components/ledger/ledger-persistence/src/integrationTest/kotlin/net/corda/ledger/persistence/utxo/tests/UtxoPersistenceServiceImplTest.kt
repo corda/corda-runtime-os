@@ -585,7 +585,6 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `persist and find signed group parameter`() {
-
         val signedGroupParameters = net.corda.ledger.libs.persistence.utxo.SignedGroupParameters(
             ByteArray(1),
             SignatureWithKey(ByteArray(1), ByteArray(1)),

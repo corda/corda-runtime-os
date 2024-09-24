@@ -32,7 +32,7 @@ interface UtxoTransactionReader {
 
     fun getVisibleStates(): Map<Int, StateAndRef<ContractState>>
 
-    fun getConsumedStates(persistenceService: net.corda.ledger.libs.persistence.utxo.UtxoPersistenceService): List<StateAndRef<ContractState>>
+    fun getConsumedStates(persistenceService: UtxoPersistenceService): List<StateAndRef<ContractState>>
 
     fun getConsumedStateRefs(): List<StateRef>
 
