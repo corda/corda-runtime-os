@@ -1,15 +1,15 @@
 package net.corda.ledger.libs.utxo.impl
 
 import net.corda.crypto.core.parseSecureHash
-import net.corda.data.crypto.wire.CryptoSignatureSpec
-import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.membership.SignedGroupParameters
 import net.corda.db.core.utils.BatchPersistenceService
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.libs.common.mapToComponentGroups
+import net.corda.ledger.libs.utxo.SignatureSpec
+import net.corda.ledger.libs.utxo.SignatureWithKey
+import net.corda.ledger.libs.utxo.SignedGroupParameters
 import net.corda.ledger.libs.utxo.UtxoRepository
 import net.corda.ledger.utxo.data.transaction.MerkleProofDto
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
@@ -23,7 +23,6 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
 import org.hibernate.Session
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
 import java.sql.Connection
 import java.sql.Timestamp
 import java.sql.Types
@@ -407,12 +406,12 @@ class UtxoRespositoryImpl(
             .resultListAsTuples()
             .map { r ->
                 SignedGroupParameters(
-                    ByteBuffer.wrap(r.get(0) as ByteArray),
-                    CryptoSignatureWithKey(
-                        ByteBuffer.wrap(r.get(1) as ByteArray),
-                        ByteBuffer.wrap(r.get(2) as ByteArray)
+                    r.get(0) as ByteArray,
+                    SignatureWithKey(
+                        r.get(1) as ByteArray,
+                        r.get(2) as ByteArray
                     ),
-                    CryptoSignatureSpec((r.get(3) as String), null, null)
+                    SignatureSpec((r.get(3) as String), null, null)
                 )
             }
             .singleOrNull()
@@ -426,9 +425,9 @@ class UtxoRespositoryImpl(
     ) {
         entityManager.createNativeQuery(queryProvider.persistSignedGroupParameters)
             .setParameter("hash", hash)
-            .setParameter("parameters", signedGroupParameters.groupParameters.array())
-            .setParameter("signature_public_key", signedGroupParameters.mgmSignature.publicKey.array())
-            .setParameter("signature_content", signedGroupParameters.mgmSignature.bytes.array())
+            .setParameter("parameters", signedGroupParameters.groupParameters)
+            .setParameter("signature_public_key", signedGroupParameters.mgmSignature.publicKey)
+            .setParameter("signature_content", signedGroupParameters.mgmSignature.bytes)
             .setParameter("signature_spec", signedGroupParameters.mgmSignatureSpec.signatureName)
             .setParameter("createdAt", timestamp)
             .executeUpdate()

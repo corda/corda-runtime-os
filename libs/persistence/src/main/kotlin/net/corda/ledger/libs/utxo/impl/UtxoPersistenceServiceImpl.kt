@@ -7,7 +7,6 @@ import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.bytes
 import net.corda.crypto.core.parseSecureHash
-import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionMetadataUtils.parseMetadata
@@ -22,6 +21,7 @@ import net.corda.ledger.libs.common.InconsistentLedgerStateException
 import net.corda.ledger.libs.json.ContractStateVaultJsonFactoryRegistry
 import net.corda.ledger.libs.json.DefaultContractStateVaultJsonFactory
 import net.corda.ledger.libs.utxo.CustomRepresentation
+import net.corda.ledger.libs.utxo.SignedGroupParameters
 import net.corda.ledger.libs.utxo.UtxoPersistenceService
 import net.corda.ledger.libs.utxo.UtxoRepository
 import net.corda.ledger.libs.utxo.UtxoTransactionReader
@@ -468,7 +468,7 @@ class UtxoPersistenceServiceImpl(
     }
 
     override fun persistSignedGroupParametersIfDoNotExist(signedGroupParameters: SignedGroupParameters) {
-        val hash = signedGroupParameters.groupParameters.array().hash(DigestAlgorithmName.SHA2_256).toString()
+        val hash = signedGroupParameters.groupParameters.hash(DigestAlgorithmName.SHA2_256).toString()
         if (findSignedGroupParameters(hash) == null) {
             entityManagerFactory.transaction { em ->
                 repository.persistSignedGroupParameters(

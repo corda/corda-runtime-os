@@ -1,6 +1,5 @@
 package net.corda.ledger.libs.utxo
 
-import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.data.transaction.MerkleProofDto

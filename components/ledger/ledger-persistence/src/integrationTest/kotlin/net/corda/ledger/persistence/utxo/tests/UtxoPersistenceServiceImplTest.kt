@@ -27,6 +27,8 @@ import net.corda.ledger.common.testkit.getPrivacySalt
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.libs.json.ContractStateVaultJsonFactoryRegistry
 import net.corda.ledger.libs.utxo.CustomRepresentation
+import net.corda.ledger.libs.utxo.SignatureSpec
+import net.corda.ledger.libs.utxo.SignatureWithKey
 import net.corda.ledger.libs.utxo.UtxoPersistenceService
 import net.corda.ledger.libs.utxo.UtxoRepository
 import net.corda.ledger.libs.utxo.UtxoTransactionReader
@@ -589,29 +591,27 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `persist and find signed group parameter`() {
-        val signedGroupParameters = SignedGroupParameters(
-            ByteBuffer.wrap(ByteArray(1)),
-            CryptoSignatureWithKey(
-                ByteBuffer.wrap(ByteArray(1)),
-                ByteBuffer.wrap(ByteArray(1))
-            ),
-            CryptoSignatureSpec("", null, null)
-        )
 
-        val hash = signedGroupParameters.groupParameters.array().hash(DigestAlgorithmName.SHA2_256).toString()
+        val signedGroupParameters = net.corda.ledger.libs.utxo.SignedGroupParameters(
+            ByteArray(1),
+            SignatureWithKey(ByteArray(1), ByteArray(1)),
+            SignatureSpec("", null, null)
+        )
+        val hash = signedGroupParameters.groupParameters.hash(DigestAlgorithmName.SHA2_256).toString()
 
         persistenceService.persistSignedGroupParametersIfDoNotExist(signedGroupParameters)
 
         val persistedSignedGroupParameters = persistenceService.findSignedGroupParameters(hash)
 
+        // Compare byte arrays using contentEquals instead of toString()
         assertThat(
-            persistedSignedGroupParameters?.mgmSignature?.publicKey.toString()
-        )
-            .isEqualTo(signedGroupParameters.mgmSignature?.publicKey.toString())
+            persistedSignedGroupParameters?.mgmSignature?.publicKey?.contentEquals(signedGroupParameters.mgmSignature.publicKey)
+        ).isTrue() // this will check if the byte arrays have the same content
+
+        // Compare signature spec directly (you can use toString() if it's a standard POJO)
         assertThat(
             persistedSignedGroupParameters?.mgmSignatureSpec.toString()
-        )
-            .isEqualTo(signedGroupParameters.mgmSignatureSpec.toString())
+        ).isEqualTo(signedGroupParameters.mgmSignatureSpec.toString())
     }
 
     @Test

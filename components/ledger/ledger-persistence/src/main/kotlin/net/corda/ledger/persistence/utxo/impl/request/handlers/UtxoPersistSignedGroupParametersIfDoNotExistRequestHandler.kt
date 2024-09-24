@@ -5,6 +5,9 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.PersistSignedGroupParametersIfDoNotExist
 import net.corda.data.persistence.EntityResponse
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
+import net.corda.ledger.libs.utxo.SignatureSpec
+import net.corda.ledger.libs.utxo.SignatureWithKey
+import net.corda.ledger.libs.utxo.SignedGroupParameters
 import net.corda.ledger.libs.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.messaging.api.records.Record
@@ -23,7 +26,23 @@ class UtxoPersistSignedGroupParametersIfDoNotExistRequestHandler(
         requireNotNull(persistSignedGroupParametersIfDoNotExist.signedGroupParameters.mgmSignatureSpec) {
             "SignedGroupParameters needs a signature specification."
         }
-        persistenceService.persistSignedGroupParametersIfDoNotExist(persistSignedGroupParametersIfDoNotExist.signedGroupParameters)
+        val signedGroupParameters = persistSignedGroupParametersIfDoNotExist.signedGroupParameters
+        persistenceService.persistSignedGroupParametersIfDoNotExist(
+            SignedGroupParameters(
+                signedGroupParameters.groupParameters.array(),
+                SignatureWithKey(
+                    signedGroupParameters.mgmSignature.publicKey.array(),
+                    signedGroupParameters.mgmSignature.bytes.array()
+                ),
+                SignatureSpec(
+                    signedGroupParameters.mgmSignatureSpec.signatureName,
+                    signedGroupParameters.mgmSignatureSpec.customDigestName,
+                    signedGroupParameters.mgmSignatureSpec.params.bytes.array()
+                )
+            )
+        )
+
+
 
         return listOf(
             externalEventResponseFactory.success(
