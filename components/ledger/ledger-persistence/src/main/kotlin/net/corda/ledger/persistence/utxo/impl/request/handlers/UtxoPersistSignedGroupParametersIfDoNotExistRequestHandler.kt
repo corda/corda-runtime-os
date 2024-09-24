@@ -46,7 +46,7 @@ private fun SignedGroupParametersAvro.toCorda(): SignedGroupParameters {
         SignatureSpec(
             mgmSignatureSpec.signatureName,
             mgmSignatureSpec.customDigestName,
-            mgmSignatureSpec.params.bytes.array()
+            mgmSignatureSpec.params?.bytes?.array()
         )
     )
 }
