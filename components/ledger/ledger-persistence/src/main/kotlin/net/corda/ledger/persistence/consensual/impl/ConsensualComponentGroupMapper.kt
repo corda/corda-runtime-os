@@ -1,6 +1,6 @@
 package net.corda.ledger.persistence.consensual.impl
 
-import net.corda.ledger.libs.common.ComponentGroupMapper
+import net.corda.ledger.libs.persistence.common.ComponentGroupMapper
 import javax.persistence.Tuple
 
 /**

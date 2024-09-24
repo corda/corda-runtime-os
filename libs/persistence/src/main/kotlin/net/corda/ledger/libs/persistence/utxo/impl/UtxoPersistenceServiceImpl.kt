@@ -1,4 +1,4 @@
-package net.corda.ledger.libs.utxo.impl
+package net.corda.ledger.libs.persistence.utxo.impl
 
 import com.fasterxml.jackson.core.JsonProcessingException
 import net.corda.crypto.cipher.suite.merkle.MerkleProofFactory
@@ -17,14 +17,13 @@ import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.data.transaction.filtered.factory.FilteredTransactionFactory
 import net.corda.ledger.common.data.transaction.getComponentGroupMerkleTreeDigestProvider
 import net.corda.ledger.common.data.transaction.getRootMerkleTreeDigestProvider
-import net.corda.ledger.libs.common.InconsistentLedgerStateException
-import net.corda.ledger.libs.json.ContractStateVaultJsonFactoryRegistry
-import net.corda.ledger.libs.json.DefaultContractStateVaultJsonFactory
-import net.corda.ledger.libs.utxo.CustomRepresentation
-import net.corda.ledger.libs.utxo.SignedGroupParameters
-import net.corda.ledger.libs.utxo.UtxoPersistenceService
-import net.corda.ledger.libs.utxo.UtxoRepository
-import net.corda.ledger.libs.utxo.UtxoTransactionReader
+import net.corda.ledger.libs.persistence.common.InconsistentLedgerStateException
+import net.corda.ledger.libs.persistence.json.DefaultContractStateVaultJsonFactory
+import net.corda.ledger.libs.persistence.utxo.CustomRepresentation
+import net.corda.ledger.libs.persistence.utxo.SignedGroupParameters
+import net.corda.ledger.libs.persistence.utxo.UtxoPersistenceService
+import net.corda.ledger.libs.persistence.utxo.UtxoRepository
+import net.corda.ledger.libs.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup.METADATA
@@ -65,7 +64,7 @@ class UtxoPersistenceServiceImpl(
     private val repository: UtxoRepository,
     private val serializationService: SerializationService,
     private val sandboxDigestService: DigestService,
-    private val factoryStorage: ContractStateVaultJsonFactoryRegistry,
+    private val factoryStorage: net.corda.ledger.libs.persistence.json.ContractStateVaultJsonFactoryRegistry,
     private val defaultContractStateVaultJsonFactory: DefaultContractStateVaultJsonFactory,
     private val jsonMarshallingService: JsonMarshallingService,
     private val jsonValidator: JsonValidator,

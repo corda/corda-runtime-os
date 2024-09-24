@@ -4,7 +4,7 @@ import net.corda.crypto.core.parseSecureHash
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.flow.utils.toMap
-import net.corda.ledger.libs.common.InconsistentLedgerStateException
+import net.corda.ledger.libs.persistence.common.InconsistentLedgerStateException
 import net.corda.ledger.persistence.common.UnsupportedLedgerTypeException
 import net.corda.ledger.persistence.common.UnsupportedRequestTypeException
 import net.corda.messaging.api.processor.SyncRPCProcessor

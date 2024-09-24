@@ -1,4 +1,4 @@
-package net.corda.ledger.libs.json
+package net.corda.ledger.libs.persistence.json
 
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.ledger.utxo.StateAndRef

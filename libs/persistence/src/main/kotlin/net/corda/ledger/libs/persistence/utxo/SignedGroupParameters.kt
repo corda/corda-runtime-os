@@ -1,9 +1,9 @@
-package net.corda.ledger.libs.utxo
+package net.corda.ledger.libs.persistence.utxo
 
 data class SignedGroupParameters(
     val groupParameters: ByteArray,
     val mgmSignature: SignatureWithKey,
-    val mgmSignatureSpec: SignatureSpec,
+    val mgmSignatureSpec: net.corda.ledger.libs.persistence.utxo.SignatureSpec,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

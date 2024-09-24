@@ -1,6 +1,5 @@
 package net.corda.ledger.persistence.json.impl
 
-import net.corda.ledger.libs.json.ContractStateVaultJsonFactoryRegistry
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
@@ -14,13 +13,13 @@ import java.util.TreeMap
 @Suppress("unused")
 @Component(
     service = [
-        ContractStateVaultJsonFactoryRegistry::class,
+        net.corda.ledger.libs.persistence.json.ContractStateVaultJsonFactoryRegistry::class,
         UsedByPersistence::class
     ],
     scope = ServiceScope.PROTOTYPE
 )
 class ContractStateVaultJsonFactoryRegistryImpl @Activate constructor() :
-    ContractStateVaultJsonFactoryRegistry, UsedByPersistence {
+    net.corda.ledger.libs.persistence.json.ContractStateVaultJsonFactoryRegistry, UsedByPersistence {
 
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(ContractStateVaultJsonFactoryRegistryImpl::class.java)

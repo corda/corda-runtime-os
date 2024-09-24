@@ -2,9 +2,6 @@ package net.corda.ledger.persistence.utxo.tests
 
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.SecureHashImpl
-import net.corda.data.crypto.wire.CryptoSignatureSpec
-import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.membership.SignedGroupParameters
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.PrivacySalt
@@ -25,14 +22,12 @@ import net.corda.ledger.common.testkit.cpiPackageSummaryExample
 import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
 import net.corda.ledger.common.testkit.getPrivacySalt
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
-import net.corda.ledger.libs.json.ContractStateVaultJsonFactoryRegistry
-import net.corda.ledger.libs.utxo.CustomRepresentation
-import net.corda.ledger.libs.utxo.SignatureSpec
-import net.corda.ledger.libs.utxo.SignatureWithKey
-import net.corda.ledger.libs.utxo.UtxoPersistenceService
-import net.corda.ledger.libs.utxo.UtxoRepository
-import net.corda.ledger.libs.utxo.UtxoTransactionReader
-import net.corda.ledger.libs.utxo.impl.UtxoPersistenceServiceImpl
+import net.corda.ledger.libs.persistence.utxo.CustomRepresentation
+import net.corda.ledger.libs.persistence.utxo.SignatureWithKey
+import net.corda.ledger.libs.persistence.utxo.UtxoPersistenceService
+import net.corda.ledger.libs.persistence.utxo.UtxoRepository
+import net.corda.ledger.libs.persistence.utxo.UtxoTransactionReader
+import net.corda.ledger.libs.persistence.utxo.impl.UtxoPersistenceServiceImpl
 import net.corda.ledger.persistence.consensual.tests.datamodel.field
 import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFactoryImpl
 import net.corda.ledger.persistence.utxo.tests.datamodel.UtxoEntityFactory
@@ -95,7 +90,6 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.math.BigDecimal
-import java.nio.ByteBuffer
 import java.nio.file.Path
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
@@ -125,7 +119,7 @@ class UtxoPersistenceServiceImplTest {
     private lateinit var entityManagerFactory: EntityManagerFactory
     private lateinit var repository: UtxoRepository
     private lateinit var cpiInfoReadService: CpiInfoReadService
-    private lateinit var factoryRegistry: ContractStateVaultJsonFactoryRegistry
+    private lateinit var factoryRegistry: net.corda.ledger.libs.persistence.json.ContractStateVaultJsonFactoryRegistry
     private lateinit var filteredTransactionFactory: FilteredTransactionFactory
     private val emConfig = DbUtils.getEntityManagerConfiguration("ledger_db_for_test")
 
@@ -592,10 +586,10 @@ class UtxoPersistenceServiceImplTest {
     @Test
     fun `persist and find signed group parameter`() {
 
-        val signedGroupParameters = net.corda.ledger.libs.utxo.SignedGroupParameters(
+        val signedGroupParameters = net.corda.ledger.libs.persistence.utxo.SignedGroupParameters(
             ByteArray(1),
             SignatureWithKey(ByteArray(1), ByteArray(1)),
-            SignatureSpec("", null, null)
+            net.corda.ledger.libs.persistence.utxo.SignatureSpec("", null, null)
         )
         val hash = signedGroupParameters.groupParameters.hash(DigestAlgorithmName.SHA2_256).toString()
 

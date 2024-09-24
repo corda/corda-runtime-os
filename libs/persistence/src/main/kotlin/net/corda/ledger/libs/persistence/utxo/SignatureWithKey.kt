@@ -1,4 +1,4 @@
-package net.corda.ledger.libs.utxo
+package net.corda.ledger.libs.persistence.utxo
 
 data class SignatureWithKey(val publicKey: ByteArray, val bytes: ByteArray) {
     override fun equals(other: Any?): Boolean {

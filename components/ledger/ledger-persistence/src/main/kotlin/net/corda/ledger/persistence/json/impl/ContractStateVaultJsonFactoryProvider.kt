@@ -1,6 +1,5 @@
 package net.corda.ledger.persistence.json.impl
 
-import net.corda.ledger.libs.json.ContractStateVaultJsonFactoryRegistry
 import net.corda.sandbox.type.SandboxConstants
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandboxgroupcontext.CustomMetadataConsumer
@@ -23,8 +22,8 @@ import org.slf4j.LoggerFactory
     scope = ServiceScope.PROTOTYPE
 )
 class ContractStateVaultJsonFactoryProvider @Activate constructor(
-    @Reference(service = ContractStateVaultJsonFactoryRegistry::class)
-    private val factoryStorage: ContractStateVaultJsonFactoryRegistry,
+    @Reference(service = net.corda.ledger.libs.persistence.json.ContractStateVaultJsonFactoryRegistry::class)
+    private val factoryStorage: net.corda.ledger.libs.persistence.json.ContractStateVaultJsonFactoryRegistry,
 ) : UsedByPersistence, CustomMetadataConsumer {
 
     private companion object {

@@ -1,4 +1,4 @@
-package net.corda.ledger.libs.common
+package net.corda.ledger.libs.persistence.common
 
 import java.sql.SQLException
 import javax.persistence.Tuple

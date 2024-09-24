@@ -1,4 +1,4 @@
-package net.corda.ledger.libs.utxo.impl
+package net.corda.ledger.libs.persistence.utxo.impl
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup

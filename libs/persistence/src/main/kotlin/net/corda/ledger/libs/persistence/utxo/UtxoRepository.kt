@@ -1,4 +1,4 @@
-package net.corda.ledger.libs.utxo
+package net.corda.ledger.libs.persistence.utxo
 
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus

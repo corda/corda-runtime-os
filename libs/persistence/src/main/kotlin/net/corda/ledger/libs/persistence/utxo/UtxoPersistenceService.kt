@@ -1,9 +1,9 @@
-package net.corda.ledger.libs.utxo
+package net.corda.ledger.libs.persistence.utxo
 
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
-import net.corda.ledger.libs.common.InconsistentLedgerStateException
+import net.corda.ledger.libs.persistence.common.InconsistentLedgerStateException
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata

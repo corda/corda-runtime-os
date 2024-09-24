@@ -1,6 +1,6 @@
 @Export
 @QuasarIgnoreAllPackages
-package net.corda.ledger.libs.common;
+package net.corda.ledger.libs.persistence.utxo;
 
 import co.paralleluniverse.quasar.annotations.QuasarIgnoreAllPackages;
 import org.osgi.annotation.bundle.Export;

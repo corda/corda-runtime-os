@@ -3,7 +3,7 @@ package net.corda.ledger.persistence.utxo.impl.request.handlers
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.ResolveStateRefs
-import net.corda.ledger.libs.utxo.UtxoPersistenceService
+import net.corda.ledger.libs.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.utxo.UtxoOutputRecordFactory
 import net.corda.messaging.api.records.Record

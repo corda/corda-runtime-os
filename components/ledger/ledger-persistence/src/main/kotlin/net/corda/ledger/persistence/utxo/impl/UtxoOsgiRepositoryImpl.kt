@@ -2,9 +2,9 @@ package net.corda.ledger.persistence.utxo.impl
 
 import net.corda.db.core.utils.BatchPersistenceServiceImpl
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
-import net.corda.ledger.libs.utxo.UtxoRepository
-import net.corda.ledger.libs.utxo.impl.UtxoQueryProvider
-import net.corda.ledger.libs.utxo.impl.UtxoRespositoryImpl
+import net.corda.ledger.libs.persistence.utxo.UtxoRepository
+import net.corda.ledger.libs.persistence.utxo.impl.UtxoQueryProvider
+import net.corda.ledger.libs.persistence.utxo.impl.UtxoRespositoryImpl
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.application.serialization.SerializationService

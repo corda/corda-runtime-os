@@ -1,7 +1,7 @@
 package net.corda.ledger.persistence.utxo.impl
 
-import net.corda.ledger.libs.utxo.impl.PostgresUtxoQueryProvider
-import net.corda.ledger.libs.utxo.impl.UtxoQueryProvider
+import net.corda.ledger.libs.persistence.utxo.impl.PostgresUtxoQueryProvider
+import net.corda.ledger.libs.persistence.utxo.impl.UtxoQueryProvider
 import net.corda.orm.DatabaseTypeProvider
 import net.corda.orm.DatabaseTypeProvider.Companion.POSTGRES_TYPE_FILTER
 import net.corda.utilities.debug

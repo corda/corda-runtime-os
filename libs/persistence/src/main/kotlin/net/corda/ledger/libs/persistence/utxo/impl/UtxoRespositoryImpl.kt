@@ -1,4 +1,4 @@
-package net.corda.ledger.libs.utxo.impl
+package net.corda.ledger.libs.persistence.utxo.impl
 
 import net.corda.crypto.core.parseSecureHash
 import net.corda.db.core.utils.BatchPersistenceService
@@ -6,11 +6,10 @@ import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
-import net.corda.ledger.libs.common.mapToComponentGroups
-import net.corda.ledger.libs.utxo.SignatureSpec
-import net.corda.ledger.libs.utxo.SignatureWithKey
-import net.corda.ledger.libs.utxo.SignedGroupParameters
-import net.corda.ledger.libs.utxo.UtxoRepository
+import net.corda.ledger.libs.persistence.common.mapToComponentGroups
+import net.corda.ledger.libs.persistence.utxo.SignatureWithKey
+import net.corda.ledger.libs.persistence.utxo.SignedGroupParameters
+import net.corda.ledger.libs.persistence.utxo.UtxoRepository
 import net.corda.ledger.utxo.data.transaction.MerkleProofDto
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoFilteredTransactionDto
@@ -411,7 +410,7 @@ class UtxoRespositoryImpl(
                         r.get(1) as ByteArray,
                         r.get(2) as ByteArray
                     ),
-                    SignatureSpec((r.get(3) as String), null, null)
+                    net.corda.ledger.libs.persistence.utxo.SignatureSpec((r.get(3) as String), null, null)
                 )
             }
             .singleOrNull()
