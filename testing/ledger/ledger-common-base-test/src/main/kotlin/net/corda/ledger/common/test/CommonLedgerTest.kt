@@ -4,7 +4,7 @@ import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
-import net.corda.common.json.validation.impl.JsonValidatorImpl
+import net.corda.common.json.validation.impl.JsonValidatorOsgiImpl
 import net.corda.crypto.cipher.suite.merkle.MerkleProofProvider
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.flow.application.crypto.SignatureSpecServiceImpl
@@ -42,7 +42,7 @@ abstract class CommonLedgerTest {
 
     val jsonMarshallingService = JsonMarshallingServiceImpl(mock<MerkleProofProvider>{})
 
-    val jsonValidator = JsonValidatorImpl()
+    val jsonValidator = JsonValidatorOsgiImpl()
 
     val wireTransactionFactory = WireTransactionFactoryImpl(
         merkleTreeProvider, digestService, jsonMarshallingService, jsonValidator

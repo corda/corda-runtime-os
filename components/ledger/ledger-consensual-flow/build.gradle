@@ -31,7 +31,7 @@ dependencies {
     implementation project(':libs:ledger:ledger-consensual-data')
     implementation project(':libs:ledger:ledger-common-data')
     implementation project(":libs:serialization:json-validator")
-    implementation project(":libs:serialization:json-validator-common")
+    implementation project(":libs:serialization:json-validator-lib")
     implementation project(':libs:serialization:serialization-checkpoint-api')
     implementation project(':libs:serialization:serialization-internal')
     implementation project(':libs:utilities')

@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-publishing'
 }
 
-description 'JSON schema validation and canonicalisation'
+description 'JSON Validator OSGi Impl'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
@@ -11,8 +11,8 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':libs:sandbox-types')
-    implementation project(':libs:serialization:json-validator-common')
-    implementation project(':libs:serialization:json-validator-common-impl')
+    implementation project(':libs:serialization:json-validator-lib')
+    implementation project(':libs:serialization:json-validator-lib-impl')
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-serialization'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'

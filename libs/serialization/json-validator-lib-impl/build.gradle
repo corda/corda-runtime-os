@@ -4,7 +4,7 @@ plugins {
     id 'corda.common-publishing'
 }
 
-description 'JSON validator Impl'
+description 'JSON Validator Lib Impl'
 
 configurations {
     bundle {
@@ -19,7 +19,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    implementation project(":libs:serialization:json-validator-common")
+    implementation project(":libs:serialization:json-validator-lib")
     implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
     implementation 'org.jetbrains.kotlin:kotlin-stdlib'
     implementation "io.github.erdtman:java-json-canonicalization:$jsonCanonicalizerVersion"
@@ -32,12 +32,12 @@ dependencies {
 }
 
 def jar = tasks.named('jar', Jar) {
-    archiveBaseName = 'corda-json-validator-common-impl'
+    archiveBaseName = 'corda-json-validator-lib-impl'
 
     bundle {
         bnd """\
-Bundle-Name: Corda JSON validator
-Bundle-SymbolicName: \${project.group}.json-validator-common-impl
+Bundle-Name: Corda JSON Validator Lib Impl
+Bundle-SymbolicName: \${project.group}.json-validator-lib-impl
 Import-Package:\
     !org.apache.hadoop.io.compress,\
     sun.misc;resolution:=optional,\

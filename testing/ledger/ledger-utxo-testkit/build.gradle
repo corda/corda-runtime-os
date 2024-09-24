@@ -15,7 +15,7 @@ dependencies {
     implementation project(':libs:ledger:ledger-common-data')
     implementation project(':libs:ledger:ledger-utxo-data')
     implementation project(':libs:serialization:json-validator')
-    implementation project(':libs:serialization:json-validator-common')
+    implementation project(':libs:serialization:json-validator-lib')
     implementation project(':testing:ledger:ledger-common-testkit')
     api project(':testing:ledger:ledger-common-base-integration-test')
 }

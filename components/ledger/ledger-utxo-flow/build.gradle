@@ -44,7 +44,7 @@ dependencies {
     implementation project(':libs:platform-info')
     implementation project(':libs:sandbox')
     implementation project(':libs:serialization:json-validator')
-    implementation project(':libs:serialization:json-validator-common')
+    implementation project(':libs:serialization:json-validator-lib')
     implementation project(':libs:serialization:serialization-avro')
     implementation project(':libs:serialization:serialization-checkpoint-api')
     implementation project(':libs:serialization:serialization-internal')

@@ -1,4 +1,4 @@
-package net.corda.common.json.validation.impl
+package net.corda.libs.json.validator.impl
 
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow

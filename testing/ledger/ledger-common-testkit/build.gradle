@@ -17,6 +17,6 @@ dependencies {
     api project(':libs:application:application-impl')
     api project(':libs:platform-info')
     api project(":libs:serialization:json-validator")
-    api project(":libs:serialization:json-validator-common")
+    api project(":libs:serialization:json-validator-lib")
     runtimeOnly project(':testing:ledger:ledger-hsqldb')
 }

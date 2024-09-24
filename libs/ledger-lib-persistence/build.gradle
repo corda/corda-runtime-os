@@ -22,7 +22,7 @@ dependencies {
     implementation project(":libs:db:db-core")
     implementation project(":libs:db:db-orm")
     implementation project(":libs:utilities")
-    implementation project(":libs:serialization:json-validator-common")
+    implementation project(":libs:serialization:json-validator-lib")
 
     // TODO This might not be needed if code is refactored so that WireTransactionSerializer is not used and
     //  WireTransaction's ID is sent over wire (doesn't need to be calculated using MerkleTreeFactory)
