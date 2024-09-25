@@ -25,5 +25,5 @@ dependencies {
     cordaProvided libs.slf4j.api
     // We use version 2.10.9 here, and version 2.10.10 in CPK One, to show that multiple versions of a library can
     // co-exist in a sandbox group.
-    implementation 'joda-time:joda-time:2.10.9'
+    implementation 'joda-time:joda-time:2.13.0'
 }
