@@ -1,6 +1,6 @@
 package net.corda.ledger.utxo.testkit
 
-import net.corda.common.json.validation.JsonValidator
+import net.corda.libs.json.validator.JsonValidator
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal

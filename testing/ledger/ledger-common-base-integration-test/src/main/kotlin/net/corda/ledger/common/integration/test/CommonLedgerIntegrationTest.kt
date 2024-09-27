@@ -1,6 +1,6 @@
 package net.corda.ledger.common.integration.test
 
-import net.corda.common.json.validation.JsonValidator
+import net.corda.libs.json.validator.JsonValidator
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT

@@ -1,6 +1,5 @@
 package net.corda.ledger.consensual.flow.impl.transaction.factory
 
-import net.corda.common.json.validation.JsonValidator
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
@@ -14,6 +13,7 @@ import net.corda.ledger.consensual.data.transaction.consensualComponentGroupStru
 import net.corda.ledger.consensual.data.transaction.verifier.verifyMetadata
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.verifier.ConsensualLedgerTransactionVerifier
+import net.corda.libs.json.validator.JsonValidator
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata

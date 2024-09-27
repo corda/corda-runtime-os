@@ -1,11 +1,7 @@
 package net.corda.ledger.persistence.utxo.tests
 
-import net.corda.common.json.validation.JsonValidator
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.SecureHashImpl
-import net.corda.data.crypto.wire.CryptoSignatureSpec
-import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.membership.SignedGroupParameters
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.PrivacySalt
@@ -26,14 +22,17 @@ import net.corda.ledger.common.testkit.cpiPackageSummaryExample
 import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
 import net.corda.ledger.common.testkit.getPrivacySalt
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
+import net.corda.ledger.libs.persistence.json.ContractStateVaultJsonFactoryRegistry
+import net.corda.ledger.libs.persistence.utxo.CustomRepresentation
+import net.corda.ledger.libs.persistence.utxo.SignatureSpec
+import net.corda.ledger.libs.persistence.utxo.SignatureWithKey
+import net.corda.ledger.libs.persistence.utxo.SignedGroupParameters
+import net.corda.ledger.libs.persistence.utxo.UtxoPersistenceService
+import net.corda.ledger.libs.persistence.utxo.UtxoRepository
+import net.corda.ledger.libs.persistence.utxo.UtxoTransactionReader
+import net.corda.ledger.libs.persistence.utxo.impl.UtxoPersistenceServiceImpl
 import net.corda.ledger.persistence.consensual.tests.datamodel.field
-import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryRegistry
 import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFactoryImpl
-import net.corda.ledger.persistence.utxo.CustomRepresentation
-import net.corda.ledger.persistence.utxo.UtxoPersistenceService
-import net.corda.ledger.persistence.utxo.UtxoRepository
-import net.corda.ledger.persistence.utxo.UtxoTransactionReader
-import net.corda.ledger.persistence.utxo.impl.UtxoPersistenceServiceImpl
 import net.corda.ledger.persistence.utxo.tests.datamodel.UtxoEntityFactory
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
@@ -45,6 +44,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.utxoComponentGroupStructure
+import net.corda.libs.json.validator.JsonValidator
 import net.corda.libs.packaging.hash
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.getEntityManagerFactory
@@ -93,7 +93,6 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.math.BigDecimal
-import java.nio.ByteBuffer
 import java.nio.file.Path
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
@@ -590,28 +589,25 @@ class UtxoPersistenceServiceImplTest {
     @Test
     fun `persist and find signed group parameter`() {
         val signedGroupParameters = SignedGroupParameters(
-            ByteBuffer.wrap(ByteArray(1)),
-            CryptoSignatureWithKey(
-                ByteBuffer.wrap(ByteArray(1)),
-                ByteBuffer.wrap(ByteArray(1))
-            ),
-            CryptoSignatureSpec("", null, null)
+            ByteArray(1),
+            SignatureWithKey(ByteArray(1), ByteArray(1)),
+            SignatureSpec("", null, null)
         )
-
-        val hash = signedGroupParameters.groupParameters.array().hash(DigestAlgorithmName.SHA2_256).toString()
+        val hash = signedGroupParameters.groupParameters.hash(DigestAlgorithmName.SHA2_256).toString()
 
         persistenceService.persistSignedGroupParametersIfDoNotExist(signedGroupParameters)
 
         val persistedSignedGroupParameters = persistenceService.findSignedGroupParameters(hash)
 
+        // Compare byte arrays using contentEquals instead of toString()
         assertThat(
-            persistedSignedGroupParameters?.mgmSignature?.publicKey.toString()
-        )
-            .isEqualTo(signedGroupParameters.mgmSignature?.publicKey.toString())
+            persistedSignedGroupParameters?.mgmSignature?.publicKey?.contentEquals(signedGroupParameters.mgmSignature.publicKey)
+        ).isTrue() // this will check if the byte arrays have the same content
+
+        // Compare signature spec directly (you can use toString() if it's a standard POJO)
         assertThat(
             persistedSignedGroupParameters?.mgmSignatureSpec.toString()
-        )
-            .isEqualTo(signedGroupParameters.mgmSignatureSpec.toString())
+        ).isEqualTo(signedGroupParameters.mgmSignatureSpec.toString())
     }
 
     @Test

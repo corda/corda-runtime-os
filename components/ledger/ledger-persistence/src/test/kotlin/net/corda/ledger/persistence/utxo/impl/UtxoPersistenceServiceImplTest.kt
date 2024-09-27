@@ -8,12 +8,13 @@ import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.persistence.json.DefaultContractStateVaultJsonFactory
+import net.corda.ledger.libs.persistence.json.DefaultContractStateVaultJsonFactory
+import net.corda.ledger.libs.persistence.utxo.CustomRepresentation
+import net.corda.ledger.libs.persistence.utxo.UtxoRepository
+import net.corda.ledger.libs.persistence.utxo.UtxoTransactionReader
+import net.corda.ledger.libs.persistence.utxo.impl.UtxoPersistenceServiceImpl
 import net.corda.ledger.persistence.json.impl.ContractStateVaultJsonFactoryRegistryImpl
 import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFactoryImpl
-import net.corda.ledger.persistence.utxo.CustomRepresentation
-import net.corda.ledger.persistence.utxo.UtxoRepository
-import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.marshalling.JsonMarshallingService

@@ -1,0 +1,32 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Corda persistence library'
+
+ext.cordaEnableFormatting = true
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation project(':libs:crypto:crypto-core')
+    implementation project(':libs:ledger:ledger-common-data')
+    implementation project(':libs:ledger:ledger-utxo-data')
+    implementation project(":libs:db:db-core")
+    implementation project(":libs:db:db-orm")
+    implementation project(":libs:utilities")
+    implementation project(":libs:serialization:json-validator-lib")
+
+    runtimeOnly project(':libs:crypto:merkle-impl')
+
+    implementation 'net.corda:corda-ledger-common'
+    implementation 'net.corda:corda-ledger-utxo'
+    implementation libs.slf4j.api
+    implementation "org.hibernate:hibernate-core:$hibernateVersion"
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib'
+    implementation libs.jackson.core
+}
