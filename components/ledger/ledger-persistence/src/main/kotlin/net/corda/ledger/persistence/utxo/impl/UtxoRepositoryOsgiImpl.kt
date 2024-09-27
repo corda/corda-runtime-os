@@ -4,7 +4,7 @@ import net.corda.db.core.utils.BatchPersistenceServiceImpl
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.libs.persistence.utxo.UtxoRepository
 import net.corda.ledger.libs.persistence.utxo.impl.UtxoQueryProvider
-import net.corda.ledger.libs.persistence.utxo.impl.UtxoRespositoryImpl
+import net.corda.ledger.libs.persistence.utxo.impl.UtxoRepositoryImpl
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.application.serialization.SerializationService
@@ -34,5 +34,5 @@ class UtxoRepositoryOsgiImpl(delegate: UtxoRepository) : UtxoRepository by deleg
         wireTransactionFactory: WireTransactionFactory,
         @Reference(service = UtxoQueryProvider::class)
         queryProvider: UtxoQueryProvider
-    ) : this(UtxoRespositoryImpl(BatchPersistenceServiceImpl(), serializationService, wireTransactionFactory, queryProvider))
+    ) : this(UtxoRepositoryImpl(BatchPersistenceServiceImpl(), serializationService, wireTransactionFactory, queryProvider))
 }

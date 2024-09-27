@@ -22,8 +22,11 @@ import net.corda.ledger.common.testkit.cpiPackageSummaryExample
 import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
 import net.corda.ledger.common.testkit.getPrivacySalt
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
+import net.corda.ledger.libs.persistence.json.ContractStateVaultJsonFactoryRegistry
 import net.corda.ledger.libs.persistence.utxo.CustomRepresentation
+import net.corda.ledger.libs.persistence.utxo.SignatureSpec
 import net.corda.ledger.libs.persistence.utxo.SignatureWithKey
+import net.corda.ledger.libs.persistence.utxo.SignedGroupParameters
 import net.corda.ledger.libs.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.libs.persistence.utxo.UtxoRepository
 import net.corda.ledger.libs.persistence.utxo.UtxoTransactionReader
@@ -119,7 +122,7 @@ class UtxoPersistenceServiceImplTest {
     private lateinit var entityManagerFactory: EntityManagerFactory
     private lateinit var repository: UtxoRepository
     private lateinit var cpiInfoReadService: CpiInfoReadService
-    private lateinit var factoryRegistry: net.corda.ledger.libs.persistence.json.ContractStateVaultJsonFactoryRegistry
+    private lateinit var factoryRegistry: ContractStateVaultJsonFactoryRegistry
     private lateinit var filteredTransactionFactory: FilteredTransactionFactory
     private val emConfig = DbUtils.getEntityManagerConfiguration("ledger_db_for_test")
 
@@ -585,10 +588,10 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `persist and find signed group parameter`() {
-        val signedGroupParameters = net.corda.ledger.libs.persistence.utxo.SignedGroupParameters(
+        val signedGroupParameters = SignedGroupParameters(
             ByteArray(1),
             SignatureWithKey(ByteArray(1), ByteArray(1)),
-            net.corda.ledger.libs.persistence.utxo.SignatureSpec("", null, null)
+            SignatureSpec("", null, null)
         )
         val hash = signedGroupParameters.groupParameters.hash(DigestAlgorithmName.SHA2_256).toString()
 

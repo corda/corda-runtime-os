@@ -7,6 +7,7 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.libs.persistence.common.mapToComponentGroups
+import net.corda.ledger.libs.persistence.utxo.SignatureSpec
 import net.corda.ledger.libs.persistence.utxo.SignatureWithKey
 import net.corda.ledger.libs.persistence.utxo.SignedGroupParameters
 import net.corda.ledger.libs.persistence.utxo.UtxoRepository
@@ -33,7 +34,7 @@ import javax.persistence.Query
 import javax.persistence.Tuple
 
 @Suppress("TooManyFunctions")
-class UtxoRespositoryImpl(
+class UtxoRepositoryImpl(
     private val batchPersistenceService: BatchPersistenceService,
     private val serializationService: SerializationService,
     private val wireTransactionFactory: WireTransactionFactory,
@@ -410,7 +411,7 @@ class UtxoRespositoryImpl(
                         r.get(1) as ByteArray,
                         r.get(2) as ByteArray
                     ),
-                    net.corda.ledger.libs.persistence.utxo.SignatureSpec((r.get(3) as String), null, null)
+                    SignatureSpec((r.get(3) as String), null, null)
                 )
             }
             .singleOrNull()
