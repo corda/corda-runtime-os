@@ -1,0 +1,37 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Corda Ledger UXTO Flow library'
+
+ext.cordaEnableFormatting = true
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation project(':libs:ledger:ledger-common-data')
+    implementation project(':libs:ledger:ledger-utxo-data')
+    implementation project(':libs:ledger:ledger-utxo-transaction-verifier')
+
+    //Should we rename components:ledger:ledger-common-flow-api to libs:ledger:ledger-common-flow-api etc.
+    implementation project(':components:ledger:ledger-common-flow-api')
+    implementation project(':components:ledger:ledger-common-flow')
+
+    //This will be removed in a future commit
+    implementation project(':libs:membership:membership-common')
+    //This will be removed in a future commit
+    implementation project(':libs:flows:flow-api')
+    //This will be removed in a future commit
+    implementation project(':libs:serialization:json-validator')
+    implementation project(':libs:serialization:json-validator-lib')
+    //This will be removed in a future commit
+    implementation project(':libs:virtual-node:sandbox-group-context')
+
+    implementation 'net.corda:corda-ledger-utxo'
+    implementation 'net.corda:corda-base'
+
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib'
+}

@@ -1,8 +1,9 @@
 package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
 import net.corda.ledger.common.testkit.publicKeyExample
-import net.corda.ledger.utxo.flow.impl.transaction.ContractStateAndEncumbranceTag
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
+import net.corda.ledger.lib.utxo.flow.impl.transaction.ContractStateAndEncumbranceTag
+import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
+import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.UtxoTransactionBuilderVerifier
 import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState

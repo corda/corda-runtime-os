@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
 import net.corda.ledger.common.flow.transaction.TransactionSignatureVerificationServiceInternal
+import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.NotarySignatureVerificationServiceInternal
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByVerification
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata

@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.flow.impl.persistence
 import io.micrometer.core.instrument.Timer
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.fiber.metrics.recordSuspendable
+import net.corda.ledger.lib.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindGroupParameters
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.PersistSignedGroupParametersIfDoNotExist
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedGroupParametersExternalEventFactory
