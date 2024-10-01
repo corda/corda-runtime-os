@@ -12,13 +12,13 @@ import net.corda.ledger.lib.utxo.flow.impl.groupparameters.SignedGroupParameters
 import net.corda.ledger.lib.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.lib.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.impl.UtxoLedgerTransactionFactoryImpl
-import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.impl.UtxoSignedTransactionFactoryImpl
 import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.NotarySignatureVerificationServiceInternal
 import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerServiceImpl
 import net.corda.ledger.utxo.flow.impl.notary.PluggableNotaryService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
+import net.corda.ledger.utxo.flow.impl.transaction.factory.impl.UtxoSignedTransactionFactoryOsgiImpl
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactoryImpl
 import net.corda.ledger.utxo.flow.impl.transaction.serializer.amqp.UtxoSignedTransactionSerializer
 import net.corda.ledger.utxo.flow.impl.transaction.serializer.kryo.UtxoSignedTransactionKryoSerializer
@@ -77,7 +77,7 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         mockUtxoLedgerGroupParametersPersistenceService,
         mockGroupParametersLookup
     )
-    val utxoSignedTransactionFactory = UtxoSignedTransactionFactoryImpl(
+    val utxoSignedTransactionFactory = UtxoSignedTransactionFactoryOsgiImpl(
         currentSandboxGroupContext,
         jsonMarshallingService,
         jsonValidator,

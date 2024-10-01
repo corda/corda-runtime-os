@@ -64,7 +64,6 @@ class UtxoSignedTransactionFactoryOsgiImpl(
         privacySaltProviderService: PrivacySaltProviderService
     ) : this(
         UtxoSignedTransactionFactoryImpl(
-            currentSandboxGroupContext,
             jsonMarshallingService,
             jsonValidator,
             serializationService,
@@ -77,7 +76,8 @@ class UtxoSignedTransactionFactoryOsgiImpl(
             groupParametersLookup,
             signedGroupParametersVerifier,
             notarySignatureVerificationService,
-            privacySaltProviderService
+            privacySaltProviderService,
+            getEvolvableTag = { tag -> currentSandboxGroupContext.get().sandboxGroup.getEvolvableTag(tag) }
         )
     )
 }

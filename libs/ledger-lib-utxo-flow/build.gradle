@@ -27,8 +27,6 @@ dependencies {
     //This will be removed in a future commit
     implementation project(':libs:serialization:json-validator')
     implementation project(':libs:serialization:json-validator-lib')
-    //This will be removed in a future commit
-    implementation project(':libs:virtual-node:sandbox-group-context')
 
     implementation 'net.corda:corda-ledger-utxo'
     implementation 'net.corda:corda-base'
