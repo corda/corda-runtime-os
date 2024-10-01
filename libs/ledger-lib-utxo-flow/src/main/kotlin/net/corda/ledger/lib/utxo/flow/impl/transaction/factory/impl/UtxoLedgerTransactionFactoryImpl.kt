@@ -11,21 +11,19 @@ import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
-import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.membership.GroupParameters
-import net.corda.v5.serialization.SingletonSerializeAsToken
 
 class UtxoLedgerTransactionFactoryImpl(
     private val serializationService: SerializationService,
     private val utxoLedgerStateQueryService: UtxoLedgerStateQueryService,
     private val utxoLedgerGroupParametersPersistenceService: UtxoLedgerGroupParametersPersistenceService,
     private val groupParametersLookup: GroupParametersLookupInternal
-) : UtxoLedgerTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
+) : UtxoLedgerTransactionFactory {
 
     @Suspendable
     override fun create(
