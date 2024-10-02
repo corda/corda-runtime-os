@@ -8,16 +8,16 @@ import net.corda.ledger.common.data.transaction.filtered.factory.impl.FilteredTr
 import net.corda.ledger.common.test.CommonLedgerTest
 import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.common.testkit.publicKeyExample
-import net.corda.ledger.lib.utxo.flow.impl.groupparameters.SignedGroupParametersVerifier
-import net.corda.ledger.lib.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
+import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.ledger.lib.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
-import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.impl.UtxoLedgerTransactionFactoryImpl
 import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.NotarySignatureVerificationServiceInternal
 import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerServiceImpl
 import net.corda.ledger.utxo.flow.impl.notary.PluggableNotaryService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
+import net.corda.ledger.utxo.flow.impl.transaction.factory.impl.UtxoLedgerTransactionFactoryOsgiImpl
 import net.corda.ledger.utxo.flow.impl.transaction.factory.impl.UtxoSignedTransactionFactoryOsgiImpl
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactoryImpl
 import net.corda.ledger.utxo.flow.impl.transaction.serializer.amqp.UtxoSignedTransactionSerializer
@@ -71,7 +71,7 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
             mock()
         ), serializationServiceWithWireTx
     )
-    private val utxoLedgerTransactionFactory = UtxoLedgerTransactionFactoryImpl(
+    private val utxoLedgerTransactionFactory = UtxoLedgerTransactionFactoryOsgiImpl(
         serializationServiceWithWireTx,
         mockUtxoLedgerStateQueryService,
         mockUtxoLedgerGroupParametersPersistenceService,

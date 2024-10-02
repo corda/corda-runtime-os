@@ -12,8 +12,6 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.testkit.publicKeyExample
-import net.corda.ledger.lib.utxo.flow.impl.groupparameters.SignedGroupParametersVerifier
-import net.corda.ledger.lib.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
@@ -26,6 +24,8 @@ import net.corda.ledger.utxo.data.transaction.verifyFilteredTransactionAndSignat
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityPayload
+import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindUnconsumedStatesByTypeExternalEventFactoryTest.TestContractState
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.TransactionVerificationException

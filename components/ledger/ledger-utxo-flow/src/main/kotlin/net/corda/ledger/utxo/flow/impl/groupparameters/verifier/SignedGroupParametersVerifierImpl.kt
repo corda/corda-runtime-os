@@ -3,7 +3,6 @@ package net.corda.ledger.utxo.flow.impl.groupparameters.verifier
 import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.flow.application.GroupParametersLookupInternal
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
-import net.corda.ledger.lib.utxo.flow.impl.groupparameters.SignedGroupParametersVerifier
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow

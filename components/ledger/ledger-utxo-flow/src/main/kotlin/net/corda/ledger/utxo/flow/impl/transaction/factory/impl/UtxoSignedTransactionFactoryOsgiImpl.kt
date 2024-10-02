@@ -1,17 +1,18 @@
 package net.corda.ledger.utxo.flow.impl.transaction.factory.impl
 
 import net.corda.flow.application.GroupParametersLookupInternal
+import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.flow.transaction.PrivacySaltProviderService
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
-import net.corda.ledger.lib.utxo.flow.impl.groupparameters.SignedGroupParametersVerifier
-import net.corda.ledger.lib.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.impl.UtxoSignedTransactionFactoryImpl
 import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.NotarySignatureVerificationServiceInternal
 import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
+import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.libs.json.validator.JsonValidator
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -72,12 +73,17 @@ class UtxoSignedTransactionFactoryOsgiImpl(
             wireTransactionFactory,
             utxoLedgerTransactionFactory,
             utxoLedgerTransactionVerificationService,
-            utxoLedgerGroupParametersPersistenceService,
-            groupParametersLookup,
-            signedGroupParametersVerifier,
             notarySignatureVerificationService,
             privacySaltProviderService,
-            getEvolvableTag = { tag -> currentSandboxGroupContext.get().sandboxGroup.getEvolvableTag(tag) }
+            getEvolvableTag = { tag -> currentSandboxGroupContext.get().sandboxGroup.getEvolvableTag(tag) },
+            getExtraMetadata = {
+                val signedGroupParameters = groupParametersLookup.currentGroupParameters
+                signedGroupParametersVerifier.verifySignature(signedGroupParameters)
+                utxoLedgerGroupParametersPersistenceService.persistIfDoesNotExist(signedGroupParameters)
+                return@UtxoSignedTransactionFactoryImpl mapOf<String, Any>(
+                    TransactionMetadataImpl.MEMBERSHIP_GROUP_PARAMETERS_HASH_KEY to signedGroupParameters.hash.toString()
+                )
+            }
         )
     )
 }

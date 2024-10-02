@@ -4,11 +4,11 @@ import io.micrometer.core.instrument.Timer
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.fiber.metrics.recordSuspendable
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
-import net.corda.ledger.lib.utxo.flow.impl.groupparameters.SignedGroupParametersVerifier
 import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
+import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.metrics.CordaMetrics
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE

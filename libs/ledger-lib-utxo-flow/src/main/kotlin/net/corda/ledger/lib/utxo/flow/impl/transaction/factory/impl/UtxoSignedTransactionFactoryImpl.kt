@@ -1,14 +1,11 @@
 package net.corda.ledger.lib.utxo.flow.impl.transaction.factory.impl
 
-import net.corda.flow.application.GroupParametersLookupInternal
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.flow.transaction.PrivacySaltProviderService
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
-import net.corda.ledger.lib.utxo.flow.impl.groupparameters.SignedGroupParametersVerifier
-import net.corda.ledger.lib.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
@@ -23,7 +20,6 @@ import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
 import net.corda.ledger.utxo.data.transaction.utxoComponentGroupStructure
 import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
 import net.corda.libs.json.validator.JsonValidator
-import net.corda.membership.lib.SignedGroupParameters
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
@@ -43,12 +39,10 @@ class UtxoSignedTransactionFactoryImpl(
     private val wireTransactionFactory: WireTransactionFactory,
     private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
     private val utxoLedgerTransactionVerificationService: UtxoLedgerTransactionVerificationService,
-    private val utxoLedgerGroupParametersPersistenceService: UtxoLedgerGroupParametersPersistenceService,
-    private val groupParametersLookup: GroupParametersLookupInternal,
-    private val signedGroupParametersVerifier: SignedGroupParametersVerifier,
     private val notarySignatureVerificationService: NotarySignatureVerificationServiceInternal,
     private val privacySaltProviderService: PrivacySaltProviderService,
-    private val getEvolvableTag: (klass: Class<*>) -> String
+    private val getEvolvableTag: (klass: Class<*>) -> String,
+    private val getExtraMetadata: () -> Map<String, Any>
 ) : UtxoSignedTransactionFactory {
 
     @Suspendable
@@ -56,7 +50,7 @@ class UtxoSignedTransactionFactoryImpl(
         utxoTransactionBuilder: UtxoTransactionBuilderInternal,
         signatories: Iterable<PublicKey>
     ): UtxoSignedTransactionInternal {
-        val utxoMetadata = utxoMetadata()
+        val utxoMetadata = utxoMetadata() + getExtraMetadata()
         val metadata = transactionMetadataFactory.create(utxoMetadata)
 
         verifyMetadata(metadata)
@@ -97,21 +91,12 @@ class UtxoSignedTransactionFactoryImpl(
     )
 
     @Suspendable
-    private fun utxoMetadata() = mapOf(
+    private fun utxoMetadata() = mapOf<String, Any>(
         TransactionMetadataImpl.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.name,
         TransactionMetadataImpl.LEDGER_VERSION_KEY to UtxoTransactionMetadata.LEDGER_VERSION,
         TransactionMetadataImpl.TRANSACTION_SUBTYPE_KEY to UtxoTransactionMetadata.TransactionSubtype.GENERAL,
         TransactionMetadataImpl.COMPONENT_GROUPS_KEY to utxoComponentGroupStructure,
-        TransactionMetadataImpl.MEMBERSHIP_GROUP_PARAMETERS_HASH_KEY to getAndPersistCurrentMgmGroupParameters().hash.toString()
     )
-
-    @Suspendable
-    private fun getAndPersistCurrentMgmGroupParameters(): SignedGroupParameters {
-        val signedGroupParameters = groupParametersLookup.currentGroupParameters
-        signedGroupParametersVerifier.verifySignature(signedGroupParameters)
-        utxoLedgerGroupParametersPersistenceService.persistIfDoesNotExist(signedGroupParameters)
-        return signedGroupParameters
-    }
 
     private fun serializeMetadata(metadata: TransactionMetadata): ByteArray {
         return jsonValidator.canonicalize(jsonMarshallingService.format(metadata)).toByteArray()

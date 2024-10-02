@@ -1,4 +1,4 @@
-package net.corda.ledger.lib.utxo.flow.impl.persistence
+package net.corda.ledger.utxo.flow.impl.persistence
 
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.v5.application.persistence.CordaPersistenceException

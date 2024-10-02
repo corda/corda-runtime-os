@@ -21,10 +21,6 @@ dependencies {
     implementation project(':components:ledger:ledger-common-flow')
 
     //This will be removed in a future commit
-    implementation project(':libs:membership:membership-common')
-    //This will be removed in a future commit
-    implementation project(':libs:flows:flow-api')
-    //This will be removed in a future commit
     implementation project(':libs:serialization:json-validator')
     implementation project(':libs:serialization:json-validator-lib')
 
