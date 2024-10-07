@@ -13,16 +13,19 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
+import java.security.PublicKey
+import java.time.Instant
+import java.util.Objects
 
 @Suppress("TooManyFunctions", "LongParameterList")
 class UtxoTransactionBuilderImpl(
     private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
     private val notaryLookup: NotaryLookup,
     private var notaryName: MemberX500Name? = null,
-    private var notaryKey: java.security.PublicKey? = null,
+    private var notaryKey: PublicKey? = null,
     override var timeWindow: TimeWindow? = null,
     override val commands: MutableList<Command> = mutableListOf(),
-    override val signatories: MutableList<java.security.PublicKey> = mutableListOf(),
+    override val signatories: MutableList<PublicKey> = mutableListOf(),
     override val inputStateRefs: MutableList<StateRef> = mutableListOf(),
     override val referenceStateRefs: MutableList<StateRef> = mutableListOf(),
     override val outputStates: MutableList<ContractStateAndEncumbranceTag> = mutableListOf()
@@ -35,7 +38,7 @@ class UtxoTransactionBuilderImpl(
         return this
     }
 
-    override fun addSignatories(signatories: Iterable<java.security.PublicKey>): UtxoTransactionBuilder {
+    override fun addSignatories(signatories: Iterable<PublicKey>): UtxoTransactionBuilder {
         require(
             this.signatories.intersect(signatories.toSet()).isEmpty() &&
                 signatories.distinct().size == signatories.count()
@@ -46,7 +49,7 @@ class UtxoTransactionBuilderImpl(
         return this
     }
 
-    override fun addSignatories(vararg signatories: java.security.PublicKey): UtxoTransactionBuilder {
+    override fun addSignatories(vararg signatories: PublicKey): UtxoTransactionBuilder {
         return addSignatories(signatories.toList())
     }
 
@@ -147,16 +150,16 @@ class UtxoTransactionBuilderImpl(
         return this
     }
 
-    override fun getNotaryKey(): java.security.PublicKey? {
+    override fun getNotaryKey(): PublicKey? {
         return notaryKey
     }
 
-    override fun setTimeWindowUntil(until: java.time.Instant): UtxoTransactionBuilder {
+    override fun setTimeWindowUntil(until: Instant): UtxoTransactionBuilder {
         this.timeWindow = TimeWindowUntilImpl(until)
         return this
     }
 
-    override fun setTimeWindowBetween(from: java.time.Instant, until: java.time.Instant): UtxoTransactionBuilder {
+    override fun setTimeWindowBetween(from: Instant, until: Instant): UtxoTransactionBuilder {
         this.timeWindow = TimeWindowBetweenImpl(from, until)
         return this
     }
@@ -206,7 +209,7 @@ class UtxoTransactionBuilderImpl(
             other.signatories == signatories
     }
 
-    override fun hashCode(): Int = java.util.Objects.hash(
+    override fun hashCode(): Int = Objects.hash(
         notaryName,
         notaryKey,
         timeWindow,
@@ -254,7 +257,7 @@ class UtxoTransactionBuilderImpl(
         )
     }
 
-    private fun lookUpNotaryKey(notaryName: MemberX500Name?): java.security.PublicKey? {
+    private fun lookUpNotaryKey(notaryName: MemberX500Name?): PublicKey? {
         if (notaryName == null) {
             return null
         }

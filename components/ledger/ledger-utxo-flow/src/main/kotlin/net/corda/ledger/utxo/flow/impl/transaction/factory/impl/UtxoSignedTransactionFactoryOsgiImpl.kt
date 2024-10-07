@@ -18,6 +18,7 @@ import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -76,11 +77,11 @@ class UtxoSignedTransactionFactoryOsgiImpl(
             notarySignatureVerificationService,
             privacySaltProviderService,
             getEvolvableTag = { tag -> currentSandboxGroupContext.get().sandboxGroup.getEvolvableTag(tag) },
-            getExtraMetadata = {
+            getExtraMetadata = @Suspendable {
                 val signedGroupParameters = groupParametersLookup.currentGroupParameters
                 signedGroupParametersVerifier.verifySignature(signedGroupParameters)
                 utxoLedgerGroupParametersPersistenceService.persistIfDoesNotExist(signedGroupParameters)
-                return@UtxoSignedTransactionFactoryImpl mapOf<String, Any>(
+                mapOf<String, Any>(
                     TransactionMetadataImpl.MEMBERSHIP_GROUP_PARAMETERS_HASH_KEY to signedGroupParameters.hash.toString()
                 )
             }
