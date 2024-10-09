@@ -8,51 +8,31 @@ import net.corda.ledger.common.data.transaction.getBatchMerkleTreeDigestProvider
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.common.flow.transaction.TransactionSignatureVerificationServiceInternal
 import net.corda.libs.platform.PlatformInfoProvider
-import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
-import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.common.transaction.TransactionWithMetadata
-import net.corda.v5.serialization.SingletonSerializeAsToken
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ServiceScope
 import java.security.PublicKey
 import java.time.Instant
 
-@Suppress("Unused", "LongParameterList")
-@Component(
-    service = [TransactionSignatureService::class, TransactionSignatureServiceInternal::class, UsedByFlow::class],
-    scope = ServiceScope.PROTOTYPE
-)
-class TransactionSignatureServiceImpl @Activate constructor(
-    @Reference(service = SerializationServiceInternal::class)
+@Suppress("LongParameterList")
+class TransactionSignatureServiceImpl(
     private val serializationService: SerializationServiceInternal,
-    @Reference(service = SigningService::class)
     private val signingService: SigningService,
-    @Reference(service = SignatureSpecService::class)
     private val signatureSpecService: SignatureSpecService,
-    @Reference(service = MerkleTreeProvider::class)
     private val merkleTreeProvider: MerkleTreeProvider,
-    @Reference(service = PlatformInfoProvider::class)
     private val platformInfoProvider: PlatformInfoProvider,
-    @Reference(service = FlowEngine::class)
-    private val flowEngine: FlowEngine,
-    @Reference(service = TransactionSignatureVerificationServiceInternal::class)
+    private val getCpiSummary: () -> CordaPackageSummary,
     private val transactionSignatureVerificationServiceInternal: TransactionSignatureVerificationServiceInternal
 ) : TransactionSignatureService,
     TransactionSignatureServiceInternal,
-    SingletonSerializeAsToken,
-    UsedByFlow,
     TransactionSignatureVerificationServiceInternal by transactionSignatureVerificationServiceInternal {
-
     @Suspendable
     override fun sign(
         transaction: TransactionWithMetadata,
@@ -124,7 +104,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
         signatureSpec: SignatureSpec,
         batchSettings: Map<String, String> = emptyMap()
     ): DigitalSignatureMetadata {
-        val cpiSummary = flowEngine.getCpiSummary()
+        val cpiSummary = getCpiSummary()
         return DigitalSignatureMetadata(
             Instant.now(),
             signatureSpec,
