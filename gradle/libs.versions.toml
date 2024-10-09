@@ -24,7 +24,7 @@ liquibaseVersion = "4.29.0"
 mssqlDriverVersion = "11.2.3.jre17"
 postgresDriverVersion = "42.7.3"
 slf4jVersion = "2.0.16"
-snakeyamlVersion = "2.2"
+snakeyamlVersion = "2.3"
 # Please also update SWAGGERUI.version in net.corda.rest.server.impl.internal.OptionalDependency
 swaggeruiVersion = "5.15.1"
 swaggerVersion = "2.2.22"
