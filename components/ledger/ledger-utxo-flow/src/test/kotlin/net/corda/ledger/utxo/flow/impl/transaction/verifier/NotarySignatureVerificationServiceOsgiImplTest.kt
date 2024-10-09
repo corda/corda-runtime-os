@@ -23,8 +23,8 @@ import java.security.PublicKey
 import java.time.Instant
 import kotlin.test.assertEquals
 
-class NotarySignatureVerificationServiceImplTest {
-    private lateinit var notarySignatureVerificationService: NotarySignatureVerificationServiceImpl
+class NotarySignatureVerificationServiceOsgiImplTest {
+    private lateinit var notarySignatureVerificationService: NotarySignatureVerificationServiceOsgiImpl
     private val transactionSignatureServiceInternal = mock<TransactionSignatureServiceInternal>()
 
     // notarykeys
@@ -60,7 +60,7 @@ class NotarySignatureVerificationServiceImplTest {
 
     @BeforeEach
     fun setup() {
-        notarySignatureVerificationService = NotarySignatureVerificationServiceImpl(
+        notarySignatureVerificationService = NotarySignatureVerificationServiceOsgiImpl(
             transactionSignatureServiceInternal
         )
     }
