@@ -6,7 +6,7 @@ import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 
-fun FlowEngine.getCpiSummary(): CordaPackageSummary =
+fun FlowEngine.getCpiSummary(): CordaPackageSummaryImpl =
     CordaPackageSummaryImpl(
         name = flowContextProperties[FlowContextPropertyKeys.CPI_NAME]
             ?: throw CordaRuntimeException("CPI name is not accessible"),

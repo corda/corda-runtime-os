@@ -34,8 +34,10 @@ class TransactionMetadataImpl(private val properties: Map<String, Any>) : Transa
 
     override fun hashCode(): Int = properties.hashCode()
 
+    @JsonIgnore
     override fun getLedgerModel(): String = this[LEDGER_MODEL_KEY].toString()
 
+    @JsonIgnore
     override fun getLedgerVersion(): Int {
         val version = this[LEDGER_VERSION_KEY].toString()
 
@@ -48,10 +50,13 @@ class TransactionMetadataImpl(private val properties: Map<String, Any>) : Transa
         }
     }
 
+    @JsonIgnore
     override fun getTransactionSubtype(): String? = this[TRANSACTION_SUBTYPE_KEY]?.toString()
 
+    @JsonIgnore
     override fun getCpiMetadata(): CordaPackageSummary? = this[CPI_METADATA_KEY]?.let { CordaPackageSummaryImpl.from(it) }
 
+    @JsonIgnore
     override fun getCpkMetadata(): List<CordaPackageSummary> {
         return when (val data = this[CPK_METADATA_KEY]) {
             null -> emptyList()
@@ -62,6 +67,7 @@ class TransactionMetadataImpl(private val properties: Map<String, Any>) : Transa
         }
     }
 
+    @JsonIgnore
     override fun getComponentGroups(): List<List<String>> {
         val value = this[COMPONENT_GROUPS_KEY]
         @Suppress("UNCHECKED_CAST")
@@ -80,6 +86,7 @@ class TransactionMetadataImpl(private val properties: Map<String, Any>) : Transa
         return this[DIGEST_SETTINGS_KEY] as Map<String, String>
     }
 
+    @JsonIgnore
     override fun getSchemaVersion(): Int {
         val version = this[SCHEMA_VERSION_KEY].toString()
 
@@ -92,8 +99,10 @@ class TransactionMetadataImpl(private val properties: Map<String, Any>) : Transa
         }
     }
 
+    @JsonIgnore
     override fun getMembershipGroupParametersHash(): String? = this[MEMBERSHIP_GROUP_PARAMETERS_HASH_KEY]?.toString()
 
+    @JsonIgnore
     override fun getPlatformVersion(): Int {
         val version = this[PLATFORM_VERSION_KEY].toString()
 

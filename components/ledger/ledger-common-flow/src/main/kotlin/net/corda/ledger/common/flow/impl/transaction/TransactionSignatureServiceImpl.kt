@@ -14,12 +14,12 @@ import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.common.transaction.TransactionWithMetadata
 import java.security.PublicKey
 import java.time.Instant
+import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 
 @Suppress("LongParameterList")
 class TransactionSignatureServiceImpl(
@@ -28,7 +28,7 @@ class TransactionSignatureServiceImpl(
     private val signatureSpecService: SignatureSpecService,
     private val merkleTreeProvider: MerkleTreeProvider,
     private val platformInfoProvider: PlatformInfoProvider,
-    private val getCpiSummary: () -> CordaPackageSummary,
+    private val getCpiSummary: () -> CordaPackageSummaryImpl,
     private val transactionSignatureVerificationServiceInternal: TransactionSignatureVerificationServiceInternal
 ) : TransactionSignatureService,
     TransactionSignatureServiceInternal,
