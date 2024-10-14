@@ -55,7 +55,7 @@ cyclonedxVersion = "1.8.2"
 dokkaVersion = "1.9.10"
 testLoggerVersion = "4.0.0"
 sonarVersion = "5.1.0.4882"
-openApiGeneratorVersion = "7.7.0"
+openApiGeneratorVersion = "7.9.0"
 
 [libraries]
 apache-commons-codec = { group = "commons-codec", name = "commons-codec", version.ref = "apacheCommonsCodecVersion" }
