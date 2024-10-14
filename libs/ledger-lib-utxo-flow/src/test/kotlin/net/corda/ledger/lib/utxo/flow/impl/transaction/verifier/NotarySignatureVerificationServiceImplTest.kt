@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.flow.impl.transaction.verifier
+package net.corda.ledger.lib.utxo.flow.impl.transaction.verifier
 
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.core.DigitalSignatureWithKeyId
@@ -23,8 +23,8 @@ import java.security.PublicKey
 import java.time.Instant
 import kotlin.test.assertEquals
 
-class NotarySignatureVerificationServiceOsgiImplTest {
-    private lateinit var notarySignatureVerificationService: NotarySignatureVerificationServiceOsgiImpl
+class NotarySignatureVerificationServiceImplTest {
+    private lateinit var notarySignatureVerificationService: NotarySignatureVerificationServiceImpl
     private val transactionSignatureServiceInternal = mock<TransactionSignatureServiceInternal>()
 
     // notarykeys
@@ -60,7 +60,7 @@ class NotarySignatureVerificationServiceOsgiImplTest {
 
     @BeforeEach
     fun setup() {
-        notarySignatureVerificationService = NotarySignatureVerificationServiceOsgiImpl(
+        notarySignatureVerificationService = NotarySignatureVerificationServiceImpl(
             transactionSignatureServiceInternal
         )
     }

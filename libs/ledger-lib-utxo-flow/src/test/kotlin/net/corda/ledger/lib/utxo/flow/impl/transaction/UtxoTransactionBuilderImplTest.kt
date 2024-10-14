@@ -1,13 +1,10 @@
-package net.corda.ledger.utxo.flow.impl.transaction
+package net.corda.ledger.lib.utxo.flow.impl.transaction
 
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.test.dummyCpkSignerSummaryHash
 import net.corda.ledger.common.testkit.publicKeyExample
-import net.corda.ledger.lib.utxo.flow.impl.transaction.ContractStateAndEncumbranceTag
-import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
-import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample

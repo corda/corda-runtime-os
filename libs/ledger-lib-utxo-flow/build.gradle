@@ -26,4 +26,13 @@ dependencies {
     implementation 'net.corda:corda-base'
 
     implementation 'org.jetbrains.kotlin:kotlin-stdlib'
+
+    testImplementation project(':components:ledger:ledger-utxo-flow')
+    testImplementation project(':testing:test-serialization')
+    testImplementation project(':testing:kryo-serialization-testkit')
+    testImplementation project(':libs:serialization:serialization-internal')
+    testImplementation project(':libs:serialization:serialization-amqp')
+    testImplementation project(':libs:serialization:serialization-kryo')
+    testImplementation project(':testing:ledger:ledger-utxo-base-test')
+
 }
