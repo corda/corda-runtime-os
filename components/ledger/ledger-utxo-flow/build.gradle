@@ -27,8 +27,8 @@ dependencies {
     implementation 'net.corda:corda-topic-schema'
     implementation libs.jackson.module.kotlin
     implementation project(':components:flow:flow-service')
-    implementation project(':components:ledger:ledger-common-flow-api')
-    implementation project(':components:ledger:ledger-common-flow')
+    implementation project(':libs:ledger:ledger-common-flow-api')
+    implementation project(':libs:ledger:ledger-common-flow')
     implementation project(':components:ledger:notary-worker-selection')
     implementation project(':components:membership:group-policy')
     implementation project(':components:membership:membership-group-read')

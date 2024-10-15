@@ -13,14 +13,12 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation project(':libs:ledger:ledger-common-data')
+    implementation project(':libs:ledger:ledger-common-flow-api')
+    implementation project(':libs:ledger:ledger-common-flow')
     implementation project(':libs:ledger:ledger-utxo-data')
     implementation project(':libs:ledger:ledger-utxo-transaction-verifier')
     implementation project(':libs:serialization:json-validator')
     implementation project(':libs:serialization:json-validator-lib')
-
-    //Should we rename components:ledger:ledger-common-flow-api to libs:ledger:ledger-common-flow-api etc.
-    implementation project(':components:ledger:ledger-common-flow-api')
-    implementation project(':components:ledger:ledger-common-flow')
 
     implementation 'net.corda:corda-ledger-utxo'
     implementation 'net.corda:corda-base'
