@@ -14,8 +14,8 @@ import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 class UtxoLedgerTransactionVerifier(
     private val transactionFactory: () -> UtxoLedgerTransaction,
     private val transaction: UtxoLedgerTransaction = transactionFactory.invoke(),
+    private val injectService: (Contract) -> Unit,
     private val metricFactory: ContractVerificationMetricFactory,
-    private val injectService: (Contract) -> Unit
 ) : UtxoTransactionVerifier() {
 
     override val subjectClass: String = UtxoLedgerTransaction::class.simpleName!!
