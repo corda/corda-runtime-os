@@ -36,8 +36,6 @@ dependencies {
     implementation project(':libs:platform-info')
     implementation project(':libs:virtual-node:sandbox-group-context')
 
-    runtimeOnly project(":libs:web:web-impl")
-
     testImplementation project(':libs:membership:membership-common')
     testImplementation project(':libs:serialization:serialization-kryo')
     testImplementation project(':testing:kryo-serialization-testkit')
