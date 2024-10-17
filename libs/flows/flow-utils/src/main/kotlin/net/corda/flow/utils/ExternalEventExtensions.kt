@@ -1,6 +1,5 @@
 package net.corda.flow.utils
 
-import net.corda.data.KeyValuePairList
 import net.corda.flow.external.events.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventContext as AvroExternalEventContext
 
