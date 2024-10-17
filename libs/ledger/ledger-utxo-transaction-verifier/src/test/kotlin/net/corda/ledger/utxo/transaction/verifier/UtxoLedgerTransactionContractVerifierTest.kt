@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.transaction.verifier
 
+import io.micrometer.core.instrument.Timer
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
@@ -14,16 +15,20 @@ import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
-import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
+import java.util.concurrent.Callable
 
 class UtxoLedgerTransactionContractVerifierTest {
 
@@ -31,12 +36,20 @@ class UtxoLedgerTransactionContractVerifierTest {
         val TX_ID_1 = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
         val TX_ID_2 = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
         val TX_ID_3 = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
-        val holdingIdentity = HoldingIdentity(MemberX500Name("ALICE", "LDN", "GB"), "group")
     }
 
     private val transaction = mock<UtxoLedgerTransaction>()
     private val transactionFactory = mock<() -> UtxoLedgerTransaction>()
     private val injectService = mock<(Contract) -> Unit>()
+    private val callable = argumentCaptor<Callable<Any>>()
+    private val timer = mock<Timer> {
+        on { recordCallable(callable.capture()) } doAnswer { callable.lastValue.call() }
+    }
+    private val metricFactory = mock<ContractVerificationMetricFactory> {
+        on { getContractVerificationTimeMetric() } doReturn timer
+        on { getContractVerificationContractCountMetric() } doReturn mock()
+        on { getContractVerificationContractTime(any()) } doReturn timer
+    }
 
     @BeforeEach
     fun beforeEach() {
@@ -61,7 +74,7 @@ class UtxoLedgerTransactionContractVerifierTest {
             )
         )
         whenever(transaction.outputStateAndRefs).thenReturn(listOf(validContractCState2))
-        verifyContracts(transactionFactory, transaction, holdingIdentity, injectService)
+        verifyContracts(transactionFactory, transaction, injectService, metricFactory)
         // Called once for each of 3 contracts
         verify(transactionFactory, times(3)).invoke()
         assertThat(MyValidContractA.EXECUTION_COUNT).isEqualTo(1)
@@ -83,7 +96,7 @@ class UtxoLedgerTransactionContractVerifierTest {
             )
         )
         whenever(transaction.outputStateAndRefs).thenReturn(listOf(invalidContractBState))
-        assertThatThrownBy { verifyContracts(transactionFactory, transaction, holdingIdentity, injectService) }
+        assertThatThrownBy { verifyContracts(transactionFactory, transaction, injectService, metricFactory) }
             .isExactlyInstanceOf(ContractVerificationException::class.java)
             .hasMessageContainingAll("I have failed", "Something is wrong here")
         // Called once for each of 4 contracts

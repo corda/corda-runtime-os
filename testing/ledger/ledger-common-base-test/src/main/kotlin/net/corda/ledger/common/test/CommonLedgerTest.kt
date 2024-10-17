@@ -15,7 +15,7 @@ import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactoryImpl
 import net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer
-import net.corda.ledger.common.flow.impl.transaction.TransactionSignatureServiceImpl
+import net.corda.ledger.common.flow.impl.transaction.TransactionSignatureServiceOsgiImpl
 import net.corda.ledger.common.flow.impl.transaction.TransactionSignatureVerificationServiceImpl
 import net.corda.ledger.common.flow.impl.transaction.factory.TransactionMetadataFactoryImpl
 import net.corda.ledger.common.flow.impl.transaction.serializer.kryo.WireTransactionKryoSerializer
@@ -84,7 +84,7 @@ abstract class CommonLedgerTest {
         digestService,
         cipherSchemeMetadata
     )
-    val transactionSignatureService = TransactionSignatureServiceImpl(
+    val transactionSignatureService = TransactionSignatureServiceOsgiImpl(
         serializationServiceWithWireTx,
         mockSigningService(),
         signatureSpecService,

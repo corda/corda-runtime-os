@@ -7,6 +7,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.transaction.verifier.UtxoLedgerTransactionVerifier
+import net.corda.ledger.verification.metrics.VerificationMetricsFactory
 import net.corda.ledger.verification.processor.VerificationRequestHandler
 import net.corda.ledger.verification.sandbox.impl.getSerializationService
 import net.corda.messaging.api.records.Record
@@ -42,8 +43,8 @@ class VerificationRequestHandlerImpl(private val responseFactory: ExternalEventR
             UtxoLedgerTransactionVerifier(
                 transactionFactory,
                 transaction,
-                sandbox.virtualNodeContext.holdingIdentity,
-                injectorService
+                injectorService,
+                VerificationMetricsFactory(sandbox.virtualNodeContext.holdingIdentity),
             ).verify()
 
             responseFactory.success(

@@ -1,13 +1,14 @@
 package net.corda.ledger.utxo.flow.impl.persistence.external.events
 
-import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.FindSignedGroupParameters
 import net.corda.data.ledger.persistence.FindSignedGroupParametersResponse
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
+import net.corda.flow.external.events.ExternalEventContext
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.utils.toAvro
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.v5.base.annotations.CordaSerializable
@@ -44,7 +45,7 @@ class FindSignedGroupParametersExternalEventFactory(
                 .setTimestamp(clock.instant())
                 .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())
                 .setRequest(createRequest(parameters))
-                .setFlowExternalEventContext(flowExternalEventContext)
+                .setFlowExternalEventContext(flowExternalEventContext.toAvro())
                 .setLedgerType(LedgerTypes.UTXO)
                 .build()
         )

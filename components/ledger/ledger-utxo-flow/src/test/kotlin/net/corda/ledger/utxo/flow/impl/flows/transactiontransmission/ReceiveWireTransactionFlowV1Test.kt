@@ -3,11 +3,11 @@ package net.corda.ledger.utxo.flow.impl.flows.transactiontransmission
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.testkit.getWireTransactionExample
+import net.corda.ledger.lib.utxo.flow.impl.transaction.factory.impl.UtxoLedgerTransactionFactoryImpl
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.common.TransactionDependencyResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.common.UtxoTransactionPayload
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.v1.ReceiveWireTransactionFlowV1
-import net.corda.ledger.utxo.flow.impl.transaction.factory.impl.UtxoLedgerTransactionFactoryImpl
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.ledger.utxo.testkit.utxoTransactionMetadataExample

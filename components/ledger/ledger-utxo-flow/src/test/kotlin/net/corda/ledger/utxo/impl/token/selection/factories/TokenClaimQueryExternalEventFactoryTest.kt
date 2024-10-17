@@ -1,7 +1,5 @@
 package net.corda.ledger.utxo.impl.token.selection.impl.factories
 
-import net.corda.data.KeyValuePairList
-import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.utxo.token.selection.data.Token
 import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimQuery
@@ -9,9 +7,11 @@ import net.corda.data.ledger.utxo.token.selection.data.TokenClaimQueryResult
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimResultStatus
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
+import net.corda.flow.external.events.ExternalEventContext
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.token.query.TokenClaimCriteriaParameters
+import net.corda.flow.utils.toAvro
 import net.corda.ledger.utxo.impl.token.selection.factories.TokenClaimFactory
 import net.corda.ledger.utxo.impl.token.selection.factories.TokenClaimQueryExternalEventFactory
 import net.corda.ledger.utxo.impl.token.selection.impl.ALICE_X500_HOLDING_ID
@@ -59,7 +59,7 @@ class TokenClaimQueryExternalEventFactoryTest {
             amount.scale(),
             ByteBuffer.wrap(amount.unscaledValue().toByteArray())
         )
-        val flowExternalEventContext = ExternalEventContext("r1", "f1", KeyValuePairList())
+        val flowExternalEventContext = ExternalEventContext("r1", "f1", emptyMap())
 
         val parameters = TokenClaimCriteriaParameters(
             dedupeId,
@@ -72,7 +72,7 @@ class TokenClaimQueryExternalEventFactoryTest {
 
         val expectedClaimQuery = TokenClaimQuery().apply {
             this.poolKey = key
-            this.requestContext = flowExternalEventContext
+            this.requestContext = flowExternalEventContext.toAvro()
             this.ownerHash = ownerHash.toString()
             this.tagRegex = tagRegex
             this.targetAmount = tokenAmount

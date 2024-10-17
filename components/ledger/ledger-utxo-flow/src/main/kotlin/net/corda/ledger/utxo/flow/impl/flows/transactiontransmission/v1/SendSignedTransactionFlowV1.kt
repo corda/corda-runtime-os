@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.v1
 
+import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.common.SendTransactionFlow
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine

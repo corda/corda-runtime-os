@@ -1,7 +1,5 @@
 package net.corda.flow.application.persistence.external.events
 
-import net.corda.data.KeyValuePairList
-import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.MergeEntities
 import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
@@ -13,13 +11,15 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import net.corda.flow.external.events.ExternalEventContext
+import net.corda.flow.utils.toAvro
 
 class MergeExternalEventFactoryTest {
 
     @Test
     fun `creates a record containing an EntityRequest with a MergeEntities payload`() {
         val checkpoint = mock<FlowCheckpoint>()
-        val externalEventContext = ExternalEventContext("request id", "flow id", KeyValuePairList(emptyList()))
+        val externalEventContext = ExternalEventContext("request id", "flow id", emptyMap())
 
         whenever(checkpoint.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
 
@@ -33,7 +33,7 @@ class MergeExternalEventFactoryTest {
             EntityRequest(
                 ALICE_X500_HOLDING_IDENTITY,
                 MergeEntities(listOf(ByteBuffer.wrap(byteArrayOf(1)))),
-                externalEventContext
+                externalEventContext.toAvro()
             ),
             externalEventRecord.payload
         )

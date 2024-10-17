@@ -1,10 +1,11 @@
 package net.corda.ledger.utxo.impl.token.selection.factories
 
-import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimRelease
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
+import net.corda.flow.external.events.ExternalEventContext
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.utils.toAvro
 import net.corda.ledger.utxo.impl.token.selection.impl.PoolKey
 import net.corda.ledger.utxo.impl.token.selection.impl.toStateRef
 import net.corda.ledger.utxo.impl.token.selection.services.TokenClaimCheckpointService
@@ -22,7 +23,7 @@ class ClaimReleaseExternalEventFactoryTest {
         val avroPoolKey = poolKey.toTokenPoolCacheKey()
         val checkpoint = mock<FlowCheckpoint>()
         val tokenClaimCheckpointService = mock<TokenClaimCheckpointService>()
-        val flowExternalEventContext = ExternalEventContext()
+        val flowExternalEventContext = ExternalEventContext("", "", emptyMap())
         val parameters = ClaimReleaseParameters("c1", poolKey, listOf(stateRef))
 
         val result = ClaimReleaseExternalEventFactory(tokenClaimCheckpointService).createExternalEvent(
@@ -34,7 +35,7 @@ class ClaimReleaseExternalEventFactoryTest {
         val expectedReleaseEvent = TokenClaimRelease().apply {
             this.claimId = "c1"
             this.poolKey = avroPoolKey
-            this.requestContext = flowExternalEventContext
+            this.requestContext = flowExternalEventContext.toAvro()
             this.usedTokenStateRefs = listOf(stateRef.toString())
         }
 

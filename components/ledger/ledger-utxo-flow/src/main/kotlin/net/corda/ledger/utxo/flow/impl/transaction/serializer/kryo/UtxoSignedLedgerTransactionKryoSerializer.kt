@@ -1,9 +1,9 @@
 package net.corda.ledger.utxo.flow.impl.transaction.serializer.kryo
 
+import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedLedgerTransaction
+import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.lib.utxo.flow.impl.transaction.verifier.UtxoSignedLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedLedgerTransaction
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedLedgerTransactionImpl
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.serialization.checkpoint.CheckpointInput
