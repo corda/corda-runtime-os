@@ -1,7 +1,5 @@
 package net.corda.lifecycle.impl
 
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ScheduledFuture
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
@@ -18,6 +16,8 @@ import net.corda.lifecycle.registry.LifecycleRegistryException
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ScheduledFuture
 
 /**
  * Perform processing of lifecycle events.
@@ -228,12 +228,15 @@ internal class LifecycleProcessor(
      * coordinators of the status change and informing the registry.
      */
     private fun updateStatus(coordinator: LifecycleCoordinatorInternal, newStatus: LifecycleStatus, reason: String) {
-        if (state.status != newStatus) {
-            logger.info("Updating coordinator ${coordinator.name} from status ${state.status} to $newStatus. Reason: $reason")
+        if (state.status == LifecycleStatus.ERROR) {
+            logger.warn("Attempted to update ${coordinator.name} from ERROR to ${newStatus.name}. Transition blocked as ERROR " +
+                    "is a terminal state.")
+        } else if (state.status != newStatus) {
+            logger.info("Attempting to update coordinator ${coordinator.name} from status ${state.status} to $newStatus. Reason: $reason")
+            state.status = newStatus
+            state.registrations.forEach { it.updateCoordinatorStatus(coordinator, newStatus) }
+            registry.updateStatus(coordinator.name, newStatus, reason)
         }
-        state.status = newStatus
-        state.registrations.forEach { it.updateCoordinatorStatus(coordinator, newStatus) }
-        registry.updateStatus(coordinator.name, newStatus, reason)
     }
 
     private fun runUserEventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator): Boolean {

@@ -1,8 +1,5 @@
 package net.corda.lifecycle.impl
 
-import java.util.concurrent.Delayed
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -31,6 +28,9 @@ import org.mockito.Mockito.verify
 import org.mockito.kotlin.any
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
+import java.util.concurrent.Delayed
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 
 class LifecycleProcessorTest {
 
@@ -400,6 +400,33 @@ class LifecycleProcessorTest {
         verify(registry).updateStatus(NAME, LifecycleStatus.DOWN, STOPPED_REASON)
         assertEquals(1, processedStopEvents)
         assertEquals(0, processedOtherEvents)
+    }
+
+    @Test
+    fun `stop event when coordinator is in ERROR state does not update coordinator status`() {
+        val state = LifecycleStateManager(5)
+        state.isRunning = true
+        state.status = LifecycleStatus.ERROR
+        var processedStopEvents = 0
+        var processedOtherEvents = 0
+        val registry = mock<LifecycleRegistryCoordinatorAccess>()
+        val processor = LifecycleProcessor(NAME, state, registry, mock()) { event, _ ->
+            when (event) {
+                is StopEvent -> {
+                    processedStopEvents++
+                }
+                else -> {
+                    processedOtherEvents++
+                }
+            }
+        }
+        val registration1 = mock<Registration>()
+        val registration2 = mock<Registration>()
+        val coordinator = setupCoordinatorMock()
+        listOf(registration1, registration2).forEach { state.registrations.add(it) }
+        state.postEvent(StopEvent())
+        process(processor, coordinator = coordinator)
+        assertEquals(LifecycleStatus.ERROR, state.status)
     }
 
     @Test
