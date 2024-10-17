@@ -1,7 +1,5 @@
-package net.corda.uniqueness.backingstore
+package net.corda.ledger.libs.uniqueness.backingstore
 
-import net.corda.lifecycle.Lifecycle
-import net.corda.uniqueness.backingstore.BackingStore.Session
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
@@ -10,51 +8,16 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 
-/**
- * Abstracts the retrieval and persistence of data required by uniqueness checker implementations.
- * Data supplied to and returned by the backing store use a suite of `UniquenessCheckInternal`
- * classes, which are agnostic to both the external messaging API used by uniqueness checker
- * implementations and any underlying database schema / data structures used by backing store
- * implementations.
- *
- * A number of functional operations are provided by the backing store. These can be categorised
- * as transactional or non-transactional, which is generally determined by whether operations are
- * committing data to the backing store, or retrieving data.
- *
- * All operations must be run within the context of a session with the backing store, irrespective
- * of the type of operation. Multiple operations may be performed within one session. A session is
- * started by calling [session], which takes a block of code to execute within the context of the
- * session. The [Session] interface is injected into the block of code being executed, which
- * provides methods for retrieving data from the backing store.
- *
- * The [Session] interface also provides an [executeTransaction][Session.executeTransaction] method,
- * which behaves in much the same way as [session], taking a block of code to run within the context
- * of a transaction. This block of code is provided with both the [Session] interface, but also a
- * [TransactionOps][Session.TransactionOps] interface which can be used to invoke operations that
- * involve committing data to the backing store. Any data that is written as a result of operations
- * invoked within this code block will be committed atomically.
- *
- * Example usage:
- *
- * ```
- * backingStore.session { session ->
- *     // Call methods from the Session interface to retrieve data
- *     session.executeTransaction() { session, txnOps ->
- *         // Call methods from the TransactionOps interface to commit data
- *     }
- * }
- * ```
- */
-interface BackingStoreLifecycle : BackingStore, Lifecycle
-
 interface BackingStore {
-
     /**
      * Opens a new session with the backing store and runs the supplied block of code in the
      * context of the session. A session is tied to a specific [holdingIdentity], which must be
      * specified when opening the session.
      */
-    fun session(holdingIdentity: HoldingIdentity, block: (Session) -> Unit)
+    fun session(
+        holdingIdentity: HoldingIdentity,
+        block: (Session) -> Unit
+    )
 
     /**
      * Convenience function which opens a session with the backing store and then immediately

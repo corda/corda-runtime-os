@@ -12,6 +12,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
+import net.corda.uniqueness.backingstore.impl.osgi.JPABackingStoreLifecycleImpl
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -23,7 +24,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
 
-class JPABackingStoreImplLifecycleTests {
+class JPABackingStoreOsgiImplLifecycleTests {
 
     private val lifecycleCoordinator = mock<LifecycleCoordinator>()
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()

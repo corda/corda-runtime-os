@@ -61,6 +61,7 @@ dependencies {
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:uniqueness:backing-store-fake")
     testImplementation project(":testing:uniqueness:uniqueness-utilities")
+    testImplementation project(":libs:ledger-lib-uniqueness")
 
     integrationTestApi project(":components:db:db-connection-manager")
     integrationTestImplementation 'net.corda:corda-crypto'
@@ -81,6 +82,8 @@ dependencies {
     // For JSON serialization to DB
     implementation libs.jackson.module.kotlin
     implementation libs.jackson.datatype.jsr310
+
+    implementation project(":libs:ledger-lib-uniqueness")
 }
 
 tasks.named('jar', Jar) {

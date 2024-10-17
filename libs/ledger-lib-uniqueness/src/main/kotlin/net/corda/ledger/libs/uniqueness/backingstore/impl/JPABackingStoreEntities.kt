@@ -1,4 +1,4 @@
-package net.corda.uniqueness.backingstore.impl
+package net.corda.ledger.libs.uniqueness.backingstore.impl
 
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.ORIGINATOR_X500_NAME_LENGTH
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.TRANSACTION_ID_ALGO_LENGTH
@@ -17,7 +17,7 @@ import javax.persistence.Table
 /*
  * JPA entity definitions used by the JPA backing store implementation
  */
-internal object JPABackingStoreEntities {
+object JPABackingStoreEntities {
     val classes = setOf(
         UniquenessStateDetailEntity::class.java,
         UniquenessTransactionDetailEntity::class.java,
@@ -25,7 +25,7 @@ internal object JPABackingStoreEntities {
     )
 }
 
-internal class UniquenessTxAlgoStateRefKey(
+class UniquenessTxAlgoStateRefKey(
     var issueTxIdAlgo: String = "",
     var issueTxId: ByteArray = ByteArray(0),
     var issueTxOutputIndex: Int = 0
@@ -56,7 +56,7 @@ internal class UniquenessTxAlgoStateRefKey(
     }
 }
 
-internal class UniquenessTxAlgoIdKey(
+class UniquenessTxAlgoIdKey(
     var txIdAlgo: String = "",
     var txId: ByteArray = ByteArray(0),
 ) : Serializable {
@@ -101,7 +101,7 @@ internal class UniquenessTxAlgoIdKey(
 )
 
 @IdClass(UniquenessTxAlgoStateRefKey::class)
-internal class UniquenessStateDetailEntity(
+class UniquenessStateDetailEntity(
     @Id
     @Column(name = "issue_tx_id_algo", length = TRANSACTION_ID_ALGO_LENGTH, nullable = false)
     var issueTxIdAlgo: String,
@@ -158,7 +158,7 @@ internal class UniquenessStateDetailEntity(
 
 @IdClass(UniquenessTxAlgoIdKey::class)
 @Suppress("LongParameterList")
-internal class UniquenessTransactionDetailEntity(
+class UniquenessTransactionDetailEntity(
     @Id
     @Column(name = "tx_id_algo", length = TRANSACTION_ID_ALGO_LENGTH, nullable = false)
     var txIdAlgo: String,
@@ -208,7 +208,7 @@ internal class UniquenessTransactionDetailEntity(
     query = "SELECT t FROM UniquenessRejectedTransactionEntity t WHERE t.txIdAlgo = :txAlgo AND t.txId = :txId"
 )
 @IdClass(UniquenessTxAlgoIdKey::class)
-internal class UniquenessRejectedTransactionEntity(
+class UniquenessRejectedTransactionEntity(
     @Id
     @Column(name = "tx_id_algo", length = TRANSACTION_ID_ALGO_LENGTH, nullable = false)
     var txIdAlgo: String,

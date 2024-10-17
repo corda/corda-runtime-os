@@ -2,11 +2,6 @@ package net.corda.uniqueness.checker.impl
 
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.testkit.SecureHashUtils
-import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.data.uniqueness.UniquenessCheckRequestAvro
-import net.corda.data.uniqueness.UniquenessCheckResponseAvro
-import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
-import net.corda.data.uniqueness.UniquenessCheckType
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.DBConfigurationException
@@ -14,15 +9,19 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
+import net.corda.ledger.libs.uniqueness.UniquenessChecker
+import net.corda.ledger.libs.uniqueness.data.UniquenessCheckRequest
+import net.corda.ledger.libs.uniqueness.data.UniquenessCheckResponse
+import net.corda.ledger.libs.uniqueness.data.randomUniquenessSecureHash
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.orm.impl.PersistenceExceptionCategorizerImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock
-import net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl
 import net.corda.uniqueness.backingstore.impl.JPABackingStoreTestUtilities
-import net.corda.uniqueness.checker.UniquenessChecker
+import net.corda.uniqueness.backingstore.impl.osgi.JPABackingStoreOsgiImpl
+import net.corda.uniqueness.backingstore.impl.osgi.JPABackingStoreOsgiMetricsFactory
 import net.corda.uniqueness.utils.UniquenessAssertions.assertInputStateConflictResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertMalformedRequestResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertNotPreviouslySeenTransactionResponse
@@ -34,16 +33,18 @@ import net.corda.uniqueness.utils.UniquenessAssertions.assertUnhandledExceptionR
 import net.corda.uniqueness.utils.UniquenessAssertions.assertUniqueCommitTimestamps
 import net.corda.uniqueness.utils.UniquenessAssertions.assertUnknownInputStateResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertUnknownReferenceStateResponse
+import net.corda.uniqueness.utils.UniquenessCheckRequestBuilder
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.toAvro
 import org.apache.avro.AvroRuntimeException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertAll
 import org.junit.jupiter.api.Assertions.assertIterableEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -65,7 +66,7 @@ import kotlin.test.assertEquals
 /**
  * Tests the integration of the uniqueness checker with the JPA based backing store implementation
  * and an associated JPA compatible DB. This mostly duplicates the test cases of
- * [UniquenessCheckerImplTests].
+ * [UniquenessCheckerOsgiImplTests].
  */
 // TODO - Find an elegant way to avoid duplication of unit tests
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -123,27 +124,17 @@ class UniquenessCheckerImplDBIntegrationTests {
     private fun currentTime(): Instant = testClock.peekTime()
 
     private fun newRequestBuilder(
-        txId: SecureHash = SecureHashUtils.randomSecureHash(),
-        type: UniquenessCheckType = UniquenessCheckType.WRITE
-    ): UniquenessCheckRequestAvro.Builder =
-        UniquenessCheckRequestAvro.newBuilder(
-            UniquenessCheckRequestAvro(
-                defaultHoldingIdentity.toAvro(),
-                ExternalEventContext(),
-                txId.toString(),
-                originatorX500Name,
-                emptyList(),
-                emptyList(),
-                0,
-                null,
-                defaultTimeWindowUpperBound,
-                type
-            )
-        )
+        txId: SecureHash = randomUniquenessSecureHash()
+    ) = UniquenessCheckRequestBuilder(
+        txId,
+        groupId,
+        defaultTimeWindowUpperBound,
+        defaultHoldingIdentity
+    )
 
     private fun processRequests(
-        vararg requests: UniquenessCheckRequestAvro
-    ) : List<UniquenessCheckResponseAvro> {
+        vararg requests: UniquenessCheckRequest
+    ) : List<UniquenessCheckResponse> {
         val requestsList = requests.asList()
 
         val responses = uniquenessChecker.processRequests(requests.asList())
@@ -263,7 +254,10 @@ class UniquenessCheckerImplDBIntegrationTests {
          */
         testClock = AutoTickTestClock(baseTime, Duration.ofSeconds(1))
 
-        val backingStore = JPABackingStoreImpl(
+        val uniquenessMetricsFactory = BatchedUniquenessCheckerMetricsFactoryOsgiImpl()
+        val backingStoreMetricsFactory = JPABackingStoreOsgiMetricsFactory()
+
+        val backingStore = JPABackingStoreOsgiImpl(
             JpaEntitiesRegistryImpl(),
             mock<DbConnectionManager>().apply {
                 whenever(getOrCreateEntityManagerFactory(
@@ -318,20 +312,21 @@ class UniquenessCheckerImplDBIntegrationTests {
                         timestamp = Instant.now()
                     )
                 )
-
-            }
+            },
+            backingStoreMetricsFactory
         )
 
-        uniquenessChecker = BatchedUniquenessCheckerImpl(backingStore, testClock)
+        uniquenessChecker = BatchedUniquenessCheckerOsgiImpl(backingStore, uniquenessMetricsFactory, testClock)
     }
 
     @Nested
     inner class MalformedRequests {
         @Test
+        @Disabled("Setting null is not possible anymore")
         fun `Request is missing time window upper bound`() {
             assertThrows(AvroRuntimeException::class.java, {
                 newRequestBuilder()
-                    .setTimeWindowUpperBound(null)
+                    //.setTimeWindowUpperBound(null)
                     .build()
             }, "Field timeWindowUpperBound type:LONG pos:5 does not accept null values")
         }
@@ -433,7 +428,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 .setInputStates(generateUnspentStates(1))
                 .build()
 
-            var initialResponse: UniquenessCheckResponseAvro? = null
+            var initialResponse: UniquenessCheckResponse? = null
 
             processRequests(
                 request
@@ -477,8 +472,8 @@ class UniquenessCheckerImplDBIntegrationTests {
                     // are unique
                     {
                         assertIterableEquals(
-                            responses.keys.map { it.txId },
-                            responses.values.map { it.txId })
+                            responses.keys.map { it.transactionId },
+                            responses.values.map { it.transactionId })
                     },
                     { assertUniqueCommitTimestamps(responses.values) }
                 )
@@ -493,7 +488,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                     .build()
             }
 
-            val allResponses = LinkedList<UniquenessCheckResponseAvro>()
+            val allResponses = LinkedList<UniquenessCheckResponse>()
 
             repeat(5) { count ->
                 processRequests(requests[count]).also { responses ->
@@ -507,8 +502,8 @@ class UniquenessCheckerImplDBIntegrationTests {
                         },
                         {
                             assertEquals(
-                                requests[count].txId,
-                                responses[0].txId
+                                requests[count].transactionId,
+                                responses[0].transactionId
                             )
                         },
                     )
@@ -544,8 +539,8 @@ class UniquenessCheckerImplDBIntegrationTests {
                     // are unique
                     {
                         assertIterableEquals(
-                            responses.keys.map { it.txId },
-                            responses.values.map { it.txId })
+                            responses.keys.map { it.transactionId },
+                            responses.values.map { it.transactionId })
                     },
                     { assertUniqueCommitTimestamps(responses.values) }
                 )
@@ -566,7 +561,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                     .build()
             )
 
-            val allResponses = LinkedList<UniquenessCheckResponseAvro>()
+            val allResponses = LinkedList<UniquenessCheckResponse>()
 
             repeat(3) { count ->
                 processRequests(requests[count]).also { responses ->
@@ -580,8 +575,8 @@ class UniquenessCheckerImplDBIntegrationTests {
                         },
                         {
                             assertEquals(
-                                requests[count].txId,
-                                responses[0].txId
+                                requests[count].transactionId,
+                                responses[0].transactionId
                             )
                         },
                     )
@@ -831,7 +826,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 .setReferenceStates(generateUnspentStates(1))
                 .build()
 
-            var initialResponse: UniquenessCheckResponseAvro? = null
+            var initialResponse: UniquenessCheckResponse? = null
 
             processRequests(request).let { responses ->
                 assertAll(
@@ -877,7 +872,7 @@ class UniquenessCheckerImplDBIntegrationTests {
         fun `Multiple txs, no input states, single shared ref state in different batch is successful`() {
             val sharedState = generateUnspentStates(1)
 
-            val allResponses = LinkedList<UniquenessCheckResponseAvro>()
+            val allResponses = LinkedList<UniquenessCheckResponse>()
 
             processRequests(
                 newRequestBuilder()
@@ -933,7 +928,7 @@ class UniquenessCheckerImplDBIntegrationTests {
 
         @Test
         fun `Multiple txs, no input states, multiple distinct ref states in different batch is successful`() {
-            val allResponses = LinkedList<UniquenessCheckResponseAvro>()
+            val allResponses = LinkedList<UniquenessCheckResponse>()
 
             processRequests(
                 newRequestBuilder()
@@ -1097,7 +1092,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 .setReferenceStates(state1)
                 .build()
 
-            var initialResponse: UniquenessCheckResponseAvro? = null
+            var initialResponse: UniquenessCheckResponse? = null
 
             processRequests(replayableRequest).let { responses ->
                 assertAll(
@@ -1217,7 +1212,7 @@ class UniquenessCheckerImplDBIntegrationTests {
         @Test
         fun `Replaying an issuance transaction in different batch is successful`() {
             val issueTxId = SecureHashUtils.randomSecureHash()
-            lateinit var initialResponse: UniquenessCheckResponseAvro
+            lateinit var initialResponse: UniquenessCheckResponse
 
             processRequests(
                 newRequestBuilder(issueTxId)
@@ -1310,7 +1305,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 .setNumOutputStates(1)
                 .build()
 
-            var initialResponse: UniquenessCheckResponseAvro? = null
+            var initialResponse: UniquenessCheckResponse? = null
 
             processRequests(request).let { responses ->
                 assertAll(
@@ -1363,7 +1358,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 .setTimeWindowLowerBound(lowerBound)
                 .setNumOutputStates(1)
                 .build()
-            var initialResponse: UniquenessCheckResponseAvro? = null
+            var initialResponse: UniquenessCheckResponse? = null
 
             processRequests(request).let { responses ->
                 assertAll(
@@ -1427,7 +1422,7 @@ class UniquenessCheckerImplDBIntegrationTests {
         fun `Uniqueness check for holding id with no uniqueness DB fails`() {
             processRequests(
                 newRequestBuilder()
-                    .setHoldingIdentity(noDbHoldingIdentity.toAvro())
+                    .setHoldingIdentity(noDbHoldingIdentity)
                     .setNumOutputStates(1)
                     .build()
             ).let { responses ->
@@ -1444,23 +1439,23 @@ class UniquenessCheckerImplDBIntegrationTests {
         fun `Unhandled exception is compartmentalised within holding id`() {
             processRequests(
                 newRequestBuilder()
-                    .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                    .setHoldingIdentity(bobHoldingIdentity)
                     .setNumOutputStates(1)
                     .build(),
                 newRequestBuilder()
-                    .setHoldingIdentity(charlieHoldingIdentity.toAvro())
+                    .setHoldingIdentity(charlieHoldingIdentity)
                     .setNumOutputStates(1)
                     .build(),
                 newRequestBuilder()
-                    .setHoldingIdentity(noDbHoldingIdentity.toAvro())
+                    .setHoldingIdentity(noDbHoldingIdentity)
                     .setNumOutputStates(1)
                     .build(),
                 newRequestBuilder()
-                    .setHoldingIdentity(noDbHoldingIdentity.toAvro())
+                    .setHoldingIdentity(noDbHoldingIdentity)
                     .setNumOutputStates(1)
                     .build(),
                 newRequestBuilder()
-                    .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                    .setHoldingIdentity(bobHoldingIdentity)
                     .setNumOutputStates(1)
                     .build(),
             ).let { responses ->
@@ -1485,11 +1480,11 @@ class UniquenessCheckerImplDBIntegrationTests {
 
             processRequests(
                 newRequestBuilder(issueTxId)
-                    .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                    .setHoldingIdentity(bobHoldingIdentity)
                     .setNumOutputStates(1)
                     .build(),
                 newRequestBuilder(issueTxId)
-                    .setHoldingIdentity(charlieHoldingIdentity.toAvro())
+                    .setHoldingIdentity(charlieHoldingIdentity)
                     .setNumOutputStates(1)
                     .build()
             ).let { responses ->
@@ -1504,11 +1499,11 @@ class UniquenessCheckerImplDBIntegrationTests {
 
             processRequests(
                 newRequestBuilder()
-                    .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                    .setHoldingIdentity(bobHoldingIdentity)
                     .setInputStates(listOf(unspentStateRef))
                     .build(),
                 newRequestBuilder()
-                    .setHoldingIdentity(charlieHoldingIdentity.toAvro())
+                    .setHoldingIdentity(charlieHoldingIdentity)
                     .setInputStates(listOf(unspentStateRef))
                     .build()
             ).let { responses ->
@@ -1527,7 +1522,7 @@ class UniquenessCheckerImplDBIntegrationTests {
 
             processRequests(
                 newRequestBuilder()
-                    .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                    .setHoldingIdentity(bobHoldingIdentity)
                     .setInputStates(unspentStateRefs)
                     .build()
             ).let { responses ->
@@ -1755,8 +1750,8 @@ class UniquenessCheckerImplDBIntegrationTests {
                 )
                 .build()
 
-            var initialRetryableSuccessfulRequestResponse: UniquenessCheckResponseAvro? = null
-            var initialRetryableFailedRequestResponse: UniquenessCheckResponseAvro? = null
+            var initialRetryableSuccessfulRequestResponse: UniquenessCheckResponse? = null
+            var initialRetryableFailedRequestResponse: UniquenessCheckResponse? = null
 
             processRequests(retryableSuccessfulRequest, retryableFailedRequest).let { responses ->
                 assertAll(
@@ -1867,7 +1862,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                     { assertStandardSuccessResponse(responses[9], testClock) },
                     {
                         assertUniqueCommitTimestamps(responses.filter {
-                            it.result is UniquenessCheckResultSuccessAvro
+                            it.uniquenessCheckResult is UniquenessCheckResultSuccess
                         })
                     }
                 )
@@ -1899,7 +1894,7 @@ class UniquenessCheckerImplDBIntegrationTests {
 
             // check that the transaction is known via the checker code
             processRequests(
-                newRequestBuilder(transactionId, UniquenessCheckType.READ)
+                newRequestBuilder(transactionId)
                     .build()
             ).let { responses ->
                 assertAll(
@@ -1929,7 +1924,8 @@ class UniquenessCheckerImplDBIntegrationTests {
 
             // check that the failure gets replayed via the checker
             processRequests(
-                newRequestBuilder(transactionId, UniquenessCheckType.READ)
+                newRequestBuilder(transactionId)
+                    .setCheckType(net.corda.ledger.libs.uniqueness.data.UniquenessCheckType.READ)
                     .build()
             ).let { responses ->
                 assertAll(
@@ -1950,7 +1946,8 @@ class UniquenessCheckerImplDBIntegrationTests {
 
             // check if transaction has yet been notarized
             processRequests(
-                newRequestBuilder(transactionId, UniquenessCheckType.READ)
+                newRequestBuilder(transactionId)
+                    .setCheckType(net.corda.ledger.libs.uniqueness.data.UniquenessCheckType.READ)
                     .setTimeWindowLowerBound(currentTime().minusSeconds(10))
                     .setTimeWindowUpperBound(currentTime().plusSeconds(10))
                     .build()
@@ -1983,7 +1980,8 @@ class UniquenessCheckerImplDBIntegrationTests {
 
             // check for unknown transaction after time window elapsed
             processRequests(
-                newRequestBuilder(type = UniquenessCheckType.READ)
+                newRequestBuilder()
+                    .setCheckType(net.corda.ledger.libs.uniqueness.data.UniquenessCheckType.READ)
                     .setTimeWindowUpperBound(upperBound)
                     .build()
             ).let { responses ->
@@ -2004,7 +2002,8 @@ class UniquenessCheckerImplDBIntegrationTests {
             val lowerBound = currentTime().plusSeconds(100)
             val transactionId = SecureHashUtils.randomSecureHash()
             processRequests(
-                newRequestBuilder(transactionId, UniquenessCheckType.READ)
+                newRequestBuilder(transactionId)
+                    .setCheckType(net.corda.ledger.libs.uniqueness.data.UniquenessCheckType.READ)
                     .setTimeWindowLowerBound(lowerBound)
                     .build()
             ).let { responses ->
@@ -2019,7 +2018,8 @@ class UniquenessCheckerImplDBIntegrationTests {
 
             // check for transaction now should return that the notary doesn't know about it
             processRequests(
-                newRequestBuilder(transactionId, UniquenessCheckType.READ)
+                newRequestBuilder(transactionId)
+                    .setCheckType(net.corda.ledger.libs.uniqueness.data.UniquenessCheckType.READ)
                     .setTimeWindowLowerBound(lowerBound)
                     .build()
             ).let { responses ->
@@ -2062,7 +2062,8 @@ class UniquenessCheckerImplDBIntegrationTests {
                     .setTimeWindowUpperBound(upperBound)
                     .setNumOutputStates(3)
                     .build(),
-                newRequestBuilder(transactionId, UniquenessCheckType.READ)
+                newRequestBuilder(transactionId)
+                    .setCheckType(net.corda.ledger.libs.uniqueness.data.UniquenessCheckType.READ)
                     .setTimeWindowLowerBound(currentTime().minusSeconds(10))
                     .setTimeWindowUpperBound(currentTime().plusSeconds(10))
                     .build()
