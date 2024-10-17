@@ -1,6 +1,6 @@
 package net.corda.flow.external.events.impl.factory
 
-import net.corda.data.flow.event.external.ExternalEventContext
+import net.corda.flow.external.events.ExternalEventContext
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.pipeline.exceptions.FlowFatalException

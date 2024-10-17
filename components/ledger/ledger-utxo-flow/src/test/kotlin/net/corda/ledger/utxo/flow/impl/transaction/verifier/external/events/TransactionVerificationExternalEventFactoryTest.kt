@@ -1,8 +1,8 @@
 package net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events
 
-import net.corda.data.KeyValuePairList
-import net.corda.data.flow.event.external.ExternalEventContext
+import net.corda.flow.external.events.ExternalEventContext
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.utils.toAvro
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.ALICE_X500_HOLDING_IDENTITY
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.TransactionVerificationExternalEventFactory
@@ -43,7 +43,7 @@ class TransactionVerificationExternalEventFactoryTest {
         val externalEventContext = ExternalEventContext(
             "request id",
             "flow id",
-            KeyValuePairList(emptyList())
+            emptyMap()
         )
         val testClock = Clock.fixed(Instant.now(), ZoneId.of("UTC"))
 
@@ -62,7 +62,7 @@ class TransactionVerificationExternalEventFactoryTest {
                 ALICE_X500_HOLDING_IDENTITY,
                 ByteBuffer.wrap(transaction),
                 cpkMetadata.map(CordaPackageSummary::toAvro),
-                externalEventContext
+                externalEventContext.toAvro()
             ),
             externalEventRecord.payload
         )

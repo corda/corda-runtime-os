@@ -1,6 +1,5 @@
 package net.corda.uniqueness.client.impl
 
-import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.flow.external.events.factory.ExternalEventFactory
@@ -12,6 +11,8 @@ import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Component
 import java.time.Instant
+import net.corda.flow.external.events.ExternalEventContext
+import net.corda.flow.utils.toAvro
 import net.corda.data.uniqueness.UniquenessCheckType as UniquenessCheckTypeAvro
 
 @Component(service = [ExternalEventFactory::class])
@@ -40,7 +41,7 @@ class UniquenessCheckExternalEventFactory :
         checkpoint: FlowCheckpoint
     ) = UniquenessCheckRequestAvro.newBuilder()
         .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())
-        .setFlowExternalEventContext(context)
+        .setFlowExternalEventContext(context.toAvro())
         .setTxId(params.txId)
         .setOriginatorX500Name(params.originatorX500Name)
         .setInputStates(params.inputStates)

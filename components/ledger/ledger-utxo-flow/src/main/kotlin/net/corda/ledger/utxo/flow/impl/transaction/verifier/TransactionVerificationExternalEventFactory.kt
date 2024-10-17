@@ -1,9 +1,10 @@
 package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
-import net.corda.data.flow.event.external.ExternalEventContext
+import net.corda.flow.external.events.ExternalEventContext
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.utils.toAvro
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationResult
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.v5.base.annotations.CordaSerializable
@@ -38,7 +39,7 @@ class TransactionVerificationExternalEventFactory(
                 .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())
                 .setTransaction(ByteBuffer.wrap(parameters.transaction))
                 .setCpkMetadata(parameters.cpkMetadata.map(CordaPackageSummary::toAvro))
-                .setFlowExternalEventContext(flowExternalEventContext)
+                .setFlowExternalEventContext(flowExternalEventContext.toAvro())
                 .build()
         )
     }

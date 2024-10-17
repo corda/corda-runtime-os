@@ -2,7 +2,6 @@ package net.corda.flow.application.crypto.external.events
 
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
-import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
@@ -10,6 +9,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.security.PublicKey
+import net.corda.flow.external.events.ExternalEventContext
+import net.corda.flow.utils.toAvro
 
 @Component(service = [ExternalEventFactory::class])
 class FilterMyKeysExternalEventFactory @Activate constructor(
@@ -28,7 +29,7 @@ class FilterMyKeysExternalEventFactory @Activate constructor(
                 .createFilterMyKeys(
                     tenantId = checkpoint.holdingIdentity.shortHash.value,
                     candidateKeys = parameters,
-                    flowExternalEventContext = flowExternalEventContext
+                    flowExternalEventContext = flowExternalEventContext.toAvro()
                 )
         return ExternalEventRecord(payload = flowOpsRequest)
     }

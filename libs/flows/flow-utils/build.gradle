@@ -9,6 +9,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "net.corda:corda-base"
+    implementation project(':libs:flows:flow-api')
     api "net.corda:corda-avro-schema"
 }
 

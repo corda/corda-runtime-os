@@ -1,12 +1,13 @@
 package net.corda.ledger.utxo.flow.impl.persistence.external.events
 
 import net.corda.data.KeyValuePairList
-import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.data.persistence.EntityResponse
+import net.corda.flow.external.events.ExternalEventContext
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.utils.toAvro
 import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -41,7 +42,7 @@ class AbstractUtxoLedgerExternalEventFactoryTest {
         val externalEventContext = ExternalEventContext(
             "request id",
             "flow id",
-            KeyValuePairList(emptyList())
+            emptyMap()
         )
 
         whenever(checkpoint.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
@@ -58,7 +59,7 @@ class AbstractUtxoLedgerExternalEventFactoryTest {
                 ALICE_X500_HOLDING_IDENTITY,
                 LedgerTypes.UTXO,
                 payload,
-                externalEventContext
+                externalEventContext.toAvro()
             ),
             externalEventRecord.payload
         )

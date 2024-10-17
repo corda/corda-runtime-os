@@ -1,7 +1,6 @@
 package net.corda.flow.testing.tests
 
 import net.corda.data.KeyValuePairList
-import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.persistence.EntityRequest
@@ -29,6 +28,8 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.ByteBuffer
 import java.util.stream.Stream
+import net.corda.flow.external.events.ExternalEventContext
+import net.corda.flow.utils.toAvro
 
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
@@ -48,7 +49,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
         val ANY_INPUT = EntityRequest(
             ALICE_HOLDING_IDENTITY,
             FindEntities("entity class name", listOf(BYTE_BUFFER)),
-            ExternalEventContext(REQUEST_ID, FLOW_ID1, KeyValuePairList(emptyList()))
+            ExternalEventContext(REQUEST_ID, FLOW_ID1, emptyMap()).toAvro()
         )
         val ANY_RESPONSE = EntityResponse(listOf(BYTE_BUFFER), KeyValuePairList(emptyList()), null)
         const val STRING_INPUT = "this is an input string"
