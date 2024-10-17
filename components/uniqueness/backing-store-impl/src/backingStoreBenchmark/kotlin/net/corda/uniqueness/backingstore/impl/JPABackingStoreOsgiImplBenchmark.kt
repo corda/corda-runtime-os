@@ -7,13 +7,19 @@ import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.DbUtils
 import net.corda.db.testkit.TestDbInfo
+import net.corda.ledger.libs.uniqueness.backingstore.BackingStore
+import net.corda.ledger.libs.uniqueness.backingstore.BackingStoreMetricsFactory
+import net.corda.ledger.libs.uniqueness.backingstore.impl.JPABackingStoreEntities
+import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock
-import net.corda.uniqueness.backingstore.BackingStore
+import net.corda.uniqueness.backingstore.impl.osgi.JPABackingStoreLifecycleImpl
+import net.corda.uniqueness.backingstore.impl.osgi.JPABackingStoreOsgiImpl
+import net.corda.uniqueness.backingstore.impl.osgi.UniquenessSecureHashFactoryOsgiImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
@@ -21,7 +27,6 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -33,6 +38,7 @@ import org.junit.jupiter.api.TestMethodOrder
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -55,7 +61,7 @@ import kotlin.system.measureTimeMillis
 @Execution(ExecutionMode.SAME_THREAD)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.MethodName::class)
-class JPABackingStoreImplBenchmark {
+class JPABackingStoreOsgiImplBenchmark {
 
     private companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -78,7 +84,7 @@ class JPABackingStoreImplBenchmark {
 
     private val originatorX500Name = "C=GB, L=London, O=Alice"
 
-    private lateinit var holdingIdentity: HoldingIdentity
+    private lateinit var holdingIdentity: UniquenessHoldingIdentity
     private lateinit var backingStore: BackingStore
     private lateinit var testClock: AutoTickTestClock
 
@@ -92,8 +98,16 @@ class JPABackingStoreImplBenchmark {
     fun init() {
         // An entirely new database is created for each test case, to ensure performance is not
         // impacted between different test cases
-        holdingIdentity = createTestHoldingIdentity(
-            "C=GB, L=London, O=NotaryRep1", UUID.randomUUID().toString())
+        val cordaHoldingIdentity = createTestHoldingIdentity(
+            "C=GB, L=London, O=NotaryRep1", UUID.randomUUID().toString()
+        )
+        holdingIdentity = UniquenessHoldingIdentity(
+            cordaHoldingIdentity.x500Name,
+            cordaHoldingIdentity.groupId,
+            cordaHoldingIdentity.shortHash,
+            cordaHoldingIdentity.hash
+        )
+
         val holdingIdentityDbName =
             VirtualNodeDbType.UNIQUENESS.getSchemaName(holdingIdentity.shortHash)
 
@@ -125,11 +139,23 @@ class JPABackingStoreImplBenchmark {
             whenever(getClusterDataSource()) doReturn clusterDbConfig.dataSource
         }
         val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
+        val metrics = mock<BackingStoreMetricsFactory> {
+            on { recordDatabaseReadTime(any(), any()) } doAnswer {}
+            on { recordTransactionAttempts(any(), any()) } doAnswer {}
+            on { recordDatabaseCommitTime(any(), any()) } doAnswer {}
+            on { recordSessionExecutionTime(any(), any()) } doAnswer {}
+            on { recordTransactionExecutionTime(any(), any()) } doAnswer {}
+        }
+
+        // Consider mocking this in the future. For now, we are not mocking this since the functionality didn't change,
+        // we just exported the logic to a class
+        val secureHashFactory = UniquenessSecureHashFactoryOsgiImpl()
+
         backingStore = JPABackingStoreLifecycleImpl(
             mock(),
             jpaEntitiesRegistry,
             dbConnectionManager,
-            JPABackingStoreImpl(jpaEntitiesRegistry, dbConnectionManager, mock(), virtualNodeInfoReadService)
+            JPABackingStoreOsgiImpl(jpaEntitiesRegistry, dbConnectionManager, mock(), virtualNodeInfoReadService, metrics, secureHashFactory)
         ).apply {
             eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
         }

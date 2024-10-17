@@ -6,16 +6,8 @@ package net.corda.uniqueness.backingstore.impl.fake
  *
  * Intended to be used as a fake for testing purposes only - DO NOT USE ON A REAL SYSTEM
  */
-import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleEvent
-import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationStatusChangeEvent
-import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.StopEvent
-import net.corda.lifecycle.createCoordinator
-import net.corda.uniqueness.backingstore.BackingStore
-import net.corda.uniqueness.backingstore.BackingStoreLifecycle
+import net.corda.ledger.libs.uniqueness.backingstore.BackingStore
+import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
@@ -23,41 +15,18 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.HoldingIdentity
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.propertytypes.ServiceRanking
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
-@ServiceRanking(Int.MAX_VALUE)
-@Component(service = [BackingStoreLifecycle::class, BackingStore::class])
 @Suppress("ForbiddenComment")
-open class BackingStoreImplFake @Activate constructor(
-    @Reference(service = LifecycleCoordinatorFactory::class)
-    coordinatorFactory: LifecycleCoordinatorFactory
-) : BackingStoreLifecycle {
+open class BackingStoreImplFake : BackingStore {
 
-    private companion object {
-        private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
-
-    private val lifecycleCoordinator: LifecycleCoordinator = coordinatorFactory
-        .createCoordinator<BackingStoreLifecycle>(::eventHandler)
-
-    override val isRunning: Boolean
-        get() = lifecycleCoordinator.isRunning
-
-    // Holding id for the current session
-    private lateinit var activeHoldingIdentity: HoldingIdentity
+    private lateinit var activeHoldingIdentity: UniquenessHoldingIdentity
 
     // Data persisted across different transactions, partitioned on holding id
     private val persistedStateData =
-        HashMap<HoldingIdentity,
+        HashMap<UniquenessHoldingIdentity,
                 HashMap<UniquenessCheckStateRef, UniquenessCheckStateDetails>>()
     private val persistedTxnData =
-        HashMap<HoldingIdentity,
+        HashMap<UniquenessHoldingIdentity,
                 HashMap<SecureHash, UniquenessCheckTransactionDetailsInternal>>()
 
     // Temporary cache of data created / updated during the current session
@@ -68,21 +37,11 @@ open class BackingStoreImplFake @Activate constructor(
 
     @Synchronized
     override fun session(
-        holdingIdentity: HoldingIdentity,
+        holdingIdentity: UniquenessHoldingIdentity,
         block: (BackingStore.Session) -> Unit
     ) {
         activeHoldingIdentity = holdingIdentity
         block(SessionImpl())
-    }
-
-    override fun start() {
-        log.info("Backing store starting.")
-        lifecycleCoordinator.start()
-    }
-
-    override fun stop() {
-        log.info("Backing store stopping.")
-        lifecycleCoordinator.stop()
     }
 
     protected open inner class SessionImpl : BackingStore.Session {
@@ -171,27 +130,6 @@ open class BackingStoreImplFake @Activate constructor(
                         )
                     }
                 )
-            }
-        }
-    }
-
-    private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        log.info("Backing store received event $event.")
-        when (event) {
-            is StartEvent -> {
-                log.info("Backing store is UP")
-                coordinator.updateStatus(LifecycleStatus.UP)
-            }
-            is StopEvent -> {
-                log.info("Backing store is DOWN")
-                coordinator.updateStatus(LifecycleStatus.DOWN)
-            }
-            is RegistrationStatusChangeEvent -> {
-                log.info("Backing store is ${event.status}")
-                coordinator.updateStatus(event.status)
-            }
-            else -> {
-                log.warn("Unexpected event $event!")
             }
         }
     }
