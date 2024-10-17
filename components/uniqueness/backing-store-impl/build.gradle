@@ -51,6 +51,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":components:uniqueness:backing-store")
     implementation project(":components:db:db-connection-manager")
+    implementation project(":libs:ledger-lib-uniqueness")
     implementation project(":libs:metrics")
     implementation project(":libs:uniqueness:common")
     implementation project(":libs:utilities")
@@ -61,7 +62,6 @@ dependencies {
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:uniqueness:backing-store-fake")
     testImplementation project(":testing:uniqueness:uniqueness-utilities")
-    testImplementation project(":libs:ledger-lib-uniqueness")
 
     integrationTestApi project(":components:db:db-connection-manager")
     integrationTestImplementation 'net.corda:corda-crypto'
@@ -78,12 +78,6 @@ dependencies {
     integrationTestRuntimeOnly libs.postgresql.jdbc
 
     backingStoreBenchmarkRuntimeOnly libs.log4j.slf4j
-
-    // For JSON serialization to DB
-    implementation libs.jackson.module.kotlin
-    implementation libs.jackson.datatype.jsr310
-
-    implementation project(":libs:ledger-lib-uniqueness")
 }
 
 tasks.named('jar', Jar) {

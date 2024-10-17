@@ -8,6 +8,7 @@ import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.DbUtils
 import net.corda.db.testkit.TestDbInfo
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStore
+import net.corda.ledger.libs.uniqueness.backingstore.BackingStoreMetricsFactory
 import net.corda.ledger.libs.uniqueness.backingstore.impl.JPABackingStoreEntities
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
@@ -36,6 +37,7 @@ import org.junit.jupiter.api.TestMethodOrder
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -128,11 +130,19 @@ class JPABackingStoreOsgiImplBenchmark {
             whenever(getClusterDataSource()) doReturn clusterDbConfig.dataSource
         }
         val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
+        val metrics = mock<BackingStoreMetricsFactory> {
+            on { recordDatabaseReadTime(any(), any()) } doAnswer {}
+            on { recordTransactionAttempts(any(), any()) } doAnswer {}
+            on { recordDatabaseCommitTime(any(), any()) } doAnswer {}
+            on { recordSessionExecutionTime(any(), any()) } doAnswer {}
+            on { recordTransactionExecutionTime(any(), any()) } doAnswer {}
+        }
+
         backingStore = JPABackingStoreLifecycleImpl(
             mock(),
             jpaEntitiesRegistry,
             dbConnectionManager,
-            JPABackingStoreOsgiImpl(jpaEntitiesRegistry, dbConnectionManager, mock(), virtualNodeInfoReadService)
+            JPABackingStoreOsgiImpl(jpaEntitiesRegistry, dbConnectionManager, mock(), virtualNodeInfoReadService, metrics)
         ).apply {
             eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
         }
