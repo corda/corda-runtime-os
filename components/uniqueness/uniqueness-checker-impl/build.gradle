@@ -30,6 +30,7 @@ dependencies {
     implementation project(":libs:uniqueness:common")
     implementation project(":libs:utilities")
     implementation project(":libs:web:web")
+    implementation project(":libs:ledger-lib-uniqueness")
 
     testImplementation project(":libs:virtual-node:virtual-node-info")
     testImplementation project(":testing:crypto-testkit")

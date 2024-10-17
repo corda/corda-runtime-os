@@ -1,15 +1,25 @@
 package net.corda.uniqueness.backingstore.impl
 
 import net.corda.crypto.core.bytes
-import net.corda.crypto.testkit.SecureHashUtils
+import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
+import net.corda.ledger.libs.uniqueness.backingstore.BackingStoreMetricsFactory
+import net.corda.ledger.libs.uniqueness.backingstore.impl.UniquenessRejectedTransactionEntity
+import net.corda.ledger.libs.uniqueness.backingstore.impl.UniquenessStateDetailEntity
+import net.corda.ledger.libs.uniqueness.backingstore.impl.UniquenessTransactionDetailEntity
+import net.corda.ledger.libs.uniqueness.backingstore.impl.UniquenessTxAlgoIdKey
+import net.corda.ledger.libs.uniqueness.backingstore.impl.UniquenessTxAlgoStateRefKey
+import net.corda.ledger.libs.uniqueness.backingstore.impl.jpaBackingStoreObjectMapper
+import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.PersistenceExceptionCategorizer
 import net.corda.orm.PersistenceExceptionType
 import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.uniqueness.backingstore.impl.osgi.JPABackingStoreOsgiImpl
+import net.corda.uniqueness.backingstore.impl.osgi.UniquenessSecureHashFactoryOsgiImpl
 import net.corda.uniqueness.datamodel.common.UniquenessConstants
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRequest
@@ -25,6 +35,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.verify
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -41,7 +52,7 @@ import javax.persistence.EntityTransaction
 import javax.persistence.OptimisticLockException
 import javax.persistence.TypedQuery
 
-class JPABackingStoreImplTest {
+class JPABackingStoreOsgiImplTest {
 
     private companion object {
         private const val MAX_ATTEMPTS = 10
@@ -55,11 +66,19 @@ class JPABackingStoreImplTest {
     private val dbConnectionManager = mock<DbConnectionManager>()
     private val persistenceExceptionCategorizer = mock<PersistenceExceptionCategorizer>()
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
-    private val backingStore = JPABackingStoreImpl(
+    private val metricsFactory = mock<BackingStoreMetricsFactory>()
+
+    // Consider mocking this in the future. For now, we are not mocking this since the functionality didn't change,
+    // we just exported the logic to a class
+    private val secureHashFactory = UniquenessSecureHashFactoryOsgiImpl()
+
+    private val backingStore = JPABackingStoreOsgiImpl(
         jpaEntitiesRegistry,
         dbConnectionManager,
         persistenceExceptionCategorizer,
-        virtualNodeInfoReadService
+        virtualNodeInfoReadService,
+        metricsFactory,
+        secureHashFactory
     )
 
     /* These lists act as the database, the data added to these lists will be returned by the multi loads */
@@ -68,7 +87,9 @@ class JPABackingStoreImplTest {
     private val errorEntities = mutableListOf<UniquenessRejectedTransactionEntity>()
 
     private val groupId = UUID.randomUUID().toString()
-    private val notaryRepIdentity = createTestHoldingIdentity("C=GB, L=London, O=NotaryRep1", groupId)
+    private val notaryRepIdentity = createTestHoldingIdentity("C=GB, L=London, O=NotaryRep1", groupId).let {
+        UniquenessHoldingIdentity(it.x500Name, it.groupId, it.shortHash, it.hash)
+    }
 
     private val originatorX500Name = "C=GB, L=London, O=Alice"
 
@@ -120,13 +141,22 @@ class JPABackingStoreImplTest {
         whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).thenReturn(
             VirtualNodeInfo(
                 holdingIdentity = mock(),
-                cpiIdentifier = CpiIdentifier("", "", SecureHashUtils.randomSecureHash()),
+                cpiIdentifier = CpiIdentifier("", "", randomSecureHash()),
                 vaultDmlConnectionId = UUID.randomUUID(),
                 cryptoDmlConnectionId = UUID.randomUUID(),
                 uniquenessDmlConnectionId = UUID.randomUUID(),
                 timestamp = Instant.now()
             )
         )
+
+        whenever(metricsFactory.recordDatabaseReadTime(any(), any())).doAnswer {  }
+        whenever(metricsFactory.recordDatabaseCommitTime(any(), any())).doAnswer {  }
+
+        whenever(metricsFactory.recordTransactionExecutionTime(any(), any())).doAnswer {  }
+        whenever(metricsFactory.recordSessionExecutionTime(any(), any())).doAnswer {  }
+
+        whenever(metricsFactory.recordTransactionAttempts(any(), any())).doAnswer {  }
+        whenever(metricsFactory.incrementTransactionErrorCount(any(), any())).doAnswer {  }
     }
 
     @Test
@@ -178,14 +208,14 @@ class JPABackingStoreImplTest {
         // Expect an exception because no error details is available from the mock.
         assertThrows<IllegalStateException> {
             backingStore.session(notaryRepIdentity) { session ->
-                session.getTransactionDetails(List(1) { SecureHashUtils.randomSecureHash() })
+                session.getTransactionDetails(List(1) { randomSecureHash() })
             }
         }
     }
 
     @Test
     fun `Retrieve correct failed status without exceptions when both tx details and rejection details are present`() {
-        val txId = SecureHashUtils.randomSecureHash()
+        val txId = randomSecureHash()
         // Prepare a rejected transaction
         txnDetails.add(
             UniquenessTransactionDetailEntity(
@@ -202,7 +232,7 @@ class JPABackingStoreImplTest {
             UniquenessRejectedTransactionEntity(
                 "SHA-256",
                 txId.bytes,
-                jpaBackingStoreObjectMapper().writeValueAsBytes(
+                jpaBackingStoreObjectMapper(secureHashFactory).writeValueAsBytes(
                     UniquenessCheckErrorMalformedRequestImpl("Error")
                 )
             )

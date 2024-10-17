@@ -1,19 +1,24 @@
 @file:Suppress("SpreadOperator", "WildcardImport")
 package net.corda.uniqueness.utils
 
-import net.corda.data.uniqueness.*
+import net.corda.ledger.libs.uniqueness.data.UniquenessCheckResponse
 import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.datamodel.common.UniquenessConstants
 import net.corda.uniqueness.datamodel.common.toCharacterRepresentation
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateConflict
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateUnknown
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRequest
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorNotPreviouslySeenTransaction
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateConflict
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateUnknown
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowBeforeLowerBound
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowOutOfBounds
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorUnhandledException
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -31,18 +36,22 @@ object UniquenessAssertions {
      * check the commit timestamp is valid with respect to the provider.
      */
     fun assertStandardSuccessResponse(
-        response: UniquenessCheckResponseAvro,
+        response: UniquenessCheckResponse,
         clock: AutoTickTestClock? = null
-    ) = getResultOfType<UniquenessCheckResultSuccessAvro>(response).run { assertValidTimestamp(commitTimestamp, clock) }
+    ) = getResultOfType<UniquenessCheckResultSuccessImpl>(response).run {
+        assertValidTimestamp(resultTimestamp, clock)
+    }
 
     /**
      * Checks for a malformed request response with the specified error text
      */
     fun assertMalformedRequestResponse(
-        response: UniquenessCheckResponseAvro,
+        response: UniquenessCheckResponse,
         expectedErrorText: String
     ) {
-        getResultOfType<UniquenessCheckResultMalformedRequestAvro>(response).run {
+        val error = getResultOfType<UniquenessCheckResultFailure>(response)
+
+        getErrorOfType<UniquenessCheckErrorMalformedRequest>(error).run {
             assertThat(errorText).isEqualTo(expectedErrorText)
         }
     }
@@ -51,11 +60,13 @@ object UniquenessAssertions {
      * Checks for an unhandled exception response with the specified exception type
      */
     fun assertUnhandledExceptionResponse(
-        response: UniquenessCheckResponseAvro,
+        response: UniquenessCheckResponse,
         expectedExceptionType: String
     ) {
-        getResultOfType<UniquenessCheckResultUnhandledExceptionAvro>(response).run {
-            assertThat(exception.errorType).isEqualTo(expectedExceptionType)
+        val error = getResultOfType<UniquenessCheckResultFailure>(response)
+
+        getErrorOfType<UniquenessCheckErrorUnhandledException>(error).run {
+            assertThat(unhandledExceptionType).isEqualTo(expectedExceptionType)
         }
     }
 
@@ -64,11 +75,13 @@ object UniquenessAssertions {
      *  are captured.
      */
     fun assertUnknownInputStateResponse(
-        response: UniquenessCheckResponseAvro,
+        response: UniquenessCheckResponse,
         expectedUnknownStates: List<String>
     ) {
-        getResultOfType<UniquenessCheckResultInputStateUnknownAvro>(response).run {
-            assertThat(unknownStates)
+        val error = getResultOfType<UniquenessCheckResultFailure>(response)
+
+        getErrorOfType<UniquenessCheckErrorInputStateUnknown>(error).run {
+            assertThat(unknownStates.map { it.toString() })
                 // This is necessary due to tactical fix CORE-18025 only storing a single failing
                 // state. This should be restored to containsExactlyInAnyOrder when strategic fix
                 // CORE-17155 is implemented.
@@ -81,11 +94,13 @@ object UniquenessAssertions {
      * states are captured.
      */
     fun assertInputStateConflictResponse(
-        response: UniquenessCheckResponseAvro,
+        response: UniquenessCheckResponse,
         expectedConflictingStates: List<String>
     ) {
-        getResultOfType<UniquenessCheckResultInputStateConflictAvro>(response).run {
-            assertThat(conflictingStates)
+        val error = getResultOfType<UniquenessCheckResultFailure>(response)
+
+        getErrorOfType<UniquenessCheckErrorInputStateConflict>(error).run {
+            assertThat(conflictingStates.map { it.stateRef.toString() })
                 // This is necessary due to tactical fix CORE-18025 only storing a single failing
                 // state. This should be restored to containsExactlyInAnyOrder when strategic fix
                 // CORE-17155 is implemented.
@@ -98,11 +113,13 @@ object UniquenessAssertions {
      *  are captured.
      */
     fun assertUnknownReferenceStateResponse(
-        response: UniquenessCheckResponseAvro,
+        response: UniquenessCheckResponse,
         expectedUnknownStates: List<String>
     ) {
-        getResultOfType<UniquenessCheckResultReferenceStateUnknownAvro>(response).run {
-            assertThat(unknownStates)
+        val error = getResultOfType<UniquenessCheckResultFailure>(response)
+
+        getErrorOfType<UniquenessCheckErrorReferenceStateUnknown>(error).run {
+            assertThat(unknownStates.map { it.toString() })
                 // This is necessary due to tactical fix CORE-18025 only storing a single failing
                 // state. This should be restored to containsExactlyInAnyOrder when strategic fix
                 // CORE-17155 is implemented.
@@ -115,11 +132,13 @@ object UniquenessAssertions {
      * states are captured.
      */
     fun assertReferenceStateConflictResponse(
-        response: UniquenessCheckResponseAvro,
+        response: UniquenessCheckResponse,
         expectedConflictingStates: List<String>
     ) {
-        getResultOfType<UniquenessCheckResultReferenceStateConflictAvro>(response).run {
-            assertThat(conflictingStates)
+        val error = getResultOfType<UniquenessCheckResultFailure>(response)
+
+        getErrorOfType<UniquenessCheckErrorReferenceStateConflict>(error).run {
+            assertThat(conflictingStates.map { it.stateRef.toString() })
                 // This is necessary due to tactical fix CORE-18025 only storing a single failing
                 // state. This should be restored to containsExactlyInAnyOrder when strategic fix
                 // CORE-17155 is implemented.
@@ -132,11 +151,13 @@ object UniquenessAssertions {
      * the expected (optional) lower and (mandatory) upper bound.
      */
     fun assertTimeWindowOutOfBoundsResponse(
-        response: UniquenessCheckResponseAvro,
+        response: UniquenessCheckResponse,
         expectedLowerBound: Instant? = null,
         expectedUpperBound: Instant)
     {
-        getResultOfType<UniquenessCheckResultTimeWindowOutOfBoundsAvro>(response).run {
+        val error = getResultOfType<UniquenessCheckResultFailure>(response)
+
+        getErrorOfType<UniquenessCheckErrorTimeWindowOutOfBounds>(error).run {
             assertAll(
                 { assertEquals(expectedLowerBound, timeWindowLowerBound, "Lower bound") },
                 { assertEquals(expectedUpperBound, timeWindowUpperBound, "Upper bound") }
@@ -147,25 +168,29 @@ object UniquenessAssertions {
     /**
      * Checks for a time window before lower bounds response
      */
-    fun assertTimeWindowBeforeLowerBoundResponse(response: UniquenessCheckResponseAvro) {
-        getResultOfType<UniquenessCheckResultTimeWindowBeforeLowerBoundAvro>(response)
+    fun assertTimeWindowBeforeLowerBoundResponse(response: UniquenessCheckResponse) {
+        val error = getResultOfType<UniquenessCheckResultFailure>(response)
+
+        getErrorOfType<UniquenessCheckErrorTimeWindowBeforeLowerBound>(error)
     }
 
     /**
      * Checks for a not previously seen transaction response
      */
-    fun assertNotPreviouslySeenTransactionResponse(response: UniquenessCheckResponseAvro) {
-        getResultOfType<UniquenessCheckResultNotPreviouslySeenTransactionAvro>(response)
+    fun assertNotPreviouslySeenTransactionResponse(response: UniquenessCheckResponse) {
+        val error = getResultOfType<UniquenessCheckResultFailure>(response)
+
+        getErrorOfType<UniquenessCheckErrorNotPreviouslySeenTransaction>(error)
     }
 
     /**
      * Checks that all commit timestamps within a list of responses are unique
      */
-    fun assertUniqueCommitTimestamps(responses: Collection<UniquenessCheckResponseAvro>) {
+    fun assertUniqueCommitTimestamps(responses: Collection<UniquenessCheckResponse>) {
         assertEquals(
             responses.size,
             responses.distinctBy {
-                (it.result as UniquenessCheckResultSuccessAvro).commitTimestamp
+                (it.uniquenessCheckResult as UniquenessCheckResultSuccess).resultTimestamp
             }.size
         )
     }
@@ -327,8 +352,8 @@ object UniquenessAssertions {
     }
 
 
-    private inline fun <reified T> getResultOfType(response: UniquenessCheckResponseAvro): T {
-        return assertInstanceOf(T::class.java, response.result) { response.result.toString() }
+    private inline fun <reified T> getResultOfType(response: UniquenessCheckResponse): T {
+        return assertInstanceOf(T::class.java, response.uniquenessCheckResult) { response.uniquenessCheckResult.toString() }
     }
 
     private fun assertValidTimestamp(timestamp: Instant, clock: AutoTickTestClock? = null) {
