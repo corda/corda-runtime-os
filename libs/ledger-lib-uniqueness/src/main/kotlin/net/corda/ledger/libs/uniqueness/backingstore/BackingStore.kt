@@ -1,7 +1,5 @@
-package net.corda.uniqueness.backingstore
+package net.corda.ledger.libs.uniqueness.backingstore
 
-import net.corda.lifecycle.Lifecycle
-import net.corda.uniqueness.backingstore.BackingStore.Session
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
@@ -45,16 +43,16 @@ import net.corda.virtualnode.HoldingIdentity
  * }
  * ```
  */
-interface BackingStoreLifecycle : BackingStore, Lifecycle
-
 interface BackingStore {
-
     /**
      * Opens a new session with the backing store and runs the supplied block of code in the
      * context of the session. A session is tied to a specific [holdingIdentity], which must be
      * specified when opening the session.
      */
-    fun session(holdingIdentity: HoldingIdentity, block: (Session) -> Unit)
+    fun session(
+        holdingIdentity: HoldingIdentity,
+        block: (Session) -> Unit
+    )
 
     /**
      * Convenience function which opens a session with the backing store and then immediately

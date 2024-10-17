@@ -22,4 +22,8 @@ dependencies {
     implementation project(":libs:utilities")
     implementation project(":testing:crypto-testkit")
     implementation project(":testing:test-utilities")
+    implementation project(":libs:ledger-lib-uniqueness")
+
+    // TODO Remove this once we work around the holding identities
+    implementation project(":libs:virtual-node:virtual-node-info")
 }

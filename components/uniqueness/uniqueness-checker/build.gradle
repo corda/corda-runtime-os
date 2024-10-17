@@ -12,6 +12,8 @@ dependencies {
 
     api project(':libs:lifecycle:lifecycle')
 
+    implementation project(":libs:ledger-lib-uniqueness")
+
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'net.corda:corda-base'
     implementation "net.corda:corda-avro-schema"

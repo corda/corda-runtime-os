@@ -1,6 +1,7 @@
 package net.corda.uniqueness.checker.impl
 
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
+import net.corda.ledger.libs.uniqueness.UniquenessChecker
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -13,8 +14,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.constants.WorkerRPCPaths.UNIQUENESS_PATH
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.uniqueness.backingstore.BackingStoreLifecycle
-import net.corda.uniqueness.checker.UniquenessChecker
+import net.corda.uniqueness.backingstore.osgi.BackingStoreLifecycle
 import net.corda.uniqueness.checker.UniquenessCheckerLifecycle
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
