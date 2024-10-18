@@ -1052,7 +1052,7 @@ internal class LifecycleCoordinatorImplTest {
 
     @Test
     @Suppress("TooGenericExceptionThrown")
-    fun `when a coordinator stops with an error the status is set to error`() {
+    fun `when a coordinator stops with an error the status is set to error and stays in error when start is called`() {
         var startLatch = CountDownLatch(1)
         val stopLatch = CountDownLatch(1)
         createCoordinator { event, _ ->
@@ -1074,11 +1074,11 @@ internal class LifecycleCoordinatorImplTest {
             assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertEquals(LifecycleStatus.ERROR, it.status)
 
-            // Restart and prove that the status is set to DOWN.
+            // Restart and prove that the status stays in ERROR.
             startLatch = CountDownLatch(1)
             it.start()
             assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
-            assertEquals(LifecycleStatus.DOWN, it.status)
+            assertEquals(LifecycleStatus.ERROR, it.status)
         }
     }
 

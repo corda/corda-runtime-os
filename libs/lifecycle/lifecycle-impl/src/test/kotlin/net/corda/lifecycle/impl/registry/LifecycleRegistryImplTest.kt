@@ -141,4 +141,32 @@ class LifecycleRegistryImplTest {
             registry.getCoordinator(aliceName)
         }
     }
+
+    @Test
+    fun `status update is blocked when current status is ERROR`() {
+        val registry = LifecycleRegistryImpl()
+        registry.registerCoordinator(aliceName, mock())
+        registry.updateStatus(aliceName, LifecycleStatus.ERROR, "Simulated error")
+
+        // Try updating from ERROR to UP
+        registry.updateStatus(aliceName, LifecycleStatus.UP, "Alice is up")
+
+        // Verify that the status remains ERROR
+        val statuses = registry.componentStatus()
+        assertEquals(CoordinatorStatus(aliceName, LifecycleStatus.ERROR, "Simulated error"), statuses[aliceName])
+    }
+
+    @Test
+    fun `removing a coordinator with ERROR status is blocked`() {
+        val registry = LifecycleRegistryImpl()
+        registry.registerCoordinator(aliceName, mock())
+        registry.updateStatus(aliceName, LifecycleStatus.ERROR, "Simulated error")
+
+        // Try removing the coordinator
+        registry.removeCoordinator(aliceName)
+
+        // Verify that the coordinator is still present
+        assertEquals(1, registry.componentStatus().size)
+        assertEquals(CoordinatorStatus(aliceName, LifecycleStatus.ERROR, "Simulated error"), registry.componentStatus()[aliceName])
+    }
 }
