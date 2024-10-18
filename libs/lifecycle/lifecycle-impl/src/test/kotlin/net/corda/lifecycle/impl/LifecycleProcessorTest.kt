@@ -519,7 +519,7 @@ class LifecycleProcessorTest {
     }
 
     @Test
-    fun `starting from an errored state causes the status to be set back to down`() {
+    fun `starting from an errored state leaves the status in ERROR`() {
         val state = LifecycleStateManager(5)
         var processedStartEvents = 0
         val registry = mock<LifecycleRegistryCoordinatorAccess>()
@@ -536,9 +536,7 @@ class LifecycleProcessorTest {
         state.registrations.add(registration)
         state.postEvent(StartEvent())
         process(processor, coordinator = coordinator)
-        assertEquals(LifecycleStatus.DOWN, state.status)
-        verify(registration).updateCoordinatorStatus(coordinator, LifecycleStatus.DOWN)
-        verify(registry).updateStatus(NAME, LifecycleStatus.DOWN, STARTED_REASON)
+        assertEquals(LifecycleStatus.ERROR, state.status)
     }
 
     @Test

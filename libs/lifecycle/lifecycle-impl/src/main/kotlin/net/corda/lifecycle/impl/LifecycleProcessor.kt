@@ -226,17 +226,21 @@ internal class LifecycleProcessor(
     /**
      * Perform any logic for updating the status of the coordinator. This includes informing other registered
      * coordinators of the status change and informing the registry.
+     * If a coordinator is in status ERROR then block any transition away from ERROR.
+     * This allows the liveness probe to determine the health of a worker correctly.
      */
     private fun updateStatus(coordinator: LifecycleCoordinatorInternal, newStatus: LifecycleStatus, reason: String) {
         if (state.status == LifecycleStatus.ERROR) {
             logger.warn("Attempted to update ${coordinator.name} from ERROR to ${newStatus.name}. Transition blocked as ERROR " +
                     "is a terminal state.")
-        } else if (state.status != newStatus) {
-            logger.info("Attempting to update coordinator ${coordinator.name} from status ${state.status} to $newStatus. Reason: $reason")
-            state.status = newStatus
-            state.registrations.forEach { it.updateCoordinatorStatus(coordinator, newStatus) }
-            registry.updateStatus(coordinator.name, newStatus, reason)
+            return
         }
+        if (state.status != newStatus) {
+            logger.info("Attempting to update coordinator ${coordinator.name} from status ${state.status} to $newStatus. Reason: $reason")
+        }
+        state.status = newStatus
+        state.registrations.forEach { it.updateCoordinatorStatus(coordinator, newStatus) }
+        registry.updateStatus(coordinator.name, newStatus, reason)
     }
 
     private fun runUserEventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator): Boolean {
