@@ -41,7 +41,8 @@
     bnd.identity;id='slf4j.simple',\
     bnd.identity;id='org.liquibase.core',\
     bnd.identity;id='com.opencsv',\
-    bnd.identity;id='net.corda.external-event-responses-impl'
+    bnd.identity;id='net.corda.external-event-responses-impl',\
+    bnd.identity;id='net.corda.membership-impl'
 
 -runstartlevel: \
     order=sortbynameversion,\
