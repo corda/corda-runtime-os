@@ -1,0 +1,43 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+    id 'org.jetbrains.kotlin.jvm'
+}
+
+description 'Corda Ledger uniqueness library'
+
+ext.cordaEnableFormatting = true
+
+dependencies {
+    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
+
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
+
+    // For JSON serialization to DB
+    implementation libs.jackson.module.kotlin
+    implementation libs.jackson.datatype.jsr310
+
+    implementation 'net.corda:corda-application'
+    implementation 'net.corda:corda-crypto'
+    implementation "org.hibernate:hibernate-core:$hibernateVersion"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    // TODO This can be removed once we have our own SecureHash implementation, we only need this for the OpaqueBytes
+    implementation project(":libs:base-internal")
+
+    implementation project(":libs:db:db-orm")
+    implementation project(":libs:db:db-orm-impl")
+
+    implementation project(":libs:rest:json-serialization")
+    implementation project(":libs:uniqueness:common")
+    implementation project(":libs:utilities")
+
+    // TODO Remove this once we work around the holding identities
+    implementation project(":libs:virtual-node:virtual-node-info")
+
+    testImplementation project(":testing:test-utilities")
+    testImplementation project(":testing:uniqueness:backing-store-fake")
+    testImplementation project(":testing:uniqueness:uniqueness-utilities")
+}

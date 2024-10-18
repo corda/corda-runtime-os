@@ -7,6 +7,12 @@ import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
+import net.corda.ledger.libs.uniqueness.backingstore.impl.JPABackingStoreEntities
+import net.corda.ledger.libs.uniqueness.backingstore.impl.UniquenessRejectedTransactionEntity
+import net.corda.ledger.libs.uniqueness.backingstore.impl.UniquenessStateDetailEntity
+import net.corda.ledger.libs.uniqueness.backingstore.impl.UniquenessTransactionDetailEntity
+import net.corda.ledger.libs.uniqueness.backingstore.impl.UniquenessTxAlgoIdKey
+import net.corda.ledger.libs.uniqueness.backingstore.impl.UniquenessTxAlgoStateRefKey
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.test.util.time.AutoTickTestClock

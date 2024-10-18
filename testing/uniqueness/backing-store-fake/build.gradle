@@ -21,4 +21,5 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":components:uniqueness:backing-store")
     implementation project(":libs:uniqueness:common")
+    implementation project(":libs:ledger-lib-uniqueness")
 }

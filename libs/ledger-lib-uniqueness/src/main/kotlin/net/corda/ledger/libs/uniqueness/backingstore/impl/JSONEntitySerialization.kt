@@ -1,4 +1,4 @@
-package net.corda.uniqueness.backingstore.impl
+package net.corda.ledger.libs.uniqueness.backingstore.impl
 
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import net.corda.crypto.core.parseSecureHash
+import net.corda.ledger.libs.uniqueness.data.parseSecureHash
 import net.corda.uniqueness.datamodel.serialize.UniquenessCheckErrorTypeMixin
 import net.corda.uniqueness.datamodel.serialize.UniquenessCheckStateDetailsTypeMixin
 import net.corda.uniqueness.datamodel.serialize.UniquenessCheckStateRefTypeMixin
