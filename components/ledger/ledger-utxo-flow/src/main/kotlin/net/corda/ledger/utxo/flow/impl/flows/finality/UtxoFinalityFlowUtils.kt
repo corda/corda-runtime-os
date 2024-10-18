@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality
 
 import net.corda.flow.state.asFlowContext
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.utilities.MDC_LOGGED_PREFIX
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.base.annotations.Suspendable

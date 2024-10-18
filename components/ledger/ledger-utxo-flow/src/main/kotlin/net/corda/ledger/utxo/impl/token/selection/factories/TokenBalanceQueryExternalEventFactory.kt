@@ -1,14 +1,15 @@
 package net.corda.ledger.utxo.impl.token.selection.factories
 
-import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.data.ledger.utxo.token.selection.data.TokenBalanceQuery
 import net.corda.data.ledger.utxo.token.selection.data.TokenBalanceQueryResult
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
+import net.corda.flow.external.events.ExternalEventContext
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.utils.toAvro
 import net.corda.ledger.utxo.impl.token.selection.impl.TokenBalanceImpl
 import net.corda.schema.Schemas
 import net.corda.v5.ledger.utxo.token.selection.TokenBalance
@@ -39,7 +40,7 @@ class TokenBalanceQueryExternalEventFactory @Activate constructor() :
 
         val balanceQuery = TokenBalanceQuery().apply {
             this.poolKey = key
-            this.requestContext = flowExternalEventContext
+            this.requestContext = flowExternalEventContext.toAvro()
             this.ownerHash = parameters.ownerHash?.toString()
             this.tagRegex = parameters.tagRegex
         }

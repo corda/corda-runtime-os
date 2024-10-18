@@ -1,13 +1,14 @@
 package net.corda.ledger.utxo.flow.impl.persistence.external.events
 
-import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.FindUnconsumedStatesByType
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.data.ledger.persistence.UtxoTransactionOutputs
+import net.corda.flow.external.events.ExternalEventContext
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.utils.toAvro
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.virtualnode.toAvro
@@ -34,7 +35,7 @@ class FindUnconsumedStatesByTypeExternalEventFactory(
                 .setTimestamp(clock.instant())
                 .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())
                 .setRequest(createRequest(parameters))
-                .setFlowExternalEventContext(flowExternalEventContext)
+                .setFlowExternalEventContext(flowExternalEventContext.toAvro())
                 .setLedgerType(LedgerTypes.UTXO)
                 .build()
         )

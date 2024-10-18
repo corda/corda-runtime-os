@@ -2,10 +2,10 @@ package net.corda.ledger.utxo.flow.impl.flows.transactionbuilder
 
 import net.corda.flow.application.services.VersioningService
 import net.corda.flow.application.versioning.VersionedSendFlowFactory
+import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoTransactionBuilderContainer
+import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.v1.SendTransactionBuilderDiffFlowV1
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoBaselinedTransactionBuilder
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderContainer
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoBaselinedTransactionBuilder
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow

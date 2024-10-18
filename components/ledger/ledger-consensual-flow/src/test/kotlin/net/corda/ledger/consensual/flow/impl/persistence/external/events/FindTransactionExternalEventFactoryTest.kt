@@ -1,11 +1,11 @@
 package net.corda.ledger.consensual.flow.impl.persistence.external.events
 
-import net.corda.data.KeyValuePairList
-import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.FindTransaction
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
+import net.corda.flow.external.events.ExternalEventContext
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.utils.toAvro
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -25,7 +25,7 @@ class FindTransactionExternalEventFactoryTest {
         val externalEventContext = ExternalEventContext(
             "request id",
             "flow id",
-            KeyValuePairList(emptyList())
+            emptyMap()
         )
         val transactionId = "1234567890123456"
         val testClock = Clock.fixed(Instant.now(), ZoneId.of("UTC"))
@@ -45,7 +45,7 @@ class FindTransactionExternalEventFactoryTest {
                 ALICE_X500_HOLDING_IDENTITY,
                 LedgerTypes.CONSENSUAL,
                 FindTransaction(transactionId, TransactionStatus.VERIFIED.value),
-                externalEventContext
+                externalEventContext.toAvro()
             ),
             externalEventRecord.payload
         )

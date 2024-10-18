@@ -1,6 +1,6 @@
 package net.corda.flow.external.events.factory
 
-import net.corda.data.flow.event.external.ExternalEventContext
+import net.corda.flow.external.events.ExternalEventContext
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.state.FlowCheckpoint
 

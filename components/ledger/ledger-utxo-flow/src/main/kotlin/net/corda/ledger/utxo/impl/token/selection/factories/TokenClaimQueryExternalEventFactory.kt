@@ -1,16 +1,17 @@
 package net.corda.ledger.utxo.impl.token.selection.factories
 
-import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimQuery
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimQueryResult
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimResultStatus
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
+import net.corda.flow.external.events.ExternalEventContext
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.token.query.TokenClaimCriteriaParameters
+import net.corda.flow.utils.toAvro
 import net.corda.ledger.utxo.impl.token.selection.services.TokenClaimCheckpointService
 import net.corda.schema.Schemas
 import net.corda.v5.ledger.utxo.token.selection.Strategy
@@ -46,7 +47,7 @@ class TokenClaimQueryExternalEventFactory @Activate constructor(
 
         val claimQuery = TokenClaimQuery().apply {
             this.poolKey = key
-            this.requestContext = flowExternalEventContext
+            this.requestContext = flowExternalEventContext.toAvro()
             this.ownerHash = criteria.ownerHash?.toString()
             this.tagRegex = criteria.tagRegex
             this.targetAmount = TokenAmount(

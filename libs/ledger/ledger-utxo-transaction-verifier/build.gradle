@@ -17,10 +17,11 @@ dependencies {
 
     implementation project(':libs:ledger:ledger-common-data')
     implementation project(':libs:ledger:ledger-utxo-data')
-    implementation project(':libs:metrics')
-    implementation project(':libs:utilities')
-    implementation project(':libs:membership:membership-common')
-    implementation project(':libs:sandbox-types')
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    api(libs.micrometer.core) {
+        // we don't need these in classpath, so excluding them to reduce dependencies.
+        exclude group: 'org.latencyutils', module: 'LatencyUtils'
+    }
 
     testImplementation project(':testing:ledger:ledger-utxo-testkit')
 

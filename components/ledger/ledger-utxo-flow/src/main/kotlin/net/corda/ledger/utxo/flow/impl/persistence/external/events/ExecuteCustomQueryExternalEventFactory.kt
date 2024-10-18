@@ -1,14 +1,15 @@
 package net.corda.ledger.utxo.flow.impl.persistence.external.events
 
-import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindWithNamedQuery
+import net.corda.flow.external.events.ExternalEventContext
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.persistence.query.StableResultSetExecutor
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.utils.toAvro
 import net.corda.utilities.toByteBuffers
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.virtualnode.toAvro
@@ -41,7 +42,7 @@ class VaultNamedQueryExternalEventFactory(
                         parameters.resumePoint?.let { ByteBuffer.wrap(it) }
                     )
                 )
-                .setFlowExternalEventContext(flowExternalEventContext)
+                .setFlowExternalEventContext(flowExternalEventContext.toAvro())
                 .setLedgerType(LedgerTypes.UTXO)
                 .build()
         )

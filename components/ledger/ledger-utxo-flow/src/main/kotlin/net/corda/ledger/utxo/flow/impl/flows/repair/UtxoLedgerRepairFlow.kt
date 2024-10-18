@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.flow.impl.flows.repair
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
+import net.corda.ledger.lib.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.flows.repair.UtxoLedgerRepairFlow.RepairedTransactionResult.Invalid
 import net.corda.ledger.utxo.flow.impl.flows.repair.UtxoLedgerRepairFlow.RepairedTransactionResult.NotNotarized
@@ -9,7 +10,6 @@ import net.corda.ledger.utxo.flow.impl.flows.repair.UtxoLedgerRepairFlow.Repaire
 import net.corda.ledger.utxo.flow.impl.flows.repair.UtxoLedgerRepairFlow.RepairedTransactionResult.Skipped
 import net.corda.ledger.utxo.flow.impl.notary.PluggableNotaryService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
