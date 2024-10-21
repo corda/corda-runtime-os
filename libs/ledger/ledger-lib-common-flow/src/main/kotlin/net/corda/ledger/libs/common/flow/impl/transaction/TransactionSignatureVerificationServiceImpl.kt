@@ -24,28 +24,13 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
 import java.security.PublicKey
 
-@Suppress("Unused", "LongParameterList")
-@Component(
-    service = [
-        TransactionSignatureVerificationService::class,
-        TransactionSignatureVerificationServiceInternal::class,
-        UsedByFlow::class,
-        UsedByVerification::class
-    ],
-    scope = ServiceScope.PROTOTYPE
-)
-class TransactionSignatureVerificationServiceImpl @Activate constructor(
-    @Reference(service = SerializationServiceInternal::class)
+@Suppress("LongParameterList")
+class TransactionSignatureVerificationServiceImpl constructor(
     private val serializationService: SerializationServiceInternal,
-    @Reference(service = DigitalSignatureVerificationService::class)
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
-    @Reference(service = SignatureSpecService::class)
     private val signatureSpecService: SignatureSpecService,
-    @Reference(service = MerkleTreeProvider::class)
     private val merkleTreeProvider: MerkleTreeProvider,
-    @Reference(service = DigestService::class)
     private val digestService: DigestService,
-    @Reference(service = KeyEncodingService::class)
     private val keyEncodingService: KeyEncodingService
 ) : TransactionSignatureVerificationService,
     TransactionSignatureVerificationServiceInternal,
