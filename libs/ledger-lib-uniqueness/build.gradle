@@ -24,6 +24,8 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
+    // TODO This can be removed once we have our own SecureHash implementation, we only need this for the OpaqueBytes
+    implementation project(":libs:base-internal")
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:db:db-orm")
     implementation project(":libs:db:db-orm-impl")
@@ -34,12 +36,4 @@ dependencies {
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:uniqueness:backing-store-fake")
     testImplementation project(":testing:uniqueness:uniqueness-utilities")
-}
-
-tasks.named('jar', Jar) {
-    bundle {
-        bnd '''\
-DynamicImport-Package: org.hibernate.proxy
-'''
-    }
 }

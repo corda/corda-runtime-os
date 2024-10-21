@@ -1,6 +1,7 @@
 package net.corda.uniqueness.utils
 
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckRequest
+import net.corda.ledger.libs.uniqueness.data.UniquenessCheckType
 import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.crypto.SecureHash
@@ -20,7 +21,7 @@ class UniquenessCheckRequestBuilder(
 
     private val originatorX500Name = "C=GB, L=London, O=Alice"
 
-    private var uniquenessCheckType: UniquenessCheckRequest.Type = UniquenessCheckRequest.Type.WRITE
+    private var uniquenessCheckType: UniquenessCheckType = UniquenessCheckType.WRITE
 
     private var transactionId: String = txId.toString()
 
@@ -33,7 +34,7 @@ class UniquenessCheckRequestBuilder(
     private var timeWindowLowerBound: Instant? = null
     private var timeWindowUpperBound: Instant = defaultTimeWindowUpperBound
 
-    fun setCheckType(uniquenessCheckType: UniquenessCheckRequest.Type): UniquenessCheckRequestBuilder {
+    fun setCheckType(uniquenessCheckType: UniquenessCheckType): UniquenessCheckRequestBuilder {
         this.uniquenessCheckType = uniquenessCheckType
         return this
     }

@@ -1,6 +1,7 @@
 package net.corda.uniqueness.backingstore.impl.osgi
 
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStoreMetricsFactory
+import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.metrics.CordaMetrics
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -9,7 +10,7 @@ import java.time.Duration
 @Component(service = [BackingStoreMetricsFactory::class])
 class JPABackingStoreOsgiMetricsFactory @Activate constructor() : BackingStoreMetricsFactory {
 
-    override fun recordSessionExecutionTime(executionTime: Duration, holdingIdentity: HoldingIdentity) {
+    override fun recordSessionExecutionTime(executionTime: Duration, holdingIdentity: UniquenessHoldingIdentity) {
         CordaMetrics.Metric.UniquenessBackingStoreSessionExecutionTime
             .builder()
             .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
@@ -17,7 +18,7 @@ class JPABackingStoreOsgiMetricsFactory @Activate constructor() : BackingStoreMe
             .record(executionTime)
     }
 
-    override fun recordTransactionExecutionTime(executionTime: Duration, holdingIdentity: HoldingIdentity) {
+    override fun recordTransactionExecutionTime(executionTime: Duration, holdingIdentity: UniquenessHoldingIdentity) {
         CordaMetrics.Metric.UniquenessBackingStoreTransactionExecutionTime
             .builder()
             .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
@@ -25,7 +26,7 @@ class JPABackingStoreOsgiMetricsFactory @Activate constructor() : BackingStoreMe
             .record(executionTime)
     }
 
-    override fun recordTransactionAttempts(attempts: Int, holdingIdentity: HoldingIdentity) {
+    override fun recordTransactionAttempts(attempts: Int, holdingIdentity: UniquenessHoldingIdentity) {
         CordaMetrics.Metric.UniquenessBackingStoreTransactionAttempts
             .builder()
             .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
@@ -33,7 +34,7 @@ class JPABackingStoreOsgiMetricsFactory @Activate constructor() : BackingStoreMe
             .record(attempts.toDouble())
     }
 
-    override fun incrementTransactionErrorCount(exception: Exception, holdingIdentity: HoldingIdentity) {
+    override fun incrementTransactionErrorCount(exception: Exception, holdingIdentity: UniquenessHoldingIdentity) {
         CordaMetrics.Metric.UniquenessBackingStoreTransactionErrorCount
             .builder()
             .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
@@ -42,7 +43,7 @@ class JPABackingStoreOsgiMetricsFactory @Activate constructor() : BackingStoreMe
             .increment()
     }
 
-    override fun recordDatabaseReadTime(readTime: Duration, holdingIdentity: HoldingIdentity) {
+    override fun recordDatabaseReadTime(readTime: Duration, holdingIdentity: UniquenessHoldingIdentity) {
         CordaMetrics.Metric.UniquenessBackingStoreDbReadTime
             .builder()
             .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
@@ -51,7 +52,7 @@ class JPABackingStoreOsgiMetricsFactory @Activate constructor() : BackingStoreMe
             .record(readTime)
     }
 
-    override fun recordDatabaseCommitTime(commitTime: Duration, holdingIdentity: HoldingIdentity) {
+    override fun recordDatabaseCommitTime(commitTime: Duration, holdingIdentity: UniquenessHoldingIdentity) {
         CordaMetrics.Metric.UniquenessBackingStoreDbCommitTime
             .builder()
             .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())

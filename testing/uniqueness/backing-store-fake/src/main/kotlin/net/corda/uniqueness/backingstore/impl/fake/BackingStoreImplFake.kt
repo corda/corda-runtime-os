@@ -7,6 +7,7 @@ package net.corda.uniqueness.backingstore.impl.fake
  * Intended to be used as a fake for testing purposes only - DO NOT USE ON A REAL SYSTEM
  */
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStore
+import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
@@ -18,14 +19,14 @@ import net.corda.v5.crypto.SecureHash
 @Suppress("ForbiddenComment")
 open class BackingStoreImplFake : BackingStore {
 
-    private lateinit var activeHoldingIdentity: HoldingIdentity
+    private lateinit var activeHoldingIdentity: UniquenessHoldingIdentity
 
     // Data persisted across different transactions, partitioned on holding id
     private val persistedStateData =
-        HashMap<HoldingIdentity,
+        HashMap<UniquenessHoldingIdentity,
                 HashMap<UniquenessCheckStateRef, UniquenessCheckStateDetails>>()
     private val persistedTxnData =
-        HashMap<HoldingIdentity,
+        HashMap<UniquenessHoldingIdentity,
                 HashMap<SecureHash, UniquenessCheckTransactionDetailsInternal>>()
 
     // Temporary cache of data created / updated during the current session
@@ -36,7 +37,7 @@ open class BackingStoreImplFake : BackingStore {
 
     @Synchronized
     override fun session(
-        holdingIdentity: HoldingIdentity,
+        holdingIdentity: UniquenessHoldingIdentity,
         block: (BackingStore.Session) -> Unit
     ) {
         activeHoldingIdentity = holdingIdentity

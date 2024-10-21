@@ -1,17 +1,16 @@
 package net.corda.ledger.libs.uniqueness
 
+import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
-import net.corda.virtualnode.HoldingIdentity
-import java.lang.Exception
 import java.time.Duration
 
 interface UniquenessCheckerMetricsFactory {
     fun recordBatchSize(size: Int)
     fun recordBatchExecutionTime(executionTime: Duration)
 
-    fun recordSubBatchExecutionTime(executionTime: Duration, holdingIdentity: HoldingIdentity)
-    fun recordSubBatchSize(size: Int, holdingIdentity: HoldingIdentity)
+    fun recordSubBatchExecutionTime(executionTime: Duration, holdingIdentity: UniquenessHoldingIdentity)
+    fun recordSubBatchSize(size: Int, holdingIdentity: UniquenessHoldingIdentity)
 
-    fun incrementSuccessfulRequestCount(holdingIdentity: HoldingIdentity, result: UniquenessCheckResult, isDuplicate: Boolean)
-    fun incrementUnhandledErrorRequestCount(holdingIdentity: HoldingIdentity, exception: Exception)
+    fun incrementSuccessfulRequestCount(holdingIdentity: UniquenessHoldingIdentity, result: UniquenessCheckResult, isDuplicate: Boolean)
+    fun incrementUnhandledErrorRequestCount(holdingIdentity: UniquenessHoldingIdentity, exception: Exception)
 }

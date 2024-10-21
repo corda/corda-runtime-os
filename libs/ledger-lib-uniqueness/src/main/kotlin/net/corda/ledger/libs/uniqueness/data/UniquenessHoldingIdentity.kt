@@ -8,7 +8,8 @@ import net.corda.v5.crypto.SecureHash
  * Alternative version of [net.corda.virtualnode.HoldingIdentity] to allow for separation from the `virtual-node-info` module without larger
  * scale refactoring of the rest of the codebase.
  */
-data class UniquenessHoldingIdentity(
+data class UniquenessHoldingIdentity
+    (
     val x500Name: MemberX500Name,
     val groupId: String,
     /**
@@ -27,4 +28,6 @@ data class UniquenessHoldingIdentity(
         // Matches the [toString] of [net.corda.virtualnode.HoldingIdentity]
         return "HoldingIdentity(x500Name=$x500Name, groupId='$groupId')"
     }
+
+
 }
