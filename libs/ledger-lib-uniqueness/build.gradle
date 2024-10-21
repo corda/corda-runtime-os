@@ -30,7 +30,6 @@ dependencies {
     implementation project(":libs:db:db-orm")
     implementation project(":libs:db:db-orm-impl")
 
-    implementation project(":libs:rest:json-serialization")
     implementation project(":libs:uniqueness:common")
     implementation project(":libs:utilities")
 
