@@ -8,7 +8,6 @@ import net.corda.ledger.libs.uniqueness.UniquenessChecker
 import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.uniqueness.checker.impl.UniquenessCheckerAvroUtils.toAvro
 import net.corda.uniqueness.checker.impl.UniquenessCheckerAvroUtils.toCorda
-import net.corda.uniqueness.datamodel.common.toAvro
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorUnhandledException
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 
