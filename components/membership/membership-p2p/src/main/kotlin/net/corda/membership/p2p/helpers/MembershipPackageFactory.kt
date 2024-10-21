@@ -2,6 +2,7 @@ package net.corda.membership.p2p.helpers
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.DigitalSignatureWithKey
+import net.corda.crypto.core.avro.toAvro
 import net.corda.crypto.core.bytes
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -18,7 +19,6 @@ import net.corda.utilities.time.Clock
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import java.nio.ByteBuffer
-import net.corda.data.crypto.SecureHash as AvroSecureHash
 
 @Suppress("LongParameterList")
 class MembershipPackageFactory(
@@ -28,10 +28,6 @@ class MembershipPackageFactory(
     private val merkleTreeGenerator: MerkleTreeGenerator,
     private val idFactory: () -> String,
 ) {
-    private companion object {
-        fun SecureHash.toAvro(): AvroSecureHash =
-            AvroSecureHash(this.algorithm, ByteBuffer.wrap(bytes))
-    }
     private fun DigitalSignatureWithKey.toAvro() =
         CryptoSignatureWithKey.newBuilder()
             .setBytes(ByteBuffer.wrap(this.bytes))

@@ -3,14 +3,13 @@ package net.corda.chunking.impl
 import java.nio.ByteBuffer
 import net.corda.chunking.Checksum
 import net.corda.chunking.Constants.Companion.CHUNK_FILENAME_KEY
-import net.corda.crypto.core.bytes
+import net.corda.crypto.core.avro.toAvro
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import net.corda.data.crypto.SecureHash as AvroSecureHash
 
 class ChunkBuilderServiceImplTest {
 
@@ -24,9 +23,6 @@ class ChunkBuilderServiceImplTest {
         const val fileNameIndex = CHUNK_FILENAME_KEY
         const val fileName = "MyFileName"
         val chunkBytes = ByteBuffer.wrap("chunk".toByteArray())
-
-        fun SecureHash.toAvro(): AvroSecureHash =
-            AvroSecureHash(this.algorithm, ByteBuffer.wrap(bytes))
     }
 
     private lateinit var properties: KeyValuePairList

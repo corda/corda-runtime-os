@@ -18,7 +18,7 @@ import java.nio.file.StandardOpenOption.WRITE
 import java.nio.file.attribute.PosixFilePermission.OWNER_READ
 import java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
 import java.nio.file.attribute.PosixFilePermissions.asFileAttribute
-import net.corda.data.crypto.SecureHash as AvroSecureHash
+import net.corda.crypto.core.avro.toCorda
 
 /**
  * Receives binary chunks and reassembles full binary under [destDir] and executes completed
@@ -32,9 +32,6 @@ internal class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
         private fun KeyValuePairList.fromAvro(): Map<String, String?> {
             return items.associate { it.key to it.value }
         }
-
-        private fun AvroSecureHash.toCorda(): SecureHash =
-            SecureHashImpl(this.algorithm, this.bytes.array())
     }
 
     // Could replace the set with just a chunk count, but a set at least tells us which chunk(s) are

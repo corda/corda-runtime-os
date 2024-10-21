@@ -70,6 +70,7 @@ dependencies {
 
     smokeTestImplementation project(':components:flow:flow-rest-resource-service')
     smokeTestImplementation project(':libs:crypto:crypto-core')
+    smokeTestImplementation project(':libs:crypto:crypto-core-avro')
     // TODO: this reference is only to get the serialialiser. I don't think this should be in the
     //  messagebus project.
     smokeTestImplementation project(":libs:messaging:kafka-message-bus-impl")

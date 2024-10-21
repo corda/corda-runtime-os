@@ -11,6 +11,7 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.avro.toAvro
 import net.corda.crypto.core.bytes
 import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.data.KeyValuePair
@@ -97,7 +98,6 @@ import net.corda.utilities.seconds
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
@@ -179,9 +179,6 @@ class SynchronisationIntegrationTest {
 
         @InjectService(timeout = 5000)
         lateinit var testLocallyHostedIdentitiesService: TestLocallyHostedIdentitiesService
-
-        fun SecureHash.toAvro(): AvroSecureHash =
-            AvroSecureHash(this.algorithm, ByteBuffer.wrap(bytes))
 
         val merkleTreeGenerator: MerkleTreeGenerator by lazy {
             MerkleTreeGenerator(

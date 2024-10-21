@@ -18,10 +18,6 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.transaction.TransactionSignatureVerificationService
 import net.corda.v5.ledger.common.transaction.TransactionWithMetadata
 import net.corda.v5.serialization.SingletonSerializeAsToken
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ServiceScope
 import java.security.PublicKey
 
 @Suppress("LongParameterList")

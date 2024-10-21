@@ -31,6 +31,7 @@ dependencies {
     implementation project(':components:virtual-node:virtual-node-info-read-service')
 
     implementation project(':libs:crypto:crypto-core')
+    implementation project(':libs:crypto:crypto-core-avro')
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(':libs:p2p-messaging')

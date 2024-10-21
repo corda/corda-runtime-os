@@ -3,7 +3,7 @@ package net.corda.membership.impl.synchronisation
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.avro.toCorda
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
@@ -65,7 +65,6 @@ import net.corda.utilities.minutes
 import net.corda.utilities.parseOrNull
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
@@ -106,8 +105,6 @@ class MemberSynchronisationServiceImplTest {
         val MEMBER_CONTEXT_BYTES = "2222".toByteArray()
         val MGM_CONTEXT_BYTES = "3333".toByteArray()
         val GROUP_PARAMETERS_BYTES = "dummy-parameters".toByteArray()
-        fun AvroSecureHash.toCorda(): SecureHash =
-            SecureHashImpl(this.algorithm, this.bytes.array())
     }
 
     private val mockPublisher = mock<Publisher>().apply {

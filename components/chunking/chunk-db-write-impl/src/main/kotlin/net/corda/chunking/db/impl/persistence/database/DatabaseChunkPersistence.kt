@@ -18,9 +18,8 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
-import net.corda.chunking.db.impl.toAvro
-import net.corda.crypto.core.SecureHashImpl
-import net.corda.data.crypto.SecureHash as AvroSecureHash
+import net.corda.crypto.core.avro.toAvro
+import net.corda.crypto.core.avro.toCorda
 
 /**
  * This class provides some simple APIs to interact with the database for manipulating chunks and their associated metadata.
@@ -53,8 +52,6 @@ class DatabaseChunkPersistence(private val entityManagerFactory: EntityManagerFa
                 ).build()
             }
         }
-        private fun AvroSecureHash.toCorda(): SecureHash =
-            SecureHashImpl(this.algorithm, this.bytes.array())
     }
 
     /**
