@@ -7,6 +7,8 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.libs.persistence.common.mapToComponentGroups
+import net.corda.ledger.libs.persistence.util.NamedParamQuery
+import net.corda.ledger.libs.persistence.util.NamedParamStatement
 import net.corda.ledger.libs.persistence.utxo.SignatureSpec
 import net.corda.ledger.libs.persistence.utxo.SignatureWithKey
 import net.corda.ledger.libs.persistence.utxo.SignedGroupParameters
@@ -33,12 +35,13 @@ import javax.persistence.EntityManager
 import javax.persistence.Query
 import javax.persistence.Tuple
 
+
 @Suppress("TooManyFunctions")
 class UtxoRepositoryImpl(
     private val batchPersistenceService: BatchPersistenceService,
     private val serializationService: SerializationService,
     private val wireTransactionFactory: WireTransactionFactory,
-    private val queryProvider: UtxoQueryProvider
+    private val queryProvider: UtxoQueryProvider,
 ) : UtxoRepository {
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -47,9 +50,12 @@ class UtxoRepositoryImpl(
         private val utcCalendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
     }
 
+    private val findSignedTransactionIdsAndStatusesSql =
+        NamedParamQuery.from(queryProvider.findSignedTransactionIdsAndStatuses)
+
     override fun findTransaction(
         entityManager: EntityManager,
-        id: String
+        id: String,
     ): SignedTransactionContainer? {
         val (privacySalt, metadataBytes) = findTransactionsPrivacySaltAndMetadata(entityManager, listOf(id))[id]
             ?: return null
@@ -64,18 +70,24 @@ class UtxoRepositoryImpl(
     }
 
     override fun findSignedTransactionIdsAndStatuses(
-        entityManager: EntityManager,
-        transactionIds: List<String>
+        connection: Connection,
+        transactionIds: List<String>,
     ): Map<SecureHash, String> {
-        return entityManager.createNativeQuery(queryProvider.findSignedTransactionIdsAndStatuses, Tuple::class.java)
-            .setParameter("transactionIds", transactionIds)
-            .resultListAsTuples()
-            .associate { r -> parseSecureHash(r.get(0) as String) to r.get(1) as String }
+        val result = mutableMapOf<SecureHash, String>()
+         NamedParamStatement(findSignedTransactionIdsAndStatusesSql, connection).use { stmt ->
+             stmt.setStrings("transactionIds", transactionIds)
+             stmt.executeQuery().use { rs ->
+                 while(rs.next()) {
+                     result[parseSecureHash(rs.getString(1))] = rs.getString(2)
+                 }
+             }
+         }
+        return result
     }
 
     private fun findTransactionsPrivacySaltAndMetadata(
         entityManager: EntityManager,
-        transactionIds: List<String>
+        transactionIds: List<String>,
     ): Map<String, Pair<PrivacySaltImpl, ByteArray>?> {
         return entityManager.createNativeQuery(queryProvider.findTransactionsPrivacySaltAndMetadata, Tuple::class.java)
             .setParameter("transactionIds", transactionIds)
@@ -86,7 +98,7 @@ class UtxoRepositoryImpl(
 
     override fun findTransactionComponentLeafs(
         entityManager: EntityManager,
-        transactionId: String
+        transactionId: String,
     ): Map<Int, List<ByteArray>> {
         return entityManager.createNativeQuery(queryProvider.findTransactionComponentLeafs, Tuple::class.java)
             .setParameter("transactionId", transactionId)
@@ -97,7 +109,7 @@ class UtxoRepositoryImpl(
     private fun findUnconsumedVisibleStates(
         entityManager: EntityManager,
         query: String,
-        stateClassType: String?
+        stateClassType: String?,
     ): List<UtxoVisibleTransactionOutputDto> {
         val queryObj = entityManager.createNativeQuery(query, Tuple::class.java)
             .setParameter("verified", TransactionStatus.VERIFIED.value)
@@ -110,14 +122,14 @@ class UtxoRepositoryImpl(
     }
 
     override fun findUnconsumedVisibleStatesByType(
-        entityManager: EntityManager
+        entityManager: EntityManager,
     ): List<UtxoVisibleTransactionOutputDto> {
         return findUnconsumedVisibleStates(entityManager, queryProvider.findUnconsumedVisibleStatesByType, null)
     }
 
     override fun resolveStateRefs(
         entityManager: EntityManager,
-        stateRefs: List<StateRef>
+        stateRefs: List<StateRef>,
     ): List<UtxoVisibleTransactionOutputDto> {
         return entityManager.createNativeQuery(queryProvider.resolveStateRefs, Tuple::class.java)
             .setParameter("transactionIds", stateRefs.map { it.transactionId.toString() })
@@ -128,7 +140,7 @@ class UtxoRepositoryImpl(
 
     override fun findTransactionSignatures(
         entityManager: EntityManager,
-        transactionId: String
+        transactionId: String,
     ): List<DigitalSignatureAndMetadata> {
         return entityManager.createNativeQuery(queryProvider.findTransactionSignatures, Tuple::class.java)
             .setParameter("transactionId", transactionId)
@@ -147,7 +159,7 @@ class UtxoRepositoryImpl(
     override fun markTransactionVisibleStatesConsumed(
         entityManager: EntityManager,
         stateRefs: List<StateRef>,
-        timestamp: Instant
+        timestamp: Instant,
     ) {
         entityManager.createNativeQuery(queryProvider.markTransactionVisibleStatesConsumed)
             .setParameter("consumed", timestamp)
@@ -228,7 +240,7 @@ class UtxoRepositoryImpl(
         hash: String,
         metadataBytes: ByteArray,
         groupParametersHash: String,
-        cpiFileChecksum: String
+        cpiFileChecksum: String,
     ) {
         entityManager.createNativeQuery(queryProvider.persistTransactionMetadata)
             .setParameter("hash", hash)
@@ -242,7 +254,7 @@ class UtxoRepositoryImpl(
     override fun persistTransactionSources(
         entityManager: EntityManager,
         transactionId: String,
-        transactionSources: List<UtxoRepository.TransactionSource>
+        transactionSources: List<UtxoRepository.TransactionSource>,
     ) {
         entityManager.connection { connection ->
             batchPersistenceService.persistBatch(
@@ -263,7 +275,7 @@ class UtxoRepositoryImpl(
         entityManager: EntityManager,
         transactionId: String,
         components: List<List<ByteArray>>,
-        hash: (ByteArray) -> String
+        hash: (ByteArray) -> String,
     ) {
         fun isMetadata(groupIndex: Int, leafIndex: Int) = groupIndex == 0 && leafIndex == 0
 
@@ -294,7 +306,7 @@ class UtxoRepositoryImpl(
     override fun persistTransactionComponents(
         entityManager: EntityManager,
         components: List<UtxoRepository.TransactionComponent>,
-        hash: (ByteArray) -> String
+        hash: (ByteArray) -> String,
     ) {
         fun isMetadata(groupIndex: Int, leafIndex: Int) = groupIndex == 0 && leafIndex == 0
 
@@ -325,7 +337,7 @@ class UtxoRepositoryImpl(
         entityManager: EntityManager,
         transactionId: String,
         timestamp: Instant,
-        visibleTransactionOutputs: List<UtxoRepository.VisibleTransactionOutput>
+        visibleTransactionOutputs: List<UtxoRepository.VisibleTransactionOutput>,
     ) {
         entityManager.connection { connection ->
             batchPersistenceService.persistBatch(
@@ -365,7 +377,7 @@ class UtxoRepositoryImpl(
     override fun persistTransactionSignatures(
         entityManager: EntityManager,
         signatures: List<UtxoRepository.TransactionSignature>,
-        timestamp: Instant
+        timestamp: Instant,
     ) {
         entityManager.connection { connection ->
             batchPersistenceService.persistBatch(
@@ -385,7 +397,7 @@ class UtxoRepositoryImpl(
         entityManager: EntityManager,
         transactionId: String,
         transactionStatus: TransactionStatus,
-        timestamp: Instant
+        timestamp: Instant,
     ) {
         // Update status. Update ignored unless: UNVERIFIED -> * | VERIFIED -> VERIFIED | INVALID -> INVALID
         val rowsUpdated = entityManager.createNativeQuery(queryProvider.updateTransactionStatus)
@@ -421,7 +433,7 @@ class UtxoRepositoryImpl(
         entityManager: EntityManager,
         hash: String,
         signedGroupParameters: SignedGroupParameters,
-        timestamp: Instant
+        timestamp: Instant,
     ) {
         entityManager.createNativeQuery(queryProvider.persistSignedGroupParameters)
             .setParameter("hash", hash)
@@ -466,7 +478,7 @@ class UtxoRepositoryImpl(
 
     override fun findMerkleProofs(
         entityManager: EntityManager,
-        transactionIds: List<String>
+        transactionIds: List<String>,
     ): Map<String, List<MerkleProofDto>> {
         return entityManager.createNativeQuery(queryProvider.findMerkleProofs, Tuple::class.java)
             .setParameter("transactionIds", transactionIds)
@@ -515,7 +527,7 @@ class UtxoRepositoryImpl(
 
     override fun findFilteredTransactions(
         entityManager: EntityManager,
-        ids: List<String>
+        ids: List<String>,
     ): Map<String, UtxoFilteredTransactionDto> {
         val privacySaltAndMetadataMap = findTransactionsPrivacySaltAndMetadata(entityManager, ids)
         val merkleProofs = findMerkleProofs(entityManager, ids)
@@ -558,7 +570,7 @@ class UtxoRepositoryImpl(
     override fun findConsumedTransactionSourcesForTransaction(
         entityManager: EntityManager,
         transactionId: String,
-        indexes: List<Int>
+        indexes: List<Int>,
     ): List<Int> {
         return entityManager.createNativeQuery(queryProvider.findConsumedTransactionSourcesForTransaction)
             .setParameter("transactionId", transactionId)
@@ -585,7 +597,7 @@ class UtxoRepositoryImpl(
 
     override fun incrementTransactionRepairAttemptCount(
         entityManager: EntityManager,
-        id: String
+        id: String,
     ) {
         entityManager.createNativeQuery(queryProvider.incrementRepairAttemptCount)
             .setParameter("transactionId", id)

@@ -15,11 +15,13 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
         val VERIFIED = TransactionStatus.VERIFIED.value
     }
 
+    abstract fun wrapInList(placeHolder: String): String
+
     override val findSignedTransactionIdsAndStatuses: String
         get() = """
             SELECT id, status 
-            FROM {h-schema}utxo_transaction 
-            WHERE id IN (:transactionIds)
+            FROM utxo_transaction 
+            WHERE id IN (${wrapInList(":transactionIds")})
             AND NOT (status = 'V' AND is_filtered = true)
         """.trimIndent()
 
@@ -29,8 +31,8 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
                 id,
                 privacy_salt,
                 utm.canonical_data
-            FROM {h-schema}utxo_transaction AS ut
-            JOIN {h-schema}utxo_transaction_metadata AS utm
+            FROM utxo_transaction AS ut
+            JOIN utxo_transaction_metadata AS utm
                 ON ut.metadata_hash = utm.hash
             WHERE id IN (:transactionIds)"""
             .trimIndent()
@@ -38,7 +40,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
     override val findTransactionComponentLeafs: String
         get() = """
             SELECT group_idx, leaf_idx, data
-            FROM {h-schema}utxo_transaction_component
+            FROM utxo_transaction_component
             WHERE transaction_id = :transactionId
             ORDER BY group_idx, leaf_idx"""
             .trimIndent()
@@ -49,16 +51,16 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             tc_output.leaf_idx, 
             tc_output_info.data as output_info_data,
             tc_output.data AS output_data 
-            FROM {h-schema}utxo_visible_transaction_output AS vto
-            JOIN {h-schema}utxo_transaction_component AS tc_output_info
+            FROM utxo_visible_transaction_output AS vto
+            JOIN utxo_transaction_component AS tc_output_info
                 ON tc_output_info.transaction_id = vto.transaction_id
                 AND tc_output_info.leaf_idx = vto.leaf_idx
                 AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
-            JOIN {h-schema}utxo_transaction_component AS tc_output
+            JOIN utxo_transaction_component AS tc_output
                 ON tc_output.transaction_id = tc_output_info.transaction_id
                 AND tc_output.leaf_idx = tc_output_info.leaf_idx
                 AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
-            JOIN {h-schema}utxo_transaction AS tx
+            JOIN utxo_transaction AS tx
                 ON tx.id = tc_output.transaction_id
             AND vto.consumed IS NULL
             AND tx.status = :verified
@@ -68,21 +70,21 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
     override val findTransactionSignatures: String
         get() = """
             SELECT signature
-            FROM {h-schema}utxo_transaction_signature
+            FROM utxo_transaction_signature
             WHERE transaction_id = :transactionId"""
             .trimIndent()
 
     override val findSignedTransactionStatus: String
         get() = """
             SELECT status
-            FROM {h-schema}utxo_transaction
+            FROM utxo_transaction
             WHERE id = :transactionId
             AND NOT (status = 'V' AND is_filtered = true)"""
             .trimIndent()
 
     override val markTransactionVisibleStatesConsumed: String
         get() = """
-            UPDATE {h-schema}utxo_visible_transaction_output
+            UPDATE utxo_visible_transaction_output
             SET consumed = :consumed
             WHERE transaction_id in (:transactionIds)
             AND (transaction_id || ':' || leaf_idx) IN (:stateRefs)"""
@@ -95,7 +97,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
                 signature_public_key,
                 signature_content,
                 signature_spec
-            FROM {h-schema}utxo_group_parameters
+            FROM utxo_group_parameters
             WHERE hash = :hash"""
             .trimIndent()
 
@@ -105,12 +107,12 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
 				tc_output.leaf_idx, 
 				tc_output_info.data as output_info_data,
                 tc_output.data AS output_data 
-            FROM {h-schema}utxo_transaction_component AS tc_output_info  
-            JOIN {h-schema}utxo_transaction_component AS tc_output
+            FROM utxo_transaction_component AS tc_output_info  
+            JOIN utxo_transaction_component AS tc_output
                 ON tc_output.transaction_id = tc_output_info.transaction_id
                 AND tc_output.leaf_idx = tc_output_info.leaf_idx
                 AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
-            JOIN {h-schema}utxo_transaction AS tx
+            JOIN utxo_transaction AS tx
                 ON tx.id = tc_output.transaction_id
             AND tc_output.transaction_id in (:transactionIds)
             AND (tc_output.transaction_id||':'|| tc_output.leaf_idx) in (:stateRefs)
@@ -121,7 +123,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
 
     override val updateTransactionStatus: String
         get() = """
-            UPDATE {h-schema}utxo_transaction SET status = :newStatus, updated = :updatedAt
+            UPDATE utxo_transaction SET status = :newStatus, updated = :updatedAt
             WHERE id = :transactionId 
             AND (status = :newStatus OR status = '$UNVERIFIED')"""
             .trimIndent()
@@ -197,7 +199,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
 
     override val findConsumedTransactionSourcesForTransaction: String
         get() = """
-            SELECT utxo_transaction_sources.source_state_idx from {h-schema}utxo_transaction_sources 
+            SELECT utxo_transaction_sources.source_state_idx from utxo_transaction_sources 
             WHERE source_state_transaction_id = :transactionId 
             AND group_idx = ${UtxoComponentGroup.INPUTS.ordinal}
             AND source_state_idx in :inputStateIndexes
@@ -205,7 +207,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
 
     override val updateTransactionToVerified: String
         get() = """
-            UPDATE {h-schema}utxo_transaction 
+            UPDATE utxo_transaction 
             SET status = '$VERIFIED', updated = :updatedAt, is_filtered = FALSE
             WHERE id = :transactionId
             AND status in ('$UNVERIFIED', '$DRAFT') 
@@ -215,7 +217,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
     override val findTransactionsWithStatusCreatedBetweenTime: String
         get() = """
             SELECT id
-            FROM {h-schema}utxo_transaction
+            FROM utxo_transaction
             WHERE status = :status 
                 AND created >= :from 
                 AND created < :until
@@ -224,7 +226,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
 
     override val incrementRepairAttemptCount: String
         get() = """
-            UPDATE {h-schema}utxo_transaction
+            UPDATE utxo_transaction
             SET repair_attempt_count = repair_attempt_count + 1
             WHERE id = :transactionId
         """.trimIndent()

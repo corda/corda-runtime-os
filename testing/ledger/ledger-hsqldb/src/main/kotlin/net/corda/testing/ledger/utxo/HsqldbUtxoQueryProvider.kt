@@ -21,6 +21,11 @@ class HsqldbUtxoQueryProvider @Activate constructor(
         LoggerFactory.getLogger(this::class.java).debug { "Activated for ${databaseTypeProvider.databaseType}" }
     }
 
+    override fun wrapInList(placeHolder: String): String {
+        // HSQL needs to UNNEST the array
+        return "UNNEST($placeHolder)"
+    }
+
     override val persistTransaction: String
         get() = """
             MERGE INTO {h-schema}utxo_transaction AS ut

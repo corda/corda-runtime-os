@@ -51,6 +51,7 @@ import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
+import org.hibernate.Session
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.security.MessageDigest
@@ -85,8 +86,11 @@ class UtxoPersistenceServiceImpl(
         id: String,
         transactionStatus: TransactionStatus
     ): Pair<SignedTransactionContainer?, String?> {
-        return entityManagerFactory.transaction { em ->
+        val em = entityManagerFactory.createEntityManager()
+        return try {
             findSignedTransaction(id, transactionStatus, em)
+        } finally {
+            em.close()
         }
     }
 
@@ -176,9 +180,13 @@ class UtxoPersistenceServiceImpl(
     override fun findSignedTransactionIdsAndStatuses(
         transactionIds: List<String>
     ): Map<SecureHash, String> {
-        return entityManagerFactory.transaction { em ->
-            repository.findSignedTransactionIdsAndStatuses(em, transactionIds)
+        var result: Map<SecureHash, String> = emptyMap()
+        entityManagerFactory.transaction { em ->
+            em.unwrap(Session::class.java).doWork { connection ->
+                result = repository.findSignedTransactionIdsAndStatuses(connection, transactionIds)
+            }
         }
+        return result
     }
 
     override fun findSignedLedgerTransaction(

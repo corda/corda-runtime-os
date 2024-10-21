@@ -10,6 +10,7 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken
+import java.sql.Connection
 import java.time.Instant
 import javax.persistence.EntityManager
 
@@ -18,7 +19,7 @@ interface UtxoRepository {
 
     /** Retrieves transaction IDs and their statuses if its ID is included in the [transactionIds] list. */
     fun findSignedTransactionIdsAndStatuses(
-        entityManager: EntityManager,
+        connection: Connection,
         transactionIds: List<String>
     ): Map<SecureHash, String>
 
