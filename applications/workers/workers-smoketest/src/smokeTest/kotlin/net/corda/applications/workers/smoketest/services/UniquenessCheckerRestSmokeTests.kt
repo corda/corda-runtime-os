@@ -9,6 +9,16 @@ import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
+import net.corda.data.uniqueness.UniquenessCheckResultInputStateConflictAvro
+import net.corda.data.uniqueness.UniquenessCheckResultInputStateUnknownAvro
+import net.corda.data.uniqueness.UniquenessCheckResultMalformedRequestAvro
+import net.corda.data.uniqueness.UniquenessCheckResultNotPreviouslySeenTransactionAvro
+import net.corda.data.uniqueness.UniquenessCheckResultReferenceStateConflictAvro
+import net.corda.data.uniqueness.UniquenessCheckResultReferenceStateUnknownAvro
+import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
+import net.corda.data.uniqueness.UniquenessCheckResultTimeWindowBeforeLowerBoundAvro
+import net.corda.data.uniqueness.UniquenessCheckResultTimeWindowOutOfBoundsAvro
+import net.corda.data.uniqueness.UniquenessCheckResultUnhandledExceptionAvro
 import net.corda.data.uniqueness.UniquenessCheckType
 import net.corda.e2etest.utilities.ClusterReadiness
 import net.corda.e2etest.utilities.ClusterReadinessChecker
@@ -20,10 +30,25 @@ import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.registerStaticMember
+import net.corda.ledger.libs.uniqueness.data.UniquenessCheckResponse
 import net.corda.messagebus.kafka.serialization.CordaAvroSerializationFactoryImpl
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.test.util.time.AutoTickTestClock
+import net.corda.uniqueness.datamodel.common.toStateRef
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateConflictImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateUnknownImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorNotPreviouslySeenTransactionImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateConflictImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorTimeWindowBeforeLowerBoundImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorTimeWindowOutOfBoundsImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorUnhandledExceptionImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
 import net.corda.uniqueness.utils.UniquenessAssertions
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
@@ -148,7 +173,9 @@ class UniquenessCheckerRestSmokeTests : ClusterReadiness by ClusterReadinessChec
             avroUniquenessDeserializer.deserialize((responseEvent?.payload as ExternalEventResponse).payload.array())
 
         assertThat(deserializedExternalEventResponse).isNotNull
-        UniquenessAssertions.assertStandardSuccessResponse(deserializedExternalEventResponse!!, testClock)
+        deserializedExternalEventResponse!!.let {
+            UniquenessAssertions.assertStandardSuccessResponse(UniquenessCheckResponse(it.txId, it.toUniquenessResult()), testClock)
+        }
     }
 
     private val testClock = AutoTickTestClock(Instant.MAX, Duration.ofSeconds(1))
@@ -186,4 +213,99 @@ class UniquenessCheckerRestSmokeTests : ClusterReadiness by ClusterReadinessChec
                 UniquenessCheckType.WRITE
             )
         )
+
+    /**
+     * Converts an Avro result to a [UniquenessCheckResult].
+     *
+     * Duplicate of the same method in [UniquenessCheckExternalEventFactory].
+     */
+    fun UniquenessCheckResponseAvro.toUniquenessResult(): UniquenessCheckResult {
+
+        return when (val avroResult = result) {
+            is UniquenessCheckResultInputStateConflictAvro -> {
+                UniquenessCheckResultFailureImpl(
+                    Instant.now(),
+                    UniquenessCheckErrorInputStateConflictImpl(avroResult.conflictingStates.map {
+                        // FIXME Consuming tx hash is populated as [null] for now
+                        UniquenessCheckStateDetailsImpl(it.toStateRef(), null)
+                    })
+                )
+            }
+            is UniquenessCheckResultInputStateUnknownAvro -> {
+                UniquenessCheckResultFailureImpl(
+                    Instant.now(),
+                    UniquenessCheckErrorInputStateUnknownImpl(avroResult.unknownStates.map {
+                        it.toStateRef()
+                    })
+                )
+            }
+            is UniquenessCheckResultReferenceStateConflictAvro -> {
+                UniquenessCheckResultFailureImpl(
+                    Instant.now(),
+                    UniquenessCheckErrorReferenceStateConflictImpl(avroResult.conflictingStates.map {
+                        // FIXME Consuming tx hash is populated as [null] for now
+                        UniquenessCheckStateDetailsImpl(it.toStateRef(), null)
+                    })
+                )
+            }
+            is UniquenessCheckResultReferenceStateUnknownAvro -> {
+                UniquenessCheckResultFailureImpl(
+                    Instant.now(),
+                    UniquenessCheckErrorReferenceStateUnknownImpl(avroResult.unknownStates.map {
+                        it.toStateRef()
+                    })
+                )
+            }
+            is UniquenessCheckResultTimeWindowOutOfBoundsAvro -> {
+                UniquenessCheckResultFailureImpl(
+                    Instant.now(),
+                    UniquenessCheckErrorTimeWindowOutOfBoundsImpl(
+                        avroResult.evaluationTimestamp,
+                        avroResult.timeWindowLowerBound,
+                        avroResult.timeWindowUpperBound
+                    )
+                )
+            }
+            is UniquenessCheckResultTimeWindowBeforeLowerBoundAvro -> {
+                UniquenessCheckResultFailureImpl(
+                    Instant.now(),
+                    UniquenessCheckErrorTimeWindowBeforeLowerBoundImpl(
+                        avroResult.evaluationTimestamp,
+                        avroResult.timeWindowLowerBound,
+                    )
+                )
+            }
+            is UniquenessCheckResultMalformedRequestAvro -> {
+                UniquenessCheckResultFailureImpl(
+                    Instant.now(),
+                    UniquenessCheckErrorMalformedRequestImpl(
+                        avroResult.errorText
+                    )
+                )
+            }
+            is UniquenessCheckResultUnhandledExceptionAvro -> {
+                UniquenessCheckResultFailureImpl(
+                    Instant.now(),
+                    UniquenessCheckErrorUnhandledExceptionImpl(
+                        avroResult.exception.errorType,
+                        avroResult.exception.errorMessage
+                    )
+                )
+            }
+            is UniquenessCheckResultNotPreviouslySeenTransactionAvro -> {
+                UniquenessCheckResultFailureImpl(
+                    Instant.now(),
+                    UniquenessCheckErrorNotPreviouslySeenTransactionImpl
+                )
+            }
+            is UniquenessCheckResultSuccessAvro -> {
+                UniquenessCheckResultSuccessImpl(avroResult.commitTimestamp)
+            }
+            else -> {
+                throw IllegalArgumentException(
+                    "Unable to convert Avro type \"${avroResult.javaClass.typeName}\" to result"
+                )
+            }
+        }
+    }
 }
