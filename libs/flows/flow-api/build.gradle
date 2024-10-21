@@ -18,7 +18,6 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:metrics")
     implementation project(":libs:serialization:serialization-checkpoint-api")
-    implementation project(':libs:virtual-node:virtual-node-info')
 }
 
 description 'Flow API Library'
