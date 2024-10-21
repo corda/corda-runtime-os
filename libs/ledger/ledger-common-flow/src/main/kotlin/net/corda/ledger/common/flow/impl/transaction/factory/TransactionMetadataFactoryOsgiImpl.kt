@@ -1,6 +1,7 @@
 package net.corda.ledger.common.flow.impl.transaction.factory
 
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
+import net.corda.ledger.common.flow.impl.transaction.getCpiSummary
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
 import net.corda.ledger.libs.common.flow.impl.transaction.factory.TransactionMetadataFactoryImpl
 import net.corda.libs.platform.PlatformInfoProvider
@@ -31,6 +32,7 @@ class TransactionMetadataFactoryOsgiImpl(
         flowEngine: FlowEngine
     ) : this(
         TransactionMetadataFactoryImpl(
+            platformInfoProvider,
             {
                 currentSandboxGroupContext
                     .get()
@@ -47,8 +49,7 @@ class TransactionMetadataFactoryOsgiImpl(
                         )
                     }
             },
-            platformInfoProvider,
-            flowEngine
+            { flowEngine.getCpiSummary() }
         )
     )
 }
