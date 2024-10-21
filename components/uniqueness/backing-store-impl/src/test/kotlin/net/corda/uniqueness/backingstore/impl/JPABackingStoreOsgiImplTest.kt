@@ -9,6 +9,7 @@ import net.corda.ledger.libs.uniqueness.backingstore.impl.UniquenessTransactionD
 import net.corda.ledger.libs.uniqueness.backingstore.impl.UniquenessTxAlgoIdKey
 import net.corda.ledger.libs.uniqueness.backingstore.impl.UniquenessTxAlgoStateRefKey
 import net.corda.ledger.libs.uniqueness.backingstore.impl.jpaBackingStoreObjectMapper
+import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.ledger.libs.uniqueness.data.bytes
 import net.corda.ledger.libs.uniqueness.data.randomUniquenessSecureHash
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -80,7 +81,9 @@ class JPABackingStoreOsgiImplTest {
     private val errorEntities = mutableListOf<UniquenessRejectedTransactionEntity>()
 
     private val groupId = UUID.randomUUID().toString()
-    private val notaryRepIdentity = createTestHoldingIdentity("C=GB, L=London, O=NotaryRep1", groupId)
+    private val notaryRepIdentity = createTestHoldingIdentity("C=GB, L=London, O=NotaryRep1", groupId).let {
+        UniquenessHoldingIdentity(it.x500Name, it.groupId, it.shortHash, it.hash)
+    }
 
     private val originatorX500Name = "C=GB, L=London, O=Alice"
 

@@ -4,8 +4,6 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.base.annotations.CordaSerializable
-import net.corda.v5.base.types.MemberX500Name
-import net.corda.virtualnode.HoldingIdentity
 import java.time.Instant
 
 @CordaSerializable
@@ -23,10 +21,7 @@ data class UniquenessCheckRequest(
     val numOutputStates: Int,
     val timeWindowLowerBound: Instant?,
     val timeWindowUpperBound: Instant,
-    val holdingIdentity: HoldingIdentity = HoldingIdentity(
-        x500Name = MemberX500Name("Dummy", "Dummy", "LDN", "GB"),
-        groupId = "Dummy"
-    ),
+    val holdingIdentity: UniquenessHoldingIdentity,
     val additionalData: Map<String, Any> = emptyMap()
 ) {
     fun toInternal(): UniquenessCheckRequestInternal {

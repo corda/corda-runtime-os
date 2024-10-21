@@ -2,22 +2,22 @@ package net.corda.uniqueness.utils
 
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckRequest
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckType
+import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.HoldingIdentity
 import java.time.Instant
 
 class UniquenessCheckRequestBuilder(
     txId: SecureHash,
     defaultGroupId: String,
     defaultTimeWindowUpperBound: Instant,
-    defaultHoldingIdentity: HoldingIdentity? = null
+    defaultHoldingIdentity: UniquenessHoldingIdentity? = null
 ) {
 
     // Default holding id used in most tests
     private val defaultNotaryVNodeHoldingIdentity = createTestHoldingIdentity(
         "C=GB, L=London, O=NotaryRep1", defaultGroupId
-    )
+    ).let { UniquenessHoldingIdentity(it.x500Name, it.groupId, it.shortHash, it.hash) }
 
     private val originatorX500Name = "C=GB, L=London, O=Alice"
 
@@ -26,7 +26,7 @@ class UniquenessCheckRequestBuilder(
     private var transactionId: String = txId.toString()
 
     private var initiator: String = originatorX500Name
-    private var holdingIdentity: HoldingIdentity = defaultHoldingIdentity ?: defaultNotaryVNodeHoldingIdentity
+    private var holdingIdentity: UniquenessHoldingIdentity = defaultHoldingIdentity ?: defaultNotaryVNodeHoldingIdentity
 
     private var inputStates: List<String> = emptyList()
     private var referenceStates: List<String> = emptyList()
@@ -64,7 +64,7 @@ class UniquenessCheckRequestBuilder(
         return this
     }
 
-    fun setHoldingIdentity(holdingIdentity: HoldingIdentity): UniquenessCheckRequestBuilder {
+    fun setHoldingIdentity(holdingIdentity: UniquenessHoldingIdentity): UniquenessCheckRequestBuilder {
         this.holdingIdentity = holdingIdentity
         return this
     }

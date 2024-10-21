@@ -1,9 +1,11 @@
 @file:Suppress("SpreadOperator", "WildcardImport")
 package net.corda.ledger.libs.uniqueness
 
+import net.corda.crypto.core.ShortHash
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStore
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckRequest
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckResponse
+import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.ledger.libs.uniqueness.data.UniquenessSecureHashImpl
 import net.corda.ledger.libs.uniqueness.data.randomBytes
 import net.corda.ledger.libs.uniqueness.data.randomUniquenessSecureHash
@@ -23,12 +25,9 @@ import net.corda.uniqueness.utils.UniquenessCheckRequestBuilder
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertIterableEquals
-import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -59,8 +58,8 @@ class BatchedUniquenessCheckerImplTest {
 
     private val groupId = UUID.randomUUID().toString()
 
-    fun createTestHoldingIdentity(x500Name: String, groupId: String): HoldingIdentity {
-        return HoldingIdentity(MemberX500Name.parse(x500Name), groupId)
+    fun createTestHoldingIdentity(x500Name: String, groupId: String): UniquenessHoldingIdentity {
+        return UniquenessHoldingIdentity(MemberX500Name.parse(x500Name), groupId, mock<ShortHash>(), mock<SecureHash>())
     }
 
     private val baseTime: Instant = Instant.EPOCH
@@ -144,16 +143,6 @@ class BatchedUniquenessCheckerImplTest {
 
     @Nested
     inner class MalformedRequests {
-        @Test
-        @Disabled("Not relevant anymore, we don't use avro")
-        fun `Request is missing time window upper bound`() {
-            assertThrows(org.apache.avro.AvroRuntimeException::class.java, {
-                newRequestBuilder()
-                    //.setTimeWindowUpperBound()
-                    .build()
-            }, "Field timeWindowUpperBound type:LONG pos:5 does not accept null values")
-        }
-
         @Test
         fun `Request contains a negative number of output states`() {
             processRequests(

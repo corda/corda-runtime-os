@@ -6,6 +6,7 @@ import net.corda.ledger.libs.uniqueness.backingstore.BackingStore
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStoreMetricsFactory
 import net.corda.ledger.libs.uniqueness.backingstore.impl.JPABackingStoreEntities
 import net.corda.ledger.libs.uniqueness.backingstore.impl.JPABackingStoreBase
+import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.PersistenceExceptionCategorizer
@@ -37,7 +38,7 @@ class JPABackingStoreOsgiImpl @Activate constructor(
         )
     }
 
-    override fun getEntityManagerFactory(holdingIdentity: HoldingIdentity): EntityManagerFactory {
+    override fun getEntityManagerFactory(holdingIdentity: UniquenessHoldingIdentity): EntityManagerFactory {
         val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentity.shortHash) ?:
         throw VirtualNodeNotFoundException("Virtual node ${holdingIdentity.shortHash} not found")
         val uniquenessDmlConnectionId = virtualNodeInfo.uniquenessDmlConnectionId

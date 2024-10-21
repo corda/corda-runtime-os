@@ -6,6 +6,7 @@ import net.corda.ledger.libs.uniqueness.backingstore.BackingStore
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckRequest
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckResponse
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckType
+import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateConflictImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateUnknownImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
@@ -21,6 +22,7 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
+import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.application.uniqueness.model.UniquenessCheckError
@@ -31,7 +33,6 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
@@ -162,7 +163,7 @@ open class BatchedUniquenessCheckerImpl(
     private inline fun processBatches(
         requestsToProcess: List<Pair<UniquenessCheckRequestInternal, UniquenessCheckRequest>>,
         results: HashMap<UniquenessCheckRequest, UniquenessCheckResponse>,
-        processingCallback: (holdingIdentity: HoldingIdentity, batch: List<UniquenessCheckRequestInternal>)
+        processingCallback: (holdingIdentity: UniquenessHoldingIdentity, batch: List<UniquenessCheckRequestInternal>)
             -> List<Pair<UniquenessCheckRequestInternal, InternalUniquenessCheckResultWithContext>>
     ) {
         requestsToProcess
@@ -233,14 +234,14 @@ open class BatchedUniquenessCheckerImpl(
 
     @Suppress("ComplexMethod", "LongMethod")
     private fun processUniquenessCheckWriteBatch(
-        holdingIdentity: HoldingIdentity,
+        holdingIdentity: UniquenessHoldingIdentity,
         batch: List<UniquenessCheckRequestInternal>
     ): List<Pair<UniquenessCheckRequestInternal, InternalUniquenessCheckResultWithContext>> {
 
         val resultsToRespondWith =
             mutableListOf<Pair<UniquenessCheckRequestInternal, InternalUniquenessCheckResultWithContext>>()
 
-        log.debug ( "Processing uniqueness batch of ${batch.size} requests for $holdingIdentity" )
+        log.debug { "Processing uniqueness batch of ${batch.size} requests for $holdingIdentity" }
 
         // DB operations are retried, removing conflicts from the batch on each attempt.
         backingStore.transactionSession(holdingIdentity) { session, transactionOps ->
@@ -370,7 +371,7 @@ open class BatchedUniquenessCheckerImpl(
 
     @Suppress("ComplexMethod", "LongMethod")
     private fun processUniquenessCheckReadBatch(
-        holdingIdentity: HoldingIdentity,
+        holdingIdentity: UniquenessHoldingIdentity,
         batch: List<UniquenessCheckRequestInternal>
     ): List<Pair<UniquenessCheckRequestInternal, InternalUniquenessCheckResultWithContext>> {
 

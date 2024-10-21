@@ -26,15 +26,12 @@ dependencies {
 
     // TODO This can be removed once we have our own SecureHash implementation, we only need this for the OpaqueBytes
     implementation project(":libs:base-internal")
-
+    implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:db:db-orm")
     implementation project(":libs:db:db-orm-impl")
 
     implementation project(":libs:uniqueness:common")
     implementation project(":libs:utilities")
-
-    // TODO Remove this once we work around the holding identities
-    implementation project(":libs:virtual-node:virtual-node-info")
 
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:uniqueness:backing-store-fake")

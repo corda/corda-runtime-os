@@ -1,12 +1,13 @@
 package net.corda.ledger.libs.uniqueness.backingstore
 
+import net.corda.ledger.libs.uniqueness.backingstore.BackingStore.Session
+import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.HoldingIdentity
 
 /**
  * Abstracts the retrieval and persistence of data required by uniqueness checker implementations.
@@ -50,7 +51,7 @@ interface BackingStore {
      * specified when opening the session.
      */
     fun session(
-        holdingIdentity: HoldingIdentity,
+        holdingIdentity: UniquenessHoldingIdentity,
         block: (Session) -> Unit
     )
 
@@ -61,7 +62,7 @@ interface BackingStore {
      * to perform commit operations up front.
      */
     fun transactionSession(
-        holdingIdentity: HoldingIdentity,
+        holdingIdentity: UniquenessHoldingIdentity,
         block: (Session, Session.TransactionOps) -> Unit
     ) {
         session(holdingIdentity) { session -> session.executeTransaction(block) }

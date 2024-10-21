@@ -2,6 +2,7 @@ package net.corda.ledger.libs.uniqueness.backingstore.impl
 
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStore
 import net.corda.ledger.libs.uniqueness.backingstore.BackingStoreMetricsFactory
+import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.ledger.libs.uniqueness.data.UniquenessSecureHashImpl
 import net.corda.ledger.libs.uniqueness.data.bytes
 import net.corda.orm.PersistenceExceptionCategorizer
@@ -23,7 +24,6 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.HoldingIdentity
 import org.hibernate.Session
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -31,7 +31,6 @@ import java.time.Duration
 import javax.persistence.EntityExistsException
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
-import kotlin.collections.HashMap
 
 @Suppress("ForbiddenComment")
 /**
@@ -49,10 +48,10 @@ abstract class JPABackingStoreBase(
         const val MAX_ATTEMPTS = 10
     }
 
-    abstract fun getEntityManagerFactory(holdingIdentity: HoldingIdentity): EntityManagerFactory
+    abstract fun getEntityManagerFactory(holdingIdentity: UniquenessHoldingIdentity): EntityManagerFactory
 
     override fun session(
-        holdingIdentity: HoldingIdentity,
+        holdingIdentity: UniquenessHoldingIdentity,
         block: (BackingStore.Session) -> Unit
     ) {
 
@@ -80,7 +79,7 @@ abstract class JPABackingStoreBase(
     }
 
     protected open inner class SessionImpl(
-        private val holdingIdentity: HoldingIdentity,
+        private val holdingIdentity: UniquenessHoldingIdentity,
         private val entityManager: EntityManager
     ) : BackingStore.Session {
 

@@ -1,13 +1,12 @@
 package net.corda.uniqueness.checker.impl
 
 import net.corda.ledger.libs.uniqueness.UniquenessCheckerMetricsFactory
+import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.metrics.CordaMetrics
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
-import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
-import java.lang.Exception
 import java.time.Duration
 
 @Component(service = [UniquenessCheckerMetricsFactory::class])
@@ -31,7 +30,7 @@ class BatchedUniquenessCheckerMetricsFactoryOsgiImpl @Activate constructor(): Un
             .record(executionTime)
     }
 
-    override fun recordSubBatchExecutionTime(executionTime: Duration, holdingIdentity: HoldingIdentity) {
+    override fun recordSubBatchExecutionTime(executionTime: Duration, holdingIdentity: UniquenessHoldingIdentity) {
         CordaMetrics.Metric.UniquenessCheckerSubBatchExecutionTime
             .builder()
             .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
@@ -39,7 +38,7 @@ class BatchedUniquenessCheckerMetricsFactoryOsgiImpl @Activate constructor(): Un
             .record(executionTime)
     }
 
-    override fun recordSubBatchSize(size: Int, holdingIdentity: HoldingIdentity) {
+    override fun recordSubBatchSize(size: Int, holdingIdentity: UniquenessHoldingIdentity) {
         CordaMetrics.Metric.UniquenessCheckerSubBatchSize
             .builder()
             .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
@@ -48,7 +47,7 @@ class BatchedUniquenessCheckerMetricsFactoryOsgiImpl @Activate constructor(): Un
     }
 
     override fun incrementSuccessfulRequestCount(
-        holdingIdentity: HoldingIdentity,
+        holdingIdentity: UniquenessHoldingIdentity,
         result: UniquenessCheckResult,
         isDuplicate: Boolean
     ) {
@@ -68,7 +67,7 @@ class BatchedUniquenessCheckerMetricsFactoryOsgiImpl @Activate constructor(): Un
             .increment()
     }
 
-    override fun incrementUnhandledErrorRequestCount(holdingIdentity: HoldingIdentity, exception: Exception) {
+    override fun incrementUnhandledErrorRequestCount(holdingIdentity: UniquenessHoldingIdentity, exception: Exception) {
         CordaMetrics.Metric.UniquenessCheckerRequestCount
             .builder()
             .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())

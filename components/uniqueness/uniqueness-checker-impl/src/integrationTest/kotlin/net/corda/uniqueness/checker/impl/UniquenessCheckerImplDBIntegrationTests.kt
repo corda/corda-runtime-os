@@ -12,6 +12,7 @@ import net.corda.db.testkit.DbUtils
 import net.corda.ledger.libs.uniqueness.UniquenessChecker
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckRequest
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckResponse
+import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.ledger.libs.uniqueness.data.randomUniquenessSecureHash
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
@@ -36,6 +37,7 @@ import net.corda.uniqueness.utils.UniquenessAssertions.assertUnknownReferenceSta
 import net.corda.uniqueness.utils.UniquenessCheckRequestBuilder
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.apache.avro.AvroRuntimeException
@@ -82,8 +84,8 @@ class UniquenessCheckerImplDBIntegrationTests {
     private val groupId = UUID.randomUUID().toString()
 
     // Default holding id used in most tests
-    private val defaultHoldingIdentity = createTestHoldingIdentity(
-        "C=GB, L=London, O=Alice", groupId)
+    private val defaultHoldingIdentity = createTestHoldingIdentity("C=GB, L=London, O=Alice", groupId)
+    private val defaultUniquenessHoldingIdentity = defaultHoldingIdentity.toUniquenessHoldingIdentity()
     private val defaultHoldingIdentityDbName =
         VirtualNodeDbType.UNIQUENESS.getSchemaName(defaultHoldingIdentity.shortHash)
     private val defaultHoldingIdentityDbId = UUID.randomUUID()
@@ -92,6 +94,7 @@ class UniquenessCheckerImplDBIntegrationTests {
     // Additional holding identities
     private val bobHoldingIdentity = createTestHoldingIdentity(
         "C=GB, L=London, O=Bob", groupId)
+    private val bobUniquenessHoldingIdentity = bobHoldingIdentity.toUniquenessHoldingIdentity()
     private val bobHoldingIdentityDbName =
         VirtualNodeDbType.UNIQUENESS.getSchemaName(bobHoldingIdentity.shortHash)
     private val bobHoldingIdentityDbId = UUID.randomUUID()
@@ -99,6 +102,7 @@ class UniquenessCheckerImplDBIntegrationTests {
 
     private val charlieHoldingIdentity = createTestHoldingIdentity(
         "C=GB, L=London, O=Charlie", groupId)
+    private val charlieUniquenessHoldingIdentity = charlieHoldingIdentity.toUniquenessHoldingIdentity()
     private val charlieHoldingIdentityDbName =
         VirtualNodeDbType.UNIQUENESS.getSchemaName(charlieHoldingIdentity.shortHash)
     private val charlieHoldingIdentityDbId = UUID.randomUUID()
@@ -107,6 +111,7 @@ class UniquenessCheckerImplDBIntegrationTests {
     // Holding id that has no associated uniqueness DB
     private val noDbHoldingIdentity = createTestHoldingIdentity(
         "C=GB, L=London, O=Nobody", groupId)
+    private val noDbUniquenessHoldingIdentity = noDbHoldingIdentity.toUniquenessHoldingIdentity()
     private val noDbHoldingIdentityDbName =
         VirtualNodeDbType.UNIQUENESS.getSchemaName(noDbHoldingIdentity.shortHash)
     private val noDbHoldingIdentityDbId = UUID.randomUUID()
@@ -123,13 +128,20 @@ class UniquenessCheckerImplDBIntegrationTests {
 
     private fun currentTime(): Instant = testClock.peekTime()
 
+    private fun HoldingIdentity.toUniquenessHoldingIdentity() = UniquenessHoldingIdentity(
+        x500Name,
+        groupId,
+        shortHash,
+        hash
+    )
+
     private fun newRequestBuilder(
         txId: SecureHash = randomUniquenessSecureHash()
     ) = UniquenessCheckRequestBuilder(
         txId,
         groupId,
         defaultTimeWindowUpperBound,
-        defaultHoldingIdentity
+        defaultUniquenessHoldingIdentity
     )
 
     private fun processRequests(
@@ -1422,7 +1434,7 @@ class UniquenessCheckerImplDBIntegrationTests {
         fun `Uniqueness check for holding id with no uniqueness DB fails`() {
             processRequests(
                 newRequestBuilder()
-                    .setHoldingIdentity(noDbHoldingIdentity)
+                    .setHoldingIdentity(noDbUniquenessHoldingIdentity)
                     .setNumOutputStates(1)
                     .build()
             ).let { responses ->
@@ -1439,23 +1451,23 @@ class UniquenessCheckerImplDBIntegrationTests {
         fun `Unhandled exception is compartmentalised within holding id`() {
             processRequests(
                 newRequestBuilder()
-                    .setHoldingIdentity(bobHoldingIdentity)
+                    .setHoldingIdentity(bobUniquenessHoldingIdentity)
                     .setNumOutputStates(1)
                     .build(),
                 newRequestBuilder()
-                    .setHoldingIdentity(charlieHoldingIdentity)
+                    .setHoldingIdentity(charlieUniquenessHoldingIdentity)
                     .setNumOutputStates(1)
                     .build(),
                 newRequestBuilder()
-                    .setHoldingIdentity(noDbHoldingIdentity)
+                    .setHoldingIdentity(noDbUniquenessHoldingIdentity)
                     .setNumOutputStates(1)
                     .build(),
                 newRequestBuilder()
-                    .setHoldingIdentity(noDbHoldingIdentity)
+                    .setHoldingIdentity(noDbUniquenessHoldingIdentity)
                     .setNumOutputStates(1)
                     .build(),
                 newRequestBuilder()
-                    .setHoldingIdentity(bobHoldingIdentity)
+                    .setHoldingIdentity(bobUniquenessHoldingIdentity)
                     .setNumOutputStates(1)
                     .build(),
             ).let { responses ->
@@ -1480,11 +1492,11 @@ class UniquenessCheckerImplDBIntegrationTests {
 
             processRequests(
                 newRequestBuilder(issueTxId)
-                    .setHoldingIdentity(bobHoldingIdentity)
+                    .setHoldingIdentity(bobUniquenessHoldingIdentity)
                     .setNumOutputStates(1)
                     .build(),
                 newRequestBuilder(issueTxId)
-                    .setHoldingIdentity(charlieHoldingIdentity)
+                    .setHoldingIdentity(charlieUniquenessHoldingIdentity)
                     .setNumOutputStates(1)
                     .build()
             ).let { responses ->
@@ -1499,11 +1511,11 @@ class UniquenessCheckerImplDBIntegrationTests {
 
             processRequests(
                 newRequestBuilder()
-                    .setHoldingIdentity(bobHoldingIdentity)
+                    .setHoldingIdentity(bobUniquenessHoldingIdentity)
                     .setInputStates(listOf(unspentStateRef))
                     .build(),
                 newRequestBuilder()
-                    .setHoldingIdentity(charlieHoldingIdentity)
+                    .setHoldingIdentity(charlieUniquenessHoldingIdentity)
                     .setInputStates(listOf(unspentStateRef))
                     .build()
             ).let { responses ->
@@ -1522,7 +1534,7 @@ class UniquenessCheckerImplDBIntegrationTests {
 
             processRequests(
                 newRequestBuilder()
-                    .setHoldingIdentity(bobHoldingIdentity)
+                    .setHoldingIdentity(bobUniquenessHoldingIdentity)
                     .setInputStates(unspentStateRefs)
                     .build()
             ).let { responses ->
