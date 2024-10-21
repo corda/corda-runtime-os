@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.time.Instant
+import net.corda.crypto.service.impl.toCryptoSigningKey
 
 @Suppress("LongParameterList")
 class CryptoFlowOpsProcessor(

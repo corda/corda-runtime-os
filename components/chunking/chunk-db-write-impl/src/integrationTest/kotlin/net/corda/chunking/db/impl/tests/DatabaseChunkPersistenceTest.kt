@@ -1,6 +1,7 @@
 package net.corda.chunking.db.impl.tests
 
 import com.google.common.jimfs.Jimfs
+import java.nio.ByteBuffer
 import java.nio.file.FileSystem
 import java.nio.file.Files
 import java.nio.file.Path
@@ -18,7 +19,7 @@ import net.corda.chunking.datamodel.ChunkingEntities
 import net.corda.chunking.db.impl.AllChunksReceived
 import net.corda.chunking.db.impl.persistence.database.DatabaseChunkPersistence
 import net.corda.crypto.core.SecureHashImpl
-import net.corda.crypto.core.toAvro
+import net.corda.crypto.core.bytes
 import net.corda.data.chunking.Chunk
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
@@ -27,17 +28,22 @@ import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
+import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import net.corda.data.crypto.SecureHash as AvroSecureHash
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class DatabaseChunkPersistenceTest {
     companion object {
         private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/config/db.changelog-master.xml"
+
+        fun SecureHash.toAvro(): AvroSecureHash =
+            AvroSecureHash(this.algorithm, ByteBuffer.wrap(bytes))
     }
 
     // N.B.  We're pulling in the config tables as well.

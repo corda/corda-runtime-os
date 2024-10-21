@@ -6,7 +6,6 @@ import net.corda.chunking.ChunksCombined
 import net.corda.chunking.Constants.Companion.SECURE_HASH_VALIDATION_ERROR
 import net.corda.chunking.RequestId
 import net.corda.crypto.core.SecureHashImpl
-import net.corda.crypto.core.toCorda
 import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
 import net.corda.utilities.posixOptional
@@ -19,6 +18,7 @@ import java.nio.file.StandardOpenOption.WRITE
 import java.nio.file.attribute.PosixFilePermission.OWNER_READ
 import java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
 import java.nio.file.attribute.PosixFilePermissions.asFileAttribute
+import net.corda.data.crypto.SecureHash as AvroSecureHash
 
 /**
  * Receives binary chunks and reassembles full binary under [destDir] and executes completed
@@ -32,6 +32,9 @@ internal class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
         private fun KeyValuePairList.fromAvro(): Map<String, String?> {
             return items.associate { it.key to it.value }
         }
+
+        private fun AvroSecureHash.toCorda(): SecureHash =
+            SecureHashImpl(this.algorithm, this.bytes.array())
     }
 
     // Could replace the set with just a chunk count, but a set at least tells us which chunk(s) are

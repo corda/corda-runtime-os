@@ -3,7 +3,7 @@ package net.corda.membership.impl.synchronisation
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.core.toCorda
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.crypto.SecureHash
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -72,12 +72,15 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertFailsWith
+import net.corda.data.crypto.SecureHash as AvroSecureHash
 
 class MgmSynchronisationServiceImplTest {
     private companion object {
         const val GROUP = "dummy_group"
         const val PERSISTENCE_EXCEPTION = "Persistence exception happened."
         val clock = TestClock(Instant.ofEpochSecond(100))
+        fun AvroSecureHash.toCorda(): net.corda.v5.crypto.SecureHash =
+            SecureHashImpl(this.algorithm, this.bytes.array())
     }
 
     private val componentHandle: RegistrationHandle = mock()

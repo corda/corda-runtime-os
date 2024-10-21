@@ -1,10 +1,11 @@
 package net.corda.cpk.read.impl
 
-import net.corda.crypto.core.toAvro
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.CpkChunkId
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
+import net.corda.crypto.core.bytes
+import net.corda.data.crypto.SecureHash as AvroSecureHash
 
 object Helpers {
 
@@ -23,4 +24,7 @@ object Helpers {
                     ByteBuffer.wrap(bytes),
                     null
                 )
+
+    private fun SecureHash.toAvro(): AvroSecureHash =
+        AvroSecureHash(this.algorithm, ByteBuffer.wrap(bytes))
 }

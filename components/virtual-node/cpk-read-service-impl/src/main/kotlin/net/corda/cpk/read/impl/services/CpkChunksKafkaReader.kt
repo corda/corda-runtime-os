@@ -1,6 +1,5 @@
 package net.corda.cpk.read.impl.services
 
-import net.corda.crypto.core.toCorda
 import net.corda.cpk.read.impl.services.cache.CpkChunkIdsCache
 import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManager
 import net.corda.data.chunking.Chunk
@@ -15,6 +14,8 @@ import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.SortedSet
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.data.crypto.SecureHash as AvroSecureHash
 
 // TODO should be enough for now to keep it simple and not replace/ delete CPK chunks?
 class CpkChunksKafkaReader(
@@ -24,6 +25,8 @@ class CpkChunksKafkaReader(
 ) : CompactedProcessor<CpkChunkId, Chunk> {
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        fun AvroSecureHash.toCorda(): SecureHash =
+            SecureHashImpl(this.algorithm, this.bytes.array())
     }
 
     // Assuming [CompactedProcessor.onSnapshot] and [CompactedProcessor.onNext] are not called concurrently.

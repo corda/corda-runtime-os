@@ -2,7 +2,6 @@ package net.corda.applications.workers.smoketest.services
 
 import net.corda.applications.workers.smoketest.utils.PLATFORM_VERSION
 import net.corda.crypto.core.SecureHashImpl
-import net.corda.crypto.core.toAvro
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHashes
@@ -36,9 +35,13 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.nio.ByteBuffer
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
+import net.corda.crypto.core.bytes
+import net.corda.v5.crypto.SecureHash
+import net.corda.data.crypto.SecureHash as AvroSecureHash
 
 /**
  * Tests for the Crypto REST service
@@ -59,6 +62,8 @@ class CryptoRestSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
     companion object {
         const val TEST_CPI_NAME = "ledger-utxo-demo-app"
         const val TEST_CPB_LOCATION = "/META-INF/ledger-utxo-demo-app.cpb"
+        private fun SecureHash.toAvro(): AvroSecureHash =
+            AvroSecureHash(this.algorithm, ByteBuffer.wrap(bytes))
     }
 
     private val testRunUniqueId = UUID.randomUUID()

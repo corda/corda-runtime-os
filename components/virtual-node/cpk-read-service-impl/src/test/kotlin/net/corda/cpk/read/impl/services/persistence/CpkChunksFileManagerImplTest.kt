@@ -7,7 +7,6 @@ import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManagerImpl.Com
 import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManagerImpl.Companion.toCpkFileName
 import net.corda.cpk.read.impl.services.persistence.CpkChunksFileManagerImpl.Companion.toFileName
 import net.corda.crypto.core.parseSecureHash
-import net.corda.crypto.core.toCorda
 import net.corda.data.chunking.CpkChunkId
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Condition
@@ -24,6 +23,9 @@ import java.nio.file.StandardOpenOption.CREATE_NEW
 import java.nio.file.StandardOpenOption.WRITE
 import java.nio.file.attribute.PosixFilePermission
 import java.nio.file.attribute.PosixFilePermission.OWNER_READ
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.v5.crypto.SecureHash
+import net.corda.data.crypto.SecureHash as AvroSecureHash
 
 class CpkChunksFileManagerImplTest {
     private lateinit var commonCpkCacheDir: Path
@@ -33,6 +35,8 @@ class CpkChunksFileManagerImplTest {
 
     private companion object {
         const val DUMMY_HASH = "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FA"
+        fun AvroSecureHash.toCorda(): SecureHash =
+            SecureHashImpl(this.algorithm, this.bytes.array())
     }
 
     @BeforeEach

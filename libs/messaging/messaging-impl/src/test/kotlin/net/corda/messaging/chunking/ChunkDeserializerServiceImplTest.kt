@@ -3,17 +3,19 @@ package net.corda.messaging.chunking
 import java.nio.ByteBuffer
 import net.corda.chunking.Checksum
 import net.corda.chunking.impl.ChunkBuilderServiceImpl
-import net.corda.crypto.core.toAvro
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.crypto.core.bytes
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
+import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import net.corda.data.crypto.SecureHash as AvroSecureHash
 
 class ChunkDeserializerServiceImplTest {
     private lateinit var valueDeserializer: CordaAvroDeserializer<String>
@@ -40,6 +42,10 @@ class ChunkDeserializerServiceImplTest {
     private lateinit var testFinalChunk: Chunk
     private lateinit var chunkMap : MutableMap<ChunkKey, Chunk>
     private lateinit var chunks : MutableList<Chunk>
+    private companion object {
+        private fun SecureHash.toAvro(): AvroSecureHash =
+            AvroSecureHash(this.algorithm, ByteBuffer.wrap(bytes))
+    }
 
     @BeforeEach
     fun setup() {

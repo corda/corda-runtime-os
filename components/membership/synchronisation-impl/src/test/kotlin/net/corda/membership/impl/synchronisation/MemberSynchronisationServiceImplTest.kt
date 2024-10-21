@@ -3,8 +3,7 @@ package net.corda.membership.impl.synchronisation
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.core.toCorda
-import net.corda.data.crypto.SecureHash
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
@@ -66,6 +65,7 @@ import net.corda.utilities.minutes
 import net.corda.utilities.parseOrNull
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
@@ -96,6 +96,7 @@ import java.security.PublicKey
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertFailsWith
+import net.corda.data.crypto.SecureHash as AvroSecureHash
 import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
 
 class MemberSynchronisationServiceImplTest {
@@ -105,6 +106,8 @@ class MemberSynchronisationServiceImplTest {
         val MEMBER_CONTEXT_BYTES = "2222".toByteArray()
         val MGM_CONTEXT_BYTES = "3333".toByteArray()
         val GROUP_PARAMETERS_BYTES = "dummy-parameters".toByteArray()
+        fun AvroSecureHash.toCorda(): SecureHash =
+            SecureHashImpl(this.algorithm, this.bytes.array())
     }
 
     private val mockPublisher = mock<Publisher>().apply {
@@ -195,7 +198,7 @@ class MemberSynchronisationServiceImplTest {
         on { memberContext } doReturn signedMemberContext
         on { mgmContext } doReturn signedMgmContext
     }
-    private val hash = SecureHash("algo", ByteBuffer.wrap(byteArrayOf(1, 2, 3)))
+    private val hash = AvroSecureHash("algo", ByteBuffer.wrap(byteArrayOf(1, 2, 3)))
     private val signedMemberships: SignedMemberships = mock {
         on { memberships } doReturn listOf(signedMemberInfo)
         on { hashCheck } doReturn hash
@@ -538,7 +541,7 @@ class MemberSynchronisationServiceImplTest {
     fun `processMembershipUpdates asks for synchronization when hashes are misaligned`() {
         postConfigChangedEvent()
         synchronisationService.start()
-        whenever(signedMemberships.hashCheck) doReturn SecureHash("algo", ByteBuffer.wrap(byteArrayOf(4, 5, 6)))
+        whenever(signedMemberships.hashCheck) doReturn AvroSecureHash("algo", ByteBuffer.wrap(byteArrayOf(4, 5, 6)))
 
         val published = synchronisationService.processMembershipUpdates(updates)
 
@@ -556,7 +559,7 @@ class MemberSynchronisationServiceImplTest {
     fun `processMembershipUpdates create the correct sync request when hashes are misaligned`() {
         postConfigChangedEvent()
         synchronisationService.start()
-        whenever(signedMemberships.hashCheck) doReturn SecureHash("algo", ByteBuffer.wrap(byteArrayOf(4, 5, 6)))
+        whenever(signedMemberships.hashCheck) doReturn AvroSecureHash("algo", ByteBuffer.wrap(byteArrayOf(4, 5, 6)))
 
         synchronisationService.processMembershipUpdates(updates)
 

@@ -6,7 +6,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.core.toCorda
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.membership.command.synchronisation.mgm.ProcessSyncRequest
 import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
@@ -54,6 +54,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.UUID
+import net.corda.data.crypto.SecureHash as AvroSecureHash
 
 @Component(service = [SynchronisationService::class])
 class MgmSynchronisationServiceImpl internal constructor(
@@ -138,6 +139,8 @@ class MgmSynchronisationServiceImpl internal constructor(
         const val SERVICE = "MgmSynchronisationService"
         private val clock: Clock = UTCClock()
         const val IDENTITY_EX_MESSAGE = "is not part of the membership group!"
+        fun AvroSecureHash.toCorda(): SecureHash =
+            SecureHashImpl(this.algorithm, this.bytes.array())
     }
 
     // Component lifecycle coordinator

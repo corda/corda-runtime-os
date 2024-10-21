@@ -12,13 +12,11 @@ import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.bytes
-import net.corda.crypto.core.toAvro
 import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
-import net.corda.data.crypto.SecureHash
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
@@ -99,6 +97,7 @@ import net.corda.utilities.seconds
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
@@ -119,6 +118,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import net.corda.data.crypto.SecureHash as AvroSecureHash
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class SynchronisationIntegrationTest {
@@ -179,6 +179,9 @@ class SynchronisationIntegrationTest {
 
         @InjectService(timeout = 5000)
         lateinit var testLocallyHostedIdentitiesService: TestLocallyHostedIdentitiesService
+
+        fun SecureHash.toAvro(): AvroSecureHash =
+            AvroSecureHash(this.algorithm, ByteBuffer.wrap(bytes))
 
         val merkleTreeGenerator: MerkleTreeGenerator by lazy {
             MerkleTreeGenerator(
@@ -427,7 +430,7 @@ class SynchronisationIntegrationTest {
         )
         val requesterHash = merkleTreeGenerator.generateTreeUsingMembers(listOf(requesterInfo)).root
         val byteBuffer = ByteBuffer.wrap("123".toByteArray())
-        val secureHash = SecureHash("algorithm", byteBuffer)
+        val secureHash = AvroSecureHash("algorithm", byteBuffer)
 
         val syncRequest = MembershipSyncRequest(
             DistributionMetaData(

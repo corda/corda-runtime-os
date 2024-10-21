@@ -4,7 +4,7 @@ import net.corda.chunking.Constants.Companion.CHUNK_FILENAME_KEY
 import net.corda.cpi.upload.endpoints.common.CpiUploadRestResourceHandler
 import net.corda.cpi.upload.endpoints.service.CpiUploadService
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.crypto.core.toCorda
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.chunking.UploadStatus
 import net.corda.libs.configuration.validation.ConfigurationValidationException
 import net.corda.libs.cpiupload.DuplicateCpiUploadException
@@ -29,6 +29,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import net.corda.data.crypto.SecureHash as AvroSecureHash
 
 @Component(service = [PluggableRestResource::class])
 class CpiUploadRestResourceImpl @Activate constructor(
@@ -43,6 +44,7 @@ class CpiUploadRestResourceImpl @Activate constructor(
 ) : CpiUploadRestResource, PluggableRestResource<CpiUploadRestResource>, Lifecycle {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private fun AvroSecureHash.toCorda(): SecureHash = SecureHashImpl(this.algorithm, this.bytes.array())
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<CpiUploadRestResource>(

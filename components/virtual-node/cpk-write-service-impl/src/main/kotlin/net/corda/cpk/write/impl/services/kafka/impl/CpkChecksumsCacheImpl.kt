@@ -1,6 +1,5 @@
 package net.corda.cpk.write.impl.services.kafka.impl
 
-import net.corda.crypto.core.toCorda
 import net.corda.cpk.write.impl.services.kafka.CpkChecksumsCache
 import net.corda.cpk.write.impl.services.kafka.impl.CpkChecksumsCacheImpl.CacheSynchronizer
 import net.corda.data.chunking.Chunk
@@ -17,6 +16,8 @@ import net.corda.v5.crypto.SecureHash
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.Collections
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.data.crypto.SecureHash as AvroSecureHash
 
 /**
  * This cache will get updated everytime a zero chunk is pushed to Kafka and gets picked up by [CacheSynchronizer].
@@ -30,6 +31,8 @@ class CpkChecksumsCacheImpl(
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private fun ByteBuffer.isZeroChunk() = this.limit() == 0
+        fun AvroSecureHash.toCorda(): SecureHash =
+            SecureHashImpl(this.algorithm, this.bytes.array())
     }
 
     private val cpkChecksums: MutableMap<SecureHash, SecureHash> = Collections.synchronizedMap(LinkedHashMap())

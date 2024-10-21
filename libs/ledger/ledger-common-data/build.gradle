@@ -19,7 +19,6 @@ dependencies {
 
     implementation libs.jackson.annotations
 
-    api project(':libs:base-internal')
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:flows:flow-api')
     implementation project(':libs:sandbox-types')

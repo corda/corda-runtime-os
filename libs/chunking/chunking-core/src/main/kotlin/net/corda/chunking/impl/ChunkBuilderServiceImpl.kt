@@ -2,14 +2,19 @@ package net.corda.chunking.impl
 
 import java.nio.ByteBuffer
 import net.corda.chunking.ChunkBuilderService
-import net.corda.crypto.core.toAvro
+import net.corda.crypto.core.bytes
 import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Component
+import net.corda.data.crypto.SecureHash as AvroSecureHash
 
 @Component(service = [ChunkBuilderService::class])
 class ChunkBuilderServiceImpl : ChunkBuilderService {
+    private companion object {
+        fun SecureHash.toAvro(): AvroSecureHash =
+            AvroSecureHash(this.algorithm, ByteBuffer.wrap(bytes))
+    }
     override fun buildFinalChunk(
         identifier: String,
         chunkNumber: Int,

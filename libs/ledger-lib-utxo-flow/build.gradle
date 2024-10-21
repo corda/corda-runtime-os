@@ -1,4 +1,4 @@
-plugins {
+    plugins {
     id 'corda.common-publishing'
     id 'corda.common-library'
 }
@@ -9,8 +9,6 @@ ext.cordaEnableFormatting = true
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
-
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation project(':libs:ledger:ledger-common-data')
     implementation project(':libs:ledger:ledger-common-flow-api')
