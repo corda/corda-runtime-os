@@ -21,7 +21,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
         get() = """
             SELECT id, status 
             FROM utxo_transaction 
-            WHERE id IN (${wrapInList(":transactionIds")})
+            WHERE id ${wrapInList(":transactionIds")}
             AND NOT (status = 'V' AND is_filtered = true)
         """.trimIndent()
 
@@ -34,7 +34,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             FROM utxo_transaction AS ut
             JOIN utxo_transaction_metadata AS utm
                 ON ut.metadata_hash = utm.hash
-            WHERE id IN (:transactionIds)"""
+            WHERE id ${wrapInList(":transactionIds")}"""
             .trimIndent()
 
     override val findTransactionComponentLeafs: String
@@ -86,8 +86,8 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
         get() = """
             UPDATE utxo_visible_transaction_output
             SET consumed = :consumed
-            WHERE transaction_id in (:transactionIds)
-            AND (transaction_id || ':' || leaf_idx) IN (:stateRefs)"""
+            WHERE transaction_id ${wrapInList(":transactionIds")}
+            AND (transaction_id || ':' || leaf_idx) ${wrapInList(":stateRefs")}"""
             .trimIndent()
 
     override val findSignedGroupParameters: String
@@ -114,8 +114,8 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
                 AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
             JOIN utxo_transaction AS tx
                 ON tx.id = tc_output.transaction_id
-            AND tc_output.transaction_id in (:transactionIds)
-            AND (tc_output.transaction_id||':'|| tc_output.leaf_idx) in (:stateRefs)
+            AND tc_output.transaction_id ${wrapInList(":transactionIds")}
+            AND (tc_output.transaction_id||':'|| tc_output.leaf_idx) ${wrapInList(":stateRefs")}
             AND tx.status = :verified
             AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
             ORDER BY tx.created, tc_output.transaction_id, tc_output.leaf_idx"""
@@ -125,7 +125,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
         get() = """
             UPDATE utxo_transaction SET status = :newStatus, updated = :updatedAt
             WHERE id = :transactionId 
-            AND (status = :newStatus OR status = '$UNVERIFIED')"""
+            AND (status = :existingStatus OR status = '$UNVERIFIED')"""
             .trimIndent()
 
     /**
@@ -194,7 +194,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
                 	FROM utxo_transaction_merkle_proof_leaves utmpl
                 	WHERE utmpl.merkle_proof_id = utmp.merkle_proof_id
             	)
-            WHERE utmp.transaction_id IN (:transactionIds)"""
+            WHERE utmp.transaction_id ${wrapInList(":transactionIds")}"""
             .trimIndent()
 
     override val findConsumedTransactionSourcesForTransaction: String
@@ -202,7 +202,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             SELECT utxo_transaction_sources.source_state_idx from utxo_transaction_sources 
             WHERE source_state_transaction_id = :transactionId 
             AND group_idx = ${UtxoComponentGroup.INPUTS.ordinal}
-            AND source_state_idx in :inputStateIndexes
+            AND source_state_idx ${wrapInList(":inputStateIndexes")}
         """.trimIndent()
 
     override val updateTransactionToVerified: String
@@ -222,6 +222,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
                 AND created >= :from 
                 AND created < :until
             ORDER BY repair_attempt_count ASC, created ASC
+            LIMIT :limit
         """.trimIndent()
 
     override val incrementRepairAttemptCount: String

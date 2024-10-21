@@ -23,12 +23,12 @@ class HsqldbUtxoQueryProvider @Activate constructor(
 
     override fun wrapInList(placeHolder: String): String {
         // HSQL needs to UNNEST the array
-        return "UNNEST($placeHolder)"
+        return "IN (UNNEST($placeHolder))"
     }
 
     override val persistTransaction: String
         get() = """
-            MERGE INTO {h-schema}utxo_transaction AS ut
+            MERGE INTO utxo_transaction AS ut
             USING (VALUES :id, CAST(:privacySalt AS VARBINARY(64)), :accountId, CAST(:createdAt AS TIMESTAMP), :status, CAST(:updatedAt AS TIMESTAMP), :metadataHash, FALSE)
                 AS x(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
             ON x.id = ut.id
@@ -41,7 +41,7 @@ class HsqldbUtxoQueryProvider @Activate constructor(
 
     override val persistUnverifiedTransaction: String
         get() = """
-            MERGE INTO {h-schema}utxo_transaction AS ut
+            MERGE INTO utxo_transaction AS ut
             USING (VALUES :id, CAST(:privacySalt AS VARBINARY(64)), :accountId, CAST(:createdAt AS TIMESTAMP), '$UNVERIFIED', CAST(:updatedAt AS TIMESTAMP), :metadataHash, FALSE)
                 AS x(id, privacy_salt, account_id, created, status, updated, metadata_hash, is_filtered)
             ON x.id = ut.id
@@ -73,7 +73,7 @@ class HsqldbUtxoQueryProvider @Activate constructor(
 
     override val persistTransactionMetadata: String
         get() = """
-            MERGE INTO {h-schema}utxo_transaction_metadata AS m
+            MERGE INTO utxo_transaction_metadata AS m
             USING (VALUES :hash, CAST(:canonicalData AS VARBINARY(1048576)), :groupParametersHash, :cpiFileChecksum)
                 AS x(hash, canonical_data, group_parameters_hash, cpi_file_checksum)
             ON x.hash = m.hash
@@ -155,7 +155,7 @@ class HsqldbUtxoQueryProvider @Activate constructor(
 
     override val persistSignedGroupParameters: String
         get() = """
-            MERGE INTO {h-schema}utxo_group_parameters AS ugp
+            MERGE INTO utxo_group_parameters AS ugp
             USING (VALUES :hash, CAST(:parameters AS VARBINARY(1048576)),
                           CAST(:signature_public_key AS VARBINARY(1048576)), CAST(:signature_content AS VARBINARY(1048576)),
                           :signature_spec, CAST(:createdAt AS TIMESTAMP))

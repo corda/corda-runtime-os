@@ -1,13 +1,18 @@
 package net.corda.ledger.libs.persistence.utxo.impl
 
+import net.corda.ledger.libs.persistence.common.ComponentGroupArrayMapper
 import net.corda.ledger.libs.persistence.common.ComponentGroupMapper
 import javax.persistence.Tuple
 
 /**
  * Used by [UtxoRepositoryImpl.findTransactionSignatures] to map DB rows to transaction's components group lists
  */
-class UtxoComponentGroupMapper(private val transactionId: String) : ComponentGroupMapper {
+class UtxoComponentGroupMapper(private val transactionId: String) : ComponentGroupMapper, ComponentGroupArrayMapper {
     override fun map(tuples: List<Tuple>): Map<Int, List<ByteArray>> {
+        return mapColumns(tuples.map { it.toArray() })
+    }
+
+    override fun mapColumns(tuples: List<Array<Any?>>): Map<Int, List<ByteArray>> {
         val componentGroupLists: MutableMap<Int, MutableList<ByteArray>> = mutableMapOf()
         tuples.forEach { columns ->
             val groupIdx = (columns[0] as Number).toInt()

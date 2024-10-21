@@ -4,7 +4,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 
 class PostgresUtxoQueryProvider : AbstractUtxoQueryProvider() {
     override fun wrapInList(placeHolder: String): String {
-        return placeHolder
+        return "= ANY($placeHolder)"
     }
 
     override val persistTransaction: String

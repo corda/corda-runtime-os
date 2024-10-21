@@ -25,11 +25,13 @@ class NamedParamQueryTest {
         val query = NamedParamQuery.from(sql)
 
         assertSoftly {
-            it.assertThat(query.sql).isEqualTo("""
+            it.assertThat(query.sql).isEqualTo(
+                """
                 UPDATE foo
                 SET bar= ? WHERE id = ?)
                 RETURNING *
-            """.trimIndent())
+                """.trimIndent()
+            )
             it.assertThat(query.fields.size).isEqualTo(2)
             it.assertThat(query.fields["bar"]).isEqualTo(1)
             it.assertThat(query.fields["id"]).isEqualTo(2)
@@ -47,11 +49,13 @@ class NamedParamQueryTest {
         val query = NamedParamQuery.from(sql)
 
         assertSoftly {
-            it.assertThat(query.sql).isEqualTo("""
+            it.assertThat(query.sql).isEqualTo(
+                """
                 INSERT INTO foo(id, bar)
                 VALUES (?, ?)
                 RETURNING *
-            """.trimIndent())
+                """.trimIndent()
+            )
             it.assertThat(query.fields.size).isEqualTo(2)
             it.assertThat(query.fields["id"]).isEqualTo(1)
             it.assertThat(query.fields["bar"]).isEqualTo(2)
