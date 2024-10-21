@@ -21,7 +21,6 @@ dependencies {
     implementation project(':libs:ledger:ledger-lib-common-flow-api')
 
     implementation project(':libs:ledger:ledger-common-data')
-    implementation project(':libs:serialization:serialization-checkpoint-api')
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:serialization:serialization-amqp-api')
     implementation project(':libs:sandbox-types')
