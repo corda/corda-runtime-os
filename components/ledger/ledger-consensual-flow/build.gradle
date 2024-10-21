@@ -23,7 +23,7 @@ dependencies {
 
     implementation 'net.corda:corda-ledger-consensual'
     implementation 'net.corda:corda-topic-schema'
-    implementation project(':libs:ledger:ledger-common-flow-api')
+    implementation project(':libs:ledger:ledger-lib-common-flow-api')
     implementation project(':libs:ledger:ledger-common-flow')
     implementation project(':libs:crypto:cipher-suite')
     implementation project(':libs:crypto:crypto-core')

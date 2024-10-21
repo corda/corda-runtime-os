@@ -18,7 +18,7 @@ configurations {
 ext.cordaEnableFormatting = true
 
 dependencies {
-    implementation project(':libs:ledger:ledger-common-flow-api')
+    implementation project(':libs:ledger:ledger-lib-common-flow-api')
 
     implementation project(':libs:ledger:ledger-common-data')
     implementation project(':libs:serialization:serialization-checkpoint-api')
