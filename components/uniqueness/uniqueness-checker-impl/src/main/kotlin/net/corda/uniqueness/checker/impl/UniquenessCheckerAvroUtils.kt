@@ -15,7 +15,6 @@ import net.corda.data.uniqueness.UniquenessCheckResultUnhandledExceptionAvro
 import net.corda.data.uniqueness.UniquenessCheckType
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckRequest
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckResponse
-import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateConflict
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateUnknown
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorNotPreviouslySeenTransaction
@@ -27,7 +26,6 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorUnhandledEx
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import org.apache.avro.specific.SpecificRecord
 
@@ -52,7 +50,7 @@ object UniquenessCheckerAvroUtils {
         }
 
         return UniquenessCheckRequest(
-            uniquenessCheckRequestType = uniquenessCheckType.toCorda(),
+            uniquenessCheckType = uniquenessCheckType.toCorda(),
             transactionId = txId,
             initiator = originatorX500Name,
             inputStates = inputStates,
@@ -60,9 +58,11 @@ object UniquenessCheckerAvroUtils {
             numOutputStates = numOutputStates,
             timeWindowLowerBound = timeWindowLowerBound,
             timeWindowUpperBound = timeWindowUpperBound,
-            holdingIdentity = holdingIdentity.toCorda().toCorda()
+            holdingIdentity = holdingIdentity.toCorda()
         )
     }
+
+    private fun UniquenessCheckType.toCorda() = net.corda.ledger.libs.uniqueness.data.UniquenessCheckType.valueOf(toString())
 
     fun UniquenessCheckResponse.toAvro() = UniquenessCheckResponseAvro(transactionId, uniquenessCheckResult.toAvro())
 
@@ -130,8 +130,4 @@ object UniquenessCheckerAvroUtils {
             else -> throw IllegalStateException("Unknown result type: ${this.javaClass.typeName}")
         }
     }
-
-    private fun UniquenessCheckType.toCorda() = UniquenessCheckRequest.Type.valueOf(toString())
-
-    private fun HoldingIdentity.toCorda() = UniquenessHoldingIdentity(x500Name, groupId, shortHash, hash)
 }
