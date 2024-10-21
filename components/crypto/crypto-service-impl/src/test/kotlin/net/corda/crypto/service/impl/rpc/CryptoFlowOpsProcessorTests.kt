@@ -26,7 +26,6 @@ import net.corda.crypto.service.impl.infra.assertClose
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
@@ -54,7 +53,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
@@ -481,8 +479,5 @@ class CryptoFlowOpsProcessorTests {
         }
         on { timestamp } doAnswer { Instant.now() }
         on { publicKey } doAnswer { key0 }
-        on { toCryptoSigningKey(any()) } doAnswer { mock<CryptoSigningKey> {
-            on { publicKey } doAnswer  { ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(key0)) }
-        } }
     }
 }

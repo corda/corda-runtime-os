@@ -1,16 +1,12 @@
 package net.corda.ledger.common.flow.impl.transaction.factory
 
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
-import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
-import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
-import net.corda.ledger.libs.common.flow.impl.transaction.getCpiSummary
 import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFactory
 import net.corda.ledger.libs.common.flow.impl.transaction.factory.TransactionMetadataFactoryImpl
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.flows.FlowEngine
-import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -35,22 +31,24 @@ class TransactionMetadataFactoryOsgiImpl(
         flowEngine: FlowEngine
     ) : this(
         TransactionMetadataFactoryImpl(
-        {
-            currentSandboxGroupContext
-                .get()
-                .sandboxGroup
-                .metadata
-                .values
-                .filter { it.isContractCpk() }
-                .map { cpk ->
-                    CordaPackageSummaryImpl(
-                        name = cpk.cpkId.name,
-                        version = cpk.cpkId.version,
-                        signerSummaryHash = cpk.cpkId.signerSummaryHash.toString(),
-                        fileChecksum = cpk.fileChecksum.toString()
-                    )
-                }
-        }, platformInfoProvider, flowEngine
-    )
+            {
+                currentSandboxGroupContext
+                    .get()
+                    .sandboxGroup
+                    .metadata
+                    .values
+                    .filter { it.isContractCpk() }
+                    .map { cpk ->
+                        CordaPackageSummaryImpl(
+                            name = cpk.cpkId.name,
+                            version = cpk.cpkId.version,
+                            signerSummaryHash = cpk.cpkId.signerSummaryHash.toString(),
+                            fileChecksum = cpk.fileChecksum.toString()
+                        )
+                    }
+            },
+            platformInfoProvider,
+            flowEngine
+        )
     )
 }

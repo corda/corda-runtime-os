@@ -23,6 +23,7 @@ dependencies {
     implementation project(':libs:serialization:serialization-amqp')
     implementation project(':libs:serialization:serialization-internal')
     implementation project(":libs:utilities")
+    implementation project(":libs:ledger:ledger-lib-common-flow")
 
     implementation libs.mockito.kotlin
 }

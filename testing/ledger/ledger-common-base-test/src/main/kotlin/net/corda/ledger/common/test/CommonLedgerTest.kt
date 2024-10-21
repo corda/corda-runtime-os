@@ -16,9 +16,7 @@ import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactoryImpl
 import net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer
 import net.corda.ledger.common.flow.impl.transaction.TransactionSignatureServiceOsgiImpl
-import net.corda.ledger.common.flow.impl.transaction.TransactionSignatureVerificationServiceImpl
 import net.corda.ledger.common.flow.impl.transaction.factory.TransactionMetadataFactoryOsgiImpl
-import net.corda.ledger.common.flow.impl.transaction.serializer.kryo.WireTransactionKryoSerializer
 import net.corda.ledger.common.flow.transaction.PrivacySaltProviderService
 import net.corda.ledger.common.testkit.FakePlatformInfoProvider
 import net.corda.ledger.common.testkit.fakePlatformInfoProvider
@@ -29,6 +27,8 @@ import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.util.UUID
+import net.corda.ledger.libs.common.flow.impl.transaction.TransactionSignatureVerificationServiceImpl
+import net.corda.ledger.libs.common.flow.impl.transaction.kryo.WireTransactionKryoSerializer
 
 abstract class CommonLedgerTest {
 

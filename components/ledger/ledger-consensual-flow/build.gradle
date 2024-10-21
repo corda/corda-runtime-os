@@ -43,6 +43,7 @@ dependencies {
     testImplementation project(':libs:serialization:serialization-amqp')
     testImplementation project(':libs:serialization:serialization-kryo')
     testImplementation project(':testing:test-serialization')
+    testImplementation project(':libs:ledger:ledger-lib-common-flow')
 
     integrationTestImplementation project(':testing:group-policy-test-common')
 

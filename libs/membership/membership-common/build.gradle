@@ -26,4 +26,5 @@ dependencies {
     implementation project(':libs:serialization:serialization-avro')
 
     testImplementation project(":testing:test-utilities")
+    testImplementation('net.corda:corda-topic-schema')
 }

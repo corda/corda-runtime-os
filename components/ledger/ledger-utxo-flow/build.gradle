@@ -65,6 +65,7 @@ dependencies {
     testImplementation libs.jackson.module.kotlin
     testImplementation libs.jackson.datatype.jsr310
     testImplementation project(':libs:crypto:merkle-impl')
+    testImplementation project(':libs:ledger:ledger-lib-common-flow')
 
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project(':testing:sandboxes-testkit')
