@@ -18,18 +18,12 @@ configurations {
 ext.cordaEnableFormatting = true
 
 dependencies {
-    compileOnly 'org.osgi:osgi.annotation'
-
-    implementation 'net.corda:corda-ledger-common'
-
     implementation project(':libs:ledger:ledger-common-flow-api')
 
     implementation project(':libs:flows:flow-api')
     implementation project(':libs:ledger:ledger-common-data')
     implementation project(':libs:serialization:serialization-checkpoint-api')
-    implementation project(':libs:serialization:serialization-internal')
     implementation project(':libs:crypto:crypto-core')
-    implementation project(':libs:serialization:json-validator')
     implementation project(':libs:serialization:serialization-amqp-api')
     implementation project(':libs:sandbox-types')
     implementation project(':libs:platform-info')
