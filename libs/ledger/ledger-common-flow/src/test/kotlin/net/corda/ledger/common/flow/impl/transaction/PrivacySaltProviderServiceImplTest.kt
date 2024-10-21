@@ -1,7 +1,6 @@
 package net.corda.ledger.common.flow.impl.transaction
 
 import net.corda.ledger.common.test.CommonLedgerTest
-import net.corda.ledger.libs.common.flow.impl.transaction.PrivacySaltProviderServiceImpl
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

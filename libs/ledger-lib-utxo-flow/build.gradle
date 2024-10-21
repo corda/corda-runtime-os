@@ -12,7 +12,7 @@ dependencies {
 
     implementation project(':libs:ledger:ledger-common-data')
     implementation project(':libs:ledger:ledger-common-flow-api')
-    implementation project(':libs:ledger:ledger-common-flow')
+    implementation project(':libs:ledger:ledger-lib-common-flow')
     implementation project(':libs:ledger:ledger-utxo-data')
     implementation project(':libs:ledger:ledger-utxo-transaction-verifier')
     implementation project(':libs:serialization:json-validator')
