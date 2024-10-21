@@ -17,7 +17,7 @@ import net.corda.ledger.common.data.transaction.factory.WireTransactionFactoryIm
 import net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer
 import net.corda.ledger.common.flow.impl.transaction.TransactionSignatureServiceOsgiImpl
 import net.corda.ledger.common.flow.impl.transaction.TransactionSignatureVerificationServiceImpl
-import net.corda.ledger.common.flow.impl.transaction.factory.TransactionMetadataFactoryImpl
+import net.corda.ledger.common.flow.impl.transaction.factory.TransactionMetadataFactoryOsgiImpl
 import net.corda.ledger.common.flow.impl.transaction.serializer.kryo.WireTransactionKryoSerializer
 import net.corda.ledger.common.flow.transaction.PrivacySaltProviderService
 import net.corda.ledger.common.testkit.FakePlatformInfoProvider
@@ -61,7 +61,7 @@ abstract class CommonLedgerTest {
     val flowEngine = FlowEngineImpl(flowFiberService)
 
     val serializationServiceNullCfg = TestSerializationService.getTestSerializationService({}, cipherSchemeMetadata)
-    val transactionMetadataFactory = TransactionMetadataFactoryImpl(
+    val transactionMetadataFactory = TransactionMetadataFactoryOsgiImpl(
         currentSandboxGroupContext,
         fakePlatformInfoProvider(),
         mockFlowEngine()

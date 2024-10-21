@@ -1,4 +1,4 @@
-package net.corda.ledger.common.flow.impl.transaction.serializer.kryo
+package net.corda.ledger.libs.common.flow.impl.transaction.kryo
 
 import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.WireTransaction
