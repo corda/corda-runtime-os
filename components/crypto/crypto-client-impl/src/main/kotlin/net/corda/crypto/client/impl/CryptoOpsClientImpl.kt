@@ -13,8 +13,8 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.bytes
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.impl.createWireRequestContext
-import net.corda.crypto.impl.toWire
+import net.corda.crypto.impl.utils.createWireRequestContext
+import net.corda.crypto.impl.utils.toWire
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHashes
 import net.corda.data.crypto.ShortHashes

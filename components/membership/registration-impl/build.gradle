@@ -72,6 +72,7 @@ dependencies {
 
     testImplementation project(":libs:crypto:cipher-suite-impl")
     testImplementation project(":libs:crypto:crypto-impl")
+    testImplementation project(":libs:crypto:crypto-impl-utils")
     testImplementation project(":testing:layered-property-map-testkit")
     testImplementation project(":testing:test-utilities")
 

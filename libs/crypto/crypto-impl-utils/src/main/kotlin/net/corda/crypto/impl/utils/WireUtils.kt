@@ -1,6 +1,6 @@
 @file:JvmName("WireUtils")
 
-package net.corda.crypto.impl
+package net.corda.crypto.impl.utils
 
 import net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService
 import net.corda.crypto.cipher.suite.CustomSignatureSpec
@@ -19,6 +19,7 @@ import java.nio.ByteBuffer
 import java.security.spec.AlgorithmParameterSpec
 import java.time.Duration
 import java.time.Instant
+import java.util.Collections.emptyList
 
 val emptyKeyValuePairList = KeyValuePairList(emptyList())
 
@@ -110,7 +111,7 @@ fun SignatureSpec.toWire(serializer: AlgorithmParameterSpecEncodingService): Cry
         else -> CryptoSignatureSpec(signatureName, null, null)
     }.also {
         CordaMetrics.Metric.Crypto.SignatureSpecTimer.builder()
-            .withTag(CordaMetrics.Tag.OperationName, TO_WIRE_OPERATION_NAME)
+            .withTag(CordaMetrics.Tag.OperationName, net.corda.crypto.impl.utils.TO_WIRE_OPERATION_NAME)
             .build()
             .record(Duration.ofNanos(System.nanoTime() - startTime))
     }

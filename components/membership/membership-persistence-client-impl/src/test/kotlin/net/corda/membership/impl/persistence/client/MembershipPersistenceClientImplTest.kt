@@ -50,7 +50,7 @@ import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.StaticNetworkInfoQueryResponse
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
 import net.corda.data.membership.preauth.PreAuthToken
-import net.corda.layeredpropertymap.toAvro
+import net.corda.layeredpropertymap.avro.toAvro
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory

@@ -43,7 +43,7 @@ import net.corda.data.membership.db.response.query.StaticNetworkInfoQueryRespons
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.preauth.PreAuthToken
-import net.corda.layeredpropertymap.toAvro
+import net.corda.layeredpropertymap.avro.toAvro
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.lib.GroupParametersFactory

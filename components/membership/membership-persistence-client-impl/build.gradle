@@ -28,5 +28,6 @@ dependencies {
     implementation project(':libs:utilities')
 
     testImplementation project(':testing:layered-property-map-testkit')
+    testImplementation project(':libs:layered-property-map-avro')
     testImplementation project(':testing:test-utilities')
 }

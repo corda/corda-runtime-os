@@ -1,4 +1,4 @@
-package net.corda.crypto.impl
+package net.corda.crypto.impl.utils
 
 import net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService
 import net.corda.crypto.cipher.suite.CustomSignatureSpec

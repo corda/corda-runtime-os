@@ -2,8 +2,8 @@ package net.corda.crypto.client.hsm.impl
 
 import net.corda.crypto.component.impl.retry
 import net.corda.crypto.component.impl.toClientException
-import net.corda.crypto.impl.createWireRequestContext
-import net.corda.crypto.impl.toWire
+import net.corda.crypto.impl.utils.createWireRequestContext
+import net.corda.crypto.impl.utils.toWire
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest

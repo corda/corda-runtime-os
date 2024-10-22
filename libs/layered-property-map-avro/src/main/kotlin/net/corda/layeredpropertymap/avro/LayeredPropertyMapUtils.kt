@@ -1,4 +1,4 @@
-package net.corda.layeredpropertymap
+package net.corda.layeredpropertymap.avro
 
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList

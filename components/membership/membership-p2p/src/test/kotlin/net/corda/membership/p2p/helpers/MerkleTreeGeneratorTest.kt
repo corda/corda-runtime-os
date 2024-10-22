@@ -6,7 +6,7 @@ import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.layeredpropertymap.toAvro
+import net.corda.layeredpropertymap.avro.toAvro
 import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name

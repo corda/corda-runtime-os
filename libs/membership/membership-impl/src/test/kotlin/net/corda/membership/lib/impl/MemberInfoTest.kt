@@ -6,8 +6,8 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedData
 import net.corda.data.membership.SignedMemberInfo
+import net.corda.layeredpropertymap.avro.toAvro
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
-import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId

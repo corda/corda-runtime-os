@@ -8,7 +8,7 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.ShortHash
-import net.corda.crypto.impl.toMap
+import net.corda.crypto.impl.utils.toMap
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey

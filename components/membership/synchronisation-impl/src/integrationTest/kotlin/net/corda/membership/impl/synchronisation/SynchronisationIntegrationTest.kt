@@ -36,7 +36,7 @@ import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.sync.BloomFilter
 import net.corda.db.messagebus.testkit.DBSetup
-import net.corda.layeredpropertymap.toAvro
+import net.corda.layeredpropertymap.avro.toAvro
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName

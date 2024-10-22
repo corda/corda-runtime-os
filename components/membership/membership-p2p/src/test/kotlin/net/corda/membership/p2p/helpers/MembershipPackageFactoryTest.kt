@@ -13,7 +13,7 @@ import net.corda.data.membership.SignedData
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.data.membership.p2p.DistributionMetaData
 import net.corda.data.membership.p2p.DistributionType
-import net.corda.layeredpropertymap.toAvro
+import net.corda.layeredpropertymap.avro.toAvro
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.SelfSignedMemberInfo
