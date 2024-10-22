@@ -50,10 +50,7 @@ interface BackingStore {
      * context of the session. A session is tied to a specific [holdingIdentity], which must be
      * specified when opening the session.
      */
-    fun session(
-        holdingIdentity: UniquenessHoldingIdentity,
-        block: (Session) -> Unit
-    )
+    fun session(holdingIdentity: UniquenessHoldingIdentity, block: (Session) -> Unit)
 
     /**
      * Convenience function which opens a session with the backing store and then immediately
@@ -61,10 +58,7 @@ interface BackingStore {
      * and [TransactionOps][Session.TransactionOps] interfaces. Useful when you know you will need
      * to perform commit operations up front.
      */
-    fun transactionSession(
-        holdingIdentity: UniquenessHoldingIdentity,
-        block: (Session, Session.TransactionOps) -> Unit
-    ) {
+    fun transactionSession(holdingIdentity: UniquenessHoldingIdentity, block: (Session, Session.TransactionOps) -> Unit) {
         session(holdingIdentity) { session -> session.executeTransaction(block) }
     }
 
