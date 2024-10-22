@@ -13,6 +13,7 @@ import net.corda.db.testkit.DbUtils
 import net.corda.ledger.libs.uniqueness.UniquenessChecker
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckRequest
 import net.corda.ledger.libs.uniqueness.data.UniquenessCheckResponse
+import net.corda.ledger.libs.uniqueness.data.UniquenessCheckType
 import net.corda.ledger.libs.uniqueness.data.UniquenessHoldingIdentity
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
@@ -1946,7 +1947,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             // check that the failure gets replayed via the checker
             processRequests(
                 newRequestBuilder(transactionId)
-                    .setCheckType(net.corda.ledger.libs.uniqueness.data.UniquenessCheckType.READ)
+                    .setCheckType(UniquenessCheckType.READ)
                     .build()
             ).let { responses ->
                 assertAll(
@@ -1968,7 +1969,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             // check if transaction has yet been notarized
             processRequests(
                 newRequestBuilder(transactionId)
-                    .setCheckType(net.corda.ledger.libs.uniqueness.data.UniquenessCheckType.READ)
+                    .setCheckType(UniquenessCheckType.READ)
                     .setTimeWindowLowerBound(currentTime().minusSeconds(10))
                     .setTimeWindowUpperBound(currentTime().plusSeconds(10))
                     .build()
@@ -2002,7 +2003,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             // check for unknown transaction after time window elapsed
             processRequests(
                 newRequestBuilder()
-                    .setCheckType(net.corda.ledger.libs.uniqueness.data.UniquenessCheckType.READ)
+                    .setCheckType(UniquenessCheckType.READ)
                     .setTimeWindowUpperBound(upperBound)
                     .build()
             ).let { responses ->
@@ -2024,7 +2025,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             val transactionId = SecureHashUtils.randomSecureHash()
             processRequests(
                 newRequestBuilder(transactionId)
-                    .setCheckType(net.corda.ledger.libs.uniqueness.data.UniquenessCheckType.READ)
+                    .setCheckType(UniquenessCheckType.READ)
                     .setTimeWindowLowerBound(lowerBound)
                     .build()
             ).let { responses ->
@@ -2040,7 +2041,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             // check for transaction now should return that the notary doesn't know about it
             processRequests(
                 newRequestBuilder(transactionId)
-                    .setCheckType(net.corda.ledger.libs.uniqueness.data.UniquenessCheckType.READ)
+                    .setCheckType(UniquenessCheckType.READ)
                     .setTimeWindowLowerBound(lowerBound)
                     .build()
             ).let { responses ->
@@ -2084,7 +2085,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                     .setNumOutputStates(3)
                     .build(),
                 newRequestBuilder(transactionId)
-                    .setCheckType(net.corda.ledger.libs.uniqueness.data.UniquenessCheckType.READ)
+                    .setCheckType(UniquenessCheckType.READ)
                     .setTimeWindowLowerBound(currentTime().minusSeconds(10))
                     .setTimeWindowUpperBound(currentTime().plusSeconds(10))
                     .build()
