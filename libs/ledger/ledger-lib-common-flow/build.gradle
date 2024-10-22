@@ -2,7 +2,6 @@ import aQute.bnd.gradle.Bundle
 
 plugins {
     id 'corda.common-publishing'
-    id 'corda.osgi-test-conventions'
     id 'corda.common-library'
 }
 
@@ -18,6 +17,9 @@ configurations {
 ext.cordaEnableFormatting = true
 
 dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+
     implementation project(':libs:ledger:ledger-lib-common-flow-api')
 
     implementation project(':libs:ledger:ledger-common-data')
@@ -45,21 +47,4 @@ dependencies {
     integrationTestRuntimeOnly project(':testing:slf4jv1')
 
     cpis project(path: ':testing:ledger:ledger-common-empty-app', configuration: 'cordaCPB')
-}
-
-tasks.withType(Test).configureEach {
-    jvmArgs '--add-opens', 'java.base/java.lang.invoke=ALL-UNNAMED',
-            '--add-opens', 'java.base/java.util=ALL-UNNAMED'
-}
-
-//  Copy the cpi builds declared in the cpis configuration into our resources so we find and load them
-def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
-    from(configurations.cpis) {
-        into 'META-INF'
-        rename "(.*)-\\Q${version}\\E-package.cpb", "\$1.cpb"
-    }
-}
-
-tasks.named('testingBundle', Bundle) {
-    dependsOn integrationTestResources
 }
